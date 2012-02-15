@@ -6,6 +6,7 @@
 
 import argparse
 import csv
+import random
 import re
 import sys
 
@@ -48,11 +49,12 @@ def sanitize_name(feature_name):
     return feature_name.replace(" ", "_").replace("#", "HASH")
 
 
-def process_set(inst_set, nominal_dict, attr_list, args):
+def process_set(inst_set, nominal_dict, attr_list, inst_str_list, args):
     '''
         Process an instance set and output MegaM-style instances
     '''
-    for instance in inst_set:
+    for inst_index in inst_set:
+        instance = split_with_quotes(inst_str_list[inst_index], quotechar=args.quotechar, delimiter=',')  # Split on demand to save tons of memory
         print (instance[args.classindex] if args.namedclasses else str(nominal_dict[args.classindex][instance[args.classindex]])) + "\t",
         # Loop through all attributes in instance set. We omit the last one, because it's class.
         for i in xrange(len(instance)):
@@ -97,6 +99,7 @@ if __name__ == '__main__':
                         type=parse_num_list)
     parser.add_argument('-m', '--max', help='Maximum number of instances to use for training for each class.', type=int, default=0)
     parser.add_argument('-n', '--namedclasses', help='Keep class names in MegaM file instead of converting the nomimal field to numeric.', action='store_true')
+    parser.add_argument('-r', '--randomize', help='Randomly shuffle the instances before splitting into training, dev, and test sets.', action='store_true')
     parser.add_argument('-q', '--quotechar', help='Character to use for quoting strings in attribute names. (Default = \')', default="'")
     parser.add_argument('-t', '--test', help='Number of instances per class to reserve for testing.', type=int, default=0)
     parser.add_argument('-v', '--verbose', help='Print out fields that were not added output to MegaM file on STDERR.', action='store_true')
@@ -144,29 +147,35 @@ if __name__ == '__main__':
     train_sets = [set() for x in class_list]
 
     # Process data instances
-    for line in args.infile:
-        instance = split_with_quotes(line, quotechar=args.quotechar, delimiter=',')
+    inst_str_list = [line.strip() for line in args.infile]
+    args.infile.close()
 
-        # Split instance list into dev, test, and training sets
+    # Randomize if asked
+    if args.randomize:
+        random.shuffle(inst_str_list)
+
+    # Split instance list into dev, test, and training sets
+    for i, inst_str in enumerate(inst_str_list):
+        instance = split_with_quotes(inst_str, quotechar=args.quotechar, delimiter=',')
         if len(dev_sets[class_dict[instance[args.classindex]]]) < args.dev:
-            dev_sets[class_dict[instance[args.classindex]]].add(tuple(instance))
+            dev_sets[class_dict[instance[args.classindex]]].add(i)
         elif len(test_sets[class_dict[instance[args.classindex]]]) < args.test:
-            test_sets[class_dict[instance[args.classindex]]].add(tuple(instance))
+            test_sets[class_dict[instance[args.classindex]]].add(i)
         elif (not args.max) or (len(train_sets[class_dict[instance[args.classindex]]]) < args.max):
-            train_sets[class_dict[instance[args.classindex]]].add(tuple(instance))
+            train_sets[class_dict[instance[args.classindex]]].add(i)
 
     # Process each training set
     for inst_set in train_sets:
-        process_set(inst_set, nominal_dict, attr_list, args)
+        process_set(inst_set, nominal_dict, attr_list, inst_str_list, args)
 
     # Process each dev set
     if args.dev:
         print "DEV"
         for inst_set in dev_sets:
-            process_set(inst_set, nominal_dict, attr_list, args)
+            process_set(inst_set, nominal_dict, attr_list, inst_str_list, args)
 
     # Process each test set
     if args.test:
         print "TEST"
         for inst_set in test_sets:
-            process_set(inst_set, nominal_dict, attr_list, args)
+            process_set(inst_set, nominal_dict, attr_list, inst_str_list, args)
