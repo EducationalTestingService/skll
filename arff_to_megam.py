@@ -55,8 +55,8 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list, args):
     '''
     for inst_index in inst_set:
         instance = split_with_quotes(inst_str_list[inst_index], quotechar=args.quotechar, delimiter=',')  # Split on demand to save tons of memory
-        print (instance[args.classindex] if args.namedclasses else str(nominal_dict[args.classindex][instance[args.classindex]])) + "\t",
-        # Loop through all attributes in instance set. We omit the last one, because it's class.
+        print (sanitize_name(instance[args.classindex]) if args.namedclasses else str(nominal_dict[args.classindex][instance[args.classindex]])) + "\t",
+        # Loop through all attributes in instance set.
         for i in xrange(len(instance)):
             # Skip over the class feature
             if i != args.classindex:
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     train_sets = [set() for x in class_list]
 
     # Process data instances
-    inst_str_list = [line.strip() for line in args.infile]
+    inst_str_list = [line.strip() for line in args.infile]  # Picks up on line after @data because of break in loop that processes header
     args.infile.close()
 
     # Randomize if asked
