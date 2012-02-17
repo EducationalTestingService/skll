@@ -11,6 +11,10 @@ import re
 import sys
 
 
+# Globals
+args = None
+
+
 def parse_num_list(num_string):
     '''
         Convert a string representing a range of numbers to a list of integers.
@@ -29,6 +33,9 @@ def parse_num_list(num_string):
 
 
 def split_with_quotes(s, delimiter=' ', quotechar="'", escapechar='\\'):
+    '''
+        A replacement for string.split that won't split delimiters enclosed in quotes.
+    '''
     return csv.reader([s], delimiter=delimiter, quotechar=quotechar, escapechar=escapechar).next()
 
 
@@ -49,35 +56,52 @@ def sanitize_name(feature_name):
     return feature_name.replace(" ", "_").replace("#", "HASH")
 
 
-def process_set(inst_set, nominal_dict, attr_list, inst_str_list, args):
+def print_instance(instance, nominal_dict, attr_list, suffix=None):
+    # Loop through all attributes in instance set.
+    for i in xrange(len(instance)):
+        # Skip over the class feature
+        if i != args.classindex:
+            # Check if this a feature we want to keep
+            if ((not args.features) or ((i + 1) in args.features)) and ((i + 1) not in args.superclasses):
+                clean_name = sanitize_name(attr_list[i][0] if suffix is None else "F{}{}".format(i + 1, suffix))
+                # Feature is numeric
+                if attr_list[i][1] == 1:
+                    # Only print feature if it's not zero to save space
+                    if float(instance[i]):
+                        # Check if we're supposed to convert the feature to binary
+                        if (args.binary and ((args.binary == [0]) or ((i + 1) in args.binary))):
+                            print clean_name, int(bool(float(instance[i]))),
+                            if args.doubleup:
+                                print clean_name, instance[i],
+                        else:
+                            print clean_name, instance[i],
+                # Feature is nominal
+                elif i in nominal_dict:
+                    print clean_name, nominal_dict[i][instance[i]],
+                # Feature is string, so ignore it
+                elif args.verbose:
+                    print >> sys.stderr, clean_name, instance[i],
+            elif args.verbose:
+                print >> sys.stderr, clean_name, instance[i],
+
+
+def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
     '''
         Process an instance set and output MegaM-style instances
     '''
     for inst_index in inst_set:
         instance = split_with_quotes(inst_str_list[inst_index], quotechar=args.quotechar, delimiter=',')  # Split on demand to save tons of memory
         print (sanitize_name(instance[args.classindex]) if args.namedclasses else str(nominal_dict[args.classindex][instance[args.classindex]])) + "\t",
-        # Loop through all attributes in instance set.
-        for i in xrange(len(instance)):
-            # Skip over the class feature
-            if i != args.classindex:
-                # Check if this a feature we want to keep
-                if (not args.features) or ((i + 1) in args.features):
-                    # Feature is numeric
-                    if attr_list[i][1] == 1:
-                        if (args.binary and ((args.binary == [0]) or ((i + 1) in args.binary))):
-                            print sanitize_name(attr_list[i][0]), int(bool(float(instance[i]))),
-                            if args.doubleup:
-                                print sanitize_name(attr_list[i][0]), instance[i],
-                        else:
-                            print sanitize_name(attr_list[i][0]), instance[i],
-                    # Feature is nominal
-                    elif i in nominal_dict:
-                        print sanitize_name(attr_list[i][0]), nominal_dict[i][instance[i]],
-                    # Feature is string
-                    else:
-                        print sanitize_name(attr_list[i][0]), instance[i].__hash__(),
-                elif args.verbose:
-                    print >> sys.stderr, sanitize_name(attr_list[i][0]), instance[i],
+        # Use explicit output format if superclasses are specified
+        if args.superclasses:
+            for class_name in attr_list[args.classindex][2]:
+                print "#",
+                print_instance(instance, nominal_dict, attr_list, suffix=" " + class_name)
+                for superclass_feat in args.superclasses:
+                    print_instance(instance, nominal_dict, attr_list, suffix=" {} {}".format(attr_list[superclass_feat - 1][0], instance[superclass_feat - 1]))
+        # Otherwise use implicit output format
+        else:
+            print_instance(instance, nominal_dict, attr_list)
         print
 
 
@@ -99,8 +123,11 @@ if __name__ == '__main__':
                         type=parse_num_list)
     parser.add_argument('-m', '--max', help='Maximum number of instances to use for training for each class.', type=int, default=0)
     parser.add_argument('-n', '--namedclasses', help='Keep class names in MegaM file instead of converting the nomimal field to numeric.', action='store_true')
-    parser.add_argument('-r', '--randomize', help='Randomly shuffle the instances before splitting into training, dev, and test sets.', action='store_true')
     parser.add_argument('-q', '--quotechar', help='Character to use for quoting strings in attribute names. (Default = \')', default="'")
+    parser.add_argument('-r', '--randomize', help='Randomly shuffle the instances before splitting into training, dev, and test sets.', action='store_true')
+    parser.add_argument('-s', '--superclasses', help='List of features that are super-classes of the classes we want to have MegaM predict. If specified, the ' +
+                                                     'MegaM "explicit" output format will be used.',
+                        type=parse_num_list, default=[])
     parser.add_argument('-t', '--test', help='Number of instances per class to reserve for testing.', type=int, default=0)
     parser.add_argument('-v', '--verbose', help='Print out fields that were not added output to MegaM file on STDERR.', action='store_true')
     args = parser.parse_args()
@@ -166,16 +193,16 @@ if __name__ == '__main__':
 
     # Process each training set
     for inst_set in train_sets:
-        process_set(inst_set, nominal_dict, attr_list, inst_str_list, args)
+        process_set(inst_set, nominal_dict, attr_list, inst_str_list)
 
     # Process each dev set
     if args.dev:
         print "DEV"
         for inst_set in dev_sets:
-            process_set(inst_set, nominal_dict, attr_list, inst_str_list, args)
+            process_set(inst_set, nominal_dict, attr_list, inst_str_list)
 
     # Process each test set
     if args.test:
         print "TEST"
         for inst_set in test_sets:
-            process_set(inst_set, nominal_dict, attr_list, inst_str_list, args)
+            process_set(inst_set, nominal_dict, attr_list, inst_str_list)
