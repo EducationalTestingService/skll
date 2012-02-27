@@ -27,13 +27,17 @@ if __name__ == '__main__':
     first = True
     for line in args.infile:
         stripped_line = line.strip()
-        split_line = stripped_line.split()
-        feature_pairs = split_line[1:]
-        sys.stdout.write(split_line[0] + "\t")
-        for feature, value in itertools.izip(itertools.islice(feature_pairs, 0, None, 2), itertools.islice(feature_pairs, 1, None, 2)):
-            if first:
-                first = False
-            else:
-                sys.stdout.write(' ')
-            if re.match(r'[\w-]*$', feature) and ((feature not in stopwords) or (args.ignorecase and (feature.lower() not in stopwords))):
-                print feature, value
+        if stripped_line in ['TEST', 'DEV']:
+            print stripped_line
+        else:
+            split_line = stripped_line.split()
+            feature_pairs = split_line[1:]
+            sys.stdout.write(split_line[0] + "\t")
+            for feature, value in itertools.izip(itertools.islice(feature_pairs, 0, None, 2), itertools.islice(feature_pairs, 1, None, 2)):
+                if first:
+                    first = False
+                else:
+                    sys.stdout.write(' ')
+                if re.match(r'[\w-]*$', feature) and ((feature not in stopwords) or (args.ignorecase and (feature.lower() not in stopwords))):
+                    sys.stdout.write('{} {}'.format(feature, value))
+            print
