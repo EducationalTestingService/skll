@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 # Filter MegaM file to remove non-content word features
 
@@ -15,6 +15,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Filter MegaM file to remove features with names in stop word list (or non alphabetic characters).")
     parser.add_argument('infile', help='MegaM input file (defaults to STDIN)', type=argparse.FileType('r'), default=sys.stdin, nargs='?')
     parser.add_argument('-i', '--ignorecase', help='Do case insensitive feature name matching.', action='store_true')
+    parser.add_argument('-k', '--keep', help='Instead of removing features with names in the list, keep only those.', action='store_true')
     parser.add_argument('-s', '--stopwordlist', help='Stop word file (Default = /home/nlp-text/static/corpora/nonets/pan-2010-plagiarism/scripts/big_stoplist)',
                         default=open('/home/nlp-text/static/corpora/nonets/pan-2010-plagiarism/scripts/big_stoplist'),
                         type=argparse.FileType('r'))
@@ -38,6 +39,7 @@ if __name__ == '__main__':
                     first = False
                 else:
                     sys.stdout.write(' ')
-                if re.match(r'[\w-]*$', feature) and ((feature not in stopwords) or (args.ignorecase and (feature.lower() not in stopwords))):
+                if re.match(r'[\w-]*$', feature) and ((not args.keep and ((feature not in stopwords) or (args.ignorecase and (feature.lower() not in stopwords)))) or
+                                                      (args.keep and ((feature in stopwords) or (args.ignorecase and (feature.lower() in stopwords))))):
                     sys.stdout.write('{} {}'.format(feature, value))
             print

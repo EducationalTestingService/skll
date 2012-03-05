@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 # Script that splits MegaM files into training, test, and dev sections
 
@@ -11,7 +11,8 @@ import sys
 
 if __name__ == '__main__':
     # Get command line arguments
-    parser = argparse.ArgumentParser(description="Splits a MegaM-compatible into dev, training, and test sets. If -d and -t are ommitted, nothing really happens.")
+    parser = argparse.ArgumentParser(description="Splits a MegaM-compatible into dev, training, and test sets. If -d and -t are ommitted, just strips existing " +
+                                                 "DEV and TEST lines from file.")
     parser.add_argument('infile', help='MegaM input file (defaults to STDIN)', type=argparse.FileType('r'), default=sys.stdin, nargs='?')
     parser.add_argument('-d', '--dev', help='Number of instances per class to reserve for development.', type=int, default=0)
     parser.add_argument('-m', '--max', help='Maximum number of instances to use for training for each class.', type=int, default=0)
