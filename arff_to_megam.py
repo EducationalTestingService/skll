@@ -109,21 +109,22 @@ if __name__ == '__main__':
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Takes an ARFF file an outputs a MegaM-compatible file to be run with the '-fvals' switch." +
                                                  " Assumes last field is class. Ignores any relational, string, or date fields. Automatically converts nominals" +
-                                                 " to numerals.")
-    parser.add_argument('infile', help='ARFF input file (defaults to STDIN)', type=argparse.FileType('r'), default=sys.stdin, nargs='?')
+                                                 " to numerals.",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('infile', help='ARFF input file', type=argparse.FileType('r'), default='-', nargs='?')
     parser.add_argument('-b', '--binary', help='Converts the specified range of numeric features to presence/absence binary features. Features are numbered ' +
                                                'starting from 1, and if 0 is specified with this flag, all numeric features are converted. Note: Any string ' +
                                                'features within the specified range are just ignored.', type=parse_num_list)
     parser.add_argument('--doubleup', help='Keep both the binary and numeric versions of any feature numeric feature you convert to binary.', action='store_true')
     parser.add_argument('-c', '--classindex', help='Index of feature that is the class. Numbering starts at 1 like --features. Supports negative numbers (i.e., ' +
-                                                   '-1 is the last feature). Default = -1',
+                                                   '-1 is the last feature).',
                         type=int, default=-1)
     parser.add_argument('-d', '--dev', help='Number of instances per class to reserve for development.', type=int, default=0)
     parser.add_argument('-f', '--features', help='Only keep the specified range of features in the MegaM output. Features are numbered starting from 1.',
                         type=parse_num_list)
     parser.add_argument('-m', '--max', help='Maximum number of instances to use for training for each class.', type=int, default=0)
     parser.add_argument('-n', '--namedclasses', help='Keep class names in MegaM file instead of converting the nomimal field to numeric.', action='store_true')
-    parser.add_argument('-q', '--quotechar', help='Character to use for quoting strings in attribute names. (Default = \')', default="'")
+    parser.add_argument('-q', '--quotechar', help='Character to use for quoting strings in attribute names.', default="'")
     parser.add_argument('-r', '--randomize', help='Randomly shuffle the instances before splitting into training, dev, and test sets.', action='store_true')
     parser.add_argument('-s', '--superclasses', help='List of features that are super-classes of the classes we want to have MegaM predict. If specified, the ' +
                                                      'MegaM "explicit" output format will be used.',

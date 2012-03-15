@@ -5,16 +5,16 @@
 # Author: Dan Blanchard, dblanchard@ets.org, Oct 2011
 
 import argparse
-import sys
 
 
 if __name__ == '__main__':
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Takes a MegaM-compatible file to be run with the '-fvals' switch and outputs a " +
-                                                 "Weka-compatible ARFF file to STDOUT.")
-    parser.add_argument('infile', help='MegaM input file (defaults to STDIN)', type=argparse.FileType('r'), default=sys.stdin, nargs='?')
-    parser.add_argument('-c', '--classname', help='Name of nominal class field for ARFF file (defaults to "class")', default='class')
-    parser.add_argument('-r', '--relation', help='Name of relation for ARFF file (defaults to "MegaM Relation")', default='MegaM Relation')
+                                                 "Weka-compatible ARFF file to STDOUT.",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('infile', help='MegaM input file', type=argparse.FileType('r'), default='-', nargs='?')
+    parser.add_argument('-c', '--classname', help='Name of nominal class field for ARFF file', default='class')
+    parser.add_argument('-r', '--relation', help='Name of relation for ARFF file', default='MegaM Relation')
     args = parser.parse_args()
 
     # Initialize variables

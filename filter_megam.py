@@ -12,11 +12,12 @@ import sys
 
 if __name__ == '__main__':
     # Get command line arguments
-    parser = argparse.ArgumentParser(description="Filter MegaM file to remove features with names in stop word list (or non alphabetic characters).")
-    parser.add_argument('infile', help='MegaM input file (defaults to STDIN)', type=argparse.FileType('r'), default=sys.stdin, nargs='?')
+    parser = argparse.ArgumentParser(description="Filter MegaM file to remove features with names in stop word list (or non alphabetic characters).",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('infile', help='MegaM input file', type=argparse.FileType('r'), default='-', nargs='?')
     parser.add_argument('-i', '--ignorecase', help='Do case insensitive feature name matching.', action='store_true')
     parser.add_argument('-k', '--keep', help='Instead of removing features with names in the list, keep only those.', action='store_true')
-    parser.add_argument('-s', '--stopwordlist', help='Stop word file (Default = /home/nlp-text/static/corpora/nonets/pan-2010-plagiarism/scripts/big_stoplist)',
+    parser.add_argument('-s', '--stopwordlist', help='Stop word file',
                         default=open('/home/nlp-text/static/corpora/nonets/pan-2010-plagiarism/scripts/big_stoplist'),
                         type=argparse.FileType('r'))
     args = parser.parse_args()
