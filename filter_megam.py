@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--ignorecase', help='Do case insensitive feature name matching.', action='store_true')
     parser.add_argument('-k', '--keep', help='Instead of removing features with names in the list, keep only those.', action='store_true')
     parser.add_argument('-s', '--stopwordlist', help='Stop word file',
-                        default=open('/home/nlp-text/static/corpora/nonets/pan-2010-plagiarism/scripts/big_stoplist'),
+                        default='/home/nlp-text/static/corpora/nonets/pan-2010-plagiarism/scripts/big_stoplist',
                         type=argparse.FileType('r'))
     args = parser.parse_args()
 
