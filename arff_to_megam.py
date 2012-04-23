@@ -83,6 +83,8 @@ def print_instance(instance, nominal_dict, attr_list, suffix=None):
                     print >> sys.stderr, clean_name, instance[i],
             elif args.verbose:
                 print >> sys.stderr, clean_name, instance[i],
+    if args.verbose:
+        print >> sys.stderr
 
 
 def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
