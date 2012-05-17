@@ -139,6 +139,9 @@ if __name__ == '__main__':
     if args.classindex == 0:
         raise argparse.ArgumentTypeError("0 is not a valid value for --classindex.  Feature numbering starts at 1 (although --classindex can also be negative).")
 
+    if args.infile.isatty():
+        print >> sys.stderr, "You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n"
+
     # Process ARFF header
     attr_list = []
     relation = ''

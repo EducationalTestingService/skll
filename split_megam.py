@@ -6,6 +6,7 @@
 
 import argparse
 import random
+import sys
 
 
 if __name__ == '__main__':
@@ -19,6 +20,9 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--randomize', help='Randomly shuffle the instances before splitting into training, dev, and test sets.', action='store_true')
     parser.add_argument('-t', '--test', help='Number of instances per class to reserve for testing.', type=int, default=0)
     args = parser.parse_args()
+
+    if args.infile.isatty():
+        print >> sys.stderr, "You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n"
 
     # Initialize variables
     classes = set()

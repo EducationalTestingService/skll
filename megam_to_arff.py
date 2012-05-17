@@ -5,6 +5,7 @@
 # Author: Dan Blanchard, dblanchard@ets.org, Oct 2011
 
 import argparse
+import sys
 
 
 if __name__ == '__main__':
@@ -16,6 +17,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--classname', help='Name of nominal class field for ARFF file', default='class')
     parser.add_argument('-r', '--relation', help='Name of relation for ARFF file', default='MegaM Relation')
     args = parser.parse_args()
+
+    if args.infile.isatty():
+        print >> sys.stderr, "You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n"
 
     # Initialize variables
     classes = set()

@@ -22,6 +22,9 @@ if __name__ == '__main__':
                         type=argparse.FileType('r'))
     args = parser.parse_args()
 
+    if args.infile.isatty():
+        print >> sys.stderr, "You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n"
+
     # Read stop word list
     stopwords = set([w.strip().lower() for w in args.stopwordlist.readlines()]) if args.ignorecase else set([w.strip() for w in args.stopwordlist.readlines()])
 
