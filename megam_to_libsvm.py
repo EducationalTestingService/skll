@@ -51,7 +51,8 @@ if __name__ == '__main__':
             field_pairs = split_line[1:]
             # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
             for field_name, value in izip(field_pairs[::2], field_pairs[1::2]):
-                sys.stdout.write(' {}:{}'.format(field_num_dict[field_name], value))
+                if float(value):
+                    sys.stdout.write(' {}:{}'.format(field_num_dict[field_name], value))
             print
 
     # Print out mappings to file
