@@ -47,11 +47,12 @@ if __name__ == '__main__':
     for line in args.infile:
         split_line = line.strip().split()
         if len(split_line) > 1:
-            print class_num_dict[split_line[0]]
+            print class_num_dict[split_line[0]],
             field_pairs = split_line[1:]
             # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
             for field_name, value in izip(field_pairs[::2], field_pairs[1::2]):
-                print '{}:{}'.format(field_num_dict[field_name], value)
+                sys.stdout.write(' {}:{}'.format(field_num_dict[field_name], value))
+            print
 
     # Print out mappings to file
     print >> args.mappingfile, "CLASS NUM\tCLASS NAME"
