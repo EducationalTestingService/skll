@@ -48,11 +48,11 @@ if __name__ == '__main__':
         split_line = line.strip().split()
         if len(split_line) > 1:
             print class_num_dict[split_line[0]],
-            field_pairs = split_line[1:]
+            del split_line[0]
             # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
-            for field_name, value in izip(field_pairs[::2], field_pairs[1::2]):
+            for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]], [float(value) for value in split_line[1::2]])):
                 if float(value):
-                    sys.stdout.write(' {}:{}'.format(field_num_dict[field_name], value))
+                    sys.stdout.write(' {}:{}'.format(field_num, value))
             print
 
     # Print out mappings to file
