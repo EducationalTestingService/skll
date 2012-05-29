@@ -180,7 +180,7 @@ if __name__ == '__main__':
     train_sets = [set() for x in class_list]
 
     # Process data instances
-    inst_str_list = [line.strip() for line in args.infile]  # Picks up on line after @data because of break in loop that processes header
+    inst_str_list = [line.strip() for line in args.infile if line.strip()]  # Picks up on line after @data because of break in loop that processes header
     args.infile.close()
 
     # Randomize if asked
