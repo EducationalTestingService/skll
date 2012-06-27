@@ -49,4 +49,4 @@ if __name__ == '__main__':
             del split_line[args.classfield]
             if args.idfield is not None:
                 del split_line[args.idfield]
-            print ' '.join(['{} {}'.format(field, value) for field, value in zip(fields, split_line)])
+            print ' '.join(['{} {}'.format(field, value) for field, value in zip(fields, split_line) if value != '.' and float(value) != 0])
