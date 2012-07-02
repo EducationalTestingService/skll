@@ -20,9 +20,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Takes a delimited file with a header line and converts it to MegaM.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile', help='MegaM input file', type=argparse.FileType('r'), default='-', nargs='?')
-    parser.add_argument('-c', '--classfield', help='Index of class field in CSV file.', default=-1, type=int)
+    parser.add_argument('-c', '--classfield', help='Index of class field in CSV file. Note: fields are numbered starting at 0.', default=-1, type=int)
     parser.add_argument('-d', '--delimiter', help='The column delimiter.', default=',')
-    parser.add_argument('-i', '--idfield', help='Index of ID field in CSV file (if there is one). This will be omitted from output.', type=int)
+    parser.add_argument('-i', '--idfield', help='Index of ID field in CSV file (if there is one). This will be omitted from output. Note: fields are numbered starting at 0.', type=int)
     args = parser.parse_args()
 
     if args.infile.isatty():
