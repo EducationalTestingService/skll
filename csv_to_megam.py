@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # Iterate through input file
     first = True
     for line in args.infile:
-        split_line = line.strip().split()
+        split_line = line.strip().split(args.delimiter)
         if first:
             fields = split_line[1:] if split_line[0] == '#' else split_line  # Check for weird commented-out header
             fields = [sanitize_name(field) for field in fields]
