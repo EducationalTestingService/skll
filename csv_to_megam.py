@@ -40,9 +40,13 @@ if __name__ == '__main__':
         if first:
             fields = split_line[1:] if split_line[0] == '#' else split_line  # Check for weird commented-out header
             fields = [sanitize_name(field) for field in fields]
-            del fields[args.classfield]
+            # Delete extra fields
             if args.idfield is not None:
-                del fields[args.idfield]
+                # Have to sort descending so that we don't screw up the indices
+                for i in sorted((args.idfield, args.classfield), reverse=True):
+                    del fields[i]
+            else:
+                del fields[args.classfield]
             first = False
         else:
             sys.stdout.write('{}\t'.format(split_line[args.classfield]))
