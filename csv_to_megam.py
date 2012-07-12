@@ -50,7 +50,11 @@ if __name__ == '__main__':
             first = False
         else:
             sys.stdout.write('{}\t'.format(split_line[args.classfield]))
-            del split_line[args.classfield]
+            # Delete extra fields
             if args.idfield is not None:
-                del split_line[args.idfield]
+                # Have to sort descending so that we don't screw up the indices
+                for i in sorted((args.idfield, args.classfield), reverse=True):
+                    del split_line[i]
+            else:
+                del split_line[args.classfield]
             print ' '.join(['{} {}'.format(field, value) for field, value in zip(fields, split_line) if value not in ['.', '?'] and float(value) != 0])
