@@ -32,12 +32,14 @@ if __name__ == '__main__':
     first = True
     for line in args.infile:
         stripped_line = line.strip()
-        split_line = stripped_line.split()
-        if len(split_line) > 1:
-            class_name = split_line[0]
-            classes.add(class_name)
-            # Add all the field values (and the current class value) to the list of instances
-            inst_str_list.append(stripped_line)
+        # Ignore comments
+        if not stripped_line.startswith('#'):
+            split_line = stripped_line.split()
+            if len(split_line) > 1:
+                class_name = split_line[0]
+                classes.add(class_name)
+                # Add all the field values (and the current class value) to the list of instances
+                inst_str_list.append(stripped_line)
 
     # Randomize if asked
     if args.randomize:

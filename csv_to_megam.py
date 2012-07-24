@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('infile', help='MegaM input file', type=argparse.FileType('r'), default='-', nargs='?')
     parser.add_argument('-c', '--classfield', help='Index of class field in CSV file. Note: fields are numbered starting at 0.', default=-1, type=int)
     parser.add_argument('-d', '--delimiter', help='The column delimiter.', default=',')
-    parser.add_argument('-i', '--idfield', help='Index of ID field in CSV file (if there is one). This will be omitted from output. Note: fields are numbered starting at 0.', type=int)
+    parser.add_argument('-i', '--idfield', help='Index of ID field in CSV file (if there is one). This will be included as a comment before each line. Note: fields are numbered starting at 0.', type=int)
     args = parser.parse_args()
 
     if args.infile.isatty():
@@ -49,12 +49,17 @@ if __name__ == '__main__':
                 del fields[args.classfield]
             first = False
         else:
-            sys.stdout.write('{}\t'.format(split_line[args.classfield]))
             # Delete extra fields
             if args.idfield is not None:
+                # Print id field
+                print "# {}".format(split_line[args.idfield])
+
                 # Have to sort descending so that we don't screw up the indices
                 for i in sorted((args.idfield, args.classfield), reverse=True):
                     del split_line[i]
             else:
                 del split_line[args.classfield]
+            # Print class
+            sys.stdout.write('{}\t'.format(split_line[args.classfield]))
+            # Print features
             print ' '.join(['{} {}'.format(field, value) for field, value in zip(fields, split_line) if value not in ['.', '?'] and float(value) != 0])

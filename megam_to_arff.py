@@ -29,17 +29,19 @@ if __name__ == '__main__':
     # Iterate through MegaM file
     first = True
     for line in args.infile:
-        split_line = line.strip().split()
-        if len(split_line) > 1:
-            class_name = split_line[0]
-            classes.add(class_name)
-            field_pairs = split_line[1:]
-            # Get names of all fields if this is the first row we've processed
-            if first:
-                fields = field_pairs[::2]
-                first = False
-            # Add all the field values (and the current class value) to the list of instances
-            instances.append(field_pairs[1::2] + [class_name])
+        # Ignore comments
+        if not line.startswith('#'):
+            split_line = line.strip().split()
+            if len(split_line) > 1:
+                class_name = split_line[0]
+                classes.add(class_name)
+                field_pairs = split_line[1:]
+                # Get names of all fields if this is the first row we've processed
+                if first:
+                    fields = field_pairs[::2]
+                    first = False
+                # Add all the field values (and the current class value) to the list of instances
+                instances.append(field_pairs[1::2] + [class_name])
 
     # Add relation to header
     print "@relation '{}'\n".format(args.relation)

@@ -49,16 +49,18 @@ def convert_to_libsvm(lines):
 
     # Iterate through MegaM file
     for line in lines:
-        result_string = ''
-        split_line = line.strip().split()
-        if len(split_line) > 1:
-            result_string += str(class_num_dict[split_line[0]])
-            del split_line[0]
-            # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
-            for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]], [float(value) for value in split_line[1::2]])):
-                if float(value):
-                    result_string += ' {}:{}'.format(field_num, value)
-            result_list.append(result_string)
+        # Ignore comments
+        if not line.startswith('#'):
+            result_string = ''
+            split_line = line.strip().split()
+            if len(split_line) > 1:
+                result_string += str(class_num_dict[split_line[0]])
+                del split_line[0]
+                # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
+                for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]], [float(value) for value in split_line[1::2]])):
+                    if float(value):
+                        result_string += ' {}:{}'.format(field_num, value)
+                result_list.append(result_string)
 
     return result_list, class_num_dict, field_num_dict
 

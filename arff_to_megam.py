@@ -93,6 +93,8 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
     '''
     for inst_index in inst_set:
         instance = split_with_quotes(inst_str_list[inst_index], quotechar=args.quotechar, delimiter=',')  # Split on demand to save tons of memory
+        if args.idindex is not None:
+            print "# {}".format(instance[args.idindex])
         print (sanitize_name(instance[args.classindex]) if args.namedclasses else str(nominal_dict[args.classindex][instance[args.classindex]])) + "\t",
         # Use explicit output format if superclasses are specified
         if args.superclasses:
@@ -105,6 +107,16 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
         else:
             print_instance(instance, nominal_dict, attr_list)
         print
+
+
+def shift_index(index, attr_list):
+    '''
+        Take an index into the attribute list that starts at 1 (and could be negative) and converts it into a proper array index.
+    '''
+    if index > 0:
+        index -= 1
+    else:
+        index += len(attr_list)
 
 
 if __name__ == '__main__':
@@ -124,6 +136,8 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dev', help='Number of instances per class to reserve for development.', type=int, default=0)
     parser.add_argument('-f', '--features', help='Only keep the specified range of features in the MegaM output. Features are numbered starting from 1.',
                         type=parse_num_list)
+    parser.add_argument('-i', '--idindex', help='Index of feature that is the ID for the instances (if there is one). This will be included as a comment before each ' +
+                                                'line. Numbering starts at 1 like --features.', type=int)
     parser.add_argument('-m', '--max', help='Maximum number of instances to use for training for each class.', type=int, default=0)
     parser.add_argument('-n', '--namedclasses', help='Keep class names in MegaM file instead of converting the nomimal field to numeric.', action='store_true')
     parser.add_argument('-q', '--quotechar', help='Character to use for quoting strings in attribute names.', default="'")
@@ -163,11 +177,12 @@ if __name__ == '__main__':
             elif row_type == '@relation':
                 relation = split_header[1]
 
-    # Shift classindex so that it matches actual array indexing
-    if args.classindex > 0:
-        args.classindex -= 1
+    # Shift classindex and idindex so they match actual array indexing
+    args.classindex = shift_index(args.classindex, attr_list)
+    if args.idindex:
+        args.idindex = shift_index(args.idindex, attr_list)
     else:
-        args.classindex += len(attr_list)
+        args.idindex = None
 
     # Convert nominal features to numeric
     nominal_dict = dict([(i, nominal_to_numeric_dict(attr_list[i][2])) for i in xrange(len(attr_list)) if attr_list[i][1] == 2])

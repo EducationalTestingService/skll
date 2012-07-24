@@ -32,7 +32,8 @@ if __name__ == '__main__':
     first = True
     for line in args.infile:
         stripped_line = line.strip()
-        if stripped_line in ['TEST', 'DEV']:
+        # Print TEST, DEV, and comment lines
+        if stripped_line in ['TEST', 'DEV'] or stripped_line.startswith('#'):
             print stripped_line
         else:
             split_line = stripped_line.split()
