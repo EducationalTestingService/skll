@@ -54,12 +54,16 @@ if __name__ == '__main__':
                 # Print id field
                 print "# {}".format(split_line[args.idfield])
 
+                # Print class
+                sys.stdout.write('{}\t'.format(split_line[args.classfield]))
+
                 # Have to sort descending so that we don't screw up the indices
                 for i in sorted((args.idfield, args.classfield), reverse=True):
                     del split_line[i]
             else:
+                # Print class
+                sys.stdout.write('{}\t'.format(split_line[args.classfield]))
                 del split_line[args.classfield]
-            # Print class
-            sys.stdout.write('{}\t'.format(split_line[args.classfield]))
+
             # Print features
             print ' '.join(['{} {}'.format(field, value) for field, value in zip(fields, split_line) if value not in ['.', '?'] and float(value) != 0])
