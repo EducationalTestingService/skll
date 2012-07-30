@@ -2,7 +2,8 @@
 """
 Join MegaM files
 
-Author: Dan Blanchard, dblanchard@ets.org, July 2012
+@author: Dan Blanchard, dblanchard@ets.org
+@date: July 2012
 """
 
 from __future__ import unicode_literals, print_function
@@ -10,6 +11,8 @@ from __future__ import unicode_literals, print_function
 import argparse
 import sys
 from collections import defaultdict
+
+from bs4 import UnicodeDammit
 
 
 if __name__ == '__main__':
@@ -29,7 +32,7 @@ if __name__ == '__main__':
         print("Loading {}...".format(infile.name), file=sys.stderr)
         sys.stderr.flush()
         for line in infile:
-            stripped_line = line.strip()
+            stripped_line = UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
             # Read current filename from comment
             if stripped_line.startswith('#'):
                 curr_filename = stripped_line.lstrip('# ')
@@ -40,9 +43,9 @@ if __name__ == '__main__':
                     class_dict[curr_filename] = split_line[0]
                     feature_dict[curr_filename] += split_line[1] + ' '
                 else:
-                    print("\nWarning: No features found for {} in {}".format(curr_filename, infile.name), file=sys.stderr)
+                    print("Warning: No features found for {} in {}".format(curr_filename, infile.name), file=sys.stderr)
 
     # Print new MegaM file
     for curr_filename in feature_dict.viewkeys():
-        print("# {}".format(curr_filename))
-        print("{}\t{}".format(class_dict[curr_filename], feature_dict[curr_filename].rstrip()))
+        print("# {}".format(curr_filename).encode('utf-8'))
+        print("{}\t{}".format(class_dict[curr_filename], feature_dict[curr_filename].rstrip()).encode('utf-8'))
