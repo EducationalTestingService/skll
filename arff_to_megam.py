@@ -1,14 +1,21 @@
 #!/usr/bin/env python
+'''
+Script that converts ARFF files to MegaM format
 
-# Script that converts ARFF files to MegaM format
+@author: Dan Blanchard, dblanchard@ets.org
+@date: September 2011
 
-# Author: Dan Blanchard, dblanchard@ets.org, Sep 2011
+'''
+
+from __future__ import print_function, unicode_literals
 
 import argparse
 import csv
 import random
 import re
 import sys
+
+from bs4 import UnicodeDammit
 
 
 # Globals
@@ -57,6 +64,9 @@ def sanitize_name(feature_name):
 
 
 def print_instance(instance, nominal_dict, attr_list, suffix=None):
+    '''
+        Print out the current instance to STDOUT
+    '''
     # Loop through all attributes in instance set.
     for i in xrange(len(instance)):
         # Skip over the class feature
@@ -70,21 +80,21 @@ def print_instance(instance, nominal_dict, attr_list, suffix=None):
                     if float(instance[i]):
                         # Check if we're supposed to convert the feature to binary
                         if (args.binary and ((args.binary == [0]) or ((i + 1) in args.binary))):
-                            print clean_name, int(bool(float(instance[i]))),
+                            print(clean_name, int(bool(float(instance[i]))), end=" ")
                             if args.doubleup:
-                                print clean_name, instance[i],
+                                print(clean_name, instance[i], end=" ")
                         else:
-                            print clean_name, instance[i],
+                            print(clean_name, instance[i], end=" ")
                 # Feature is nominal
                 elif i in nominal_dict:
-                    print clean_name, nominal_dict[i][instance[i]],
+                    print(clean_name, nominal_dict[i][instance[i]], end=" ")
                 # Feature is string, so ignore it
                 elif args.verbose:
-                    print >> sys.stderr, clean_name, instance[i],
+                    print(clean_name, instance[i], end=" ", file=sys.stderr)
             elif args.verbose:
-                print >> sys.stderr, clean_name, instance[i],
+                print(clean_name, instance[i], end=" ", file=sys.stderr)
     if args.verbose:
-        print >> sys.stderr
+        print(file=sys.stderr)
 
 
 def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
@@ -94,19 +104,19 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
     for inst_index in inst_set:
         instance = split_with_quotes(inst_str_list[inst_index], quotechar=args.quotechar, delimiter=',')  # Split on demand to save tons of memory
         if args.idindex is not None:
-            print "# {}".format(instance[args.idindex])
-        print (sanitize_name(instance[args.classindex]) if args.namedclasses else str(nominal_dict[args.classindex][instance[args.classindex]])) + "\t",
+            print("# {}".format(instance[args.idindex]))
+        print((sanitize_name(instance[args.classindex]) if args.namedclasses else unicode(nominal_dict[args.classindex][instance[args.classindex]])) + "\t", end=" ")
         # Use explicit output format if superclasses are specified
         if args.superclasses:
             for class_name in attr_list[args.classindex][2]:
-                print "#",
+                print("#", end=" ")
                 print_instance(instance, nominal_dict, attr_list, suffix=" " + class_name)
                 for superclass_feat in args.superclasses:
                     print_instance(instance, nominal_dict, attr_list, suffix=" {} {}".format(attr_list[superclass_feat - 1][0], instance[superclass_feat - 1]))
         # Otherwise use implicit output format
         else:
             print_instance(instance, nominal_dict, attr_list)
-        print
+        print()
 
 
 def shift_index(index, attr_list):
@@ -117,6 +127,7 @@ def shift_index(index, attr_list):
         index -= 1
     else:
         index += len(attr_list)
+    return index
 
 
 if __name__ == '__main__':
@@ -154,12 +165,16 @@ if __name__ == '__main__':
         raise argparse.ArgumentTypeError("0 is not a valid value for --classindex.  Feature numbering starts at 1 (although --classindex can also be negative).")
 
     if args.infile.isatty():
-        print >> sys.stderr, "You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n"
+        print("You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n", 
+              file=sys.stderr)
 
     # Process ARFF header
     attr_list = []
     relation = ''
     for line in args.infile:
+        # Process encoding
+        line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
+
         if line.strip():
             # Split the line using CSV reader because it can handle quoted delimiters.
             split_header = split_with_quotes(line, quotechar=args.quotechar)
@@ -218,12 +233,12 @@ if __name__ == '__main__':
 
     # Process each dev set
     if args.dev:
-        print "DEV"
+        print("DEV")
         for inst_set in dev_sets:
             process_set(inst_set, nominal_dict, attr_list, inst_str_list)
 
     # Process each test set
     if args.test:
-        print "TEST"
+        print("TEST")
         for inst_set in test_sets:
             process_set(inst_set, nominal_dict, attr_list, inst_str_list)

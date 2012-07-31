@@ -6,7 +6,7 @@ Join MegaM files
 @date: July 2012
 """
 
-from __future__ import unicode_literals, print_function
+from __future__ import print_function, unicode_literals
 
 import argparse
 import sys

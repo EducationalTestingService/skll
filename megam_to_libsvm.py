@@ -1,14 +1,20 @@
 #!/usr/bin/env python
+'''
+Script that converts MegaM files to LibSVM format
 
-# Script that converts MegaM files to LibSVM format
+@author: Dan Blanchard, dblanchard@ets.org, 
+@date: May 2012
+'''
 
-# Author: Dan Blanchard, dblanchard@ets.org, May 2012
+from __future__ import print_function, unicode_literals
 
 import argparse
 import sys
 from collections import defaultdict
 from itertools import izip
 from operator import itemgetter
+
+from bs4 import UnicodeDammit
 
 
 # Globals
@@ -17,12 +23,14 @@ NUM_CLASSES = 0
 
 
 def get_next_field_num():
+    ''' Returns the next available field number '''
     global NUM_FIELDS
     NUM_FIELDS += 1
     return NUM_FIELDS
 
 
 def get_next_class_num():
+    ''' Returns the next available class number '''
     global NUM_CLASSES
     NUM_CLASSES += 1
     return NUM_CLASSES
@@ -49,6 +57,9 @@ def convert_to_libsvm(lines):
 
     # Iterate through MegaM file
     for line in lines:
+        # Process encoding
+        line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
+
         # Ignore comments
         if not line.startswith('#'):
             result_string = ''
@@ -75,19 +86,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.infile.isatty():
-        print >> sys.stderr, "You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n"
+        print("You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n", 
+              file=sys.stderr)
 
     line_list, class_num_dict, field_num_dict = convert_to_libsvm(args.infile)
 
     # Iterate through converted MegaM file
     for line in line_list:
-        print line
+        print(line)
 
     # Print out mappings to file
-    print >> args.mappingfile, "CLASS NUM\tCLASS NAME"
+    print("CLASS NUM\tCLASS NAME", file=args.mappingfile)
     for class_name, class_num in sorted(class_num_dict.iteritems(), key=itemgetter(1)):
-        print >> args.mappingfile, "{}\t{}".format(class_num, class_name)
+        print("{}\t{}".format(class_num, class_name), file=args.mappingfile)
 
-    print >> args.mappingfile, "\n\nFEATURE NUM\tFEATURE NAME"
+    print("\n\nFEATURE NUM\tFEATURE NAME", file=args.mappingfile)
     for field_name, field_num in sorted(field_num_dict.iteritems(), key=itemgetter(1)):
-        print >> args.mappingfile, "{}\t{}".format(field_num, field_name)
+        print("{}\t{}".format(field_num, field_name), file=args.mappingfile)
