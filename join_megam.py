@@ -48,4 +48,4 @@ if __name__ == '__main__':
     # Print new MegaM file
     for curr_filename in feature_dict.viewkeys():
         print("# {}".format(curr_filename).encode('utf-8'))
-        print("{}\t{}".format(class_dict[curr_filename], feature_dict[curr_filename].rstrip()).encode('utf-8'))
+        print("{}\t{}".format(class_dict[curr_filename], feature_dict[curr_filename].strip()).encode('utf-8'))

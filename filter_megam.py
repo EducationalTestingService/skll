@@ -1,8 +1,13 @@
 #!/usr/bin/env python
+'''
+Filter MegaM file to remove non-content word features
 
-# Filter MegaM file to remove non-content word features
+@author: Dan Blanchard, dblanchard@ets.org
+@date: Feb 2012
 
-# Author: Dan Blanchard, dblanchard@ets.org, Feb 2012
+'''
+
+from __future__ import print_function, unicode_literals
 
 import argparse
 import itertools
@@ -23,10 +28,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.infile.isatty():
-        print >> sys.stderr, "You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n"
+        print("You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n",
+              file=sys.stderr)
 
     # Read stop word list
-    stopwords = set([w.strip().lower() for w in args.stopwordlist.readlines()]) if args.ignorecase else set([w.strip() for w in args.stopwordlist.readlines()])
+    stopwords = {w.strip().lower() for w in args.stopwordlist} if args.ignorecase else {w.strip() for w in args.stopwordlist}
 
     # Iterate through MegaM file
     first = True
@@ -34,7 +40,7 @@ if __name__ == '__main__':
         stripped_line = line.strip()
         # Print TEST, DEV, and comment lines
         if stripped_line in ['TEST', 'DEV'] or stripped_line.startswith('#'):
-            print stripped_line
+            print(stripped_line)
         else:
             split_line = stripped_line.split()
             feature_pairs = split_line[1:]
@@ -47,4 +53,4 @@ if __name__ == '__main__':
                 if re.match(r'[\w-]*$', feature) and ((not args.keep and ((feature not in stopwords) or (args.ignorecase and (feature.lower() not in stopwords)))) or
                                                       (args.keep and ((feature in stopwords) or (args.ignorecase and (feature.lower() in stopwords))))):
                     sys.stdout.write('{} {}'.format(feature, value))
-            print
+            print()
