@@ -9,8 +9,10 @@ Join MegaM files
 from __future__ import print_function, unicode_literals
 
 import argparse
+import os
 import sys
 from collections import defaultdict
+from itertools import izip, islice
 
 from bs4 import UnicodeDammit
 
@@ -27,8 +29,16 @@ if __name__ == '__main__':
     feature_dict = defaultdict(unicode)
     class_dict = dict()
 
+    # Set that will contain all of the features seen in previous files (for duplicate detection)
+    prev_feature_set = set()
+
     # Iterate through MegaM files
     for infile in args.megam_file:
+        # Initialize duplicate feature book-keeping variables
+        curr_feature_set = set()
+        warned_about = dict()
+
+        # Handle current MegaM file
         print("Loading {}...".format(infile.name), file=sys.stderr)
         sys.stderr.flush()
         for line in infile:
@@ -39,11 +49,30 @@ if __name__ == '__main__':
             # Ignore TEST and DEV lines and store features
             elif stripped_line not in ['TEST', 'DEV']:
                 split_line = stripped_line.split('\t', 1)
+                # Only proceed if there are features on the line
                 if len(split_line) == 2:
                     class_dict[curr_filename] = split_line[0]
-                    feature_dict[curr_filename] += split_line[1] + ' '
+                    feature_pairs = split_line[1].split(' ')
+                    feature_names = islice(feature_pairs, 0, None, 2)
+                    feature_values = islice(feature_pairs, 1, None, 2)
+                    for feat_name, feat_val in izip(feature_names, feature_values):
+                        # Handle duplicate features
+                        if feat_name in prev_feature_set:
+                            new_feat_name = feat_name + "_" + os.path.splitext(curr_filename)[0].replace(' ', '_')
+                            if feat_name not in warned_about:
+                                print("Warning: Feature named {} already found in previous files. Renaming to {} to prevent duplicates.".format(feat_name, new_feat_name),
+                                      file=sys.stderr)
+                                warned_about[feat_name] = True
+                            feat_name = new_feat_name
+                        # Add feature pair to current string of features
+                        feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
+
+                # Otherwise warn about lack of features (although that really just means all of them have zero values)
                 else:
                     print("Warning: No features found for {} in {}".format(curr_filename, infile.name), file=sys.stderr)
+
+        # Add current file's features to set of seen features
+        prev_feature_set.update(curr_feature_set)
 
     # Print new MegaM file
     for curr_filename in feature_dict.viewkeys():
