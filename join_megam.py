@@ -64,8 +64,14 @@ if __name__ == '__main__':
                                       file=sys.stderr)
                                 warned_about[feat_name] = True
                             feat_name = new_feat_name
-                        # Add feature pair to current string of features
-                        feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
+                        # Ignore zero-valued features
+                        try:                            
+                            if feat_val == 'N/A' or float(feat_val) != 0:
+                                # Add feature pair to current string of features
+                                feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
+                        except ValueError:
+                            print("Error: Invalid feature value in feature pair '{} {}' for file {}".format(feat_name, feat_val, curr_filename), file=sys.stderr)
+                            sys.exit(1)
 
                 # Otherwise warn about lack of features (although that really just means all of them have zero values)
                 else:
