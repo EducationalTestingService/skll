@@ -10,11 +10,29 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 import os
+import re
 import sys
 from collections import defaultdict
 from itertools import izip, islice
 
 from bs4 import UnicodeDammit
+
+
+def parse_num_list(num_string):
+    '''
+        Convert a string representing a range of numbers to a list of integers.
+    '''
+    range_list = []
+    if (num_string != '') and (not re.match(r'^(\d+(-\d+)?,)*\d+(-\d+)?$', num_string)):
+        raise argparse.ArgumentTypeError("'" + num_string + "' is not a range of numbers. Expected forms are '8-15', '4,8,15,16,23,42', or '8-15,42'.")
+    for rng in num_string.split(','):
+        if rng.count('-'):
+            split_range = [int(x) for x in rng.split('-')]
+            split_range[1] += 1
+            range_list.extend(range(*split_range))
+        else:
+            range_list.append(int(rng))
+    return range_list
 
 
 if __name__ == '__main__':
@@ -23,6 +41,9 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('megam_file', help='MegaM input file(s). Each feature line must be preceded by a comment with the filename/ID ' +
                                            'that the features should be joined on.', type=argparse.FileType('r'), nargs='+')
+    parser.add_argument('-b', '--binary', help='Converts all of the features in the specified range of files to presence/absence binary features. Files are numbered ' +
+                                               'starting from 1, and if 0 is specified with this flag, all files are converted.', type=parse_num_list)
+    parser.add_argument('--doubleup', help='Keep both the binary and numeric versions of any feature you convert to binary.', action='store_true')
     args = parser.parse_args()
 
     # Map from filenames to feature strings
@@ -33,7 +54,7 @@ if __name__ == '__main__':
     prev_feature_set = set()
 
     # Iterate through MegaM files
-    for infile in args.megam_file:
+    for file_num, infile in enumerate(args.megam_file, start=1):
         # Initialize duplicate feature book-keeping variables
         curr_feature_set = set()
         warned_about = dict()
@@ -65,10 +86,18 @@ if __name__ == '__main__':
                                 warned_about[feat_name] = True
                             feat_name = new_feat_name
                         # Ignore zero-valued features
-                        try:                            
+                        try:
                             if feat_val == 'N/A' or float(feat_val) != 0:
+                                # Convert feature to binary if necessary
+                                if (args.binary and ((args.binary == [0]) or (file_num in args.binary))):
+                                    if args.doubleup:
+                                        feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
+                                        feat_name = feat_name + "_binary"
+                                    feat_val = 1
+
                                 # Add feature pair to current string of features
                                 feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
+
                         except ValueError:
                             print("Error: Invalid feature value in feature pair '{} {}' for file {}".format(feat_name, feat_val, curr_filename), file=sys.stderr)
                             sys.exit(1)
