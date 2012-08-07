@@ -37,7 +37,6 @@ if __name__ == '__main__':
     stopwords = {w.strip().lower() for w in args.stopwordlist} if args.ignorecase else {w.strip() for w in args.stopwordlist}
 
     # Iterate through MegaM file
-    first = True
     for line in args.infile:
         stripped_line = UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
         # Print TEST, DEV, and comment lines
@@ -47,12 +46,14 @@ if __name__ == '__main__':
             split_line = stripped_line.split()
             feature_pairs = split_line[1:]
             print(split_line[0], end="\t")
+            first = True
             for feature, value in itertools.izip(itertools.islice(feature_pairs, 0, None, 2), itertools.islice(feature_pairs, 1, None, 2)):
-                if first:
-                    first = False
-                else:
-                    sys.stdout.write(' ')
+                feature = feature.strip()
                 if re.match(r'[\w-]*$', feature) and ((not args.keep and ((feature not in stopwords) or (args.ignorecase and (feature.lower() not in stopwords)))) or
                                                       (args.keep and ((feature in stopwords) or (args.ignorecase and (feature.lower() in stopwords))))):
+                    if first:
+                        first = False
+                    else:
+                        print(" ", end='')
                     print('{} {}'.format(feature, value).format('utf-8'), end="")
             print()
