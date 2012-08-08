@@ -87,7 +87,7 @@ if __name__ == '__main__':
                             feat_name = new_feat_name
                         # Ignore zero-valued features
                         try:
-                            if feat_val == 'N/A' or float(feat_val) != 0:
+                            if feat_val != 'N/A' and float(feat_val) != 0:
                                 # Convert feature to binary if necessary
                                 if (args.binary and ((args.binary == [0]) or (file_num in args.binary))):
                                     if args.doubleup:
