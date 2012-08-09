@@ -79,7 +79,7 @@ if __name__ == '__main__':
                     for feat_name, feat_val in izip(feature_names, feature_values):
                         # Handle duplicate features
                         if feat_name in prev_feature_set:
-                            new_feat_name = feat_name + "_" + os.path.splitext(curr_filename)[0].replace(' ', '_')
+                            new_feat_name = feat_name + "_" + os.path.splitext(infile.name)[0].replace(' ', '_')
                             if feat_name not in warned_about:
                                 print("Warning: Feature named {} already found in previous files. Renaming to {} to prevent duplicates.".format(feat_name, new_feat_name),
                                       file=sys.stderr)
@@ -92,12 +92,13 @@ if __name__ == '__main__':
                                 if (args.binary and ((args.binary == [0]) or (file_num in args.binary))):
                                     if args.doubleup:
                                         feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
+                                        curr_feature_set.add(feat_name)
                                         feat_name = feat_name + "_binary"
                                     feat_val = 1
 
                                 # Add feature pair to current string of features
                                 feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
-
+                                curr_feature_set.add(feat_name)
                         except ValueError:
                             print("Error: Invalid feature value in feature pair '{} {}' for file {}".format(feat_name, feat_val, curr_filename), file=sys.stderr)
                             sys.exit(1)
