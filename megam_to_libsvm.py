@@ -2,7 +2,7 @@
 '''
 Script that converts MegaM files to LibSVM format
 
-@author: Dan Blanchard, dblanchard@ets.org, 
+@author: Dan Blanchard, dblanchard@ets.org,
 @date: May 2012
 '''
 
@@ -54,9 +54,9 @@ def convert_to_libsvm(lines):
     class_num_dict = defaultdict(get_next_class_num)
 
     result_list = []
-
     # Iterate through MegaM file
     for line in lines:
+        line_fields = set()
         # Process encoding
         line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
 
@@ -69,8 +69,14 @@ def convert_to_libsvm(lines):
                 del split_line[0]
                 # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
                 for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]], [float(value) for value in split_line[1::2]])):
-                    if float(value):
+                    # Check for duplicates
+                    if field_num in line_fields:
+                        field_name = (field_name for field_name, f_num in field_num_dict.items() if f_num == field_num).next()
+                        raise AssertionError("Field {} occurs on same line twice.".format(field_name))
+                    # Otherwise output non-empty features
+                    elif float(value):
                         result_string += ' {}:{}'.format(field_num, value)
+                        line_fields.add(field_num)
                 result_list.append(result_string)
 
     return result_list, class_num_dict, field_num_dict
@@ -86,7 +92,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.infile.isatty():
-        print("You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n", 
+        print("You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n",
               file=sys.stderr)
 
     line_list, class_num_dict, field_num_dict = convert_to_libsvm(args.infile)

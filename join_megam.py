@@ -74,12 +74,18 @@ if __name__ == '__main__':
                 if len(split_line) == 2:
                     class_dict[curr_filename] = split_line[0]
                     feature_pairs = split_line[1].split(' ')
-                    feature_names = islice(feature_pairs, 0, None, 2)
+                    feature_names = feature_pairs[0::2]
+                    if len(feature_names) != len(set(feature_names)):
+                        print("Error: Duplicate features occur on the line of features for {}.".format(curr_filename), file=sys.stderr)
+                        sys.exit(1)
                     feature_values = islice(feature_pairs, 1, None, 2)
                     for feat_name, feat_val in izip(feature_names, feature_values):
                         # Handle duplicate features
                         if feat_name in prev_feature_set:
-                            new_feat_name = feat_name + "_" + os.path.splitext(infile.name)[0].replace(' ', '_')
+                            new_feat_name = feat_name
+                            # Add suffix multiple times if necessary
+                            while new_feat_name in prev_feature_set:
+                                new_feat_name += "_" + os.path.splitext(os.path.basename(infile.name))[0].replace(' ', '_')
                             if feat_name not in warned_about:
                                 print("Warning: Feature named {} already found in previous files. Renaming to {} to prevent duplicates.".format(feat_name, new_feat_name),
                                       file=sys.stderr)
