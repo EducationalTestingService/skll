@@ -18,6 +18,10 @@ from itertools import izip, islice
 from bs4 import UnicodeDammit
 
 
+# Globals
+warned_about = set()
+
+
 def parse_num_list(num_string):
     '''
         Convert a string representing a range of numbers to a list of integers.
@@ -33,6 +37,23 @@ def parse_num_list(num_string):
         else:
             range_list.append(int(rng))
     return range_list
+
+
+def get_unique_name(feature_name, prev_feature_set, filename):
+    '''
+        Get a name that doesn't overlap with the previous features.
+    '''
+    global warned_about
+
+    new_feature_name = feature_name
+    suffix = os.path.splitext(os.path.basename(filename))[0].replace(' ', '_')
+    # Add suffix multiple times if necessary
+    while new_feature_name in prev_feature_set:
+        new_feature_name += "_" + suffix
+    if new_feature_name != feature_name and feature_name not in warned_about:
+        print("Warning: Feature named {} already found in previous files. Renaming to {} to prevent duplicates.".format(feature_name, new_feature_name), file=sys.stderr)
+        warned_about.add(feature_name)
+    return new_feature_name
 
 
 if __name__ == '__main__':
@@ -57,7 +78,6 @@ if __name__ == '__main__':
     for file_num, infile in enumerate(args.megam_file, start=1):
         # Initialize duplicate feature book-keeping variables
         curr_feature_set = set()
-        warned_about = dict()
 
         # Handle current MegaM file
         print("Loading {}...".format(infile.name), file=sys.stderr)
@@ -81,16 +101,7 @@ if __name__ == '__main__':
                     feature_values = islice(feature_pairs, 1, None, 2)
                     for feat_name, feat_val in izip(feature_names, feature_values):
                         # Handle duplicate features
-                        if feat_name in prev_feature_set:
-                            new_feat_name = feat_name
-                            # Add suffix multiple times if necessary
-                            while new_feat_name in prev_feature_set:
-                                new_feat_name += "_" + os.path.splitext(os.path.basename(infile.name))[0].replace(' ', '_')
-                            if feat_name not in warned_about:
-                                print("Warning: Feature named {} already found in previous files. Renaming to {} to prevent duplicates.".format(feat_name, new_feat_name),
-                                      file=sys.stderr)
-                                warned_about[feat_name] = True
-                            feat_name = new_feat_name
+                        feat_name = get_unique_name(feat_name, prev_feature_set, infile.name)
                         # Ignore zero-valued features
                         try:
                             if feat_val != 'N/A' and float(feat_val) != 0:
@@ -99,7 +110,7 @@ if __name__ == '__main__':
                                     if args.doubleup:
                                         feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
                                         curr_feature_set.add(feat_name)
-                                        feat_name = feat_name + "_binary"
+                                        feat_name = get_unique_name(feat_name + "_binary", prev_feature_set, infile.name)
                                     feat_val = 1
 
                                 # Add feature pair to current string of features
