@@ -68,13 +68,13 @@ def convert_to_libsvm(lines):
                 result_string += str(class_num_dict[split_line[0]])
                 del split_line[0]
                 # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
-                for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]], [float(value) for value in split_line[1::2]])):
+                for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]], [float(value) if value != 'N/A' else 0.0 for value in split_line[1::2]])):
                     # Check for duplicates
                     if field_num in line_fields:
                         field_name = (field_name for field_name, f_num in field_num_dict.items() if f_num == field_num).next()
                         raise AssertionError("Field {} occurs on same line twice.".format(field_name))
                     # Otherwise output non-empty features
-                    elif float(value):
+                    elif value != 'N/A' and float(value):
                         result_string += ' {}:{}'.format(field_num, value)
                         line_fields.add(field_num)
                 result_list.append(result_string)
