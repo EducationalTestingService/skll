@@ -12,7 +12,7 @@ import argparse
 import os
 import re
 import sys
-from collections import defaultdict
+from collections import OrderedDict
 from itertools import izip, islice
 
 from bs4 import UnicodeDammit
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Map from filenames to feature strings
-    feature_dict = defaultdict(unicode)
+    feature_dict = OrderedDict()
     class_dict = dict()
 
     # Set that will contain all of the features seen in previous files (for duplicate detection)
@@ -108,13 +108,15 @@ if __name__ == '__main__':
                                 # Convert feature to binary if necessary
                                 if (args.binary and ((args.binary == [0]) or (file_num in args.binary))):
                                     if args.doubleup:
-                                        feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
+                                        new_feat_pair = '{} {} '.format(feat_name, feat_val)
+                                        feature_dict[curr_filename] = new_feat_pair if curr_filename not in feature_dict else feature_dict[curr_filename] + new_feat_pair
                                         curr_feature_set.add(feat_name)
                                         feat_name = get_unique_name(feat_name + "_binary", prev_feature_set, infile.name)
                                     feat_val = 1
 
                                 # Add feature pair to current string of features
-                                feature_dict[curr_filename] += '{} {} '.format(feat_name, feat_val)
+                                new_feat_pair = '{} {} '.format(feat_name, feat_val)
+                                feature_dict[curr_filename] = new_feat_pair if curr_filename not in feature_dict else feature_dict[curr_filename] + new_feat_pair
                                 curr_feature_set.add(feat_name)
                         except ValueError:
                             print("Error: Invalid feature value in feature pair '{} {}' for file {}".format(feat_name, feat_val, curr_filename), file=sys.stderr)
