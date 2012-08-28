@@ -43,7 +43,7 @@ def convert_to_libsvm(lines):
         @type lines: L{file} or L{list} of L{str}
 
         @return: A tuple of the newly formatted data, the mappings from class names to numbers, and the mappings from feature names to numbers.
-        @rtype: 3-L{tuple} of (L{list} of L{str}, L{dict}, and L{dict})
+        @rtype: 3-L{tuple} of (L{list} of L{unicode}, L{dict}, and L{dict})
     '''
     global NUM_FIELDS, NUM_CLASSES
 
@@ -64,8 +64,9 @@ def convert_to_libsvm(lines):
         if not line.startswith('#'):
             result_string = ''
             split_line = line.strip().split()
+            result_string += unicode(class_num_dict[split_line[0]])
+            # Handle features if there are any
             if len(split_line) > 1:
-                result_string += str(class_num_dict[split_line[0]])
                 del split_line[0]
                 # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
                 for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]], [float(value) if value != 'N/A' else 0.0 for value in split_line[1::2]])):
@@ -77,7 +78,7 @@ def convert_to_libsvm(lines):
                     elif value != 'N/A' and float(value):
                         result_string += ' {}:{}'.format(field_num, value)
                         line_fields.add(field_num)
-                result_list.append(result_string)
+            result_list.append(result_string)
 
     return result_list, class_num_dict, field_num_dict
 

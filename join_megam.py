@@ -90,9 +90,9 @@ if __name__ == '__main__':
             # Ignore TEST and DEV lines and store features
             elif stripped_line not in ['TEST', 'DEV']:
                 split_line = stripped_line.split('\t', 1)
-                # Only proceed if there are features on the line
+                class_dict[curr_filename] = split_line[0]
+                # If there are non-zero features, process them
                 if len(split_line) == 2:
-                    class_dict[curr_filename] = split_line[0]
                     feature_pairs = split_line[1].split(' ')
                     feature_names = feature_pairs[0::2]
                     if len(feature_names) != len(set(feature_names)):
@@ -124,7 +124,9 @@ if __name__ == '__main__':
 
                 # Otherwise warn about lack of features (although that really just means all of them have zero values)
                 else:
-                    print("Warning: No features found for {} in {}".format(curr_filename, infile.name), file=sys.stderr)
+                    if curr_filename not in feature_dict:
+                        feature_dict[curr_filename] = ""
+                    print("Warning: No features found for {} in {}. All are assumed to be zero.".format(curr_filename, infile.name), file=sys.stderr)
 
         # Add current file's features to set of seen features
         prev_feature_set.update(curr_feature_set)
