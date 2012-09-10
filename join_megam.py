@@ -51,7 +51,8 @@ def get_unique_name(feature_name, prev_feature_set, filename):
     while new_feature_name in prev_feature_set:
         new_feature_name += "_" + suffix
     if new_feature_name != feature_name and feature_name not in warned_about:
-        print("Warning: Feature named {} already found in previous files. Renaming to {} to prevent duplicates.".format(feature_name, new_feature_name), file=sys.stderr)
+        print("Warning: Feature named {} already found in previous files. Renaming to {} to prevent duplicates.".format(feature_name, new_feature_name).encode('utf-8'),
+              file=sys.stderr)
         warned_about.add(feature_name)
     return new_feature_name
 
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         curr_feature_set = set()
 
         # Handle current MegaM file
-        print("Loading {}...".format(infile.name), file=sys.stderr)
+        print("Loading {}...".format(infile.name).encode('utf-8'), file=sys.stderr)
         sys.stderr.flush()
         for line in infile:
             stripped_line = UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
@@ -96,7 +97,7 @@ if __name__ == '__main__':
                     feature_pairs = split_line[1].split(' ')
                     feature_names = feature_pairs[0::2]
                     if len(feature_names) != len(set(feature_names)):
-                        print("Error: Duplicate features occur on the line of features for {}.".format(curr_filename), file=sys.stderr)
+                        print("Error: Duplicate features occur on the line of features for {}.".format(curr_filename).encode('utf-8'), file=sys.stderr)
                         sys.exit(1)
                     feature_values = islice(feature_pairs, 1, None, 2)
                     for feat_name, feat_val in izip(feature_names, feature_values):
@@ -119,14 +120,14 @@ if __name__ == '__main__':
                                 feature_dict[curr_filename] = new_feat_pair if curr_filename not in feature_dict else feature_dict[curr_filename] + new_feat_pair
                                 curr_feature_set.add(feat_name)
                         except ValueError:
-                            print("Error: Invalid feature value in feature pair '{} {}' for file {}".format(feat_name, feat_val, curr_filename), file=sys.stderr)
+                            print("Error: Invalid feature value in feature pair '{} {}' for file {}".format(feat_name, feat_val, curr_filename).encode('utf-8'), file=sys.stderr)
                             sys.exit(1)
 
                 # Otherwise warn about lack of features (although that really just means all of them have zero values)
                 else:
                     if curr_filename not in feature_dict:
                         feature_dict[curr_filename] = ""
-                    print("Warning: No features found for {} in {}. All are assumed to be zero.".format(curr_filename, infile.name), file=sys.stderr)
+                    print("Warning: No features found for {} in {}. All are assumed to be zero.".format(curr_filename, infile.name).encode('utf-8'), file=sys.stderr)
 
         # Add current file's features to set of seen features
         prev_feature_set.update(curr_feature_set)
