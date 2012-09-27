@@ -26,7 +26,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.infile.isatty():
-        print("You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n", 
+        print("You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n",
               file=sys.stderr)
 
     # Initialize variables
@@ -43,9 +43,9 @@ if __name__ == '__main__':
         # Ignore comments
         if not line.startswith('#'):
             split_line = line.strip().split()
+            class_name = split_line[0]
+            classes.add(class_name)
             if len(split_line) > 1:
-                class_name = split_line[0]
-                classes.add(class_name)
                 field_pairs = split_line[1:]
                 # Add field names to set in case there are new ones
                 field_names = field_pairs[::2]
@@ -53,6 +53,8 @@ if __name__ == '__main__':
                 fields.update(field_names)
                 # Add all the field values (and the current class value) to the list of instances
                 instances.append(dict(zip(field_names, field_values) + [(args.classname, class_name)]))
+            else:
+                instances.append({args.classname: class_name})
 
     # Add relation to header
     print("@relation '{}'\n".format(args.relation))
