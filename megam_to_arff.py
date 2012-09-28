@@ -16,6 +16,14 @@ from itertools import islice, izip
 from bs4 import UnicodeDammit
 
 
+def sanitize_line(line):
+    ''' Return copy of line with all non-ASCII characters replaced with <U1234> sequences where 1234 is the value of ord() for the character. '''
+    char_list = []
+    for char in line:
+        char_num = ord(char)
+        char_list.append('<U{}>'.format(char_num) if char_num > 127 else char)
+    return ''.join(char_list)
+
 def megam_iter(instance_str_list, parsed_args):
     '''
     Generator for items in the instance_str_list as dictionaries.
@@ -65,11 +73,11 @@ if __name__ == '__main__':
     sys.stderr.flush()
     for line in args.infile:
         # Process encoding
-        line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
+        line = sanitize_line(UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup).strip()
 
         # Ignore comments
         if not line.startswith('#'):
-            split_line = line.strip().split()
+            split_line = line.split()
             classes.add(split_line[0])
             if len(split_line) > 1:
                 # Add field names to set in case there are new ones
