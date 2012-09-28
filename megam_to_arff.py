@@ -11,8 +11,32 @@ from __future__ import print_function, unicode_literals
 import argparse
 import csv
 import sys
+from itertools import islice, izip
 
 from bs4 import UnicodeDammit
+
+
+def megam_iter(instance_str_list, parsed_args):
+    '''
+    Generator for items in the instance_str_list as dictionaries.
+
+    @param instance_str_list: List of instance lines in file
+    @type instance_str_list: C{list} of C{unicode}
+    @param parsed_args: The parsed command-line arguments returned by ArgumentParser
+    '''
+
+    for instance in instance_str_list:
+        split_instance = instance.split()
+        curr_info_dict = {parsed_args.class_name: split_instance[0]}
+        if len(split_instance) > 1:
+            # Get current instances feature-value pairs
+            field_pairs = split_instance[1:]
+            field_names = islice(field_pairs, 0, None, 2)
+            field_values = islice(field_pairs, 1, None, 2)
+
+            # Add the feature-value pairs to dictionary
+            curr_info_dict.update(izip(field_names, field_values))
+        yield curr_info_dict
 
 
 if __name__ == '__main__':
@@ -21,7 +45,7 @@ if __name__ == '__main__':
                                                  "Weka-compatible ARFF file to STDOUT.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile', help='MegaM input file', type=argparse.FileType('r'), default='-', nargs='?')
-    parser.add_argument('-c', '--classname', help='Name of nominal class field for ARFF file', default='class')
+    parser.add_argument('-c', '--class_name', help='Name of nominal class field for ARFF file', default='class')
     parser.add_argument('-r', '--relation', help='Name of relation for ARFF file', default='MegaM Relation')
     args = parser.parse_args()
 
@@ -36,6 +60,9 @@ if __name__ == '__main__':
 
     # Iterate through MegaM file
     first = True
+    line_count = 0
+    print("Loading {}...".format(args.infile.name).encode('utf-8'), end="", file=sys.stderr)
+    sys.stderr.flush()
     for line in args.infile:
         # Process encoding
         line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
@@ -43,18 +70,15 @@ if __name__ == '__main__':
         # Ignore comments
         if not line.startswith('#'):
             split_line = line.strip().split()
-            class_name = split_line[0]
-            classes.add(class_name)
+            classes.add(split_line[0])
             if len(split_line) > 1:
-                field_pairs = split_line[1:]
                 # Add field names to set in case there are new ones
-                field_names = field_pairs[::2]
-                field_values = field_pairs[1::2]
-                fields.update(field_names)
-                # Add all the field values (and the current class value) to the list of instances
-                instances.append(dict(zip(field_names, field_values) + [(args.classname, class_name)]))
-            else:
-                instances.append({args.classname: class_name})
+                fields.update(islice(islice(split_line, 1, None), 0, None, 2))
+            instances.append(line)
+        line_count += 1
+        if line_count % 100 == 0:
+            print(".", end="", file=sys.stderr)
+    print("done", file=sys.stderr)
 
     # Add relation to header
     print("@relation '{}'\n".format(args.relation))
@@ -63,15 +87,15 @@ if __name__ == '__main__':
     sorted_fields = sorted(fields)
     for field in sorted_fields:
         print("@attribute '{}' numeric".format(field.replace('\\', '\\\\').replace("'", "\\'")))
-    print("@attribute {} ".format(args.classname) + "{" + ','.join([unicode(x) for x in classes]) + "}")
+    print("@attribute {} ".format(args.class_name) + "{" + ','.join(sorted(classes)) + "}")
 
     # Create CSV writer to handle missing values for lines in data section
     csv.excel.lineterminator = '\n'
     csv.unregister_dialect('excel')
     csv.register_dialect('excel', csv.excel)
-    writer = csv.DictWriter(sys.stdout, sorted_fields + [args.classname], restval=0)
+    writer = csv.DictWriter(sys.stdout, sorted_fields + [args.class_name], restval=0)
 
     print("\n@data")
     # Loop through the list of instances, writing the ARFF file
-    for instance in instances:
-        writer.writerow(instance)
+    for instance_dict in megam_iter(instances, args):
+        writer.writerow(instance_dict)
