@@ -35,7 +35,8 @@ vocabfile = os.path.join({{ vocabpath }}, '{}-{}.vocab'.format({{ lexicon }}, {{
 # load the feature vocab if it already exists. We can do this since this is independent of the model type
 if os.path.exists(vocabfile):
     sys.stderr.write('  loading pre-existing feature vocab\n')
-    feat_vectorizer, scaler, label_dict, inverse_label_dict = pickle.loads(open(vocabfile).read())
+    with open(vocabfile) as f:
+        feat_vectorizer, scaler, label_dict, inverse_label_dict = pickle.load(f)
 else:
     feat_vectorizer, scaler, label_dict, inverse_label_dict = [None] * 4
 
@@ -49,7 +50,8 @@ for given_classifier in {{ given_classifiers }}:
     # load the model if it already exists
     if os.path.exists(modelfile):
         sys.stderr.write('  loading pre-existing {} model\n'.format(given_classifier))
-        model = pickle.loads(open(modelfile).read())
+        with open(modelfile) as f:
+            model = pickle.load(f)
     else:
         model = None
 

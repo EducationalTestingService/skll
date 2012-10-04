@@ -220,10 +220,6 @@ class Classifier(object):
             model = estimator.fit(xtrain_scaled, ytrain)
             score = 0.0
 
-        #for i in range(0, len(label_list)):
-        #    for j in range(0, len(feat_list)):
-        #        sys.stderr.write("{}\t{}\t{}\n".format(label_list[i], feat_list[j], model.coef_[i][j]))
-
         # write out the model and the feature vocabulary
         if modelfile and vocabfile:
 
@@ -238,9 +234,9 @@ class Classifier(object):
 
             # write out the files
             with open(modelfile, "w") as f:
-                f.write(pickle.dumps(model))
+                pickle.dump(model, f, -1)
             with open(vocabfile, "w") as f:
-                f.write(pickle.dumps([feat_vectorizer, scaler, label_dict, inverse_label_dict]))
+                pickle.dump([feat_vectorizer, scaler, label_dict, inverse_label_dict], f, -1)
 
         return model, score, feat_vectorizer, scaler, label_dict, inverse_label_dict
 
@@ -293,7 +289,7 @@ class Classifier(object):
 
             # write out the model
             with open(modelfile, "w") as f:
-                f.write(pickle.dumps(model))
+                pickle.dump(model, f, -1)
 
         return model, score
 
