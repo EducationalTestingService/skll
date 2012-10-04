@@ -54,18 +54,18 @@ class Classifier(object):
         '''
         if re.search("\.tsv$", path):
             out = []
-            reader = csv.reader(open(path), dialect=csv.excel_tab)
-            header = reader.next()
-            for row in reader:
-                example = self.preprocess_example(row, header)
-                out.append(example)
+            with open(path) as f:
+                reader = csv.reader(f, dialect=csv.excel_tab)
+                header = reader.next()
+                for row in reader:
+                    example = self.preprocess_example(row, header)
+                    out.append(example)
         elif re.search("\.jsonlines$", path):
             out = []
-            f = open(path)
-            for line in f:
-                example = json.loads(line.strip())
-                out.append(example)
-            f.close()
+            with open(path) as f:
+                for line in f:
+                    example = json.loads(line.strip())
+                    out.append(example)
         else:
             raise Exception('example files must be in .tsv format or the preprocessed .jsonlines format.')
         # sys.stderr.write("loaded {} examples\n".format(len(out)))
@@ -152,12 +152,14 @@ class Classifier(object):
 
     @staticmethod
     def extract_feature_vectorizer(features):
+        ''' Given a dict of features, create a DictVectorizer for mapping from dicts of features to arrays of features '''
         vectorizer = DictVectorizer()
         vectorizer.fit(features)
         return vectorizer
 
     @staticmethod
     def convert_labels_to_array(labels, label_list):
+        ''' Given a list of all labels in the dataset and a list of the unique labels in the set, convert the first list to an array of numbers. '''
         label_dict = {}
 
         # we need a dictionary that stores int label to real label mapping for later prediction extraction
@@ -203,7 +205,8 @@ class Classifier(object):
         estimator, param_grid = self.create_estimator(model_type)
         if grid_search:
             if param_grid_file:
-                param_grid = json.loads(open(param_grid_file).read())
+                with open(param_grid_file) as f:
+                    param_grid = json.load(f)
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
             if model_type in ["svm_linear", "logistic"]:
@@ -262,7 +265,8 @@ class Classifier(object):
         estimator, param_grid = self.create_estimator(model_type)
         if grid_search:
             if param_grid_file:
-                param_grid = json.loads(open(param_grid_file).read())
+                with open(param_grid_file) as f:
+                    param_grid = json.load(f)
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
             if model_type in ["svm_linear", "logistic", "lm"]:

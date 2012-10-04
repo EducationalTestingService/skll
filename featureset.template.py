@@ -6,7 +6,7 @@ import sys
 
 import classifier
 
-sys.stderr.write("Lexicon {}, feature set {} ... \n".format({{ lexicon }}, {{ featureset }}))
+sys.stderr.write("Training on {}, Test on {}, feature set {} ... \n".format({{ train_set_name }}, {{ test_set_name }}, {{ featureset }}))
 
 # instantiate the classifier wrapper
 clf = classifier.Classifier()
@@ -23,14 +23,14 @@ tunable_parameters = {'dtree': ['max_depth', 'max_features'], \
                       'rforest': ['max_depth', 'max_features']}
 
 # load the training and test examples
-train_examples = clf.load_examples(os.path.join({{ train_path }}, '{}-{}.tsv'.format({{ lexicon }}, {{ featureset }})))
-test_examples = clf.load_examples(os.path.join({{ test_path }}, '{}-{}.tsv'.format({{ lexicon }}, {{ featureset }})))
+train_examples = clf.load_examples(os.path.join({{ train_path }}, '{}.tsv'.format({{ featureset }})))
+test_examples = clf.load_examples(os.path.join({{ test_path }}, '{}.tsv'.format({{ featureset }})))
 
 # the path where model and vocab files are stored; create if necessary
 modelpath = {{ modelpath }}
 
 # the name of the feature vocab file
-vocabfile = os.path.join({{ vocabpath }}, '{}-{}.vocab'.format({{ lexicon }}, {{ featureset }}))
+vocabfile = os.path.join({{ vocabpath }}, '{}.vocab'.format({{ featureset }}))
 
 # load the feature vocab if it already exists. We can do this since this is independent of the model type
 if os.path.exists(vocabfile):
@@ -45,7 +45,7 @@ for given_classifier in {{ given_classifiers }}:
 
     # check whether a trained model on the same data with the same featureset already exists
     # if so, load it (and the feature vocabulary) and then use it on the test data
-    modelfile = os.path.join(modelpath, given_classifier, '{}-{}.model'.format({{ lexicon }}, {{ featureset }}))
+    modelfile = os.path.join(modelpath, given_classifier, '{}.model'.format({{ featureset }}))
 
     # load the model if it already exists
     if os.path.exists(modelfile):
@@ -85,6 +85,6 @@ for given_classifier in {{ given_classifiers }}:
         continue
 
     # write out the tsv row to STDOUT
-    row = [{{ test_set_name }}, {{ lexicon }}, {{ featureset }}, {{ lexicon_info }}, given_classifier]
+    row = [{{ train_set_name }}, {{ test_set_name }}, {{ featureset }}, given_classifier]
     row.extend(results)
     w.writerow(row)
