@@ -6,7 +6,7 @@ Runs a bunch of sklearn jobs in parallel on the cluster given a config file.
 @author: Dan Blanchard, dblanchard@ets.org
 '''
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import argparse
 import ConfigParser
@@ -15,7 +15,6 @@ import re
 import subprocess
 import sys
 
-import classifier
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -45,7 +44,6 @@ scriptpath = thispath
 
 # extract sklearn parameters from the config file
 given_classifiers = eval(configurator.get('Input', 'classifiers'))
-given_lexicons = eval(configurator.get("Input", "lexicons"))
 given_featuresets = eval(configurator.get("Input", "featuresets"))
 
 # get all the input paths and directories
@@ -108,9 +106,6 @@ if predict and not prediction_prefix:
     print('Error: you need to specify a prediction prefix if you are using prediction mode (no "results" option in config file).', file=sys.stderr)
     sys.exit(2)
 
-
-# instantiate the classifier wrapper
-clf = classifier.Classifier()
 
 # the list of jobids submitted
 jobids = []

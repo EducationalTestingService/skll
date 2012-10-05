@@ -10,6 +10,7 @@ import json
 import os
 import cPickle as pickle
 import re
+import subprocess
 import sys
 from itertools import chain, islice, izip
 
@@ -117,23 +118,25 @@ def extract_label(example):
 
 
 def create_estimator(model_type):
+    '''
+    @param model_type: Type of estimator to create.
+                       Options are: 'logistic', 'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and 'gradient'
+    @type model_type: C{unicode}
+
+    @return: A tuple containing an instantiation of the requested estimator, and a parameter grid to search.
+    '''
     estimator = None
     default_param_grid = None
 
     if model_type == 'logistic':
         estimator = LogisticRegression()
-        c_values = [1e-4, 1e-2, 1.0, 1e2, 1e4]
-        default_param_grid = [{'C': c_values}]
+        default_param_grid = [{'C': [1e-4, 1e-2, 1.0, 1e2, 1e4]}]
     elif model_type == 'svm_linear':
         estimator = LinearSVC()
-        c_values = [0.1, 1.0, 10, 100, 1000]
-        default_param_grid = [{'C': c_values}]
+        default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
     elif model_type == 'svm_radial':
         estimator = SVC(cache_size=1000)
-        c_values = [0.1, 1.0, 10, 100, 1000]
-        # gamma_values = [1e-4, 1e-3, 1e-2, 0.1, 1.0]
-        # default_param_grid = [{'C': c_values, 'gamma': gamma_values}]
-        default_param_grid = [{'C': c_values}]
+        default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
     elif model_type == 'naivebayes':
         estimator = MultinomialNB()
         default_param_grid = [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
@@ -142,7 +145,6 @@ def create_estimator(model_type):
         default_param_grid = [{'max_features': ["auto", None]}]
     elif model_type == 'rforest':
         estimator = RandomForestClassifier(n_estimators=100)
-        # default_param_grid = [{'max_depth': [2, 5, 10, None], 'max_features': ["auto", None]}]
         default_param_grid = [{'max_features': ["sqrt", "log2", None]}]
     elif model_type == "gradient":
         estimator = GradientBoostingClassifier(n_estimators=100)
@@ -173,33 +175,44 @@ def convert_labels_to_array(labels, label_list):
     return out_array, label_dict, inverse_label_dict
 
 
-def train(examples, model_type='logistic', param_grid_file=None, modelfile=None, vocabfile=None, cv_folds=5, grid_search=True, grid_objective="classifier.f1_score_micro"):
+def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, model_type='logistic', param_grid_file=None, modelfile=None,
+          vocabfile=None, cv_folds=5, grid_search=True, grid_objective="classifier.f1_score_micro"):
+    '''
+    Train a classificatiion model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.
+    '''
 
     # seed the random number generator so that randomized algorithms are replicable
     np.random.seed(9876315986142)
 
     # extract the features and the labels
     features = [extract_features(x) for x in examples]
-    labels = [extract_label(x) for x in examples]
 
-    # get the feature vectorizer
-    feat_vectorizer = extract_feature_vectorizer(features)  # create feature name -> value mapping
+    # Create label_dict if we weren't passed one
+    if label_dict is None:
+        labels = [extract_label(x) for x in examples]
 
-    # create a fake scaler for naivebayes since we don't want to do the scaling for it
-    if model_type == 'naivebayes':
-        fake_scaler = Scaler(with_mean=False, with_std=False)
+        # extract list of unique labels if we are doing classification
+        label_list = np.unique(labels).tolist()
+
+        # convert labels to numbers if we are doing classification
+        ytrain, label_dict, inverse_label_dict = convert_labels_to_array(labels, label_list)
     else:
-        scaler = Scaler()
+        ytrain = np.array([label_dict[extract_label(x)] for x in examples])
 
-    # extract list of unique labels if we are doing classification
-    label_list = np.unique(labels).tolist()
+    # Create feat_vectorizer if we weren't passed one
+    if feat_vectorizer is None:
+        feat_vectorizer = extract_feature_vectorizer(features)  # create feature name -> value mapping
+
+    # create a fake scaler for naive bayes
+    fake_scaler = Scaler(with_mean=False, with_std=False)
+
+    # Create scaler if we weren't passed one
+    if scaler is None:
+        scaler = Scaler(with_mean=False, with_std=False)
 
     # vectorize and scale the features
     xtrain = feat_vectorizer.transform(features).tocsr()
-    xtrain_scaled = fake_scaler.fit_transform(xtrain) if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
-
-    # convert labels to numbers if we are doing classification
-    ytrain, label_dict, inverse_label_dict = convert_labels_to_array(labels, label_list)
+    xtrain_scaled = fake_scaler.transform(xtrain) if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
 
     # set up a grid searcher if we are asked to
     estimator, param_grid = create_estimator(model_type)
@@ -209,10 +222,7 @@ def train(examples, model_type='logistic', param_grid_file=None, modelfile=None,
                 param_grid = json.load(f)
 
         # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
-        if model_type in ["svm_linear", "logistic"]:
-            grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=cv_folds)
-        else:
-            grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=cv_folds, n_jobs=5)
+        grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=cv_folds, n_jobs=(cv_folds if model_type not in ["svm_linear", "logistic"] else 1))
 
         # run the grid search for hyperparameters
         print('  starting grid search', file=sys.stderr)
@@ -224,79 +234,26 @@ def train(examples, model_type='logistic', param_grid_file=None, modelfile=None,
         score = 0.0
 
     # write out the model and the feature vocabulary
-    if modelfile and vocabfile:
-
+    if modelfile:
         # create the directory if it doesn't exist
         modeldir = os.path.dirname(modelfile)
         if not os.path.exists(modeldir):
-            os.system("mkdir -p {}".format(modeldir))
-
-        vocabdir = os.path.dirname(vocabfile)
-        if not os.path.exists(vocabdir):
-            os.system("mkdir -p {}".format(vocabdir))
-
+            subprocess.call("mkdir -p {}".format(modeldir))
         # write out the files
         with open(modelfile, "w") as f:
             pickle.dump(model, f, -1)
+
+
+    if vocabfile:
+        # create the directory if it doesn't exist
+        vocabdir = os.path.dirname(vocabfile)
+        if not os.path.exists(vocabdir):
+            subprocess.call("mkdir -p {}".format(vocabdir))
         with open(vocabfile, "w") as f:
             pickle.dump([feat_vectorizer, scaler, label_dict, inverse_label_dict], f, -1)
 
+    # train_without_featurization function used to only return model and score, so fix references to that
     return model, score, feat_vectorizer, scaler, label_dict, inverse_label_dict
-
-
-def train_without_featurization(examples, feat_vectorizer, scaler, label_dict, model_type='logistic', param_grid_file=None, modelfile=None, cv_folds=5,
-                                grid_search=True, grid_objective="classifier.f1_score_micro"):
-    ''' same as train except we are given the feature vectorizer and the label dictionary so we don't need to generate those '''
-
-    # seed the random number generator so that randomized algorithms are replicable
-    np.random.seed(9876315986142)
-
-    # extract the features
-    features = [extract_features(x) for x in examples]
-
-    # create a fake scaler for naive bayes
-    fake_scaler = Scaler(with_mean=False, with_std=False)
-
-    # vectorize and scale the features
-    xtrain = feat_vectorizer.transform(features).tocsr()
-    xtrain_scaled = fake_scaler.transform(xtrain) if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
-    ytrain = np.array([label_dict[extract_label(x)] for x in examples])
-
-    # set up the grid searcher if we are asked to
-    estimator, param_grid = create_estimator(model_type)
-    if grid_search:
-        if param_grid_file:
-            with open(param_grid_file) as f:
-                param_grid = json.load(f)
-
-        # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
-        if model_type in ["svm_linear", "logistic", "lm"]:
-            grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=cv_folds)
-        else:
-            grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=cv_folds, n_jobs=5)
-
-        # run the grid search for hyperparameters
-        print('  starting grid search', file=sys.stderr)
-        grid_searcher.fit(xtrain_scaled, ytrain)
-        model = grid_searcher.best_estimator_
-        score = grid_searcher.best_score_
-    else:
-        model = estimator.fit(xtrain_scaled, ytrain)
-        score = 0.0
-
-    # write out the model
-    if modelfile:
-
-        # create the directory if it doesn't exist
-        modeldir = os.path.dirname(modelfile)
-        if not os.path.exists(modeldir):
-            os.system("mkdir -p {}".format(modeldir))
-
-        # write out the model
-        with open(modelfile, "w") as f:
-            pickle.dump(model, f, -1)
-
-    return model, score
 
 
 def evaluate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type='logistic', prediction_prefix=None):
@@ -313,7 +270,6 @@ def evaluate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label
     xtest = feat_vectorizer.transform(features).tocsr()
     xtest_scaled = fake_scaler.transform(xtest) if model_type == 'naivebayes' else scaler.fit_transform(xtest)
     ytest = np.array([label_dict[extract_label(x)] for x in examples])
-    # ytest = convert_labels_to_array([extract_label(x) for x in examples], label_list)
 
     # make the prediction on the test data
     yhat = model.predict(xtest_scaled)
