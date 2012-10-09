@@ -9,12 +9,12 @@ import csv
 import json
 import os
 import cPickle as pickle
-import re
 import subprocess
 import sys
-from itertools import chain, izip
+from itertools import chain, islice, izip
 
 import numpy as np
+from bs4 import UnicodeDammit
 from sklearn import metrics
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -48,11 +48,55 @@ def accuracy(y_true, y_pred):
     return metrics.zero_one_score(y_true, y_pred)
 
 
+def sanitize_line(line):
+    ''' Return copy of line with all non-ASCII characters replaced with <U1234> sequences where 1234 is the value of ord() for the character. '''
+    char_list = []
+    for char in line:
+        char_num = ord(char)
+        char_list.append('<U{}>'.format(char_num) if char_num > 127 else char)
+    return ''.join(char_list)
+
+
+def megam_dict_iter(path):
+    '''
+    Generator that yields tuples of classes and dictionaries mapping from features to values for each pair of lines in path
+
+    @param path: Path to MegaM file
+    @type path: C{unicode}
+    '''
+
+    line_count = 0
+    print("Loading {}...".format(path).encode('utf-8'), end="", file=sys.stderr)
+    sys.stderr.flush()
+    with open(path) as megam_file:
+        for line in megam_file:
+            # Process encoding
+            line = sanitize_line(UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup.strip())
+            # Handle instance lines
+            if not line.startswith('#') and line not in ['TRAIN', 'TEST', 'DEV']:
+                split_line = line.split()
+                class_name = split_line[0]
+                curr_info_dict = dict()
+                if len(split_line) > 1:
+                    # Get current instances feature-value pairs
+                    field_pairs = split_line[1:]
+                    field_names = islice(field_pairs, 0, None, 2)
+                    field_values = islice(field_pairs, 1, None, 2)
+
+                    # Add the feature-value pairs to dictionary
+                    curr_info_dict.update(izip(field_names, field_values))
+                yield class_name, curr_info_dict
+            line_count += 1
+            if line_count % 100 == 0:
+                print(".", end="", file=sys.stderr)
+        print("done", file=sys.stderr)
+
+
 def load_examples(path):
     '''
-    Loads and returns a TSV file of examples.  Or, loads a preprocessed json version of the examples if the path ends in ".jsonlines".
+    Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM formats.
     '''
-    if re.search("\.tsv$", path):
+    if path.endswith(".tsv"):
         out = []
         with open(path) as f:
             reader = csv.reader(f, dialect=csv.excel_tab)
@@ -60,15 +104,16 @@ def load_examples(path):
             for row in reader:
                 example = preprocess_example(row, header)
                 out.append(example)
-    elif re.search("\.jsonlines$", path):
+    elif path.endswith(".jsonlines"):
         out = []
         with open(path) as f:
             for line in f:
                 example = json.loads(line.strip())
                 out.append(example)
+    elif path.endswith(".megam"):
+        out = [{"y": class_name, "x": feature_dict} for class_name, feature_dict in megam_dict_iter(path)]
     else:
-        raise Exception('Example files must be in .tsv format or the preprocessed .jsonlines format. You specified: {}'.format(path))
-    # print("loaded {} examples\n".format(len(out)), file=sys.stderr)
+        raise Exception('Example files must be in either TSV, MegaM, or the preprocessed .jsonlines format. You specified: {}'.format(path))
     return out
 
 
@@ -310,17 +355,16 @@ def evaluate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label
 
     # write out the predictions if we are asked to
     if prediction_prefix:
-        predictions = [inverse_label_dict[x] for x in yhat]
         prediction_file = prediction_prefix + '-{}.predictions'.format(model_type)
-        predictionfh = open(prediction_file, "w")
-        predictionfh.write("\n".join(predictions) + "\n")
-        predictionfh.close()
+        with open(prediction_file, "w") as predictionfh:
+            for pred in yhat:
+                print(inverse_label_dict[pred], file=predictionfh)
+            print(file=predictionfh)
 
     # return the results list
     return results
 
 
-# just predict for test sets where we don't have labels
 def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, prediction_prefix, model_type='logistic'):
     '''
     Uses a given model to generate predictions on a given data set
@@ -338,16 +382,16 @@ def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, predic
     yhat = model.predict(xtest_scaled)
 
     # write out the predictions if we are asked to
-    predictions = [inverse_label_dict[x] for x in yhat]
     prediction_file = prediction_prefix + '-{}.predictions'.format(model_type)
     with open(prediction_file, "w") as predictionfh:
-        predictionfh.write("\n".join(predictions) + "\n")
+        for pred in yhat:
+            print(inverse_label_dict[pred], file=predictionfh)
+        print(file=predictionfh)
 
 
 def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type='logistic', prediction_prefix=None, stratified=True, cv_folds=10):
     '''
     Cross-validates a given model on the training examples.
-    Uses KFold with 5 folds.
     Returns the confusion matrix, the per-class PRFs and the overall accuracy.
     '''
     features = [extract_features(x) for x in examples]
@@ -359,7 +403,6 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
     X = feat_vectorizer.transform(features)
     X_scaled = fake_scaler.transform(X) if model_type == 'naivebayes' else scaler.fit_transform(X)
     y = np.array([label_dict[extract_label(x)] for x in examples])
-    # ytest = convert_labels_to_array([extract_label(x) for x in examples], label_list)
 
     # compute the five-fold cross-validation iterator
     kfold = StratifiedKFold(len(y), k=cv_folds) if stratified else KFold(len(y), k=cv_folds)
@@ -367,7 +410,7 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
     # handle each fold separately and accumulate the predictions and the numbers
     results_array = np.zeros((5, 13))
     yhat = -1 * np.ones(len(X_scaled))
-    for i, (train_index, test_index) in enumerate(kfold):
+    for train_index, test_index in kfold:
         results = []
         fold_model = model.fit(X_scaled[train_index], y[train_index])
         fold_ytest = y[test_index]
@@ -399,10 +442,11 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
 
     # write out the predictions if we are asked to
     if prediction_prefix:
-        predictions = [inverse_label_dict[x] for x in yhat]
         prediction_file = prediction_prefix + '-{}.predictions'.format(model_type)
         with open(prediction_file, "w") as predictionfh:
-            predictionfh.write("\n".join(predictions) + "\n")
+            for pred in yhat:
+                print(inverse_label_dict[pred], file=predictionfh)
+            print(file=predictionfh)
 
     # compute the average performance numbers
     averaged_results = np.mean(results_array, axis=0)
