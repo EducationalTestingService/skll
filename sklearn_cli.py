@@ -144,15 +144,16 @@ def process_fold(arg_tuple):
     return (fold_score, result_dict, metrics.confusion_matrix(fold_test_classes, raw_predictions).tolist())
 
 
-def print_fancy_output(result_tuples, num_folds):
+def print_fancy_output(result_tuples):
     ''' Function to take all of the results from all of the folds and print nice tables with the resluts. '''
+    num_folds = len(result_tuples)
     score_sum = 0.0
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
     classes = sorted(result_tuples[0][1].iterkeys())
     for k, (fold_score, result_dict, conf_matrix) in enumerate(result_tuples, start=1):
-        if len(result_tuples) > 1:
+        if num_folds > 1:
             print("\nFold: {}".format(k))
         result_table = Texttable(max_width=0)
         result_table.set_cols_align(["r"] * (len(classes) + 4))
@@ -171,7 +172,7 @@ def print_fancy_output(result_tuples, num_folds):
         print("Accuracy = {:.1f}%\n".format(fold_score))
         score_sum += fold_score
 
-    if len(result_tuples) > 1:
+    if num_folds > 1:
         print("\nAverage:")
         result_table = Texttable(max_width=0)
         result_table.set_cols_align(["l", "r", "r", "r"])
@@ -225,7 +226,7 @@ if __name__ == '__main__':
     # If given a test file, train on train_data, and test on test_data
     if args.test_file:
         vectorizer, test_data, test_classes = load_megam_file(args.test_file, dict_vectorizer=vectorizer)
-        print_fancy_output((process_fold((learner, train_data, test_data, train_classes, test_classes, 0, reverse_class_num_dict)),), 1)
+        print_fancy_output((process_fold((learner, train_data, test_data, train_classes, test_classes, 0, reverse_class_num_dict)),))
 
     # Otherwise do cross validation
     else:
@@ -239,4 +240,4 @@ if __name__ == '__main__':
         else:
             results = pool.map(process_fold, arg_tuple_list)
 
-        print_fancy_output(results, args.num_folds)
+        print_fancy_output(results)
