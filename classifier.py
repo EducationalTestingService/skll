@@ -401,15 +401,20 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
 
     # transform and scale the features
     X = feat_vectorizer.transform(features)
+
+    # Convert to dense if using naivebayes or rforest
+    if model_type in ['naivebayes', 'rforest']:
+        X = X.todense()
+
+    # scale the features
     X_scaled = fake_scaler.transform(X) if model_type == 'naivebayes' else scaler.fit_transform(X)
     y = np.array([label_dict[extract_label(x)] for x in examples])
 
     # compute the five-fold cross-validation iterator
-    kfold = StratifiedKFold(len(y), k=cv_folds) if stratified else KFold(len(y), k=cv_folds)
+    kfold = StratifiedKFold(y, k=cv_folds) if stratified else KFold(y, k=cv_folds)
 
     # handle each fold separately and accumulate the predictions and the numbers
-    results_array = np.zeros((5, 13))
-    yhat = -1 * np.ones(len(X_scaled))
+    yhat = -1 * np.ones(X_scaled.shape[0])
     for train_index, test_index in kfold:
         results = []
         fold_model = model.fit(X_scaled[train_index], y[train_index])
@@ -448,9 +453,5 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
                 print(inverse_label_dict[pred], file=predictionfh)
             print(file=predictionfh)
 
-    # compute the average performance numbers
-    averaged_results = np.mean(results_array, axis=0)
-
     # return the results list
-    averaged_results = list(averaged_results)
-    return [round(f, 3) for f in averaged_results[:4]] + averaged_results[4:]
+    return results
