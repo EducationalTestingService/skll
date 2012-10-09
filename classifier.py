@@ -12,7 +12,7 @@ import cPickle as pickle
 import re
 import subprocess
 import sys
-from itertools import chain, islice, izip
+from itertools import chain, izip
 
 import numpy as np
 from sklearn import metrics
@@ -67,7 +67,7 @@ def load_examples(path):
                 example = json.loads(line.strip())
                 out.append(example)
     else:
-        raise Exception('example files must be in .tsv format or the preprocessed .jsonlines format.')
+        raise Exception('Example files must be in .tsv format or the preprocessed .jsonlines format. You specified: {}'.format(path))
     # print("loaded {} examples\n".format(len(out)), file=sys.stderr)
     return out
 
@@ -105,8 +105,8 @@ def classify(clf, feat_vectorizer, label_list, example):
     to get a score (perhaps a probability).
     '''
     features = extract_features(example)
-    x = feat_vectorizer.transform(features).tocsr()
-    return label_list[clf.predict(x)[0]]
+    transformed_features = feat_vectorizer.transform(features)
+    return label_list[clf.predict(transformed_features)[0]]
 
 
 def extract_label(example):
@@ -175,7 +175,7 @@ def convert_labels_to_array(labels, label_list):
     return out_array, label_dict, inverse_label_dict
 
 
-def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, model_type='logistic', param_grid_file=None, modelfile=None,
+def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic', param_grid_file=None, modelfile=None,
           vocabfile=None, cv_folds=5, grid_search=True, grid_objective="classifier.f1_score_micro"):
     '''
     Train a classificatiion model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -211,7 +211,12 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, model_ty
         scaler = Scaler(with_mean=False, with_std=False)
 
     # vectorize and scale the features
-    xtrain = feat_vectorizer.transform(features).tocsr()
+    xtrain = feat_vectorizer.transform(features)
+
+    # Convert to dense if using naivebayes or rforest
+    if model_type in ['naivebayes', 'rforest']:
+        xtrain = xtrain.todense()
+
     xtrain_scaled = fake_scaler.transform(xtrain) if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
 
     # set up a grid searcher if we are asked to
@@ -225,7 +230,7 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, model_ty
         grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=cv_folds, n_jobs=(cv_folds if model_type not in ["svm_linear", "logistic"] else 1))
 
         # run the grid search for hyperparameters
-        print('  starting grid search', file=sys.stderr)
+        print('\tstarting grid search', file=sys.stderr)
         grid_searcher.fit(xtrain_scaled, ytrain)
         model = grid_searcher.best_estimator_
         score = grid_searcher.best_score_
@@ -238,7 +243,7 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, model_ty
         # create the directory if it doesn't exist
         modeldir = os.path.dirname(modelfile)
         if not os.path.exists(modeldir):
-            subprocess.call("mkdir -p {}".format(modeldir))
+            subprocess.call("mkdir -p {}".format(modeldir), shell=True)
         # write out the files
         with open(modelfile, "w") as f:
             pickle.dump(model, f, -1)
@@ -248,7 +253,7 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, model_ty
         # create the directory if it doesn't exist
         vocabdir = os.path.dirname(vocabfile)
         if not os.path.exists(vocabdir):
-            subprocess.call("mkdir -p {}".format(vocabdir))
+            subprocess.call("mkdir -p {}".format(vocabdir), shell=True)
         with open(vocabfile, "w") as f:
             pickle.dump([feat_vectorizer, scaler, label_dict, inverse_label_dict], f, -1)
 
@@ -267,7 +272,12 @@ def evaluate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label
     fake_scaler = Scaler(with_mean=False, with_std=False)
 
     # transform and scale the features
-    xtest = feat_vectorizer.transform(features).tocsr()
+    xtest = feat_vectorizer.transform(features)
+
+    # Convert to dense if using naivebayes or rforest
+    if model_type in ['naivebayes', 'rforest']:
+        xtest = xtest.todense()
+
     xtest_scaled = fake_scaler.transform(xtest) if model_type == 'naivebayes' else scaler.fit_transform(xtest)
     ytest = np.array([label_dict[extract_label(x)] for x in examples])
 
@@ -321,7 +331,7 @@ def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, predic
     fake_scaler = Scaler(with_mean=False, with_std=False)
 
     # transform and scale the features
-    xtest = feat_vectorizer.transform(features).tocsr()
+    xtest = feat_vectorizer.transform(features)
     xtest_scaled = fake_scaler.transform(xtest) if model_type == 'naivebayes' else scaler.fit_transform(xtest)
 
     # make the prediction on the test data
@@ -346,7 +356,7 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
     fake_scaler = Scaler(with_mean=False, with_std=False)
 
     # transform and scale the features
-    X = feat_vectorizer.transform(features).tocsr()
+    X = feat_vectorizer.transform(features)
     X_scaled = fake_scaler.transform(X) if model_type == 'naivebayes' else scaler.fit_transform(X)
     y = np.array([label_dict[extract_label(x)] for x in examples])
     # ytest = convert_labels_to_array([extract_label(x) for x in examples], label_list)
@@ -368,14 +378,8 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
         fold_accuracy = metrics.zero_one_score(fold_ytest, fold_yhat)
         results = [fold_accuracy]
 
-        # TODO: MAKE SURE THAT COMMENTING THIS OUT DIDN'T BREAK STUFF
-        # get the confusion matrix and the per class accuracies for this fold
-        # conf_mat = metrics.confusion_matrix(fold_ytest, fold_yhat)
-        # if conf_mat.shape == (3, 3):
-        #     per_class_accuracies = compute_class_accuracies(conf_mat)
-        # else:
-        #     per_class_accuracies = [round(f, 3) for f in [fold_accuracy, fold_accuracy]]
-        # results.extend(per_class_accuracies)
+        # get the confusion matrix and the per class accuracies for this fold -- don't actually do the per class accuracies anymore
+        results.append(metrics.confusion_matrix(fold_ytest, fold_yhat))
 
         # compute the per-class PRFs
         precisions, recalls, f1_scores, _ = metrics.precision_recall_fscore_support(fold_ytest, fold_yhat)
@@ -388,15 +392,10 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
         # append the PRF values to the results list
         results.extend(chain.from_iterable(izip(precisions, recalls, f1_scores)))
 
-        # resize appropriately depending on if the task is sentiment or polarity classification
-        if i == 0:
-            results_array.resize((5, len(results)))
-        results_array[:(i + 1)] = results
-
     # make sure there are no items for which we haven't generated a prediction
     missing = len(yhat[yhat == -1])
     if missing > 0:
-        print('  error: missing predictions.', file=sys.stderr)
+        print('\terror: missing predictions.', file=sys.stderr)
 
     # write out the predictions if we are asked to
     if prediction_prefix:

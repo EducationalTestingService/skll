@@ -9,13 +9,19 @@ Runs a bunch of sklearn jobs in parallel on the cluster given a config file.
 from __future__ import print_function, unicode_literals
 
 import argparse
+import cPickle as pickle
 import ConfigParser
-import os
 import re
-import subprocess
+import os
 import sys
+from collections import namedtuple
 
-from jinja2 import Environment, FileSystemLoader
+import classifier
+from pythongrid import KybJob, process_jobs
+
+
+# Named tuple for storing job results
+ClassifierResultInfo = namedtuple('ClassifierResultInfo', ['train_set_name', 'test_set_name', 'featureset', 'given_classifier', 'task', 'task_results'])
 
 
 def clean_path(path):
@@ -26,183 +32,215 @@ def clean_path(path):
     return path
 
 
-# Get command line arguments
-parser = argparse.ArgumentParser(description="Runs a bunch of sklearn jobs in parallel on the cluster given a config file.",
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                 conflict_handler='resolve')
-parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.')
-args = parser.parse_args()
+def classify_featureset(featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
+                        grid_objective, cross_validate, evaluate, suffix, log_path):
+    ''' Classification job to be submitted to grid '''
+    result_list = []
 
-# initialize config parser
-configurator = ConfigParser.RawConfigParser({'test_location': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro"})
-configurator.read(args.config_file)
+    with open(log_path, 'w') as log_file:
+        print("Training on {}, Test on {}, feature set {} ...".format(train_set_name, test_set_name, featureset), file=log_file)
 
-# initialize the jinja2 environment
-thispath = os.path.dirname(clean_path(os.path.abspath(__file__)))
-jinja_env = Environment(loader=FileSystemLoader(thispath))
-scriptpath = thispath
+        # tunable parameters for each model type
+        tunable_parameters = {'dtree': ['max_depth', 'max_features'], \
+                              'svm_linear': ['C'], \
+                              'svm_radial': ['C', 'gamma'], \
+                              'logistic': ['C'], \
+                              'naivebayes': ['alpha'], \
+                              'rforest': ['max_depth', 'max_features']}
 
-# extract sklearn parameters from the config file
-given_classifiers = eval(configurator.get('Input', 'classifiers'))
-given_featuresets = eval(configurator.get("Input", "featuresets"))
+        # load the training and test examples
+        train_examples = classifier.load_examples(os.path.join(train_path, featureset + suffix))
+        test_examples = classifier.load_examples(os.path.join(test_path, featureset + suffix))
 
-# get all the input paths and directories
-train_path = configurator.get("Input", "train_location")
-test_path = configurator.get("Input", "test_location")
+        # the name of the feature vocab file
+        vocabfile = os.path.join(vocabpath, '{}.vocab'.format(featureset))
 
-# get all the output files and directories
-resultsfile = configurator.get("Output", "results")
-resultspath = os.path.dirname(resultsfile) if resultsfile else ""
-logfile = configurator.get("Output", "log")
-logpath = os.path.dirname(logfile)
-modelpath = configurator.get("Output", "models")
-vocabpath = configurator.get("Output", "vocabs")
+        # load the feature vocab if it already exists. We can do this since this is independent of the model type
+        if os.path.exists(vocabfile):
+            print('\tloading pre-existing feature vocab', file=log_file)
+            with open(vocabfile) as f:
+                feat_vectorizer, scaler, label_dict, inverse_label_dict = pickle.load(f)
+        else:
+            feat_vectorizer, scaler, label_dict, inverse_label_dict = [None] * 4
 
-# create the path of the resultsfile, logfile and the modelpath
-os.system("mkdir -p {} {}".format(resultspath, logpath))
+        # now go over each classifier
+        for given_classifier in given_classifiers:
 
-# do we want to keep the predictions?
-prediction_prefix = configurator.get("Output", "predictions")
-if prediction_prefix:
-    predictdir = os.path.dirname(prediction_prefix)
-    os.system("mkdir -p {}".format(predictdir))
+            # check whether a trained model on the same data with the same featureset already exists
+            # if so, load it (and the feature vocabulary) and then use it on the test data
+            modelfile = os.path.join(modelpath, given_classifier, '{}.model'.format(featureset))
 
-# make sure all the specified paths exist
-if not (os.path.exists(train_path) and (not test_path or os.path.exists(test_path))):
-    print("Error: the training and/or test path(s) specified in config file does not exist.", file=sys.stderr)
-    sys.exit(2)
+            # load the model if it already exists
+            if os.path.exists(modelfile):
+                print('\tloading pre-existing {} model'.format(given_classifier), file=log_file)
+                with open(modelfile) as f:
+                    model = pickle.load(f)
+            else:
+                model = None
 
-# make sure all the given classifiers are valid as well
-if set(given_classifiers).difference(set(['dtree', 'svm_linear', 'svm_radial', 'logistic', 'naivebayes', 'rforest'])):
-    print("Error: unrecognized classifier in config file.", file=sys.stderr)
-    sys.exit(2)
+            # if we have do not have a saved model, we need to train one. However, we may be able to reuse a saved feature vocab file if that existed above.
+            if not model:
+                if feat_vectorizer:
+                    print('\ttraining new {} model'.format(given_classifier), file=log_file)
+                    model, best_score = classifier.train(train_examples, feat_vectorizer=feat_vectorizer, scaler=scaler, label_dict=label_dict, model_type=given_classifier,
+                                                         modelfile=modelfile, grid_search=grid_search, grid_objective=grid_objective, inverse_label_dict=inverse_label_dict)[0:2]
+                else:
+                    print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
+                    model, best_score, feat_vectorizer, scaler, label_dict, inverse_label_dict = classifier.train(train_examples, model_type=given_classifier, modelfile=modelfile,
+                                                                                                                  vocabfile=vocabfile, grid_search=grid_search,
+                                                                                                                  grid_objective=grid_objective)
 
-# do we need to run a grid search for the hyperparameters or are we just using the defaults
-do_grid_search = configurator.get("Tuning", "grid_search")
+                # print out the tuned parameters and best CV score
+                if grid_search:
+                    param_out = []
+                    for param_name in tunable_parameters[given_classifier]:
+                        param_out.append('{}: {}'.format(param_name, model.get_params()[param_name]))
+                    print('\ttuned hyperparameters: {}'.format(', '.join(param_out)), file=log_file)
+                    print('\tbest score: {}'.format(round(best_score, 3)), file=log_file)
 
-# what is the objective function for the grid search?
-grid_objective_func = configurator.get("Tuning", "objective")
-if grid_objective_func not in ['f1_score_micro', 'f1_score_macro', 'accuracy']:
-    print('Error: invalid grid objective function.', file=sys.stderr)
-    sys.exit(2)
-else:
-    grid_objective_func = 'classifier.' + grid_objective_func
+            # run on test set or cross-validate on training data, depending on what was asked for
+            if cross_validate:
+                print('\tcross-validating', file=log_file)
+                results = classifier.cross_validate(train_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=given_classifier,
+                                                    prediction_prefix=prediction_prefix)
+                task = 'cross-validate'
+            elif evaluate:
+                print('\tevaluating predictions', file=log_file)
+                results = classifier.evaluate(test_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=given_classifier,
+                                              prediction_prefix=prediction_prefix)
+                task = 'evaluate'
+            else:
+                print('\twriting predictions', file=log_file)
+                classifier.predict(test_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, prediction_prefix, model_type=given_classifier)
+                continue
 
-# are we doing cross validation or actual testing or just generating predictions on a new test set?
-# If no test set was specified then assume that we are doing cross validation.
-# If the results field was not specified then assume that we are just generating predictions
-evaluate = False
-cross_validate = False
-predict = False
-if test_path and resultspath:
-    evaluate = True
-elif not test_path:
-    cross_validate = True
-else:
-    predict = True
+            # write out the tsv row to STDOUT
+            result_list.append(ClassifierResultInfo(train_set_name, test_set_name, featureset, given_classifier, task, results))
 
-# make sure that, if we are in prediction mode,we have a prediction_prefix
-if predict and not prediction_prefix:
-    print('Error: you need to specify a prediction prefix if you are using prediction mode (no "results" option in config file).', file=sys.stderr)
-    sys.exit(2)
+    return result_list
 
 
-# the list of jobids submitted
-jobids = []
+def run_configuration(config_file):
+    ''' Takes a configuration file and runs the specified jobs on the grid. '''
+    # initialize config parser
+    configurator = ConfigParser.RawConfigParser({'test_location': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro"})
+    configurator.read(config_file)
 
-# For each feature set
-for featureset in given_featuresets:
+    # extract sklearn parameters from the config file
+    given_classifiers = eval(configurator.get('Input', 'classifiers'))
+    given_featuresets = eval(configurator.get("Input", "featuresets"))
 
-    # instantiate the jinja template and run with qsub
-    template = jinja_env.get_template('featureset.template.py')
+    # get all the input paths and directories
+    train_path = configurator.get("Input", "train_location")
+    test_path = configurator.get("Input", "test_location")
+    suffix = configurator.get("Input", "suffix")
 
-    # store training/test set names for later use
-    train_set_name = os.path.basename(train_path)
-    test_set_name = os.path.basename(test_path)
+    # get all the output files and directories
+    resultsfile = configurator.get("Output", "results")
+    resultspath = os.path.dirname(resultsfile) if resultsfile else ""
+    logfile = configurator.get("Output", "log")
+    logpath = os.path.dirname(logfile)
+    modelpath = configurator.get("Output", "models")
+    vocabpath = configurator.get("Output", "vocabs")
 
-    # instantiate the python template into a python script
-    jobname = 'run_{}_{}_{}'.format(train_set_name, test_set_name, featureset)
-    with open(os.path.join(scriptpath, '{}.py'.format(jobname)), "w") as scriptfh:
+    # create the path of the resultsfile, logfile and the modelpath
+    os.system("mkdir -p {} {}".format(resultspath, logpath))
+
+    # do we want to keep the predictions?
+    prediction_prefix = configurator.get("Output", "predictions")
+    if prediction_prefix:
+        predictdir = os.path.dirname(prediction_prefix)
+        os.system("mkdir -p {}".format(predictdir))
+
+    # make sure all the specified paths exist
+    if not (os.path.exists(train_path) and (not test_path or os.path.exists(test_path))):
+        print("Error: the training and/or test path(s) specified in config file does not exist.", file=sys.stderr)
+        sys.exit(2)
+
+    # make sure all the given classifiers are valid as well
+    if set(given_classifiers).difference(set(['dtree', 'svm_linear', 'svm_radial', 'logistic', 'naivebayes', 'rforest'])):
+        print("Error: unrecognized classifier in config file.", file=sys.stderr)
+        sys.exit(2)
+
+    # do we need to run a grid search for the hyperparameters or are we just using the defaults
+    do_grid_search = eval(configurator.get("Tuning", "grid_search"))
+
+    # what is the objective function for the grid search?
+    grid_objective_func = configurator.get("Tuning", "objective")
+    if grid_objective_func not in ['f1_score_micro', 'f1_score_macro', 'accuracy']:
+        print('Error: invalid grid objective function.', file=sys.stderr)
+        sys.exit(2)
+    else:
+        grid_objective_func = 'classifier.' + grid_objective_func
+
+    # are we doing cross validation or actual testing or just generating predictions on a new test set?
+    # If no test set was specified then assume that we are doing cross validation.
+    # If the results field was not specified then assume that we are just generating predictions
+    evaluate = False
+    cross_validate = False
+    predict = False
+    if test_path and resultspath:
+        evaluate = True
+    elif not test_path:
+        cross_validate = True
+    else:
+        predict = True
+
+    # make sure that, if we are in prediction mode,we have a prediction_prefix
+    if predict and not prediction_prefix:
+        print('Error: you need to specify a prediction prefix if you are using prediction mode (no "results" option in config file).', file=sys.stderr)
+        sys.exit(2)
+
+
+    # the list of jobs submitted
+    jobs = []
+
+    # For each feature set
+    for featureset in given_featuresets:
+
+        # store training/test set names for later use
+        train_set_name = os.path.basename(train_path)
+        test_set_name = os.path.basename(test_path)
+
+        # instantiate the python template into a python script
+        jobname = 'run_{}_{}_{}'.format(train_set_name, test_set_name, featureset)
 
         # change the prediction prefix to include the feature set
         featset_prediction_prefix = prediction_prefix + '-' + featureset.replace('+', '-')
 
-        # write out the rendered template into this script
-        scriptfh.write(template.render(featureset=repr(featureset), given_classifiers=repr(given_classifiers), train_path=repr(train_path), test_path=repr(test_path),
-                                       train_set_name=repr(train_set_name), test_set_name=repr(test_set_name), modelpath=repr(modelpath), vocabpath=repr(vocabpath),
-                                       prediction_prefix=repr(featset_prediction_prefix), grid_search=do_grid_search, grid_objective=grid_objective_func,
-                                       cross_validate=cross_validate, evaluate=evaluate))
-
         # the log file
         temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
 
-        # the output file
-        temp_outfile = os.path.join(resultspath, '{}.tsv'.format(jobname))
+        # create job
+        job = KybJob(classify_featureset, [featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name,
+                                           modelpath, vocabpath, featset_prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
+                                           evaluate, suffix, temp_logfile])
+        job.name = jobname
 
         # request 5 slots for each job if we are doing a grid search to make things go even faster
         if do_grid_search:
-            if evaluate or cross_validate:
-                command_str = "/local/research/linux/sge6_2u6/bin/lx24-amd64/qsub -q nlp.q -b y -o /dev/null -j y -N {} -pe smp 5 'python {} > {} 2> {}'".format(jobname,
-                                                                                                                                                                 scriptfh.name,
-                                                                                                                                                                 temp_outfile,
-                                                                                                                                                                 temp_logfile)
-            else:
-                command_str = "/local/research/linux/sge6_2u6/bin/lx24-amd64/qsub -q nlp.q -b y -o /dev/null -j y -N {} -pe smp 5 'python {} 2> {}'".format(jobname,
-                                                                                                                                                            scriptfh.name,
-                                                                                                                                                            temp_logfile)
-        else:
-            if evaluate or cross_validate:
-                command_str = "/local/research/linux/sge6_2u6/bin/lx24-amd64/qsub -q nlp.q -b y -o /dev/null -j y -N {} 'python {} > {} 2> {}'".format(jobname,
-                                                                                                                                                       scriptfh.name,
-                                                                                                                                                       temp_outfile,
-                                                                                                                                                       temp_logfile)
-            else:
-                command_str = "/local/research/linux/sge6_2u6/bin/lx24-amd64/qsub -q nlp.q -b y -o /dev/null -j y -N {} 'python {} 2> {}'".format(jobname, scriptfh.name,
-                                                                                                                                                  temp_logfile)
+            job.pe = 'smp 5'
 
-    # submit the job
-    try:
-        qsub_proc = subprocess.Popen(command_str, stderr=subprocess.PIPE, stdin=None, stdout=subprocess.PIPE, shell=True)
-        stdout_data, stderr_data = qsub_proc.communicate()
-        jobid = re.findall(r'[0-9]+', stdout_data)[0]
-        jobids.append(jobid)
-    except subprocess.CalledProcessError, cpe:
-        print('Error {}: {}'.format(cpe.returncode, cpe.output), file=sys.stderr)
-        sys.stderr.flush()
-        sys.exit(2)
-    else:
-        if stderr_data:
-            print("[STDERR: {}".format(stderr_data), file=sys.stderr)
-            sys.stderr.flush()
-        print("Train on {}, Test on {}, feature set {}submitted".format(train_set_name, test_set_name, featureset))
+        # Add job to list
+        jobs.append(job)
 
-# run a job that cleans up and merges the results on disk
-if evaluate or cross_validate:
-    cleanup_script = os.path.join(thispath, "cleanup_evaluate.sh")
-    command_str = "/local/research/linux/sge6_2u6/bin/lx24-amd64/qsub -q nlp.q -b y -o /dev/null -j y -N cleanup -hold_jid {} 'bash {} {} {} {} {} {}'".format(",".join(jobids),
-                                                                                                                                                               cleanup_script,
-                                                                                                                                                               resultspath,
-                                                                                                                                                               scriptpath,
-                                                                                                                                                               logpath,
-                                                                                                                                                               resultsfile,
-                                                                                                                                                               logfile)
-elif predict:
-    cleanup_script = os.path.join(thispath, "cleanup_predict.sh")
-    command_str = "/local/research/linux/sge6_2u6/bin/lx24-amd64/qsub -q nlp.q -b y -o /dev/null -j y -N cleanup -hold_jid {} 'bash {} {} {} {}'".format(",".join(jobids),
-                                                                                                                                                         cleanup_script,
-                                                                                                                                                         scriptpath,
-                                                                                                                                                         logpath,
-                                                                                                                                                         logfile)
+    # submit the jobs
+    processed_jobs = process_jobs(jobs)
 
-try:
-    qsub_proc = subprocess.Popen(command_str, stderr=subprocess.PIPE, stdin=None, stdout=subprocess.PIPE, shell=True)
-    stdout_data, stderr_data = qsub_proc.communicate()
-except subprocess.CalledProcessError, cpe:
-    print('Error {}: {}'.format(cpe.returncode, cpe.output), file=sys.stderr)
-    sys.stderr.flush()
-    sys.exit(2)
-else:
-    if stderr_data:
-        print("[STDERR: {}".format(stderr_data), file=sys.stderr)
-        sys.stderr.flush()
-    print('Cleanup job submitted')
+    # Print out results
+    with open(resultsfile, 'w') as output_file:
+        for processed_job in processed_jobs:
+            for result_tuple_list in processed_job.ret:
+                for result_tuple in result_tuple_list:
+                    print(result_tuple, file=output_file)
+
+
+if __name__ == '__main__':
+    # Get command line arguments
+    parser = argparse.ArgumentParser(description="Runs a bunch of sklearn jobs in parallel on the cluster given a config file.",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                     conflict_handler='resolve')
+    parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.')
+    args = parser.parse_args()
+
+    run_configuration(args.config_file)
