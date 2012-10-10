@@ -221,7 +221,7 @@ def convert_labels_to_array(labels, label_list):
 
 
 def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic', param_grid_file=None, modelfile=None,
-          vocabfile=None, cv_folds=5, grid_search=True, grid_objective="classifier.f1_score_micro"):
+          vocabfile=None, cv_folds=5, grid_search=True, grid_objective=f1_score_micro):
     '''
     Train a classificatiion model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.
     '''
@@ -248,12 +248,9 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_
     if feat_vectorizer is None:
         feat_vectorizer = extract_feature_vectorizer(features)  # create feature name -> value mapping
 
-    # create a fake scaler for naive bayes
-    fake_scaler = Scaler(with_mean=False, with_std=False)
-
     # Create scaler if we weren't passed one
-    if scaler is None:
-        scaler = Scaler(with_mean=False, with_std=False)
+    if scaler is None and model_type != 'naivebayes':
+        scaler = Scaler()
 
     # vectorize and scale the features
     xtrain = feat_vectorizer.transform(features)
@@ -262,7 +259,7 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_
     if model_type in ['naivebayes', 'rforest']:
         xtrain = xtrain.todense()
 
-    xtrain_scaled = fake_scaler.transform(xtrain) if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
+    xtrain_scaled = xtrain if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
 
     # set up a grid searcher if we are asked to
     estimator, param_grid = create_estimator(model_type)
@@ -313,9 +310,6 @@ def evaluate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label
     '''
     features = [extract_features(x) for x in examples]
 
-    # create a fake scaler for naive bayes
-    fake_scaler = Scaler(with_mean=False, with_std=False)
-
     # transform and scale the features
     xtest = feat_vectorizer.transform(features)
 
@@ -323,7 +317,7 @@ def evaluate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label
     if model_type in ['naivebayes', 'rforest']:
         xtest = xtest.todense()
 
-    xtest_scaled = fake_scaler.transform(xtest) if model_type == 'naivebayes' else scaler.fit_transform(xtest)
+    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.fit_transform(xtest)
     ytest = np.array([label_dict[extract_label(x)] for x in examples])
 
     # make the prediction on the test data
@@ -371,12 +365,9 @@ def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, predic
     '''
     features = [extract_features(x) for x in examples]
 
-    # create a fake scaler for naive bayes
-    fake_scaler = Scaler(with_mean=False, with_std=False)
-
     # transform and scale the features
     xtest = feat_vectorizer.transform(features)
-    xtest_scaled = fake_scaler.transform(xtest) if model_type == 'naivebayes' else scaler.fit_transform(xtest)
+    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.fit_transform(xtest)
 
     # make the prediction on the test data
     yhat = model.predict(xtest_scaled)
@@ -396,9 +387,6 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
     '''
     features = [extract_features(x) for x in examples]
 
-    # create a fake scaler for naive bayes
-    fake_scaler = Scaler(with_mean=False, with_std=False)
-
     # transform and scale the features
     X = feat_vectorizer.transform(features)
 
@@ -407,7 +395,7 @@ def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse
         X = X.todense()
 
     # scale the features
-    X_scaled = fake_scaler.transform(X) if model_type == 'naivebayes' else scaler.fit_transform(X)
+    X_scaled = X if model_type == 'naivebayes' else scaler.fit_transform(X)
     y = np.array([label_dict[extract_label(x)] for x in examples])
 
     # compute the five-fold cross-validation iterator
