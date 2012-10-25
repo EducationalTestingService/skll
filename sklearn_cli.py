@@ -27,10 +27,6 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn.feature_extraction import DictVectorizer
 from texttable import Texttable
 
-# More globals for class mapping
-class_num_dict = dict()
-reverse_class_num_dict = dict()
-
 
 def sanitize_line(line):
     ''' Return copy of line with all non-ASCII characters replaced with <U1234> sequences where 1234 is the value of ord() for the character. '''
@@ -93,6 +89,7 @@ def load_megam_file(path, dict_vectorizer=None):
     '''
     # Initialize class list
     classes = []
+    class_num_dict = dict()
 
     # Load MegaM file into sparse array
     if not dict_vectorizer:
@@ -102,16 +99,16 @@ def load_megam_file(path, dict_vectorizer=None):
         data = dict_vectorizer.transform(megam_dict_iter(path, classes)).tocsr()
 
     # Setup mappings from class names to numbers
-    for class_num, class_name in enumerate(sorted(set(classes))):
+    class_names = sorted(set(classes))
+    for class_num, class_name in enumerate(class_names):
         class_num_dict[class_name] = class_num
-        reverse_class_num_dict[class_num] = class_name
 
-    return (dict_vectorizer, data, np.array([class_num_dict[class_name] for class_name in classes]))
+    return (dict_vectorizer, data, np.array([class_num_dict[class_name] for class_name in classes]), class_names)
 
 
 def process_fold(arg_tuple):
     ''' Function to process a given fold. Meant to be used asynchronously. '''
-    fold_learner, fold_train_data, fold_test_data, fold_train_classes, fold_test_classes, k, rev_class_num_dict = arg_tuple
+    fold_learner, fold_train_data, fold_test_data, fold_train_classes, fold_test_classes, k, class_names = arg_tuple
     actual_dict = defaultdict(set)
     pred_dict = defaultdict(set)
 
@@ -125,8 +122,8 @@ def process_fold(arg_tuple):
     print(fold_prefix + "Testing model...".format(k), file=sys.stderr)
     sys.stderr.flush()
     raw_predictions = fold_learner.predict(fold_test_data)
-    pred_list = [rev_class_num_dict[pred_class] for pred_class in raw_predictions]
-    actual_list = [rev_class_num_dict[actual_class] for actual_class in fold_test_classes]
+    pred_list = [class_names[pred_class] for pred_class in raw_predictions]
+    actual_list = [class_names[actual_class] for actual_class in fold_test_classes]
     for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
         pred_dict[pred_class].add(line_num)
         actual_dict[actual_class].add(line_num)
@@ -140,7 +137,6 @@ def process_fold(arg_tuple):
         result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
         result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
 
-    # return (fold_score, result_dict, ConfusionMatrix(actual_list, pred_list))
     return (fold_score, result_dict, metrics.confusion_matrix(fold_test_classes, raw_predictions).tolist())
 
 
@@ -185,7 +181,7 @@ def print_fancy_output(result_tuples):
         print("Accuracy = {:.1f}%".format(score_sum / num_folds))
 
 
-if __name__ == '__main__':
+def main():
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Takes a MegaM-compatible data file and uses sklearn to perform either k-fold cross-validation or training and testing.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -225,13 +221,13 @@ if __name__ == '__main__':
 
     # If given a test file, train on train_data, and test on test_data
     if args.test_file:
-        vectorizer, test_data, test_classes = load_megam_file(args.test_file, dict_vectorizer=vectorizer)
-        print_fancy_output((process_fold((learner, train_data, test_data, train_classes, test_classes, 0, reverse_class_num_dict)),))
+        vectorizer, test_data, test_classes, class_names = load_megam_file(args.test_file, dict_vectorizer=vectorizer)
+        print_fancy_output((process_fold((learner, train_data, test_data, train_classes, test_classes, 0, class_names)),))
 
     # Otherwise do cross validation
     else:
         # Pool.map needs pickle-able 1-argument function
-        arg_tuple_list = [(learner, train_data[train_index], train_data[test_index], train_classes[train_index], train_classes[test_index], fold_num, reverse_class_num_dict)
+        arg_tuple_list = [(learner, train_data[train_index], train_data[test_index], train_classes[train_index], train_classes[test_index], fold_num, class_names)
                           for fold_num, (train_index, test_index) in enumerate(StratifiedKFold(train_classes, args.num_folds, indices=True), start=1)]
 
         # Process each fold
@@ -241,3 +237,7 @@ if __name__ == '__main__':
             results = pool.map(process_fold, arg_tuple_list)
 
         print_fancy_output(results)
+
+
+if __name__ == '__main__':
+    main()

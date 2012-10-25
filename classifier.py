@@ -11,10 +11,12 @@ import os
 import cPickle as pickle
 import subprocess
 import sys
+from collections import defaultdict
 from itertools import chain, islice, izip
 
 import numpy as np
 from bs4 import UnicodeDammit
+from nltk.metrics import precision, recall, f_measure
 from sklearn import metrics
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -209,15 +211,11 @@ def convert_labels_to_array(labels, label_list):
     ''' Given a list of all labels in the dataset and a list of the unique labels in the set, convert the first list to an array of numbers. '''
     label_dict = {}
 
-    # we need a dictionary that stores int label to real label mapping for later prediction extraction
-    inverse_label_dict = {}
-
     for i, label in enumerate(label_list):
         label_dict[label] = i
-        inverse_label_dict[i] = label
 
     out_array = np.array([label_dict[label] for label in labels])
-    return out_array, label_dict, inverse_label_dict
+    return out_array, label_dict, label_list
 
 
 def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic', param_grid_file=None, modelfile=None,
@@ -252,13 +250,14 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_
     if scaler is None and model_type != 'naivebayes':
         scaler = Scaler()
 
-    # vectorize and scale the features
+    # vectorize the features
     xtrain = feat_vectorizer.transform(features)
 
     # Convert to dense if using naivebayes or rforest
     if model_type in ['naivebayes', 'rforest']:
         xtrain = xtrain.todense()
 
+    # Scale features if necessary
     xtrain_scaled = xtrain if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
 
     # set up a grid searcher if we are asked to
@@ -299,64 +298,39 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_
         with open(vocabfile, "w") as f:
             pickle.dump([feat_vectorizer, scaler, label_dict, inverse_label_dict], f, -1)
 
-    # train_without_featurization function used to only return model and score, so fix references to that
     return model, score, feat_vectorizer, scaler, label_dict, inverse_label_dict
 
 
 def evaluate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type='logistic', prediction_prefix=None):
     '''
     Evaluates a given model on a given dev or test example set.
-    Returns the confusion matrix, the per-class PRFs and the overall accuracy.
+    Returns the confusion matrix, the overall accuracy, and the per-class PRFs.
     '''
-    features = [extract_features(x) for x in examples]
+    # make the prediction on the test data
+    yhat = predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, prediction_prefix, model_type=model_type)
 
-    # transform and scale the features
-    xtest = feat_vectorizer.transform(features)
-
-    # Convert to dense if using naivebayes or rforest
-    if model_type in ['naivebayes', 'rforest']:
-        xtest = xtest.todense()
-
-    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.fit_transform(xtest)
+    # extract actual labels
     ytest = np.array([label_dict[extract_label(x)] for x in examples])
 
-    # make the prediction on the test data
-    yhat = model.predict(xtest_scaled)
+    # Create prediction dicts for easier scoring
+    actual_dict = defaultdict(set)
+    pred_dict = defaultdict(set)
+    pred_list = [inverse_label_dict[pred_class] for pred_class in yhat]
+    actual_list = [inverse_label_dict[actual_class] for actual_class in ytest]
+    for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
+        pred_dict[pred_class].add(line_num)
+        actual_dict[actual_class].add(line_num)
 
-    # get the overall accuracy
-    acc = accuracy(ytest, yhat)
-    results = [round(acc, 3)]
+    # Calculate metrics
+    result_dict = defaultdict(dict)
+    overall_accuracy = metrics.zero_one_score(ytest, yhat) * 100
+    # Store results
+    for actual_class in sorted(actual_dict.iterkeys()):
+        result_dict[actual_class]["Precision"] = precision(actual_dict[actual_class], pred_dict[actual_class])
+        result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
+        result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
 
-    # get the confusion matrix and the per class accuracies
-    # conf_mat = metrics.confusion_matrix(ytest, yhat)
-    # if conf_mat.shape == (3, 3):
-    #     per_class_accuracies = compute_class_accuracies(conf_mat)
-    # else:
-    #     per_class_accuracies = [round(f, 3) for f in [acc, acc]]
-    # results.extend(per_class_accuracies)
-
-    # compute the per-class PRFs
-    precisions, recalls, f1_scores, _ = metrics.precision_recall_fscore_support(ytest, yhat)
-
-    # reverse the PRF lists to get 'PNE' ordering instead of the alphabetical ordering 'ENP' (or 'SO' ordering instead of 'OS' ordering)
-    precisions = [round(100 * f, 0) for f in precisions[::-1]]
-    recalls = [round(100 * f, 0) for f in recalls[::-1]]
-    f1_scores = [round(100 * f, 0) for f in f1_scores[::-1]]
-
-    # append the PRF values in PNE/SO order to the results list
-    for value in chain.from_iterable(izip(precisions, recalls, f1_scores)):
-        results.append(value)
-
-    # write out the predictions if we are asked to
-    if prediction_prefix:
-        prediction_file = prediction_prefix + '-{}.predictions'.format(model_type)
-        with open(prediction_file, "w") as predictionfh:
-            for pred in yhat:
-                print(inverse_label_dict[pred], file=predictionfh)
-            print(file=predictionfh)
-
-    # return the results list
-    return results
+    return (metrics.confusion_matrix(ytest, yhat).tolist(), overall_accuracy, result_dict)
 
 
 def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, prediction_prefix, model_type='logistic'):
@@ -367,7 +341,7 @@ def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, predic
 
     # transform and scale the features
     xtest = feat_vectorizer.transform(features)
-    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.fit_transform(xtest)
+    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.transform(xtest)
 
     # make the prediction on the test data
     yhat = model.predict(xtest_scaled)
@@ -379,67 +353,50 @@ def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, predic
             print(inverse_label_dict[pred], file=predictionfh)
         print(file=predictionfh)
 
+    return yhat
 
-def cross_validate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type='logistic', prediction_prefix=None, stratified=True, cv_folds=10):
+
+def cross_validate(examples, model, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic', prediction_prefix=None, stratified=True,
+                   cv_folds=10, grid_search=False, grid_search_folds=5, grid_objective=f1_score_micro):
     '''
     Cross-validates a given model on the training examples.
-    Returns the confusion matrix, the per-class PRFs and the overall accuracy.
+    Returns a list of tuples containing the confusion matrix, overall accuracy, and per-class PRFs for each fold..
     '''
     features = [extract_features(x) for x in examples]
 
-    # transform and scale the features
-    X = feat_vectorizer.transform(features)
+    # Create scaler if we weren't passed one
+    if scaler is None and model_type != 'naivebayes':
+        scaler = Scaler()
 
-    # Convert to dense if using naivebayes or rforest
-    if model_type in ['naivebayes', 'rforest']:
-        X = X.todense()
+    # Create feat_vectorizer if we weren't passed one
+    if feat_vectorizer is None:
+        feat_vectorizer = extract_feature_vectorizer(features)  # create feature name -> value mapping
 
-    # scale the features
-    X_scaled = X if model_type == 'naivebayes' else scaler.fit_transform(X)
-    y = np.array([label_dict[extract_label(x)] for x in examples])
+    # Create label_dict if we weren't passed one
+    if label_dict is None:
+        labels = [extract_label(x) for x in examples]
 
-    # compute the five-fold cross-validation iterator
+        # extract list of unique labels if we are doing classification
+        label_list = np.unique(labels).tolist()
+
+        # convert labels to numbers if we are doing classification
+        y, label_dict, inverse_label_dict = convert_labels_to_array(labels, label_list)
+    else:
+        y = np.array([label_dict[extract_label(x)] for x in examples])
+
+    # setup the cross-validation iterator
     kfold = StratifiedKFold(y, k=cv_folds) if stratified else KFold(y, k=cv_folds)
 
     # handle each fold separately and accumulate the predictions and the numbers
-    yhat = -1 * np.ones(X_scaled.shape[0])
+    results = []
     for train_index, test_index in kfold:
-        results = []
-        fold_model = model.fit(X_scaled[train_index], y[train_index])
-        fold_ytest = y[test_index]
-        fold_yhat = fold_model.predict(X_scaled[test_index])
-        yhat[test_index] = fold_yhat
+        # Train model
+        fold_model, _, feat_vectorizer, scaler, label_dict, inverse_label_dict = train(examples[train_index], feat_vectorizer=feat_vectorizer, scaler=scaler, label_dict=label_dict,
+                                                                                       inverse_label_dict=inverse_label_dict, model_type=model_type, cv_folds=grid_search_folds,
+                                                                                       grid_search=grid_search, grid_objective=grid_objective)
 
-        # get the fold accuracy
-        fold_accuracy = metrics.zero_one_score(fold_ytest, fold_yhat)
-        results = [fold_accuracy]
+        # Evaluate model
+        results.append(evaluate(y[test_index], fold_model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=model_type, prediction_prefix=prediction_prefix))
 
-        # get the confusion matrix and the per class accuracies for this fold -- don't actually do the per class accuracies anymore
-        results.append(metrics.confusion_matrix(fold_ytest, fold_yhat))
-
-        # compute the per-class PRFs
-        precisions, recalls, f1_scores, _ = metrics.precision_recall_fscore_support(fold_ytest, fold_yhat)
-
-        # round the per-class PRFs (used to reverse these, but can do that after the fact)
-        precisions = [round(100 * f, 0) for f in precisions]
-        recalls = [round(100 * f, 0) for f in recalls]
-        f1_scores = [round(100 * f, 0) for f in f1_scores]
-
-        # append the PRF values to the results list
-        results.extend(chain.from_iterable(izip(precisions, recalls, f1_scores)))
-
-    # make sure there are no items for which we haven't generated a prediction
-    missing = len(yhat[yhat == -1])
-    if missing > 0:
-        print('\terror: missing predictions.', file=sys.stderr)
-
-    # write out the predictions if we are asked to
-    if prediction_prefix:
-        prediction_file = prediction_prefix + '-{}.predictions'.format(model_type)
-        with open(prediction_file, "w") as predictionfh:
-            for pred in yhat:
-                print(inverse_label_dict[pred], file=predictionfh)
-            print(file=predictionfh)
-
-    # return the results list
+    # return list of results for all folds
     return results

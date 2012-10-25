@@ -38,7 +38,10 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
     result_list = []
 
     with open(log_path, 'w') as log_file:
-        print("Training on {}, Test on {}, feature set {} ...".format(train_set_name, test_set_name, featureset), file=log_file)
+        if cross_validate:
+            print("Cross-validating on {}, feature set {} ...".format(train_set_name, featureset), file=log_file)
+        else:
+            print("Training on {}, Test on {}, feature set {} ...".format(train_set_name, test_set_name, featureset), file=log_file)
 
         # tunable parameters for each model type
         tunable_parameters = {'dtree': ['max_depth', 'max_features'], \
@@ -50,7 +53,8 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
 
         # load the training and test examples
         train_examples = classifier.load_examples(os.path.join(train_path, featureset + suffix))
-        test_examples = classifier.load_examples(os.path.join(test_path, featureset + suffix))
+        if not cross_validate:
+            test_examples = classifier.load_examples(os.path.join(test_path, featureset + suffix))
 
         # the name of the feature vocab file
         vocabfile = os.path.join(vocabpath, '{}.vocab'.format(featureset))
@@ -202,7 +206,7 @@ def run_configuration(config_file):
         train_set_name = os.path.basename(train_path)
         test_set_name = os.path.basename(test_path)
 
-        # instantiate the python template into a python script
+        # create a name for the job
         jobname = 'run_{}_{}_{}'.format(train_set_name, test_set_name, featureset)
 
         # change the prediction prefix to include the feature set
