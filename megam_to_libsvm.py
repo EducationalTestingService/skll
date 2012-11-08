@@ -58,18 +58,19 @@ def convert_to_libsvm(lines):
     for line in lines:
         line_fields = set()
         # Process encoding
-        line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
+        line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup.strip()
 
-        # Ignore comments
-        if not line.startswith('#'):
+        # Ignore comments (and TEST/DEV lines)
+        if not line.startswith('#') and not line == 'TEST' and not line == 'DEV':
             result_string = ''
-            split_line = line.strip().split()
+            split_line = line.split()
             result_string += unicode(class_num_dict[split_line[0]])
             # Handle features if there are any
             if len(split_line) > 1:
                 del split_line[0]
                 # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
-                for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]], [float(value) if value != 'N/A' else 0.0 for value in split_line[1::2]])):
+                for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]],
+                                                    [float(value) if value != 'N/A' else 0.0 for value in split_line[1::2]])):
                     # Check for duplicates
                     if field_num in line_fields:
                         field_name = (field_name for field_name, f_num in field_num_dict.items() if f_num == field_num).next()
@@ -100,13 +101,13 @@ if __name__ == '__main__':
 
     # Iterate through converted MegaM file
     for line in line_list:
-        print(line)
+        print(line.encode('utf-8'))
 
     # Print out mappings to file
     print("CLASS NUM\tCLASS NAME", file=args.mappingfile)
     for class_name, class_num in sorted(class_num_dict.iteritems(), key=itemgetter(1)):
-        print("{}\t{}".format(class_num, class_name), file=args.mappingfile)
+        print("{}\t{}".format(class_num, class_name).encode('utf-8'), file=args.mappingfile)
 
     print("\n\nFEATURE NUM\tFEATURE NAME", file=args.mappingfile)
     for field_name, field_num in sorted(field_num_dict.iteritems(), key=itemgetter(1)):
-        print("{}\t{}".format(field_num, field_name), file=args.mappingfile)
+        print("{}\t{}".format(field_num, field_name).encode('utf-8'), file=args.mappingfile)
