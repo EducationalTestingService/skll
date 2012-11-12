@@ -135,8 +135,8 @@ def run_configuration(config_file):
     given_featuresets = eval(configurator.get("Input", "featuresets"))
 
     # get all the input paths and directories
-    train_path = configurator.get("Input", "train_location")
-    test_path = configurator.get("Input", "test_location")
+    train_path = configurator.get("Input", "train_location").rstrip('/')  # remove trailing / at the end of path name
+    test_path = configurator.get("Input", "test_location").rstrip('/')
     suffix = configurator.get("Input", "suffix")
 
     # get all the output files and directories
@@ -201,9 +201,6 @@ def run_configuration(config_file):
 
     # For each feature set
     for featureset in given_featuresets:
-
-        train_path = re.sub('\/$','',train_path) #remove trailing / at the end of path name
-        
         # store training/test set names for later use
         train_set_name = os.path.basename(train_path)
         test_set_name = os.path.basename(test_path) if test_path else "cv"
