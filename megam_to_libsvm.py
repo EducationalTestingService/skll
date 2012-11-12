@@ -11,7 +11,7 @@ from __future__ import print_function, unicode_literals
 import argparse
 import sys
 from collections import defaultdict
-from itertools import izip
+from itertools import islice, izip
 from operator import itemgetter
 
 from bs4 import UnicodeDammit
@@ -69,8 +69,8 @@ def convert_to_libsvm(lines):
             if len(split_line) > 1:
                 del split_line[0]
                 # Loop through all feature-value pairs printing out pairs separated by commas (and with feature names replaced with numbers)
-                for field_num, value in sorted(izip([field_num_dict[field_name] for field_name in split_line[::2]],
-                                                    [float(value) if value != 'N/A' else 0.0 for value in split_line[1::2]])):
+                for field_num, value in sorted(izip((field_num_dict[field_name] for field_name in islice(split_line, 0, None, 2)),
+                                                    (float(value) if value != 'N/A' else 0.0 for value in islice(split_line, 1, None, 2)))):
                     # Check for duplicates
                     if field_num in line_fields:
                         field_name = (field_name for field_name, f_num in field_num_dict.items() if f_num == field_num).next()
@@ -84,7 +84,8 @@ def convert_to_libsvm(lines):
     return result_list, class_num_dict, field_num_dict
 
 
-if __name__ == '__main__':
+def main():
+    ''' Main function '''
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Takes a MegaM-compatible file to be run with the '-fvals' switch and outputs a " +
                                                  "LibSVM/LibLinear-compatible file to STDOUT.",
@@ -111,3 +112,6 @@ if __name__ == '__main__':
     print("\n\nFEATURE NUM\tFEATURE NAME", file=args.mappingfile)
     for field_name, field_num in sorted(field_num_dict.iteritems(), key=itemgetter(1)):
         print("{}\t{}".format(field_num, field_name).encode('utf-8'), file=args.mappingfile)
+
+if __name__ == '__main__':
+    main()
