@@ -202,6 +202,8 @@ def run_configuration(config_file):
     # For each feature set
     for featureset in given_featuresets:
 
+        train_path = re.sub('\/$','',train_path) #remove trailing / at the end of path name
+        
         # store training/test set names for later use
         train_set_name = os.path.basename(train_path)
         test_set_name = os.path.basename(test_path) if test_path else "cv"
