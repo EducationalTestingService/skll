@@ -289,7 +289,6 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_
         with open(modelfile, "w") as f:
             pickle.dump(model, f, -1)
 
-
     if vocabfile:
         # create the directory if it doesn't exist
         vocabdir = os.path.dirname(vocabfile)
