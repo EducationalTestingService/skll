@@ -204,7 +204,7 @@ def run_configuration(config_file):
 
         # store training/test set names for later use
         train_set_name = os.path.basename(train_path)
-        test_set_name = os.path.basename(test_path)
+        test_set_name = os.path.basename(test_path) if test_path else "cv"
 
         # create a name for the job
         jobname = 'run_{}_{}_{}'.format(train_set_name, test_set_name, featureset)
