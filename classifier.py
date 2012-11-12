@@ -247,19 +247,19 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_
     if feat_vectorizer is None:
         feat_vectorizer = extract_feature_vectorizer(features)  # create feature name -> value mapping
 
-    # Create scaler if we weren't passed one
-    if scaler is None and model_type != 'naivebayes':
-        scaler = Scaler()
-
     # vectorize the features
     xtrain = feat_vectorizer.transform(features)
+
+    # Create scaler if we weren't passed one
+    if scaler is None and model_type != 'naivebayes':
+        scaler = Scaler(with_mean=(not issparse(xtrain)))
 
     # Convert to dense if using naivebayes or rforest
     if model_type in ['naivebayes', 'rforest']:
         xtrain = xtrain.todense()
 
     # Scale features if necessary
-    xtrain_scaled = xtrain if model_type == 'naivebayes' else scaler.fit_transform(xtrain, with_mean=(not issparse(xtrain)))
+    xtrain_scaled = xtrain if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
 
     # set up a grid searcher if we are asked to
     estimator, param_grid = create_estimator(model_type)
@@ -341,7 +341,7 @@ def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, predic
 
     # transform and scale the features
     xtest = feat_vectorizer.transform(features)
-    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.transform(xtest, with_mean=(not issparse(xtest)))
+    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.transform(xtest)
 
     # make the prediction on the test data
     yhat = model.predict(xtest_scaled)
