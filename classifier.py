@@ -17,6 +17,7 @@ from itertools import chain, islice, izip
 import numpy as np
 from bs4 import UnicodeDammit
 from nltk.metrics import precision, recall, f_measure
+from scipy.sparse import issparse
 from sklearn import metrics
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -258,7 +259,7 @@ def train(examples, feat_vectorizer=None, scaler=None, label_dict=None, inverse_
         xtrain = xtrain.todense()
 
     # Scale features if necessary
-    xtrain_scaled = xtrain if model_type == 'naivebayes' else scaler.fit_transform(xtrain)
+    xtrain_scaled = xtrain if model_type == 'naivebayes' else scaler.fit_transform(xtrain, with_mean=(not issparse(xtrain)))
 
     # set up a grid searcher if we are asked to
     estimator, param_grid = create_estimator(model_type)
@@ -340,7 +341,7 @@ def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, predic
 
     # transform and scale the features
     xtest = feat_vectorizer.transform(features)
-    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.transform(xtest)
+    xtest_scaled = xtest if model_type == 'naivebayes' else scaler.transform(xtest, with_mean=(not issparse(xtest)))
 
     # make the prediction on the test data
     yhat = model.predict(xtest_scaled)
