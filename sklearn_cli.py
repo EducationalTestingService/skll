@@ -217,7 +217,7 @@ def main():
         learner = svm.LinearSVC(penalty=args.penalty, loss=args.loss, dual=args.dual)
 
     # Read training file
-    vectorizer, train_data, train_classes = load_megam_file(args.train_file)
+    vectorizer, train_data, train_classes, class_names = load_megam_file(args.train_file)
 
     # If given a test file, train on train_data, and test on test_data
     if args.test_file:
