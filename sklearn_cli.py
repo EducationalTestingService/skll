@@ -25,7 +25,17 @@ from nltk.metrics import precision, recall, f_measure
 from sklearn import linear_model, svm, metrics
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.preprocessing import Scaler
 from texttable import Texttable
+
+
+class UniqueNumberDict(dict):
+    """ Class for creating sequential unique numbers for each key."""
+
+    def __getitem__(self, key):
+        if key not in self:
+            self[key] = len(self)
+        return dict.__getitem__(self, key)
 
 
 def sanitize_line(line):
@@ -75,7 +85,7 @@ def megam_dict_iter(path, classes):
         print("done", file=sys.stderr)
 
 
-def load_megam_file(path, dict_vectorizer=None):
+def load_megam_file(path, class_num_dict=None, dict_vectorizer=None):
     '''
     Loads a MegaM file into a sparse NumPy matrix
 
@@ -88,22 +98,25 @@ def load_megam_file(path, dict_vectorizer=None):
     @rtype: 2-C{tuple} of L{DictVectorizer} and C{sparse matrix}
     '''
     # Initialize class list
-    classes = []
-    class_num_dict = dict()
+    if class_num_dict is not None:
+        classes = class_num_dict.keys()
+        # print("Classes: {}".format(classes))
+    else:
+        classes = []
+        class_num_dict = UniqueNumberDict()
 
     # Load MegaM file into sparse array
-    if not dict_vectorizer:
+    if dict_vectorizer is None:
         dict_vectorizer = DictVectorizer()
         data = dict_vectorizer.fit_transform(megam_dict_iter(path, classes)).tocsr()
     else:
         data = dict_vectorizer.transform(megam_dict_iter(path, classes)).tocsr()
 
-    # Setup mappings from class names to numbers
-    class_names = sorted(set(classes))
-    for class_num, class_name in enumerate(class_names):
-        class_num_dict[class_name] = class_num
+    class_array = np.array([class_num_dict[class_name] for class_name in classes])
 
-    return (dict_vectorizer, data, np.array([class_num_dict[class_name] for class_name in classes]), class_names)
+    # print("Class num dict keys: {}".format(class_num_dict.keys()))
+
+    return (dict_vectorizer, data, class_array, sorted(class_num_dict.keys()))
 
 
 def process_fold(arg_tuple):
@@ -112,16 +125,27 @@ def process_fold(arg_tuple):
     actual_dict = defaultdict(set)
     pred_dict = defaultdict(set)
 
+    # Scale data
+    scaler = Scaler(with_mean=False)
+    fold_train_data = scaler.fit_transform(fold_train_data)
+    fold_test_data = scaler.transform(fold_test_data)
+
     # Train model
     fold_prefix = "[Fold {}]\t".format(k) if k > 0 else ""
     print(fold_prefix + "Training model...", file=sys.stderr)
     sys.stderr.flush()
+    print("Train data: {}".format(fold_train_data))
+    print("Train classes: {}".format(fold_train_classes))
+    print("Test data: {}".format(fold_test_data))
+    print("Test classes: {}".format(fold_test_classes))
     fold_learner.fit(fold_train_data, fold_train_classes)
 
     # Get predictions
     print(fold_prefix + "Testing model...".format(k), file=sys.stderr)
     sys.stderr.flush()
     raw_predictions = fold_learner.predict(fold_test_data)
+    print("Learner: {}".format(fold_learner))
+    print("Predictions: {}".format(raw_predictions))
     pred_list = [class_names[pred_class] for pred_class in raw_predictions]
     actual_list = [class_names[actual_class] for actual_class in fold_test_classes]
     for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
@@ -204,7 +228,7 @@ def main():
     args = parser.parse_args()
 
     # Create process pool if necessary
-    if not args.no_parallel:
+    if not (args.no_parallel or args.test_file):
         pool = Pool(processes=args.num_folds)
 
     # Handle dual/primal variable setting
@@ -217,11 +241,12 @@ def main():
         learner = svm.LinearSVC(penalty=args.penalty, loss=args.loss, dual=args.dual)
 
     # Read training file
-    vectorizer, train_data, train_classes, class_names = load_megam_file(args.train_file)
+    class_num_dict = UniqueNumberDict()
+    vectorizer, train_data, train_classes, class_names = load_megam_file(args.train_file, class_num_dict=class_num_dict)
 
     # If given a test file, train on train_data, and test on test_data
     if args.test_file:
-        vectorizer, test_data, test_classes, class_names = load_megam_file(args.test_file, dict_vectorizer=vectorizer)
+        vectorizer, test_data, test_classes, class_names = load_megam_file(args.test_file, class_num_dict=class_num_dict,  dict_vectorizer=vectorizer)
         print_fancy_output((process_fold((learner, train_data, test_data, train_classes, test_classes, 0, class_names)),))
 
     # Otherwise do cross validation
