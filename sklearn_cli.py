@@ -111,7 +111,7 @@ def load_megam_file(path, class_num_dict=None, dict_vectorizer=None):
 
     class_array = np.array([class_num_dict[class_name] for class_name in classes])
 
-    print("Class num dict keys: {}".format(class_num_dict.keys()))
+    # print("Class num dict keys: {}".format(class_num_dict.keys()))
 
     return (dict_vectorizer, data, class_array, sorted(class_num_dict.keys()))
 
@@ -131,20 +131,20 @@ def process_fold(arg_tuple):
     fold_prefix = "[Fold {}]\t".format(k) if k > 0 else ""
     print(fold_prefix + "Training model...", file=sys.stderr)
     sys.stderr.flush()
-    print("Train data: {}".format(fold_train_data))
-    print("Train classes: {}".format(fold_train_classes))
-    print("Test data: {}".format(fold_test_data))
-    print("Test classes: {}".format(fold_test_classes))
-    print("Num test classes: {}".format(len(fold_test_classes)))
+    # print("Train data: {}".format(fold_train_data))
+    # print("Train classes: {}".format(fold_train_classes))
+    # print("Test data: {}".format(fold_test_data))
+    # print("Test classes: {}".format(fold_test_classes))
+    # print("Num test classes: {}".format(len(fold_test_classes)))
     fold_learner.fit(fold_train_data, fold_train_classes)
 
     # Get predictions
     print(fold_prefix + "Testing model...".format(k), file=sys.stderr)
     sys.stderr.flush()
     raw_predictions = fold_learner.predict(fold_test_data)
-    print("Learner: {}".format(fold_learner))
-    print("Predictions: {}".format(raw_predictions))
-    print("Num predictions: {}".format(len(raw_predictions)))
+    # print("Learner: {}".format(fold_learner))
+    # print("Predictions: {}".format(raw_predictions))
+    # print("Num predictions: {}".format(len(raw_predictions)))
     pred_list = [class_names[pred_class] for pred_class in raw_predictions]
     actual_list = [class_names[actual_class] for actual_class in fold_test_classes]
     for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
