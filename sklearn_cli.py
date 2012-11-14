@@ -160,6 +160,7 @@ def process_fold(arg_tuple):
         result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
         result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
 
+
     return (fold_score, result_dict, metrics.confusion_matrix(fold_test_classes, raw_predictions).tolist())
 
 
@@ -171,12 +172,16 @@ def print_fancy_output(result_tuples):
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
     classes = sorted(result_tuples[0][1].iterkeys())
+    
+
     for k, (fold_score, result_dict, conf_matrix) in enumerate(result_tuples, start=1):
         if num_folds > 1:
             print("\nFold: {}".format(k))
         result_table = Texttable(max_width=0)
-        result_table.set_cols_align(["r"] * (len(classes) + 4))
-        result_table.add_rows([[""] + classes + ["Precision", "Recall", "F-measure"]], header=True)
+        result_table.set_cols_align(["r"] * 4)
+        result_table.add_rows([[""] + ["Precision", "Recall", "F-measure"]], header=True)
+        #result_table.set_cols_align(["r"] * (len(classes) + 4))
+        #result_table.add_rows([[""] + classes + ["Precision", "Recall", "F-measure"]], header=True)
         for i, actual_class in enumerate(classes):
             conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
             class_prec = (result_dict[actual_class]["Precision"] * 100) if "Precision" in result_dict[actual_class] and result_dict[actual_class]["Precision"] else 0
@@ -185,7 +190,8 @@ def print_fancy_output(result_tuples):
             prec_sum_dict[actual_class] += class_prec
             recall_sum_dict[actual_class] += class_recall
             f_sum_dict[actual_class] += class_f
-            result_table.add_row([actual_class] + conf_matrix[i] + ["{:.1f}%".format(class_prec), "{:.1f}%".format(class_recall), "{:.1f}%".format(class_f)])
+            #result_table.add_row([actual_class] + conf_matrix[i] + ["{:.1f}%".format(class_prec), "{:.1f}%".format(class_recall), "{:.1f}%".format(class_f)])
+            result_table.add_row([actual_class] + ["{:.1f}%".format(class_prec), "{:.1f}%".format(class_recall), "{:.1f}%".format(class_f)])
         print(result_table.draw())
         print("(row = reference; column = predicted)")
         print("Accuracy = {:.1f}%\n".format(fold_score))
@@ -224,6 +230,7 @@ def main():
     #                     action='store_true')
     parser.add_argument('-v', '--verbose', help='Print debugging information to STDERR.', action='store_true')
     parser.add_argument('--no_parallel', help="Do not run the folds in parallel.", action='store_true')
+
     args = parser.parse_args()
 
     # Create process pool if necessary
