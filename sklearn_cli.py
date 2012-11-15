@@ -167,6 +167,13 @@ def process_fold(arg_tuple):
 
     return (fold_score, result_dict, metrics.confusion_matrix(fold_test_classes, raw_predictions, labels=range(len(class_names))).tolist())
 
+def get_stat_string(class_result_dict, stat):
+    ''' Little helper for getting output for precision, recall, and f-score columns in confusion matrix. '''
+    if stat in class_result_dict and class_result_dict[stat]:
+        return "{:.1f}%".format(class_result_dict[stat] * 100)
+    else:
+        return "N/A"
+
 
 def print_fancy_output(result_tuples):
     ''' Function to take all of the results from all of the folds and print nice tables with the resluts. '''
@@ -176,7 +183,7 @@ def print_fancy_output(result_tuples):
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
     classes = sorted(result_tuples[0][1].iterkeys())
-
+    folds_with_class = defaultdict(int)
 
     for k, (fold_score, result_dict, conf_matrix) in enumerate(result_tuples, start=1):
         if num_folds > 1:
@@ -186,13 +193,15 @@ def print_fancy_output(result_tuples):
         result_table.add_rows([[""] + classes + ["Precision", "Recall", "F-measure"]], header=True)
         for i, actual_class in enumerate(classes):
             conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
-            class_prec = (result_dict[actual_class]["Precision"] * 100) if "Precision" in result_dict[actual_class] and result_dict[actual_class]["Precision"] else 0
-            class_recall = (result_dict[actual_class]["Recall"] * 100) if "Recall" in result_dict[actual_class] and result_dict[actual_class]["Recall"] else 0
-            class_f = (result_dict[actual_class]["F-measure"] * 100) if "F-measure" in result_dict[actual_class] and result_dict[actual_class]["F-measure"] else 0
-            prec_sum_dict[actual_class] += class_prec
-            recall_sum_dict[actual_class] += class_recall
-            f_sum_dict[actual_class] += class_f
-            result_table.add_row([actual_class] + conf_matrix[i] + ["{:.1f}%".format(class_prec), "{:.1f}%".format(class_recall), "{:.1f}%".format(class_f)])
+            class_prec = get_stat_string(result_dict[actual_class], "Precision")
+            class_recall = get_stat_string(result_dict[actual_class], "Recall")
+            class_f = get_stat_string(result_dict[actual_class], "F-measure")
+            if class_prec != 'N/A':
+                folds_with_class[actual_class] += 1
+                prec_sum_dict[actual_class] += float(class_prec[:-1])
+                recall_sum_dict[actual_class] += float(class_recall[:-1])
+                f_sum_dict[actual_class] += float(class_f[:-1])
+            result_table.add_row([actual_class] + conf_matrix[i] + [class_prec, class_recall, class_f])
         print(result_table.draw())
         print("(row = reference; column = predicted)")
         print("Accuracy = {:.1f}%\n".format(fold_score))
@@ -204,9 +213,9 @@ def print_fancy_output(result_tuples):
         result_table.set_cols_align(["l", "r", "r", "r"])
         result_table.add_rows([["Class", "Precision", "Recall", "F-measure"]], header=True)
         for actual_class in classes:
-            result_table.add_row([actual_class] + ["{:.1f}%".format(prec_sum_dict[actual_class] / num_folds),
-                                                   "{:.1f}%".format(recall_sum_dict[actual_class] / num_folds),
-                                                   "{:.1f}%".format(f_sum_dict[actual_class] / num_folds)])
+            result_table.add_row([actual_class] + ["{:.1f}%".format(prec_sum_dict[actual_class] / folds_with_class[actual_class]),
+                                                   "{:.1f}%".format(recall_sum_dict[actual_class] / folds_with_class[actual_class]),
+                                                   "{:.1f}%".format(f_sum_dict[actual_class] / folds_with_class[actual_class])])
         print(result_table.draw())
         print("Accuracy = {:.1f}%".format(score_sum / num_folds))
 
