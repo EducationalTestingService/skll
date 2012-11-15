@@ -165,7 +165,7 @@ def process_fold(arg_tuple):
         result_dict[class_name]["F-measure"] = f_measure(actual_dict[class_name], pred_dict[class_name])
 
 
-    return (fold_score, result_dict, metrics.confusion_matrix(fold_test_classes, raw_predictions).tolist())
+    return (fold_score, result_dict, metrics.confusion_matrix(fold_test_classes, raw_predictions, labels=range(len(class_names))).tolist())
 
 
 def print_fancy_output(result_tuples):
