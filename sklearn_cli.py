@@ -194,7 +194,7 @@ def print_fancy_output(result_tuples):
             prec_sum_dict[actual_class] += class_prec
             recall_sum_dict[actual_class] += class_recall
             f_sum_dict[actual_class] += class_f
-            #result_table.add_row([actual_class] + conf_matrix[i] + ["{:.1f}%".format(class_prec), "{:.1f}%".format(class_recall), "{:.1f}%".format(class_f)])
+            result_table.add_row([actual_class] + conf_matrix[i] + ["{:.1f}%".format(class_prec), "{:.1f}%".format(class_recall), "{:.1f}%".format(class_f)])
             result_table.add_row([actual_class] + ["{:.1f}%".format(class_prec), "{:.1f}%".format(class_recall), "{:.1f}%".format(class_f)])
         print(result_table.draw())
         print("(row = reference; column = predicted)")
