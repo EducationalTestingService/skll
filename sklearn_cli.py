@@ -145,7 +145,11 @@ def process_fold(arg_tuple):
     # print("Learner: {}".format(fold_learner))
     # print("Predictions: {}".format(raw_predictions))
     # print("Num predictions: {}".format(len(raw_predictions)))
-    pred_list = [class_names[pred_class] for pred_class in raw_predictions]
+    try:
+        pred_list = [class_names[pred_class] for pred_class in raw_predictions]
+    except IndexError as e:
+        print(fold_prefix + "Learner predicted class number that was not in training or test data. Prediction list: {}".format(raw_predictions), file=sys.stderr)
+        raise e
     actual_list = [class_names[actual_class] for actual_class in fold_test_classes]
     for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
         pred_dict[pred_class].add(line_num)
@@ -155,10 +159,10 @@ def process_fold(arg_tuple):
     result_dict = defaultdict(dict)
     fold_score = metrics.zero_one_score(fold_test_classes, raw_predictions) * 100
     # Store results
-    for actual_class in sorted(actual_dict.iterkeys()):
-        result_dict[actual_class]["Precision"] = precision(actual_dict[actual_class], pred_dict[actual_class])
-        result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
-        result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
+    for class_name in sorted(class_names):
+        result_dict[class_name]["Precision"] = precision(actual_dict[class_name], pred_dict[class_name])
+        result_dict[class_name]["Recall"] = recall(actual_dict[class_name], pred_dict[class_name])
+        result_dict[class_name]["F-measure"] = f_measure(actual_dict[class_name], pred_dict[class_name])
 
     return (fold_score, result_dict, metrics.confusion_matrix(fold_test_classes, raw_predictions).tolist())
 
