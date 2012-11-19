@@ -69,7 +69,7 @@ def megam_dict_iter(path, classes):
                 split_line = line.split()
                 class_name = split_line[0]
                 classes.append(class_name)
-                curr_info_dict = dict()
+                curr_info_dict = {}
                 if len(split_line) > 1:
                     # Get current instances feature-value pairs
                     field_pairs = split_line[1:]

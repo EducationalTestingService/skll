@@ -79,7 +79,7 @@ def megam_dict_iter(path):
             if not line.startswith('#') and line not in ['TRAIN', 'TEST', 'DEV']:
                 split_line = line.split()
                 class_name = split_line[0]
-                curr_info_dict = dict()
+                curr_info_dict = {}
                 if len(split_line) > 1:
                     # Get current instances feature-value pairs
                     field_pairs = split_line[1:]
