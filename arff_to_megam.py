@@ -50,7 +50,7 @@ def nominal_to_numeric_dict(nominal_list):
     '''
         Create a dict for a list of nominal values that will convert the strings to integers
     '''
-    num_dict = dict()
+    num_dict = {}
     for i in xrange(len(nominal_list)):
         num_dict[nominal_list[i]] = i
     return num_dict

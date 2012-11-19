@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     # Map from filenames to feature strings
     feature_dict = OrderedDict()
-    class_dict = dict()
+    class_dict = {}
 
     # Set that will contain all of the features seen in previous files (for duplicate detection)
     prev_feature_set = set()
