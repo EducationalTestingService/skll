@@ -17,7 +17,7 @@ import sys
 from collections import namedtuple
 
 import classifier
-from pythongrid import KybJob, process_jobs
+from pythongrid import Job, process_jobs
 
 
 # Named tuple for storing job results
@@ -215,14 +215,9 @@ def run_configuration(config_file):
         temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
 
         # create job
-        job = KybJob(classify_featureset, [featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name,
-                                           modelpath, vocabpath, featset_prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
-                                           evaluate, suffix, temp_logfile])
-        job.name = jobname
-
-        # request 5 slots for each job if we are doing a grid search to make things go even faster
-        if do_grid_search:
-            job.pe = 'smp 5'
+        job = Job(classify_featureset, [featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name,
+                                        modelpath, vocabpath, featset_prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
+                                        evaluate, suffix, temp_logfile], num_slots=(5 if do_grid_search else 1), name=jobname)
 
         # Add job to list
         jobs.append(job)
