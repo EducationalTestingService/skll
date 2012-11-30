@@ -223,14 +223,13 @@ def run_configuration(config_file):
         jobs.append(job)
 
     # submit the jobs
-    processed_jobs = process_jobs(jobs)
+    job_results = process_jobs(jobs)
 
     # Print out results
     with open(resultsfile, 'w') as output_file:
-        for processed_job in processed_jobs:
-            for result_tuple_list in processed_job.ret:
-                for result_tuple in result_tuple_list:
-                    print(result_tuple, file=output_file)
+        for result_tuple_list in job_results:
+            for result_tuple in result_tuple_list:
+                print(result_tuple, file=output_file)
 
 
 if __name__ == '__main__':
