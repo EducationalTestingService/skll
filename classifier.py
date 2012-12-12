@@ -117,7 +117,7 @@ def load_examples(path):
         out = [{"y": class_name, "x": feature_dict} for class_name, feature_dict in megam_dict_iter(path)]
     else:
         raise Exception('Example files must be in either TSV, MegaM, or the preprocessed .jsonlines format. You specified: {}'.format(path))
-    return out
+    return np.array(out)
 
 
 def preprocess_example(example, feature_names=None):
@@ -396,7 +396,8 @@ def cross_validate(examples, model, feat_vectorizer=None, scaler=None, label_dic
                                                                                        grid_search=grid_search, grid_objective=grid_objective)
 
         # Evaluate model
-        results.append(evaluate(y[test_index], fold_model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=model_type, prediction_prefix=prediction_prefix))
+        results.append(evaluate(examples[test_index], fold_model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=model_type,
+                                prediction_prefix=prediction_prefix))
 
     # return list of results for all folds
     return results
