@@ -14,11 +14,12 @@ import ConfigParser
 import re
 import os
 import sys
-from collections import namedtuple
+from collections import defaultdict, namedtuple
+from itertools import chain
 
 import classifier
 from pythongrid import Job, process_jobs
-
+from texttable import Texttable
 
 # Named tuple for storing job results
 ClassifierResultInfo = namedtuple('ClassifierResultInfo', ['train_set_name', 'test_set_name', 'featureset', 'given_classifier', 'task', 'task_results'])
@@ -30,6 +31,60 @@ def clean_path(path):
     path = re.sub(r'/\.automount/\w+/SAN/NLP/(\w+)-(dynamic|static)', r'/home/nlp-\1/\2', path)
     path = re.sub(r'/\.automount/[^/]+/SAN/Research/HomeResearch', '/home/research', path)
     return path
+
+
+def get_stat_string(class_result_dict, stat):
+    ''' Little helper for getting output for precision, recall, and f-score columns in confusion matrix. '''
+    if stat in class_result_dict and class_result_dict[stat]:
+        return "{:.1f}%".format(class_result_dict[stat] * 100)
+    else:
+        return "N/A"
+
+
+def print_fancy_output(result_tuples, output_file=sys.stdout):
+    ''' Function to take all of the results from all of the folds and print nice tables with the resluts. '''
+    num_folds = len(result_tuples)
+    score_sum = 0.0
+    prec_sum_dict = defaultdict(float)
+    recall_sum_dict = defaultdict(float)
+    f_sum_dict = defaultdict(float)
+    print("Result tuples: {}".format(result_tuples))
+    classes = sorted(result_tuples[0][2].iterkeys())
+    folds_with_class = defaultdict(int)
+    for k, (conf_matrix, fold_score, result_dict) in enumerate(result_tuples, start=1):
+        if num_folds > 1:
+            print("\nFold: {}".format(k), file=output_file)
+        result_table = Texttable(max_width=0)
+        result_table.set_cols_align(["r"] * (len(classes) + 4))
+        result_table.add_rows([[""] + classes + ["Precision", "Recall", "F-measure"]], header=True)
+        for i, actual_class in enumerate(classes):
+            conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
+            class_prec = get_stat_string(result_dict[actual_class], "Precision")
+            class_recall = get_stat_string(result_dict[actual_class], "Recall")
+            class_f = get_stat_string(result_dict[actual_class], "F-measure")
+            if class_prec != 'N/A':
+                folds_with_class[actual_class] += 1
+                prec_sum_dict[actual_class] += float(class_prec[:-1])
+                recall_sum_dict[actual_class] += float(class_recall[:-1])
+                f_sum_dict[actual_class] += float(class_f[:-1])
+                result_table.add_row([actual_class] + conf_matrix[i] + [class_prec, class_recall, class_f])
+        print(result_table.draw(), file=output_file)
+        print("(row = reference; column = predicted)", file=output_file)
+        print("Accuracy = {:.1f}%\n".format(fold_score), file=output_file)
+        score_sum += fold_score
+
+    if num_folds > 1:
+        print("\nAverage:", file=output_file)
+        result_table = Texttable(max_width=0)
+        result_table.set_cols_align(["l", "r", "r", "r"])
+        result_table.add_rows([["Class", "Precision", "Recall", "F-measure"]], header=True)
+        for actual_class in classes:
+            if folds_with_class[actual_class]:
+                result_table.add_row([actual_class] + ["{:.1f}%".format(prec_sum_dict[actual_class] / folds_with_class[actual_class]),
+                                                       "{:.1f}%".format(recall_sum_dict[actual_class] / folds_with_class[actual_class]),
+                                                       "{:.1f}%".format(f_sum_dict[actual_class] / folds_with_class[actual_class])])
+        print(result_table.draw(), file=output_file)
+        print("Accuracy = {:.1f}%".format(score_sum / num_folds), file=output_file)
 
 
 def classify_featureset(featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
@@ -110,11 +165,12 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
                 task = 'cross-validate'
             elif evaluate:
                 print('\tevaluating predictions', file=log_file)
-                results = classifier.evaluate(test_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=given_classifier,
-                                              prediction_prefix=prediction_prefix)
+                results = [classifier.evaluate(test_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=given_classifier,
+                                               prediction_prefix=prediction_prefix)]
                 task = 'evaluate'
             else:
                 print('\twriting predictions', file=log_file)
+                task = 'predict'
                 classifier.predict(test_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, prediction_prefix, model_type=given_classifier)
                 continue
 
@@ -226,10 +282,11 @@ def run_configuration(config_file):
     job_results = process_jobs(jobs)
 
     # Print out results
-    with open(resultsfile, 'w') as output_file:
-        for result_tuple_list in job_results:
-            for result_tuple in result_tuple_list:
-                print(result_tuple, file=output_file)
+    for result_info in chain.from_iterable(job_results):
+        if result_info.task != 'predict':
+            with open(os.path.join(resultspath, '{}_{}_{}_{}_{}.results'.format(result_info.train_set_name, result_info.test_set_name, result_info.featureset,
+                                                                                result_info.given_classifier, result_info.task)), 'w') as output_file:
+                print_fancy_output(result_info.task_results, output_file)
 
 
 if __name__ == '__main__':
