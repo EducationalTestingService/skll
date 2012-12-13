@@ -12,7 +12,7 @@ import cPickle as pickle
 import subprocess
 import sys
 from collections import defaultdict
-from itertools import chain, islice, izip
+from itertools import islice, izip
 
 import numpy as np
 from bs4 import UnicodeDammit
@@ -330,7 +330,7 @@ def evaluate(examples, model, feat_vectorizer, scaler, label_dict, inverse_label
         result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
         result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
 
-    return (metrics.confusion_matrix(ytest, yhat).tolist(), overall_accuracy, result_dict)
+    return (metrics.confusion_matrix(ytest, yhat, labels=range(len(inverse_label_dict))).tolist(), overall_accuracy, result_dict)
 
 
 def predict(examples, model, feat_vectorizer, scaler, inverse_label_dict, prediction_prefix, model_type='logistic'):
