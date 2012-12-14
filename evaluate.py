@@ -48,7 +48,6 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
-    print("Result tuples: {}".format(result_tuples))
     classes = sorted(result_tuples[0][2].iterkeys())
     folds_with_class = defaultdict(int)
     for k, (conf_matrix, fold_score, result_dict) in enumerate(result_tuples, start=1):
