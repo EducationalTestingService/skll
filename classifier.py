@@ -2,7 +2,7 @@
 '''
 Module with many functions to use for easily creating an sklearn classifier
 
-TODO: Fix functions that expect predict function to always return list of classes predicted (instead of probabilities of predicting different classes)
+@author: Dan Blanchard (based on code from Nitin Madnani and Michael Heilman)
 '''
 
 from __future__ import print_function, unicode_literals
@@ -69,7 +69,7 @@ def _megam_dict_iter(path):
     Generator that yields tuples of classes and dictionaries mapping from features to values for each pair of lines in path
 
     @param path: Path to MegaM file
-    @type path: C{unicode}
+    @type path: C{basestring}
     '''
 
     line_count = 0
@@ -102,6 +102,11 @@ def _megam_dict_iter(path):
 def load_examples(path):
     '''
     Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM formats.
+
+    @param path: The path to the file to load the examples from.
+    @type path: C{basestring}
+
+    @return: 2-column C{numpy.array} of examples with the "y" containing the class labels and "x" containing the features for each example.
     '''
     if path.endswith(".tsv"):
         out = []
@@ -149,6 +154,17 @@ class Classifier(object):
 
     def __init__(self, probability=False, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic'):
         '''
+        @param feat_vectorizer: A C{DictVectorizer} that transforms lists of feature-value mappings to vectors.
+        @type feat_vectorizer: C{DictVectorizer}
+        @param scaler: A pre-fit scaler for the data that this classifier will be processing.
+        @type scaler: C{Scaler}
+        @param label_dict: Maps from class/label names to integers.
+        @type label_dict: C{dict}
+        @param inverse_label_dict: Maps from integers back to label strings.
+        @type inverse_label_dict: C{list} of C{basestring}
+        @param model_type: Type of estimator to create.
+                   Options are: 'logistic', 'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and 'gradient'
+        @type model_type: C{basestring}
         @param probability: Should classifier return probabilities of all classes (instead of just class with highest probability)?
         @type probability: C{bool}
         '''
@@ -162,17 +178,32 @@ class Classifier(object):
         self.model = None
 
     def load_model(self, modelfile):
-        ''' Load a saved model. '''
+        '''
+        Load a saved model.
+
+        @param modelfile: The path to the model file to load.
+        @type modelfile: C{basestring}
+        '''
         with open(modelfile) as f:
             self.model = pickle.load(f)
 
     def load_vocab(self, vocabfile):
-        ''' Load a saved vocab (feature vectorizer, scaler, label dictionary, and inverse label dictionary). '''
+        '''
+        Load a saved vocab (feature vectorizer, scaler, label dictionary, and inverse label dictionary).
+
+        @param vocabfile: The path to the vocab file to load.
+        @type vocabfile: C{basestring}
+        '''
         with open(vocabfile) as f:
             self.feat_vectorizer, self.scaler, self.label_dict, self.inverse_label_dict = pickle.load(f)
 
     def save_model(self, modelfile):
-        ''' Save the model to file. '''
+        '''
+        Save the model to file.
+
+        @param modelfile: The path to where you want to save the model.
+        @type modelfile: C{basestring}
+        '''
         # create the directory if it doesn't exist
         modeldir = os.path.dirname(modelfile)
         if not os.path.exists(modeldir):
@@ -182,7 +213,12 @@ class Classifier(object):
             pickle.dump(self.model, f, -1)
 
     def save_vocab(self, vocabfile):
-        ''' Save vocab (feature vectorizer, scaler, label dictionary, and inverse label dictionary) to file. '''
+        '''
+        Save vocab (feature vectorizer, scaler, label dictionary, and inverse label dictionary) to file.
+
+        @param vocabfile: The path to where you want to save the vocab.
+        @type vocabfile: C{basestring}
+        '''
         # create the directory if it doesn't exist
         vocabdir = os.path.dirname(vocabfile)
         if not os.path.exists(vocabdir):
@@ -210,7 +246,7 @@ class Classifier(object):
         '''
         @param model_type: Type of estimator to create.
                            Options are: 'logistic', 'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and 'gradient'
-        @type model_type: C{unicode}
+        @type model_type: C{basestring}
 
         @return: A tuple containing an instantiation of the requested estimator, and a parameter grid to search.
         '''
@@ -260,9 +296,20 @@ class Classifier(object):
     def train(self, examples, clear_vocab=False, param_grid_file=None, grid_search_folds=5, grid_search=True, grid_objective=f1_score_micro):
         '''
         Train a classificatiion model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.
+
+        @param examples: The examples to train the model on.
+        @type examples: C{array}
         @param clear_vocab: Wipe out the feature vectorizer, scaler, label dictionary, and inverse label dictionary. This should be done if you're retraining
                             a L{Classifier} on a completely different data set (with different features).
         @type clear_vocab: C{bool}
+        @param param_grid_file: The path to a parameter grid file containing the parameters to search through for grid search.
+        @type param_grid_file: C{basestring}
+        @param grid_search_folds: The number of folds to use when doing the grid search.
+        @type grid_search_folds: C{int}
+        @param grid_search: Should we do grid search?
+        @type grid_search: C{bool}
+        @param grid_objective: The objective functino to use when doing the grid search.
+        @type grid_objective: C{function}
 
         @return: The best grid search objective function score, or 0 if we're not doing grid search.
         '''
@@ -328,10 +375,21 @@ class Classifier(object):
     def evaluate(self, examples, prediction_prefix=None):
         '''
         Evaluates a given model on a given dev or test example set.
-        Returns the confusion matrix, the overall accuracy, and the per-class PRFs.
+
+        @param examples: The examples to evaluate the performance of the model on.
+        @type examples: C{array}
+        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "-{model_type}.predictions"
+        @type prediction_prefix: C{basestring}
+
+        @return: The confusion matrix, the overall accuracy, and the per-class PRFs.
+        @rtype: 3-C{tuple}
         '''
         # make the prediction on the test data
         yhat = self.predict(examples, prediction_prefix)
+
+        # if run in probability mode, convert yhat to list of classes predicted
+        if self.probability:
+            np.array([max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
 
         # extract actual labels
         ytest = np.array([self.label_dict[self._extract_label(x)] for x in examples])
@@ -359,6 +417,13 @@ class Classifier(object):
     def predict(self, examples, prediction_prefix):
         '''
         Uses a given model to generate predictions on a given data set
+
+        @param examples: The examples to predict the classes for.
+        @type examples: C{array}
+        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "-{model_type}.predictions"
+        @type prediction_prefix: C{basestring}
+
+        @return: The predictions returned by the classifier.
         '''
         features = [self._extract_features(x) for x in examples]
 
@@ -384,15 +449,29 @@ class Classifier(object):
 
         return yhat
 
-    def cross_validate(self, examples, stratified=True, clear_vocab=False, cv_folds=10, grid_search=False, grid_search_folds=5, grid_objective=f1_score_micro):
+    def cross_validate(self, examples, stratified=True, clear_vocab=False, cv_folds=10, grid_search=False, grid_search_folds=5, grid_objective=f1_score_micro,
+                       prediction_prefix=None):
         '''
         Cross-validates a given model on the training examples.
 
+        @param examples: The data to cross-validate classifier performance on.
+        @type examples: C{array}
+        @param stratified: Should we stratifiy the folds to ensure an even distribution of classes for each fold?
+        @type stratified: C{bool}
         @param clear_vocab: Wipe out the feature vectorizer, scaler, label dictionary, and inverse label dictionary. This should be done if you're retraining
                             a L{Classifier} on a completely different data set (with different features).
         @type clear_vocab: C{bool}
+        @param cv_folds: The number of folds to use for cross-validation.
+        @type cv_folds: C{int}
+        @param grid_search: Should we do grid search when training each fold? Note: This will make this take *much* longer.
+        @type grid_search: C{bool}
+        @param grid_search_folds: The number of folds to use when doing the grid search.
+        @type grid_search_folds: C{int}
+        @param grid_objective: The objective functino to use when doing the grid search.
+        @type grid_objective: C{function}
 
-        Returns a list of tuples containing the confusion matrix, overall accuracy, and per-class PRFs for each fold..
+        @return: The confusion matrix, overall accuracy, and per-class PRFs for each fold.
+        @rtype: C{list} of 3-{tuple}s
         '''
         features = [self._extract_features(x) for x in examples]
 
@@ -427,7 +506,7 @@ class Classifier(object):
             self.train(examples[train_index], grid_search_folds=grid_search_folds, grid_search=grid_search, grid_objective=grid_objective)
 
             # Evaluate model
-            results.append(self.evaluate(examples[test_index]))
+            results.append(self.evaluate(examples[test_index], prediction_prefix=prediction_prefix))
 
         # return list of results for all folds
         return results
