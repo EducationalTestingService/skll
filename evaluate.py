@@ -9,7 +9,6 @@ Runs a bunch of sklearn jobs in parallel on the cluster given a config file.
 from __future__ import print_function, unicode_literals
 
 import argparse
-import cPickle as pickle
 import ConfigParser
 import re
 import os
@@ -91,6 +90,9 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
     ''' Classification job to be submitted to grid '''
     result_list = []
 
+    # initialize a classifer object
+    learner = classifier.Classifier()
+
     with open(log_path, 'w') as log_file:
         if cross_validate:
             print("Cross-validating on {}, feature set {} ...".format(train_set_name, featureset), file=log_file)
@@ -116,13 +118,12 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
         # load the feature vocab if it already exists. We can do this since this is independent of the model type
         if os.path.exists(vocabfile):
             print('\tloading pre-existing feature vocab', file=log_file)
-            with open(vocabfile) as f:
-                feat_vectorizer, scaler, label_dict, inverse_label_dict = pickle.load(f)
-        else:
-            feat_vectorizer, scaler, label_dict, inverse_label_dict = [None] * 4
+            learner.load_vocab(vocabfile)
 
         # now go over each classifier
         for given_classifier in given_classifiers:
+            # set the model type
+            learner.model_type = given_classifier
 
             # check whether a trained model on the same data with the same featureset already exists
             # if so, load it (and the feature vocabulary) and then use it on the test data
@@ -131,46 +132,44 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
             # load the model if it already exists
             if os.path.exists(modelfile):
                 print('\tloading pre-existing {} model'.format(given_classifier), file=log_file)
-                with open(modelfile) as f:
-                    model = pickle.load(f)
-            else:
-                model = None
+                learner.load_model(modelfile)
 
             # if we have do not have a saved model, we need to train one. However, we may be able to reuse a saved feature vocab file if that existed above.
-            if not model:
-                if feat_vectorizer:
+            else:
+                if learner.feat_vectorizer:
                     print('\ttraining new {} model'.format(given_classifier), file=log_file)
-                    model, best_score = classifier.train(train_examples, feat_vectorizer=feat_vectorizer, scaler=scaler, label_dict=label_dict, model_type=given_classifier,
-                                                         modelfile=modelfile, grid_search=grid_search, grid_objective=grid_objective, inverse_label_dict=inverse_label_dict)[0:2]
+                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
                 else:
                     print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
-                    model, best_score, feat_vectorizer, scaler, label_dict, inverse_label_dict = classifier.train(train_examples, model_type=given_classifier, modelfile=modelfile,
-                                                                                                                  vocabfile=vocabfile, grid_search=grid_search,
-                                                                                                                  grid_objective=grid_objective)
+                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
+
+                    # save vocab
+                    learner.save_vocab(vocabfile)
+
+                # save model
+                learner.save_model(modelfile)
 
                 # print out the tuned parameters and best CV score
                 if grid_search:
                     param_out = []
                     for param_name in tunable_parameters[given_classifier]:
-                        param_out.append('{}: {}'.format(param_name, model.get_params()[param_name]))
+                        param_out.append('{}: {}'.format(param_name, learner.model.get_params()[param_name]))
                     print('\ttuned hyperparameters: {}'.format(', '.join(param_out)), file=log_file)
                     print('\tbest score: {}'.format(round(best_score, 3)), file=log_file)
 
             # run on test set or cross-validate on training data, depending on what was asked for
             if cross_validate:
                 print('\tcross-validating', file=log_file)
-                results = classifier.cross_validate(train_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=given_classifier,
-                                                    prediction_prefix=prediction_prefix)
+                results = learner.cross_validate(train_examples, prediction_prefix=prediction_prefix)
                 task = 'cross-validate'
             elif evaluate:
                 print('\tevaluating predictions', file=log_file)
-                results = [classifier.evaluate(test_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, model_type=given_classifier,
-                                               prediction_prefix=prediction_prefix)]
+                results = [learner.evaluate(test_examples, prediction_prefix=prediction_prefix)]
                 task = 'evaluate'
             else:
                 print('\twriting predictions', file=log_file)
                 task = 'predict'
-                classifier.predict(test_examples, model, feat_vectorizer, scaler, label_dict, inverse_label_dict, prediction_prefix, model_type=given_classifier)
+                learner.predict(test_examples, prediction_prefix)
                 continue
 
             # write out the tsv row to STDOUT
