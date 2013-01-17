@@ -2,7 +2,8 @@
 '''
 Module with many functions to use for easily creating an sklearn classifier
 
-@author: Dan Blanchard (based on code from Nitin Madnani and Michael Heilman)
+@author: Nitin Madnani, nmadnani@ets.org
+@author: Dan Blanchard, dblanchard@ets.org
 '''
 
 from __future__ import print_function, unicode_literals
