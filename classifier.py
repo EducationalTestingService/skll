@@ -151,10 +151,12 @@ def _preprocess_example(example, feature_names=None):
 
 
 class Classifier(object):
-    """ A simpler wrapper around many sklearn classification functions. """
+    """ A simpler classifier interface around many sklearn classification functions. """
 
     def __init__(self, probability=False, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic'):
         '''
+        Initializes a classifier object with the specified settings.
+
         @param feat_vectorizer: A C{DictVectorizer} that transforms lists of feature-value mappings to vectors.
         @type feat_vectorizer: C{DictVectorizer}
         @param scaler: A pre-fit scaler for the data that this classifier will be processing.
@@ -245,10 +247,6 @@ class Classifier(object):
 
     def _create_estimator(self):
         '''
-        @param model_type: Type of estimator to create.
-                           Options are: 'logistic', 'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and 'gradient'
-        @type model_type: C{basestring}
-
         @return: A tuple containing an instantiation of the requested estimator, and a parameter grid to search.
         '''
         estimator = None
@@ -313,6 +311,7 @@ class Classifier(object):
         @type grid_objective: C{function}
 
         @return: The best grid search objective function score, or 0 if we're not doing grid search.
+        @rtype: C{float}
         '''
 
         # seed the random number generator so that randomized algorithms are replicable
@@ -425,6 +424,7 @@ class Classifier(object):
         @type prediction_prefix: C{basestring}
 
         @return: The predictions returned by the classifier.
+        @rtype: C{array}
         '''
         features = [self._extract_features(x) for x in examples]
 

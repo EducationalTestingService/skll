@@ -1,0 +1,636 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>classifier.Classifier</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="classifier-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="classifier-module.html">Module&nbsp;classifier</a> ::
+        Class&nbsp;Classifier
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class Classifier</h1><p class="nomargin-top"><span class="codelink"><a href="classifier-pysrc.html#Classifier">source&nbsp;code</a></span></p>
+<pre class="base-tree">
+object --+
+         |
+        <strong class="uidshort">Classifier</strong>
+</pre>
+
+<hr />
+<p>A simpler classifier interface around many sklearn classification 
+  functions.</p>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td align="left" colspan="2" class="table-header">
+    <span class="table-header">Instance Methods</span></td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">probability</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">feat_vectorizer</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">scaler</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">label_dict</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">inverse_label_dict</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">model_type</span>=<span class="summary-sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>)</span><br />
+      Initializes a classifier object with the specified settings.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.__init__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#load_model" class="summary-sig-name">load_model</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">modelfile</span>)</span><br />
+      Load a saved model.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.load_model">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#load_vocab" class="summary-sig-name">load_vocab</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">vocabfile</span>)</span><br />
+      Load a saved vocab (feature vectorizer, scaler, label dictionary, and
+      inverse label dictionary).</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.load_vocab">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#save_model" class="summary-sig-name">save_model</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">modelfile</span>)</span><br />
+      Save the model to file.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.save_model">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#save_vocab" class="summary-sig-name">save_vocab</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">vocabfile</span>)</span><br />
+      Save vocab (feature vectorizer, scaler, label dictionary, and inverse
+      label dictionary) to file.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.save_vocab">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type"><code>float</code></span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#train" class="summary-sig-name">train</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">examples</span>,
+        <span class="summary-sig-arg">clear_vocab</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">param_grid_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">grid_search_folds</span>=<span class="summary-sig-default">5</span>,
+        <span class="summary-sig-arg">grid_search</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x27c1578&gt;</span>)</span><br />
+      Train a classificatiion model and return the model, score, feature 
+      vectorizer, scaler, label dictionary, and inverse label dictionary.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.train">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">3-<code>tuple</code></span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#evaluate" class="summary-sig-name">evaluate</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">examples</span>,
+        <span class="summary-sig-arg">prediction_prefix</span>=<span class="summary-sig-default">None</span>)</span><br />
+      Evaluates a given model on a given dev or test example set.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.evaluate">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type"><code>array</code></span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#predict" class="summary-sig-name">predict</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">examples</span>,
+        <span class="summary-sig-arg">prediction_prefix</span>)</span><br />
+      Uses a given model to generate predictions on a given data set</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.predict">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type"><code>list</code> of 3-{tuple}s</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#cross_validate" class="summary-sig-name">cross_validate</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">examples</span>,
+        <span class="summary-sig-arg">stratified</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">clear_vocab</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">cv_folds</span>=<span class="summary-sig-default">10</span>,
+        <span class="summary-sig-arg">grid_search</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">grid_search_folds</span>=<span class="summary-sig-default">5</span>,
+        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x27c1578&gt;</span>,
+        <span class="summary-sig-arg">prediction_prefix</span>=<span class="summary-sig-default">None</span>)</span><br />
+      Cross-validates a given model on the training examples.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.cross_validate">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" class="summary">
+    <p class="indent-wrapped-lines"><b>Inherited from <code>object</code></b>:
+      <code>__delattr__</code>,
+      <code>__format__</code>,
+      <code>__getattribute__</code>,
+      <code>__hash__</code>,
+      <code>__new__</code>,
+      <code>__reduce__</code>,
+      <code>__reduce_ex__</code>,
+      <code>__repr__</code>,
+      <code>__setattr__</code>,
+      <code>__sizeof__</code>,
+      <code>__str__</code>,
+      <code>__subclasshook__</code>
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- ==================== PROPERTIES ==================== -->
+<a name="section-Properties"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td align="left" colspan="2" class="table-header">
+    <span class="table-header">Properties</span></td>
+</tr>
+  <tr>
+    <td colspan="2" class="summary">
+    <p class="indent-wrapped-lines"><b>Inherited from <code>object</code></b>:
+      <code>__class__</code>
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td align="left" colspan="2" class="table-header">
+    <span class="table-header">Method Details</span></td>
+</tr>
+</table>
+<a name="__init__"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">probability</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">feat_vectorizer</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">scaler</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">label_dict</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">inverse_label_dict</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">model_type</span>=<span class="sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>)</span>
+    <br /><em class="fname">(Constructor)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.__init__">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Initializes a classifier object with the specified settings.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>feat_vectorizer</code></strong> (<code>DictVectorizer</code>) - A <code>DictVectorizer</code> that transforms lists of 
+          feature-value mappings to vectors.</li>
+        <li><strong class="pname"><code>scaler</code></strong> (<code>Scaler</code>) - A pre-fit scaler for the data that this classifier will be 
+          processing.</li>
+        <li><strong class="pname"><code>label_dict</code></strong> (<code>dict</code>) - Maps from class/label names to integers.</li>
+        <li><strong class="pname"><code>inverse_label_dict</code></strong> (<code>list</code> of <code>basestring</code>) - Maps from integers back to label strings.</li>
+        <li><strong class="pname"><code>model_type</code></strong> (<code>basestring</code>) - Type of estimator to create. Options are: 'logistic', 
+          'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and
+          'gradient'</li>
+        <li><strong class="pname"><code>probability</code></strong> (<code>bool</code>) - Should classifier return probabilities of all classes (instead of
+          just class with highest probability)?</li>
+    </ul></dd>
+    <dt>Overrides:
+        object.__init__
+    </dt>
+  </dl>
+</td></tr></table>
+</div>
+<a name="load_model"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">load_model</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">modelfile</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.load_model">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Load a saved model.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>modelfile</code></strong> (<code>basestring</code>) - The path to the model file to load.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="load_vocab"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">load_vocab</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">vocabfile</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.load_vocab">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Load a saved vocab (feature vectorizer, scaler, label dictionary, and 
+  inverse label dictionary).</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>vocabfile</code></strong> (<code>basestring</code>) - The path to the vocab file to load.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="save_model"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">save_model</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">modelfile</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.save_model">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Save the model to file.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>modelfile</code></strong> (<code>basestring</code>) - The path to where you want to save the model.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="save_vocab"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">save_vocab</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">vocabfile</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.save_vocab">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Save vocab (feature vectorizer, scaler, label dictionary, and inverse 
+  label dictionary) to file.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>vocabfile</code></strong> (<code>basestring</code>) - The path to where you want to save the vocab.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="train"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">train</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">examples</span>,
+        <span class="sig-arg">clear_vocab</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">param_grid_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">grid_search_folds</span>=<span class="sig-default">5</span>,
+        <span class="sig-arg">grid_search</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x27c1578&gt;</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.train">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Train a classificatiion model and return the model, score, feature 
+  vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>examples</code></strong> (<code>array</code>) - The examples to train the model on.</li>
+        <li><strong class="pname"><code>clear_vocab</code></strong> (<code>bool</code>) - Wipe out the feature vectorizer, scaler, label dictionary, and 
+          inverse label dictionary. This should be done if you're 
+          retraining a <a href="classifier.Classifier-class.html" 
+          class="link">Classifier</a> on a completely different data set 
+          (with different features).</li>
+        <li><strong class="pname"><code>param_grid_file</code></strong> (<code>basestring</code>) - The path to a parameter grid file containing the parameters to 
+          search through for grid search.</li>
+        <li><strong class="pname"><code>grid_search_folds</code></strong> (<code>int</code>) - The number of folds to use when doing the grid search.</li>
+        <li><strong class="pname"><code>grid_search</code></strong> (<code>bool</code>) - Should we do grid search?</li>
+        <li><strong class="pname"><code>grid_objective</code></strong> (<code>function</code>) - The objective functino to use when doing the grid search.</li>
+    </ul></dd>
+    <dt>Returns: <code>float</code></dt>
+        <dd>The best grid search objective function score, or 0 if we're not 
+          doing grid search.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="evaluate"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">evaluate</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">examples</span>,
+        <span class="sig-arg">prediction_prefix</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.evaluate">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates a given model on a given dev or test example set.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>examples</code></strong> (<code>array</code>) - The examples to evaluate the performance of the model on.</li>
+        <li><strong class="pname"><code>prediction_prefix</code></strong> (<code>basestring</code>) - If saving the predictions, this is the prefix that will be used 
+          for the filename. It will be followed by 
+          &quot;-{model_type}.predictions&quot;</li>
+    </ul></dd>
+    <dt>Returns: 3-<code>tuple</code></dt>
+        <dd>The confusion matrix, the overall accuracy, and the per-class 
+          PRFs.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="predict"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">predict</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">examples</span>,
+        <span class="sig-arg">prediction_prefix</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.predict">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Uses a given model to generate predictions on a given data set</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>examples</code></strong> (<code>array</code>) - The examples to predict the classes for.</li>
+        <li><strong class="pname"><code>prediction_prefix</code></strong> (<code>basestring</code>) - If saving the predictions, this is the prefix that will be used 
+          for the filename. It will be followed by 
+          &quot;-{model_type}.predictions&quot;</li>
+    </ul></dd>
+    <dt>Returns: <code>array</code></dt>
+        <dd>The predictions returned by the classifier.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="cross_validate"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">cross_validate</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">examples</span>,
+        <span class="sig-arg">stratified</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">clear_vocab</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">cv_folds</span>=<span class="sig-default">10</span>,
+        <span class="sig-arg">grid_search</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">grid_search_folds</span>=<span class="sig-default">5</span>,
+        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x27c1578&gt;</span>,
+        <span class="sig-arg">prediction_prefix</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.cross_validate">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Cross-validates a given model on the training examples.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>examples</code></strong> (<code>array</code>) - The data to cross-validate classifier performance on.</li>
+        <li><strong class="pname"><code>stratified</code></strong> (<code>bool</code>) - Should we stratifiy the folds to ensure an even distribution of 
+          classes for each fold?</li>
+        <li><strong class="pname"><code>clear_vocab</code></strong> (<code>bool</code>) - Wipe out the feature vectorizer, scaler, label dictionary, and 
+          inverse label dictionary. This should be done if you're 
+          retraining a <a href="classifier.Classifier-class.html" 
+          class="link">Classifier</a> on a completely different data set 
+          (with different features).</li>
+        <li><strong class="pname"><code>cv_folds</code></strong> (<code>int</code>) - The number of folds to use for cross-validation.</li>
+        <li><strong class="pname"><code>grid_search</code></strong> (<code>bool</code>) - Should we do grid search when training each fold? Note: This will
+          make this take *much* longer.</li>
+        <li><strong class="pname"><code>grid_search_folds</code></strong> (<code>int</code>) - The number of folds to use when doing the grid search.</li>
+        <li><strong class="pname"><code>grid_objective</code></strong> (<code>function</code>) - The objective functino to use when doing the grid search.</li>
+    </ul></dd>
+    <dt>Returns: <code>list</code> of 3-{tuple}s</dt>
+        <dd>The confusion matrix, overall accuracy, and per-class PRFs for 
+          each fold.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="classifier-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Thu Jan 17 11:34:19 2013
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>
