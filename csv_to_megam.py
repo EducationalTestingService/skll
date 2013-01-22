@@ -71,7 +71,11 @@ if __name__ == '__main__':
 
                     # Have to sort descending so that we don't screw up the indices
                     for i in sorted((args.idfield, args.classfield), reverse=True):
-                        del split_line[i]
+                        try:
+                            del split_line[i]
+                        except IndexError as e:
+                            print("ERROR: Could not delete element at index {} from list {}.".format(i, split_line), file=sys.stderr)
+                            raise e
                 else:
                     # Print class
                     print('{}'.format(split_line[args.classfield]).encode('utf-8'), end='\t')
