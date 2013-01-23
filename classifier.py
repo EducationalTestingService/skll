@@ -153,7 +153,7 @@ def _preprocess_example(example, feature_names=None):
 class Classifier(object):
     """ A simpler classifier interface around many sklearn classification functions. """
 
-    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic'):
+    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic', model_kwargs=None):
         '''
         Initializes a classifier object with the specified settings.
 
@@ -170,6 +170,8 @@ class Classifier(object):
         @type model_type: C{basestring}
         @param probability: Should classifier return probabilities of all classes (instead of just class with highest probability)?
         @type probability: C{bool}
+        @param model_kwargs: A dictionary of keyword arguments to pass to the initializer for the specified model.
+        @type model_kwargs: C{dict}
         '''
         super(Classifier, self).__init__()
         self.probability = probability
@@ -179,6 +181,19 @@ class Classifier(object):
         self.inverse_label_dict = inverse_label_dict
         self.model_type = model_type
         self.model = None
+        self.model_kwargs = {}
+
+        # Set default keyword arguments for models that we have some for.
+        if self.model_type == 'svm_radial':
+            self.model_kwargs['cache_size'] = 1000
+            self.model_kwargs['probability'] = self.probability
+        elif self.model_type == 'dtree':
+            self.model_kwargs['criterion'] = 'entropy'
+        elif self.model_type == 'rforest' or self.model_type == 'gradient':
+            self.model_kwargs['n_estimators'] = 100
+
+        if model_kwargs:
+            self.model_kwargs.update(model_kwargs)
 
     def load_model(self, modelfile):
         '''
@@ -229,7 +244,6 @@ class Classifier(object):
         with open(vocabfile, "w") as f:
             pickle.dump([self.feat_vectorizer, self.scaler, self.label_dict, self.inverse_label_dict], f, -1)
 
-
     @staticmethod
     def _extract_features(example):
         '''
@@ -253,25 +267,25 @@ class Classifier(object):
         default_param_grid = None
 
         if self.model_type == 'logistic':
-            estimator = LogisticRegression()
+            estimator = LogisticRegression(**self.model_kwargs)
             default_param_grid = [{'C': [1e-4, 1e-2, 1.0, 1e2, 1e4]}]
         elif self.model_type == 'svm_linear':  # No predict_proba support
-            estimator = LinearSVC()
+            estimator = LinearSVC(**self.model_kwargs)
             default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
         elif self.model_type == 'svm_radial':
-            estimator = SVC(cache_size=1000, probability=self.probability)
+            estimator = SVC(**self.model_kwargs)
             default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
         elif self.model_type == 'naivebayes':
-            estimator = MultinomialNB()
+            estimator = MultinomialNB(**self.model_kwargs)
             default_param_grid = [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
         elif self.model_type == 'dtree':
-            estimator = DecisionTreeClassifier(criterion='entropy')
+            estimator = DecisionTreeClassifier(**self.model_kwargs)
             default_param_grid = [{'max_features': ["auto", None]}]
         elif self.model_type == 'rforest':
-            estimator = RandomForestClassifier(n_estimators=100)
+            estimator = RandomForestClassifier(**self.model_kwargs)
             default_param_grid = [{'max_features': ["sqrt", "log2", None]}]
         elif self.model_type == "gradient":
-            estimator = GradientBoostingClassifier(n_estimators=100)
+            estimator = GradientBoostingClassifier(**self.model_kwargs)
             default_param_grid = [{'learn_rate': [0.01, 0.1, 0.5]}]
 
         return estimator, default_param_grid
