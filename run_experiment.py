@@ -100,11 +100,11 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
             print("Training on {}, Test on {}, feature set {} ...".format(train_set_name, test_set_name, featureset), file=log_file)
 
         # tunable parameters for each model type
-        tunable_parameters = {'dtree': ['max_depth', 'max_features'], \
-                              'svm_linear': ['C'], \
-                              'svm_radial': ['C', 'gamma'], \
-                              'logistic': ['C'], \
-                              'naivebayes': ['alpha'], \
+        tunable_parameters = {'dtree': ['max_depth', 'max_features'],
+                              'svm_linear': ['C'],
+                              'svm_radial': ['C', 'gamma'],
+                              'logistic': ['C'],
+                              'naivebayes': ['alpha'],
                               'rforest': ['max_depth', 'max_features']}
 
         # load the training and test examples
@@ -248,7 +248,6 @@ def run_configuration(config_file):
     if predict and not prediction_prefix:
         print('Error: you need to specify a prediction prefix if you are using prediction mode (no "results" option in config file).', file=sys.stderr)
         sys.exit(2)
-
 
     # the list of jobs submitted
     jobs = []
