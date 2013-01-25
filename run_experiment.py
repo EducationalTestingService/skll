@@ -86,12 +86,12 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
 
 
 def classify_featureset(featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
-                        grid_objective, cross_validate, evaluate, suffix, log_path):
+                        grid_objective, cross_validate, evaluate, suffix, log_path, probability):
     ''' Classification job to be submitted to grid '''
     result_list = []
 
     # initialize a classifer object
-    learner = classifier.Classifier()
+    learner = classifier.Classifier(probability=probability)
 
     with open(log_path, 'w') as log_file:
         if cross_validate:
@@ -181,7 +181,7 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
 def run_configuration(config_file):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
-    configurator = ConfigParser.RawConfigParser({'test_location': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro"})
+    configurator = ConfigParser.RawConfigParser({'test_location': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro", 'probability': False})
     configurator.read(config_file)
 
     # extract sklearn parameters from the config file
@@ -200,7 +200,7 @@ def run_configuration(config_file):
     logpath = os.path.dirname(logfile)
     modelpath = configurator.get("Output", "models")
     vocabpath = configurator.get("Output", "vocabs")
-
+    probability = configurator.get("Output", "probability")
     # create the path of the resultsfile, logfile and the modelpath
     os.system("mkdir -p {} {}".format(resultspath, logpath))
 
@@ -270,7 +270,7 @@ def run_configuration(config_file):
         # create job
         job = Job(classify_featureset, [featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name,
                                         modelpath, vocabpath, featset_prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
-                                        evaluate, suffix, temp_logfile], num_slots=(5 if do_grid_search else 1), name=jobname)
+                                        evaluate, suffix, temp_logfile, probability], num_slots=(5 if do_grid_search else 1), name=jobname)
 
         # Add job to list
         jobs.append(job)
