@@ -179,21 +179,37 @@ class Classifier(object):
         self.scaler = scaler
         self.label_dict = label_dict
         self.inverse_label_dict = inverse_label_dict
-        self.model_type = model_type
-        self.model = None
-        self.model_kwargs = {}
+        self._model_type = model_type
+        self._model = None
+        self._model_kwargs = {}
 
         # Set default keyword arguments for models that we have some for.
-        if self.model_type == 'svm_radial':
-            self.model_kwargs['cache_size'] = 1000
-            self.model_kwargs['probability'] = self.probability
-        elif self.model_type == 'dtree':
-            self.model_kwargs['criterion'] = 'entropy'
-        elif self.model_type == 'rforest' or self.model_type == 'gradient':
-            self.model_kwargs['n_estimators'] = 100
+        if self._model_type == 'svm_radial':
+            self._model_kwargs['cache_size'] = 1000
+            self._model_kwargs['probability'] = self.probability
+            print("Probability: {}\nkwargs: {}".format(self.probability, self._model_kwargs))
+        elif self._model_type == 'dtree':
+            self._model_kwargs['criterion'] = 'entropy'
+        elif self._model_type == 'rforest' or self._model_type == 'gradient':
+            self._model_kwargs['n_estimators'] = 100
 
         if model_kwargs:
-            self.model_kwargs.update(model_kwargs)
+            self._model_kwargs.update(model_kwargs)
+
+    @property
+    def model_type(self):
+        ''' Getter for model type '''
+        return self._model_type
+
+    @property
+    def model_kwargs(self):
+        ''' Getter for model keyword arguments '''
+        return self._model_kwargs
+
+    @property
+    def model_kwargs(self):
+        ''' Getter for underlying model '''
+        return self._model
 
     def load_model(self, modelfile):
         '''
@@ -203,7 +219,7 @@ class Classifier(object):
         @type modelfile: C{basestring}
         '''
         with open(modelfile) as f:
-            self.model, self.probability = pickle.load(f)
+            self._model, self.probability = pickle.load(f)
 
     def load_vocab(self, vocabfile):
         '''
@@ -228,7 +244,7 @@ class Classifier(object):
             subprocess.call("mkdir -p {}".format(modeldir), shell=True)
         # write out the files
         with open(modelfile, "w") as f:
-            pickle.dump([self.model, self.probability], f, -1)
+            pickle.dump([self._model, self.probability], f, -1)
 
     def save_vocab(self, vocabfile):
         '''
@@ -266,26 +282,26 @@ class Classifier(object):
         estimator = None
         default_param_grid = None
 
-        if self.model_type == 'logistic':
-            estimator = LogisticRegression(**self.model_kwargs)
+        if self._model_type == 'logistic':
+            estimator = LogisticRegression(**self._model_kwargs)
             default_param_grid = [{'C': [1e-4, 1e-2, 1.0, 1e2, 1e4]}]
-        elif self.model_type == 'svm_linear':  # No predict_proba support
-            estimator = LinearSVC(**self.model_kwargs)
+        elif self._model_type == 'svm_linear':  # No predict_proba support
+            estimator = LinearSVC(**self._model_kwargs)
             default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
-        elif self.model_type == 'svm_radial':
-            estimator = SVC(**self.model_kwargs)
+        elif self._model_type == 'svm_radial':
+            estimator = SVC(**self._model_kwargs)
             default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
-        elif self.model_type == 'naivebayes':
-            estimator = MultinomialNB(**self.model_kwargs)
+        elif self._model_type == 'naivebayes':
+            estimator = MultinomialNB(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
-        elif self.model_type == 'dtree':
-            estimator = DecisionTreeClassifier(**self.model_kwargs)
+        elif self._model_type == 'dtree':
+            estimator = DecisionTreeClassifier(**self._model_kwargs)
             default_param_grid = [{'max_features': ["auto", None]}]
-        elif self.model_type == 'rforest':
-            estimator = RandomForestClassifier(**self.model_kwargs)
+        elif self._model_type == 'rforest':
+            estimator = RandomForestClassifier(**self._model_kwargs)
             default_param_grid = [{'max_features': ["sqrt", "log2", None]}]
-        elif self.model_type == "gradient":
-            estimator = GradientBoostingClassifier(**self.model_kwargs)
+        elif self._model_type == "gradient":
+            estimator = GradientBoostingClassifier(**self._model_kwargs)
             default_param_grid = [{'learn_rate': [0.01, 0.1, 0.5]}]
 
         return estimator, default_param_grid
@@ -354,15 +370,15 @@ class Classifier(object):
         xtrain = self.feat_vectorizer.transform(features)
 
         # Create scaler if we weren't passed one
-        if (clear_vocab or self.scaler is None) and self.model_type != 'naivebayes':
+        if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
             self.scaler = Scaler(with_mean=(not issparse(xtrain)))
 
         # Convert to dense if using naivebayes or rforest
-        if self.model_type in ['naivebayes', 'rforest']:
+        if self._model_type in ['naivebayes', 'rforest']:
             xtrain = xtrain.todense()
 
         # Scale features if necessary
-        xtrain_scaled = xtrain if self.model_type == 'naivebayes' else self.scaler.fit_transform(xtrain)
+        xtrain_scaled = xtrain if self._model_type == 'naivebayes' else self.scaler.fit_transform(xtrain)
 
         # set up a grid searcher if we are asked to
         estimator, param_grid = self._create_estimator()
@@ -373,15 +389,15 @@ class Classifier(object):
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
             grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
-                                         n_jobs=(grid_search_folds if self.model_type not in ["svm_linear", "logistic"] else 1))
+                                         n_jobs=(grid_search_folds if self._model_type not in ["svm_linear", "logistic"] else 1))
 
             # run the grid search for hyperparameters
             print('\tstarting grid search', file=sys.stderr)
             grid_searcher.fit(xtrain_scaled, ytrain)
-            self.model = grid_searcher.best_estimator_
+            self._model = grid_searcher.best_estimator_
             score = grid_searcher.best_score_
         else:
-            self.model = estimator.fit(xtrain_scaled, ytrain)
+            self._model = estimator.fit(xtrain_scaled, ytrain)
             score = 0.0
 
         return score
@@ -444,24 +460,24 @@ class Classifier(object):
 
         # transform and scale the features
         xtest = self.feat_vectorizer.transform(features)
-        xtest_scaled = xtest if self.model_type == 'naivebayes' else self.scaler.transform(xtest)
+        xtest_scaled = xtest if self._model_type == 'naivebayes' else self.scaler.transform(xtest)
 
         # Convert to dense if using naivebayes or rforest
-        if self.model_type in ['naivebayes', 'rforest']:
+        if self._model_type in ['naivebayes', 'rforest']:
             xtest_scaled = xtest_scaled.todense()
 
         # make the prediction on the test data
         try:
-            yhat = self.model.predict_proba(xtest_scaled) if self.probability and self.model_type != 'svm_linear' else self.model.predict(xtest_scaled)
+            yhat = self._model.predict_proba(xtest_scaled) if self.probability and self._model_type != 'svm_linear' else self._model.predict(xtest_scaled)
         except NotImplementedError as e:
-            print("Model type: {}\nModel: {}\nProbability: {}\n".format(self.model_type, self.model, self.probability), file=sys.stderr)
+            print("Model type: {}\nModel: {}\nProbability: {}\n".format(self._model_type, self._model, self.probability), file=sys.stderr)
             raise e
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            prediction_file = prediction_prefix + '-{}.predictions'.format(self.model_type)
+            prediction_file = prediction_prefix + '-{}.predictions'.format(self._model_type)
             with open(prediction_file, "w") as predictionfh:
-                if self.probability and self.model_type != 'svm_linear':
+                if self.probability and self._model_type != 'svm_linear':
                     print('\t'.join(self.inverse_label_dict), file=predictionfh)
                     for class_probs in yhat:
                         print('\t'.join(str(x) for x in class_probs), file=predictionfh)
@@ -499,7 +515,7 @@ class Classifier(object):
         features = [self._extract_features(x) for x in examples]
 
         # Create scaler if we weren't passed one
-        if (clear_vocab or self.scaler is None) and self.model_type != 'naivebayes':
+        if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
             self.scaler = Scaler()
 
         # Create feat_vectorizer if we weren't passed one
@@ -525,7 +541,7 @@ class Classifier(object):
         results = []
         for train_index, test_index in kfold:
             # Train model
-            self.model = None  # Do this to prevent feature vectorizer from being reset every time.
+            self._model = None  # Do this to prevent feature vectorizer from being reset every time.
             self.train(examples[train_index], grid_search_folds=grid_search_folds, grid_search=grid_search, grid_objective=grid_objective)
 
             # Evaluate model
