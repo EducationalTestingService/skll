@@ -211,8 +211,11 @@ def run_configuration(config_file):
         os.system("mkdir -p {}".format(predictdir))
 
     # make sure all the specified paths exist
-    if not (os.path.exists(train_path) and (not test_path or os.path.exists(test_path))):
-        print("Error: the training and/or test path(s) specified in config file does not exist.", file=sys.stderr)
+    if not os.path.exists(train_path):
+        print("Error: the training path specified in config file ({}) does not exist.".format(train_path), file=sys.stderr)
+        sys.exit(2)
+    if test_path and not os.path.exists(test_path):
+        print("Error: the test path specified in config file ({}) does not exist.".format(test_path), file=sys.stderr)
         sys.exit(2)
 
     # make sure all the given classifiers are valid as well
@@ -280,7 +283,10 @@ def run_configuration(config_file):
 
     # Print out results
     for result_info in chain.from_iterable(job_results):
-        if result_info.task != 'predict':
+        if isistance(result_info, basestring):
+            print('There was an error running the experiment:\n{}'.format(result_info), file=sys.stderr)
+            sys.exit(2)
+        elif result_info.task != 'predict':
             with open(os.path.join(resultspath, '{}_{}_{}_{}_{}.results'.format(result_info.train_set_name, result_info.test_set_name, result_info.featureset,
                                                                                 result_info.given_classifier, result_info.task)), 'w') as output_file:
                 print_fancy_output(result_info.task_results, output_file)
