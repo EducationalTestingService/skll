@@ -411,8 +411,8 @@ class Classifier(object):
         # Create prediction dicts for easier scoring
         actual_dict = defaultdict(set)
         pred_dict = defaultdict(set)
-        pred_list = [self.inverse_label_dict[pred_class] for pred_class in yhat]
-        actual_list = [self.inverse_label_dict[actual_class] for actual_class in ytest]
+        pred_list = [self.inverse_label_dict[int(pred_class)] for pred_class in yhat]
+        actual_list = [self.inverse_label_dict[int(actual_class)] for actual_class in ytest]
         for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
             pred_dict[pred_class].add(line_num)
             actual_dict[actual_class].add(line_num)
@@ -451,7 +451,11 @@ class Classifier(object):
             xtest_scaled = xtest_scaled.todense()
 
         # make the prediction on the test data
-        yhat = self.model.predict_proba(xtest_scaled) if self.probability and self.model_type != 'svm_linear' else self.model.predict(xtest_scaled)
+        try:
+            yhat = self.model.predict_proba(xtest_scaled) if self.probability and self.model_type != 'svm_linear' else self.model.predict(xtest_scaled)
+        except NotImplementedError as e:
+            print("Model type: {}\nModel: {}\nProbability: {}\n".format(self.model_type, self.model, self.probability))
+            raise e
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
@@ -463,7 +467,7 @@ class Classifier(object):
                         print('\t'.join(str(x) for x in class_probs), file=predictionfh)
                 else:
                     for pred in yhat:
-                        print(self.inverse_label_dict[pred], file=predictionfh)
+                        print(self.inverse_label_dict[int(pred)], file=predictionfh)
                 print(file=predictionfh)
 
         return yhat
