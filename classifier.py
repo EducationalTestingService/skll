@@ -203,7 +203,7 @@ class Classifier(object):
         @type modelfile: C{basestring}
         '''
         with open(modelfile) as f:
-            self.model = pickle.load(f)
+            self.model, self.probability = pickle.load(f)
 
     def load_vocab(self, vocabfile):
         '''
@@ -228,7 +228,7 @@ class Classifier(object):
             subprocess.call("mkdir -p {}".format(modeldir), shell=True)
         # write out the files
         with open(modelfile, "w") as f:
-            pickle.dump(self.model, f, -1)
+            pickle.dump([self.model, self.probability], f, -1)
 
     def save_vocab(self, vocabfile):
         '''
