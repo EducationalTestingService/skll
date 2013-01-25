@@ -403,7 +403,7 @@ class Classifier(object):
 
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
-            np.array([max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
+            yhat = np.array([max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
 
         # extract actual labels
         ytest = np.array([self.label_dict[self._extract_label(x)] for x in examples])
