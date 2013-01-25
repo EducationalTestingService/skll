@@ -207,7 +207,7 @@ class Classifier(object):
         return self._model_kwargs
 
     @property
-    def model_kwargs(self):
+    def model(self):
         ''' Getter for underlying model '''
         return self._model
 
