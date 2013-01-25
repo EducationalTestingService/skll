@@ -454,7 +454,7 @@ class Classifier(object):
         try:
             yhat = self.model.predict_proba(xtest_scaled) if self.probability and self.model_type != 'svm_linear' else self.model.predict(xtest_scaled)
         except NotImplementedError as e:
-            print("Model type: {}\nModel: {}\nProbability: {}\n".format(self.model_type, self.model, self.probability))
+            print("Model type: {}\nModel: {}\nProbability: {}\n".format(self.model_type, self.model, self.probability), file=sys.stderr)
             raise e
 
         # write out the predictions if we are asked to
