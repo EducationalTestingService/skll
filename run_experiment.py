@@ -90,9 +90,6 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
     ''' Classification job to be submitted to grid '''
     result_list = []
 
-    # initialize a classifer object
-    learner = classifier.Classifier(probability=probability)
-
     with open(log_path, 'w') as log_file:
         if cross_validate:
             print("Cross-validating on {}, feature set {} ...".format(train_set_name, featureset), file=log_file)
@@ -115,19 +112,19 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
         # the name of the feature vocab file
         vocabfile = os.path.join(vocabpath, '{}.vocab'.format(featureset))
 
-        # load the feature vocab if it already exists. We can do this since this is independent of the model type
-        if os.path.exists(vocabfile):
-            print('\tloading pre-existing feature vocab', file=log_file)
-            learner.load_vocab(vocabfile)
-
         # now go over each classifier
         for given_classifier in given_classifiers:
-            # set the model type
-            learner.model_type = given_classifier
+            # initialize a classifer object
+            learner = classifier.Classifier(probability=probability, model_type=given_classifier)
 
             # check whether a trained model on the same data with the same featureset already exists
             # if so, load it (and the feature vocabulary) and then use it on the test data
             modelfile = os.path.join(modelpath, given_classifier, '{}.model'.format(featureset))
+
+            # load the feature vocab if it already exists. We can do this since this is independent of the model type
+            if os.path.exists(vocabfile):
+                print('\tloading pre-existing feature vocab', file=log_files)
+                learner.load_vocab(vocabfile)
 
             # load the model if it already exists
             if os.path.exists(modelfile):
