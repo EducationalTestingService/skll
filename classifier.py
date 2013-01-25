@@ -348,7 +348,7 @@ class Classifier(object):
 
         # Create feat_vectorizer if we weren't passed one
         if clear_vocab or self.feat_vectorizer is None:
-            self.feat_vectorizer = self._extract_feature_vectorizer(features)  # create feature name -> value mapping
+            self._extract_feature_vectorizer(features)  # create feature name -> value mapping
 
         # vectorize the features
         xtrain = self.feat_vectorizer.transform(features)
@@ -446,6 +446,10 @@ class Classifier(object):
         xtest = self.feat_vectorizer.transform(features)
         xtest_scaled = xtest if self.model_type == 'naivebayes' else self.scaler.transform(xtest)
 
+        # Convert to dense if using naivebayes or rforest
+        if self.model_type in ['naivebayes', 'rforest']:
+            xtest_scaled = xtest_scaled.todense()
+
         # make the prediction on the test data
         yhat = self.model.predict_proba(xtest_scaled) if self.probability and self.model_type != 'svm_linear' else self.model.predict(xtest_scaled)
 
@@ -496,7 +500,7 @@ class Classifier(object):
 
         # Create feat_vectorizer if we weren't passed one
         if clear_vocab or self.feat_vectorizer is None:
-            self.feat_vectorizer = self._extract_feature_vectorizer(features)  # create feature name -> value mapping
+            self._extract_feature_vectorizer(features)  # create feature name -> value mapping
 
         # Create label_dict if we weren't passed one
         if clear_vocab or self.label_dict is None:
