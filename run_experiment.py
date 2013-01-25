@@ -283,7 +283,7 @@ def run_configuration(config_file):
 
     # Print out results
     for result_info in chain.from_iterable(job_results):
-        if isistance(result_info, basestring):
+        if isinstance(result_info, basestring):
             print('There was an error running the experiment:\n{}'.format(result_info), file=sys.stderr)
             sys.exit(2)
         elif result_info.task != 'predict':
