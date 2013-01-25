@@ -123,7 +123,7 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
 
             # load the feature vocab if it already exists. We can do this since this is independent of the model type
             if os.path.exists(vocabfile):
-                print('\tloading pre-existing feature vocab', file=log_files)
+                print('\tloading pre-existing feature vocab', file=log_file)
                 learner.load_vocab(vocabfile)
 
             # load the model if it already exists
