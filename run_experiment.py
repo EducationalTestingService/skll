@@ -200,7 +200,7 @@ def run_configuration(config_file):
     logpath = os.path.dirname(logfile)
     modelpath = configurator.get("Output", "models")
     vocabpath = configurator.get("Output", "vocabs")
-    probability = configurator.get("Output", "probability")
+    probability = eval(configurator.get("Output", "probability"))
     # create the path of the resultsfile, logfile and the modelpath
     os.system("mkdir -p {} {}".format(resultspath, logpath))
 
