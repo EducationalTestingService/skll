@@ -166,7 +166,7 @@ class Classifier(object):
         @param inverse_label_dict: Maps from integers back to label strings.
         @type inverse_label_dict: C{list} of C{basestring}
         @param model_type: Type of estimator to create.
-                   Options are: 'logistic', 'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and 'gradient'
+                           Options are: 'logistic', 'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and 'gradient'
         @type model_type: C{basestring}
         @param probability: Should classifier return probabilities of all classes (instead of just class with highest probability)?
         @type probability: C{bool}
