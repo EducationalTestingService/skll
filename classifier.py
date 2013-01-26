@@ -174,7 +174,7 @@ class Classifier(object):
         @type model_kwargs: C{dict}
         '''
         super(Classifier, self).__init__()
-        self.probability = probability
+        self.probability = probability if model_type != 'svm_linear' else False
         self.feat_vectorizer = feat_vectorizer
         self.scaler = scaler
         self.label_dict = label_dict
@@ -187,7 +187,6 @@ class Classifier(object):
         if self._model_type == 'svm_radial':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
-            print("Probability: {}\nkwargs: {}".format(self.probability, self._model_kwargs))
         elif self._model_type == 'dtree':
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type == 'rforest' or self._model_type == 'gradient':
