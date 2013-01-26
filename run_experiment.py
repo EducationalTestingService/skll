@@ -178,7 +178,8 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
 def run_configuration(config_file):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
-    configurator = ConfigParser.RawConfigParser({'test_location': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro", 'probability': False})
+    configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
+                                                 'probability': False})
     configurator.read(config_file)
 
     # extract sklearn parameters from the config file
@@ -191,6 +192,8 @@ def run_configuration(config_file):
     suffix = configurator.get("Input", "suffix")
 
     # get all the output files and directories
+    resultspath = configurator.get("Output", "results")
+    logpath = configurator.get("Output", "log")
     modelpath = configurator.get("Output", "models")
     vocabpath = configurator.get("Output", "vocabs")
     probability = eval(configurator.get("Output", "probability"))
@@ -258,8 +261,8 @@ def run_configuration(config_file):
         # change the prediction prefix to include the feature set
         featset_prediction_prefix = prediction_prefix + '-' + featureset.replace('+', '-')
 
-        # the log file
-        temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
+        # the log file that stores the actual output of this script (e.g., the tuned parameters, what kind of experiment was run, etc.)
+        temp_logfile = os.path.join(logpath, 'experiment_parameters_{}_{}_{}.log'.format(train_set_name, test_set_name, featureset))
 
         # create job
         job = Job(classify_featureset, [featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name,
