@@ -191,15 +191,9 @@ def run_configuration(config_file):
     suffix = configurator.get("Input", "suffix")
 
     # get all the output files and directories
-    resultsfile = configurator.get("Output", "results")
-    resultspath = os.path.dirname(resultsfile) if resultsfile else ""
-    logfile = configurator.get("Output", "log")
-    logpath = os.path.dirname(logfile)
     modelpath = configurator.get("Output", "models")
     vocabpath = configurator.get("Output", "vocabs")
     probability = eval(configurator.get("Output", "probability"))
-    # create the path of the resultsfile, logfile and the modelpath
-    os.system("mkdir -p {} {}".format(resultspath, logpath))
 
     # do we want to keep the predictions?
     prediction_prefix = configurator.get("Output", "predictions")
