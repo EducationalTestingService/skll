@@ -80,7 +80,8 @@ object --+
         <span class="summary-sig-arg">scaler</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">label_dict</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">inverse_label_dict</span>=<span class="summary-sig-default">None</span>,
-        <span class="summary-sig-arg">model_type</span>=<span class="summary-sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>)</span><br />
+        <span class="summary-sig-arg">model_type</span>=<span class="summary-sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">model_kwargs</span>=<span class="summary-sig-default">None</span>)</span><br />
       Initializes a classifier object with the specified settings.</td>
           <td align="right" valign="top">
             <span class="codelink"><a href="classifier-pysrc.html#Classifier.__init__">source&nbsp;code</a></span>
@@ -177,7 +178,7 @@ object --+
         <span class="summary-sig-arg">param_grid_file</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">grid_search_folds</span>=<span class="summary-sig-default">5</span>,
         <span class="summary-sig-arg">grid_search</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x27c1578&gt;</span>)</span><br />
+        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x3c2bc80&gt;</span>)</span><br />
       Train a classificatiion model and return the model, score, feature 
       vectorizer, scaler, label dictionary, and inverse label dictionary.</td>
           <td align="right" valign="top">
@@ -240,7 +241,7 @@ object --+
         <span class="summary-sig-arg">cv_folds</span>=<span class="summary-sig-default">10</span>,
         <span class="summary-sig-arg">grid_search</span>=<span class="summary-sig-default">False</span>,
         <span class="summary-sig-arg">grid_search_folds</span>=<span class="summary-sig-default">5</span>,
-        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x27c1578&gt;</span>,
+        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x3c2bc80&gt;</span>,
         <span class="summary-sig-arg">prediction_prefix</span>=<span class="summary-sig-default">None</span>)</span><br />
       Cross-validates a given model on the training examples.</td>
           <td align="right" valign="top">
@@ -279,6 +280,30 @@ object --+
   <td align="left" colspan="2" class="table-header">
     <span class="table-header">Properties</span></td>
 </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="classifier.Classifier-class.html#model_type" class="summary-name">model_type</a><br />
+      Getter for model type
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="classifier.Classifier-class.html#model_kwargs" class="summary-name">model_kwargs</a><br />
+      Getter for model keyword arguments
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="classifier.Classifier-class.html#model" class="summary-name">model</a><br />
+      Getter for underlying model
+    </td>
+  </tr>
   <tr>
     <td colspan="2" class="summary">
     <p class="indent-wrapped-lines"><b>Inherited from <code>object</code></b>:
@@ -309,7 +334,8 @@ object --+
         <span class="sig-arg">scaler</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">label_dict</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">inverse_label_dict</span>=<span class="sig-default">None</span>,
-        <span class="sig-arg">model_type</span>=<span class="sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>)</span>
+        <span class="sig-arg">model_type</span>=<span class="sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">model_kwargs</span>=<span class="sig-default">None</span>)</span>
     <br /><em class="fname">(Constructor)</em>
   </h3>
   </td><td align="right" valign="top"
@@ -332,6 +358,8 @@ object --+
           'gradient'</li>
         <li><strong class="pname"><code>probability</code></strong> (<code>bool</code>) - Should classifier return probabilities of all classes (instead of
           just class with highest probability)?</li>
+        <li><strong class="pname"><code>model_kwargs</code></strong> (<code>dict</code>) - A dictionary of keyword arguments to pass to the initializer for 
+          the specified model.</li>
     </ul></dd>
     <dt>Overrides:
         object.__init__
@@ -450,7 +478,7 @@ object --+
         <span class="sig-arg">param_grid_file</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">grid_search_folds</span>=<span class="sig-default">5</span>,
         <span class="sig-arg">grid_search</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x27c1578&gt;</span>)</span>
+        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x3c2bc80&gt;</span>)</span>
   </h3>
   </td><td align="right" valign="top"
     ><span class="codelink"><a href="classifier-pysrc.html#Classifier.train">source&nbsp;code</a></span>&nbsp;
@@ -555,7 +583,7 @@ object --+
         <span class="sig-arg">cv_folds</span>=<span class="sig-default">10</span>,
         <span class="sig-arg">grid_search</span>=<span class="sig-default">False</span>,
         <span class="sig-arg">grid_search_folds</span>=<span class="sig-default">5</span>,
-        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x27c1578&gt;</span>,
+        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x3c2bc80&gt;</span>,
         <span class="sig-arg">prediction_prefix</span>=<span class="sig-default">None</span>)</span>
   </h3>
   </td><td align="right" valign="top"
@@ -588,6 +616,61 @@ object --+
 </td></tr></table>
 </div>
 <br />
+<!-- ==================== PROPERTY DETAILS ==================== -->
+<a name="section-PropertyDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td align="left" colspan="2" class="table-header">
+    <span class="table-header">Property Details</span></td>
+</tr>
+</table>
+<a name="model_type"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">model_type</h3>
+  <p>Getter for model type</p>
+  <dl class="fields">
+    <dt>Get Method:</dt>
+    <dd class="value"><span class="summary-sig"><i>unreachable</i>.model_type(<span class="summary-sig-arg">self</span>)</span>
+        - Getter for model type
+    </dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="model_kwargs"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">model_kwargs</h3>
+  <p>Getter for model keyword arguments</p>
+  <dl class="fields">
+    <dt>Get Method:</dt>
+    <dd class="value"><span class="summary-sig"><i>unreachable</i>.model_kwargs(<span class="summary-sig-arg">self</span>)</span>
+        - Getter for model keyword arguments
+    </dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="model"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">model</h3>
+  <p>Getter for underlying model</p>
+  <dl class="fields">
+    <dt>Get Method:</dt>
+    <dd class="value"><span class="summary-sig"><i>unreachable</i>.model(<span class="summary-sig-arg">self</span>)</span>
+        - Getter for underlying model
+    </dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
 <!-- ==================== NAVIGATION BAR ==================== -->
 <table class="navbar" border="0" width="100%" cellpadding="0"
        bgcolor="#a0c0ff" cellspacing="0">
@@ -614,7 +697,7 @@ object --+
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Thu Jan 17 11:34:19 2013
+    Generated by Epydoc 3.0.1 on Sat Jan 26 14:31:59 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"

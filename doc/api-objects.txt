@@ -13,6 +13,7 @@ classifier.Classifier.cross_validate	classifier.Classifier-class.html#cross_vali
 classifier.Classifier.predict	classifier.Classifier-class.html#predict
 classifier.Classifier.save_model	classifier.Classifier-class.html#save_model
 classifier.Classifier._create_estimator	classifier.Classifier-class.html#_create_estimator
+classifier.Classifier.model_kwargs	classifier.Classifier-class.html#model_kwargs
 classifier.Classifier._extract_features	classifier.Classifier-class.html#_extract_features
 classifier.Classifier.__init__	classifier.Classifier-class.html#__init__
 classifier.Classifier.load_model	classifier.Classifier-class.html#load_model
@@ -21,4 +22,6 @@ classifier.Classifier.evaluate	classifier.Classifier-class.html#evaluate
 classifier.Classifier._extract_feature_vectorizer	classifier.Classifier-class.html#_extract_feature_vectorizer
 classifier.Classifier.train	classifier.Classifier-class.html#train
 classifier.Classifier._convert_labels_to_array	classifier.Classifier-class.html#_convert_labels_to_array
+classifier.Classifier.model_type	classifier.Classifier-class.html#model_type
+classifier.Classifier.model	classifier.Classifier-class.html#model
 classifier.Classifier._extract_label	classifier.Classifier-class.html#_extract_label
