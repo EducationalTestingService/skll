@@ -187,7 +187,7 @@
 <a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line"><tt class="py-docstring">    Make a dictionary of preprocessed values (e.g., tokens, POS tags, etc.).</tt> </tt>
 <a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line"><tt class="py-docstring">    This should be separate from the feature extraction code so that slow preprocessing steps</tt> </tt>
 <a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line"><tt class="py-docstring">    can be saved and reused, without have to redo preprocessing whenever features change.</tt> </tt>
-<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line"><tt class="py-docstring">    The simple classifier parses a TSV row and returns a dictionary {"y": classlabel, "x": dictionary_of_feature_values}</tt> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line"><tt class="py-docstring">    The simple classifier parses a TSV row and returns a dictionary {"y": class label, "x": dictionary of feature values}</tt> </tt>
 <a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line"><tt class="py-docstring">    It also takes in an optional list of feature names to be used in the "x" dictionary.</tt> </tt>
 <a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
 <a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line">    <tt class="py-name">x</tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt><tt class="py-op">}</tt> </tt>
@@ -374,7 +374,7 @@
 </div><a name="L323"></a><tt class="py-lineno">323</tt>  <tt class="py-line"> </tt>
 <a name="Classifier.train"></a><div id="Classifier.train-def"><a name="L324"></a><tt class="py-lineno">324</tt> <a class="py-toggle" href="#" id="Classifier.train-toggle" onclick="return toggle('Classifier.train');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="classifier.Classifier-class.html#train">train</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt> <tt class="py-param">examples</tt><tt class="py-op">,</tt> <tt class="py-param">clear_vocab</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">,</tt> <tt class="py-param">param_grid_file</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">,</tt> <tt class="py-param">grid_search_folds</tt><tt class="py-op">=</tt><tt class="py-number">5</tt><tt class="py-op">,</tt> <tt class="py-param">grid_search</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">,</tt> <tt class="py-param">grid_objective</tt><tt class="py-op">=</tt><tt id="link-6" class="py-name" targets="Function classifier.f1_score_micro()=classifier-module.html#f1_score_micro"><a title="classifier.f1_score_micro" class="py-name" href="#" onclick="return doclink('link-6', 'f1_score_micro', 'link-6');">f1_score_micro</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
 </div><div id="Classifier.train-collapsed" style="display:none;" pad="+++" indent="++++++++"></div><div id="Classifier.train-expanded"><a name="L325"></a><tt class="py-lineno">325</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
-<a name="L326"></a><tt class="py-lineno">326</tt>  <tt class="py-line"><tt class="py-docstring">        Train a classificatiion model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.</tt> </tt>
+<a name="L326"></a><tt class="py-lineno">326</tt>  <tt class="py-line"><tt class="py-docstring">        Train a classification model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.</tt> </tt>
 <a name="L327"></a><tt class="py-lineno">327</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
 <a name="L328"></a><tt class="py-lineno">328</tt>  <tt class="py-line"><tt class="py-docstring">        @param examples: The examples to train the model on.</tt> </tt>
 <a name="L329"></a><tt class="py-lineno">329</tt>  <tt class="py-line"><tt class="py-docstring">        @type examples: C{array}</tt> </tt>
@@ -545,7 +545,7 @@
 <a name="L494"></a><tt class="py-lineno">494</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
 <a name="L495"></a><tt class="py-lineno">495</tt>  <tt class="py-line"><tt class="py-docstring">        @param examples: The data to cross-validate classifier performance on.</tt> </tt>
 <a name="L496"></a><tt class="py-lineno">496</tt>  <tt class="py-line"><tt class="py-docstring">        @type examples: C{array}</tt> </tt>
-<a name="L497"></a><tt class="py-lineno">497</tt>  <tt class="py-line"><tt class="py-docstring">        @param stratified: Should we stratifiy the folds to ensure an even distribution of classes for each fold?</tt> </tt>
+<a name="L497"></a><tt class="py-lineno">497</tt>  <tt class="py-line"><tt class="py-docstring">        @param stratified: Should we stratify the folds to ensure an even distribution of classes for each fold?</tt> </tt>
 <a name="L498"></a><tt class="py-lineno">498</tt>  <tt class="py-line"><tt class="py-docstring">        @type stratified: C{bool}</tt> </tt>
 <a name="L499"></a><tt class="py-lineno">499</tt>  <tt class="py-line"><tt class="py-docstring">        @param clear_vocab: Wipe out the feature vectorizer, scaler, label dictionary, and inverse label dictionary. This should be done if you're retraining</tt> </tt>
 <a name="L500"></a><tt class="py-lineno">500</tt>  <tt class="py-line"><tt class="py-docstring">                            a L{Classifier} on a completely different data set (with different features).</tt> </tt>
@@ -556,11 +556,11 @@
 <a name="L505"></a><tt class="py-lineno">505</tt>  <tt class="py-line"><tt class="py-docstring">        @type grid_search: C{bool}</tt> </tt>
 <a name="L506"></a><tt class="py-lineno">506</tt>  <tt class="py-line"><tt class="py-docstring">        @param grid_search_folds: The number of folds to use when doing the grid search.</tt> </tt>
 <a name="L507"></a><tt class="py-lineno">507</tt>  <tt class="py-line"><tt class="py-docstring">        @type grid_search_folds: C{int}</tt> </tt>
-<a name="L508"></a><tt class="py-lineno">508</tt>  <tt class="py-line"><tt class="py-docstring">        @param grid_objective: The objective functino to use when doing the grid search.</tt> </tt>
+<a name="L508"></a><tt class="py-lineno">508</tt>  <tt class="py-line"><tt class="py-docstring">        @param grid_objective: The objective function to use when doing the grid search.</tt> </tt>
 <a name="L509"></a><tt class="py-lineno">509</tt>  <tt class="py-line"><tt class="py-docstring">        @type grid_objective: C{function}</tt> </tt>
 <a name="L510"></a><tt class="py-lineno">510</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
 <a name="L511"></a><tt class="py-lineno">511</tt>  <tt class="py-line"><tt class="py-docstring">        @return: The confusion matrix, overall accuracy, and per-class PRFs for each fold.</tt> </tt>
-<a name="L512"></a><tt class="py-lineno">512</tt>  <tt class="py-line"><tt class="py-docstring">        @rtype: C{list} of 3-{tuple}s</tt> </tt>
+<a name="L512"></a><tt class="py-lineno">512</tt>  <tt class="py-line"><tt class="py-docstring">        @rtype: C{list} of 3-C{tuple}s</tt> </tt>
 <a name="L513"></a><tt class="py-lineno">513</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
 <a name="L514"></a><tt class="py-lineno">514</tt>  <tt class="py-line">        <tt class="py-name">features</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt class="py-name">_extract_features</tt><tt class="py-op">(</tt><tt class="py-name">x</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">x</tt> <tt class="py-keyword">in</tt> <tt class="py-name">examples</tt><tt class="py-op">]</tt> </tt>
 <a name="L515"></a><tt class="py-lineno">515</tt>  <tt class="py-line"> </tt>
@@ -632,7 +632,7 @@ expandto(location.href);
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Sat Jan 26 14:49:33 2013
+    Generated by Epydoc 3.0.1 on Tue Jan 29 13:32:09 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"
