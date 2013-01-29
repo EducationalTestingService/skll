@@ -136,7 +136,7 @@ def _preprocess_example(example, feature_names=None):
     Make a dictionary of preprocessed values (e.g., tokens, POS tags, etc.).
     This should be separate from the feature extraction code so that slow preprocessing steps
     can be saved and reused, without have to redo preprocessing whenever features change.
-    The simple classifier parses a TSV row and returns a dictionary {"y": classlabel, "x": dictionary_of_feature_values}
+    The simple classifier parses a TSV row and returns a dictionary {"y": class label, "x": dictionary of feature values}
     It also takes in an optional list of feature names to be used in the "x" dictionary.
     '''
     x = {}
@@ -323,7 +323,7 @@ class Classifier(object):
 
     def train(self, examples, clear_vocab=False, param_grid_file=None, grid_search_folds=5, grid_search=True, grid_objective=f1_score_micro):
         '''
-        Train a classificatiion model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.
+        Train a classification model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.
 
         @param examples: The examples to train the model on.
         @type examples: C{array}
@@ -494,7 +494,7 @@ class Classifier(object):
 
         @param examples: The data to cross-validate classifier performance on.
         @type examples: C{array}
-        @param stratified: Should we stratifiy the folds to ensure an even distribution of classes for each fold?
+        @param stratified: Should we stratify the folds to ensure an even distribution of classes for each fold?
         @type stratified: C{bool}
         @param clear_vocab: Wipe out the feature vectorizer, scaler, label dictionary, and inverse label dictionary. This should be done if you're retraining
                             a L{Classifier} on a completely different data set (with different features).
@@ -505,11 +505,11 @@ class Classifier(object):
         @type grid_search: C{bool}
         @param grid_search_folds: The number of folds to use when doing the grid search.
         @type grid_search_folds: C{int}
-        @param grid_objective: The objective functino to use when doing the grid search.
+        @param grid_objective: The objective function to use when doing the grid search.
         @type grid_objective: C{function}
 
         @return: The confusion matrix, overall accuracy, and per-class PRFs for each fold.
-        @rtype: C{list} of 3-{tuple}s
+        @rtype: C{list} of 3-C{tuple}s
         '''
         features = [self._extract_features(x) for x in examples]
 
