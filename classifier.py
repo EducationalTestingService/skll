@@ -301,7 +301,7 @@ class Classifier(object):
             default_param_grid = [{'max_features': ["sqrt", "log2", None]}]
         elif self._model_type == "gradient":
             estimator = GradientBoostingClassifier(**self._model_kwargs)
-            default_param_grid = [{'learn_rate': [0.01, 0.1, 0.5]}]
+            default_param_grid = [{'learning_rate': [0.01, 0.1, 0.5]}]
         else:
             raise ValueError("{} is not a valid classifier type.".format(self._model_type))
 
