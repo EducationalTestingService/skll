@@ -38,7 +38,7 @@ def f1_score_macro(y_true, y_pred):
     '''
     Use the macro-averaged F1 measure to select hyperparameter values during the cross-validation grid search during training.
 
-    This method averages over classes (does not take imbalance into account).
+    This method averages over classes (does not take imbalance into account). You should use this if each class is equally important.
     '''
     return metrics.f1_score(y_true, y_pred, average="macro")
 
@@ -47,7 +47,7 @@ def f1_score_micro(y_true, y_pred):
     '''
     Use the micro-averaged F1 measure to select hyperparameter values during the cross-validation grid search during training.
 
-    This method averages over instances (takes imbalance into account). This implies that precision == recall == F1
+    This method averages over instances (takes imbalance into account). This implies that precision == recall == F1.
     '''
     return metrics.f1_score(y_true, y_pred, average="micro")
 
