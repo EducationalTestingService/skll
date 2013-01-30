@@ -86,7 +86,7 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
 
 
 def classify_featureset(featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
-                        grid_objective, cross_validate, evaluate, suffix, log_path, probability):
+                        grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath):
     ''' Classification job to be submitted to grid '''
     # TODO: Change this function so that it just does classification of featureset using one classifier and then spawn a job for every featureset/classifier combination
     result_list = []
@@ -171,8 +171,15 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
                 learner.predict(test_examples, prediction_prefix)
                 continue
 
-            # write out the tsv row to STDOUT
-            result_list.append(ClassifierResultInfo(train_set_name, test_set_name, featureset, given_classifier, task, results))
+            # write out results to file if we're not predicting
+            result_info = ClassifierResultInfo(train_set_name, test_set_name, featureset, given_classifier, task, results)
+            if result_info.task != 'predict':
+                with open(os.path.join(resultspath, '{}_{}_{}_{}_{}.results'.format(result_info.train_set_name, result_info.test_set_name, result_info.featureset,
+                                                                                    result_info.given_classifier, result_info.task)), 'w') as output_file:
+                    print_fancy_output(result_info.task_results, output_file)
+
+            # Append the current results to the list to be returned
+            result_list.append(result_info)
 
     return result_list
 
@@ -271,7 +278,7 @@ def run_configuration(config_file):
         # create job
         job = Job(classify_featureset, [featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name,
                                         modelpath, vocabpath, featset_prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
-                                        evaluate, suffix, temp_logfile, probability], num_slots=(5 if do_grid_search else 1), name=jobname)
+                                        evaluate, suffix, temp_logfile, probability, resultspath], num_slots=(5 if do_grid_search else 1), name=jobname)
 
         # Add job to list
         jobs.append(job)
@@ -284,10 +291,6 @@ def run_configuration(config_file):
         if not hasattr(result_info, 'task'):
             print('There was an error running the experiment:\n{}'.format(result_info), file=sys.stderr)
             sys.exit(2)
-        elif result_info.task != 'predict':
-            with open(os.path.join(resultspath, '{}_{}_{}_{}_{}.results'.format(result_info.train_set_name, result_info.test_set_name, result_info.featureset,
-                                                                                result_info.given_classifier, result_info.task)), 'w') as output_file:
-                print_fancy_output(result_info.task_results, output_file)
 
 
 if __name__ == '__main__':
