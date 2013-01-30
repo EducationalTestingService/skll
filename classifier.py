@@ -84,7 +84,7 @@ def _megam_dict_iter(path):
             # Process encoding
             line = _sanitize_line(UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup.strip())
             # Handle instance lines
-            if not line.startswith('#') and line not in ['TRAIN', 'TEST', 'DEV']:
+            if line and not line.startswith('#') and line not in ['TRAIN', 'TEST', 'DEV']:
                 split_line = line.split()
                 class_name = split_line[0]
                 curr_info_dict = {}
