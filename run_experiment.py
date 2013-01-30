@@ -201,10 +201,9 @@ def run_configuration(config_file):
     probability = eval(configurator.get("Output", "probability"))
 
     # do we want to keep the predictions?
-    prediction_prefix = configurator.get("Output", "predictions")
-    if prediction_prefix:
-        predictdir = os.path.dirname(prediction_prefix)
-        os.system("mkdir -p {}".format(predictdir))
+    prediction_dir = configurator.get("Output", "predictions")
+    if prediction_dir:
+        os.system("mkdir -p {}".format(prediction_dir))
 
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
@@ -238,9 +237,9 @@ def run_configuration(config_file):
     else:
         predict = True
 
-    # make sure that, if we are in prediction mode,we have a prediction_prefix
-    if predict and not prediction_prefix:
-        print('Error: you need to specify a prediction prefix if you are using prediction mode (no "results" option in config file).', file=sys.stderr)
+    # make sure that, if we are in prediction mode, we have a prediction_dir
+    if predict and not prediction_dir:
+        print('Error: you need to specify a prediction directory if you are using prediction mode (no "results" option in config file).', file=sys.stderr)
         sys.exit(2)
 
     # the list of jobs submitted
@@ -256,7 +255,7 @@ def run_configuration(config_file):
         jobname = 'run_{}_{}_{}'.format(train_set_name, test_set_name, featureset)
 
         # change the prediction prefix to include the feature set
-        featset_prediction_prefix = prediction_prefix + '-' + featureset.replace('+', '-')
+        featset_prediction_prefix = os.path.join(prediction_dir, featureset.replace('+', '_'))
 
         # the log file that stores the actual output of this script (e.g., the tuned parameters, what kind of experiment was run, etc.)
         temp_logfile = os.path.join(logpath, 'experiment_parameters_{}_{}_{}.log'.format(train_set_name, test_set_name, featureset))
