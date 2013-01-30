@@ -1,11 +1,12 @@
 classifier	classifier-module.html
 classifier.load_examples	classifier-module.html#load_examples
 classifier.f1_score_micro	classifier-module.html#f1_score_micro
-classifier.__package__	classifier-module.html#__package__
+classifier.f1_score_macro	classifier-module.html#f1_score_macro
 classifier._preprocess_example	classifier-module.html#_preprocess_example
 classifier._megam_dict_iter	classifier-module.html#_megam_dict_iter
-classifier.f1_score_macro	classifier-module.html#f1_score_macro
+classifier.__package__	classifier-module.html#__package__
 classifier.accuracy	classifier-module.html#accuracy
+classifier._REQUIRES_DENSE	classifier-module.html#_REQUIRES_DENSE
 classifier._sanitize_line	classifier-module.html#_sanitize_line
 classifier.Classifier	classifier.Classifier-class.html
 classifier.Classifier.load_vocab	classifier.Classifier-class.html#load_vocab
