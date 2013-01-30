@@ -33,6 +33,10 @@ from sklearn.svm import LinearSVC, SVC
 from sklearn.tree import DecisionTreeClassifier
 
 
+#### Globals ####
+_REQUIRES_DENSE = {'naivebayes', 'rforest', 'gradient', 'dtree'}
+
+
 #### METRICS ####
 def f1_score_macro(y_true, y_pred):
     '''
@@ -377,8 +381,8 @@ class Classifier(object):
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
             self.scaler = StandardScaler(with_mean=(not issparse(xtrain)))
 
-        # Convert to dense if using naivebayes or rforest
-        if self._model_type in ['naivebayes', 'rforest']:
+        # Convert to dense if using naivebayes, rforest
+        if self._model_type in _REQUIRES_DENSE:
             xtrain = xtrain.todense()
 
         # Scale features if necessary
@@ -467,7 +471,7 @@ class Classifier(object):
         xtest_scaled = xtest if self._model_type == 'naivebayes' else self.scaler.transform(xtest)
 
         # Convert to dense if using naivebayes or rforest
-        if self._model_type in ['naivebayes', 'rforest']:
+        if self._model_type in _REQUIRES_DENSE:
             xtest_scaled = xtest_scaled.todense()
 
         # make the prediction on the test data
