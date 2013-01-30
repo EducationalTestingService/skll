@@ -88,6 +88,7 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
 def classify_featureset(featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
                         grid_objective, cross_validate, evaluate, suffix, log_path, probability):
     ''' Classification job to be submitted to grid '''
+    # TODO: Change this function so that it just does classification of featureset using one classifier and then spawn a job for every featureset/classifier combination
     result_list = []
 
     with open(log_path, 'w') as log_file:
@@ -102,7 +103,8 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
                               'svm_radial': ['C', 'gamma'],
                               'logistic': ['C'],
                               'naivebayes': ['alpha'],
-                              'rforest': ['max_depth', 'max_features']}
+                              'rforest': ['max_depth', 'max_features'],
+                              'gradient': ['learning_rate']}
 
         # load the training and test examples
         train_examples = classifier.load_examples(os.path.join(train_path, featureset + suffix))
@@ -212,17 +214,12 @@ def run_configuration(config_file):
         print("Error: the test path specified in config file ({}) does not exist.".format(test_path), file=sys.stderr)
         sys.exit(2)
 
-    # make sure all the given classifiers are valid as well
-    if set(given_classifiers).difference(set(['dtree', 'svm_linear', 'svm_radial', 'logistic', 'naivebayes', 'rforest'])):
-        print("Error: unrecognized classifier in config file.", file=sys.stderr)
-        sys.exit(2)
-
     # do we need to run a grid search for the hyperparameters or are we just using the defaults
     do_grid_search = eval(configurator.get("Tuning", "grid_search"))
 
     # what is the objective function for the grid search?
     grid_objective_func = configurator.get("Tuning", "objective")
-    if grid_objective_func not in ['f1_score_micro', 'f1_score_macro', 'accuracy']:
+    if grid_objective_func not in {'f1_score_micro', 'f1_score_macro', 'accuracy'}:
         print('Error: invalid grid objective function.', file=sys.stderr)
         sys.exit(2)
     else:
