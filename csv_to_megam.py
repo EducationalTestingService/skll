@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     # Iterate through input file
     first = True
-    for line in args.infile:
+    for line_num, line in enumerate(args.infile):
         stripped_line = UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
         split_line = stripped_line.split(args.delimiter)
         # Skip blank lines
@@ -75,11 +75,20 @@ if __name__ == '__main__':
                             del split_line[i]
                         except IndexError as e:
                             print("ERROR: Could not delete element at index {} from list {}.".format(i, split_line), file=sys.stderr)
-                            raise e
+                            sys.exit(2)
                 else:
                     # Print class
                     print('{}'.format(split_line[args.classfield]).encode('utf-8'), end='\t')
                     del split_line[args.classfield]
 
                 # Print features
-                print(' '.join(['{} {}'.format(field, value) for field, value in zip(fields, split_line) if value not in ['.', '?'] and float(value) != 0]).encode('utf-8'))
+                try:
+                    print(' '.join(['{} {}'.format(field, value) for field, value in zip(fields, split_line) if value not in ['.', '?'] and float(value) != 0]).encode('utf-8'))
+                except ValueError:
+                    for value in split_line:
+                        if value not in ['.', '?']:
+                            try:
+                                float(value)
+                            except ValueError as e:
+                                print("Could not convert '{}' to float on line {}.".format(value, line_num).encode('utf-8'), file=sys.stderr)
+                                sys.exit(2)
