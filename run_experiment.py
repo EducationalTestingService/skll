@@ -121,7 +121,7 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
 
             # check whether a trained model on the same data with the same featureset already exists
             # if so, load it (and the feature vocabulary) and then use it on the test data
-            modelfile = os.path.join(modelpath, given_classifier, '{}.model'.format(featureset))
+            modelfile = os.path.join(modelpath, given_classifier, '{}_{}.model'.format(featureset, "untuned" if not grid_search else "tuned"))
 
             # load the feature vocab if it already exists. We can do this since this is independent of the model type
             if os.path.exists(vocabfile):
@@ -286,7 +286,7 @@ def run_configuration(config_file):
     # submit the jobs
     job_results = process_jobs(jobs)
 
-    # Print out results
+    # Check for errors
     for result_info in chain.from_iterable(job_results):
         if not hasattr(result_info, 'task'):
             print('There was an error running the experiment:\n{}'.format(result_info), file=sys.stderr)
