@@ -28,7 +28,7 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.preprocessing import Scaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC
 from sklearn.tree import DecisionTreeClassifier
 
@@ -302,6 +302,8 @@ class Classifier(object):
         elif self._model_type == "gradient":
             estimator = GradientBoostingClassifier(**self._model_kwargs)
             default_param_grid = [{'learn_rate': [0.01, 0.1, 0.5]}]
+        else:
+            raise ValueError("{} is not a valid classifier type.".format(self._model_type))
 
         return estimator, default_param_grid
 
@@ -370,7 +372,7 @@ class Classifier(object):
 
         # Create scaler if we weren't passed one
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            self.scaler = Scaler(with_mean=(not issparse(xtrain)))
+            self.scaler = StandardScaler(with_mean=(not issparse(xtrain)))
 
         # Convert to dense if using naivebayes or rforest
         if self._model_type in ['naivebayes', 'rforest']:
@@ -434,7 +436,7 @@ class Classifier(object):
 
         # Calculate metrics
         result_dict = defaultdict(dict)
-        overall_accuracy = metrics.zero_one_score(ytest, yhat) * 100
+        overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
         # Store results
         for actual_class in sorted(actual_dict.iterkeys()):
             result_dict[actual_class]["Precision"] = precision(actual_dict[actual_class], pred_dict[actual_class])
@@ -515,7 +517,7 @@ class Classifier(object):
 
         # Create scaler if we weren't passed one
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            self.scaler = Scaler()
+            self.scaler = StandardScaler()
 
         # Create feat_vectorizer if we weren't passed one
         if clear_vocab or self.feat_vectorizer is None:
