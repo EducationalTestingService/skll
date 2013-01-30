@@ -205,6 +205,14 @@ def run_configuration(config_file):
     if prediction_dir:
         os.system("mkdir -p {}".format(prediction_dir))
 
+    # make sure log path exists
+    if logpath:
+        os.system("mkdir -p {}".format(logpath))
+
+    # make sure results path exists
+    if resultspath:
+        os.system("mkdir -p {}".format(resultspath))
+
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
         print("Error: the training path specified in config file ({}) does not exist.".format(train_path), file=sys.stderr)
@@ -273,7 +281,7 @@ def run_configuration(config_file):
 
     # Print out results
     for result_info in chain.from_iterable(job_results):
-        if isinstance(result_info, basestring):
+        if not hasattr(result_info, 'task'):
             print('There was an error running the experiment:\n{}'.format(result_info), file=sys.stderr)
             sys.exit(2)
         elif result_info.task != 'predict':
