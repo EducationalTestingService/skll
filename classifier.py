@@ -412,7 +412,7 @@ class Classifier(object):
 
         @param examples: The examples to evaluate the performance of the model on.
         @type examples: C{array}
-        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "-{model_type}.predictions"
+        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "_{model_type}.predictions"
         @type prediction_prefix: C{basestring}
 
         @return: The confusion matrix, the overall accuracy, and the per-class PRFs.
@@ -454,7 +454,7 @@ class Classifier(object):
 
         @param examples: The examples to predict the classes for.
         @type examples: C{array}
-        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "-{model_type}.predictions"
+        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "_{model_type}.predictions"
         @type prediction_prefix: C{basestring}
 
         @return: The predictions returned by the classifier.
@@ -479,7 +479,7 @@ class Classifier(object):
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            prediction_file = prediction_prefix + '-{}.predictions'.format(self._model_type)
+            prediction_file = prediction_prefix + '_{}.predictions'.format(self._model_type)
             with open(prediction_file, "w") as predictionfh:
                 if self.probability and self._model_type != 'svm_linear':
                     print('\t'.join(self.inverse_label_dict), file=predictionfh)
