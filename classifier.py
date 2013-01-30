@@ -397,7 +397,7 @@ class Classifier(object):
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
             grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
-                                         n_jobs=(grid_search_folds if self._model_type not in ["svm_linear", "logistic"] else 1))
+                                         n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
 
             # run the grid search for hyperparameters
             print('\tstarting grid search', file=sys.stderr)
@@ -410,7 +410,7 @@ class Classifier(object):
 
         return score
 
-    def evaluate(self, examples, prediction_prefix=None):
+    def evaluate(self, examples, prediction_prefix=None, append=False):
         '''
         Evaluates a given model on a given dev or test example set.
 
@@ -418,12 +418,14 @@ class Classifier(object):
         @type examples: C{array}
         @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "_{model_type}.predictions"
         @type prediction_prefix: C{basestring}
+        @param append: Should we append the current predictions to the file if it exists?
+        @type append: C{bool}
 
         @return: The confusion matrix, the overall accuracy, and the per-class PRFs.
         @rtype: 3-C{tuple}
         '''
         # make the prediction on the test data
-        yhat = self.predict(examples, prediction_prefix)
+        yhat = self.predict(examples, prediction_prefix, append=append)
 
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
@@ -452,7 +454,7 @@ class Classifier(object):
 
         return (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.inverse_label_dict))).tolist(), overall_accuracy, result_dict)
 
-    def predict(self, examples, prediction_prefix):
+    def predict(self, examples, prediction_prefix, append=False):
         '''
         Uses a given model to generate predictions on a given data set
 
@@ -460,6 +462,8 @@ class Classifier(object):
         @type examples: C{array}
         @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "_{model_type}.predictions"
         @type prediction_prefix: C{basestring}
+        @param append: Should we append the current predictions to the file if it exists?
+        @type append: C{bool}
 
         @return: The predictions returned by the classifier.
         @rtype: C{array}
@@ -484,9 +488,10 @@ class Classifier(object):
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
             prediction_file = prediction_prefix + '_{}.predictions'.format(self._model_type)
-            with open(prediction_file, "w") as predictionfh:
+            with open(prediction_file, "w" if not append else "a") as predictionfh:
                 if self.probability and self._model_type != 'svm_linear':
-                    print('\t'.join(self.inverse_label_dict), file=predictionfh)
+                    if not append:
+                        print('\t'.join(self.inverse_label_dict), file=predictionfh)
                     for class_probs in yhat:
                         print('\t'.join(str(x) for x in class_probs), file=predictionfh)
                 else:
@@ -547,13 +552,16 @@ class Classifier(object):
 
         # handle each fold separately and accumulate the predictions and the numbers
         results = []
+        append_predictions = False
         for train_index, test_index in kfold:
             # Train model
             self._model = None  # Do this to prevent feature vectorizer from being reset every time.
             self.train(examples[train_index], grid_search_folds=grid_search_folds, grid_search=grid_search, grid_objective=grid_objective)
 
             # Evaluate model
-            results.append(self.evaluate(examples[test_index], prediction_prefix=prediction_prefix))
+            results.append(self.evaluate(examples[test_index], prediction_prefix=prediction_prefix, append=append_predictions))
+
+            append_predictions = True
 
         # return list of results for all folds
         return results
