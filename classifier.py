@@ -381,7 +381,7 @@ class Classifier(object):
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
             self.scaler = StandardScaler(with_mean=(not issparse(xtrain)))
 
-        # Convert to dense if using naivebayes, rforest
+        # Convert to dense if required by model type
         if self._model_type in _REQUIRES_DENSE:
             xtrain = xtrain.todense()
 
@@ -470,7 +470,7 @@ class Classifier(object):
         xtest = self.feat_vectorizer.transform(features)
         xtest_scaled = xtest if self._model_type == 'naivebayes' else self.scaler.transform(xtest)
 
-        # Convert to dense if using naivebayes or rforest
+        # Convert to dense if required by model type
         if self._model_type in _REQUIRES_DENSE:
             xtest_scaled = xtest_scaled.todense()
 
