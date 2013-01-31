@@ -20,6 +20,7 @@ import classifier
 from pythongrid import Job, process_jobs
 from texttable import Texttable
 
+
 # Named tuple for storing job results
 ClassifierResultInfo = namedtuple('ClassifierResultInfo', ['train_set_name', 'test_set_name', 'featureset', 'given_classifier', 'task', 'task_results'])
 
@@ -121,7 +122,7 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
 
             # check whether a trained model on the same data with the same featureset already exists
             # if so, load it (and the feature vocabulary) and then use it on the test data
-            modelfile = os.path.join(modelpath, given_classifier, '{}_{}.model'.format(featureset, "untuned" if not grid_search else "tuned"))
+            modelfile = os.path.join(modelpath, given_classifier, '{}_{}_{}.model'.format(featureset, "untuned" if not grid_search else "tuned", grid_objective))
 
             # load the feature vocab if it already exists. We can do this since this is independent of the model type
             if os.path.exists(vocabfile):
