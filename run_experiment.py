@@ -89,7 +89,6 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
 def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
                         grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath):
     ''' Classification job to be submitted to grid '''
-    result_list = []
 
     with open(log_path, 'w') as log_file:
         if cross_validate:
@@ -167,11 +166,10 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
             print('\twriting predictions', file=log_file)
             task = 'predict'
             learner.predict(test_examples, prediction_prefix)
-            continue
 
         # write out results to file if we're not predicting
         result_info = ClassifierResultInfo(train_set_name, test_set_name, featureset, given_classifier, task, results)
-        if result_info.task != 'predict':
+        if task != 'predict':
             with open(os.path.join(resultspath, '{}.results'.format(jobname)), 'w') as output_file:
                 print_fancy_output(result_info.task_results, output_file)
 
