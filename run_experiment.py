@@ -14,7 +14,6 @@ import re
 import os
 import sys
 from collections import defaultdict, namedtuple
-from itertools import chain
 
 import classifier
 from pythongrid import Job, process_jobs
