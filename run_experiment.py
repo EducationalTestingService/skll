@@ -122,7 +122,7 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
 
             # check whether a trained model on the same data with the same featureset already exists
             # if so, load it (and the feature vocabulary) and then use it on the test data
-            modelfile = os.path.join(modelpath, given_classifier, '{}_{}_{}.model'.format(featureset, "untuned" if not grid_search else "tuned", grid_objective))
+            modelfile = os.path.join(modelpath, given_classifier, '{}_{}_{}.model'.format(featureset, "untuned" if not grid_search else "tuned", grid_objective.__name__))
 
             # load the feature vocab if it already exists. We can do this since this is independent of the model type
             if os.path.exists(vocabfile):
@@ -175,8 +175,8 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
             # write out results to file if we're not predicting
             result_info = ClassifierResultInfo(train_set_name, test_set_name, featureset, given_classifier, task, results)
             if result_info.task != 'predict':
-                with open(os.path.join(resultspath, '{}_{}_{}_{}_{}.results'.format(result_info.train_set_name, result_info.test_set_name, result_info.featureset,
-                                                                                    result_info.given_classifier, result_info.task)), 'w') as output_file:
+                with open(os.path.join(resultspath, '{}_{}_{}_{}_{}_{}_{}.results'.format(result_info.train_set_name, result_info.test_set_name, result_info.featureset,
+                                                                                    result_info.given_classifier, "untuned" if not grid_search else "tuned", grid_objective.__name__, result_info.task)), 'w') as output_file:
                     print_fancy_output(result_info.task_results, output_file)
 
             # Append the current results to the list to be returned
