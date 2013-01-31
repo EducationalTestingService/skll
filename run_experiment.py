@@ -125,37 +125,40 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
             print('\tloading pre-existing feature vocab', file=log_file)
             learner.load_vocab(vocabfile)
 
-        # load the model if it already exists
-        if os.path.exists(modelfile):
-            print('\tloading pre-existing {} model'.format(given_classifier), file=log_file)
-            learner.load_model(modelfile)
+        # check if we're doing cross-validation, because we only load/save models when we're not.
+        if not cross_validate:
 
-        # if we have do not have a saved model, we need to train one. However, we may be able to reuse a saved feature vocab file if that existed above.
-        else:
-            if learner.feat_vectorizer:
-                print('\ttraining new {} model'.format(given_classifier), file=log_file)
-                best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
+            # load the model if it already exists
+            if os.path.exists(modelfile):
+                print('\tloading pre-existing {} model'.format(given_classifier), file=log_file)
+                learner.load_model(modelfile)
+
+            # if we have do not have a saved model, we need to train one. However, we may be able to reuse a saved feature vocab file if that existed above.
             else:
-                print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
-                best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
+                if learner.feat_vectorizer:
+                    print('\ttraining new {} model'.format(given_classifier), file=log_file)
+                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
+                else:
+                    print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
+                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
 
-                # save vocab
-                learner.save_vocab(vocabfile)
+                    # save vocab
+                    learner.save_vocab(vocabfile)
 
-            # save model
-            learner.save_model(modelfile)
+                # save model
+                learner.save_model(modelfile)
 
-            if grid_search:
-                print('\tbest {} score: {}'.format(grid_objective.__name__, round(best_score, 3)), file=log_file)
+                if grid_search:
+                    print('\tbest {} score: {}'.format(grid_objective.__name__, round(best_score, 3)), file=log_file)
 
-        # print out the tuned parameters and best CV score
-        param_out = ('{}: {}'.format(param_name, param_value) for param_name, param_value in learner.model.get_params().iteritems())
-        print('\thyperparameters: {}'.format(', '.join(param_out)), file=log_file)
+            # print out the tuned parameters and best CV score
+            param_out = ('{}: {}'.format(param_name, param_value) for param_name, param_value in learner.model.get_params().iteritems())
+            print('\thyperparameters: {}'.format(', '.join(param_out)), file=log_file)
 
         # run on test set or cross-validate on training data, depending on what was asked for
         if cross_validate:
             print('\tcross-validating', file=log_file)
-            results = learner.cross_validate(train_examples, prediction_prefix=prediction_prefix)
+            results = learner.cross_validate(train_examples, prediction_prefix=prediction_prefix, grid_search=grid_search, grid_objective=grid_objective)
             task = 'cross-validate'
         elif evaluate:
             print('\tevaluating predictions', file=log_file)
