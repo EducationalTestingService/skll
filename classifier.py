@@ -47,7 +47,6 @@ def f1_score_least_frequent(y_true, y_pred):
     '''
 
     least_frequent = np.bincount(y_true).argmin()
-    print("y_true: {}\ny_pred: {}\nleast_frequent: {}".format(y_true, y_pred, least_frequent), file=sys.stderr)
     return metrics.f1_score(y_true[y_true == least_frequent], y_pred[y_true == least_frequent])
 
 
