@@ -74,11 +74,6 @@ def accuracy(y_true, y_pred):
     '''
     return metrics.accuracy_score(y_true, y_pred)
 
-def f1_score_weighted(y_true, y_pred):
-    '''
-    Use the weighted F1 measure to select hyperparameter values during the cross-validation grid search during training.
-    '''
-    return metrics.f1_score(y_true, y_pred, average="weighted")
 
 #### DATA LOADING FUNCTIONS ###
 def _sanitize_line(line):
