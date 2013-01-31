@@ -86,10 +86,9 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
         print("Accuracy = {:.1f}%".format(score_sum / num_folds), file=output_file)
 
 
-def classify_featureset(featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
+def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
                         grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath):
     ''' Classification job to be submitted to grid '''
-    # TODO: Change this function so that it just does classification of featureset using one classifier and then spawn a job for every featureset/classifier combination
     result_list = []
 
     with open(log_path, 'w') as log_file:
@@ -115,74 +114,68 @@ def classify_featureset(featureset, given_classifiers, train_path, test_path, tr
         # the name of the feature vocab file
         vocabfile = os.path.join(vocabpath, '{}.vocab'.format(featureset))
 
-        # now go over each classifier
-        for given_classifier in given_classifiers:
-            # initialize a classifer object
-            learner = classifier.Classifier(probability=probability, model_type=given_classifier)
+        # initialize a classifer object
+        learner = classifier.Classifier(probability=probability, model_type=given_classifier)
 
-            # check whether a trained model on the same data with the same featureset already exists
-            # if so, load it (and the feature vocabulary) and then use it on the test data
-            modelfile = os.path.join(modelpath, given_classifier, '{}_{}_{}.model'.format(featureset, "untuned" if not grid_search else "tuned", grid_objective.__name__))
+        # check whether a trained model on the same data with the same featureset already exists
+        # if so, load it (and the feature vocabulary) and then use it on the test data
+        modelfile = os.path.join(modelpath, '{}.model'.format(jobname))
 
-            # load the feature vocab if it already exists. We can do this since this is independent of the model type
-            if os.path.exists(vocabfile):
-                print('\tloading pre-existing feature vocab', file=log_file)
-                learner.load_vocab(vocabfile)
+        # load the feature vocab if it already exists. We can do this since this is independent of the model type
+        if os.path.exists(vocabfile):
+            print('\tloading pre-existing feature vocab', file=log_file)
+            learner.load_vocab(vocabfile)
 
-            # load the model if it already exists
-            if os.path.exists(modelfile):
-                print('\tloading pre-existing {} model'.format(given_classifier), file=log_file)
-                learner.load_model(modelfile)
+        # load the model if it already exists
+        if os.path.exists(modelfile):
+            print('\tloading pre-existing {} model'.format(given_classifier), file=log_file)
+            learner.load_model(modelfile)
 
-            # if we have do not have a saved model, we need to train one. However, we may be able to reuse a saved feature vocab file if that existed above.
+        # if we have do not have a saved model, we need to train one. However, we may be able to reuse a saved feature vocab file if that existed above.
+        else:
+            if learner.feat_vectorizer:
+                print('\ttraining new {} model'.format(given_classifier), file=log_file)
+                best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
             else:
-                if learner.feat_vectorizer:
-                    print('\ttraining new {} model'.format(given_classifier), file=log_file)
-                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
-                else:
-                    print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
-                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
+                print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
+                best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
 
-                    # save vocab
-                    learner.save_vocab(vocabfile)
+                # save vocab
+                learner.save_vocab(vocabfile)
 
-                # save model
-                learner.save_model(modelfile)
+            # save model
+            learner.save_model(modelfile)
 
-                # print out the tuned parameters and best CV score
-                if grid_search:
-                    param_out = []
-                    for param_name in tunable_parameters[given_classifier]:
-                        param_out.append('{}: {}'.format(param_name, learner.model.get_params()[param_name]))
-                    print('\ttuned hyperparameters: {}'.format(', '.join(param_out)), file=log_file)
-                    print('\tbest score: {}'.format(round(best_score, 3)), file=log_file)
+            # print out the tuned parameters and best CV score
+            if grid_search:
+                param_out = []
+                for param_name in tunable_parameters[given_classifier]:
+                    param_out.append('{}: {}'.format(param_name, learner.model.get_params()[param_name]))
+                print('\ttuned hyperparameters: {}'.format(', '.join(param_out)), file=log_file)
+                print('\tbest score: {}'.format(round(best_score, 3)), file=log_file)
 
-            # run on test set or cross-validate on training data, depending on what was asked for
-            if cross_validate:
-                print('\tcross-validating', file=log_file)
-                results = learner.cross_validate(train_examples, prediction_prefix=prediction_prefix)
-                task = 'cross-validate'
-            elif evaluate:
-                print('\tevaluating predictions', file=log_file)
-                results = [learner.evaluate(test_examples, prediction_prefix=prediction_prefix)]
-                task = 'evaluate'
-            else:
-                print('\twriting predictions', file=log_file)
-                task = 'predict'
-                learner.predict(test_examples, prediction_prefix)
-                continue
+        # run on test set or cross-validate on training data, depending on what was asked for
+        if cross_validate:
+            print('\tcross-validating', file=log_file)
+            results = learner.cross_validate(train_examples, prediction_prefix=prediction_prefix)
+            task = 'cross-validate'
+        elif evaluate:
+            print('\tevaluating predictions', file=log_file)
+            results = [learner.evaluate(test_examples, prediction_prefix=prediction_prefix)]
+            task = 'evaluate'
+        else:
+            print('\twriting predictions', file=log_file)
+            task = 'predict'
+            learner.predict(test_examples, prediction_prefix)
+            continue
 
-            # write out results to file if we're not predicting
-            result_info = ClassifierResultInfo(train_set_name, test_set_name, featureset, given_classifier, task, results)
-            if result_info.task != 'predict':
-                with open(os.path.join(resultspath, '{}_{}_{}_{}_{}_{}_{}.results'.format(result_info.train_set_name, result_info.test_set_name, result_info.featureset,
-                                                                                    result_info.given_classifier, "untuned" if not grid_search else "tuned", grid_objective.__name__, result_info.task)), 'w') as output_file:
-                    print_fancy_output(result_info.task_results, output_file)
+        # write out results to file if we're not predicting
+        result_info = ClassifierResultInfo(train_set_name, test_set_name, featureset, given_classifier, task, results)
+        if result_info.task != 'predict':
+            with open(os.path.join(resultspath, '{}.results'.format(jobname)), 'w') as output_file:
+                print_fancy_output(result_info.task_results, output_file)
 
-            # Append the current results to the list to be returned
-            result_list.append(result_info)
-
-    return result_list
+    return result_info
 
 
 def run_configuration(config_file):
@@ -239,6 +232,7 @@ def run_configuration(config_file):
         sys.exit(2)
     else:
         grid_objective_func = 'classifier.' + grid_objective_func
+    grid_objective = eval(grid_objective_func)
 
     # are we doing cross validation or actual testing or just generating predictions on a new test set?
     # If no test set was specified then assume that we are doing cross validation.
@@ -253,6 +247,13 @@ def run_configuration(config_file):
     else:
         predict = True
 
+    if cross_validate:
+        task = 'cross-validate'
+    elif evaluate:
+        task = 'evaluate'
+    else:
+        task = 'predict'
+
     # make sure that, if we are in prediction mode, we have a prediction_dir
     if predict and not prediction_dir:
         print('Error: you need to specify a prediction directory if you are using prediction mode (no "results" option in config file).', file=sys.stderr)
@@ -263,26 +264,31 @@ def run_configuration(config_file):
 
     # For each feature set
     for featureset in given_featuresets:
-        # store training/test set names for later use
-        train_set_name = os.path.basename(train_path)
-        test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-        # create a name for the job
-        jobname = 'run_{}_{}_{}'.format(train_set_name, test_set_name, featureset)
+        # and for each classifier
+        for given_classifier in given_classifiers:
 
-        # change the prediction prefix to include the feature set
-        featset_prediction_prefix = os.path.join(prediction_dir, featureset.replace('+', '_'))
+            # store training/test set names for later use
+            train_set_name = os.path.basename(train_path)
+            test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-        # the log file that stores the actual output of this script (e.g., the tuned parameters, what kind of experiment was run, etc.)
-        temp_logfile = os.path.join(logpath, 'experiment_parameters_{}_{}_{}.log'.format(train_set_name, test_set_name, featureset))
+            # create a name for the job
+            jobname = '{}_{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset, given_classifier, "untuned" if not do_grid_search else "tuned",
+                                                    grid_objective.__name__, task)
 
-        # create job
-        job = Job(classify_featureset, [featureset, given_classifiers, train_path, test_path, train_set_name, test_set_name,
-                                        modelpath, vocabpath, featset_prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
-                                        evaluate, suffix, temp_logfile, probability, resultspath], num_slots=(5 if do_grid_search else 1), name=jobname)
+            # change the prediction prefix to include the feature set
+            prediction_prefix = os.path.join(prediction_dir, jobname)
 
-        # Add job to list
-        jobs.append(job)
+            # the log file that stores the actual output of this script (e.g., the tuned parameters, what kind of experiment was run, etc.)
+            temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
+
+            # create job
+            job = Job(classify_featureset, [jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name,
+                                            modelpath, vocabpath, prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
+                                            evaluate, suffix, temp_logfile, probability, resultspath], num_slots=(5 if do_grid_search else 1), name=jobname)
+
+            # Add job to list
+            jobs.append(job)
 
     # submit the jobs
     job_results = process_jobs(jobs)
