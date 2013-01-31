@@ -47,6 +47,7 @@ def f1_score_least_frequent(y_true, y_pred):
     '''
 
     least_frequent = np.bincount(y_true).argmin()
+    print("y_true: {}\ny_pred: {}\nleast_frequent: {}".format(y_true, y_pred, least_frequent), file=sys.stderr)
     return metrics.f1_score(y_true[y_true == least_frequent], y_pred[y_true == least_frequent])
 
 
@@ -561,7 +562,7 @@ class Classifier(object):
             y = np.array([self.label_dict[self._extract_label(x)] for x in examples])
 
         # setup the cross-validation iterator
-        kfold = StratifiedKFold(y, k=cv_folds) if stratified else KFold(y, k=cv_folds)
+        kfold = StratifiedKFold(y, n_folds=cv_folds) if stratified else KFold(y, n_folds=cv_folds)
 
         # handle each fold separately and accumulate the predictions and the numbers
         results = []
