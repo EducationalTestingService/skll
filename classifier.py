@@ -38,6 +38,18 @@ _REQUIRES_DENSE = {'naivebayes', 'rforest', 'gradient', 'dtree'}
 
 
 #### METRICS ####
+def f1_score_least_frequent(y_true, y_pred):
+    '''
+    Optimize the hyperparameter values during the grid search based on the F1 measure of the least frequent class.
+
+    This is mostly intended for use when you're doing binary classification and your data is highly skewed. You should probably use f1_score_macro if your data
+    is skewed and you're doing multi-class classification.
+    '''
+
+    least_frequent = np.bincount(y_true).argmin()
+    return metrics.f1_score(y_true[y_true == least_frequent], y_pred[y_true == least_frequent])
+
+
 def f1_score_macro(y_true, y_pred):
     '''
     Use the macro-averaged F1 measure to select hyperparameter values during the cross-validation grid search during training.
@@ -54,6 +66,7 @@ def f1_score_micro(y_true, y_pred):
     This method averages over instances (takes imbalance into account). This implies that precision == recall == F1.
     '''
     return metrics.f1_score(y_true, y_pred, average="micro")
+
 
 def accuracy(y_true, y_pred):
     '''
@@ -197,7 +210,7 @@ class Classifier(object):
         elif self._model_type == 'dtree':
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type == 'rforest' or self._model_type == 'gradient':
-            self._model_kwargs['n_estimators'] = 100
+            self._model_kwargs['n_estimators'] = 1000
 
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
@@ -305,7 +318,7 @@ class Classifier(object):
             default_param_grid = [{'max_features': ["auto", None]}]
         elif self._model_type == 'rforest':
             estimator = RandomForestClassifier(**self._model_kwargs)
-            default_param_grid = [{'max_features': ["sqrt", "log2", None]}]
+            default_param_grid = [{'max_depth': [1, 5, 10, None]}]
         elif self._model_type == "gradient":
             estimator = GradientBoostingClassifier(**self._model_kwargs)
             default_param_grid = [{'learning_rate': [0.01, 0.1, 0.5]}]
@@ -416,7 +429,7 @@ class Classifier(object):
 
         @param examples: The examples to evaluate the performance of the model on.
         @type examples: C{array}
-        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "_{model_type}.predictions"
+        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by ".predictions"
         @type prediction_prefix: C{basestring}
         @param append: Should we append the current predictions to the file if it exists?
         @type append: C{bool}
@@ -460,7 +473,7 @@ class Classifier(object):
 
         @param examples: The examples to predict the classes for.
         @type examples: C{array}
-        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by "_{model_type}.predictions"
+        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by ".predictions"
         @type prediction_prefix: C{basestring}
         @param append: Should we append the current predictions to the file if it exists?
         @type append: C{bool}
@@ -487,7 +500,7 @@ class Classifier(object):
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            prediction_file = prediction_prefix + '_{}.predictions'.format(self._model_type)
+            prediction_file = '{}.predictions'.format(prediction_prefix)
             with open(prediction_file, "w" if not append else "a") as predictionfh:
                 if self.probability and self._model_type != 'svm_linear':
                     if not append:
