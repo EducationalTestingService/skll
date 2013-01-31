@@ -223,7 +223,7 @@ def run_configuration(config_file):
 
     # what is the objective function for the grid search?
     grid_objective_func = configurator.get("Tuning", "objective")
-    if grid_objective_func not in {'f1_score_micro', 'f1_score_macro', 'accuracy'}:
+    if grid_objective_func not in {'f1_score_micro', 'f1_score_macro', 'accuracy', 'f1_score_weighted'}:
         print('Error: invalid grid objective function.', file=sys.stderr)
         sys.exit(2)
     else:
