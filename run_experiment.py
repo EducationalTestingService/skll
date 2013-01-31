@@ -2,8 +2,8 @@
 '''
 Runs a bunch of sklearn jobs in parallel on the cluster given a config file.
 
-@author: Nitin Madnani, nmadnani@ets.org
-@author: Dan Blanchard, dblanchard@ets.org
+@author: Nitin Madnani (nmadnani@ets.org)
+@author: Dan Blanchard (dblanchard@ets.org)
 '''
 
 from __future__ import print_function, unicode_literals
