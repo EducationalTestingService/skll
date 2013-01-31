@@ -302,7 +302,8 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      conflict_handler='resolve')
     parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.')
-    parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.')
+    parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.',
+                        action='store_true')
     args = parser.parse_args()
 
     run_configuration(args.config_file, args.local)
