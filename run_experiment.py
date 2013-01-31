@@ -145,11 +145,12 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
             # save model
             learner.save_model(modelfile)
 
-            # print out the tuned parameters and best CV score
-            param_out = ('{}: {}'.format(param_name, param_value) for param_name, param_value in learner.model.get_params().iteritems())
-            print('\thyperparameters: {}'.format(', '.join(param_out)), file=log_file)
             if grid_search:
-                print('\tbest score: {}'.format(round(best_score, 3)), file=log_file)
+                print('\tbest {} score: {}'.format(grid_objective.__name__, round(best_score, 3)), file=log_file)
+
+        # print out the tuned parameters and best CV score
+        param_out = ('{}: {}'.format(param_name, param_value) for param_name, param_value in learner.model.get_params().iteritems())
+        print('\thyperparameters: {}'.format(', '.join(param_out)), file=log_file)
 
         # run on test set or cross-validate on training data, depending on what was asked for
         if cross_validate:
