@@ -96,15 +96,6 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         else:
             print("Training on {}, Test on {}, feature set {} ...".format(train_set_name, test_set_name, featureset), file=log_file)
 
-        # tunable parameters for each model type
-        tunable_parameters = {'dtree': ['max_depth', 'max_features'],
-                              'svm_linear': ['C'],
-                              'svm_radial': ['C', 'gamma'],
-                              'logistic': ['C'],
-                              'naivebayes': ['alpha'],
-                              'rforest': ['max_depth', 'max_features'],
-                              'gradient': ['learning_rate']}
-
         # load the training and test examples
         train_examples = classifier.load_examples(os.path.join(train_path, featureset + suffix))
         if not cross_validate:
