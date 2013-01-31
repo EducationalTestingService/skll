@@ -168,7 +168,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
     return result_info
 
 
-def run_configuration(config_file):
+def run_configuration(config_file, local=False):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
     configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
@@ -249,8 +249,9 @@ def run_configuration(config_file):
         print('Error: you need to specify a prediction directory if you are using prediction mode (no "results" option in config file).', file=sys.stderr)
         sys.exit(2)
 
-    # the list of jobs submitted
-    jobs = []
+    # the list of jobs submitted (if running on grid)
+    if not local:
+        jobs = []
 
     # For each feature set
     for featureset in given_featuresets:
@@ -272,22 +273,27 @@ def run_configuration(config_file):
             # the log file that stores the actual output of this script (e.g., the tuned parameters, what kind of experiment was run, etc.)
             temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
 
-            # create job
-            job = Job(classify_featureset, [jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name,
-                                            modelpath, vocabpath, prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
-                                            evaluate, suffix, temp_logfile, probability, resultspath], num_slots=(5 if do_grid_search else 1), name=jobname)
+            # create job if we're doing things on the grid
+            if not local:
+                job = Job(classify_featureset, [jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name,
+                                                modelpath, vocabpath, prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
+                                                evaluate, suffix, temp_logfile, probability, resultspath], num_slots=(5 if do_grid_search else 1), name=jobname)
 
-            # Add job to list
-            jobs.append(job)
+                # Add job to list
+                jobs.append(job)
+            else:
+                classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix,
+                                    do_grid_search, eval(grid_objective_func), cross_validate, evaluate, suffix, temp_logfile, probability, resultspath)
 
-    # submit the jobs
-    job_results = process_jobs(jobs)
+    # submit the jobs (if running on grid)
+    if not local:
+        job_results = process_jobs(jobs)
 
-    # Check for errors
-    for result_info in job_results:
-        if not hasattr(result_info, 'task'):
-            print('There was an error running the experiment:\n{}'.format(result_info), file=sys.stderr)
-            sys.exit(2)
+        # Check for errors
+        for result_info in job_results:
+            if not hasattr(result_info, 'task'):
+                print('There was an error running the experiment:\n{}'.format(result_info), file=sys.stderr)
+                sys.exit(2)
 
 
 if __name__ == '__main__':
@@ -296,6 +302,7 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      conflict_handler='resolve')
     parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.')
+    parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.')
     args = parser.parse_args()
 
-    run_configuration(args.config_file)
+    run_configuration(args.config_file, args.local)
