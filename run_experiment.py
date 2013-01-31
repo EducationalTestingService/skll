@@ -150,7 +150,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
                 param_out = []
                 for param_name in tunable_parameters[given_classifier]:
                     param_out.append('{}: {}'.format(param_name, learner.model.get_params()[param_name]))
-                print('\ttuned hyperparameters: {}'.format(', '.join(param_out)), file=log_file)
+                print('\thyperparameters: {}'.format(', '.join(param_out)), file=log_file)
                 print('\tbest score: {}'.format(round(best_score, 3)), file=log_file)
 
         # run on test set or cross-validate on training data, depending on what was asked for
@@ -292,7 +292,7 @@ def run_configuration(config_file):
     job_results = process_jobs(jobs)
 
     # Check for errors
-    for result_info in chain.from_iterable(job_results):
+    for result_info in job_results:
         if not hasattr(result_info, 'task'):
             print('There was an error running the experiment:\n{}'.format(result_info), file=sys.stderr)
             sys.exit(2)
