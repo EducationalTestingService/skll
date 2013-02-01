@@ -390,16 +390,17 @@ class Classifier(object):
         # vectorize the features
         xtrain = self.feat_vectorizer.transform(features)
 
-        # Create scaler if we weren't passed one
-        if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            self.scaler = StandardScaler(with_mean=(not issparse(xtrain)))
-
         # Convert to dense if required by model type
         if self._model_type in _REQUIRES_DENSE:
             xtrain = xtrain.todense()
 
+        # Create scaler if we weren't passed one
+        if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
+            self.scaler = StandardScaler(copy=True, with_mean=(not issparse(xtrain)))
+
         # Scale features if necessary
-        xtrain_scaled = xtrain if self._model_type == 'naivebayes' else self.scaler.fit_transform(xtrain)
+        if self._model_type == 'naivebayes':
+            xtrain = self.scaler.fit_transform(xtrain)
 
         # set up a grid searcher if we are asked to
         estimator, default_param_grid = self._create_estimator()
@@ -414,11 +415,11 @@ class Classifier(object):
 
             # run the grid search for hyperparameters
             # print('\tstarting grid search', file=sys.stderr)
-            grid_searcher.fit(xtrain_scaled, ytrain)
+            grid_searcher.fit(xtrain, ytrain)
             self._model = grid_searcher.best_estimator_
             score = grid_searcher.best_score_
         else:
-            self._model = estimator.fit(xtrain_scaled, ytrain)
+            self._model = estimator.fit(xtrain, ytrain)
             score = 0.0
 
         return score
@@ -483,17 +484,20 @@ class Classifier(object):
         '''
         features = [self._extract_features(x) for x in examples]
 
-        # transform and scale the features
+        # transform the features
         xtest = self.feat_vectorizer.transform(features)
-        xtest_scaled = xtest if self._model_type == 'naivebayes' else self.scaler.transform(xtest)
 
         # Convert to dense if required by model type
         if self._model_type in _REQUIRES_DENSE:
-            xtest_scaled = xtest_scaled.todense()
+            xtest = xtest.todense()
+
+        # Scale xtest
+        if self._model_type != 'naivebayes':
+            xtest = self.scaler.transform(xtest)
 
         # make the prediction on the test data
         try:
-            yhat = self._model.predict_proba(xtest_scaled) if self.probability and self._model_type != 'svm_linear' else self._model.predict(xtest_scaled)
+            yhat = self._model.predict_proba(xtest) if self.probability and self._model_type != 'svm_linear' else self._model.predict(xtest)
         except NotImplementedError as e:
             print("Model type: {}\nModel: {}\nProbability: {}\n".format(self._model_type, self._model, self.probability), file=sys.stderr)
             raise e
@@ -546,7 +550,7 @@ class Classifier(object):
 
         # Create scaler if we weren't passed one
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            self.scaler = StandardScaler(with_mean=self._model_type in _REQUIRES_DENSE)
+            self.scaler = StandardScaler(copy=True, with_mean=self._model_type in _REQUIRES_DENSE)
 
         # Create feat_vectorizer if we weren't passed one
         if clear_vocab or self.feat_vectorizer is None:
