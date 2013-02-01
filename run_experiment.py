@@ -65,7 +65,7 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                 prec_sum_dict[actual_class] += float(class_prec[:-1])
                 recall_sum_dict[actual_class] += float(class_recall[:-1])
                 f_sum_dict[actual_class] += float(class_f[:-1])
-                result_table.add_row([actual_class] + conf_matrix[i] + [class_prec, class_recall, class_f])
+            result_table.add_row([actual_class] + conf_matrix[i] + [class_prec, class_recall, class_f])
         print(result_table.draw(), file=output_file)
         print("(row = reference; column = predicted)", file=output_file)
         print("Accuracy = {:.1f}%\n".format(fold_score), file=output_file)
