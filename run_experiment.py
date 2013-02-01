@@ -171,14 +171,14 @@ def run_configuration(config_file, local=False):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
     configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
-                                                 'probability': False, 'fixed_parameters': '', 'param_grids': ''})
-    configurator.read(config_file)
+                                                 'probability': False, 'fixed_parameters': '', 'param_grids': '[]'})
+    configurator.readfp(config_file)
 
     # extract sklearn parameters from the config file
     given_classifiers = eval(configurator.get('Input', 'classifiers'))
     given_featuresets = eval(configurator.get("Input", "featuresets"))
     fixed_parameter_list = eval(configurator.get("Input", 'fixed_parameters'))
-    param_grid_list = eval(configurator.get("Input", 'param_grids'))
+    param_grid_list = eval(configurator.get("Tuning", 'param_grids'))
 
     # get all the input paths and directories
     train_path = configurator.get("Input", "train_location").rstrip('/')  # remove trailing / at the end of path name
@@ -278,7 +278,8 @@ def run_configuration(config_file, local=False):
             if not local:
                 job = Job(classify_featureset, [jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name,
                                                 modelpath, vocabpath, prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
-                                                evaluate, suffix, temp_logfile, probability, resultspath, fixed_parameter_list[classifier_num] if fixed_parameter_list else dict()],
+                                                evaluate, suffix, temp_logfile, probability, resultspath, fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
+                                                param_grid_list[classifier_num] if param_grid_list else None],
                                                 num_slots=(5 if do_grid_search else 1), name=jobname)
 
                 # Add job to list
@@ -286,7 +287,7 @@ def run_configuration(config_file, local=False):
             else:
                 classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix,
                                     do_grid_search, eval(grid_objective_func), cross_validate, evaluate, suffix, temp_logfile, probability, resultspath,
-                                    fixed_parameter_list[classifier_num] if fixed_parameter_list else dict())
+                                    fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(), param_grid_list[classifier_num] if param_grid_list else None)
 
     # submit the jobs (if running on grid)
     if not local:
@@ -304,7 +305,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Runs a bunch of sklearn jobs in parallel on the cluster given a config file.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      conflict_handler='resolve')
-    parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.')
+    parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.', type=argparse.FileType('r'))
     parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.',
                         action='store_true')
     args = parser.parse_args()
