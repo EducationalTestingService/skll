@@ -265,8 +265,10 @@ def run_configuration(config_file, local=False):
             test_set_name = os.path.basename(test_path) if test_path else "cv"
 
             # create a name for the job
-            jobname = '{}_{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset, given_classifier, "untuned" if not do_grid_search else "tuned",
-                                                    grid_objective.__name__, task)
+            if do_grid_search:
+                jobname = '{}_{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset, given_classifier, "tuned", grid_objective.__name__, task)
+            else:
+                jobname = '{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset, given_classifier, "untuned", task)
 
             # change the prediction prefix to include the feature set
             prediction_prefix = os.path.join(prediction_dir, jobname)
