@@ -48,7 +48,6 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
     classes = sorted(result_tuples[0][2].iterkeys())
-    folds_with_class = defaultdict(int)
     for k, (conf_matrix, fold_score, result_dict) in enumerate(result_tuples, start=1):
         if num_folds > 1:
             print("\nFold: {}".format(k), file=output_file)
@@ -61,7 +60,6 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
             class_recall = get_stat_string(result_dict[actual_class], "Recall")
             class_f = get_stat_string(result_dict[actual_class], "F-measure")
             if class_prec != 'N/A':
-                folds_with_class[actual_class] += 1
                 prec_sum_dict[actual_class] += float(class_prec[:-1])
                 recall_sum_dict[actual_class] += float(class_recall[:-1])
                 f_sum_dict[actual_class] += float(class_f[:-1])
@@ -77,10 +75,9 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
         result_table.set_cols_align(["l", "r", "r", "r"])
         result_table.add_rows([["Class", "Precision", "Recall", "F-measure"]], header=True)
         for actual_class in classes:
-            if folds_with_class[actual_class]:
-                result_table.add_row([actual_class] + ["{:.1f}%".format(prec_sum_dict[actual_class] / folds_with_class[actual_class]),
-                                                       "{:.1f}%".format(recall_sum_dict[actual_class] / folds_with_class[actual_class]),
-                                                       "{:.1f}%".format(f_sum_dict[actual_class] / folds_with_class[actual_class])])
+            result_table.add_row([actual_class] + ["{:.1f}%".format(prec_sum_dict[actual_class] / num_folds),
+                                                   "{:.1f}%".format(recall_sum_dict[actual_class] / num_folds),
+                                                   "{:.1f}%".format(f_sum_dict[actual_class] / num_folds)])
         print(result_table.draw(), file=output_file)
         print("Accuracy = {:.1f}%".format(score_sum / num_folds), file=output_file)
 
