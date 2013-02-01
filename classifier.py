@@ -546,7 +546,7 @@ class Classifier(object):
 
         # Create scaler if we weren't passed one
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            self.scaler = StandardScaler()
+            self.scaler = StandardScaler(with_mean=self._model_type in _REQUIRES_DENSE)
 
         # Create feat_vectorizer if we weren't passed one
         if clear_vocab or self.feat_vectorizer is None:
