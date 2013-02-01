@@ -34,7 +34,7 @@ def clean_path(path):
 
 def get_stat_string(class_result_dict, stat):
     ''' Little helper for getting output for precision, recall, and f-score columns in confusion matrix. '''
-    if stat in class_result_dict and class_result_dict[stat]:
+    if stat in class_result_dict and class_result_dict[stat] is not None:
         return "{:.1f}%".format(class_result_dict[stat] * 100)
     else:
         return "N/A"
