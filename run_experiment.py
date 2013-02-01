@@ -110,9 +110,9 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         modelfile = os.path.join(modelpath, '{}.model'.format(jobname))
 
         # load the feature vocab if it already exists. We can do this since this is independent of the model type
-        if os.path.exists(vocabfile):
-            print('\tloading pre-existing feature vocab', file=log_file)
-            learner.load_vocab(vocabfile)
+        # if os.path.exists(vocabfile):
+        #     print('\tloading pre-existing feature vocab', file=log_file)
+        #     learner.load_vocab(vocabfile)
 
         # check if we're doing cross-validation, because we only load/save models when we're not.
         if not cross_validate:
@@ -131,8 +131,8 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
                     print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
                     best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective, param_grid=param_grid)
 
-                    # save vocab
-                    learner.save_vocab(vocabfile)
+                    # # save vocab
+                    # learner.save_vocab(vocabfile)
 
                 # save model
                 learner.save_model(modelfile)
