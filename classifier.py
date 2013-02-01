@@ -434,7 +434,7 @@ class Classifier(object):
         @param append: Should we append the current predictions to the file if it exists?
         @type append: C{bool}
 
-        @return: The confusion matrix, the overall accuracy, and the per-class PRFs.
+        @return: The confusion matrix, the overall accuracy, the per-class PRFs, and model parameters.
         @rtype: 3-C{tuple}
         '''
         # make the prediction on the test data
@@ -465,7 +465,7 @@ class Classifier(object):
             result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
             result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
 
-        return (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.inverse_label_dict))).tolist(), overall_accuracy, result_dict)
+        return (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.inverse_label_dict))).tolist(), overall_accuracy, result_dict, self._model.get_params())
 
     def predict(self, examples, prediction_prefix, append=False):
         '''
@@ -535,8 +535,8 @@ class Classifier(object):
         @param grid_objective: The objective function to use when doing the grid search.
         @type grid_objective: C{function}
 
-        @return: The confusion matrix, overall accuracy, and per-class PRFs for each fold.
-        @rtype: C{list} of 3-C{tuple}s
+        @return: The confusion matrix, overall accuracy, per-class PRFs, and model parameters for each fold.
+        @rtype: C{list} of 4-C{tuple}s
         '''
         features = [self._extract_features(x) for x in examples]
 
