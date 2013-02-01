@@ -403,6 +403,7 @@ class Classifier(object):
 
         # set up a grid searcher if we are asked to
         estimator, default_param_grid = self._create_estimator()
+
         if grid_search:
             if not param_grid:
                 param_grid = default_param_grid
