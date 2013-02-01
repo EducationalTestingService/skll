@@ -21,7 +21,7 @@ class UniqueNumberDict(dict):
 
     def __getitem__(self, key):
         if key not in self:
-            self[key] = len(self)
+            self[key] = len(self) + 1
         return dict.__getitem__(self, key)
 
 
