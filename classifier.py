@@ -413,7 +413,7 @@ class Classifier(object):
                                          n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
 
             # run the grid search for hyperparameters
-            print('\tstarting grid search', file=sys.stderr)
+            # print('\tstarting grid search', file=sys.stderr)
             grid_searcher.fit(xtrain_scaled, ytrain)
             self._model = grid_searcher.best_estimator_
             score = grid_searcher.best_score_
