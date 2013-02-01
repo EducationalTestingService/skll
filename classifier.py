@@ -343,7 +343,7 @@ class Classifier(object):
         out_array = np.array([label_dict[label] for label in labels])
         return out_array, label_dict, label_list
 
-    def train(self, examples, clear_vocab=False, param_grid_file=None, grid_search_folds=5, grid_search=True, grid_objective=f1_score_micro):
+    def train(self, examples, clear_vocab=False, param_grid=None, grid_search_folds=5, grid_search=True, grid_objective=f1_score_micro):
         '''
         Train a classification model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.
 
@@ -352,8 +352,8 @@ class Classifier(object):
         @param clear_vocab: Wipe out the feature vectorizer, scaler, label dictionary, and inverse label dictionary. This should be done if you're retraining
                             a L{Classifier} on a completely different data set (with different features).
         @type clear_vocab: C{bool}
-        @param param_grid_file: The path to a parameter grid file containing the parameters to search through for grid search.
-        @type param_grid_file: C{basestring}
+        @param param_grid: The parameter grid to search through for grid search. If unspecified, a default parameter grid will be used.
+        @type param_grid: C{basestring}
         @param grid_search_folds: The number of folds to use when doing the grid search.
         @type grid_search_folds: C{int}
         @param grid_search: Should we do grid search?
@@ -402,11 +402,10 @@ class Classifier(object):
         xtrain_scaled = xtrain if self._model_type == 'naivebayes' else self.scaler.fit_transform(xtrain)
 
         # set up a grid searcher if we are asked to
-        estimator, param_grid = self._create_estimator()
+        estimator, default_param_grid = self._create_estimator()
         if grid_search:
-            if param_grid_file:
-                with open(param_grid_file) as f:
-                    param_grid = json.load(f)
+            if not param_grid:
+                param_grid = default_param_grid
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
             grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
