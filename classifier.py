@@ -399,7 +399,7 @@ class Classifier(object):
             self.scaler = StandardScaler(copy=True, with_mean=(not issparse(xtrain)))
 
         # Scale features if necessary
-        if self._model_type == 'naivebayes':
+        if self._model_type != 'naivebayes':
             xtrain = self.scaler.fit_transform(xtrain)
 
         # set up a grid searcher if we are asked to
