@@ -353,7 +353,7 @@ class Classifier(object):
                             a L{Classifier} on a completely different data set (with different features).
         @type clear_vocab: C{bool}
         @param param_grid: The parameter grid to search through for grid search. If unspecified, a default parameter grid will be used.
-        @type param_grid: C{basestring}
+        @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to C{list}s of parameter values
         @param grid_search_folds: The number of folds to use when doing the grid search.
         @type grid_search_folds: C{int}
         @param grid_search: Should we do grid search?
@@ -514,7 +514,7 @@ class Classifier(object):
         return yhat
 
     def cross_validate(self, examples, stratified=True, clear_vocab=False, cv_folds=10, grid_search=False, grid_search_folds=5, grid_objective=f1_score_micro,
-                       prediction_prefix=None):
+                       prediction_prefix=None, param_grid=None):
         '''
         Cross-validates a given model on the training examples.
 
@@ -533,6 +533,10 @@ class Classifier(object):
         @type grid_search_folds: C{int}
         @param grid_objective: The objective function to use when doing the grid search.
         @type grid_objective: C{function}
+        @param param_grid: The parameter grid to search through for grid search. If unspecified, a default parameter grid will be used.
+        @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to C{list}s of parameter values
+        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by ".predictions"
+        @type prediction_prefix: C{basestring}
 
         @return: The confusion matrix, overall accuracy, per-class PRFs, and model parameters for each fold.
         @rtype: C{list} of 4-C{tuple}s
@@ -568,7 +572,7 @@ class Classifier(object):
         for train_index, test_index in kfold:
             # Train model
             self._model = None  # Do this to prevent feature vectorizer from being reset every time.
-            self.train(examples[train_index], grid_search_folds=grid_search_folds, grid_search=grid_search, grid_objective=grid_objective)
+            self.train(examples[train_index], grid_search_folds=grid_search_folds, grid_search=grid_search, grid_objective=grid_objective, param_grid=param_grid)
 
             # Evaluate model
             results.append(self.evaluate(examples[test_index], prediction_prefix=prediction_prefix, append=append_predictions))

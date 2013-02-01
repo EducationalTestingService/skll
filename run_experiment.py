@@ -85,7 +85,7 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
 
 
 def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
-                        grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath):
+                        grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -103,7 +103,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         vocabfile = os.path.join(vocabpath, '{}.vocab'.format(featureset))
 
         # initialize a classifer object
-        learner = classifier.Classifier(probability=probability, model_type=given_classifier)
+        learner = classifier.Classifier(probability=probability, model_type=given_classifier, model_kwargs=fixed_parameters)
 
         # check whether a trained model on the same data with the same featureset already exists
         # if so, load it (and the feature vocabulary) and then use it on the test data
@@ -126,10 +126,10 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
             else:
                 if learner.feat_vectorizer:
                     print('\ttraining new {} model'.format(given_classifier), file=log_file)
-                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
+                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective, param_grid=param_grid)
                 else:
                     print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
-                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective)
+                    best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective, param_grid=param_grid)
 
                     # save vocab
                     learner.save_vocab(vocabfile)
@@ -147,7 +147,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         # run on test set or cross-validate on training data, depending on what was asked for
         if cross_validate:
             print('\tcross-validating', file=log_file)
-            results = learner.cross_validate(train_examples, prediction_prefix=prediction_prefix, grid_search=grid_search, grid_objective=grid_objective)
+            results = learner.cross_validate(train_examples, prediction_prefix=prediction_prefix, grid_search=grid_search, grid_objective=grid_objective, param_grid=param_grid)
             task = 'cross-validate'
         elif evaluate:
             print('\tevaluating predictions', file=log_file)
@@ -171,12 +171,14 @@ def run_configuration(config_file, local=False):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
     configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
-                                                 'probability': False})
+                                                 'probability': False, 'fixed_parameters': '', 'param_grids': ''})
     configurator.read(config_file)
 
     # extract sklearn parameters from the config file
     given_classifiers = eval(configurator.get('Input', 'classifiers'))
     given_featuresets = eval(configurator.get("Input", "featuresets"))
+    fixed_parameter_list = eval(configurator.get("Input", 'fixed_parameters'))
+    param_grid_list = eval(configurator.get("Input", 'param_grids'))
 
     # get all the input paths and directories
     train_path = configurator.get("Input", "train_location").rstrip('/')  # remove trailing / at the end of path name
@@ -256,7 +258,7 @@ def run_configuration(config_file, local=False):
     for featureset in given_featuresets:
 
         # and for each classifier
-        for given_classifier in given_classifiers:
+        for classifier_num, given_classifier in enumerate(given_classifiers):
 
             # store training/test set names for later use
             train_set_name = os.path.basename(train_path)
@@ -276,13 +278,15 @@ def run_configuration(config_file, local=False):
             if not local:
                 job = Job(classify_featureset, [jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name,
                                                 modelpath, vocabpath, prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
-                                                evaluate, suffix, temp_logfile, probability, resultspath], num_slots=(5 if do_grid_search else 1), name=jobname)
+                                                evaluate, suffix, temp_logfile, probability, resultspath, fixed_parameter_list[classifier_num] if fixed_parameter_list else dict()],
+                                                num_slots=(5 if do_grid_search else 1), name=jobname)
 
                 # Add job to list
                 jobs.append(job)
             else:
                 classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix,
-                                    do_grid_search, eval(grid_objective_func), cross_validate, evaluate, suffix, temp_logfile, probability, resultspath)
+                                    do_grid_search, eval(grid_objective_func), cross_validate, evaluate, suffix, temp_logfile, probability, resultspath,
+                                    fixed_parameter_list[classifier_num] if fixed_parameter_list else dict())
 
     # submit the jobs (if running on grid)
     if not local:
