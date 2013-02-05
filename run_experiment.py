@@ -156,6 +156,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         else:
             print('\twriting predictions', file=log_file)
             task = 'predict'
+            results = None
             learner.predict(test_examples, prediction_prefix)
 
         # write out results to file if we're not predicting
@@ -218,7 +219,7 @@ def run_configuration(config_file, local=False):
 
     # what is the objective function for the grid search?
     grid_objective_func = configurator.get("Tuning", "objective")
-    if grid_objective_func not in {'f1_score_micro', 'f1_score_macro', 'accuracy', 'f1_score_least_frequent'}:
+    if grid_objective_func not in {'f1_score_micro', 'f1_score_macro', 'accuracy', 'f1_score_least_frequent', 'spearman', 'pearson', 'kendall_tau'}:
         print('Error: invalid grid objective function.', file=sys.stderr)
         sys.exit(2)
     else:

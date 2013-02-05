@@ -21,6 +21,7 @@ import numpy as np
 from bs4 import UnicodeDammit
 from nltk.metrics import precision, recall, f_measure
 from scipy.sparse import issparse
+from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn import metrics
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -38,6 +39,34 @@ _REQUIRES_DENSE = {'naivebayes', 'rforest', 'gradient', 'dtree'}
 
 
 #### METRICS ####
+def kendall_tau(y_true, y_pred):
+    '''
+    Optimize the hyperparameter values during the grid search based on Kendall's tau.
+
+    This is useful in cases where you want to use the actual probabilities of the different classes after the fact, and not just the optimize based on the classification accuracy.
+    '''
+
+    return kendalltau(y_true, y_pred)[0]
+
+
+def spearman(y_true, y_pred):
+    '''
+    Optimize the hyperparameter values during the grid search based on Spearman rank correlation.
+
+    This is useful in cases where you want to use the actual probabilities of the different classes after the fact, and not just the optimize based on the classification accuracy.
+    '''
+
+    return spearmanr(y_true, y_pred)[0]
+
+
+def pearson(y_true, y_pred):
+    '''
+    Optimize the hyperparameter values during the grid search based on Pearson correlation.
+    '''
+
+    return pearsonr(y_true, y_pred)
+
+
 def f1_score_least_frequent(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on the F1 measure of the least frequent class.
