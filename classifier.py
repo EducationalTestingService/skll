@@ -45,7 +45,6 @@ def kendall_tau(y_true, y_pred):
 
     This is useful in cases where you want to use the actual probabilities of the different classes after the fact, and not just the optimize based on the classification accuracy.
     '''
-
     return kendalltau(y_true, y_pred)[0]
 
 
@@ -55,7 +54,6 @@ def spearman(y_true, y_pred):
 
     This is useful in cases where you want to use the actual probabilities of the different classes after the fact, and not just the optimize based on the classification accuracy.
     '''
-
     return spearmanr(y_true, y_pred)[0]
 
 
@@ -63,7 +61,6 @@ def pearson(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on Pearson correlation.
     '''
-
     return pearsonr(y_true, y_pred)
 
 
@@ -74,7 +71,6 @@ def f1_score_least_frequent(y_true, y_pred):
     This is mostly intended for use when you're doing binary classification and your data is highly skewed. You should probably use f1_score_macro if your data
     is skewed and you're doing multi-class classification.
     '''
-
     least_frequent = np.bincount(y_true).argmin()
     return metrics.f1_score(y_true[y_true == least_frequent], y_pred[y_true == least_frequent])
 
@@ -197,6 +193,22 @@ def _preprocess_example(example, feature_names=None):
         for i, fval in enumerate(example):
             x["x{}".format(i)] = float(fval)
     return {"y": y, "x": x}
+
+
+class GridSearchCVBinary(GridSearchCV):
+    '''
+    GridSearchCV for use with binary classification problems where you want to optimize the learner based on the probabilities assigned to each class, and not just
+    the predicted class.
+    '''
+    def score(self, X, y=None):
+        if hasattr(self.best_estimator_, 'score'):
+            return self.best_estimator_.score(X, y)
+        if self.scorer_ is None:
+            raise ValueError("No score function explicitly defined, "
+                             "and the estimator doesn't provide one %s"
+                             % self.best_estimator_)
+        y_predicted = self.predict_proba(X)[0]
+        return self.scorer(y, y_predicted)
 
 
 class Classifier(object):
@@ -439,8 +451,12 @@ class Classifier(object):
                 param_grid = default_param_grid
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
-            grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
-                                         n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
+            if grid_objective == kendall_tau or grid_objective == spearman or grid_objective == pearson:
+                grid_searcher = GridSearchCVBinary(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
+                                                   n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
+            else:
+                grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
+                                             n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
 
             # run the grid search for hyperparameters
             # print('\tstarting grid search', file=sys.stderr)
