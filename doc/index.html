@@ -91,6 +91,63 @@
     </td><td class="summary">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
+          <td><span class="summary-sig"><a href="classifier-module.html#kendall_tau" class="summary-sig-name">kendall_tau</a>(<span class="summary-sig-arg">y_true</span>,
+        <span class="summary-sig-arg">y_pred</span>)</span><br />
+      Optimize the hyperparameter values during the grid search based on 
+      Kendall's tau.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#kendall_tau">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier-module.html#spearman" class="summary-sig-name">spearman</a>(<span class="summary-sig-arg">y_true</span>,
+        <span class="summary-sig-arg">y_pred</span>)</span><br />
+      Optimize the hyperparameter values during the grid search based on 
+      Spearman rank correlation.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#spearman">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="pearson"></a><span class="summary-sig-name">pearson</span>(<span class="summary-sig-arg">y_true</span>,
+        <span class="summary-sig-arg">y_pred</span>)</span><br />
+      Optimize the hyperparameter values during the grid search based on 
+      Pearson correlation.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#pearson">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
           <td><span class="summary-sig"><a href="classifier-module.html#f1_score_least_frequent" class="summary-sig-name">f1_score_least_frequent</a>(<span class="summary-sig-arg">y_true</span>,
         <span class="summary-sig-arg">y_pred</span>)</span><br />
       Optimize the hyperparameter values during the grid search based on 
@@ -205,6 +262,54 @@
     <span class="table-header">Function Details</span></td>
 </tr>
 </table>
+<a name="kendall_tau"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">kendall_tau</span>(<span class="sig-arg">y_true</span>,
+        <span class="sig-arg">y_pred</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#kendall_tau">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Optimize the hyperparameter values during the grid search based on 
+  Kendall's tau.</p>
+  <p>This is useful in cases where you want to use the actual probabilities
+  of the different classes after the fact, and not just the optimize based 
+  on the classification accuracy.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="spearman"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">spearman</span>(<span class="sig-arg">y_true</span>,
+        <span class="sig-arg">y_pred</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#spearman">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Optimize the hyperparameter values during the grid search based on 
+  Spearman rank correlation.</p>
+  <p>This is useful in cases where you want to use the actual probabilities
+  of the different classes after the fact, and not just the optimize based 
+  on the classification accuracy.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
 <a name="f1_score_least_frequent"></a>
 <div>
 <table class="details" border="1" cellpadding="3"
@@ -331,7 +436,7 @@
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Fri Feb  1 14:56:38 2013
+    Generated by Epydoc 3.0.1 on Tue Feb  5 11:47:55 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"
