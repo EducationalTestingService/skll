@@ -44,6 +44,7 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
     ''' Function to take all of the results from all of the folds and print nice tables with the resluts. '''
     num_folds = len(result_tuples)
     score_sum = 0.0
+    grid_score_sum = None
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
@@ -53,8 +54,6 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
             print("\nFold: {}".format(k), file=output_file)
         param_out = ('{}: {}'.format(param_name, param_value) for param_name, param_value in model_params.iteritems())
         print('Model parameters: {}'.format(', '.join(param_out)), file=output_file)
-        if grid_score is not None:
-            print('Objective function score: {:.5f}'.format(grid_score), file=output_file)
         result_table = Texttable(max_width=0)
         result_table.set_cols_align(["r"] * (len(classes) + 4))
         result_table.add_rows([[""] + classes + ["Precision", "Recall", "F-measure"]], header=True)
@@ -71,6 +70,12 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
         print(result_table.draw(), file=output_file)
         print("(row = reference; column = predicted)", file=output_file)
         print("Accuracy = {:.1f}%\n".format(fold_score), file=output_file)
+        if grid_score is not None:
+            if grid_score_sum is None:
+                grid_score_sum = grid_score
+            else:
+                grid_score_sum += grid_score
+            print('Objective function score = {:.5f}'.format(grid_score), file=output_file)
         score_sum += fold_score
 
     if num_folds > 1:
@@ -84,6 +89,8 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                                                    "{:.1f}%".format(f_sum_dict[actual_class] / num_folds)])
         print(result_table.draw(), file=output_file)
         print("Accuracy = {:.1f}%".format(score_sum / num_folds), file=output_file)
+        if grid_score_sum is not None:
+            print("Objective function score = {:.5f}".format(grid_score_sum / num_folds), file=output_file)
 
 
 def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
