@@ -69,13 +69,14 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
             result_table.add_row([actual_class] + conf_matrix[i] + [class_prec, class_recall, class_f])
         print(result_table.draw(), file=output_file)
         print("(row = reference; column = predicted)", file=output_file)
-        print("Accuracy = {:.1f}%\n".format(fold_score), file=output_file)
+        print("Accuracy = {:.1f}%".format(fold_score), file=output_file)
         if grid_score is not None:
             if grid_score_sum is None:
                 grid_score_sum = grid_score
             else:
                 grid_score_sum += grid_score
             print('Objective function score = {:.5f}'.format(grid_score), file=output_file)
+        print(file=output_file)
         score_sum += fold_score
 
     if num_folds > 1:
