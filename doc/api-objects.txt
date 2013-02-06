@@ -11,6 +11,7 @@ classifier._fit_grid_point	classifier-module.html#_fit_grid_point
 classifier.accuracy	classifier-module.html#accuracy
 classifier.f1_score_least_frequent	classifier-module.html#f1_score_least_frequent
 classifier.pearson	classifier-module.html#pearson
+classifier._CORRELATION_METRICS	classifier-module.html#_CORRELATION_METRICS
 classifier._REQUIRES_DENSE	classifier-module.html#_REQUIRES_DENSE
 classifier._sanitize_line	classifier-module.html#_sanitize_line
 classifier.Classifier	classifier.Classifier-class.html
