@@ -14,6 +14,7 @@ import os
 import cPickle as pickle
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from itertools import islice, izip
 
@@ -23,15 +24,19 @@ from nltk.metrics import precision, recall, f_measure
 from scipy.sparse import issparse
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn import metrics
-from sklearn.cross_validation import KFold, StratifiedKFold
+from sklearn.base import is_classifier, clone
+from sklearn.cross_validation import KFold, StratifiedKFold, check_cv
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.externals.joblib import Parallel, delayed, logger
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.grid_search import GridSearchCV
+from sklearn.grid_search import GridSearchCV, IterGrid, _has_one_grid_point
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.utils import safe_mask, check_arrays
+from sklearn.utils.validation import _num_samples
 
 
 #### Globals ####
@@ -45,7 +50,8 @@ def kendall_tau(y_true, y_pred):
 
     This is useful in cases where you want to use the actual probabilities of the different classes after the fact, and not just the optimize based on the classification accuracy.
     '''
-    return kendalltau(y_true, y_pred)[0]
+    ret_score = kendalltau(y_true, y_pred)[0]
+    return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def spearman(y_true, y_pred):
@@ -54,14 +60,16 @@ def spearman(y_true, y_pred):
 
     This is useful in cases where you want to use the actual probabilities of the different classes after the fact, and not just the optimize based on the classification accuracy.
     '''
-    return spearmanr(y_true, y_pred)[0]
+    ret_score = spearmanr(y_true, y_pred)[0]
+    return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def pearson(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on Pearson correlation.
     '''
-    return pearsonr(y_true, y_pred)
+    ret_score = pearsonr(y_true, y_pred)
+    return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def f1_score_least_frequent(y_true, y_pred):
@@ -195,20 +203,174 @@ def _preprocess_example(example, feature_names=None):
     return {"y": y, "x": x}
 
 
+def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_func, verbose, **fit_params):
+    """
+    Run fit on one set of parameters
+
+    Returns the score and the instance of the classifier
+    """
+    if verbose > 1:
+        start_time = time.time()
+        msg = '%s' % (', '.join('%s=%s' % (k, v)
+                                for k, v in clf_params.iteritems()))
+        print("[GridSearchCV] %s %s" % (msg, (64 - len(msg)) * '.'))
+    # update parameters of the classifier after a copy of its base structure
+    clf = clone(base_clf)
+    clf.set_params(**clf_params)
+
+    if hasattr(base_clf, 'kernel') and hasattr(base_clf.kernel, '__call__'):
+        # cannot compute the kernel values with custom function
+        raise ValueError("Cannot use a custom kernel function. "
+                         "Precompute the kernel matrix instead.")
+
+    if not hasattr(X, "shape"):
+        if getattr(base_clf, "_pairwise", False):
+            raise ValueError("Precomputed kernels or affinity matrices have "
+                             "to be passed as arrays or sparse matrices.")
+        X_train = [X[idx] for idx in train]
+        X_test = [X[idx] for idx in test]
+    else:
+        if getattr(base_clf, "_pairwise", False):
+            # X is a precomputed square kernel matrix
+            if X.shape[0] != X.shape[1]:
+                raise ValueError("X should be a square kernel matrix")
+            X_train = X[np.ix_(train, train)]
+            X_test = X[np.ix_(test, train)]
+        else:
+            X_train = X[safe_mask(X, train)]
+            X_test = X[safe_mask(X, test)]
+
+    if y is not None:
+        y_test = y[safe_mask(y, test)]
+        y_train = y[safe_mask(y, train)]
+        clf.fit(X_train, y_train, **fit_params)
+        if loss_func is not None:
+            y_pred = clf.predict_proba(X_test)[:,1]
+            this_score = -loss_func(y_test, y_pred)
+        elif score_func is not None:
+            y_pred = clf.predict_proba(X_test)[:,1]
+            this_score = score_func(y_test, y_pred)
+        else:
+            this_score = clf.score(X_test, y_test)
+    else:
+        clf.fit(X_train, **fit_params)
+        this_score = clf.score(X_test)
+
+    if verbose > 2:
+        msg += ", score=%f" % this_score
+    if verbose > 1:
+        end_msg = "%s -%s" % (msg,
+                              logger.short_format_time(time.time() -
+                                                       start_time))
+        print("[GridSearchCV] %s %s" % ((64 - len(end_msg)) * '.', end_msg))
+    return this_score, clf_params, _num_samples(X)
+
+
 class GridSearchCVBinary(GridSearchCV):
     '''
     GridSearchCV for use with binary classification problems where you want to optimize the learner based on the probabilities assigned to each class, and not just
     the predicted class.
     '''
-    def score(self, X, y=None):
-        if hasattr(self.best_estimator_, 'score'):
-            return self.best_estimator_.score(X, y)
-        if self.scorer_ is None:
-            raise ValueError("No score function explicitly defined, "
-                             "and the estimator doesn't provide one %s"
-                             % self.best_estimator_)
-        y_predicted = self.predict_proba(X)[0]
-        return self.scorer(y, y_predicted)
+
+    def fit(self, X, y=None, **params):
+        """Run fit with all sets of parameters
+
+        Returns the best classifier
+
+        Parameters
+        ----------
+
+        X: array, [n_samples, n_features]
+            Training vector, where n_samples in the number of samples and
+            n_features is the number of features.
+
+        y: array-like, shape = [n_samples], optional
+            Target vector relative to X for classification;
+            None for unsupervised learning.
+
+        """
+        estimator = self.estimator
+        cv = self.cv
+
+        X, y = check_arrays(X, y, sparse_format="csr", allow_lists=True)
+        cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
+
+        grid = IterGrid(self.param_grid)
+        base_clf = clone(self.estimator)
+
+        # Return early if there is only one grid point.
+        if _has_one_grid_point(self.param_grid):
+            params = next(iter(grid))
+            base_clf.set_params(**params)
+            if y is not None:
+                base_clf.fit(X, y)
+            else:
+                base_clf.fit(X)
+            self.best_estimator_ = base_clf
+            self._set_methods()
+            return self
+
+        pre_dispatch = self.pre_dispatch
+        out = Parallel(n_jobs=self.n_jobs, verbose=self.verbose,
+                       pre_dispatch=pre_dispatch)(
+                           delayed(_fit_grid_point)(
+                               X, y, base_clf, clf_params, train, test,
+                               self.loss_func, self.score_func, self.verbose,
+                               **self.fit_params)
+                           for clf_params in grid for train, test in cv)
+
+        # Out is a list of triplet: score, estimator, n_test_samples
+        n_grid_points = len(list(grid))
+        n_fits = len(out)
+        n_folds = n_fits // n_grid_points
+
+        scores = list()
+        cv_scores = list()
+        for grid_start in range(0, n_fits, n_folds):
+            n_test_samples = 0
+            score = 0
+            these_points = list()
+            for this_score, clf_params, this_n_test_samples in out[grid_start:grid_start + n_folds]:
+                these_points.append(this_score)
+                if self.iid:
+                    this_score *= this_n_test_samples
+                score += this_score
+                n_test_samples += this_n_test_samples
+            if self.iid:
+                score /= float(n_test_samples)
+            scores.append((score, clf_params))
+            cv_scores.append(these_points)
+
+        cv_scores = np.asarray(cv_scores)
+
+        # Note: we do not use max(out) to make ties deterministic even if
+        # comparison on estimator instances is not deterministic
+        best_score = -np.inf
+        for score, params in scores:
+            if score > best_score:
+                best_score = score
+                best_params = params
+
+        self.best_score_ = best_score
+        self.best_params_ = best_params
+
+        if self.refit:
+            # fit the best estimator using the entire dataset
+            # clone first to work around broken estimators
+            best_estimator = clone(base_clf).set_params(**best_params)
+            if y is not None:
+                best_estimator.fit(X, y, **self.fit_params)
+            else:
+                best_estimator.fit(X, **self.fit_params)
+            self.best_estimator_ = best_estimator
+            self._set_methods()
+
+        # Store the computed scores
+        # XXX: the name is too specific, it shouldn't have 'grid' in it. Also, we should be retrieving/storing variance
+        self.grid_scores_ = [(clf_params, score, all_scores)
+                             for clf_params, (score, _), all_scores
+                             in zip(grid, scores, cv_scores)]
+        return self
 
 
 class Classifier(object):
@@ -451,7 +613,7 @@ class Classifier(object):
                 param_grid = default_param_grid
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
-            if grid_objective == kendall_tau or grid_objective == spearman or grid_objective == pearson:
+            if grid_objective.__name__ in {'kendall_tau', 'spearman', 'pearson'}:
                 grid_searcher = GridSearchCVBinary(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
                                                    n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
             else:
