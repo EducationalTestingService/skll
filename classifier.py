@@ -41,6 +41,7 @@ from sklearn.utils.validation import _num_samples
 
 #### Globals ####
 _REQUIRES_DENSE = {'naivebayes', 'rforest', 'gradient', 'dtree'}
+_CORRELATION_METRICS = {'kendall_tau', 'spearman', 'pearson'}
 
 
 #### METRICS ####
@@ -245,10 +246,10 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_fu
         y_train = y[safe_mask(y, train)]
         clf.fit(X_train, y_train, **fit_params)
         if loss_func is not None:
-            y_pred = clf.predict_proba(X_test)[:,1]
+            y_pred = clf.predict_proba(X_test)[:, 1]
             this_score = -loss_func(y_test, y_pred)
         elif score_func is not None:
-            y_pred = clf.predict_proba(X_test)[:,1]
+            y_pred = clf.predict_proba(X_test)[:, 1]
             this_score = score_func(y_test, y_pred)
         else:
             this_score = clf.score(X_test, y_test)
@@ -313,11 +314,11 @@ class _GridSearchCVBinary(GridSearchCV):
         pre_dispatch = self.pre_dispatch
         out = Parallel(n_jobs=self.n_jobs, verbose=self.verbose,
                        pre_dispatch=pre_dispatch)(
-                           delayed(_fit_grid_point)(
-                               X, y, base_clf, clf_params, train, test,
-                               self.loss_func, self.score_func, self.verbose,
-                               **self.fit_params)
-                           for clf_params in grid for train, test in cv)
+                                                  delayed(_fit_grid_point)(
+                                                                           X, y, base_clf, clf_params, train, test,
+                                                                           self.loss_func, self.score_func, self.verbose,
+                                                                           **self.fit_params)
+                                                  for clf_params in grid for train, test in cv)
 
         # Out is a list of triplet: score, estimator, n_test_samples
         n_grid_points = len(list(grid))
@@ -366,11 +367,18 @@ class _GridSearchCVBinary(GridSearchCV):
             self._set_methods()
 
         # Store the computed scores
-        # XXX: the name is too specific, it shouldn't have 'grid' in it. Also, we should be retrieving/storing variance
-        self.grid_scores_ = [(clf_params, score, all_scores)
-                             for clf_params, (score, _), all_scores
-                             in zip(grid, scores, cv_scores)]
+        self.grid_scores_ = [(clf_params, score, all_scores) for clf_params, (score, _), all_scores in zip(grid, scores, cv_scores)]
         return self
+
+    def score(self, X, y=None):
+        if hasattr(self.best_estimator_, 'score'):
+            return self.best_estimator_.score(X, y)
+        if self.score_func is None:
+            raise ValueError("No score function explicitly defined, "
+                             "and the estimator doesn't provide one %s"
+                             % self.best_estimator_)
+        y_predicted = self.predict_proba(X)[:, 1]
+        return self.score_func(y, y_predicted)
 
 
 class Classifier(object):
@@ -561,7 +569,7 @@ class Classifier(object):
         @type grid_search_folds: C{int}
         @param grid_search: Should we do grid search?
         @type grid_search: C{bool}
-        @param grid_objective: The objective functino to use when doing the grid search.
+        @param grid_objective: The objective function to use when doing the grid search.
         @type grid_objective: C{function}
 
         @return: The best grid search objective function score, or 0 if we're not doing grid search.
@@ -613,7 +621,7 @@ class Classifier(object):
                 param_grid = default_param_grid
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
-            if grid_objective.__name__ in {'kendall_tau', 'spearman', 'pearson'}:
+            if grid_objective.__name__ in _CORRELATION_METRICS:
                 grid_searcher = _GridSearchCVBinary(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
                                                    n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
             else:
@@ -631,7 +639,7 @@ class Classifier(object):
 
         return score
 
-    def evaluate(self, examples, prediction_prefix=None, append=False):
+    def evaluate(self, examples, prediction_prefix=None, append=False, grid_objective=None):
         '''
         Evaluates a given model on a given dev or test example set.
 
@@ -641,19 +649,31 @@ class Classifier(object):
         @type prediction_prefix: C{basestring}
         @param append: Should we append the current predictions to the file if it exists?
         @type append: C{bool}
+        @param grid_objective: The objective function that was used when doing the grid search.
+        @type grid_objective: C{function}
 
-        @return: The confusion matrix, the overall accuracy, the per-class PRFs, and model parameters.
+        @return: The confusion matrix, the overall accuracy, the per-class PRFs, the model parameters, and the grid search objective function score.
         @rtype: 3-C{tuple}
         '''
+        # initialize grid score
+        grid_score = None
+
         # make the prediction on the test data
         yhat = self.predict(examples, prediction_prefix, append=append)
 
-        # if run in probability mode, convert yhat to list of classes predicted
-        if self.probability:
-            yhat = np.array([max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
-
         # extract actual labels
         ytest = np.array([self.label_dict[self._extract_label(x)] for x in examples])
+
+        # if run in probability mode, convert yhat to list of classes predicted
+        if self.probability:
+            # if we're using a correlation grid objective, calculate it here
+            if grid_objective.__name__ in _CORRELATION_METRICS:
+                grid_score = grid_objective(ytest, yhat[:, 1])
+            yhat = np.array([max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
+
+        # calculate grid search objective function score, if specified
+        if grid_objective is not None and (grid_objective.__name__ not in _CORRELATION_METRICS or not self.probability):
+            grid_score = grid_objective(ytest, yhat)
 
         # Create prediction dicts for easier scoring
         actual_dict = defaultdict(set)
@@ -673,7 +693,7 @@ class Classifier(object):
             result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
             result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
 
-        return (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.inverse_label_dict))).tolist(), overall_accuracy, result_dict, self._model.get_params())
+        return (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.inverse_label_dict))).tolist(), overall_accuracy, result_dict, self._model.get_params(), grid_score)
 
     def predict(self, examples, prediction_prefix, append=False):
         '''

@@ -48,11 +48,13 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
     classes = sorted(result_tuples[0][2].iterkeys())
-    for k, (conf_matrix, fold_score, result_dict, model_params) in enumerate(result_tuples, start=1):
+    for k, (conf_matrix, fold_score, result_dict, model_params, grid_score) in enumerate(result_tuples, start=1):
         if num_folds > 1:
             print("\nFold: {}".format(k), file=output_file)
         param_out = ('{}: {}'.format(param_name, param_value) for param_name, param_value in model_params.iteritems())
         print('Model parameters: {}'.format(', '.join(param_out)), file=output_file)
+        if grid_score is not None:
+            print('Objective function score: {:.5f}'.format(grid_score), file=output_file)
         result_table = Texttable(max_width=0)
         result_table.set_cols_align(["r"] * (len(classes) + 4))
         result_table.add_rows([[""] + classes + ["Precision", "Recall", "F-measure"]], header=True)
