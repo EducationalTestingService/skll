@@ -667,7 +667,7 @@ class Classifier(object):
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
-            if grid_objective.__name__ in _CORRELATION_METRICS:
+            if grid_objective is not None and  grid_objective.__name__ in _CORRELATION_METRICS:
                 grid_score = grid_objective(ytest, yhat[:, 1])
             yhat = np.array([max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
 
@@ -807,7 +807,7 @@ class Classifier(object):
             self.train(examples[train_index], grid_search_folds=grid_search_folds, grid_search=grid_search, grid_objective=grid_objective, param_grid=param_grid)
 
             # Evaluate model
-            results.append(self.evaluate(examples[test_index], prediction_prefix=prediction_prefix, append=append_predictions))
+            results.append(self.evaluate(examples[test_index], prediction_prefix=prediction_prefix, append=append_predictions, grid_objective=grid_objective))
 
             append_predictions = True
 

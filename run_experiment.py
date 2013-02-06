@@ -153,7 +153,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
             task = 'cross-validate'
         elif evaluate:
             print('\tevaluating predictions', file=log_file)
-            results = [learner.evaluate(test_examples, prediction_prefix=prediction_prefix)]
+            results = [learner.evaluate(test_examples, prediction_prefix=prediction_prefix, grid_objective=grid_objective)]
             task = 'evaluate'
         else:
             print('\twriting predictions', file=log_file)
