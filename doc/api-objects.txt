@@ -7,6 +7,7 @@ classifier._preprocess_example	classifier-module.html#_preprocess_example
 classifier._megam_dict_iter	classifier-module.html#_megam_dict_iter
 classifier.kendall_tau	classifier-module.html#kendall_tau
 classifier.__package__	classifier-module.html#__package__
+classifier._fit_grid_point	classifier-module.html#_fit_grid_point
 classifier.accuracy	classifier-module.html#accuracy
 classifier.f1_score_least_frequent	classifier-module.html#f1_score_least_frequent
 classifier.pearson	classifier-module.html#pearson
