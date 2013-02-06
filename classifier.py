@@ -266,7 +266,7 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_fu
     return this_score, clf_params, _num_samples(X)
 
 
-class GridSearchCVBinary(GridSearchCV):
+class _GridSearchCVBinary(GridSearchCV):
     '''
     GridSearchCV for use with binary classification problems where you want to optimize the learner based on the probabilities assigned to each class, and not just
     the predicted class.
@@ -614,7 +614,7 @@ class Classifier(object):
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
             if grid_objective.__name__ in {'kendall_tau', 'spearman', 'pearson'}:
-                grid_searcher = GridSearchCVBinary(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
+                grid_searcher = _GridSearchCVBinary(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
                                                    n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
             else:
                 grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
