@@ -40,8 +40,8 @@ from sklearn.utils.validation import _num_samples
 
 
 #### Globals ####
-_REQUIRES_DENSE = {'naivebayes', 'rforest', 'gradient', 'dtree'}
-_CORRELATION_METRICS = {'kendall_tau', 'spearman', 'pearson'}
+_REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
+_CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 
 
 #### METRICS ####
@@ -246,10 +246,10 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_fu
         y_train = y[safe_mask(y, train)]
         clf.fit(X_train, y_train, **fit_params)
         if loss_func is not None:
-            y_pred = clf.predict_proba(X_test)[:, 1]
+            y_pred = clf.predict_proba(X_test)[:, 1]  # Everything is the same as the original version except this line...
             this_score = -loss_func(y_test, y_pred)
         elif score_func is not None:
-            y_pred = clf.predict_proba(X_test)[:, 1]
+            y_pred = clf.predict_proba(X_test)[:, 1]  # and this one
             this_score = score_func(y_test, y_pred)
         else:
             this_score = clf.score(X_test, y_test)
