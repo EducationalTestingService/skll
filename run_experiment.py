@@ -96,7 +96,7 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
 
 
 def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
-                        grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid):
+                        grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid, pos_label_str):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -114,7 +114,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         vocabfile = os.path.join(vocabpath, '{}.vocab'.format(jobname))  # temporarily changed this to jobname (from featureset)
 
         # initialize a classifer object
-        learner = classifier.Classifier(probability=probability, model_type=given_classifier, model_kwargs=fixed_parameters)
+        learner = classifier.Classifier(probability=probability, model_type=given_classifier, model_kwargs=fixed_parameters, pos_label_str=pos_label_str)
 
         # check whether a trained model on the same data with the same featureset already exists
         # if so, load it (and the feature vocabulary) and then use it on the test data
@@ -183,14 +183,15 @@ def run_configuration(config_file, local=False):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
     configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
-                                                 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]'})
+                                                 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]', 'pos_label_str': None})
     configurator.readfp(config_file)
 
     # extract sklearn parameters from the config file
-    given_classifiers = eval(configurator.get('Input', 'classifiers'))
+    given_classifiers = eval(configurator.get("Input", "classifiers"))
     given_featuresets = eval(configurator.get("Input", "featuresets"))
-    fixed_parameter_list = eval(configurator.get("Input", 'fixed_parameters'))
-    param_grid_list = eval(configurator.get("Tuning", 'param_grids'))
+    fixed_parameter_list = eval(configurator.get("Input", "fixed_parameters"))
+    param_grid_list = eval(configurator.get("Tuning", "param_grids"))
+    pos_label_str = configurator.get("Tuning", "pos_label_str")
 
     # get all the input paths and directories
     train_path = configurator.get("Input", "train_location").rstrip('/')  # remove trailing / at the end of path name
@@ -234,8 +235,7 @@ def run_configuration(config_file, local=False):
         print('Error: invalid grid objective function.', file=sys.stderr)
         sys.exit(2)
     else:
-        grid_objective_func = 'classifier.' + grid_objective_func
-    grid_objective = eval(grid_objective_func)
+        grid_objective = eval('classifier.' + grid_objective_func)
 
     # are we doing cross validation or actual testing or just generating predictions on a new test set?
     # If no test set was specified then assume that we are doing cross validation.
@@ -290,18 +290,27 @@ def run_configuration(config_file, local=False):
 
             # create job if we're doing things on the grid
             if not local:
-                job = Job(classify_featureset, [jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name,
-                                                modelpath, vocabpath, prediction_prefix, do_grid_search, eval(grid_objective_func), cross_validate,
-                                                evaluate, suffix, temp_logfile, probability, resultspath, fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
-                                                param_grid_list[classifier_num] if param_grid_list else None],
+                job = Job(classify_featureset, [jobname, featureset, given_classifier, 
+                                                train_path, test_path, train_set_name, test_set_name,
+                                                modelpath, vocabpath, prediction_prefix, 
+                                                do_grid_search, grid_objective, cross_validate,
+                                                evaluate, suffix, temp_logfile, probability, resultspath, 
+                                                fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
+                                                param_grid_list[classifier_num] if param_grid_list else None,
+                                                pos_label_str],
                                                 num_slots=(5 if do_grid_search else 1), name=jobname)
 
                 # Add job to list
                 jobs.append(job)
             else:
-                classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix,
-                                    do_grid_search, eval(grid_objective_func), cross_validate, evaluate, suffix, temp_logfile, probability, resultspath,
-                                    fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(), param_grid_list[classifier_num] if param_grid_list else None)
+                classify_featureset(jobname, featureset, given_classifier,
+                    train_path, test_path, train_set_name, test_set_name,
+                    modelpath, vocabpath, prediction_prefix,
+                    do_grid_search, grid_objective, cross_validate,
+                    evaluate, suffix, temp_logfile, probability, resultspath,
+                    fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
+                    param_grid_list[classifier_num] if param_grid_list else None,
+                    pos_label_str)
 
     # submit the jobs (if running on grid)
     if not local:

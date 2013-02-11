@@ -389,7 +389,7 @@ class _GridSearchCVBinary(GridSearchCV):
 class Classifier(object):
     """ A simpler classifier interface around many sklearn classification functions. """
 
-    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic', model_kwargs=None):
+    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic', model_kwargs=None, pos_label_str=None):
         '''
         Initializes a classifier object with the specified settings.
 
@@ -415,6 +415,7 @@ class Classifier(object):
         self.scaler = scaler
         self.label_dict = label_dict
         self.inverse_label_dict = inverse_label_dict
+        self.pos_label_str = pos_label_str
         self._model_type = model_type
         self._model = None
         self._model_kwargs = {}
@@ -559,7 +560,7 @@ class Classifier(object):
     def _convert_labels_to_array(labels, label_list):
         ''' Given a list of all labels in the dataset and a list of the unique labels in the set, convert the first list to an array of numbers. '''
         label_dict = {}
-
+            
         for i, label in enumerate(label_list):
             label_dict[label] = i
 
@@ -600,6 +601,10 @@ class Classifier(object):
 
             # extract list of unique labels if we are doing classification
             label_list = np.unique(labels).tolist()
+
+            # if one label is specified as the positive class, make sure it's last
+            if self.pos_label_str:
+                label_list = sorted(label_list, key=lambda x: (x == self.pos_label_str, x))
 
             # convert labels to numbers if we are doing classification
             ytrain, self.label_dict, self.inverse_label_dict = self._convert_labels_to_array(labels, label_list)
@@ -679,7 +684,7 @@ class Classifier(object):
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
-            if grid_objective is not None and  grid_objective.__name__ in _CORRELATION_METRICS:
+            if grid_objective is not None and grid_objective.__name__ in _CORRELATION_METRICS:
                 grid_score = grid_objective(ytest, yhat[:, 1])
             yhat = np.array([max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
 
@@ -803,11 +808,15 @@ class Classifier(object):
             self._extract_feature_vectorizer(features)  # create feature name -> value mapping
 
         # Create label_dict if we weren't passed one
-        if clear_vocab or self.label_dict is None:
+        if clear_vocab or self.label_dict is None or self.inverse_label_dict is None:
             labels = [self._extract_label(x) for x in examples]
 
             # extract list of unique labels if we are doing classification
             label_list = np.unique(labels).tolist()
+
+            # if one label is specified as the positive class, make sure it's last
+            if self.pos_label_str:
+                label_list = sorted(label_list, key=lambda x: (x == self.pos_label_str, x))
 
             # convert labels to numbers if we are doing classification
             y, self.label_dict, self.inverse_label_dict = self._convert_labels_to_array(labels, label_list)
