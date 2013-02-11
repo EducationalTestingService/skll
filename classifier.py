@@ -2,8 +2,9 @@
 '''
 Module with many functions to use for easily creating an sklearn classifier
 
-@author: Nitin Madnani, nmadnani@ets.org
-@author: Dan Blanchard, dblanchard@ets.org
+@author: Nitin Madnani (nmadnani@ets.org)
+@author: Dan Blanchard (dblanchard@ets.org)
+@author Michael Heilman (mheilman@ets.org)
 '''
 
 from __future__ import print_function, unicode_literals
@@ -168,40 +169,44 @@ def load_examples(path):
         with open(path) as f:
             reader = csv.reader(f, dialect=csv.excel_tab)
             header = reader.next()
-            for row in reader:
-                example = _preprocess_example(row, header)
-                out.append(example)
+            out = [_preprocess_tsv_row(row, header, example_num) for example_num, row in enumerate(reader)]
     elif path.endswith(".jsonlines"):
         out = []
         with open(path) as f:
+            example_num = 0
             for line in f:
                 example = json.loads(line.strip())
+                if "id" not in example:
+                    example["id"] = "EXAMPLE_{}".format(example_num)
+                example_num += 1
                 out.append(example)
     elif path.endswith(".megam"):
-        out = [{"y": class_name, "x": feature_dict} for class_name, feature_dict in _megam_dict_iter(path)]
+        # TODO read in example ids from comments
+        out = [{"y": class_name, "x": feature_dict, "id": "EXAMPLE_{}".format(example_num)} for example_num, class_name, feature_dict in enumerate(_megam_dict_iter(path))]
     else:
         raise Exception('Example files must be in either TSV, MegaM, or the preprocessed .jsonlines format. You specified: {}'.format(path))
 
     return np.array(out)
 
 
-def _preprocess_example(example, feature_names=None):
+def _preprocess_tsv_row(row, header, example_num):
     '''
     Make a dictionary of preprocessed values (e.g., tokens, POS tags, etc.).
     This should be separate from the feature extraction code so that slow preprocessing steps
     can be saved and reused, without have to redo preprocessing whenever features change.
-    The simple classifier parses a TSV row and returns a dictionary {"y": class label, "x": dictionary of feature values}
+    This parses a TSV row and returns a dictionary {"y": class label, "x": dictionary of feature values}
     It also takes in an optional list of feature names to be used in the "x" dictionary.
     '''
     x = {}
-    y = example[0]
-    if feature_names:
-        for fname, fval in izip(islice(feature_names, 1, None), islice(example, 1, None)):
+    y = row[0]
+    example_id = "EXAMPLE_{}".format(example_num)
+    for fname, fval in izip(islice(header, 1, None), islice(row, 1, None)):
+        if fname == "id":
+            example_id = fval
+        else:
             x["{}".format(fname)] = float(fval)
-    else:
-        for i, fval in enumerate(example):
-            x["x{}".format(i)] = float(fval)
-    return {"y": y, "x": x}
+
+    return {"y": y, "x": x, "id": example_id}
 
 
 def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_func, verbose, **fit_params):
@@ -505,6 +510,13 @@ class Classifier(object):
         '''
         return example["y"]
 
+    @staticmethod
+    def _extract_id(example):
+        '''
+        Return the string ID for a preprocessed example.
+        '''
+        return example["id"]
+
     def _create_estimator(self):
         '''
         @return: A tuple containing an instantiation of the requested estimator, and a parameter grid to search.
@@ -701,6 +713,8 @@ class Classifier(object):
 
         @param examples: The examples to predict the classes for.
         @type examples: C{array}
+        @param examples: string IDs for the examples.
+        @type examples: C{array}
         @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by ".predictions"
         @type prediction_prefix: C{basestring}
         @param append: Should we append the current predictions to the file if it exists?
@@ -710,6 +724,7 @@ class Classifier(object):
         @rtype: C{array}
         '''
         features = [self._extract_features(x) for x in examples]
+        example_ids = [self._extract_id(x) for x in examples]
 
         # transform the features
         xtest = self.feat_vectorizer.transform(features)
@@ -733,15 +748,19 @@ class Classifier(object):
         if prediction_prefix is not None:
             prediction_file = '{}.predictions'.format(prediction_prefix)
             with open(prediction_file, "w" if not append else "a") as predictionfh:
+                # header
+                if not append:
+                    if self.probability and self._model_type != 'svm_linear':
+                        print('\t'.join(["id"] + self.inverse_label_dict), file=predictionfh)
+                    else:
+                        print('\t'.join(["id", "prediction"]), file=predictionfh)
+
                 if self.probability and self._model_type != 'svm_linear':
-                    if not append:
-                        print('\t'.join(self.inverse_label_dict), file=predictionfh)
-                    for class_probs in yhat:
-                        print('\t'.join(str(x) for x in class_probs), file=predictionfh)
+                    for example_id, class_probs in zip(example_ids, yhat):
+                        print('\t'.join([example_id] + [str(x) for x in class_probs]), file=predictionfh)
                 else:
-                    for pred in yhat:
-                        print(self.inverse_label_dict[int(pred)], file=predictionfh)
-                print(file=predictionfh)
+                    for example_id, pred in zip(example_ids, yhat):
+                        print('\t'.join([example_id, self.inverse_label_dict[int(pred)]]), file=predictionfh)
 
         return yhat
 
