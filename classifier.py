@@ -718,8 +718,6 @@ class Classifier(object):
 
         @param examples: The examples to predict the classes for.
         @type examples: C{array}
-        @param examples: string IDs for the examples.
-        @type examples: C{array}
         @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by ".predictions"
         @type prediction_prefix: C{basestring}
         @param append: Should we append the current predictions to the file if it exists?
