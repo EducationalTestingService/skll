@@ -182,7 +182,7 @@ def load_examples(path):
                 out.append(example)
     elif path.endswith(".megam"):
         # TODO read in example ids from comments
-        out = [{"y": class_name, "x": feature_dict, "id": "EXAMPLE_{}".format(example_num)} for example_num, class_name, feature_dict in enumerate(_megam_dict_iter(path))]
+        out = [{"y": class_name, "x": feature_dict, "id": "EXAMPLE_{}".format(example_num)} for example_num, (class_name, feature_dict) in enumerate(_megam_dict_iter(path))]
     else:
         raise Exception('Example files must be in either TSV, MegaM, or the preprocessed .jsonlines format. You specified: {}'.format(path))
 
@@ -560,7 +560,7 @@ class Classifier(object):
     def _convert_labels_to_array(labels, label_list):
         ''' Given a list of all labels in the dataset and a list of the unique labels in the set, convert the first list to an array of numbers. '''
         label_dict = {}
-            
+
         for i, label in enumerate(label_list):
             label_dict[label] = i
 
