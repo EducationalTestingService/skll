@@ -16,6 +16,7 @@ import os
 import sys
 from collections import defaultdict, namedtuple
 
+import numpy as np
 import classifier
 from pythongrid import Job, process_jobs
 from texttable import Texttable
@@ -95,6 +96,28 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
             print("Objective function score = {:.5f}".format(grid_score_sum / num_folds), file=output_file)
 
 
+def load_featureset(dirpath, featureset, suffix):
+    '''
+    loads a list of feature files and merges them (or loads just one if featureset is a string).
+    '''
+    if isinstance(featureset, basestring):
+        featureset = [featureset]
+        
+    example_dict = {}
+    for feats in featureset:
+        examples = classifier.load_examples(os.path.join(dirpath, feats + suffix))
+        for example in examples:
+            if example['id'] not in example_dict:
+                example_dict[example['id']] = example
+            else:
+                example_dict[example['id']]['x'].update(example['x'])
+
+    # TODO add checks to make sure that the set of IDs and the ys are the same
+
+    res = example_dict.values()
+    return np.array(res)
+
+
 def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
                         grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid, pos_label_str):
     ''' Classification job to be submitted to grid '''
@@ -106,9 +129,9 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
             print("Training on {}, Test on {}, feature set {} ...".format(train_set_name, test_set_name, featureset), file=log_file)
 
         # load the training and test examples
-        train_examples = classifier.load_examples(os.path.join(train_path, featureset + suffix))
+        train_examples = load_featureset(train_path, featureset, suffix)
         if not cross_validate:
-            test_examples = classifier.load_examples(os.path.join(test_path, featureset + suffix))
+            test_examples = load_featureset(test_path, featureset, suffix)
 
         # the name of the feature vocab file
         vocabfile = os.path.join(vocabpath, '{}.vocab'.format(jobname))  # temporarily changed this to jobname (from featureset)
@@ -177,6 +200,14 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
                 print_fancy_output(result_info.task_results, output_file)
 
     return result_info
+
+
+def munge_featureset_name(featureset):
+    if isinstance(featureset, basestring):
+        return featureset
+    
+    res = '+'.join(featureset)
+    return res
 
 
 def run_configuration(config_file, local=False):
@@ -278,9 +309,9 @@ def run_configuration(config_file, local=False):
 
             # create a name for the job
             if do_grid_search:
-                jobname = '{}_{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset, given_classifier, "tuned", grid_objective.__name__, task)
+                jobname = '{}_{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, munge_featureset_name(featureset), given_classifier, "tuned", grid_objective.__name__, task)
             else:
-                jobname = '{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset, given_classifier, "untuned", task)
+                jobname = '{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, munge_featureset_name(featureset), given_classifier, "untuned", task)
 
             # change the prediction prefix to include the feature set
             prediction_prefix = os.path.join(prediction_dir, jobname)
