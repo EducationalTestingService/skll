@@ -14,7 +14,7 @@ import ConfigParser
 import re
 import os
 import sys
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, OrderedDict
 
 import numpy as np
 import classifier
@@ -102,8 +102,8 @@ def load_featureset(dirpath, featureset, suffix):
     '''
     if isinstance(featureset, basestring):
         featureset = [featureset]
-        
-    example_dict = {}
+
+    example_dict = OrderedDict()
     for feats in featureset:
         examples = classifier.load_examples(os.path.join(dirpath, feats + suffix))
         for example in examples:
@@ -114,8 +114,7 @@ def load_featureset(dirpath, featureset, suffix):
 
     # TODO add checks to make sure that the set of IDs and the ys are the same
 
-    res = example_dict.values()
-    return np.array(res)
+    return np.array(example_dict.values())
 
 
 def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
@@ -205,7 +204,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
 def munge_featureset_name(featureset):
     if isinstance(featureset, basestring):
         return featureset
-    
+
     res = '+'.join(featureset)
     return res
 
@@ -321,11 +320,11 @@ def run_configuration(config_file, local=False):
 
             # create job if we're doing things on the grid
             if not local:
-                job = Job(classify_featureset, [jobname, featureset, given_classifier, 
+                job = Job(classify_featureset, [jobname, featureset, given_classifier,
                                                 train_path, test_path, train_set_name, test_set_name,
-                                                modelpath, vocabpath, prediction_prefix, 
+                                                modelpath, vocabpath, prediction_prefix,
                                                 do_grid_search, grid_objective, cross_validate,
-                                                evaluate, suffix, temp_logfile, probability, resultspath, 
+                                                evaluate, suffix, temp_logfile, probability, resultspath,
                                                 fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
                                                 param_grid_list[classifier_num] if param_grid_list else None,
                                                 pos_label_str],
