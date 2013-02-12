@@ -132,11 +132,14 @@ def _megam_dict_iter(path):
     print("Loading {}...".format(path).encode('utf-8'), end="", file=sys.stderr)
     sys.stderr.flush()
     with open(path) as megam_file:
+        curr_id = None
         for line in megam_file:
             # Process encoding
             line = _sanitize_line(UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup.strip())
             # Handle instance lines
-            if line and not line.startswith('#') and line not in ['TRAIN', 'TEST', 'DEV']:
+            if line.startswith('#'):
+                curr_id = line[1:].strip()
+            elif line and line not in ['TRAIN', 'TEST', 'DEV']:
                 split_line = line.split()
                 class_name = split_line[0]
                 curr_info_dict = {}
@@ -148,7 +151,8 @@ def _megam_dict_iter(path):
 
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(izip(field_names, field_values))
-                yield class_name, curr_info_dict
+                yield curr_id, class_name, curr_info_dict
+                curr_id = None
             line_count += 1
             if line_count % 100 == 0:
                 print(".", end="", file=sys.stderr)
@@ -181,8 +185,9 @@ def load_examples(path):
                 example_num += 1
                 out.append(example)
     elif path.endswith(".megam"):
-        # TODO read in example ids from comments
-        out = [{"y": class_name, "x": feature_dict, "id": "EXAMPLE_{}".format(example_num)} for example_num, (class_name, feature_dict) in enumerate(_megam_dict_iter(path))]
+        out = [{"y": class_name, "x": feature_dict, "id": "EXAMPLE_{}".format(example_num) if example_id is None else example_id} for example_num, (example_id, class_name,
+                                                                                                                                                    feature_dict)
+                                                                                                                                  in enumerate(_megam_dict_iter(path))]
     else:
         raise Exception('Example files must be in either TSV, MegaM, or the preprocessed .jsonlines format. You specified: {}'.format(path))
 
