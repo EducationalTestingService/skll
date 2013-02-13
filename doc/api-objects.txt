@@ -1,9 +1,9 @@
 classifier	classifier-module.html
 classifier.spearman	classifier-module.html#spearman
+classifier._preprocess_tsv_row	classifier-module.html#_preprocess_tsv_row
 classifier.load_examples	classifier-module.html#load_examples
 classifier.f1_score_micro	classifier-module.html#f1_score_micro
 classifier.f1_score_macro	classifier-module.html#f1_score_macro
-classifier._preprocess_example	classifier-module.html#_preprocess_example
 classifier._megam_dict_iter	classifier-module.html#_megam_dict_iter
 classifier.kendall_tau	classifier-module.html#kendall_tau
 classifier.__package__	classifier-module.html#__package__
@@ -29,6 +29,7 @@ classifier.Classifier.evaluate	classifier.Classifier-class.html#evaluate
 classifier.Classifier._extract_feature_vectorizer	classifier.Classifier-class.html#_extract_feature_vectorizer
 classifier.Classifier.train	classifier.Classifier-class.html#train
 classifier.Classifier._convert_labels_to_array	classifier.Classifier-class.html#_convert_labels_to_array
+classifier.Classifier._extract_id	classifier.Classifier-class.html#_extract_id
 classifier.Classifier.model_type	classifier.Classifier-class.html#model_type
 classifier.Classifier.model	classifier.Classifier-class.html#model
 classifier.Classifier._extract_label	classifier.Classifier-class.html#_extract_label
