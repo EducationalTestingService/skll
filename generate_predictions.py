@@ -60,9 +60,9 @@ class Predictor(object):
 
         if self._classifier.probability:
             if self.threshold is None:
-                return prediction_array[0][0][self._pos_index]
+                return prediction_array[0][self._pos_index]
             else:
-                return int(prediction_array[0][0][self._pos_index] >= self.threshold)
+                return int(prediction_array[0][self._pos_index] >= self.threshold)
         else:
             return self._classifier.inverse_label_dict[int(prediction_array[0][0])]
 
