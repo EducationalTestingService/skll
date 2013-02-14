@@ -77,7 +77,8 @@ def main():
     parser.add_argument('feature_file', help='File containing list of space-delimited pairs of feature names and values, separated by spaces. For example: A 4.8 B 15 C 16.',
                         type=argparse.FileType('r'), nargs='+')
     parser.add_argument('-p', '--positive_class', help="If the model is only being used to predict the probability of a particular class, this specifies the index " +
-                                                       "of the class we're predicting. 1 = second class, which is default for binary classification.", type=int)
+                                                       "of the class we're predicting. 1 = second class, which is default for binary classification. Keep in mind that " +
+                                                       "classes are sorted lexicographically.", default=1, type=int)
     parser.add_argument('-t', '--threshold', help="If the model we're using is generating probabilities of the positive class, return 1 if it meets/exceeds " +
                                                   "the given threshold and 0 otherwise.", type=float)
     args = parser.parse_args()
