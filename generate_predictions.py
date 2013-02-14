@@ -59,9 +59,12 @@ class Predictor(object):
         prediction_array = self._classifier.predict([{"y": None, "x": curr_info_dict, "id": "EXAMPLE_{}".format(self._example_count)}], None)
 
         if self._classifier.probability:
-            return prediction_array[0, self._pos_index] if self.threshold is None else int(prediction_array[0, self._pos_index] >= self.threshold)
+            if self.threshold is None:
+                return prediction_array[0][0][self._pos_index]
+            else:
+                return int(prediction_array[0][0][self._pos_index] >= self.threshold)
         else:
-            return self._classifier.inverse_label_dict[int(prediction_array[0, 0])]
+            return self._classifier.inverse_label_dict[int(prediction_array[0][0])]
 
 
 def main():
@@ -80,7 +83,7 @@ def main():
     args = parser.parse_args()
 
     # Create the classifier and load the model
-    predictor = Predictor(args.model_prefix, args.positive_class, args.threshold)
+    predictor = Predictor(args.model_prefix, positive_class=args.positive_class, threshold=args.threshold)
 
     for feature_file in args.feature_file:
         for line in feature_file:
