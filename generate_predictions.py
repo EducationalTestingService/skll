@@ -56,7 +56,6 @@ class Predictor(object):
         curr_info_dict = dict(izip(field_names, field_values))
 
         # Must make a list around a dictionary to fit format that Classifier.predict expects
-
         prediction_array = self._classifier.predict([{"y": None, "x": curr_info_dict, "id": "EXAMPLE_{}".format(self._example_count)}], None)
 
         if self._classifier.probability:
