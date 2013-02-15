@@ -461,6 +461,20 @@ class Classifier(object):
         '''
         with open(modelfile) as f:
             self._model, self.probability = pickle.load(f)
+        if isinstance(self._model, LogisticRegression):
+            self._model_type = 'logistic'
+        elif isinstance(self._model, LinearSVC):
+            self._model_type = 'svm_linear'
+        elif isinstance(self._model, SVC):
+            self._model_type = 'svm_radial'
+        elif isinstance(self._model, MultinomialNB):
+            self._model_type = 'naivebayes'
+        elif isinstance(self._model, DecisionTreeClassifier):
+            self._model_type = 'dtree'
+        elif isinstance(self._model, RandomForestClassifier):
+            self._model_type = 'rforest'
+        elif isinstance(self._model, GradientBoostingClassifier):
+            self._model_type = "gradient"
 
     def load_vocab(self, vocabfile):
         '''
