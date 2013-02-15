@@ -144,7 +144,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
 
         # load the feature vocab if it already exists. We can do this since this is independent of the model type
         if os.path.exists(vocabfile) and not overwrite:
-            print('\tloading pre-existing feature vocab', file=log_file)
+            print('\tloading pre-existing feature vocab')
             learner.load_vocab(vocabfile)
 
         # check if we're doing cross-validation, because we only load/save models when we're not.
@@ -152,7 +152,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
 
             # load the model if it already exists
             if os.path.exists(modelfile) and not overwrite:
-                print('\tloading pre-existing {} model: {}'.format(given_classifier, modelfile), file=log_file)
+                print('\tloading pre-existing {} model: {}'.format(given_classifier, modelfile))
                 learner.load_model(modelfile)
 
             # if we have do not have a saved model, we need to train one. However, we may be able to reuse a saved feature vocab file if that existed above.
