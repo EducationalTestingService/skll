@@ -147,7 +147,7 @@ def _megam_dict_iter(path):
                     # Get current instances feature-value pairs
                     field_pairs = split_line[1:]
                     field_names = islice(field_pairs, 0, None, 2)
-                    field_values = islice(field_pairs, 1, None, 2)
+                    field_values = (float(val) for val in islice(field_pairs, 1, None, 2))  # Convert values to floats, because otherwise features'll be categorical
 
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(izip(field_names, field_values))
