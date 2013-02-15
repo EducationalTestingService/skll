@@ -118,7 +118,7 @@ def load_featureset(dirpath, featureset, suffix):
 
 
 def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
-                        grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid, pos_label_str):
+                        grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid, pos_label_str, overwrite):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -143,7 +143,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         modelfile = os.path.join(modelpath, '{}.model'.format(jobname))
 
         # load the feature vocab if it already exists. We can do this since this is independent of the model type
-        if os.path.exists(vocabfile):
+        if os.path.exists(vocabfile) and not overwrite:
             print('\tloading pre-existing feature vocab', file=log_file)
             learner.load_vocab(vocabfile)
 
@@ -151,7 +151,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         if not cross_validate:
 
             # load the model if it already exists
-            if os.path.exists(modelfile):
+            if os.path.exists(modelfile) and not overwrite:
                 print('\tloading pre-existing {} model: {}'.format(given_classifier, modelfile), file=log_file)
                 learner.load_model(modelfile)
 
@@ -209,7 +209,7 @@ def munge_featureset_name(featureset):
     return res
 
 
-def run_configuration(config_file, local=False):
+def run_configuration(config_file, local=False, overwrite=False):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
     configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
@@ -327,7 +327,8 @@ def run_configuration(config_file, local=False):
                                                 evaluate, suffix, temp_logfile, probability, resultspath,
                                                 fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
                                                 param_grid_list[classifier_num] if param_grid_list else None,
-                                                pos_label_str],
+                                                pos_label_str,
+                                                overwrite],
                                                 num_slots=(5 if do_grid_search else 1), name=jobname)
 
                 # Add job to list
@@ -340,7 +341,7 @@ def run_configuration(config_file, local=False):
                     evaluate, suffix, temp_logfile, probability, resultspath,
                     fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
                     param_grid_list[classifier_num] if param_grid_list else None,
-                    pos_label_str)
+                    pos_label_str, overwrite)
 
     # submit the jobs (if running on grid)
     if not local:
@@ -361,6 +362,7 @@ if __name__ == '__main__':
     parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.', type=argparse.FileType('r'))
     parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.',
                         action='store_true')
+    parser.add_argument('-o', '--overwrite', help='If models and/or vocabs exists, just overwrite them instead of reusing them.', action='store_true')
     args = parser.parse_args()
 
-    run_configuration(args.config_file, args.local)
+    run_configuration(args.config_file, local=args.local, overwrite=args.overwrite)
