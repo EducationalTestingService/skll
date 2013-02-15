@@ -50,12 +50,13 @@ class Predictor(object):
         # Get current instances feature-value pairs
         field_pairs = feature_string.split()
         field_names = islice(field_pairs, 0, None, 2)
-        field_values = islice(field_pairs, 1, None, 2)
+        field_values = (float(val) for val in islice(field_pairs, 1, None, 2))  # Convert values to floats, because otherwise features'll be categorical
 
         # Add the feature-value pairs to dictionary
         curr_info_dict = dict(izip(field_names, field_values))
 
         # Must make a list around a dictionary to fit format that Classifier.predict expects
+
         prediction_array = self._classifier.predict([{"y": None, "x": curr_info_dict, "id": "EXAMPLE_{}".format(self._example_count)}], None)
 
         if self._classifier.probability:
