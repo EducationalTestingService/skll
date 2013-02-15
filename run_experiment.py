@@ -209,7 +209,7 @@ def munge_featureset_name(featureset):
     return res
 
 
-def run_configuration(config_file, local=False, overwrite=False):
+def run_configuration(config_file, local=False, overwrite=True):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
     configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
@@ -360,9 +360,9 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      conflict_handler='resolve')
     parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.', type=argparse.FileType('r'))
+    parser.add_argument('-k', '--keep_models', help='If models and/or vocabs exists, re-use them instead of overwriting them.', action='store_true')
     parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.',
                         action='store_true')
-    parser.add_argument('-o', '--overwrite', help='If models and/or vocabs exists, just overwrite them instead of reusing them.', action='store_true')
     args = parser.parse_args()
 
-    run_configuration(args.config_file, local=args.local, overwrite=args.overwrite)
+    run_configuration(args.config_file, local=args.local, overwrite=not args.keep_models)
