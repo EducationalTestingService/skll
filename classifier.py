@@ -70,7 +70,7 @@ def pearson(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on Pearson correlation.
     '''
-    ret_score = pearsonr(y_true, y_pred)
+    ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
