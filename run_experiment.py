@@ -45,33 +45,39 @@ def get_stat_string(class_result_dict, stat):
 def print_fancy_output(result_tuples, output_file=sys.stdout):
     ''' Function to take all of the results from all of the folds and print nice tables with the resluts. '''
     num_folds = len(result_tuples)
-    score_sum = 0.0
+    accuracy_sum = 0.0
     grid_score_sum = None
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
-    classes = sorted(result_tuples[0][2].iterkeys())
-    for k, (conf_matrix, fold_score, result_dict, model_params, grid_score) in enumerate(result_tuples, start=1):
+    result_table = None
+
+    for k, (conf_matrix, fold_accuracy, result_dict, model_params, grid_score) in enumerate(result_tuples, start=1):
         if num_folds > 1:
             print("\nFold: {}".format(k), file=output_file)
         param_out = ('{}: {}'.format(param_name, param_value) for param_name, param_value in model_params.iteritems())
         print('Model parameters: {}'.format(', '.join(param_out)), file=output_file)
-        result_table = Texttable(max_width=0)
-        result_table.set_cols_align(["r"] * (len(classes) + 4))
-        result_table.add_rows([[""] + classes + ["Precision", "Recall", "F-measure"]], header=True)
-        for i, actual_class in enumerate(classes):
-            conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
-            class_prec = get_stat_string(result_dict[actual_class], "Precision")
-            class_recall = get_stat_string(result_dict[actual_class], "Recall")
-            class_f = get_stat_string(result_dict[actual_class], "F-measure")
-            if class_prec != 'N/A':
-                prec_sum_dict[actual_class] += float(class_prec[:-1])
-                recall_sum_dict[actual_class] += float(class_recall[:-1])
-                f_sum_dict[actual_class] += float(class_f[:-1])
-            result_table.add_row([actual_class] + conf_matrix[i] + [class_prec, class_recall, class_f])
-        print(result_table.draw(), file=output_file)
-        print("(row = reference; column = predicted)", file=output_file)
-        print("Accuracy = {:.1f}%".format(fold_score), file=output_file)
+
+        if conf_matrix:
+            classes = sorted(result_tuples[0][2].iterkeys())
+            result_table = Texttable(max_width=0)
+            result_table.set_cols_align(["r"] * (len(classes) + 4))
+            result_table.add_rows([[""] + classes + ["Precision", "Recall", "F-measure"]], header=True)
+            for i, actual_class in enumerate(classes):
+                conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
+                class_prec = get_stat_string(result_dict[actual_class], "Precision")
+                class_recall = get_stat_string(result_dict[actual_class], "Recall")
+                class_f = get_stat_string(result_dict[actual_class], "F-measure")
+                if class_prec != 'N/A':
+                    prec_sum_dict[actual_class] += float(class_prec[:-1])
+                    recall_sum_dict[actual_class] += float(class_recall[:-1])
+                    f_sum_dict[actual_class] += float(class_f[:-1])
+                result_table.add_row([actual_class] + conf_matrix[i] + [class_prec, class_recall, class_f])
+            print(result_table.draw(), file=output_file)
+            print("(row = reference; column = predicted)", file=output_file)
+            print("Accuracy = {:.1f}%".format(fold_accuracy), file=output_file)
+            accuracy_sum += fold_accuracy
+
         if grid_score is not None:
             if grid_score_sum is None:
                 grid_score_sum = grid_score
@@ -79,19 +85,20 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                 grid_score_sum += grid_score
             print('Objective function score = {:.5f}'.format(grid_score), file=output_file)
         print(file=output_file)
-        score_sum += fold_score
+
 
     if num_folds > 1:
         print("\nAverage:", file=output_file)
-        result_table = Texttable(max_width=0)
-        result_table.set_cols_align(["l", "r", "r", "r"])
-        result_table.add_rows([["Class", "Precision", "Recall", "F-measure"]], header=True)
-        for actual_class in classes:
-            result_table.add_row([actual_class] + ["{:.1f}%".format(prec_sum_dict[actual_class] / num_folds),
-                                                   "{:.1f}%".format(recall_sum_dict[actual_class] / num_folds),
-                                                   "{:.1f}%".format(f_sum_dict[actual_class] / num_folds)])
-        print(result_table.draw(), file=output_file)
-        print("Accuracy = {:.1f}%".format(score_sum / num_folds), file=output_file)
+        if result_table:
+            result_table = Texttable(max_width=0)
+            result_table.set_cols_align(["l", "r", "r", "r"])
+            result_table.add_rows([["Class", "Precision", "Recall", "F-measure"]], header=True)
+            for actual_class in classes:
+                result_table.add_row([actual_class] + ["{:.1f}%".format(prec_sum_dict[actual_class] / num_folds),
+                                                       "{:.1f}%".format(recall_sum_dict[actual_class] / num_folds),
+                                                       "{:.1f}%".format(f_sum_dict[actual_class] / num_folds)])
+            print(result_table.draw(), file=output_file)
+            print("Accuracy = {:.1f}%".format(accuracy_sum / num_folds), file=output_file)
         if grid_score_sum is not None:
             print("Objective function score = {:.5f}".format(grid_score_sum / num_folds), file=output_file)
 
@@ -209,7 +216,7 @@ def munge_featureset_name(featureset):
     return res
 
 
-def run_configuration(config_file, local=False, overwrite=True):
+def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', hosts=None):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
     configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
@@ -329,7 +336,7 @@ def run_configuration(config_file, local=False, overwrite=True):
                                                 param_grid_list[classifier_num] if param_grid_list else None,
                                                 pos_label_str,
                                                 overwrite],
-                                                num_slots=(5 if do_grid_search else 1), name=jobname)
+                                                num_slots=(5 if do_grid_search else 1), name=jobname, queue=queue)
 
                 # Add job to list
                 jobs.append(job)
@@ -345,7 +352,7 @@ def run_configuration(config_file, local=False, overwrite=True):
 
     # submit the jobs (if running on grid)
     if not local:
-        job_results = process_jobs(jobs)
+        job_results = process_jobs(jobs, white_list=hosts)
 
         # Check for errors
         for result_info in job_results:
@@ -356,13 +363,17 @@ def run_configuration(config_file, local=False, overwrite=True):
 
 if __name__ == '__main__':
     # Get command line arguments
-    parser = argparse.ArgumentParser(description="Runs a bunch of sklearn jobs in parallel on the cluster given a config file.",
+    parser = argparse.ArgumentParser(description="Runs sklearn jobs in parallel on the cluster given a config file.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      conflict_handler='resolve')
     parser.add_argument('config_file', help='Configuration file describing the sklearn task to run.', type=argparse.FileType('r'))
     parser.add_argument('-k', '--keep_models', help='If models and/or vocabs exists, re-use them instead of overwriting them.', action='store_true')
-    parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.',
-                        action='store_true')
-    args = parser.parse_args()
+    parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.', action='store_true')
+    parser.add_argument('-m', '--machines', help="comma-separated list of machines to add to pythongrid's whitelist (if not specified, all available machines are used). Note that full names must be specified, e.g., \"nlp.research.ets.org\"", type=str, default=None)
+    parser.add_argument('-q', '--queue', help="Use this queue for python grid.", type=str, default='nlp.q')
 
-    run_configuration(args.config_file, local=args.local, overwrite=not args.keep_models)
+    args = parser.parse_args()
+    machines = None
+    if args.machines:
+        machines = args.machines.split(',')
+    run_configuration(args.config_file, local=args.local, overwrite=not args.keep_models, queue=args.queue, hosts=machines)

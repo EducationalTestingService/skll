@@ -31,7 +31,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.externals.joblib import Parallel, delayed, logger
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.grid_search import GridSearchCV, IterGrid, _has_one_grid_point
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC
@@ -43,6 +43,7 @@ from sklearn.utils.validation import _num_samples
 #### Globals ####
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
+_REGRESSION_MODELS = frozenset(['ridge'])
 
 
 #### METRICS ####
@@ -565,6 +566,9 @@ class Classifier(object):
         elif self._model_type == "gradient":
             estimator = GradientBoostingClassifier(**self._model_kwargs)
             default_param_grid = [{'learning_rate': [0.01, 0.1, 0.5]}]
+        elif self._model_type == 'ridge':
+            estimator = Ridge(**self._model_kwargs)
+            default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
         else:
             raise ValueError("{} is not a valid classifier type.".format(self._model_type))
 
@@ -615,7 +619,9 @@ class Classifier(object):
         features = [self._extract_features(x) for x in examples]
 
         # Create label_dict if we weren't passed one
-        if clear_vocab or self.label_dict is None:
+        if self._model_type in _REGRESSION_MODELS:
+            ytrain = np.array([float(self._extract_label(x)) for x in examples])
+        elif clear_vocab or self.label_dict is None:
             labels = [self._extract_label(x) for x in examples]
 
             # extract list of unique labels if we are doing classification
@@ -657,11 +663,11 @@ class Classifier(object):
                 param_grid = default_param_grid
 
             # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
-            if grid_objective.__name__ in _CORRELATION_METRICS:
-                grid_searcher = _GridSearchCVBinary(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
-                                                   n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
+            if grid_objective.__name__ in _CORRELATION_METRICS and self._model_type not in _REGRESSION_MODELS:
+                grid_search_class = _GridSearchCVBinary
             else:
-                grid_searcher = GridSearchCV(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
+                grid_search_class = GridSearchCV
+            grid_searcher = grid_search_class(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
                                              n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
 
             # run the grid search for hyperparameters
@@ -722,14 +728,19 @@ class Classifier(object):
 
         # Calculate metrics
         result_dict = defaultdict(dict)
-        overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
-        # Store results
-        for actual_class in sorted(actual_dict.iterkeys()):
-            result_dict[actual_class]["Precision"] = precision(actual_dict[actual_class], pred_dict[actual_class])
-            result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
-            result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
 
-        return (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.inverse_label_dict))).tolist(), overall_accuracy, result_dict, self._model.get_params(), grid_score)
+        if self._model_type in _REGRESSION_MODELS:
+            res = (None, None, None, self._model.get_params(), grid_score)
+        else:
+            overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
+            # Store results
+            for actual_class in sorted(actual_dict.iterkeys()):
+                result_dict[actual_class]["Precision"] = precision(actual_dict[actual_class], pred_dict[actual_class])
+                result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
+                result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
+
+            res = (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.inverse_label_dict))).tolist(), overall_accuracy, result_dict, self._model.get_params(), grid_score)
+        return res
 
     def predict(self, examples, prediction_prefix, append=False):
         '''
