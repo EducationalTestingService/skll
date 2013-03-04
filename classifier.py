@@ -548,6 +548,9 @@ class Classifier(object):
         elif self._model_type == 'rforest' or self._model_type == 'gradient':
             self._model_kwargs['n_estimators'] = 1000
 
+        if self._model_type == 'rforest' or self._model_type == 'dtree':
+            self._model_kwargs['compute_importances'] = True
+
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
 
@@ -589,6 +592,8 @@ class Classifier(object):
             self._model_type = 'rforest'
         elif isinstance(self._model, GradientBoostingClassifier):
             self._model_type = "gradient"
+        elif isinstance(self._model, Ridge):
+            self._model_type = 'ridge'
 
     def load_vocab(self, vocabfile):
         '''
