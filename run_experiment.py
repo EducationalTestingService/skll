@@ -322,7 +322,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
             test_set_name = os.path.basename(test_path) if test_path else "cv"
 
             # create a name for the job
-            name_components = [train_set_name, test_set_name, munge_featureset_name(featureset), given_classifier]
+            name_components = [train_set_name, test_set_name, featureset_name, given_classifier]
 
             # add scaling information to name
             if do_scale_features:
