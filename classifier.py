@@ -668,7 +668,7 @@ class Classifier(object):
             else:
                 grid_search_class = GridSearchCV
             grid_searcher = grid_search_class(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
-                                             n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
+                                             n_jobs=grid_search_folds)
 
             # run the grid search for hyperparameters
             # print('\tstarting grid search', file=sys.stderr)
