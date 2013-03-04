@@ -219,13 +219,13 @@ def munge_featureset_name(featureset):
 def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', hosts=None):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
-    configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
-                                                 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]', 'pos_label_str': None})
+    configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro", 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]', 'pos_label_str': None, 'featureset_names': None})
     configurator.readfp(config_file)
 
     # extract sklearn parameters from the config file
     given_classifiers = eval(configurator.get("Input", "classifiers"))
     given_featuresets = eval(configurator.get("Input", "featuresets"))
+    given_featureset_names = eval(configurator.get("Input", "featureset_names"))
     fixed_parameter_list = eval(configurator.get("Input", "fixed_parameters"))
     param_grid_list = eval(configurator.get("Tuning", "param_grids"))
     pos_label_str = configurator.get("Tuning", "pos_label_str")
@@ -303,8 +303,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
     if not local:
         jobs = []
 
+    if not given_featureset_names:
+        given_featureset_names = [munge_featureset_name(x) for x in given_featuresets]
+    assert len(given_featureset_names) == len(given_featuresets)
+
     # For each feature set
-    for featureset in given_featuresets:
+    for featureset, featureset_name in zip(given_featuresets, given_featureset_names):
 
         # and for each classifier
         for classifier_num, given_classifier in enumerate(given_classifiers):
@@ -315,9 +319,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
 
             # create a name for the job
             if do_grid_search:
-                jobname = '{}_{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, munge_featureset_name(featureset), given_classifier, "tuned", grid_objective.__name__, task)
+                jobname = '{}_{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset_name, given_classifier, "tuned", grid_objective.__name__, task)
             else:
-                jobname = '{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, munge_featureset_name(featureset), given_classifier, "untuned", task)
+                jobname = '{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset_name, given_classifier, "untuned", task)
 
             # change the prediction prefix to include the feature set
             prediction_prefix = os.path.join(prediction_dir, jobname)
