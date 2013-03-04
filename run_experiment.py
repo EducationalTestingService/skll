@@ -219,7 +219,7 @@ def munge_featureset_name(featureset):
 def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', hosts=None):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
-    configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro", 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]', 'pos_label_str': None, 'featureset_names': None})
+    configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro", 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]', 'pos_label_str': None, 'featureset_names': '[]'})
     configurator.readfp(config_file)
 
     # extract sklearn parameters from the config file
