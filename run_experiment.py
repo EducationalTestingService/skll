@@ -124,8 +124,7 @@ def load_featureset(dirpath, featureset, suffix):
     return np.array(example_dict.values())
 
 
-def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search,
-                        grid_objective, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid, pos_label_str, overwrite):
+def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search, grid_objective, do_scale_features, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid, pos_label_str, overwrite):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -143,7 +142,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         vocabfile = os.path.join(vocabpath, '{}.vocab'.format(jobname))  # temporarily changed this to jobname (from featureset)
 
         # initialize a classifer object
-        learner = classifier.Classifier(probability=probability, model_type=given_classifier, model_kwargs=fixed_parameters, pos_label_str=pos_label_str)
+        learner = classifier.Classifier(probability=probability, model_type=given_classifier, do_scale_features=do_scale_features, model_kwargs=fixed_parameters, pos_label_str=pos_label_str)
 
         # check whether a trained model on the same data with the same featureset already exists
         # if so, load it (and the feature vocabulary) and then use it on the test data
@@ -219,7 +218,9 @@ def munge_featureset_name(featureset):
 def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', hosts=None):
     ''' Takes a configuration file and runs the specified jobs on the grid. '''
     # initialize config parser
-    configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro", 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]', 'pos_label_str': None, 'featureset_names': '[]'})
+    configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
+                                                'scale_features': True, 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]', 'pos_label_str': None,
+                                                'featureset_names': '[]'})
     configurator.readfp(config_file)
 
     # extract sklearn parameters from the config file
@@ -274,6 +275,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
     else:
         grid_objective = eval('classifier.' + grid_objective_func)
 
+    # do we need to scale the feature values?
+    do_scale_features = eval(configurator.get("Tuning", "scale_features"))
+
     # are we doing cross validation or actual testing or just generating predictions on a new test set?
     # If no test set was specified then assume that we are doing cross validation.
     # If the results field was not specified then assume that we are just generating predictions
@@ -318,10 +322,25 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
             test_set_name = os.path.basename(test_path) if test_path else "cv"
 
             # create a name for the job
-            if do_grid_search:
-                jobname = '{}_{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset_name, given_classifier, "tuned", grid_objective.__name__, task)
+            name_components = [train_set_name, test_set_name, munge_featureset_name(featureset), given_classifier]
+
+            # add scaling information to name
+            if do_scale_features:
+                name_components.append('scaled')
             else:
-                jobname = '{}_{}_{}_{}_{}_{}'.format(train_set_name, test_set_name, featureset_name, given_classifier, "untuned", task)
+                name_components.append('unscaled')
+
+            # add tuning information to name
+            if do_grid_search:
+                name_components.append('tuned')
+                name_components.append(grid_objective.__name__)
+            else:
+                name_components.append('untuned')
+
+            # add task name
+            name_components.append(task)
+
+            jobname = '_'.join(name_components)
 
             # change the prediction prefix to include the feature set
             prediction_prefix = os.path.join(prediction_dir, jobname)
@@ -334,7 +353,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
                 job = Job(classify_featureset, [jobname, featureset, given_classifier,
                                                 train_path, test_path, train_set_name, test_set_name,
                                                 modelpath, vocabpath, prediction_prefix,
-                                                do_grid_search, grid_objective, cross_validate,
+                                                do_grid_search, grid_objective, do_scale_features, cross_validate,
                                                 evaluate, suffix, temp_logfile, probability, resultspath,
                                                 fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
                                                 param_grid_list[classifier_num] if param_grid_list else None,
@@ -348,7 +367,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
                 classify_featureset(jobname, featureset, given_classifier,
                     train_path, test_path, train_set_name, test_set_name,
                     modelpath, vocabpath, prediction_prefix,
-                    do_grid_search, grid_objective, cross_validate,
+                    do_grid_search, grid_objective, do_scale_features, cross_validate,
                     evaluate, suffix, temp_logfile, probability, resultspath,
                     fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
                     param_grid_list[classifier_num] if param_grid_list else None,
@@ -375,6 +394,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--local', help='Do not use the Grid Engine for running jobs and just run everything sequential on the local machine. This is for debugging.', action='store_true')
     parser.add_argument('-m', '--machines', help="comma-separated list of machines to add to pythongrid's whitelist (if not specified, all available machines are used). Note that full names must be specified, e.g., \"nlp.research.ets.org\"", type=str, default=None)
     parser.add_argument('-q', '--queue', help="Use this queue for python grid.", type=str, default='nlp.q')
+
 
     args = parser.parse_args()
     machines = None

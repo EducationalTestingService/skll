@@ -278,6 +278,118 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_fu
     return this_score, clf_params, _num_samples(X)
 
 
+# Temporary imports for _FixedStandardScaler
+import numpy as np
+import scipy.sparse as sp
+from sklearn.preprocessing import _mean_and_std
+from sklearn.utils import warn_if_not_float
+from sklearn.utils.sparsefuncs import inplace_csr_row_normalize_l1
+from sklearn.utils.sparsefuncs import inplace_csr_row_normalize_l2
+from sklearn.utils.sparsefuncs import inplace_csr_column_scale
+from sklearn.utils.sparsefuncs import mean_variance_axis0
+from sklearn.utils import warn_if_not_float
+
+
+class _FixedStandardScaler(StandardScaler):
+
+    '''
+    StandardScaler has a bug in that it always scales by the standard deviation for sparse matrices, i.e., it ignores the value of with_std.
+    This is a fixed version. This is just temporary until the bug is fixed in sklearn.
+    '''
+
+    def fit(self, X, y=None):
+        """Compute the mean and std to be used for later scaling.
+
+        Parameters
+        ----------
+        X : array-like or CSR matrix with shape [n_samples, n_features]
+            The data used to compute the mean and standard deviation
+            used for later scaling along the features axis.
+        """
+        X = check_arrays(X, copy=self.copy, sparse_format="csr")[0]
+        if sp.issparse(X):
+            if self.with_mean:
+                raise ValueError(
+                    "Cannot center sparse matrices: pass `with_mean=False` "
+                    "instead See docstring for motivation and alternatives.")
+            warn_if_not_float(X, estimator=self)
+            self.mean_ = None
+
+            # we added this check for with_std
+            if self.with_std:
+                var = mean_variance_axis0(X)[1]
+                self.std_ = np.sqrt(var)
+                self.std_[var == 0.0] = 1.0
+            else:
+                self.std_ = None
+
+            return self
+        else:
+            warn_if_not_float(X, estimator=self)
+            self.mean_, self.std_ = _mean_and_std(
+                X, axis=0, with_mean=self.with_mean, with_std=self.with_std)
+            return self
+
+    def transform(self, X, y=None, copy=None):
+        """Perform standardization by centering and scaling
+
+        Parameters
+        ----------
+        X : array-like with shape [n_samples, n_features]
+            The data used to scale along the features axis.
+        """
+        copy = copy if copy is not None else self.copy
+        X = check_arrays(X, copy=copy, sparse_format="csr")[0]
+        if sp.issparse(X):
+            if self.with_mean:
+                raise ValueError(
+                    "Cannot center sparse matrices: pass `with_mean=False` "
+                    "instead See docstring for motivation and alternatives.")
+            warn_if_not_float(X, estimator=self)
+            if self.with_std:
+                inplace_csr_column_scale(X, 1 / self.std_)
+        else:
+            warn_if_not_float(X, estimator=self)
+            if self.with_mean:
+                X -= self.mean_
+            # we added this check for with_std
+            if self.with_std:
+                X /= self.std_
+        return X
+
+    def inverse_transform(self, X, copy=None):
+        """Scale back the data to the original representation
+
+        Parameters
+        ----------
+        X : array-like with shape [n_samples, n_features]
+            The data used to scale along the features axis.
+        """
+        copy = copy if copy is not None else self.copy
+        if sp.issparse(X):
+            if self.with_mean:
+                raise ValueError(
+                    "Cannot uncenter sparse matrices: pass `with_mean=False` "
+                    "instead See docstring for motivation and alternatives.")
+            if not sp.isspmatrix_csr(X):
+                X = X.tocsr()
+                copy = False
+            if copy:
+                X = X.copy()
+            # we added this check for with_std
+            if self.with_std:
+                inplace_csr_column_scale(X, self.std_)
+        else:
+            X = np.asarray(X)
+            if copy:
+                X = X.copy()
+            if self.with_std:
+                X *= self.std_
+            if self.with_mean:
+                X += self.mean_
+        return X
+
+
 class _GridSearchCVBinary(GridSearchCV):
     '''
     GridSearchCV for use with binary classification problems where you want to optimize the learner based on the probabilities assigned to each class, and not just
@@ -395,7 +507,7 @@ class _GridSearchCVBinary(GridSearchCV):
 class Classifier(object):
     """ A simpler classifier interface around many sklearn classification functions. """
 
-    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, label_dict=None, inverse_label_dict=None, model_type='logistic', model_kwargs=None, pos_label_str=None):
+    def __init__(self, probability=False, feat_vectorizer=None, do_scale_features=False, label_dict=None, inverse_label_dict=None, model_type='logistic', model_kwargs=None, pos_label_str=None):
         '''
         Initializes a classifier object with the specified settings.
 
@@ -418,7 +530,8 @@ class Classifier(object):
         super(Classifier, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
         self.feat_vectorizer = feat_vectorizer
-        self.scaler = scaler
+        self.scaler = None
+        self.do_scale_features = do_scale_features
         self.label_dict = label_dict
         self.inverse_label_dict = inverse_label_dict
         self.pos_label_str = pos_label_str
@@ -649,7 +762,11 @@ class Classifier(object):
 
         # Create scaler if we weren't passed one
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            self.scaler = StandardScaler(copy=True, with_mean=(not issparse(xtrain)))
+            if self.do_scale_features:
+                self.scaler = _FixedStandardScaler(copy=True, with_mean=(not issparse(xtrain)))
+            else:
+                # Doing this is to prevent any modification of feature values using a dummy transformation
+                self.scaler = _FixedStandardScaler(copy=False, with_mean=False, with_std=False)
 
         # Scale features if necessary
         if self._model_type != 'naivebayes':
@@ -668,7 +785,7 @@ class Classifier(object):
             else:
                 grid_search_class = GridSearchCV
             grid_searcher = grid_search_class(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
-                                             n_jobs=(grid_search_folds if self._model_type not in {"svm_linear", "logistic"} else 1))
+                                             n_jobs=(grid_search_folds if self._model_type not in {"svm_linear"} else 1))
 
             # run the grid search for hyperparameters
             # print('\tstarting grid search', file=sys.stderr)
@@ -829,7 +946,11 @@ class Classifier(object):
 
         # Create scaler if we weren't passed one
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            self.scaler = StandardScaler(copy=True, with_mean=self._model_type in _REQUIRES_DENSE)
+            if self.do_scale_features:
+                self.scaler = _FixedStandardScaler(copy=True, with_mean=self._model_type in _REQUIRES_DENSE)
+            else:
+                # Doing this is to prevent any modification of feature values using a dummy transformation
+                self.scaler = _FixedStandardScaler(copy=False, with_mean=False, with_std=False)
 
         # Create feat_vectorizer if we weren't passed one
         if clear_vocab or self.feat_vectorizer is None:
