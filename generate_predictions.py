@@ -64,7 +64,7 @@ class Predictor(object):
             else:
                 return int(prediction_array[0][self._pos_index] >= self.threshold)
         else:
-            return self._classifier.inverse_label_dict[int(prediction_array[0][0])]
+            return self._classifier.label_list[int(prediction_array[0][0])]
 
 
 def main():
