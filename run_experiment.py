@@ -169,8 +169,6 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
                 else:
                     print('\tfeaturizing and training new {} model'.format(given_classifier), file=log_file)
                     best_score = learner.train(train_examples, grid_search=grid_search, grid_objective=grid_objective, param_grid=param_grid)
-
-                    # save vocab
                     learner.save_vocab(vocabfile)
 
                 # save model
