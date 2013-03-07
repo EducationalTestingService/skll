@@ -22,7 +22,6 @@ from itertools import islice, izip
 import numpy as np
 from bs4 import UnicodeDammit
 from nltk.metrics import precision, recall, f_measure
-from scipy.sparse import issparse
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn import metrics
 from sklearn.base import is_classifier, clone
@@ -279,15 +278,11 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_fu
 
 
 # Temporary imports for _FixedStandardScaler
-import numpy as np
 import scipy.sparse as sp
 from sklearn.preprocessing import _mean_and_std
 from sklearn.utils import warn_if_not_float
-from sklearn.utils.sparsefuncs import inplace_csr_row_normalize_l1
-from sklearn.utils.sparsefuncs import inplace_csr_row_normalize_l2
 from sklearn.utils.sparsefuncs import inplace_csr_column_scale
 from sklearn.utils.sparsefuncs import mean_variance_axis0
-from sklearn.utils import warn_if_not_float
 
 
 class _FixedStandardScaler(StandardScaler):
@@ -507,7 +502,8 @@ class _GridSearchCVBinary(GridSearchCV):
 class Classifier(object):
     """ A simpler classifier interface around many sklearn classification functions. """
 
-    def __init__(self, probability=False, feat_vectorizer=None, do_scale_features=False, label_dict=None, label_list=None, model_type='logistic', model_kwargs=None, pos_label_str=None):
+    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, do_scale_features=False, label_dict=None, label_list=None, model_type='logistic',
+                 model_kwargs=None, pos_label_str=None):
         '''
         Initializes a classifier object with the specified settings.
 
@@ -515,6 +511,8 @@ class Classifier(object):
         @type feat_vectorizer: C{DictVectorizer}
         @param scaler: A pre-fit scaler for the data that this classifier will be processing.
         @type scaler: C{Scaler}
+        @param do_scale_features: Should we scale features with this classifier?
+        @type do_scale_features: C{bool}
         @param label_dict: Maps from class/label names to integers.
         @type label_dict: C{dict}
         @param label_list: Maps from integers back to label strings.
@@ -530,8 +528,8 @@ class Classifier(object):
         super(Classifier, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
         self.feat_vectorizer = feat_vectorizer
-        self.scaler = None
         self.do_scale_features = do_scale_features
+        self.scaler = scaler if self.do_scale_features else None
         self.label_dict = label_dict
         self.label_list = label_list
         self.pos_label_str = pos_label_str
@@ -634,7 +632,8 @@ class Classifier(object):
         with open(vocabfile, "w") as f:
             pickle.dump([self.feat_vectorizer, self.scaler, self.label_dict, self.label_list], f, -1)
 
-    def _extract_features(self, example):
+    @staticmethod
+    def _extract_features(example):
         '''
         Return a dictionary of feature values extracted from a preprocessed example.
         This base method expects all the features to be of the form "x1", "x2", etc.
@@ -650,7 +649,8 @@ class Classifier(object):
         else:
             return self.label_dict[example["y"]]
 
-    def _extract_id(self, example):
+    @staticmethod
+    def _extract_id(example):
         '''
         Return the string ID for a preprocessed example.
         '''
@@ -951,7 +951,7 @@ class Classifier(object):
         '''
 
         # call train setup
-        features, y = self.train_setup(examples, clear_vocab)
+        _, y = self.train_setup(examples, clear_vocab)
 
         # setup the cross-validation iterator
         stratified = stratified and not self._model_type in _REGRESSION_MODELS
