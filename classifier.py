@@ -507,7 +507,7 @@ class _GridSearchCVBinary(GridSearchCV):
 class Classifier(object):
     """ A simpler classifier interface around many sklearn classification functions. """
 
-    def __init__(self, probability=False, feat_vectorizer=None, do_scale_features=False, label_dict=None, inverse_label_dict=None, model_type='logistic', model_kwargs=None, pos_label_str=None):
+    def __init__(self, probability=False, feat_vectorizer=None, do_scale_features=False, label_dict=None, label_list=None, model_type='logistic', model_kwargs=None, pos_label_str=None):
         '''
         Initializes a classifier object with the specified settings.
 
@@ -517,8 +517,8 @@ class Classifier(object):
         @type scaler: C{Scaler}
         @param label_dict: Maps from class/label names to integers.
         @type label_dict: C{dict}
-        @param inverse_label_dict: Maps from integers back to label strings.
-        @type inverse_label_dict: C{list} of C{basestring}
+        @param label_list: Maps from integers back to label strings.
+        @type label_list: C{list} of C{basestring}
         @param model_type: Type of estimator to create.
                            Options are: 'logistic', 'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and 'gradient'
         @type model_type: C{basestring}
@@ -533,7 +533,7 @@ class Classifier(object):
         self.scaler = None
         self.do_scale_features = do_scale_features
         self.label_dict = label_dict
-        self.inverse_label_dict = inverse_label_dict
+        self.label_list = label_list
         self.pos_label_str = pos_label_str
         self._model_type = model_type
         self._model = None
@@ -603,7 +603,7 @@ class Classifier(object):
         @type vocabfile: C{basestring}
         '''
         with open(vocabfile) as f:
-            self.feat_vectorizer, self.scaler, self.label_dict, self.inverse_label_dict = pickle.load(f)
+            self.feat_vectorizer, self.scaler, self.label_dict, self.label_list = pickle.load(f)
 
     def save_model(self, modelfile):
         '''
@@ -632,25 +632,25 @@ class Classifier(object):
         if not os.path.exists(vocabdir):
             subprocess.call("mkdir -p {}".format(vocabdir), shell=True)
         with open(vocabfile, "w") as f:
-            pickle.dump([self.feat_vectorizer, self.scaler, self.label_dict, self.inverse_label_dict], f, -1)
+            pickle.dump([self.feat_vectorizer, self.scaler, self.label_dict, self.label_list], f, -1)
 
-    @staticmethod
-    def _extract_features(example):
+    def _extract_features(self, example):
         '''
         Return a dictionary of feature values extracted from a preprocessed example.
         This base method expects all the features to be of the form "x1", "x2", etc.
         '''
         return example["x"]
 
-    @staticmethod
-    def _extract_label(example):
+    def _extract_label(self, example):
         '''
         Return the label for a preprocessed example.
         '''
-        return example["y"]
+        if self._model_type in _REGRESSION_MODELS:
+            return float(example["y"])
+        else:
+            return self.label_dict[example["y"]]
 
-    @staticmethod
-    def _extract_id(example):
+    def _extract_id(self, example):
         '''
         Return the string ID for a preprocessed example.
         '''
@@ -697,16 +697,43 @@ class Classifier(object):
         self.feat_vectorizer = DictVectorizer()
         self.feat_vectorizer.fit(features)
 
-    @staticmethod
-    def _convert_labels_to_array(labels, label_list):
-        ''' Given a list of all labels in the dataset and a list of the unique labels in the set, convert the first list to an array of numbers. '''
-        label_dict = {}
+    def train_setup(self, examples, clear_vocab):
+        '''Set up the feature vectorizer, the scaler and the label dict and return the features and the labels'''
 
-        for i, label in enumerate(label_list):
-            label_dict[label] = i
+        #extract the features and the labels
+        features = [self._extract_features(x) for x in examples]
 
-        out_array = np.array([label_dict[label] for label in labels])
-        return out_array, label_dict, label_list
+        # Create label_dict if we weren't passed one
+        if self._model_type not in _REGRESSION_MODELS and (clear_vocab or self.label_dict is None):
+
+            # extract list of unique labels if we are doing classification
+            self.label_list = np.unique([example["y"] for example in examples]).tolist()
+
+            # if one label is specified as the positive class, make sure it's last
+            if self.pos_label_str:
+                self.label_list = sorted(self.label_list, key=lambda x: (x == self.pos_label_str, x))
+
+            # Given a list of all labels in the dataset and a list of the unique labels in the set,
+            # convert the first list to an array of numbers.
+            self.label_dict = {}
+            for i, label in enumerate(self.label_list):
+                self.label_dict[label] = i
+
+        y = np.array([self._extract_label(x) for x in examples])
+
+        # Create feat_vectorizer if we weren't passed one
+        if clear_vocab or self.feat_vectorizer is None:
+            self._extract_feature_vectorizer(features)  # create feature name -> value mapping
+
+        # Create scaler if we weren't passed one
+        if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
+            if self.do_scale_features:
+                self.scaler = _FixedStandardScaler(copy=True, with_mean=self._model_type in _REQUIRES_DENSE)
+            else:
+                # Doing this is to prevent any modification of feature values using a dummy transformation
+                self.scaler = _FixedStandardScaler(copy=False, with_mean=False, with_std=False)
+
+        return features, y
 
     def train(self, examples, clear_vocab=False, param_grid=None, grid_search_folds=5, grid_search=True, grid_objective=f1_score_micro):
         '''
@@ -733,30 +760,8 @@ class Classifier(object):
         # seed the random number generator so that randomized algorithms are replicable
         np.random.seed(9876315986142)
 
-        # extract the features and the labels
-        features = [self._extract_features(x) for x in examples]
-
-        # Create label_dict if we weren't passed one
-        if self._model_type in _REGRESSION_MODELS:
-            ytrain = np.array([float(self._extract_label(x)) for x in examples])
-        elif clear_vocab or self.label_dict is None:
-            labels = [self._extract_label(x) for x in examples]
-
-            # extract list of unique labels if we are doing classification
-            label_list = np.unique(labels).tolist()
-
-            # if one label is specified as the positive class, make sure it's last
-            if self.pos_label_str:
-                label_list = sorted(label_list, key=lambda x: (x == self.pos_label_str, x))
-
-            # convert labels to numbers if we are doing classification
-            ytrain, self.label_dict, self.inverse_label_dict = self._convert_labels_to_array(labels, label_list)
-        else:
-            ytrain = np.array([self.label_dict[self._extract_label(x)] for x in examples])
-
-        # Create feat_vectorizer if we weren't passed one
-        if clear_vocab or self.feat_vectorizer is None:
-            self._extract_feature_vectorizer(features)  # create feature name -> value mapping
+        # call train setup to set up the vectorizer, the labeldict, and the scaler
+        features, ytrain = self.train_setup(examples, clear_vocab)
 
         # vectorize the features
         xtrain = self.feat_vectorizer.transform(features)
@@ -764,14 +769,6 @@ class Classifier(object):
         # Convert to dense if required by model type
         if self._model_type in _REQUIRES_DENSE:
             xtrain = xtrain.todense()
-
-        # Create scaler if we weren't passed one
-        if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            if self.do_scale_features:
-                self.scaler = _FixedStandardScaler(copy=True, with_mean=(not issparse(xtrain)))
-            else:
-                # Doing this is to prevent any modification of feature values using a dummy transformation
-                self.scaler = _FixedStandardScaler(copy=False, with_mean=False, with_std=False)
 
         # Scale features if necessary
         if self._model_type != 'naivebayes':
@@ -789,8 +786,7 @@ class Classifier(object):
                 grid_search_class = _GridSearchCVBinary
             else:
                 grid_search_class = GridSearchCV
-            grid_searcher = grid_search_class(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds,
-                                             n_jobs=grid_search_folds)
+            grid_searcher = grid_search_class(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds, n_jobs=grid_search_folds)
 
             # run the grid search for hyperparameters
             # print('\tstarting grid search', file=sys.stderr)
@@ -826,7 +822,7 @@ class Classifier(object):
         yhat = self.predict(examples, prediction_prefix, append=append)
 
         # extract actual labels
-        ytest = np.array([self.label_dict[self._extract_label(x)] for x in examples])
+        ytest = np.array([self._extract_label(x) for x in examples])
 
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
@@ -839,29 +835,31 @@ class Classifier(object):
         if grid_objective is not None and (grid_objective.__name__ not in _CORRELATION_METRICS or not self.probability):
             grid_score = grid_objective(ytest, yhat)
 
-        # Create prediction dicts for easier scoring
-        actual_dict = defaultdict(set)
-        pred_dict = defaultdict(set)
-        pred_list = [self.inverse_label_dict[int(pred_class)] for pred_class in yhat]
-        actual_list = [self.inverse_label_dict[int(actual_class)] for actual_class in ytest]
-        for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
-            pred_dict[pred_class].add(line_num)
-            actual_dict[actual_class].add(line_num)
-
-        # Calculate metrics
-        result_dict = defaultdict(dict)
-
         if self._model_type in _REGRESSION_MODELS:
             res = (None, None, None, self._model.get_params(), grid_score)
         else:
+
+            # Create prediction dicts for easier scoring
+            actual_dict = defaultdict(set)
+            pred_dict = defaultdict(set)
+            pred_list = [self.label_list[int(pred_class)] for pred_class in yhat]
+            actual_list = [self.label_list[int(actual_class)] for actual_class in ytest]
+            for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
+                pred_dict[pred_class].add(line_num)
+                actual_dict[actual_class].add(line_num)
+
             overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
+
+            # Calculate metrics
+            result_dict = defaultdict(dict)
+
             # Store results
             for actual_class in sorted(actual_dict.iterkeys()):
                 result_dict[actual_class]["Precision"] = precision(actual_dict[actual_class], pred_dict[actual_class])
                 result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
                 result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
 
-            res = (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.inverse_label_dict))).tolist(), overall_accuracy, result_dict, self._model.get_params(), grid_score)
+            res = (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.label_list))).tolist(), overall_accuracy, result_dict, self._model.get_params(), grid_score)
         return res
 
     def predict(self, examples, prediction_prefix, append=False):
@@ -906,7 +904,7 @@ class Classifier(object):
                 # header
                 if not append:
                     if self.probability and self._model_type != 'svm_linear':
-                        print('\t'.join(["id"] + self.inverse_label_dict), file=predictionfh)
+                        print('\t'.join(["id"] + self.label_list), file=predictionfh)
                     else:
                         print('\t'.join(["id", "prediction"]), file=predictionfh)
 
@@ -914,8 +912,12 @@ class Classifier(object):
                     for example_id, class_probs in zip(example_ids, yhat):
                         print('\t'.join([example_id] + [str(x) for x in class_probs]), file=predictionfh)
                 else:
-                    for example_id, pred in zip(example_ids, yhat):
-                        print('\t'.join([example_id, self.inverse_label_dict[int(pred)]]), file=predictionfh)
+                    if self._model_type in _REGRESSION_MODELS:
+                        for example_id, pred in zip(example_ids, yhat):
+                            print('\t'.join([example_id, str(pred)]), file=predictionfh)
+                    else:
+                        for example_id, pred in zip(example_ids, yhat):
+                            print('\t'.join([example_id, self.label_list[int(pred)]]), file=predictionfh)
 
         return yhat
 
@@ -947,38 +949,13 @@ class Classifier(object):
         @return: The confusion matrix, overall accuracy, per-class PRFs, and model parameters for each fold.
         @rtype: C{list} of 4-C{tuple}s
         '''
-        features = [self._extract_features(x) for x in examples]
 
-        # Create scaler if we weren't passed one
-        if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
-            if self.do_scale_features:
-                self.scaler = _FixedStandardScaler(copy=True, with_mean=self._model_type in _REQUIRES_DENSE)
-            else:
-                # Doing this is to prevent any modification of feature values using a dummy transformation
-                self.scaler = _FixedStandardScaler(copy=False, with_mean=False, with_std=False)
-
-        # Create feat_vectorizer if we weren't passed one
-        if clear_vocab or self.feat_vectorizer is None:
-            self._extract_feature_vectorizer(features)  # create feature name -> value mapping
-
-        # Create label_dict if we weren't passed one
-        if clear_vocab or self.label_dict is None or self.inverse_label_dict is None:
-            labels = [self._extract_label(x) for x in examples]
-
-            # extract list of unique labels if we are doing classification
-            label_list = np.unique(labels).tolist()
-
-            # if one label is specified as the positive class, make sure it's last
-            if self.pos_label_str:
-                label_list = sorted(label_list, key=lambda x: (x == self.pos_label_str, x))
-
-            # convert labels to numbers if we are doing classification
-            y, self.label_dict, self.inverse_label_dict = self._convert_labels_to_array(labels, label_list)
-        else:
-            y = np.array([self.label_dict[self._extract_label(x)] for x in examples])
+        # call train setup
+        features, y = self.train_setup(examples, clear_vocab)
 
         # setup the cross-validation iterator
-        kfold = StratifiedKFold(y, n_folds=cv_folds) if stratified else KFold(y, n_folds=cv_folds)
+        stratified = stratified and not self._model_type in _REGRESSION_MODELS
+        kfold = StratifiedKFold(y, n_folds=cv_folds) if stratified else KFold(len(examples), n_folds=cv_folds)
 
         # handle each fold separately and accumulate the predictions and the numbers
         results = []
