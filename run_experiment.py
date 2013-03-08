@@ -124,7 +124,7 @@ def load_featureset(dirpath, featureset, suffix):
     return np.array(example_dict.values())
 
 
-def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search, grid_objective, do_scale_features, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid, pos_label_str, overwrite):
+def classify_featureset(jobname, featureset, given_classifier, train_path, test_path, train_set_name, test_set_name, modelpath, vocabpath, prediction_prefix, grid_search, grid_objective, do_scale_features, cross_validate, evaluate, suffix, log_path, probability, resultspath, fixed_parameters, param_grid, pos_label_str, overwrite, use_dense_features):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -142,7 +142,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path, test_
         vocabfile = os.path.join(vocabpath, '{}.vocab'.format(jobname))  # temporarily changed this to jobname (from featureset)
 
         # initialize a classifer object
-        learner = classifier.Classifier(probability=probability, model_type=given_classifier, do_scale_features=do_scale_features, model_kwargs=fixed_parameters, pos_label_str=pos_label_str)
+        learner = classifier.Classifier(probability=probability, model_type=given_classifier, do_scale_features=do_scale_features, model_kwargs=fixed_parameters, pos_label_str=pos_label_str, use_dense_features=use_dense_features)
 
         # check whether a trained model on the same data with the same featureset already exists
         # if so, load it (and the feature vocabulary) and then use it on the test data
@@ -218,7 +218,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
     # initialize config parser
     configurator = ConfigParser.RawConfigParser({'test_location': '', 'log': '', 'results': '', 'predictions': '', "grid_search": False, 'objective': "f1_score_micro",
                                                 'scale_features': True, 'probability': False, 'fixed_parameters': '[]', 'param_grids': '[]', 'pos_label_str': None,
-                                                'featureset_names': '[]'})
+                                                'featureset_names': '[]', 'use_dense_features': False})
     configurator.readfp(config_file)
 
     # extract sklearn parameters from the config file
@@ -228,6 +228,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
     fixed_parameter_list = eval(configurator.get("Input", "fixed_parameters"))
     param_grid_list = eval(configurator.get("Tuning", "param_grids"))
     pos_label_str = configurator.get("Tuning", "pos_label_str")
+    use_dense_features = eval(configurator.get("Tuning", "use_dense_features"))
 
     # get all the input paths and directories
     train_path = configurator.get("Input", "train_location").rstrip('/')  # remove trailing / at the end of path name
@@ -356,7 +357,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
                                                 fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
                                                 param_grid_list[classifier_num] if param_grid_list else None,
                                                 pos_label_str,
-                                                overwrite],
+                                                overwrite, use_dense_features],
                                                 num_slots=(5 if do_grid_search else 1), name=jobname, queue=queue)
 
                 # Add job to list
@@ -369,7 +370,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q', h
                     evaluate, suffix, temp_logfile, probability, resultspath,
                     fixed_parameter_list[classifier_num] if fixed_parameter_list else dict(),
                     param_grid_list[classifier_num] if param_grid_list else None,
-                    pos_label_str, overwrite)
+                    pos_label_str, overwrite, use_dense_features)
 
     # submit the jobs (if running on grid)
     if not local:
