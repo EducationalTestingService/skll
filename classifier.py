@@ -502,8 +502,7 @@ class _GridSearchCVBinary(GridSearchCV):
 class Classifier(object):
     """ A simpler classifier interface around many sklearn classification functions. """
 
-    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, do_scale_features=False, label_dict=None, label_list=None, model_type='logistic',
-                 model_kwargs=None, pos_label_str=None):
+    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, do_scale_features=False, label_dict=None, label_list=None, model_type='logistic', model_kwargs=None, pos_label_str=None, use_dense_features=False):
         '''
         Initializes a classifier object with the specified settings.
 
@@ -524,6 +523,10 @@ class Classifier(object):
         @type probability: C{bool}
         @param model_kwargs: A dictionary of keyword arguments to pass to the initializer for the specified model.
         @type model_kwargs: C{dict}
+        @param pos_label_str: The string for the positive class in the binary classification setting.  Otherwise, an arbitrary class is picked.
+        @type pos_label_str: C{str}
+        @param use_dense_features: Whether to require conversion to dense feature matrices.
+        @type use_dense_features: C{bool}
         '''
         super(Classifier, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
@@ -535,7 +538,10 @@ class Classifier(object):
         self.pos_label_str = pos_label_str
         self._model_type = model_type
         self._model = None
+        self._use_dense_features = use_dense_features
         self._model_kwargs = {}
+
+        self._use_dense_features = self._model_type in _REQUIRES_DENSE or self._use_dense_features
 
         # Set default keyword arguments for models that we have some for.
         if self._model_type == 'svm_radial':
@@ -694,7 +700,7 @@ class Classifier(object):
 
     def _extract_feature_vectorizer(self, features):
         ''' Given a dict of features, create a DictVectorizer for mapping from dicts of features to arrays of features '''
-        self.feat_vectorizer = DictVectorizer()
+        self.feat_vectorizer = DictVectorizer(sparse=not self._use_dense_features)
         self.feat_vectorizer.fit(features)
 
     def train_setup(self, examples, clear_vocab):
@@ -728,7 +734,7 @@ class Classifier(object):
         # Create scaler if we weren't passed one
         if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
             if self.do_scale_features:
-                self.scaler = _FixedStandardScaler(copy=True, with_mean=self._model_type in _REQUIRES_DENSE)
+                self.scaler = _FixedStandardScaler(copy=True, with_mean=self._use_dense_features, with_std=True)
             else:
                 # Doing this is to prevent any modification of feature values using a dummy transformation
                 self.scaler = _FixedStandardScaler(copy=False, with_mean=False, with_std=False)
@@ -765,10 +771,6 @@ class Classifier(object):
 
         # vectorize the features
         xtrain = self.feat_vectorizer.transform(features)
-
-        # Convert to dense if required by model type
-        if self._model_type in _REQUIRES_DENSE:
-            xtrain = xtrain.todense()
 
         # Scale features if necessary
         if self._model_type != 'naivebayes':
@@ -881,10 +883,6 @@ class Classifier(object):
 
         # transform the features
         xtest = self.feat_vectorizer.transform(features)
-
-        # Convert to dense if required by model type
-        if self._model_type in _REQUIRES_DENSE:
-            xtest = xtest.todense()
 
         # Scale xtest
         if self._model_type != 'naivebayes':
