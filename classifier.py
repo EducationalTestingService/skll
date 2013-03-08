@@ -61,7 +61,8 @@ def kendall_tau(y_true, y_pred):
 
 def spearman(y_true, y_pred):
     '''
-    Optimize the hyperparameter values during the grid search based on Spearman rank correlation.
+    Optimize the hyperparameter values during the grid search based on
+    Spearman rank correlation.
 
     This is useful in cases where you want to use the actual probabilities of
     the different classes after the fact, and not just the optimize based on
