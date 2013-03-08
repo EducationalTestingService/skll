@@ -78,8 +78,9 @@ object --+
         <span class="summary-sig-arg">probability</span>=<span class="summary-sig-default">False</span>,
         <span class="summary-sig-arg">feat_vectorizer</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">scaler</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">do_scale_features</span>=<span class="summary-sig-default">False</span>,
         <span class="summary-sig-arg">label_dict</span>=<span class="summary-sig-default">None</span>,
-        <span class="summary-sig-arg">inverse_label_dict</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">label_list</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">model_type</span>=<span class="summary-sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>,
         <span class="summary-sig-arg">model_kwargs</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">pos_label_str</span>=<span class="summary-sig-default">None</span>)</span><br />
@@ -169,6 +170,26 @@ object --+
   </tr>
 <tr>
     <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="train_setup"></a><span class="summary-sig-name">train_setup</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">examples</span>,
+        <span class="summary-sig-arg">clear_vocab</span>)</span><br />
+      Set up the feature vectorizer, the scaler and the label dict and 
+      return the features and the labels</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#Classifier.train_setup">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
       <span class="summary-type"><code>float</code></span>
     </td><td class="summary">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -179,7 +200,7 @@ object --+
         <span class="summary-sig-arg">param_grid</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">grid_search_folds</span>=<span class="summary-sig-default">5</span>,
         <span class="summary-sig-arg">grid_search</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x3a9b758&gt;</span>)</span><br />
+        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x3cc6230&gt;</span>)</span><br />
       Train a classification model and return the model, score, feature 
       vectorizer, scaler, label dictionary, and inverse label dictionary.</td>
           <td align="right" valign="top">
@@ -245,7 +266,7 @@ object --+
         <span class="summary-sig-arg">cv_folds</span>=<span class="summary-sig-default">10</span>,
         <span class="summary-sig-arg">grid_search</span>=<span class="summary-sig-default">False</span>,
         <span class="summary-sig-arg">grid_search_folds</span>=<span class="summary-sig-default">5</span>,
-        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x3a9b758&gt;</span>,
+        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x3cc6230&gt;</span>,
         <span class="summary-sig-arg">prediction_prefix</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">param_grid</span>=<span class="summary-sig-default">None</span>)</span><br />
       Cross-validates a given model on the training examples.</td>
@@ -337,8 +358,9 @@ object --+
         <span class="sig-arg">probability</span>=<span class="sig-default">False</span>,
         <span class="sig-arg">feat_vectorizer</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">scaler</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">do_scale_features</span>=<span class="sig-default">False</span>,
         <span class="sig-arg">label_dict</span>=<span class="sig-default">None</span>,
-        <span class="sig-arg">inverse_label_dict</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">label_list</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">model_type</span>=<span class="sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>,
         <span class="sig-arg">model_kwargs</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">pos_label_str</span>=<span class="sig-default">None</span>)</span>
@@ -357,8 +379,9 @@ object --+
           feature-value mappings to vectors.</li>
         <li><strong class="pname"><code>scaler</code></strong> (<code>Scaler</code>) - A pre-fit scaler for the data that this classifier will be 
           processing.</li>
+        <li><strong class="pname"><code>do_scale_features</code></strong> (<code>bool</code>) - Should we scale features with this classifier?</li>
         <li><strong class="pname"><code>label_dict</code></strong> (<code>dict</code>) - Maps from class/label names to integers.</li>
-        <li><strong class="pname"><code>inverse_label_dict</code></strong> (<code>list</code> of <code>basestring</code>) - Maps from integers back to label strings.</li>
+        <li><strong class="pname"><code>label_list</code></strong> (<code>list</code> of <code>basestring</code>) - Maps from integers back to label strings.</li>
         <li><strong class="pname"><code>model_type</code></strong> (<code>basestring</code>) - Type of estimator to create. Options are: 'logistic', 
           'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and
           'gradient'</li>
@@ -484,7 +507,7 @@ object --+
         <span class="sig-arg">param_grid</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">grid_search_folds</span>=<span class="sig-default">5</span>,
         <span class="sig-arg">grid_search</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x3a9b758&gt;</span>)</span>
+        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x3cc6230&gt;</span>)</span>
   </h3>
   </td><td align="right" valign="top"
     ><span class="codelink"><a href="classifier-pysrc.html#Classifier.train">source&nbsp;code</a></span>&nbsp;
@@ -598,7 +621,7 @@ object --+
         <span class="sig-arg">cv_folds</span>=<span class="sig-default">10</span>,
         <span class="sig-arg">grid_search</span>=<span class="sig-default">False</span>,
         <span class="sig-arg">grid_search_folds</span>=<span class="sig-default">5</span>,
-        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x3a9b758&gt;</span>,
+        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x3cc6230&gt;</span>,
         <span class="sig-arg">prediction_prefix</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">param_grid</span>=<span class="sig-default">None</span>)</span>
   </h3>
@@ -719,7 +742,7 @@ object --+
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Wed Feb 13 08:53:02 2013
+    Generated by Epydoc 3.0.1 on Fri Mar  8 11:47:21 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"
