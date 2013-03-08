@@ -48,9 +48,12 @@ _REGRESSION_MODELS = frozenset(['ridge'])
 #### METRICS ####
 def kendall_tau(y_true, y_pred):
     '''
-    Optimize the hyperparameter values during the grid search based on Kendall's tau.
+    Optimize the hyperparameter values during the grid search based on
+    Kendall's tau.
 
-    This is useful in cases where you want to use the actual probabilities of the different classes after the fact, and not just the optimize based on the classification accuracy.
+    This is useful in cases where you want to use the actual probabilities of
+    the different classes after the fact, and not just the optimize based on
+    the classification accuracy.
     '''
     ret_score = kendalltau(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -60,7 +63,9 @@ def spearman(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on Spearman rank correlation.
 
-    This is useful in cases where you want to use the actual probabilities of the different classes after the fact, and not just the optimize based on the classification accuracy.
+    This is useful in cases where you want to use the actual probabilities of
+    the different classes after the fact, and not just the optimize based on
+    the classification accuracy.
     '''
     ret_score = spearmanr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -68,7 +73,8 @@ def spearman(y_true, y_pred):
 
 def pearson(y_true, y_pred):
     '''
-    Optimize the hyperparameter values during the grid search based on Pearson correlation.
+    Optimize the hyperparameter values during the grid search based on Pearson
+    correlation.
     '''
     ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -76,43 +82,54 @@ def pearson(y_true, y_pred):
 
 def f1_score_least_frequent(y_true, y_pred):
     '''
-    Optimize the hyperparameter values during the grid search based on the F1 measure of the least frequent class.
+    Optimize the hyperparameter values during the grid search based on the F1
+    measure of the least frequent class.
 
-    This is mostly intended for use when you're doing binary classification and your data is highly skewed. You should probably use f1_score_macro if your data
-    is skewed and you're doing multi-class classification.
+    This is mostly intended for use when you're doing binary classification
+    and your data is highly skewed. You should probably use f1_score_macro if
+    your data is skewed and you're doing multi-class classification.
     '''
     least_frequent = np.bincount(y_true).argmin()
-    return metrics.f1_score(y_true[y_true == least_frequent], y_pred[y_true == least_frequent])
+    return metrics.f1_score(y_true[y_true == least_frequent],
+                            y_pred[y_true == least_frequent])
 
 
 def f1_score_macro(y_true, y_pred):
     '''
-    Use the macro-averaged F1 measure to select hyperparameter values during the cross-validation grid search during training.
+    Use the macro-averaged F1 measure to select hyperparameter values during
+    the cross-validation grid search during training.
 
-    This method averages over classes (does not take imbalance into account). You should use this if each class is equally important.
+    This method averages over classes (does not take imbalance into account).
+    You should use this if each class is equally important.
     '''
     return metrics.f1_score(y_true, y_pred, average="macro")
 
 
 def f1_score_micro(y_true, y_pred):
     '''
-    Use the micro-averaged F1 measure to select hyperparameter values during the cross-validation grid search during training.
+    Use the micro-averaged F1 measure to select hyperparameter values during
+    the cross-validation grid search during training.
 
-    This method averages over instances (takes imbalance into account). This implies that precision == recall == F1.
+    This method averages over instances (takes imbalance into account). This
+    implies that precision == recall == F1.
     '''
     return metrics.f1_score(y_true, y_pred, average="micro")
 
 
 def accuracy(y_true, y_pred):
     '''
-    Use the overall accuracy to select hyperparameter values during the cross-validation grid search during training.
+    Use the overall accuracy to select hyperparameter values during the cross-
+    validation grid search during training.
     '''
     return metrics.accuracy_score(y_true, y_pred)
 
 
 #### DATA LOADING FUNCTIONS ###
 def _sanitize_line(line):
-    ''' Return copy of line with all non-ASCII characters replaced with <U1234> sequences where 1234 is the value of ord() for the character. '''
+    '''
+    Return copy of line with all non-ASCII characters replaced with
+    <U1234> sequences where 1234 is the value of ord() for the character.
+    '''
     char_list = []
     for char in line:
         char_num = ord(char)
@@ -122,20 +139,23 @@ def _sanitize_line(line):
 
 def _megam_dict_iter(path):
     '''
-    Generator that yields tuples of classes and dictionaries mapping from features to values for each pair of lines in path
+    Generator that yields tuples of classes and dictionaries mapping from
+    features to values for each pair of lines in path
 
     @param path: Path to MegaM file
     @type path: C{basestring}
     '''
 
     line_count = 0
-    print("Loading {}...".format(path).encode('utf-8'), end="", file=sys.stderr)
+    print(
+        "Loading {}...".format(path).encode('utf-8'), end="", file=sys.stderr)
     sys.stderr.flush()
     with open(path) as megam_file:
         curr_id = None
         for line in megam_file:
             # Process encoding
-            line = _sanitize_line(UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup.strip())
+            line = _sanitize_line(UnicodeDammit(
+                line, ['utf-8', 'windows-1252']).unicode_markup.strip())
             # Handle instance lines
             if line.startswith('#'):
                 curr_id = line[1:].strip()
@@ -147,7 +167,10 @@ def _megam_dict_iter(path):
                     # Get current instances feature-value pairs
                     field_pairs = split_line[1:]
                     field_names = islice(field_pairs, 0, None, 2)
-                    field_values = (float(val) for val in islice(field_pairs, 1, None, 2))  # Convert values to floats, because otherwise features'll be categorical
+                    # Convert values to floats, because otherwise features'll
+                    # be categorical
+                    field_values = (float(val) for val in islice(field_pairs,
+                                                                 1, None, 2))
 
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(izip(field_names, field_values))
@@ -161,19 +184,22 @@ def _megam_dict_iter(path):
 
 def load_examples(path):
     '''
-    Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM formats.
+    Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
+    formats.
 
     @param path: The path to the file to load the examples from.
     @type path: C{basestring}
 
-    @return: 2-column C{numpy.array} of examples with the "y" containing the class labels and "x" containing the features for each example.
+    @return: 2-column C{numpy.array} of examples with the "y" containing the
+    class labels and "x" containing the features for each example.
     '''
     if path.endswith(".tsv"):
         out = []
         with open(path) as f:
             reader = csv.reader(f, dialect=csv.excel_tab)
             header = reader.next()
-            out = [_preprocess_tsv_row(row, header, example_num) for example_num, row in enumerate(reader)]
+            out = [_preprocess_tsv_row(row, header, example_num)
+                   for example_num, row in enumerate(reader)]
     elif path.endswith(".jsonlines"):
         out = []
         with open(path) as f:
@@ -185,11 +211,15 @@ def load_examples(path):
                 example_num += 1
                 out.append(example)
     elif path.endswith(".megam"):
-        out = [{"y": class_name, "x": feature_dict, "id": "EXAMPLE_{}".format(example_num) if example_id is None else example_id} for example_num, (example_id, class_name,
-                                                                                                                                                    feature_dict)
-                                                                                                                                  in enumerate(_megam_dict_iter(path))]
+        out = [{"y": class_name, "x": feature_dict,
+                "id": "EXAMPLE_{}".format(example_num) if example_id is None
+                else example_id}
+               for example_num, (example_id, class_name, feature_dict)
+               in enumerate(_megam_dict_iter(path))]
     else:
-        raise Exception('Example files must be in either TSV, MegaM, or the preprocessed .jsonlines format. You specified: {}'.format(path))
+        raise Exception('Example files must be in either TSV, MegaM, or the \
+                         preprocessed .jsonlines format. \
+                         You specified: {}'.format(path))
 
     return np.array(out)
 
@@ -197,10 +227,12 @@ def load_examples(path):
 def _preprocess_tsv_row(row, header, example_num):
     '''
     Make a dictionary of preprocessed values (e.g., tokens, POS tags, etc.).
-    This should be separate from the feature extraction code so that slow preprocessing steps
-    can be saved and reused, without have to redo preprocessing whenever features change.
-    This parses a TSV row and returns a dictionary {"y": class label, "x": dictionary of feature values}
-    It also takes in an optional list of feature names to be used in the "x" dictionary.
+    This should be separate from the feature extraction code so that slow
+    preprocessing steps can be saved and reused, without have to redo
+    preprocessing whenever features change. This parses a TSV row and returns
+    a dictionary {"y": class label, "x": dictionary of feature values} It also
+    takes in an optional list of feature names to be used in the "x"
+    dictionary.
     '''
     x = {}
     y = row[0]
@@ -214,7 +246,8 @@ def _preprocess_tsv_row(row, header, example_num):
     return {"y": y, "x": x, "id": example_id}
 
 
-def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_func, verbose, **fit_params):
+def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func,
+                    score_func, verbose, **fit_params):
     """
     Run fit on one set of parameters
 
@@ -236,7 +269,7 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_fu
 
     if not hasattr(X, "shape"):
         if getattr(base_clf, "_pairwise", False):
-            raise ValueError("Precomputed kernels or affinity matrices have "
+            raise ValueError("Precomputed kernels or affinity matrices have " +
                              "to be passed as arrays or sparse matrices.")
         X_train = [X[idx] for idx in train]
         X_test = [X[idx] for idx in test]
@@ -256,7 +289,8 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func, score_fu
         y_train = y[safe_mask(y, train)]
         clf.fit(X_train, y_train, **fit_params)
         if loss_func is not None:
-            y_pred = clf.predict_proba(X_test)[:, 1]  # Everything is the same as the original version except this line...
+            # Everything is the same as the original version except next line
+            y_pred = clf.predict_proba(X_test)[:, 1]
             this_score = -loss_func(y_test, y_pred)
         elif score_func is not None:
             y_pred = clf.predict_proba(X_test)[:, 1]  # and this one
@@ -288,8 +322,10 @@ from sklearn.utils.sparsefuncs import mean_variance_axis0
 class _FixedStandardScaler(StandardScaler):
 
     '''
-    StandardScaler has a bug in that it always scales by the standard deviation for sparse matrices, i.e., it ignores the value of with_std.
-    This is a fixed version. This is just temporary until the bug is fixed in sklearn.
+    StandardScaler has a bug in that it always scales by the standard
+    deviation for sparse matrices, i.e., it ignores the value of with_std.
+    This is a fixed version. This is just temporary until the bug is fixed in
+    sklearn.
     '''
 
     def fit(self, X, y=None):
@@ -387,8 +423,9 @@ class _FixedStandardScaler(StandardScaler):
 
 class _GridSearchCVBinary(GridSearchCV):
     '''
-    GridSearchCV for use with binary classification problems where you want to optimize the learner based on the probabilities assigned to each class, and not just
-    the predicted class.
+    GridSearchCV for use with binary classification problems where you want to
+    optimize the learner based on the probabilities assigned to each class,
+    and not just the predicted class.
     '''
 
     def fit(self, X, y=None, **params):
@@ -432,11 +469,11 @@ class _GridSearchCVBinary(GridSearchCV):
         pre_dispatch = self.pre_dispatch
         out = Parallel(n_jobs=self.n_jobs, verbose=self.verbose,
                        pre_dispatch=pre_dispatch)(
-                                                  delayed(_fit_grid_point)(
-                                                                           X, y, base_clf, clf_params, train, test,
-                                                                           self.loss_func, self.score_func, self.verbose,
-                                                                           **self.fit_params)
-                                                  for clf_params in grid for train, test in cv)
+                           delayed(_fit_grid_point)(
+                               X, y, base_clf, clf_params, train, test,
+                               self.loss_func, self.score_func, self.verbose,
+                               **self.fit_params)
+                           for clf_params in grid for train, test in cv)
 
         # Out is a list of triplet: score, estimator, n_test_samples
         n_grid_points = len(list(grid))
@@ -449,7 +486,8 @@ class _GridSearchCVBinary(GridSearchCV):
             n_test_samples = 0
             score = 0
             these_points = list()
-            for this_score, clf_params, this_n_test_samples in out[grid_start:grid_start + n_folds]:
+            for (this_score, clf_params,
+                    this_n_test_samples) in out[grid_start:grid_start + n_folds]:
                 these_points.append(this_score)
                 if self.iid:
                     this_score *= this_n_test_samples
@@ -485,7 +523,8 @@ class _GridSearchCVBinary(GridSearchCV):
             self._set_methods()
 
         # Store the computed scores
-        self.grid_scores_ = [(clf_params, score, all_scores) for clf_params, (score, _), all_scores in zip(grid, scores, cv_scores)]
+        self.grid_scores_ = [(clf_params, score, all_scores) for clf_params, (
+            score, _), all_scores in zip(grid, scores, cv_scores)]
         return self
 
     def score(self, X, y=None):
@@ -500,29 +539,40 @@ class _GridSearchCVBinary(GridSearchCV):
 
 
 class Classifier(object):
-    """ A simpler classifier interface around many sklearn classification functions. """
+    """
+    A simpler classifier interface around many sklearn classification
+    functions.
+    """
 
-    def __init__(self, probability=False, feat_vectorizer=None, scaler=None, do_scale_features=False, label_dict=None, label_list=None, model_type='logistic',
-                 model_kwargs=None, pos_label_str=None):
+    def __init__(self, probability=False, feat_vectorizer=None, scaler=None,
+                 do_scale_features=False, label_dict=None, label_list=None,
+                 model_type='logistic', model_kwargs=None, pos_label_str=None):
         '''
         Initializes a classifier object with the specified settings.
 
-        @param feat_vectorizer: A C{DictVectorizer} that transforms lists of feature-value mappings to vectors.
+        @param feat_vectorizer: A C{DictVectorizer} that transforms lists of
+                                feature-value mappings to vectors.
         @type feat_vectorizer: C{DictVectorizer}
-        @param scaler: A pre-fit scaler for the data that this classifier will be processing.
+        @param scaler: A pre-fit scaler for the data that this classifier will
+                       be processing.
         @type scaler: C{Scaler}
-        @param do_scale_features: Should we scale features with this classifier?
+        @param do_scale_features: Should we scale features with this
+                                  classifier?
         @type do_scale_features: C{bool}
         @param label_dict: Maps from class/label names to integers.
         @type label_dict: C{dict}
         @param label_list: Maps from integers back to label strings.
         @type label_list: C{list} of C{basestring}
-        @param model_type: Type of estimator to create.
-                           Options are: 'logistic', 'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and 'gradient'
+        @param model_type: Type of estimator to create. Options are:
+                           'logistic', 'svm_linear', 'svm_radial',
+                           'naivebayes', 'dtree', 'rforest', and 'gradient'
         @type model_type: C{basestring}
-        @param probability: Should classifier return probabilities of all classes (instead of just class with highest probability)?
+        @param probability: Should classifier return probabilities of all
+                            classes (instead of just class with highest
+                            probability)?
         @type probability: C{bool}
-        @param model_kwargs: A dictionary of keyword arguments to pass to the initializer for the specified model.
+        @param model_kwargs: A dictionary of keyword arguments to pass to the
+                             initializer for the specified model.
         @type model_kwargs: C{dict}
         '''
         super(Classifier, self).__init__()
@@ -595,13 +645,15 @@ class Classifier(object):
 
     def load_vocab(self, vocabfile):
         '''
-        Load a saved vocab (feature vectorizer, scaler, label dictionary, and inverse label dictionary).
+        Load a saved vocab (feature vectorizer, scaler, label dictionary, and
+        inverse label dictionary).
 
         @param vocabfile: The path to the vocab file to load.
         @type vocabfile: C{basestring}
         '''
         with open(vocabfile) as f:
-            self.feat_vectorizer, self.scaler, self.label_dict, self.label_list = pickle.load(f)
+            (self.feat_vectorizer, self.scaler, self.label_dict,
+             self.label_list) = pickle.load(f)
 
     def save_model(self, modelfile):
         '''
@@ -620,7 +672,8 @@ class Classifier(object):
 
     def save_vocab(self, vocabfile):
         '''
-        Save vocab (feature vectorizer, scaler, label dictionary, and inverse label dictionary) to file.
+        Save vocab (feature vectorizer, scaler, label dictionary, and inverse
+        label dictionary) to file.
 
         @param vocabfile: The path to where you want to save the vocab.
         @type vocabfile: C{basestring}
@@ -630,13 +683,15 @@ class Classifier(object):
         if not os.path.exists(vocabdir):
             subprocess.call("mkdir -p {}".format(vocabdir), shell=True)
         with open(vocabfile, "w") as f:
-            pickle.dump([self.feat_vectorizer, self.scaler, self.label_dict, self.label_list], f, -1)
+            pickle.dump([self.feat_vectorizer, self.scaler,
+                        self.label_dict, self.label_list], f, -1)
 
     @staticmethod
     def _extract_features(example):
         '''
-        Return a dictionary of feature values extracted from a preprocessed example.
-        This base method expects all the features to be of the form "x1", "x2", etc.
+        Return a dictionary of feature values extracted from a preprocessed
+        example. This base method expects all the features to be of the form
+        "x1", "x2", etc.
         '''
         return example["x"]
 
@@ -658,7 +713,8 @@ class Classifier(object):
 
     def _create_estimator(self):
         '''
-        @return: A tuple containing an instantiation of the requested estimator, and a parameter grid to search.
+        @return: A tuple containing an instantiation of the requested
+        estimator, and a parameter grid to search.
         '''
         estimator = None
         default_param_grid = None
@@ -688,33 +744,46 @@ class Classifier(object):
             estimator = Ridge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
         else:
-            raise ValueError("{} is not a valid classifier type.".format(self._model_type))
+            raise ValueError(
+                "{} is not a valid classifier type.".format(self._model_type))
 
         return estimator, default_param_grid
 
     def _extract_feature_vectorizer(self, features):
-        ''' Given a dict of features, create a DictVectorizer for mapping from dicts of features to arrays of features '''
+        '''
+        Given a dict of features, create a DictVectorizer for mapping from
+        dicts of features to arrays of features
+        '''
         self.feat_vectorizer = DictVectorizer()
         self.feat_vectorizer.fit(features)
 
     def train_setup(self, examples, clear_vocab):
-        '''Set up the feature vectorizer, the scaler and the label dict and return the features and the labels'''
+        '''
+        Set up the feature vectorizer, the scaler and the label dict and
+        return the features and the labels
+        '''
 
-        #extract the features and the labels
+        # extract the features and the labels
         features = [self._extract_features(x) for x in examples]
 
         # Create label_dict if we weren't passed one
-        if self._model_type not in _REGRESSION_MODELS and (clear_vocab or self.label_dict is None):
+        if (self._model_type not in _REGRESSION_MODELS and
+                (clear_vocab or self.label_dict is None)):
 
             # extract list of unique labels if we are doing classification
-            self.label_list = np.unique([example["y"] for example in examples]).tolist()
+            self.label_list = np.unique(
+                [example["y"] for example in examples]).tolist()
 
-            # if one label is specified as the positive class, make sure it's last
+            # if one label is specified as the positive class, make sure it's
+            # last
             if self.pos_label_str:
-                self.label_list = sorted(self.label_list, key=lambda x: (x == self.pos_label_str, x))
+                self.label_list = sorted(
+                    self.label_list,
+                    key=lambda x: (x == self.pos_label_str, x))
 
-            # Given a list of all labels in the dataset and a list of the unique labels in the set,
-            # convert the first list to an array of numbers.
+            # Given a list of all labels in the dataset and a list of the
+            # unique labels in the set, convert the first list to an array of
+            # numbers.
             self.label_dict = {}
             for i, label in enumerate(self.label_list):
                 self.label_dict[label] = i
@@ -723,44 +792,63 @@ class Classifier(object):
 
         # Create feat_vectorizer if we weren't passed one
         if clear_vocab or self.feat_vectorizer is None:
-            self._extract_feature_vectorizer(features)  # create feature name -> value mapping
+            self._extract_feature_vectorizer(
+                features)  # create feature name -> value mapping
 
         # Create scaler if we weren't passed one
-        if (clear_vocab or self.scaler is None) and self._model_type != 'naivebayes':
+        if ((clear_vocab or self.scaler is None) and
+                self._model_type != 'naivebayes'):
             if self.do_scale_features:
-                self.scaler = _FixedStandardScaler(copy=True, with_mean=self._model_type in _REQUIRES_DENSE)
+                self.scaler = _FixedStandardScaler(
+                    copy=True, with_mean=self._model_type in _REQUIRES_DENSE)
             else:
-                # Doing this is to prevent any modification of feature values using a dummy transformation
-                self.scaler = _FixedStandardScaler(copy=False, with_mean=False, with_std=False)
+                # Doing this is to prevent any modification of feature values
+                # using a dummy transformation
+                self.scaler = _FixedStandardScaler(
+                    copy=False, with_mean=False, with_std=False)
 
         return features, y
 
-    def train(self, examples, clear_vocab=False, param_grid=None, grid_search_folds=5, grid_search=True, grid_objective=f1_score_micro):
+    def train(self, examples, clear_vocab=False, param_grid=None,
+              grid_search_folds=5, grid_search=True,
+              grid_objective=f1_score_micro):
         '''
-        Train a classification model and return the model, score, feature vectorizer, scaler, label dictionary, and inverse label dictionary.
+        Train a classification model and return the model, score, feature
+        vectorizer, scaler, label dictionary, and inverse label dictionary.
 
         @param examples: The examples to train the model on.
         @type examples: C{array}
-        @param clear_vocab: Wipe out the feature vectorizer, scaler, label dictionary, and inverse label dictionary. This should be done if you're retraining
-                            a L{Classifier} on a completely different data set (with different features).
+        @param clear_vocab: Wipe out the feature vectorizer, scaler, label
+                            dictionary, and inverse label dictionary. This
+                            should be done if you're retraining a
+                            L{Classifier} on a completely different data set
+                            (with different features).
         @type clear_vocab: C{bool}
-        @param param_grid: The parameter grid to search through for grid search. If unspecified, a default parameter grid will be used.
-        @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to C{list}s of parameter values
-        @param grid_search_folds: The number of folds to use when doing the grid search.
+        @param param_grid: The parameter grid to search through for grid
+                           search. If unspecified, a default parameter grid
+                           will be used.
+        @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to
+                          C{list}s of parameter values
+        @param grid_search_folds: The number of folds to use when doing the
+                                  grid search.
         @type grid_search_folds: C{int}
         @param grid_search: Should we do grid search?
         @type grid_search: C{bool}
-        @param grid_objective: The objective function to use when doing the grid search.
+        @param grid_objective: The objective function to use when doing the
+                               grid search.
         @type grid_objective: C{function}
 
-        @return: The best grid search objective function score, or 0 if we're not doing grid search.
+        @return: The best grid search objective function score, or 0 if we're
+                 not doing grid search.
         @rtype: C{float}
         '''
 
-        # seed the random number generator so that randomized algorithms are replicable
+        # seed the random number generator so that randomized algorithms are
+        # replicable
         np.random.seed(9876315986142)
 
-        # call train setup to set up the vectorizer, the labeldict, and the scaler
+        # call train setup to set up the vectorizer, the labeldict, and the
+        # scaler
         features, ytrain = self.train_setup(examples, clear_vocab)
 
         # vectorize the features
@@ -781,12 +869,17 @@ class Classifier(object):
             if not param_grid:
                 param_grid = default_param_grid
 
-            # NOTE: we don't want to use multithreading for LIBLINEAR since it seems to lead to irreproducible results
-            if grid_objective.__name__ in _CORRELATION_METRICS and self._model_type not in _REGRESSION_MODELS:
+            # NOTE: we don't want to use multithreading for LIBLINEAR since it
+            # seems to lead to irreproducible results
+            if (grid_objective.__name__ in _CORRELATION_METRICS and
+                    self._model_type not in _REGRESSION_MODELS):
                 grid_search_class = _GridSearchCVBinary
             else:
                 grid_search_class = GridSearchCV
-            grid_searcher = grid_search_class(estimator, param_grid, score_func=grid_objective, cv=grid_search_folds, n_jobs=grid_search_folds)
+            grid_searcher = grid_search_class(estimator, param_grid,
+                                              score_func=grid_objective,
+                                              cv=grid_search_folds,
+                                              n_jobs=grid_search_folds)
 
             # run the grid search for hyperparameters
             # print('\tstarting grid search', file=sys.stderr)
@@ -799,20 +892,28 @@ class Classifier(object):
 
         return score
 
-    def evaluate(self, examples, prediction_prefix=None, append=False, grid_objective=None):
+    def evaluate(self, examples, prediction_prefix=None, append=False,
+                 grid_objective=None):
         '''
         Evaluates a given model on a given dev or test example set.
 
-        @param examples: The examples to evaluate the performance of the model on.
+        @param examples: The examples to evaluate the performance of the model
+            on.
         @type examples: C{array}
-        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by ".predictions"
+        @param prediction_prefix: If saving the predictions, this is the
+                                  prefix that will be used for the filename.
+                                  It will be followed by ".predictions"
         @type prediction_prefix: C{basestring}
-        @param append: Should we append the current predictions to the file if it exists?
+        @param append: Should we append the current predictions to the file if
+                       it exists?
         @type append: C{bool}
-        @param grid_objective: The objective function that was used when doing the grid search.
+        @param grid_objective: The objective function that was used when doing
+                               the grid search.
         @type grid_objective: C{function}
 
-        @return: The confusion matrix, the overall accuracy, the per-class PRFs, the model parameters, and the grid search objective function score.
+        @return: The confusion matrix, the overall accuracy, the per-class
+                 PRFs, the model parameters, and the grid search objective
+                 function score.
         @rtype: 3-C{tuple}
         '''
         # initialize grid score
@@ -827,12 +928,16 @@ class Classifier(object):
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
-            if grid_objective is not None and grid_objective.__name__ in _CORRELATION_METRICS:
+            if (grid_objective is not None and
+                    grid_objective.__name__ in _CORRELATION_METRICS):
                 grid_score = grid_objective(ytest, yhat[:, 1])
-            yhat = np.array([max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
+            yhat = np.array(
+                [max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
 
         # calculate grid search objective function score, if specified
-        if grid_objective is not None and (grid_objective.__name__ not in _CORRELATION_METRICS or not self.probability):
+        if (grid_objective is not None and
+                (grid_objective.__name__ not in _CORRELATION_METRICS or
+                 not self.probability)):
             grid_score = grid_objective(ytest, yhat)
 
         if self._model_type in _REGRESSION_MODELS:
@@ -842,9 +947,14 @@ class Classifier(object):
             # Create prediction dicts for easier scoring
             actual_dict = defaultdict(set)
             pred_dict = defaultdict(set)
-            pred_list = [self.label_list[int(pred_class)] for pred_class in yhat]
-            actual_list = [self.label_list[int(actual_class)] for actual_class in ytest]
-            for line_num, (pred_class, actual_class) in enumerate(izip(pred_list, actual_list)):
+            pred_list = [self.label_list[int(pred_class)]
+                         for pred_class in yhat]
+            actual_list = [self.label_list[int(actual_class)]
+                           for actual_class in ytest]
+            for (line_num,
+                 (pred_class,
+                  actual_class)) in enumerate(izip(pred_list,
+                                                   actual_list)):
                 pred_dict[pred_class].add(line_num)
                 actual_dict[actual_class].add(line_num)
 
@@ -855,11 +965,16 @@ class Classifier(object):
 
             # Store results
             for actual_class in sorted(actual_dict.iterkeys()):
-                result_dict[actual_class]["Precision"] = precision(actual_dict[actual_class], pred_dict[actual_class])
-                result_dict[actual_class]["Recall"] = recall(actual_dict[actual_class], pred_dict[actual_class])
-                result_dict[actual_class]["F-measure"] = f_measure(actual_dict[actual_class], pred_dict[actual_class])
-
-            res = (metrics.confusion_matrix(ytest, yhat, labels=range(len(self.label_list))).tolist(), overall_accuracy, result_dict, self._model.get_params(), grid_score)
+                result_dict[actual_class]["Precision"] = precision(
+                    actual_dict[actual_class], pred_dict[actual_class])
+                result_dict[actual_class]["Recall"] = recall(
+                    actual_dict[actual_class], pred_dict[actual_class])
+                result_dict[actual_class]["F-measure"] = f_measure(
+                    actual_dict[actual_class], pred_dict[actual_class])
+            conf_mat = metrics.confusion_matrix(
+                ytest, yhat, labels=range(len(self.label_list))).tolist()
+            res = (conf_mat, overall_accuracy, result_dict,
+                   self._model.get_params(), grid_score)
         return res
 
     def predict(self, examples, prediction_prefix, append=False):
@@ -868,9 +983,13 @@ class Classifier(object):
 
         @param examples: The examples to predict the classes for.
         @type examples: C{array}
-        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by ".predictions"
+        @param prediction_prefix: If saving the predictions, this is the
+                                  prefix that will be used for the
+                                  filename. It will be followed by
+                                  ".predictions"
         @type prediction_prefix: C{basestring}
-        @param append: Should we append the current predictions to the file if it exists?
+        @param append: Should we append the current predictions to the file if
+                       it exists?
         @type append: C{bool}
 
         @return: The predictions returned by the classifier.
@@ -892,61 +1011,88 @@ class Classifier(object):
 
         # make the prediction on the test data
         try:
-            yhat = self._model.predict_proba(xtest) if self.probability and self._model_type != 'svm_linear' else self._model.predict(xtest)
+            yhat = (self._model.predict_proba(xtest)
+                    if (self.probability and
+                        self._model_type != 'svm_linear')
+                    else self._model.predict(xtest))
         except NotImplementedError as e:
-            print("Model type: {}\nModel: {}\nProbability: {}\n".format(self._model_type, self._model, self.probability), file=sys.stderr)
+            print("Model type: {}\nModel: {}\nProbability: \
+                   {}\n".format(self._model_type, self._model,
+                                self.probability), file=sys.stderr)
             raise e
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
             prediction_file = '{}.predictions'.format(prediction_prefix)
-            with open(prediction_file, "w" if not append else "a") as predictionfh:
+            with open(prediction_file,
+                      "w" if not append else "a") as predictionfh:
                 # header
                 if not append:
                     if self.probability and self._model_type != 'svm_linear':
-                        print('\t'.join(["id"] + self.label_list), file=predictionfh)
+                        print('\t'.join(
+                            ["id"] + self.label_list), file=predictionfh)
                     else:
-                        print('\t'.join(["id", "prediction"]), file=predictionfh)
+                        print('\t'.join(
+                            ["id", "prediction"]), file=predictionfh)
 
                 if self.probability and self._model_type != 'svm_linear':
                     for example_id, class_probs in zip(example_ids, yhat):
-                        print('\t'.join([example_id] + [str(x) for x in class_probs]), file=predictionfh)
+                        print('\t'.join([example_id] + [str(
+                            x) for x in class_probs]), file=predictionfh)
                 else:
                     if self._model_type in _REGRESSION_MODELS:
                         for example_id, pred in zip(example_ids, yhat):
-                            print('\t'.join([example_id, str(pred)]), file=predictionfh)
+                            print('\t'.join(
+                                [example_id, str(pred)]), file=predictionfh)
                     else:
                         for example_id, pred in zip(example_ids, yhat):
-                            print('\t'.join([example_id, self.label_list[int(pred)]]), file=predictionfh)
+                            print('\t'.join([example_id,
+                                  self.label_list[int(pred)]]),
+                                  file=predictionfh)
 
         return yhat
 
-    def cross_validate(self, examples, stratified=True, clear_vocab=False, cv_folds=10, grid_search=False, grid_search_folds=5, grid_objective=f1_score_micro,
-                       prediction_prefix=None, param_grid=None):
+    def cross_validate(self, examples, stratified=True, clear_vocab=False,
+                       cv_folds=10, grid_search=False, grid_search_folds=5,
+                       grid_objective=f1_score_micro, prediction_prefix=None,
+                       param_grid=None):
         '''
         Cross-validates a given model on the training examples.
 
         @param examples: The data to cross-validate classifier performance on.
         @type examples: C{array}
-        @param stratified: Should we stratify the folds to ensure an even distribution of classes for each fold?
+        @param stratified: Should we stratify the folds to ensure an even
+                           distribution of classes for each fold?
         @type stratified: C{bool}
-        @param clear_vocab: Wipe out the feature vectorizer, scaler, label dictionary, and inverse label dictionary. This should be done if you're retraining
-                            a L{Classifier} on a completely different data set (with different features).
+        @param clear_vocab: Wipe out the feature vectorizer, scaler, label
+                            dictionary, and inverse label dictionary. This
+                            should be done if you're retraining a
+                            L{Classifier} on a completely different data set
+                            (with different features).
         @type clear_vocab: C{bool}
         @param cv_folds: The number of folds to use for cross-validation.
         @type cv_folds: C{int}
-        @param grid_search: Should we do grid search when training each fold? Note: This will make this take *much* longer.
+        @param grid_search: Should we do grid search when training each fold?
+                            Note: This will make this take *much* longer.
         @type grid_search: C{bool}
-        @param grid_search_folds: The number of folds to use when doing the grid search.
+        @param grid_search_folds: The number of folds to use when doing the
+                                  grid search.
         @type grid_search_folds: C{int}
-        @param grid_objective: The objective function to use when doing the grid search.
+        @param grid_objective: The objective function to use when doing the
+                               grid search.
         @type grid_objective: C{function}
-        @param param_grid: The parameter grid to search through for grid search. If unspecified, a default parameter grid will be used.
-        @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to C{list}s of parameter values
-        @param prediction_prefix: If saving the predictions, this is the prefix that will be used for the filename. It will be followed by ".predictions"
+        @param param_grid: The parameter grid to search through for grid
+                           search. If unspecified, a default parameter
+                           grid will be used.
+        @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to
+                          C{list}s of parameter values
+        @param prediction_prefix: If saving the predictions, this is the
+                                  prefix that will be used for the filename.
+                                  It will be followed by ".predictions"
         @type prediction_prefix: C{basestring}
 
-        @return: The confusion matrix, overall accuracy, per-class PRFs, and model parameters for each fold.
+        @return: The confusion matrix, overall accuracy, per-class PRFs, and
+                 model parameters for each fold.
         @rtype: C{list} of 4-C{tuple}s
         '''
 
@@ -955,18 +1101,26 @@ class Classifier(object):
 
         # setup the cross-validation iterator
         stratified = stratified and not self._model_type in _REGRESSION_MODELS
-        kfold = StratifiedKFold(y, n_folds=cv_folds) if stratified else KFold(len(examples), n_folds=cv_folds)
+        kfold = StratifiedKFold(y, n_folds=cv_folds) if stratified else KFold(
+            len(examples), n_folds=cv_folds)
 
-        # handle each fold separately and accumulate the predictions and the numbers
+        # handle each fold separately and accumulate the predictions and the
+        # numbers
         results = []
         append_predictions = False
         for train_index, test_index in kfold:
             # Train model
-            self._model = None  # Do this to prevent feature vectorizer from being reset every time.
-            self.train(examples[train_index], grid_search_folds=grid_search_folds, grid_search=grid_search, grid_objective=grid_objective, param_grid=param_grid)
+            self._model = None  # prevent feature vectorizer from being reset.
+            self.train(
+                examples[train_index], grid_search_folds=grid_search_folds,
+                grid_search=grid_search, grid_objective=grid_objective,
+                param_grid=param_grid)
 
             # Evaluate model
-            results.append(self.evaluate(examples[test_index], prediction_prefix=prediction_prefix, append=append_predictions, grid_objective=grid_objective))
+            results.append(
+                self.evaluate(
+                    examples[test_index], prediction_prefix=prediction_prefix,
+                    append=append_predictions, grid_objective=grid_objective))
 
             append_predictions = True
 
