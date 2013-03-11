@@ -1062,7 +1062,7 @@ class Classifier(object):
     def cross_validate(self, examples, stratified=True, clear_vocab=False,
                        cv_folds=10, grid_search=False, grid_search_folds=5,
                        grid_objective=f1_score_micro, prediction_prefix=None,
-                       param_grid=None):
+                       param_grid=None, shuffle=True):
         '''
         Cross-validates a given model on the training examples.
 
@@ -1097,11 +1097,19 @@ class Classifier(object):
                                   prefix that will be used for the filename.
                                   It will be followed by ".predictions"
         @type prediction_prefix: C{basestring}
+        @param shuffle: Shuffle examples before splitting into folds for CV.
+        @type shuffle: C{bool}
 
         @return: The confusion matrix, overall accuracy, per-class PRFs, and
                  model parameters for each fold.
         @rtype: C{list} of 4-C{tuple}s
         '''
+        # seed the random number generator so that randomized folds are
+        # replicable
+        np.random.seed(9876315986142)
+
+        # Shuffle examples before splitting
+        np.random.shuffle(examples)
 
         # call train setup
         _, y = self.train_setup(examples, clear_vocab)
