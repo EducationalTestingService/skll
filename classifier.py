@@ -637,7 +637,7 @@ class Classifier(object):
         @param modelfile: The path to the model file to load.
         @type modelfile: C{basestring}
         '''
-        with open(modelfile) as f:
+        with open(modelfile, "rb") as f:
             self._model, self.probability = pickle.load(f)
         if isinstance(self._model, LogisticRegression):
             self._model_type = 'logistic'
@@ -664,7 +664,7 @@ class Classifier(object):
         @param vocabfile: The path to the vocab file to load.
         @type vocabfile: C{basestring}
         '''
-        with open(vocabfile) as f:
+        with open(vocabfile, "rb") as f:
             (self.feat_vectorizer, self.scaler, self.label_dict,
              self.label_list) = pickle.load(f)
 
@@ -680,7 +680,7 @@ class Classifier(object):
         if not os.path.exists(modeldir):
             subprocess.call("mkdir -p {}".format(modeldir), shell=True)
         # write out the files
-        with open(modelfile, "w") as f:
+        with open(modelfile, "wb") as f:
             pickle.dump([self._model, self.probability], f, -1)
 
     def save_vocab(self, vocabfile):
@@ -695,7 +695,7 @@ class Classifier(object):
         vocabdir = os.path.dirname(vocabfile)
         if not os.path.exists(vocabdir):
             subprocess.call("mkdir -p {}".format(vocabdir), shell=True)
-        with open(vocabfile, "w") as f:
+        with open(vocabfile, "wb") as f:
             pickle.dump([self.feat_vectorizer, self.scaler,
                         self.label_dict, self.label_list], f, -1)
 
