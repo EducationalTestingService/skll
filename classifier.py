@@ -1109,7 +1109,8 @@ class Classifier(object):
         np.random.seed(9876315986142)
 
         # Shuffle examples before splitting
-        np.random.shuffle(examples)
+        if shuffle:
+            np.random.shuffle(examples)
 
         # call train setup
         _, y = self.train_setup(examples, clear_vocab)
