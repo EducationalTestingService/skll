@@ -89,9 +89,11 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                                                "Recall")
                 class_f = get_stat_string(result_dict[actual_class],
                                           "F-measure")
-                if 'N/A' not in (class_prec, class_recall, class_f):
+                if class_prec != 'N/A':
                     prec_sum_dict[actual_class] += float(class_prec[:-1])
+                if class_recall != 'N/A':
                     recall_sum_dict[actual_class] += float(class_recall[:-1])
+                if class_f != 'N/A':
                     f_sum_dict[actual_class] += float(class_f[:-1])
                 try:
                     result_row = ([actual_class] + conf_matrix[i] +
