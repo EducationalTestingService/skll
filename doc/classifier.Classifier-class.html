@@ -76,11 +76,7 @@ object --+
         <tr>
           <td><span class="summary-sig"><a href="classifier.Classifier-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
         <span class="summary-sig-arg">probability</span>=<span class="summary-sig-default">False</span>,
-        <span class="summary-sig-arg">feat_vectorizer</span>=<span class="summary-sig-default">None</span>,
-        <span class="summary-sig-arg">scaler</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">do_scale_features</span>=<span class="summary-sig-default">False</span>,
-        <span class="summary-sig-arg">label_dict</span>=<span class="summary-sig-default">None</span>,
-        <span class="summary-sig-arg">label_list</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">model_type</span>=<span class="summary-sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>,
         <span class="summary-sig-arg">model_kwargs</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">pos_label_str</span>=<span class="summary-sig-default">None</span>,
@@ -119,25 +115,6 @@ object --+
     </td><td class="summary">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#load_vocab" class="summary-sig-name">load_vocab</a>(<span class="summary-sig-arg">self</span>,
-        <span class="summary-sig-arg">vocabfile</span>)</span><br />
-      Load a saved vocab (feature vectorizer, scaler, label dictionary, and
-      inverse label dictionary).</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#Classifier.load_vocab">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
           <td><span class="summary-sig"><a href="classifier.Classifier-class.html#save_model" class="summary-sig-name">save_model</a>(<span class="summary-sig-arg">self</span>,
         <span class="summary-sig-arg">modelfile</span>)</span><br />
       Save the model to file.</td>
@@ -156,28 +133,8 @@ object --+
     </td><td class="summary">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td><span class="summary-sig"><a href="classifier.Classifier-class.html#save_vocab" class="summary-sig-name">save_vocab</a>(<span class="summary-sig-arg">self</span>,
-        <span class="summary-sig-arg">vocabfile</span>)</span><br />
-      Save vocab (feature vectorizer, scaler, label dictionary, and inverse
-      label dictionary) to file.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#Classifier.save_vocab">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
           <td><span class="summary-sig"><a name="train_setup"></a><span class="summary-sig-name">train_setup</span>(<span class="summary-sig-arg">self</span>,
-        <span class="summary-sig-arg">examples</span>,
-        <span class="summary-sig-arg">clear_vocab</span>)</span><br />
+        <span class="summary-sig-arg">examples</span>)</span><br />
       Set up the feature vectorizer, the scaler and the label dict and 
       return the features and the labels</td>
           <td align="right" valign="top">
@@ -197,11 +154,10 @@ object --+
         <tr>
           <td><span class="summary-sig"><a href="classifier.Classifier-class.html#train" class="summary-sig-name">train</a>(<span class="summary-sig-arg">self</span>,
         <span class="summary-sig-arg">examples</span>,
-        <span class="summary-sig-arg">clear_vocab</span>=<span class="summary-sig-default">False</span>,
         <span class="summary-sig-arg">param_grid</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">grid_search_folds</span>=<span class="summary-sig-default">5</span>,
         <span class="summary-sig-arg">grid_search</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x2bcd1b8&gt;</span>)</span><br />
+        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x40310c8&gt;</span>)</span><br />
       Train a classification model and return the model, score, feature 
       vectorizer, scaler, label dictionary, and inverse label dictionary.</td>
           <td align="right" valign="top">
@@ -263,11 +219,10 @@ object --+
           <td><span class="summary-sig"><a href="classifier.Classifier-class.html#cross_validate" class="summary-sig-name">cross_validate</a>(<span class="summary-sig-arg">self</span>,
         <span class="summary-sig-arg">examples</span>,
         <span class="summary-sig-arg">stratified</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">clear_vocab</span>=<span class="summary-sig-default">False</span>,
         <span class="summary-sig-arg">cv_folds</span>=<span class="summary-sig-default">10</span>,
         <span class="summary-sig-arg">grid_search</span>=<span class="summary-sig-default">False</span>,
         <span class="summary-sig-arg">grid_search_folds</span>=<span class="summary-sig-default">5</span>,
-        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x2bcd1b8&gt;</span>,
+        <span class="summary-sig-arg">grid_objective</span>=<span class="summary-sig-default">&lt;function f1_score_micro at 0x40310c8&gt;</span>,
         <span class="summary-sig-arg">prediction_prefix</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">param_grid</span>=<span class="summary-sig-default">None</span>,
         <span class="summary-sig-arg">shuffle</span>=<span class="summary-sig-default">True</span>)</span><br />
@@ -358,11 +313,7 @@ object --+
   <tr valign="top"><td>
   <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
         <span class="sig-arg">probability</span>=<span class="sig-default">False</span>,
-        <span class="sig-arg">feat_vectorizer</span>=<span class="sig-default">None</span>,
-        <span class="sig-arg">scaler</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">do_scale_features</span>=<span class="sig-default">False</span>,
-        <span class="sig-arg">label_dict</span>=<span class="sig-default">None</span>,
-        <span class="sig-arg">label_list</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">model_type</span>=<span class="sig-default"><code class="variable-quote">u'</code><code class="variable-string">logistic</code><code class="variable-quote">'</code></span>,
         <span class="sig-arg">model_kwargs</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">pos_label_str</span>=<span class="sig-default">None</span>,
@@ -378,13 +329,7 @@ object --+
   <dl class="fields">
     <dt>Parameters:</dt>
     <dd><ul class="nomargin-top">
-        <li><strong class="pname"><code>feat_vectorizer</code></strong> (<code>DictVectorizer</code>) - A <code>DictVectorizer</code> that transforms lists of 
-          feature-value mappings to vectors.</li>
-        <li><strong class="pname"><code>scaler</code></strong> (<code>Scaler</code>) - A pre-fit scaler for the data that this classifier will be 
-          processing.</li>
         <li><strong class="pname"><code>do_scale_features</code></strong> (<code>bool</code>) - Should we scale features with this classifier?</li>
-        <li><strong class="pname"><code>label_dict</code></strong> (<code>dict</code>) - Maps from class/label names to integers.</li>
-        <li><strong class="pname"><code>label_list</code></strong> (<code>list</code> of <code>basestring</code>) - Maps from integers back to label strings.</li>
         <li><strong class="pname"><code>model_type</code></strong> (<code>basestring</code>) - Type of estimator to create. Options are: 'logistic', 
           'svm_linear', 'svm_radial', 'naivebayes', 'dtree', 'rforest', and
           'gradient'</li>
@@ -426,31 +371,6 @@ object --+
   </dl>
 </td></tr></table>
 </div>
-<a name="load_vocab"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">load_vocab</span>(<span class="sig-arg">self</span>,
-        <span class="sig-arg">vocabfile</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.load_vocab">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Load a saved vocab (feature vectorizer, scaler, label dictionary, and 
-  inverse label dictionary).</p>
-  <dl class="fields">
-    <dt>Parameters:</dt>
-    <dd><ul class="nomargin-top">
-        <li><strong class="pname"><code>vocabfile</code></strong> (<code>basestring</code>) - The path to the vocab file to load.</li>
-    </ul></dd>
-  </dl>
-</td></tr></table>
-</div>
 <a name="save_model"></a>
 <div>
 <table class="details" border="1" cellpadding="3"
@@ -475,31 +395,6 @@ object --+
   </dl>
 </td></tr></table>
 </div>
-<a name="save_vocab"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">save_vocab</span>(<span class="sig-arg">self</span>,
-        <span class="sig-arg">vocabfile</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#Classifier.save_vocab">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Save vocab (feature vectorizer, scaler, label dictionary, and inverse 
-  label dictionary) to file.</p>
-  <dl class="fields">
-    <dt>Parameters:</dt>
-    <dd><ul class="nomargin-top">
-        <li><strong class="pname"><code>vocabfile</code></strong> (<code>basestring</code>) - The path to where you want to save the vocab.</li>
-    </ul></dd>
-  </dl>
-</td></tr></table>
-</div>
 <a name="train"></a>
 <div>
 <table class="details" border="1" cellpadding="3"
@@ -509,11 +404,10 @@ object --+
   <tr valign="top"><td>
   <h3 class="epydoc"><span class="sig"><span class="sig-name">train</span>(<span class="sig-arg">self</span>,
         <span class="sig-arg">examples</span>,
-        <span class="sig-arg">clear_vocab</span>=<span class="sig-default">False</span>,
         <span class="sig-arg">param_grid</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">grid_search_folds</span>=<span class="sig-default">5</span>,
         <span class="sig-arg">grid_search</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x2bcd1b8&gt;</span>)</span>
+        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x40310c8&gt;</span>)</span>
   </h3>
   </td><td align="right" valign="top"
     ><span class="codelink"><a href="classifier-pysrc.html#Classifier.train">source&nbsp;code</a></span>&nbsp;
@@ -526,11 +420,6 @@ object --+
     <dt>Parameters:</dt>
     <dd><ul class="nomargin-top">
         <li><strong class="pname"><code>examples</code></strong> (<code>array</code>) - The examples to train the model on.</li>
-        <li><strong class="pname"><code>clear_vocab</code></strong> (<code>bool</code>) - Wipe out the feature vectorizer, scaler, label dictionary, and 
-          inverse label dictionary. This should be done if you're 
-          retraining a <a href="classifier.Classifier-class.html" 
-          class="link">Classifier</a> on a completely different data set 
-          (with different features).</li>
         <li><strong class="pname"><code>param_grid</code></strong> (<code>list</code> of <code>dict</code>s mapping from 
           <code>basestring</code>s to <code>list</code>s of parameter 
           values) - The parameter grid to search through for grid search. If 
@@ -623,11 +512,10 @@ object --+
   <h3 class="epydoc"><span class="sig"><span class="sig-name">cross_validate</span>(<span class="sig-arg">self</span>,
         <span class="sig-arg">examples</span>,
         <span class="sig-arg">stratified</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">clear_vocab</span>=<span class="sig-default">False</span>,
         <span class="sig-arg">cv_folds</span>=<span class="sig-default">10</span>,
         <span class="sig-arg">grid_search</span>=<span class="sig-default">False</span>,
         <span class="sig-arg">grid_search_folds</span>=<span class="sig-default">5</span>,
-        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x2bcd1b8&gt;</span>,
+        <span class="sig-arg">grid_objective</span>=<span class="sig-default">&lt;function f1_score_micro at 0x40310c8&gt;</span>,
         <span class="sig-arg">prediction_prefix</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">param_grid</span>=<span class="sig-default">None</span>,
         <span class="sig-arg">shuffle</span>=<span class="sig-default">True</span>)</span>
@@ -644,11 +532,6 @@ object --+
         <li><strong class="pname"><code>examples</code></strong> (<code>array</code>) - The data to cross-validate classifier performance on.</li>
         <li><strong class="pname"><code>stratified</code></strong> (<code>bool</code>) - Should we stratify the folds to ensure an even distribution of 
           classes for each fold?</li>
-        <li><strong class="pname"><code>clear_vocab</code></strong> (<code>bool</code>) - Wipe out the feature vectorizer, scaler, label dictionary, and 
-          inverse label dictionary. This should be done if you're 
-          retraining a <a href="classifier.Classifier-class.html" 
-          class="link">Classifier</a> on a completely different data set 
-          (with different features).</li>
         <li><strong class="pname"><code>cv_folds</code></strong> (<code>int</code>) - The number of folds to use for cross-validation.</li>
         <li><strong class="pname"><code>grid_search</code></strong> (<code>bool</code>) - Should we do grid search when training each fold? Note: This will
           make this take *much* longer.</li>
@@ -750,7 +633,7 @@ object --+
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Mon Mar 11 10:05:01 2013
+    Generated by Epydoc 3.0.1 on Wed Mar 13 15:18:53 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"
