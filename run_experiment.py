@@ -19,7 +19,7 @@ from collections import defaultdict, namedtuple, OrderedDict
 import numpy as np
 import classifier
 from pythongrid import Job, process_jobs
-from texttable import Texttable
+from texttable import ArraySizeError, Texttable
 
 
 # Named tuple for storing job results
