@@ -42,7 +42,6 @@ class Predictor(object):
         @type positive_class: C{int}
         '''
         self._classifier = Classifier()
-        self._classifier.load_vocab('{}.vocab'.format(model_prefix))
         self._classifier.load_model('{}.model'.format(model_prefix))
         self._example_count = 0
         self._pos_index = positive_class

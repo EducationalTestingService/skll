@@ -545,26 +545,15 @@ class Classifier(object):
     functions.
     """
 
-    def __init__(self, probability=False, feat_vectorizer=None, scaler=None,
-                 do_scale_features=False, label_dict=None, label_list=None,
+    def __init__(self, probability=False, do_scale_features=False,
                  model_type='logistic', model_kwargs=None, pos_label_str=None,
                  use_dense_features=False):
         '''
         Initializes a classifier object with the specified settings.
 
-        @param feat_vectorizer: A C{DictVectorizer} that transforms lists of
-                                feature-value mappings to vectors.
-        @type feat_vectorizer: C{DictVectorizer}
-        @param scaler: A pre-fit scaler for the data that this classifier will
-                       be processing.
-        @type scaler: C{Scaler}
         @param do_scale_features: Should we scale features with this
                                   classifier?
         @type do_scale_features: C{bool}
-        @param label_dict: Maps from class/label names to integers.
-        @type label_dict: C{dict}
-        @param label_list: Maps from integers back to label strings.
-        @type label_list: C{list} of C{basestring}
         @param model_type: Type of estimator to create. Options are:
                            'logistic', 'svm_linear', 'svm_radial',
                            'naivebayes', 'dtree', 'rforest', and 'gradient'
@@ -586,11 +575,11 @@ class Classifier(object):
         '''
         super(Classifier, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
-        self.feat_vectorizer = feat_vectorizer
+        self.feat_vectorizer = None
         self.do_scale_features = do_scale_features
-        self.scaler = scaler if self.do_scale_features else None
-        self.label_dict = label_dict
-        self.label_list = label_list
+        self.scaler = None
+        self.label_dict = None
+        self.label_list = None
         self.pos_label_str = pos_label_str
         self._model_type = model_type
         self._model = None
@@ -638,7 +627,8 @@ class Classifier(object):
         @type modelfile: C{basestring}
         '''
         with open(modelfile, "rb") as f:
-            self._model, self.probability = pickle.load(f)
+            (self._model, self.probability, self.feat_vectorizer,
+             self.scaler, self.label_dict, self.label_list) = pickle.load(f)
         if isinstance(self._model, LogisticRegression):
             self._model_type = 'logistic'
         elif isinstance(self._model, LinearSVC):
@@ -656,18 +646,6 @@ class Classifier(object):
         elif isinstance(self._model, Ridge):
             self._model_type = 'ridge'
 
-    def load_vocab(self, vocabfile):
-        '''
-        Load a saved vocab (feature vectorizer, scaler, label dictionary, and
-        inverse label dictionary).
-
-        @param vocabfile: The path to the vocab file to load.
-        @type vocabfile: C{basestring}
-        '''
-        with open(vocabfile, "rb") as f:
-            (self.feat_vectorizer, self.scaler, self.label_dict,
-             self.label_list) = pickle.load(f)
-
     def save_model(self, modelfile):
         '''
         Save the model to file.
@@ -681,23 +659,9 @@ class Classifier(object):
             subprocess.call("mkdir -p {}".format(modeldir), shell=True)
         # write out the files
         with open(modelfile, "wb") as f:
-            pickle.dump([self._model, self.probability], f, -1)
-
-    def save_vocab(self, vocabfile):
-        '''
-        Save vocab (feature vectorizer, scaler, label dictionary, and inverse
-        label dictionary) to file.
-
-        @param vocabfile: The path to where you want to save the vocab.
-        @type vocabfile: C{basestring}
-        '''
-        # create the directory if it doesn't exist
-        vocabdir = os.path.dirname(vocabfile)
-        if not os.path.exists(vocabdir):
-            subprocess.call("mkdir -p {}".format(vocabdir), shell=True)
-        with open(vocabfile, "wb") as f:
-            pickle.dump([self.feat_vectorizer, self.scaler,
-                        self.label_dict, self.label_list], f, -1)
+            pickle.dump([self._model, self.probability,
+                         self.feat_vectorizer, self.scaler, self.label_dict,
+                         self.label_list], f, -1)
 
     @staticmethod
     def _extract_features(example):
@@ -771,7 +735,7 @@ class Classifier(object):
             sparse=not self._use_dense_features)
         self.feat_vectorizer.fit(features)
 
-    def train_setup(self, examples, clear_vocab):
+    def train_setup(self, examples):
         '''
         Set up the feature vectorizer, the scaler and the label dict and
         return the features and the labels
@@ -781,8 +745,7 @@ class Classifier(object):
         features = [self._extract_features(x) for x in examples]
 
         # Create label_dict if we weren't passed one
-        if (self._model_type not in _REGRESSION_MODELS and
-                (clear_vocab or self.label_dict is None)):
+        if self._model_type not in _REGRESSION_MODELS:
 
             # extract list of unique labels if we are doing classification
             self.label_list = np.unique(
@@ -804,14 +767,11 @@ class Classifier(object):
 
         y = np.array([self._extract_label(x) for x in examples])
 
-        # Create feat_vectorizer if we weren't passed one
-        if clear_vocab or self.feat_vectorizer is None:
-            self._extract_feature_vectorizer(
-                features)  # create feature name -> value mapping
+        # Create feature name -> value mapping
+        self._extract_feature_vectorizer(features)
 
         # Create scaler if we weren't passed one
-        if ((clear_vocab or self.scaler is None) and
-                self._model_type != 'naivebayes'):
+        if self._model_type != 'naivebayes':
             if self.do_scale_features:
                 self.scaler = _FixedStandardScaler(
                     copy=True, with_mean=self._use_dense_features,
@@ -824,7 +784,7 @@ class Classifier(object):
 
         return features, y
 
-    def train(self, examples, clear_vocab=False, param_grid=None,
+    def train(self, examples, param_grid=None,
               grid_search_folds=5, grid_search=True,
               grid_objective=f1_score_micro):
         '''
@@ -833,12 +793,6 @@ class Classifier(object):
 
         @param examples: The examples to train the model on.
         @type examples: C{array}
-        @param clear_vocab: Wipe out the feature vectorizer, scaler, label
-                            dictionary, and inverse label dictionary. This
-                            should be done if you're retraining a
-                            L{Classifier} on a completely different data set
-                            (with different features).
-        @type clear_vocab: C{bool}
         @param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter grid
                            will be used.
@@ -864,7 +818,7 @@ class Classifier(object):
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
-        features, ytrain = self.train_setup(examples, clear_vocab)
+        features, ytrain = self.train_setup(examples)
 
         # vectorize the features
         xtrain = self.feat_vectorizer.transform(features)
@@ -1023,9 +977,9 @@ class Classifier(object):
                         self._model_type != 'svm_linear')
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            print("Model type: {}\nModel: {}\nProbability: \
-                   {}\n".format(self._model_type, self._model,
-                                self.probability), file=sys.stderr)
+            print(("Model type: {}\nModel: {}\nProbability: " +
+                   "{}\n").format(self._model_type, self._model,
+                                  self.probability), file=sys.stderr)
             raise e
 
         # write out the predictions if we are asked to
@@ -1059,7 +1013,7 @@ class Classifier(object):
 
         return yhat
 
-    def cross_validate(self, examples, stratified=True, clear_vocab=False,
+    def cross_validate(self, examples, stratified=True,
                        cv_folds=10, grid_search=False, grid_search_folds=5,
                        grid_objective=f1_score_micro, prediction_prefix=None,
                        param_grid=None, shuffle=True):
@@ -1071,12 +1025,6 @@ class Classifier(object):
         @param stratified: Should we stratify the folds to ensure an even
                            distribution of classes for each fold?
         @type stratified: C{bool}
-        @param clear_vocab: Wipe out the feature vectorizer, scaler, label
-                            dictionary, and inverse label dictionary. This
-                            should be done if you're retraining a
-                            L{Classifier} on a completely different data set
-                            (with different features).
-        @type clear_vocab: C{bool}
         @param cv_folds: The number of folds to use for cross-validation.
         @type cv_folds: C{int}
         @param grid_search: Should we do grid search when training each fold?
@@ -1113,7 +1061,7 @@ class Classifier(object):
             np.random.shuffle(examples)
 
         # call train setup
-        _, y = self.train_setup(examples, clear_vocab)
+        _, y = self.train_setup(examples)
 
         # setup the cross-validation iterator
         stratified = stratified and not self._model_type in _REGRESSION_MODELS
