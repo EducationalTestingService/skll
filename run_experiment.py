@@ -89,7 +89,7 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                                                "Recall")
                 class_f = get_stat_string(result_dict[actual_class],
                                           "F-measure")
-                if class_prec != 'N/A':
+                if 'N/A' not in (class_prec, class_recall, class_f):
                     prec_sum_dict[actual_class] += float(class_prec[:-1])
                     recall_sum_dict[actual_class] += float(class_recall[:-1])
                     f_sum_dict[actual_class] += float(class_f[:-1])
@@ -131,8 +131,8 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
             result_table.add_rows(
                 [["Class", "Precision", "Recall", "F-measure"]], header=True)
             for actual_class in classes:
-                result_table.add_row(
-                    [actual_class] + ["{:.1f}%".format(prec_sum_dict[actual_class]
+                result_table.add_row([actual_class] +
+                                     ["{:.1f}%".format(prec_sum_dict[actual_class]
                                                        / num_folds),
                                       "{:.1f}%".format(recall_sum_dict[actual_class]
                                                        / num_folds),
@@ -273,6 +273,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
 
 
 def munge_featureset_name(featureset):
+    ''' Converts feature set into '''
     if isinstance(featureset, basestring):
         return featureset
 
@@ -338,12 +339,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
 
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
-        print("Error: the training path specified in config file ({}) does not\
-               exist.".format(train_path), file=sys.stderr)
+        print(("Error: the training path specified in config file ({}) does " +
+               "not exist.").format(train_path), file=sys.stderr)
         sys.exit(2)
     if test_path and not os.path.exists(test_path):
-        print("Error: the test path specified in config file ({}) does not \
-               exist.".format(test_path), file=sys.stderr)
+        print(("Error: the test path specified in config file ({}) does " +
+               "not exist.").format(test_path), file=sys.stderr)
         sys.exit(2)
 
     # do we need to run a grid search for the hyperparameters or are we just

@@ -908,7 +908,6 @@ class Classifier(object):
         if self._model_type in _REGRESSION_MODELS:
             res = (None, None, None, self._model.get_params(), grid_score)
         else:
-
             # Create prediction dicts for easier scoring
             actual_dict = defaultdict(set)
             pred_dict = defaultdict(set)
@@ -929,7 +928,7 @@ class Classifier(object):
             result_dict = defaultdict(dict)
 
             # Store results
-            for actual_class in sorted(actual_dict.iterkeys()):
+            for actual_class in sorted(self.label_list):
                 result_dict[actual_class]["Precision"] = precision(
                     actual_dict[actual_class], pred_dict[actual_class])
                 result_dict[actual_class]["Recall"] = recall(
