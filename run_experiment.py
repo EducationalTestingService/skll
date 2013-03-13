@@ -133,19 +133,21 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
             result_table.add_rows(
                 [["Class", "Precision", "Recall", "F-measure"]], header=True)
             for actual_class in classes:
+                # Convert sums to means
+                prec_mean = prec_sum_dict[actual_class] / num_folds
+                recall_mean = recall_sum_dict[actual_class] / num_folds
+                f_mean = f_sum_dict[actual_class] / num_folds
                 result_table.add_row([actual_class] +
-                                     ["{:.1f}%".format(prec_sum_dict[actual_class]
-                                                       / num_folds),
-                                      "{:.1f}%".format(recall_sum_dict[actual_class]
-                                                       / num_folds),
-                                      "{:.1f}%".format(f_sum_dict[actual_class]
-                                                       / num_folds)])
+                                     ["{:.1f}%".format(prec_mean),
+                                      "{:.1f}%".format(recall_mean),
+                                      "{:.1f}%".format(f_mean)])
             print(result_table.draw(), file=output_file)
-            print("Accuracy = {:.1f}%".format(
-                accuracy_sum / num_folds), file=output_file)
+            print("Accuracy = {:.1f}%".format(accuracy_sum / num_folds),
+                  file=output_file)
         if grid_score_sum is not None:
-            print("Objective function score = {:.5f}".format(
-                grid_score_sum / num_folds), file=output_file)
+            print("Objective function score = {:.5f}".format(grid_score_sum
+                                                             / num_folds),
+                  file=output_file)
 
 
 def load_featureset(dirpath, featureset, suffix):
