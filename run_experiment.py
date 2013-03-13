@@ -19,7 +19,7 @@ from collections import defaultdict, namedtuple, OrderedDict
 import numpy as np
 import classifier
 from pythongrid import Job, process_jobs
-from texttable import Texttable
+from texttable import ArraySizeError, Texttable
 
 
 # Named tuple for storing job results
@@ -80,20 +80,27 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                                                      "Recall",
                                                      "F-measure"]],
                                   header=True)
+
             for i, actual_class in enumerate(classes):
                 conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
-                class_prec = get_stat_string(
-                    result_dict[actual_class], "Precision")
-                class_recall = get_stat_string(
-                    result_dict[actual_class], "Recall")
-                class_f = get_stat_string(
-                    result_dict[actual_class], "F-measure")
+                class_prec = get_stat_string(result_dict[actual_class],
+                                             "Precision")
+                class_recall = get_stat_string(result_dict[actual_class],
+                                               "Recall")
+                class_f = get_stat_string(result_dict[actual_class],
+                                          "F-measure")
                 if class_prec != 'N/A':
                     prec_sum_dict[actual_class] += float(class_prec[:-1])
                     recall_sum_dict[actual_class] += float(class_recall[:-1])
                     f_sum_dict[actual_class] += float(class_f[:-1])
-                result_table.add_row([actual_class] + conf_matrix[i]
-                                     + [class_prec, class_recall, class_f])
+                try:
+                    result_row = ([actual_class] + conf_matrix[i] +
+                                  [class_prec, class_recall, class_f])
+                    result_table.add_row(result_row)
+                except ArraySizeError as e:
+                    print("Row does not contain {} elements: {}".format(
+                        result_table._row_size, result_row))
+                    raise e
             print(result_table.draw(), file=output_file)
             print("(row = reference; column = predicted)", file=output_file)
             print("Accuracy = {:.1f}%".format(fold_accuracy), file=output_file)
