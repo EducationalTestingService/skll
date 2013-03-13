@@ -156,7 +156,7 @@ def load_featureset(dirpath, featureset, suffix):
 
 def classify_featureset(jobname, featureset, given_classifier, train_path,
                         test_path, train_set_name, test_set_name, modelpath,
-                        vocabpath, prediction_prefix, grid_search,
+                        prediction_prefix, grid_search,
                         grid_objective, do_scale_features, cross_validate,
                         evaluate, suffix, log_path, probability, resultspath,
                         fixed_parameters, param_grid, pos_label_str,
@@ -176,10 +176,6 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
         if not cross_validate:
             test_examples = load_featureset(test_path, featureset, suffix)
 
-        # the name of the feature vocab file
-        vocabfile = os.path.join(vocabpath, '{}.vocab'.format(
-            jobname))  # temporarily changed this to jobname (from featureset)
-
         # initialize a classifer object
         learner = classifier.Classifier(probability=probability,
                                         model_type=given_classifier,
@@ -193,12 +189,6 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
         # vocabulary) and then use it on the test data
         modelfile = os.path.join(modelpath, '{}.model'.format(jobname))
 
-        # load the feature vocab if it already exists. We can do this since
-        # this is independent of the model type
-        if os.path.exists(vocabfile) and not overwrite:
-            print('\tloading pre-existing feature vocab')
-            learner.load_vocab(vocabfile)
-
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
         if not cross_validate:
@@ -210,24 +200,13 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
                 learner.load_model(modelfile)
 
             # if we have do not have a saved model, we need to train one.
-            # However, we may be able to reuse a saved feature vocab file if
-            # that existed above.
             else:
-                if learner.feat_vectorizer:
-                    print('\ttraining new {} model'.format(
-                        given_classifier), file=log_file)
-                    best_score = learner.train(train_examples,
-                                               grid_search=grid_search,
-                                               grid_objective=grid_objective,
-                                               param_grid=param_grid)
-                else:
-                    print('\tfeaturizing and training new {} model'.format(
-                        given_classifier), file=log_file)
-                    best_score = learner.train(train_examples,
-                                               grid_search=grid_search,
-                                               grid_objective=grid_objective,
-                                               param_grid=param_grid)
-                    learner.save_vocab(vocabfile)
+                print('\tfeaturizing and training new {} model'.format(
+                    given_classifier), file=log_file)
+                best_score = learner.train(train_examples,
+                                           grid_search=grid_search,
+                                           grid_objective=grid_objective,
+                                           param_grid=param_grid)
 
                 # save model
                 learner.save_model(modelfile)
@@ -296,15 +275,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                                  'log': '',
                                                  'results': '',
                                                  'predictions': '',
-                                                 "grid_search": False,
+                                                 "grid_search": 'False',
                                                  'objective': "f1_score_micro",
-                                                 'scale_features': True,
-                                                 'probability': False,
+                                                 'scale_features': 'True',
+                                                 'probability': 'False',
                                                  'fixed_parameters': '[]',
                                                  'param_grids': '[]',
                                                  'pos_label_str': None,
                                                  'featureset_names': '[]',
-                                                 'use_dense_features': False})
+                                                 'use_dense_features': 'False'})
     configurator.readfp(config_file)
 
     # extract sklearn parameters from the config file
@@ -327,7 +306,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     resultspath = configurator.get("Output", "results")
     logpath = configurator.get("Output", "log")
     modelpath = configurator.get("Output", "models")
-    vocabpath = configurator.get("Output", "vocabs")
     probability = eval(configurator.get("Output", "probability"))
 
     # do we want to keep the predictions?
@@ -452,7 +430,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                 job = Job(classify_featureset,
                           [jobname, featureset, given_classifier, train_path,
                            test_path, train_set_name, test_set_name, modelpath,
-                           vocabpath, prediction_prefix, do_grid_search,
+                           prediction_prefix, do_grid_search,
                            grid_objective, do_scale_features, cross_validate,
                            evaluate, suffix, temp_logfile, probability,
                            resultspath, fixed_parameter_list[classifier_num]
@@ -470,7 +448,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
             else:
                 classify_featureset(jobname, featureset, given_classifier,
                                     train_path, test_path, train_set_name,
-                                    test_set_name, modelpath, vocabpath,
+                                    test_set_name, modelpath,
                                     prediction_prefix, do_grid_search,
                                     grid_objective, do_scale_features,
                                     cross_validate, evaluate, suffix,
