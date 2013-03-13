@@ -98,8 +98,16 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                                   [class_prec, class_recall, class_f])
                     result_table.add_row(result_row)
                 except ArraySizeError as e:
-                    print("Row does not contain {} elements: {}".format(
-                        result_table._row_size, result_row))
+                    print(("Row does not contain enough elements.\n " +
+                           "actual_class: {}\n" +
+                           "conf_matrix[i]: {}\n" +
+                           "class_prec: {}\n" +
+                           "class_recall: {}\n" +
+                           "class_f: {}\n").format(actual_class,
+                                                   conf_matrix[i],
+                                                   class_prec, class_recall,
+                                                   class_f),
+                          file=sys.stderr)
                     raise e
             print(result_table.draw(), file=output_file)
             print("(row = reference; column = predicted)", file=output_file)
