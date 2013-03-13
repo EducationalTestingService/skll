@@ -545,26 +545,15 @@ class Classifier(object):
     functions.
     """
 
-    def __init__(self, probability=False, feat_vectorizer=None, scaler=None,
-                 do_scale_features=False, label_dict=None, label_list=None,
+    def __init__(self, probability=False, do_scale_features=False,
                  model_type='logistic', model_kwargs=None, pos_label_str=None,
                  use_dense_features=False):
         '''
         Initializes a classifier object with the specified settings.
 
-        @param feat_vectorizer: A C{DictVectorizer} that transforms lists of
-                                feature-value mappings to vectors.
-        @type feat_vectorizer: C{DictVectorizer}
-        @param scaler: A pre-fit scaler for the data that this classifier will
-                       be processing.
-        @type scaler: C{Scaler}
         @param do_scale_features: Should we scale features with this
                                   classifier?
         @type do_scale_features: C{bool}
-        @param label_dict: Maps from class/label names to integers.
-        @type label_dict: C{dict}
-        @param label_list: Maps from integers back to label strings.
-        @type label_list: C{list} of C{basestring}
         @param model_type: Type of estimator to create. Options are:
                            'logistic', 'svm_linear', 'svm_radial',
                            'naivebayes', 'dtree', 'rforest', and 'gradient'
@@ -586,11 +575,11 @@ class Classifier(object):
         '''
         super(Classifier, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
-        self.feat_vectorizer = feat_vectorizer
+        self.feat_vectorizer = None
         self.do_scale_features = do_scale_features
-        self.scaler = scaler if self.do_scale_features else None
-        self.label_dict = label_dict
-        self.label_list = label_list
+        self.scaler = None
+        self.label_dict = None
+        self.label_list = None
         self.pos_label_str = pos_label_str
         self._model_type = model_type
         self._model = None
@@ -638,8 +627,8 @@ class Classifier(object):
         @type modelfile: C{basestring}
         '''
         with open(modelfile, "rb") as f:
-            self._model, self.probability, self.feat_vectorizer, \
-            self.scaler, self.label_dict, self.label_list = pickle.load(f)
+            (self._model, self.probability, self.feat_vectorizer,
+             self.scaler, self.label_dict, self.label_list) = pickle.load(f)
         if isinstance(self._model, LogisticRegression):
             self._model_type = 'logistic'
         elif isinstance(self._model, LinearSVC):
@@ -670,9 +659,9 @@ class Classifier(object):
             subprocess.call("mkdir -p {}".format(modeldir), shell=True)
         # write out the files
         with open(modelfile, "wb") as f:
-            pickle.dump([self._model, self.probability, \
-                        self.feat_vectorizer, self.scaler, self.label_dict, \
-                        self.label_list], f, -1)
+            pickle.dump([self._model, self.probability,
+                         self.feat_vectorizer, self.scaler, self.label_dict,
+                         self.label_list], f, -1)
 
     @staticmethod
     def _extract_features(example):
@@ -988,9 +977,9 @@ class Classifier(object):
                         self._model_type != 'svm_linear')
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            print("Model type: {}\nModel: {}\nProbability: \
-                   {}\n".format(self._model_type, self._model,
-                                self.probability), file=sys.stderr)
+            print(("Model type: {}\nModel: {}\nProbability: " +
+                   "{}\n").format(self._model_type, self._model,
+                                  self.probability), file=sys.stderr)
             raise e
 
         # write out the predictions if we are asked to
