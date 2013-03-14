@@ -920,7 +920,7 @@ class Classifier(object):
             for (line_num,
                  (pred_class,
                   actual_class)) in enumerate(zip(pred_list,
-                                                   actual_list)):
+                                                  actual_list)):
                 pred_dict[pred_class].add(line_num)
                 actual_dict[actual_class].add(line_num)
 
@@ -940,7 +940,7 @@ class Classifier(object):
             num_labels = len(self.label_list)
             conf_mat = metrics.confusion_matrix(ytest, yhat,
                                                 labels=list(range(num_labels))
-                                               ).tolist()
+                                                ).tolist()
             res = (conf_mat, overall_accuracy, result_dict,
                    self._model.get_params(), grid_score)
         return res

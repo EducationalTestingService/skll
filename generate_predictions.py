@@ -17,6 +17,7 @@ from bs4 import UnicodeDammit
 from classifier import Classifier, _sanitize_line
 from six.moves import izip
 
+
 class Predictor(object):
     """
     Little wrapper around a L{Classifier} to load models and get
