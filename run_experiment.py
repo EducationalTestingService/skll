@@ -10,7 +10,11 @@ Runs a bunch of sklearn jobs in parallel on the cluster given a config file.
 from __future__ import print_function, unicode_literals
 
 import argparse
-import ConfigParser
+try:
+    import configparser  # Python 3+ name
+except ImportError:
+    import ConfigParser as configparser
+import json
 import re
 import os
 import sys
@@ -291,45 +295,44 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     Takes a configuration file and runs the specified jobs on the grid.
     '''
     # initialize config parser
-    configurator = ConfigParser.RawConfigParser({'test_location': '',
-                                                 'log': '',
-                                                 'results': '',
-                                                 'predictions': '',
-                                                 "grid_search": 'False',
-                                                 'objective': "f1_score_micro",
-                                                 'scale_features': 'True',
-                                                 'probability': 'False',
-                                                 'fixed_parameters': '[]',
-                                                 'param_grids': '[]',
-                                                 'pos_label_str': None,
-                                                 'featureset_names': '[]',
-                                                 'use_dense_features': 'False'})
-    configurator.readfp(config_file)
+    config = configparser.SafeConfigParser({'test_location': '',
+                                            'log': '',
+                                            'results': '',
+                                            'predictions': '',
+                                            "grid_search": 'False',
+                                            'objective': "f1_score_micro",
+                                            'scale_features': 'True',
+                                            'probability': 'False',
+                                            'fixed_parameters': '[]',
+                                            'param_grids': '[]',
+                                            'pos_label_str': None,
+                                            'featureset_names': '[]',
+                                            'use_dense_features': 'False'})
+    config.readfp(config_file)
 
     # extract sklearn parameters from the config file
-    given_classifiers = eval(configurator.get("Input", "classifiers"))
-    given_featuresets = eval(configurator.get("Input", "featuresets"))
-    given_featureset_names = eval(
-        configurator.get("Input", "featureset_names"))
-    fixed_parameter_list = eval(configurator.get("Input", "fixed_parameters"))
-    param_grid_list = eval(configurator.get("Tuning", "param_grids"))
-    pos_label_str = configurator.get("Tuning", "pos_label_str")
-    use_dense_features = eval(configurator.get("Tuning", "use_dense_features"))
+    given_classifiers = json.loads(config.get("Input", "classifiers"))
+    given_featuresets = json.loads(config.get("Input", "featuresets"))
+    given_featureset_names = json.loads(config.get("Input",
+                                                   "featureset_names"))
+    fixed_parameter_list = json.loads(config.get("Input", "fixed_parameters"))
+    param_grid_list = json.loads(config.get("Tuning", "param_grids"))
+    pos_label_str = config.get("Tuning", "pos_label_str")
+    use_dense_features = config.getboolean("Tuning", "use_dense_features")
 
-    # get all the input paths and directories
-    train_path = configurator.get("Input", "train_location").rstrip(
-        '/')  # remove trailing / at the end of path name
-    test_path = configurator.get("Input", "test_location").rstrip('/')
-    suffix = configurator.get("Input", "suffix")
+    # get all the input paths and directories (without trailing slashes)
+    train_path = config.get("Input", "train_location").rstrip('/')
+    test_path = config.get("Input", "test_location").rstrip('/')
+    suffix = config.get("Input", "suffix")
 
     # get all the output files and directories
-    resultspath = configurator.get("Output", "results")
-    logpath = configurator.get("Output", "log")
-    modelpath = configurator.get("Output", "models")
-    probability = eval(configurator.get("Output", "probability"))
+    resultspath = config.get("Output", "results")
+    logpath = config.get("Output", "log")
+    modelpath = config.get("Output", "models")
+    probability = config.getboolean("Output", "probability")
 
     # do we want to keep the predictions?
-    prediction_dir = configurator.get("Output", "predictions")
+    prediction_dir = config.get("Output", "predictions")
     if prediction_dir:
         os.system("mkdir -p {}".format(prediction_dir))
 
@@ -353,20 +356,20 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
 
     # do we need to run a grid search for the hyperparameters or are we just
     # using the defaults
-    do_grid_search = eval(configurator.get("Tuning", "grid_search"))
+    do_grid_search = config.getboolean("Tuning", "grid_search")
 
     # what is the objective function for the grid search?
-    grid_objective_func = configurator.get("Tuning", "objective")
+    grid_objective_func = config.get("Tuning", "objective")
     if grid_objective_func not in {'f1_score_micro', 'f1_score_macro',
                                    'accuracy', 'f1_score_least_frequent',
                                    'spearman', 'pearson', 'kendall_tau'}:
         print('Error: invalid grid objective function.', file=sys.stderr)
         sys.exit(2)
     else:
-        grid_objective = eval('classifier.' + grid_objective_func)
+        grid_objective = getattr(classifier, grid_objective_func)
 
     # do we need to scale the feature values?
-    do_scale_features = eval(configurator.get("Tuning", "scale_features"))
+    do_scale_features = config.getboolean("Tuning", "scale_features")
 
     # are we doing cross validation or actual testing or just generating
     # predictions on a new test set? If no test set was specified then assume
