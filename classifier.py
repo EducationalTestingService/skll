@@ -17,7 +17,7 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
-from itertools import islice, izip
+from itertools import islice
 
 import numpy as np
 from bs4 import UnicodeDammit
@@ -37,6 +37,8 @@ from sklearn.svm import LinearSVC, SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import safe_mask, check_arrays
 from sklearn.utils.validation import _num_samples
+from six import iteritems
+from six.moves import zip, xrange
 
 
 #### Globals ####
@@ -174,7 +176,7 @@ def _megam_dict_iter(path):
                                                                  1, None, 2))
 
                     # Add the feature-value pairs to dictionary
-                    curr_info_dict.update(izip(field_names, field_values))
+                    curr_info_dict.update(zip(field_names, field_values))
                 yield curr_id, class_name, curr_info_dict
                 curr_id = None
             line_count += 1
@@ -198,7 +200,7 @@ def load_examples(path):
         out = []
         with open(path) as f:
             reader = csv.reader(f, dialect=csv.excel_tab)
-            header = reader.next()
+            header = next(reader)
             out = [_preprocess_tsv_row(row, header, example_num)
                    for example_num, row in enumerate(reader)]
     elif path.endswith(".jsonlines"):
@@ -238,7 +240,7 @@ def _preprocess_tsv_row(row, header, example_num):
     x = {}
     y = row[0]
     example_id = "EXAMPLE_{}".format(example_num)
-    for fname, fval in izip(islice(header, 1, None), islice(row, 1, None)):
+    for fname, fval in zip(islice(header, 1, None), islice(row, 1, None)):
         if fname == "id":
             example_id = fval
         else:
@@ -257,7 +259,7 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func,
     if verbose > 1:
         start_time = time.time()
         msg = '%s' % (', '.join('%s=%s' % (k, v)
-                                for k, v in clf_params.iteritems()))
+                                for k, v in iteritems(clf_params)))
         print("[GridSearchCV] %s %s" % (msg, (64 - len(msg)) * '.'))
     # update parameters of the classifier after a copy of its base structure
     clf = clone(base_clf)
@@ -483,7 +485,7 @@ class _GridSearchCVBinary(GridSearchCV):
 
         scores = list()
         cv_scores = list()
-        for grid_start in range(0, n_fits, n_folds):
+        for grid_start in xrange(0, n_fits, n_folds):
             n_test_samples = 0
             score = 0
             these_points = list()
@@ -917,7 +919,7 @@ class Classifier(object):
                            for actual_class in ytest]
             for (line_num,
                  (pred_class,
-                  actual_class)) in enumerate(izip(pred_list,
+                  actual_class)) in enumerate(zip(pred_list,
                                                    actual_list)):
                 pred_dict[pred_class].add(line_num)
                 actual_dict[actual_class].add(line_num)
@@ -935,8 +937,10 @@ class Classifier(object):
                     actual_dict[actual_class], pred_dict[actual_class])
                 result_dict[actual_class]["F-measure"] = f_measure(
                     actual_dict[actual_class], pred_dict[actual_class])
-            conf_mat = metrics.confusion_matrix(
-                ytest, yhat, labels=range(len(self.label_list))).tolist()
+            num_labels = len(self.label_list)
+            conf_mat = metrics.confusion_matrix(ytest, yhat,
+                                                labels=list(range(num_labels))
+                                               ).tolist()
             res = (conf_mat, overall_accuracy, result_dict,
                    self._model.get_params(), grid_score)
         return res

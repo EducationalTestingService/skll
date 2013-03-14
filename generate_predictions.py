@@ -11,11 +11,11 @@ Loads a trained model and outputs predictions based on input feature files.
 from __future__ import print_function, unicode_literals
 
 import argparse
-from itertools import islice, izip
+from itertools import islice
 
 from bs4 import UnicodeDammit
 from classifier import Classifier, _sanitize_line
-
+from six.moves import izip
 
 class Predictor(object):
     """

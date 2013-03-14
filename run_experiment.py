@@ -10,10 +10,6 @@ Runs a bunch of sklearn jobs in parallel on the cluster given a config file.
 from __future__ import print_function, unicode_literals
 
 import argparse
-try:
-    import configparser  # Python 3+ name
-except ImportError:
-    import ConfigParser as configparser
 import json
 import re
 import os
@@ -24,6 +20,8 @@ import numpy as np
 import classifier
 from pythongrid import Job, process_jobs
 from texttable import ArraySizeError, Texttable
+from six import string_types, iterkeys, iteritems, itervalues  # Python 2/3
+from six.moves import configparser
 
 
 # Named tuple for storing job results
@@ -72,12 +70,12 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
         if num_folds > 1:
             print("\nFold: {}".format(k), file=output_file)
         param_out = ('{}: {}'.format(param_name, param_value)
-                     for param_name, param_value in model_params.iteritems())
+                     for param_name, param_value in iteritems(model_params))
         print('Model parameters: {}'.format(
             ', '.join(param_out)), file=output_file)
 
         if conf_matrix:
-            classes = sorted(result_tuples[0][2].iterkeys())
+            classes = sorted(iterkeys(result_tuples[0][2]))
             result_table = Texttable(max_width=0)
             result_table.set_cols_align(["r"] * (len(classes) + 4))
             result_table.add_rows([[""] + classes + ["Precision",
@@ -159,7 +157,7 @@ def load_featureset(dirpath, featureset, suffix):
     loads a list of feature files and merges them (or loads just one if
     featureset is a string).
     '''
-    if isinstance(featureset, basestring):
+    if isinstance(featureset, string_types):
         featureset = [featureset]
 
     example_dict = OrderedDict()
@@ -174,7 +172,7 @@ def load_featureset(dirpath, featureset, suffix):
 
     # TODO add checks to make sure that the set of IDs and the ys are the same
 
-    return np.array(example_dict.values())
+    return np.array(list(itervalues(example_dict)))
 
 
 def classify_featureset(jobname, featureset, given_classifier, train_path,
@@ -242,7 +240,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
             # print out the tuned parameters and best CV score
             param_out = ('{}: {}'.format(param_name, param_value)
                          for param_name, param_value in
-                         learner.model.get_params().iteritems())
+                         iteritems(learner.model.get_params()))
             print('\thyperparameters: {}'.format(', '.join(param_out)),
                   file=log_file)
 
@@ -282,11 +280,21 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
 
 def munge_featureset_name(featureset):
     ''' Converts feature set into '''
-    if isinstance(featureset, basestring):
+    if isinstance(featureset, string_types):
         return featureset
 
     res = '+'.join(featureset)
     return res
+
+def fix_json(json_string):
+    '''
+    Takes a bit of JSON that might have bad quotes or capitalized booleans
+    and fixes that stuff.
+    '''
+    json_string = json_string.replace('True', 'true')
+    json_string = json_string.replace('False', 'false')
+    json_string = json_string.replace("'", '"')
+    return json_string
 
 
 def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
@@ -311,12 +319,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     config.readfp(config_file)
 
     # extract sklearn parameters from the config file
-    given_classifiers = json.loads(config.get("Input", "classifiers"))
-    given_featuresets = json.loads(config.get("Input", "featuresets"))
-    given_featureset_names = json.loads(config.get("Input",
-                                                   "featureset_names"))
-    fixed_parameter_list = json.loads(config.get("Input", "fixed_parameters"))
-    param_grid_list = json.loads(config.get("Tuning", "param_grids"))
+    given_classifiers = json.loads(fix_json(config.get("Input",
+                                                       "classifiers")))
+    given_featuresets = json.loads(fix_json(config.get("Input",
+                                                       "featuresets")))
+    given_featureset_names = json.loads(fix_json(config.get(
+        "Input", "featureset_names")))
+    fixed_parameter_list = json.loads(fix_json(config.get(
+        "Input", "fixed_parameters")))
+    param_grid_list = json.loads(fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
     use_dense_features = config.getboolean("Tuning", "use_dense_features")
 
