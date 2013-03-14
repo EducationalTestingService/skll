@@ -446,39 +446,22 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
             temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
 
             # create job if we're doing things on the grid
+            job_args = [jobname, featureset, given_classifier, train_path,
+                        test_path, train_set_name, test_set_name, modelpath,
+                        prediction_prefix, do_grid_search,
+                        grid_objective, do_scale_features, cross_validate,
+                        evaluate, suffix, temp_logfile, probability,
+                        resultspath, fixed_parameter_list[classifier_num]
+                                     if fixed_parameter_list else dict(),
+                        param_grid_list[classifier_num] if param_grid_list
+                                                        else None,
+                        pos_label_str, overwrite, use_dense_features]
             if not local:
-                job = Job(classify_featureset,
-                          [jobname, featureset, given_classifier, train_path,
-                           test_path, train_set_name, test_set_name, modelpath,
-                           prediction_prefix, do_grid_search,
-                           grid_objective, do_scale_features, cross_validate,
-                           evaluate, suffix, temp_logfile, probability,
-                           resultspath, fixed_parameter_list[classifier_num]
-                                        if fixed_parameter_list else dict(),
-                           param_grid_list[classifier_num] if param_grid_list
-                                                           else None,
-                                           pos_label_str, overwrite,
-                                           use_dense_features],
-                          num_slots=(5 if do_grid_search else 1),
-                          name=jobname,
-                          queue=queue)
-
-                # Add job to list
-                jobs.append(job)
+                jobs.append(Job(classify_featureset, job_args,
+                                num_slots=(5 if do_grid_search else 1),
+                                name=jobname, queue=queue))
             else:
-                classify_featureset(jobname, featureset, given_classifier,
-                                    train_path, test_path, train_set_name,
-                                    test_set_name, modelpath,
-                                    prediction_prefix, do_grid_search,
-                                    grid_objective, do_scale_features,
-                                    cross_validate, evaluate, suffix,
-                                    temp_logfile, probability, resultspath,
-                                    fixed_parameter_list[classifier_num] if
-                                        fixed_parameter_list else dict(),
-                                    param_grid_list[ classifier_num] if
-                                        param_grid_list else None,
-                                    pos_label_str, overwrite,
-                                    use_dense_features)
+                classify_featureset(*job_args)
 
     # submit the jobs (if running on grid)
     if not local:
