@@ -37,7 +37,9 @@ from sklearn.svm import LinearSVC, SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import safe_mask, check_arrays
 from sklearn.utils.validation import _num_samples
+from sklearn.feature_selection import SelectKBest
 from six import iteritems
+import scipy.sparse as sp
 from six.moves import zip, xrange
 import ml_metrics
 
@@ -359,8 +361,42 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func,
     return this_score, clf_params, _num_samples(X)
 
 
+class SelectByMinCount(SelectKBest):
+    """
+    Select features ocurring in more (and/or fewer than) than a specified
+    number of examples in the training data (or a CV training fold).
+    """
+    def __init__(self, min_count=1):
+        self.min_count = min_count
+        self.scores_ = None
+
+    def fit(self, X, y=None):
+        # initialize a list of counts of times each feature appears
+        col_counts = [0 for _ in range(X.shape[1])]
+
+        if sp.issparse(X):
+            # find() is scipy.sparse's equivalent of nonzero()
+            _, col_indices, _ = sp.find(X.copy())
+        else:
+            col_indices = X.nonzero()[1].tolist()[0]
+        
+        for i in col_indices:
+            col_counts[i] += 1
+        
+        self.scores_ = np.array(col_counts)
+        return self
+
+    def _get_support_mask(self):
+        '''
+        Returns an indication of which features to keep.  
+        Adapted from SelectKBest.
+        '''
+        mask = np.zeros(self.scores_.shape, dtype=bool)
+        mask[self.scores_ >= self.min_count] = True
+        return mask
+
+
 # Temporary imports for _FixedStandardScaler
-import scipy.sparse as sp
 from sklearn.preprocessing import _mean_and_std
 from sklearn.utils import warn_if_not_float
 from sklearn.utils.sparsefuncs import inplace_csr_column_scale
@@ -617,7 +653,7 @@ class Classifier(object):
 
     def __init__(self, probability=False, do_scale_features=False,
                  model_type='logistic', model_kwargs=None, pos_label_str=None,
-                 use_dense_features=False):
+                 use_dense_features=False, min_feature_count=1):
         '''
         Initializes a classifier object with the specified settings.
 
@@ -642,6 +678,9 @@ class Classifier(object):
         @param use_dense_features: Whether to require conversion to dense
                                    feature matrices.
         @type use_dense_features: C{bool}
+        @param min_feature_count: The minimum number of examples a feature
+                                  must have a nonzero value in to be included.
+        @type min_feature_count: C{int}
         '''
         super(Classifier, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
@@ -654,6 +693,8 @@ class Classifier(object):
         self._model_type = model_type
         self._model = None
         self._use_dense_features = use_dense_features
+        self.feat_selector = None
+        self._min_feature_count = min_feature_count
         self._model_kwargs = {}
 
         self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
@@ -698,7 +739,8 @@ class Classifier(object):
         '''
         with open(modelfile, "rb") as f:
             (self._model, self.probability, self.feat_vectorizer,
-             self.scaler, self.label_dict, self.label_list) = pickle.load(f)
+             self.feat_selector, self.scaler, self.label_dict,
+             self.label_list) = pickle.load(f)
         if isinstance(self._model, LogisticRegression):
             self._model_type = 'logistic'
         elif isinstance(self._model, LinearSVC):
@@ -712,7 +754,7 @@ class Classifier(object):
         elif isinstance(self._model, RandomForestClassifier):
             self._model_type = 'rforest'
         elif isinstance(self._model, GradientBoostingClassifier):
-            self._model_type = "gradient"
+            self._model_type = 'gradient'
         elif isinstance(self._model, Ridge):
             self._model_type = 'ridge'
         elif isinstance(self._model, ConstrainedRidge):
@@ -732,8 +774,9 @@ class Classifier(object):
         # write out the files
         with open(modelfile, "wb") as f:
             pickle.dump([self._model, self.probability,
-                         self.feat_vectorizer, self.scaler, self.label_dict,
-                         self.label_list], f, -1)
+                         self.feat_vectorizer, self.feat_selector,
+                         self.scaler, self.label_dict, self.label_list],
+                        f, -1)
 
     @staticmethod
     def _extract_features(example):
@@ -801,15 +844,6 @@ class Classifier(object):
 
         return estimator, default_param_grid
 
-    def _extract_feature_vectorizer(self, features):
-        '''
-        Given a dict of features, create a DictVectorizer for mapping from
-        dicts of features to arrays of features
-        '''
-        self.feat_vectorizer = DictVectorizer(
-            sparse=not self._use_dense_features)
-        self.feat_vectorizer.fit(features)
-
     def train_setup(self, examples):
         '''
         Set up the feature vectorizer, the scaler and the label dict and
@@ -843,7 +877,12 @@ class Classifier(object):
         y = np.array([self._extract_label(x) for x in examples])
 
         # Create feature name -> value mapping
-        self._extract_feature_vectorizer(features)
+        self.feat_vectorizer = DictVectorizer(
+            sparse=not self._use_dense_features)
+
+        # initialize feature selector
+        self.feat_selector = SelectByMinCount(
+            min_count=self._min_feature_count)
 
         # Create scaler if we weren't passed one
         if self._model_type != 'naivebayes':
@@ -896,7 +935,10 @@ class Classifier(object):
         features, ytrain = self.train_setup(examples)
 
         # vectorize the features
-        xtrain = self.feat_vectorizer.transform(features)
+        xtrain = self.feat_vectorizer.fit_transform(features)
+
+        # select features
+        xtrain = self.feat_selector.fit_transform(xtrain)
 
         # Scale features if necessary
         if self._model_type != 'naivebayes':
@@ -1039,6 +1081,9 @@ class Classifier(object):
 
         # transform the features
         xtest = self.feat_vectorizer.transform(features)
+
+        # filter features based on those selected from training set
+        xtest = self.feat_selector.transform(xtest)
 
         # Scale xtest
         if self._model_type != 'naivebayes':

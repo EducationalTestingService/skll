@@ -181,7 +181,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
                         grid_objective, do_scale_features, cross_validate,
                         evaluate, suffix, log_path, probability, resultspath,
                         fixed_parameters, param_grid, pos_label_str,
-                        overwrite, use_dense_features):
+                        overwrite, use_dense_features, min_feature_count):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -203,7 +203,8 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
                                         do_scale_features=do_scale_features,
                                         model_kwargs=fixed_parameters,
                                         pos_label_str=pos_label_str,
-                                        use_dense_features=use_dense_features)
+                                        use_dense_features=use_dense_features,
+                                        min_feature_count=min_feature_count)
 
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it (and the feature
@@ -307,7 +308,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                             'log': '',
                                             'results': '',
                                             'predictions': '',
-                                            "grid_search": 'False',
+                                            'grid_search': 'False',
                                             'objective': "f1_score_micro",
                                             'scale_features': 'True',
                                             'probability': 'False',
@@ -315,7 +316,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                             'param_grids': '[]',
                                             'pos_label_str': None,
                                             'featureset_names': '[]',
-                                            'use_dense_features': 'False'})
+                                            'use_dense_features': 'False',
+                                            'min_feature_count': '1'})
     config.readfp(config_file)
 
     # extract sklearn parameters from the config file
@@ -368,6 +370,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     # do we need to run a grid search for the hyperparameters or are we just
     # using the defaults
     do_grid_search = config.getboolean("Tuning", "grid_search")
+
+    # the minimum number of examples a feature must be nonzero in to be included
+    min_feature_count = config.getint("Tuning", "min_feature_count")
 
     # what is the objective function for the grid search?
     grid_objective_func = config.get("Tuning", "objective")
@@ -471,7 +476,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                      if fixed_parameter_list else dict(),
                         param_grid_list[classifier_num] if param_grid_list
                                                         else None,
-                        pos_label_str, overwrite, use_dense_features]
+                        pos_label_str, overwrite, use_dense_features, 
+                        min_feature_count]
             if not local:
                 jobs.append(Job(classify_featureset, job_args,
                                 num_slots=(5 if do_grid_search else 1),
