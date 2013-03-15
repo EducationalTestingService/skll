@@ -378,7 +378,8 @@ class SelectByMinCount(SelectKBest):
             # find() is scipy.sparse's equivalent of nonzero()
             _, col_indices, _ = sp.find(X.copy())
         else:
-            col_indices = X.nonzero()[1].tolist()[0]
+            # assume it's a numpy array (not a numpy matrix)
+            col_indices = X.nonzero()[1].tolist()
         
         for i in col_indices:
             col_counts[i] += 1
