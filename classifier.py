@@ -39,15 +39,60 @@ from sklearn.utils import safe_mask, check_arrays
 from sklearn.utils.validation import _num_samples
 from six import iteritems
 from six.moves import zip, xrange
+import ml_metrics
 
 
 #### Globals ####
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
-_REGRESSION_MODELS = frozenset(['ridge'])
+_REGRESSION_MODELS = frozenset(['ridge', 'constrained_ridge'])
 
 
 #### METRICS ####
+def quadratic_weighted_kappa(y_true, y_pred):
+    '''
+    Returns the quadratic weighted kappa.  
+    This rounds the inputs before passing them to the ml_metrics module.
+    '''
+    
+    # This rather crazy looking typecast is intended to work as follows:
+    # If an input is an int, the operations will have no effect.
+    # If it is a float, it will be rounded and then converted to an int 
+    # because the ml_metrics package requires ints.
+    # If it is a str like "1", then it will be converted to a (rounded) int.
+    # If it is a str that can't be typecast, then the user is 
+    # given a hopefully useful error message.
+    try:    
+        y_true_rounded = [int(round(float(y))) for y in y_true]
+        y_pred_rounded = [int(round(float(y))) for y in y_pred] 
+    except ValueError, e:
+        print("For kappa, the labels should be integers or strings that" +
+              " can be converted to ints (E.g., '4.0' or '3').",
+              file=sys.stderr)
+        raise e
+
+    res = ml_metrics.quadratic_weighted_kappa(y_true_rounded, y_pred_rounded)
+    return res
+
+
+def unweighted_kappa(y_true, y_pred):
+    '''
+    Returns the unweighted Cohen's kappa.
+    '''
+    # See quadratic_weighted_kappa for comments about the typecasting below.
+    try:    
+        y_true_rounded = [int(round(float(y))) for y in y_true]
+        y_pred_rounded = [int(round(float(y))) for y in y_pred] 
+    except ValueError, e:
+        print("For kappa, the labels should be integers or strings that" +
+              " can be converted to ints (E.g., '4.0' or '3').",
+              file=sys.stderr)
+        raise e
+
+    res = ml_metrics.kappa(y_true_rounded, y_pred_rounded)
+    return res
+
+
 def kendall_tau(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on
@@ -320,6 +365,29 @@ from sklearn.preprocessing import _mean_and_std
 from sklearn.utils import warn_if_not_float
 from sklearn.utils.sparsefuncs import inplace_csr_column_scale
 from sklearn.utils.sparsefuncs import mean_variance_axis0
+
+
+class ConstrainedRidge(Ridge):
+    '''
+    This is an extension of the Ridge classifier that stores a min and 
+    a max for the training data.  It makes sure its predictions fall within
+    that range.
+    '''
+    def fit(self, X, y=None):
+        # fit a regular ridge model
+        super(ConstrainedRidge, self).fit(X, y=y)
+
+        # also record the training data min and max
+        self.y_min = min(y)
+        self.y_max = max(y)
+
+    def decision_function(self, X):
+        # get the unconstrained predictions
+        preds = super(ConstrainedRidge, self).decision_function(X)
+
+        # apply
+        res = np.array([max(self.y_min, min(self.y_max, pred)) for pred in preds])
+        return res
 
 
 class _FixedStandardScaler(StandardScaler):
@@ -647,6 +715,8 @@ class Classifier(object):
             self._model_type = "gradient"
         elif isinstance(self._model, Ridge):
             self._model_type = 'ridge'
+        elif isinstance(self._model, ConstrainedRidge):
+            self._model_type = 'constrained_ridge'
 
     def save_model(self, modelfile):
         '''
@@ -721,6 +791,9 @@ class Classifier(object):
             default_param_grid = [{'learning_rate': [0.01, 0.1, 0.5]}]
         elif self._model_type == 'ridge':
             estimator = Ridge(**self._model_kwargs)
+            default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
+        elif self._model_type == 'constrained_ridge':
+            estimator = ConstrainedRidge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
         else:
             raise ValueError(
@@ -836,8 +909,6 @@ class Classifier(object):
             if not param_grid:
                 param_grid = default_param_grid
 
-            # NOTE: we don't want to use multithreading for LIBLINEAR since it
-            # seems to lead to irreproducible results
             if (grid_objective.__name__ in _CORRELATION_METRICS and
                     self._model_type not in _REGRESSION_MODELS):
                 grid_search_class = _GridSearchCVBinary

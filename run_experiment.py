@@ -373,7 +373,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     grid_objective_func = config.get("Tuning", "objective")
     if grid_objective_func not in {'f1_score_micro', 'f1_score_macro',
                                    'accuracy', 'f1_score_least_frequent',
-                                   'spearman', 'pearson', 'kendall_tau'}:
+                                   'spearman', 'pearson', 'kendall_tau',
+                                   'quadratic_weighted_kappa',
+                                   'unweighted_kappa'}:
         print('Error: invalid grid objective function.', file=sys.stderr)
         sys.exit(2)
     else:
