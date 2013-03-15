@@ -367,29 +367,6 @@ from sklearn.utils.sparsefuncs import inplace_csr_column_scale
 from sklearn.utils.sparsefuncs import mean_variance_axis0
 
 
-class ConstrainedRidge(Ridge):
-    '''
-    This is an extension of the Ridge classifier that stores a min and 
-    a max for the training data.  It makes sure its predictions fall within
-    that range.
-    '''
-    def fit(self, X, y=None):
-        # fit a regular ridge model
-        super(ConstrainedRidge, self).fit(X, y=y)
-
-        # also record the training data min and max
-        self.y_min = min(y)
-        self.y_max = max(y)
-
-    def decision_function(self, X):
-        # get the unconstrained predictions
-        preds = super(ConstrainedRidge, self).decision_function(X)
-
-        # apply
-        res = np.array([max(self.y_min, min(self.y_max, pred)) for pred in preds])
-        return res
-
-
 class _FixedStandardScaler(StandardScaler):
 
     '''
@@ -607,6 +584,29 @@ class _GridSearchCVBinary(GridSearchCV):
                              % self.best_estimator_)
         y_predicted = self.predict_proba(X)[:, 1]
         return self.score_func(y, y_predicted)
+
+
+class ConstrainedRidge(Ridge):
+    '''
+    This is an extension of the Ridge classifier that stores a min and 
+    a max for the training data.  It makes sure its predictions fall within
+    that range.
+    '''
+    def fit(self, X, y=None):
+        # fit a regular ridge model
+        super(ConstrainedRidge, self).fit(X, y=y)
+
+        # also record the training data min and max
+        self.y_min = min(y)
+        self.y_max = max(y)
+
+    def decision_function(self, X):
+        # get the unconstrained predictions
+        preds = super(ConstrainedRidge, self).decision_function(X)
+
+        # apply
+        res = np.array([max(self.y_min, min(self.y_max, pred)) for pred in preds])
+        return res
 
 
 class Classifier(object):
