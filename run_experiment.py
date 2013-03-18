@@ -265,7 +265,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
             print('\twriting predictions', file=log_file)
             task = 'predict'
             results = None
-            learner.predict(test_examples, prediction_prefix)
+            learner.predict(test_examples, prediction_prefix=prediction_prefix)
 
         # write out results to file if we're not predicting
         result_info = ClassifierResultInfo(train_set_name, test_set_name,

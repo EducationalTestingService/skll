@@ -11,11 +11,7 @@ Loads a trained model and outputs predictions based on input feature files.
 from __future__ import print_function, unicode_literals
 
 import argparse
-from itertools import islice
-
-from bs4 import UnicodeDammit
-from classifier import Classifier, _sanitize_line
-from six.moves import izip
+from classifier import Classifier, load_examples, _REGRESSION_MODELS
 
 
 class Predictor(object):
@@ -44,41 +40,24 @@ class Predictor(object):
         '''
         self._classifier = Classifier()
         self._classifier.load_model('{}.model'.format(model_prefix))
-        self._example_count = 0
         self._pos_index = positive_class
         self.threshold = threshold
 
-    def predict(self, feature_string):
-        ''' Return a prediction given a list of features '''
-        self._example_count += 1
-
-        # Process encoding
-        feature_string = _sanitize_line(UnicodeDammit(
-            feature_string, ['utf-8', 'windows-1252']).unicode_markup.strip())
-
-        # Get current instances feature-value pairs
-        field_pairs = feature_string.split()
-        field_names = islice(field_pairs, 0, None, 2)
-        field_values = (float(val) for val in islice(field_pairs, 1, None, 2))
-                        # Convert values to floats, because otherwise
-                        # features'll be categorical
-
-        # Add the feature-value pairs to dictionary
-        curr_info_dict = dict(izip(field_names, field_values))
-
+    def predict(self, data):
+        ''' Return a list of predictions for a given numpy array of examples (which are dicts) '''
         # Must make a list around a dictionary to fit format that
         # Classifier.predict expects
-        pred_array = self._classifier.predict(
-            [{"y": None, "x": curr_info_dict,
-                "id": "EXAMPLE_{}".format(self._example_count)}], None)
+        preds = self._classifier.predict(data).tolist()
 
         if self._classifier.probability:
             if self.threshold is None:
-                return pred_array[0][self._pos_index]
+                return [pred[self._pos_index] for pred in preds]
             else:
-                return int(pred_array[0][self._pos_index] >= self.threshold)
+                return [int(pred[self._pos_index] >= self.threshold) for pred in preds]
+        elif self._classifier.model_type in _REGRESSION_MODELS:
+            return preds
         else:
-            return self._classifier.label_list[int(pred_array[0][0])]
+            return [self._classifier.label_list[int(pred[0])] for pred in preds]
 
 
 def main():
@@ -91,11 +70,11 @@ def main():
         conflict_handler='resolve')
     parser.add_argument('model_prefix', help='Prefix to use when loading \
                                               trained model (and its vocab).')
-    parser.add_argument('feature_file',
-                        help='File containing list of space-delimited pairs of\
-                              feature names and values, separated by spaces. \
-                              For example: A 4.8 B 15 C 16.',
-                        type=argparse.FileType('r'), nargs='+')
+    parser.add_argument('input_file',
+                        help='A csv file, json file, or megam file \
+                        (with or without the label column), \
+                        with the appropriate suffix.',
+                        type=str)
     parser.add_argument('-p', '--positive_class',
                         help="If the model is only being used to predict the \
                               probability of a particular class, this \
@@ -104,6 +83,11 @@ def main():
                               for binary classification. Keep in mind that \
                               classes are sorted lexicographically.",
                         default=1, type=int)
+    parser.add_argument('--has_labels',
+                        help="Indicates that the input file includes \
+                              labels and that the features start at the \
+                              2nd column for csv and megam files.",
+                              action='store_true', default=False)
     parser.add_argument('-t', '--threshold',
                         help="If the model we're using is generating \
                               probabilities of the positive class, return 1 \
@@ -117,9 +101,9 @@ def main():
                           positive_class=args.positive_class,
                           threshold=args.threshold)
 
-    for feature_file in args.feature_file:
-        for line in feature_file:
-            print(predictor.predict(line))
+    data = load_examples(args.input_file, has_labels=args.has_labels)
+    for pred in predictor.predict(data):
+        print(pred)
 
 
 if __name__ == '__main__':

@@ -187,7 +187,7 @@ def _sanitize_line(line):
     return ''.join(char_list)
 
 
-def _megam_dict_iter(path):
+def _megam_dict_iter(path, has_labels=True):
     '''
     Generator that yields tuples of classes and dictionaries mapping from
     features to values for each pair of lines in path
@@ -211,11 +211,17 @@ def _megam_dict_iter(path):
                 curr_id = line[1:].strip()
             elif line and line not in ['TRAIN', 'TEST', 'DEV']:
                 split_line = line.split()
-                class_name = split_line[0]
                 curr_info_dict = {}
-                if len(split_line) > 1:
-                    # Get current instances feature-value pairs
+
+                if has_labels:
+                    class_name = split_line[0]
                     field_pairs = split_line[1:]
+                else:
+                    class_name = None
+                    field_pairs = split_line
+
+                if len(field_pairs) > 0:
+                    # Get current instances feature-value pairs
                     field_names = islice(field_pairs, 0, None, 2)
                     # Convert values to floats, because otherwise features'll
                     # be categorical
@@ -232,7 +238,7 @@ def _megam_dict_iter(path):
         print("done", file=sys.stderr)
 
 
-def load_examples(path):
+def load_examples(path, has_labels=True):
     '''
     Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
     formats.
@@ -248,7 +254,7 @@ def load_examples(path):
         with open(path) as f:
             reader = csv.reader(f, dialect=csv.excel_tab)
             header = next(reader)
-            out = [_preprocess_tsv_row(row, header, example_num)
+            out = [_preprocess_tsv_row(row, header, example_num, has_labels=has_labels)
                    for example_num, row in enumerate(reader)]
     elif path.endswith(".jsonlines"):
         out = []
@@ -265,7 +271,7 @@ def load_examples(path):
                 "id": "EXAMPLE_{}".format(example_num) if example_id is None
                 else example_id}
                for example_num, (example_id, class_name, feature_dict)
-               in enumerate(_megam_dict_iter(path))]
+               in enumerate(_megam_dict_iter(path, has_labels=has_labels))]
     else:
         raise Exception('Example files must be in either TSV, MegaM, or the \
                          preprocessed .jsonlines format. \
@@ -274,7 +280,7 @@ def load_examples(path):
     return np.array(out)
 
 
-def _preprocess_tsv_row(row, header, example_num):
+def _preprocess_tsv_row(row, header, example_num, has_labels=True):
     '''
     Make a dictionary of preprocessed values (e.g., tokens, POS tags, etc.).
     This should be separate from the feature extraction code so that slow
@@ -285,9 +291,17 @@ def _preprocess_tsv_row(row, header, example_num):
     dictionary.
     '''
     x = {}
-    y = row[0]
+
+    if has_labels:
+        y = row[0]
+        feature_start_col = 1
+    else:
+        y = None
+        feature_start_col = 0
+
     example_id = "EXAMPLE_{}".format(example_num)
-    for fname, fval in zip(islice(header, 1, None), islice(row, 1, None)):
+    for fname, fval in zip(islice(header, feature_start_col, None), 
+                           islice(row, feature_start_col, None)):
         if fname == "id":
             example_id = fval
         else:
@@ -709,10 +723,8 @@ class Classifier(object):
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type == 'rforest' or self._model_type == 'gradient':
             self._model_kwargs['n_estimators'] = 1000
-
         if self._model_type == 'rforest' or self._model_type == 'dtree':
             self._model_kwargs['compute_importances'] = True
-
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
 
@@ -1001,7 +1013,7 @@ class Classifier(object):
         grid_score = None
 
         # make the prediction on the test data
-        yhat = self.predict(examples, prediction_prefix, append=append)
+        yhat = self.predict(examples, prediction_prefix=prediction_prefix, append=append)
 
         # extract actual labels
         ytest = np.array([self._extract_label(x) for x in examples])
@@ -1059,7 +1071,7 @@ class Classifier(object):
                    self._model.get_params(), grid_score)
         return res
 
-    def predict(self, examples, prediction_prefix, append=False):
+    def predict(self, examples, prediction_prefix=None, append=False):
         '''
         Uses a given model to generate predictions on a given data set
 
