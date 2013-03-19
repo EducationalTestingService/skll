@@ -44,7 +44,10 @@ class Predictor(object):
         self.threshold = threshold
 
     def predict(self, data):
-        ''' Return a list of predictions for a given numpy array of examples (which are dicts) '''
+        '''
+        Return a list of predictions for a given numpy array of examples
+        (which are dicts)
+        '''
         # Must make a list around a dictionary to fit format that
         # Classifier.predict expects
         preds = self._classifier.predict(data).tolist()
@@ -53,7 +56,8 @@ class Predictor(object):
             if self.threshold is None:
                 return [pred[self._pos_index] for pred in preds]
             else:
-                return [int(pred[self._pos_index] >= self.threshold) for pred in preds]
+                return [int(pred[self._pos_index] >= self.threshold)
+                        for pred in preds]
         elif self._classifier.model_type in _REGRESSION_MODELS:
             return preds
         else:
@@ -65,16 +69,20 @@ def main():
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Loads a trained model and outputs predictions based \
-            on input feature files.",
+                     on input feature files.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         conflict_handler='resolve')
     parser.add_argument('model_prefix', help='Prefix to use when loading \
                                               trained model (and its vocab).')
     parser.add_argument('input_file',
                         help='A csv file, json file, or megam file \
-                        (with or without the label column), \
-                        with the appropriate suffix.',
-                        type=str)
+                              (with or without the label column), \
+                              with the appropriate suffix.')
+    parser.add_argument('-l', '--has_labels',
+                        help="Indicates that the input file includes \
+                              labels and that the features start at the \
+                              2nd column for csv and megam files.",
+                        action='store_true')
     parser.add_argument('-p', '--positive_class',
                         help="If the model is only being used to predict the \
                               probability of a particular class, this \
@@ -83,11 +91,6 @@ def main():
                               for binary classification. Keep in mind that \
                               classes are sorted lexicographically.",
                         default=1, type=int)
-    parser.add_argument('--has_labels',
-                        help="Indicates that the input file includes \
-                              labels and that the features start at the \
-                              2nd column for csv and megam files.",
-                              action='store_true', default=False)
     parser.add_argument('-t', '--threshold',
                         help="If the model we're using is generating \
                               probabilities of the positive class, return 1 \
@@ -101,9 +104,10 @@ def main():
                           positive_class=args.positive_class,
                           threshold=args.threshold)
 
-    data = load_examples(args.input_file, has_labels=args.has_labels)
-    for pred in predictor.predict(data):
-        print(pred)
+    for input_file in args.input_file:
+        data = load_examples(input_file, has_labels=args.has_labels)
+        for pred in predictor.predict(data):
+            print(pred)
 
 
 if __name__ == '__main__':
