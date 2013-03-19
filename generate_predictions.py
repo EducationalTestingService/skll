@@ -77,7 +77,8 @@ def main():
     parser.add_argument('input_file',
                         help='A csv file, json file, or megam file \
                               (with or without the label column), \
-                              with the appropriate suffix.')
+                              with the appropriate suffix.',
+                        nargs='+')
     parser.add_argument('-l', '--has_labels',
                         help="Indicates that the input file includes \
                               labels and that the features start at the \
