@@ -33,7 +33,7 @@ from sklearn.grid_search import GridSearchCV, IterGrid, _has_one_grid_point
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import LinearSVC, SVC
+from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import safe_mask, check_arrays
 from sklearn.utils.validation import _num_samples
@@ -47,7 +47,7 @@ import ml_metrics
 #### Globals ####
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
-_REGRESSION_MODELS = frozenset(['ridge', 'constrained_ridge'])
+_REGRESSION_MODELS = frozenset(['ridge', 'constrained_ridge', 'svr_linear', 'constrained_svr_linear'])
 
 
 #### METRICS ####
@@ -644,16 +644,40 @@ class ConstrainedRidge(Ridge):
     that range.
     '''
     def fit(self, X, y=None):
-        # fit a regular ridge model
+        # fit a regular regression model
         super(ConstrainedRidge, self).fit(X, y=y)
 
         # also record the training data min and max
         self.y_min = min(y)
         self.y_max = max(y)
 
-    def decision_function(self, X):
+    def predict(self, X):
         # get the unconstrained predictions
-        preds = super(ConstrainedRidge, self).decision_function(X)
+        preds = super(ConstrainedRidge, self).predict(X)
+
+        # apply
+        res = np.array([max(self.y_min, min(self.y_max, pred)) for pred in preds])
+        return res
+
+
+class ConstrainedSVR(SVR):
+    '''
+    This is an extension of the SVR learner that stores a min and 
+    a max for the training data.  It makes sure its predictions fall within
+    that range.
+    '''
+    #TODO there is probably some elegant way to combine ConstrainedRidge and ConstrainedSVR
+    def fit(self, X, y=None):
+        # fit a regular regression model
+        super(ConstrainedSVR, self).fit(X, y=y)
+
+        # also record the training data min and max
+        self.y_min = min(y)
+        self.y_max = max(y)
+
+    def predict(self, X):
+        # get the unconstrained predictions
+        preds = super(ConstrainedSVR, self).predict(X)
 
         # apply
         res = np.array([max(self.y_min, min(self.y_max, pred)) for pred in preds])
@@ -772,6 +796,10 @@ class Classifier(object):
             self._model_type = 'ridge'
         elif isinstance(self._model, ConstrainedRidge):
             self._model_type = 'constrained_ridge'
+        elif isinstance(self._model, SVR):
+            self._model_type = 'svr_linear'
+        elif isinstance(self._model, ConstrainedSVR):
+            self._model_type = 'constrained_svr_linear'
 
     def save_model(self, modelfile):
         '''
@@ -851,6 +879,12 @@ class Classifier(object):
         elif self._model_type == 'constrained_ridge':
             estimator = ConstrainedRidge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
+        elif self._model_type == 'svr_linear':  # No predict_proba support
+            estimator = SVR(**self._model_kwargs)
+            default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000], 'kernel': ['linear']}]
+        elif self._model_type == 'constrained_svr_linear':  # No predict_proba support
+            estimator = ConstrainedSVR(**self._model_kwargs)
+            default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000], 'kernel': ['linear']}]
         else:
             raise ValueError(
                 "{} is not a valid classifier type.".format(self._model_type))
