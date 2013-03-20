@@ -18,7 +18,6 @@ from collections import defaultdict, namedtuple, OrderedDict
 
 import numpy as np
 import classifier
-from pythongrid import Job, process_jobs
 from texttable import ArraySizeError, Texttable
 from six import string_types, iterkeys, iteritems, itervalues  # Python 2/3
 from six.moves import configparser
@@ -319,6 +318,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                             'use_dense_features': 'False',
                                             'min_feature_count': '1'})
     config.readfp(config_file)
+
+    if not local:
+        # import pythongrid if available
+        try:
+            from pythongrid import Job, process_jobs
+        except ImportError:
+            local = True
+            print('pythongrid not available.  Forcing local mode.', 
+                  file=sys.stderr)
 
     # extract sklearn parameters from the config file
     given_classifiers = json.loads(fix_json(config.get("Input",

@@ -880,11 +880,11 @@ class Classifier(object):
             estimator = ConstrainedRidge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
         elif self._model_type == 'svr_linear':  # No predict_proba support
-            estimator = SVR(**self._model_kwargs)
-            default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000], 'kernel': ['linear']}]
+            estimator = SVR(kernel='linear', **self._model_kwargs)
+            default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
         elif self._model_type == 'constrained_svr_linear':  # No predict_proba support
-            estimator = ConstrainedSVR(**self._model_kwargs)
-            default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000], 'kernel': ['linear']}]
+            estimator = ConstrainedSVR(kernel='linear', **self._model_kwargs)
+            default_param_grid = [{'C': [0.2, 2.0, 20, 200, 2000]}]
         else:
             raise ValueError(
                 "{} is not a valid classifier type.".format(self._model_type))
