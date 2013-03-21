@@ -47,7 +47,8 @@ import ml_metrics
 #### Globals ####
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
-_REGRESSION_MODELS = frozenset(['ridge', 'constrained_ridge', 'svr_linear', 'constrained_svr_linear'])
+_REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear', 
+                                'rescaled_svr_linear'])
 
 
 #### METRICS ####
@@ -637,50 +638,120 @@ class _GridSearchCVBinary(GridSearchCV):
         return self.score_func(y, y_predicted)
 
 
-class ConstrainedRidge(Ridge):
+class RescaledRidge(Ridge):
     '''
     This is an extension of the Ridge classifier that stores a min and 
     a max for the training data.  It makes sure its predictions fall within
     that range.
     '''
+    def __init__(self, rescale=True, constrain=True, alpha=1.0, 
+                 fit_intercept=True, normalize=False, copy_X=True, 
+                 max_iter=None, tol=1e-3, solver="auto"):
+        self.constrain = constrain
+        self.rescale = rescale
+        self.y_min = None
+        self.y_max = None
+        self.yhat_mean = None
+        self.yhat_sd = None
+        self.y_mean = None
+        self.y_sd = None
+        super(RescaledRidge, self).__init__(alpha=alpha, 
+                                            fit_intercept=fit_intercept,
+                                            normalize=normalize, 
+                                            copy_X=copy_X,
+                                            max_iter=max_iter, 
+                                            tol=tol, solver=solver)
+
     def fit(self, X, y=None):
         # fit a regular regression model
-        super(ConstrainedRidge, self).fit(X, y=y)
+        super(RescaledRidge, self).fit(X, y=y)
 
-        # also record the training data min and max
-        self.y_min = min(y)
-        self.y_max = max(y)
+        if self.constrain:
+            # also record the training data min and max
+            self.y_min = min(y)
+            self.y_max = max(y)
+
+        if self.rescale:
+            # also record the means and SDs for the training set
+            y_hat = super(RescaledRidge, self).predict(X)
+            self.yhat_mean = np.mean(y_hat)
+            self.yhat_sd = np.std(y_hat)
+            self.y_mean = np.mean(y)
+            self.y_sd = np.std(y)
 
     def predict(self, X):
         # get the unconstrained predictions
-        preds = super(ConstrainedRidge, self).predict(X)
+        res = super(RescaledRidge, self).predict(X)
 
-        # apply
-        res = np.array([max(self.y_min, min(self.y_max, pred)) for pred in preds])
+        if self.rescale:
+            # convert the predictions to z-scores, 
+            # then rescale to match the training set distribution
+            res = (((res - self.yhat_mean) / self.yhat_sd) 
+                * self.y_sd) + self.y_mean
+
+        if self.constrain:
+            # apply min and max constraints
+            res = np.array([max(self.y_min, min(self.y_max, pred)) 
+                            for pred in res])
+
         return res
 
 
-class ConstrainedSVR(SVR):
+class RescaledSVR(SVR):
     '''
-    This is an extension of the SVR learner that stores a min and 
+    This is an extension of the SVR classifier that stores a min and 
     a max for the training data.  It makes sure its predictions fall within
     that range.
     '''
-    #TODO there is probably some elegant way to combine ConstrainedRidge and ConstrainedSVR
+    def __init__(self, rescale=True, constrain=True, kernel='rbf', degree=3, 
+        gamma=0.0, coef0=0.0, tol=0.001, C=1.0, epsilon=0.10000000000000001, 
+        shrinking=True, probability=False, cache_size=200, verbose=False, 
+        max_iter=-1):
+        self.constrain = constrain
+        self.rescale = rescale
+        self.y_min = None
+        self.y_max = None
+        self.yhat_mean = None
+        self.yhat_sd = None
+        self.y_mean = None
+        self.y_sd = None
+        super(RescaledSVR, self).__init__(kernel=kernel, degree=degree, 
+              gamma=gamma, coef0=coef0, tol=tol, C=C, epsilon=epsilon, 
+              shrinking=shrinking, probability=probability, 
+              cache_size=cache_size, verbose=verbose, max_iter=max_iter)
+
     def fit(self, X, y=None):
         # fit a regular regression model
-        super(ConstrainedSVR, self).fit(X, y=y)
+        super(RescaledSVR, self).fit(X, y=y)
 
-        # also record the training data min and max
-        self.y_min = min(y)
-        self.y_max = max(y)
+        if self.constrain:
+            # also record the training data min and max
+            self.y_min = min(y)
+            self.y_max = max(y)
+
+        if self.rescale:
+            # also record the means and SDs for the training set
+            y_hat = super(RescaledSVR, self).predict(X)
+            self.yhat_mean = np.mean(y_hat)
+            self.yhat_sd = np.std(y_hat)
+            self.y_mean = np.mean(y)
+            self.y_sd = np.std(y)
 
     def predict(self, X):
         # get the unconstrained predictions
-        preds = super(ConstrainedSVR, self).predict(X)
+        res = super(RescaledSVR, self).predict(X)
 
-        # apply
-        res = np.array([max(self.y_min, min(self.y_max, pred)) for pred in preds])
+        if self.rescale:
+            # convert the predictions to z-scores, 
+            # then rescale to match the training set distribution
+            res = (((res - self.yhat_mean) / self.yhat_sd) 
+                * self.y_sd) + self.y_mean
+
+        if self.constrain:
+            # apply min and max constraints
+            res = np.array([max(self.y_min, min(self.y_max, pred)) 
+                            for pred in res])
+
         return res
 
 
@@ -794,12 +865,12 @@ class Classifier(object):
             self._model_type = 'gradient'
         elif isinstance(self._model, Ridge):
             self._model_type = 'ridge'
-        elif isinstance(self._model, ConstrainedRidge):
-            self._model_type = 'constrained_ridge'
+        elif isinstance(self._model, RescaledRidge):
+            self._model_type = 'rescaled_ridge'
         elif isinstance(self._model, SVR):
             self._model_type = 'svr_linear'
-        elif isinstance(self._model, ConstrainedSVR):
-            self._model_type = 'constrained_svr_linear'
+        elif isinstance(self._model, RescaledSVR):
+            self._model_type = 'rescaled_svr_linear'
 
     def save_model(self, modelfile):
         '''
@@ -876,14 +947,14 @@ class Classifier(object):
         elif self._model_type == 'ridge':
             estimator = Ridge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
-        elif self._model_type == 'constrained_ridge':
-            estimator = ConstrainedRidge(**self._model_kwargs)
+        elif self._model_type == 'rescaled_ridge':
+            estimator = RescaledRidge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
-        elif self._model_type == 'svr_linear':  # No predict_proba support
+        elif self._model_type == 'svr_linear':
             estimator = SVR(kernel='linear', **self._model_kwargs)
             default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
-        elif self._model_type == 'constrained_svr_linear':  # No predict_proba support
-            estimator = ConstrainedSVR(kernel='linear', **self._model_kwargs)
+        elif self._model_type == 'rescaled_svr_linear':
+            estimator = RescaledSVR(kernel='linear', **self._model_kwargs)
             default_param_grid = [{'C': [0.2, 2.0, 20, 200, 2000]}]
         else:
             raise ValueError(
