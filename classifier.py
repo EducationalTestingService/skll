@@ -1176,7 +1176,8 @@ class Classifier(object):
                    self._model.get_params(), grid_score)
         return res
 
-    def predict(self, examples, prediction_prefix=None, append=False):
+    def predict(self, examples, prediction_prefix=None, append=False,
+                class_labels=False):
         '''
         Uses a given model to generate predictions on a given data set
 
@@ -1190,6 +1191,9 @@ class Classifier(object):
         @param append: Should we append the current predictions to the file if
                        it exists?
         @type append: C{bool}
+        @param class_labels: For classifier, should we convert class 
+                             indices to their (str) labels?
+        @type class_labels: C{bool}                   
 
         @return: The predictions returned by the classifier.
         @rtype: C{array}
@@ -1211,7 +1215,8 @@ class Classifier(object):
         try:
             yhat = (self._model.predict_proba(xtest)
                     if (self.probability and
-                        self._model_type != 'svm_linear')
+                        self._model_type != 'svm_linear'
+                        and not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
             print(("Model type: {}\nModel: {}\nProbability: " +
@@ -1247,6 +1252,9 @@ class Classifier(object):
                             print('\t'.join([example_id,
                                   self.label_list[int(pred)]]),
                                   file=predictionfh)
+
+        if class_labels and self._model_type not in _REGRESSION_MODELS:
+            yhat = np.array([self.label_list[int(pred)] for pred in yhat])
 
         return yhat
 
