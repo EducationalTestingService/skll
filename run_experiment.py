@@ -320,7 +320,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                             'featureset_names': '[]',
                                             'use_dense_features': 'False',
                                             'min_feature_count': '1',
-                                            'grid_search_jobs': None})
+                                            'grid_search_jobs': '0'})
     config.readfp(config_file)
 
     if not local:
@@ -388,6 +388,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
 
     # how many jobs should we run in parallel for grid search
     grid_search_jobs = config.getint("Tuning", "grid_search_jobs")
+    if not grid_search_jobs:
+        grid_search_jobs = None
 
     # what is the objective function for the grid search?
     grid_objective_func = config.get("Tuning", "objective")
