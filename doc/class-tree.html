@@ -52,9 +52,111 @@
     <li> <strong class="uidlink">object</strong>:
       <em class="summary">The most base type</em>
     <ul>
+    <li> <strong class="uidlink">sklearn.base.BaseEstimator</strong>:
+      <em class="summary">Base class for all estimators in scikit-learn</em>
+    <ul>
+    <li> <strong class="uidlink">sklearn.svm.base.BaseLibSVM</strong>:
+      <em class="summary">Base class for estimators that use libsvm as backing library</em>
+    <ul>
+    <li> <strong class="uidlink">sklearn.svm.classes.SVR</strong>:
+      <em class="summary">epsilon-Support Vector Regression.</em>
+    <ul>
+    <li> <strong class="uidlink"><a href="classifier.RescaledSVR-class.html">classifier.RescaledSVR</a></strong>:
+      <em class="summary">This is an extension of the SVR classifier that stores a min and a 
+        max for the training data.</em>
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    <li> <strong class="uidlink">sklearn.linear_model.base.LinearModel</strong>:
+      <em class="summary">Base class for Linear Models</em>
+    <ul>
+    <li> <strong class="uidlink">sklearn.linear_model.ridge._BaseRidge</strong>
+    <ul>
+    <li> <strong class="uidlink">sklearn.linear_model.ridge.Ridge</strong>:
+      <em class="summary">Linear least squares with l2 regularization.</em>
+    <ul>
+    <li> <strong class="uidlink"><a href="classifier.RescaledRidge-class.html">classifier.RescaledRidge</a></strong>:
+      <em class="summary">This is an extension of the Ridge classifier that stores a min and 
+        a max for the training data.</em>
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    <li> <strong class="uidlink">sklearn.feature_selection.univariate_selection._AbstractUnivariateFilter</strong>
+    <ul>
+    <li> <strong class="uidlink">sklearn.feature_selection.univariate_selection.SelectKBest</strong>:
+      <em class="summary">Select features according to the k highest scores.</em>
+    <ul>
+    <li> <strong class="uidlink"><a href="classifier.SelectByMinCount-class.html">classifier.SelectByMinCount</a></strong>:
+      <em class="summary">Select features ocurring in more (and/or fewer than) than a 
+        specified number of examples in the training data (or a CV training
+        fold).</em>
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
     <li> <strong class="uidlink"><a href="classifier.Classifier-class.html">classifier.Classifier</a></strong>:
       <em class="summary">A simpler classifier interface around many sklearn classification 
         functions.</em>
+    </li>
+    <li> <strong class="uidlink">sklearn.base.RegressorMixin</strong>:
+      <em class="summary">Mixin class for all regression estimators in scikit-learn</em>
+    <ul>
+    <li> <strong class="uidlink">sklearn.linear_model.ridge.Ridge</strong>:
+      <em class="summary">Linear least squares with l2 regularization.</em>
+    <ul>
+    <li> <strong class="uidlink"><a href="classifier.RescaledRidge-class.html">classifier.RescaledRidge</a></strong>:
+      <em class="summary">This is an extension of the Ridge classifier that stores a min and 
+        a max for the training data.</em>
+    </li>
+    </ul>
+    </li>
+    <li> <strong class="uidlink">sklearn.svm.classes.SVR</strong>:
+      <em class="summary">epsilon-Support Vector Regression.</em>
+    <ul>
+    <li> <strong class="uidlink"><a href="classifier.RescaledSVR-class.html">classifier.RescaledSVR</a></strong>:
+      <em class="summary">This is an extension of the SVR classifier that stores a min and a 
+        max for the training data.</em>
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    <li> <strong class="uidlink">sklearn.base.TransformerMixin</strong>:
+      <em class="summary">Mixin class for all transformers in scikit-learn</em>
+    <ul>
+    <li> <strong class="uidlink">sklearn.feature_selection.univariate_selection._AbstractUnivariateFilter</strong>
+    <ul>
+    <li> <strong class="uidlink">sklearn.feature_selection.univariate_selection.SelectKBest</strong>:
+      <em class="summary">Select features according to the k highest scores.</em>
+    <ul>
+    <li> <strong class="uidlink"><a href="classifier.SelectByMinCount-class.html">classifier.SelectByMinCount</a></strong>:
+      <em class="summary">Select features ocurring in more (and/or fewer than) than a 
+        specified number of examples in the training data (or a CV training
+        fold).</em>
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    </ul>
+    </li>
+    <li> <strong class="uidlink">type</strong>:
+      <em class="summary">type(object) -&gt; the object's type type(name, bases, dict) -&gt; 
+        a new type</em>
+    <ul>
+    <li> <strong class="uidlink"><a href="abc.ABCMeta-class.html">abc.ABCMeta</a></strong>:
+      <em class="summary">Metaclass for defining Abstract Base Classes (ABCs).</em>
+    </li>
+    </ul>
     </li>
     </ul>
     </li>
@@ -85,7 +187,7 @@
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Thu Mar 14 11:14:48 2013
+    Generated by Epydoc 3.0.1 on Fri Mar 29 10:29:44 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"

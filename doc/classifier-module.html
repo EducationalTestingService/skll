@@ -72,6 +72,34 @@
     <td width="15%" align="right" valign="top" class="summary">
       <span class="summary-type">&nbsp;</span>
     </td><td class="summary">
+        <a href="classifier.SelectByMinCount-class.html" class="summary-name">SelectByMinCount</a><br />
+      Select features ocurring in more (and/or fewer than) than a 
+        specified number of examples in the training data (or a CV training
+        fold).
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="classifier.RescaledRidge-class.html" class="summary-name">RescaledRidge</a><br />
+      This is an extension of the Ridge classifier that stores a min and 
+        a max for the training data.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="classifier.RescaledSVR-class.html" class="summary-name">RescaledSVR</a><br />
+      This is an extension of the SVR classifier that stores a min and a 
+        max for the training data.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
         <a href="classifier.Classifier-class.html" class="summary-name">Classifier</a><br />
       A simpler classifier interface around many sklearn classification 
         functions.
@@ -86,6 +114,42 @@
   <td align="left" colspan="2" class="table-header">
     <span class="table-header">Functions</span></td>
 </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="classifier-module.html#quadratic_weighted_kappa" class="summary-sig-name">quadratic_weighted_kappa</a>(<span class="summary-sig-arg">y_true</span>,
+        <span class="summary-sig-arg">y_pred</span>)</span><br />
+      Returns the quadratic weighted kappa.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#quadratic_weighted_kappa">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="unweighted_kappa"></a><span class="summary-sig-name">unweighted_kappa</span>(<span class="summary-sig-arg">y_true</span>,
+        <span class="summary-sig-arg">y_pred</span>)</span><br />
+      Returns the unweighted Cohen's kappa.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="classifier-pysrc.html#unweighted_kappa">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
 <tr>
     <td width="15%" align="right" valign="top" class="summary">
       <span class="summary-type">&nbsp;</span>
@@ -225,7 +289,8 @@
     </td><td class="summary">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td><span class="summary-sig"><a href="classifier-module.html#load_examples" class="summary-sig-name">load_examples</a>(<span class="summary-sig-arg">path</span>)</span><br />
+          <td><span class="summary-sig"><a href="classifier-module.html#load_examples" class="summary-sig-name">load_examples</a>(<span class="summary-sig-arg">path</span>,
+        <span class="summary-sig-arg">has_labels</span>=<span class="summary-sig-default">True</span>)</span><br />
       Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
       formats.</td>
           <td align="right" valign="top">
@@ -263,6 +328,27 @@
     <span class="table-header">Function Details</span></td>
 </tr>
 </table>
+<a name="quadratic_weighted_kappa"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">quadratic_weighted_kappa</span>(<span class="sig-arg">y_true</span>,
+        <span class="sig-arg">y_pred</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="classifier-pysrc.html#quadratic_weighted_kappa">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Returns the quadratic weighted kappa. This rounds the inputs before 
+  passing them to the ml_metrics module.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
 <a name="kendall_tau"></a>
 <div>
 <table class="details" border="1" cellpadding="3"
@@ -389,7 +475,8 @@
 <tr><td>
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">load_examples</span>(<span class="sig-arg">path</span>)</span>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">load_examples</span>(<span class="sig-arg">path</span>,
+        <span class="sig-arg">has_labels</span>=<span class="sig-default">True</span>)</span>
   </h3>
   </td><td align="right" valign="top"
     ><span class="codelink"><a href="classifier-pysrc.html#load_examples">source&nbsp;code</a></span>&nbsp;
@@ -437,7 +524,7 @@
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Thu Mar 14 11:14:48 2013
+    Generated by Epydoc 3.0.1 on Fri Mar 29 10:29:44 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"
