@@ -180,7 +180,8 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
                         grid_objective, do_scale_features, cross_validate,
                         evaluate, suffix, log_path, probability, resultspath,
                         fixed_parameters, param_grid, pos_label_str,
-                        overwrite, use_dense_features, min_feature_count):
+                        overwrite, use_dense_features, min_feature_count,
+                        grid_search_jobs):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -227,7 +228,8 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
                 best_score = learner.train(train_examples,
                                            grid_search=grid_search,
                                            grid_objective=grid_objective,
-                                           param_grid=param_grid)
+                                           param_grid=param_grid,
+                                           grid_jobs=grid_search_jobs)
 
                 # save model
                 learner.save_model(modelfile)
@@ -252,7 +254,8 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
                                              prediction_prefix=prediction_prefix,
                                              grid_search=grid_search,
                                              grid_objective=grid_objective,
-                                             param_grid=param_grid)
+                                             param_grid=param_grid,
+                                             grid_jobs=grid_search_jobs)
             task = 'cross-validate'
         elif evaluate:
             print('\tevaluating predictions', file=log_file)
@@ -316,7 +319,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                             'pos_label_str': None,
                                             'featureset_names': '[]',
                                             'use_dense_features': 'False',
-                                            'min_feature_count': '1'})
+                                            'min_feature_count': '1',
+                                            'grid_search_jobs': None})
     config.readfp(config_file)
 
     if not local:
@@ -325,7 +329,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
             from pythongrid import Job, process_jobs
         except ImportError:
             local = True
-            print('pythongrid not available.  Forcing local mode.', 
+            print('pythongrid not available.  Forcing local mode.',
                   file=sys.stderr)
 
     # extract sklearn parameters from the config file
@@ -382,6 +386,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     # the minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")
 
+    # how many jobs should we run in parallel for grid search
+    grid_search_jobs = config.getint("Tuning", "grid_search_jobs")
+
     # what is the objective function for the grid search?
     grid_objective_func = config.get("Tuning", "objective")
     if grid_objective_func not in {'f1_score_micro', 'f1_score_macro',
@@ -420,8 +427,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
 
     # make sure that, if we are in prediction mode, we have a prediction_dir
     if predict and not prediction_dir:
-        print('Error: you need to specify a prediction directory if you are \
-               using prediction mode (no "results" option in config file).',
+        print('Error: you need to specify a prediction directory if you are ' +
+              'using prediction mode (no "results" option in config file).',
               file=sys.stderr)
         sys.exit(2)
 
@@ -484,8 +491,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                      if fixed_parameter_list else dict(),
                         param_grid_list[classifier_num] if param_grid_list
                                                         else None,
-                        pos_label_str, overwrite, use_dense_features, 
-                        min_feature_count]
+                        pos_label_str, overwrite, use_dense_features,
+                        min_feature_count, grid_search_jobs]
             if not local:
                 jobs.append(Job(classify_featureset, job_args,
                                 num_slots=(5 if do_grid_search else 1),
@@ -500,8 +507,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
         # Check for errors
         for result_info in job_results:
             if not hasattr(result_info, 'task'):
-                print('There was an error running the experiment:\
-                       \n{}'.format(result_info), file=sys.stderr)
+                print('There was an error running the experiment:\n' +
+                      '{}'.format(result_info), file=sys.stderr)
                 sys.exit(2)
 
 

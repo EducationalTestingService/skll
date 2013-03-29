@@ -47,27 +47,27 @@ import ml_metrics
 #### Globals ####
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
-_REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear', 
+_REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
                                 'rescaled_svr_linear'])
 
 
 #### METRICS ####
 def quadratic_weighted_kappa(y_true, y_pred):
     '''
-    Returns the quadratic weighted kappa.  
+    Returns the quadratic weighted kappa.
     This rounds the inputs before passing them to the ml_metrics module.
     '''
-    
+
     # This rather crazy looking typecast is intended to work as follows:
     # If an input is an int, the operations will have no effect.
-    # If it is a float, it will be rounded and then converted to an int 
+    # If it is a float, it will be rounded and then converted to an int
     # because the ml_metrics package requires ints.
     # If it is a str like "1", then it will be converted to a (rounded) int.
-    # If it is a str that can't be typecast, then the user is 
+    # If it is a str that can't be typecast, then the user is
     # given a hopefully useful error message.
-    try:    
+    try:
         y_true_rounded = [int(round(float(y))) for y in y_true]
-        y_pred_rounded = [int(round(float(y))) for y in y_pred] 
+        y_pred_rounded = [int(round(float(y))) for y in y_pred]
     except ValueError, e:
         print("For kappa, the labels should be integers or strings that" +
               " can be converted to ints (E.g., '4.0' or '3').",
@@ -83,9 +83,9 @@ def unweighted_kappa(y_true, y_pred):
     Returns the unweighted Cohen's kappa.
     '''
     # See quadratic_weighted_kappa for comments about the typecasting below.
-    try:    
+    try:
         y_true_rounded = [int(round(float(y))) for y in y_true]
-        y_pred_rounded = [int(round(float(y))) for y in y_pred] 
+        y_pred_rounded = [int(round(float(y))) for y in y_pred]
     except ValueError, e:
         print("For kappa, the labels should be integers or strings that" +
               " can be converted to ints (E.g., '4.0' or '3').",
@@ -301,7 +301,7 @@ def _preprocess_tsv_row(row, header, example_num, has_labels=True):
         feature_start_col = 0
 
     example_id = "EXAMPLE_{}".format(example_num)
-    for fname, fval in zip(islice(header, feature_start_col, None), 
+    for fname, fval in zip(islice(header, feature_start_col, None),
                            islice(row, feature_start_col, None)):
         if fname == "id":
             example_id = fval
@@ -395,16 +395,16 @@ class SelectByMinCount(SelectKBest):
         else:
             # assume it's a numpy array (not a numpy matrix)
             col_indices = X.nonzero()[1].tolist()
-        
+
         for i in col_indices:
             col_counts[i] += 1
-        
+
         self.scores_ = np.array(col_counts)
         return self
 
     def _get_support_mask(self):
         '''
-        Returns an indication of which features to keep.  
+        Returns an indication of which features to keep.
         Adapted from SelectKBest.
         '''
         mask = np.zeros(self.scores_.shape, dtype=bool)
@@ -640,12 +640,12 @@ class _GridSearchCVBinary(GridSearchCV):
 
 class RescaledRidge(Ridge):
     '''
-    This is an extension of the Ridge classifier that stores a min and 
+    This is an extension of the Ridge classifier that stores a min and
     a max for the training data.  It makes sure its predictions fall within
     that range.
     '''
-    def __init__(self, rescale=True, constrain=True, alpha=1.0, 
-                 fit_intercept=True, normalize=False, copy_X=True, 
+    def __init__(self, rescale=True, constrain=True, alpha=1.0,
+                 fit_intercept=True, normalize=False, copy_X=True,
                  max_iter=None, tol=1e-3, solver="auto"):
         self.constrain = constrain
         self.rescale = rescale
@@ -655,11 +655,11 @@ class RescaledRidge(Ridge):
         self.yhat_sd = None
         self.y_mean = None
         self.y_sd = None
-        super(RescaledRidge, self).__init__(alpha=alpha, 
+        super(RescaledRidge, self).__init__(alpha=alpha,
                                             fit_intercept=fit_intercept,
-                                            normalize=normalize, 
+                                            normalize=normalize,
                                             copy_X=copy_X,
-                                            max_iter=max_iter, 
+                                            max_iter=max_iter,
                                             tol=tol, solver=solver)
 
     def fit(self, X, y=None):
@@ -684,14 +684,14 @@ class RescaledRidge(Ridge):
         res = super(RescaledRidge, self).predict(X)
 
         if self.rescale:
-            # convert the predictions to z-scores, 
+            # convert the predictions to z-scores,
             # then rescale to match the training set distribution
-            res = (((res - self.yhat_mean) / self.yhat_sd) 
+            res = (((res - self.yhat_mean) / self.yhat_sd)
                 * self.y_sd) + self.y_mean
 
         if self.constrain:
             # apply min and max constraints
-            res = np.array([max(self.y_min, min(self.y_max, pred)) 
+            res = np.array([max(self.y_min, min(self.y_max, pred))
                             for pred in res])
 
         return res
@@ -699,13 +699,13 @@ class RescaledRidge(Ridge):
 
 class RescaledSVR(SVR):
     '''
-    This is an extension of the SVR classifier that stores a min and 
+    This is an extension of the SVR classifier that stores a min and
     a max for the training data.  It makes sure its predictions fall within
     that range.
     '''
-    def __init__(self, rescale=True, constrain=True, kernel='rbf', degree=3, 
-        gamma=0.0, coef0=0.0, tol=0.001, C=1.0, epsilon=0.10000000000000001, 
-        shrinking=True, probability=False, cache_size=200, verbose=False, 
+    def __init__(self, rescale=True, constrain=True, kernel='rbf', degree=3,
+        gamma=0.0, coef0=0.0, tol=0.001, C=1.0, epsilon=0.10000000000000001,
+        shrinking=True, probability=False, cache_size=200, verbose=False,
         max_iter=-1):
         self.constrain = constrain
         self.rescale = rescale
@@ -715,9 +715,9 @@ class RescaledSVR(SVR):
         self.yhat_sd = None
         self.y_mean = None
         self.y_sd = None
-        super(RescaledSVR, self).__init__(kernel=kernel, degree=degree, 
-              gamma=gamma, coef0=coef0, tol=tol, C=C, epsilon=epsilon, 
-              shrinking=shrinking, probability=probability, 
+        super(RescaledSVR, self).__init__(kernel=kernel, degree=degree,
+              gamma=gamma, coef0=coef0, tol=tol, C=C, epsilon=epsilon,
+              shrinking=shrinking, probability=probability,
               cache_size=cache_size, verbose=verbose, max_iter=max_iter)
 
     def fit(self, X, y=None):
@@ -742,14 +742,14 @@ class RescaledSVR(SVR):
         res = super(RescaledSVR, self).predict(X)
 
         if self.rescale:
-            # convert the predictions to z-scores, 
+            # convert the predictions to z-scores,
             # then rescale to match the training set distribution
-            res = (((res - self.yhat_mean) / self.yhat_sd) 
+            res = (((res - self.yhat_mean) / self.yhat_sd)
                 * self.y_sd) + self.y_mean
 
         if self.constrain:
             # apply min and max constraints
-            res = np.array([max(self.y_min, min(self.y_max, pred)) 
+            res = np.array([max(self.y_min, min(self.y_max, pred))
                             for pred in res])
 
         return res
@@ -1016,9 +1016,8 @@ class Classifier(object):
 
         return features, y
 
-    def train(self, examples, param_grid=None,
-              grid_search_folds=5, grid_search=True,
-              grid_objective=f1_score_micro):
+    def train(self, examples, param_grid=None, grid_search_folds=5,
+              grid_search=True, grid_objective=f1_score_micro, grid_jobs=None):
         '''
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -1038,11 +1037,19 @@ class Classifier(object):
         @param grid_objective: The objective function to use when doing the
                                grid search.
         @type grid_objective: C{function}
+        @param grid_jobs: The number of jobs to run in parallel when doing the
+                          grid search. If unspecified or C{None}, the number of
+                          grid search folds will be used.
+        @type grid_jobs: C{int}
 
         @return: The best grid search objective function score, or 0 if we're
                  not doing grid search.
         @rtype: C{float}
         '''
+
+        # Set number of grid_jobs if None
+        if grid_jobs is None:
+            grid_jobs = grid_search_folds
 
         # seed the random number generator so that randomized algorithms are
         # replicable
@@ -1077,7 +1084,7 @@ class Classifier(object):
             grid_searcher = grid_search_class(estimator, param_grid,
                                               score_func=grid_objective,
                                               cv=grid_search_folds,
-                                              n_jobs=grid_search_folds)
+                                              n_jobs=grid_jobs)
 
             # run the grid search for hyperparameters
             # print('\tstarting grid search', file=sys.stderr)
@@ -1191,9 +1198,9 @@ class Classifier(object):
         @param append: Should we append the current predictions to the file if
                        it exists?
         @type append: C{bool}
-        @param class_labels: For classifier, should we convert class 
+        @param class_labels: For classifier, should we convert class
                              indices to their (str) labels?
-        @type class_labels: C{bool}                   
+        @type class_labels: C{bool}
 
         @return: The predictions returned by the classifier.
         @rtype: C{array}
@@ -1258,8 +1265,8 @@ class Classifier(object):
 
         return yhat
 
-    def cross_validate(self, examples, stratified=True,
-                       cv_folds=10, grid_search=False, grid_search_folds=5,
+    def cross_validate(self, examples, stratified=True, cv_folds=10,
+                       grid_search=False, grid_search_folds=5, grid_jobs=None,
                        grid_objective=f1_score_micro, prediction_prefix=None,
                        param_grid=None, shuffle=True):
         '''
@@ -1278,6 +1285,10 @@ class Classifier(object):
         @param grid_search_folds: The number of folds to use when doing the
                                   grid search.
         @type grid_search_folds: C{int}
+        @param grid_jobs: The number of jobs to run in parallel when doing the
+                          grid search. If unspecified or C{None}, the number of
+                          grid search folds will be used.
+        @type grid_jobs: C{int}
         @param grid_objective: The objective function to use when doing the
                                grid search.
         @type grid_objective: C{function}
@@ -1323,7 +1334,7 @@ class Classifier(object):
             self.train(
                 examples[train_index], grid_search_folds=grid_search_folds,
                 grid_search=grid_search, grid_objective=grid_objective,
-                param_grid=param_grid)
+                param_grid=param_grid, grid_jobs=grid_jobs)
 
             # Evaluate model
             results.append(
