@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 '''
 Module with many functions to use for easily creating an sklearn classifier
 
@@ -68,7 +68,7 @@ def quadratic_weighted_kappa(y_true, y_pred):
     try:
         y_true_rounded = [int(round(float(y))) for y in y_true]
         y_pred_rounded = [int(round(float(y))) for y in y_pred]
-    except ValueError, e:
+    except ValueError as e:
         print("For kappa, the labels should be integers or strings that" +
               " can be converted to ints (E.g., '4.0' or '3').",
               file=sys.stderr)
@@ -86,7 +86,7 @@ def unweighted_kappa(y_true, y_pred):
     try:
         y_true_rounded = [int(round(float(y))) for y in y_true]
         y_pred_rounded = [int(round(float(y))) for y in y_pred]
-    except ValueError, e:
+    except ValueError as e:
         print("For kappa, the labels should be integers or strings that" +
               " can be converted to ints (E.g., '4.0' or '3').",
               file=sys.stderr)
@@ -975,15 +975,15 @@ class Classifier(object):
         if self._model_type not in _REGRESSION_MODELS:
 
             # extract list of unique labels if we are doing classification
-            self.label_list = np.unique(
-                [example["y"] for example in examples]).tolist()
+            self.label_list = np.unique([example["y"] for example
+                                         in examples]).tolist()
 
             # if one label is specified as the positive class, make sure it's
             # last
             if self.pos_label_str:
-                self.label_list = sorted(
-                    self.label_list,
-                    key=lambda x: (x == self.pos_label_str, x))
+                self.label_list = sorted(self.label_list,
+                                         key=lambda x: (x == self.pos_label_str,
+                                                        x))
 
             # Given a list of all labels in the dataset and a list of the
             # unique labels in the set, convert the first list to an array of
