@@ -22,7 +22,6 @@ import ml_metrics
 import numpy as np
 import scipy.sparse as sp
 from bs4 import UnicodeDammit
-from nltk.metrics import precision, recall, f_measure
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn import metrics
 from sklearn.base import is_classifier, clone
@@ -1148,34 +1147,19 @@ class Classifier(object):
         if self._model_type in _REGRESSION_MODELS:
             res = (None, None, None, self._model.get_params(), grid_score)
         else:
-            # Create prediction dicts for easier scoring
-            actual_dict = defaultdict(set)
-            pred_dict = defaultdict(set)
-            pred_list = [self.label_list[int(pred_class)]
-                         for pred_class in yhat]
-            actual_list = [self.label_list[int(actual_class)]
-                           for actual_class in ytest]
-            for (line_num,
-                 (pred_class,
-                  actual_class)) in enumerate(zip(pred_list,
-                                                  actual_list)):
-                pred_dict[pred_class].add(line_num)
-                actual_dict[actual_class].add(line_num)
-
-            overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
-
             # Calculate metrics
-            result_dict = defaultdict(dict)
+            overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
+            num_labels = len(self.label_list)
+            result_matrix = metrics.precision_recall_fscore_support(
+                ytest, yhat, labels=list(range(num_labels), average=None)
 
             # Store results
+            result_dict = defaultdict(dict)
             for actual_class in sorted(self.label_list):
-                result_dict[actual_class]["Precision"] = precision(
-                    actual_dict[actual_class], pred_dict[actual_class])
-                result_dict[actual_class]["Recall"] = recall(
-                    actual_dict[actual_class], pred_dict[actual_class])
-                result_dict[actual_class]["F-measure"] = f_measure(
-                    actual_dict[actual_class], pred_dict[actual_class])
-            num_labels = len(self.label_list)
+                c_num = self.label_dict[actual_class]
+                result_dict[actual_class]["Precision"] = result_matrix[0][c_num]
+                result_dict[actual_class]["Recall"] = result_matrix[1][c_num]
+                result_dict[actual_class]["F-measure"] = result_matrix[2][c_num]
             conf_mat = metrics.confusion_matrix(ytest, yhat,
                                                 labels=list(range(num_labels))
                                                 ).tolist()
