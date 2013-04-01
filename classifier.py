@@ -12,14 +12,15 @@ from __future__ import print_function, unicode_literals
 import csv
 import json
 import os
-import cPickle as pickle
 import subprocess
 import sys
 import time
 from collections import defaultdict
 from itertools import islice
 
+import ml_metrics
 import numpy as np
+import scipy.sparse as sp
 from bs4 import UnicodeDammit
 from nltk.metrics import precision, recall, f_measure
 from scipy.stats import kendalltau, spearmanr, pearsonr
@@ -39,9 +40,8 @@ from sklearn.utils import safe_mask, check_arrays
 from sklearn.utils.validation import _num_samples
 from sklearn.feature_selection import SelectKBest
 from six import iteritems
-import scipy.sparse as sp
 from six.moves import zip, xrange
-import ml_metrics
+from six.moves import cPickle as pickle
 
 
 #### Globals ####
