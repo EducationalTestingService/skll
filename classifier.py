@@ -1138,9 +1138,6 @@ class Classifier(object):
             yhat = np.array(
                 [max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
 
-        import pdb
-        pdb.set_trace()
-
         # calculate grid search objective function score, if specified
         if (grid_objective is not None and
                 (grid_objective.__name__ not in _CORRELATION_METRICS or
