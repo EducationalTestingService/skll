@@ -140,8 +140,7 @@ def f1_score_least_frequent(y_true, y_pred):
     your data is skewed and you're doing multi-class classification.
     '''
     least_frequent = np.bincount(y_true).argmin()
-    return metrics.f1_score(y_true[y_true == least_frequent],
-                            y_pred[y_true == least_frequent])
+    return metrics.f1_score(y_true, y_pred, average=None)[least_frequent]
 
 
 def f1_score_macro(y_true, y_pred):
@@ -1124,7 +1123,8 @@ class Classifier(object):
         grid_score = None
 
         # make the prediction on the test data
-        yhat = self.predict(examples, prediction_prefix=prediction_prefix, append=append)
+        yhat = self.predict(examples, prediction_prefix=prediction_prefix,
+                            append=append)
 
         # extract actual labels
         ytest = np.array([self._extract_label(x) for x in examples])
@@ -1137,6 +1137,9 @@ class Classifier(object):
                 grid_score = grid_objective(ytest, yhat[:, 1])
             yhat = np.array(
                 [max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
+
+        import pdb
+        pdb.set_trace()
 
         # calculate grid search objective function score, if specified
         if (grid_objective is not None and
@@ -1151,7 +1154,7 @@ class Classifier(object):
             overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
             num_labels = len(self.label_list)
             result_matrix = metrics.precision_recall_fscore_support(
-                ytest, yhat, labels=list(range(num_labels), average=None)
+                ytest, yhat, labels=list(range(num_labels)), average=None)
 
             # Store results
             result_dict = defaultdict(dict)
