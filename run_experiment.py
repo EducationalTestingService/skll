@@ -161,8 +161,8 @@ def load_featureset(dirpath, featureset, suffix):
 
     example_dict = OrderedDict()
     for feats in featureset:
-        examples = classifier.load_examples(
-            os.path.join(dirpath, feats + suffix))
+        examples = classifier.load_examples(os.path.join(dirpath,
+                                                         feats + suffix))
         for example in examples:
             if example['id'] not in example_dict:
                 example_dict[example['id']] = example
@@ -171,7 +171,7 @@ def load_featureset(dirpath, featureset, suffix):
 
     # TODO add checks to make sure that the set of IDs and the ys are the same
 
-    return np.array(list(itervalues(example_dict)))
+    return np.array(list(itervalues(example_dict)))  # Python 2/3 compatible
 
 
 def classify_featureset(jobname, featureset, given_classifier, train_path,
