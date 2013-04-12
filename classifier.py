@@ -173,6 +173,39 @@ def accuracy(y_true, y_pred):
     return metrics.accuracy_score(y_true, y_pred)
 
 
+def compute_class_accuracies(confusion_matrix):
+    '''
+    Compute the per-class accuracies from the confusion matrix.
+    '''
+
+    # get the number of classes in the matrix
+    num_classes = confusion_matrix.shape[0]
+
+    # initialize a list that will store the class accuracies
+    accuracies = []
+
+    # compute the accuracy of each class
+    for i in range(num_classes):
+
+        # get the true positives
+        true_pos = confusion_matrix[i][i]
+
+        # compute the true negatives
+        mask = np.ma.make_mask_none(confusion_matrix.shape)
+        mask[i, i] = True
+        masked_matrix = np.ma.masked_array(confusion_matrix, mask)
+        masked_matrix = np.ma.mask_rowcols(masked_matrix)
+        true_neg = np.ma.sum(masked_matrix)
+
+        # compute the total
+        total = np.sum(confusion_matrix)
+
+        accuracy = float(true_pos + true_neg) / total
+        accuracies.append(accuracy)
+
+    return accuracies
+
+
 #### DATA LOADING FUNCTIONS ###
 def _sanitize_line(line):
     '''
@@ -1147,9 +1180,14 @@ class Classifier(object):
         if self._model_type in _REGRESSION_MODELS:
             res = (None, None, None, self._model.get_params(), grid_score)
         else:
+            # compute the confusion matrix
+            num_labels = len(self.label_list)
+            conf_mat = metrics.confusion_matrix(ytest, yhat,
+                                                labels=list(range(num_labels))
+                                                )
             # Calculate metrics
             overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
-            num_labels = len(self.label_list)
+            class_accuracies = compute_class_accuracies(conf_mat)
             result_matrix = metrics.precision_recall_fscore_support(
                 ytest, yhat, labels=list(range(num_labels)), average=None)
 
@@ -1160,10 +1198,9 @@ class Classifier(object):
                 result_dict[actual_class]["Precision"] = result_matrix[0][c_num]
                 result_dict[actual_class]["Recall"] = result_matrix[1][c_num]
                 result_dict[actual_class]["F-measure"] = result_matrix[2][c_num]
-            conf_mat = metrics.confusion_matrix(ytest, yhat,
-                                                labels=list(range(num_labels))
-                                                ).tolist()
-            res = (conf_mat, overall_accuracy, result_dict,
+                result_dict[actual_class]["Accuracy"] = class_accuracies[c_num]
+
+            res = (conf_mat.tolist(), overall_accuracy, result_dict,
                    self._model.get_params(), grid_score)
         return res
 

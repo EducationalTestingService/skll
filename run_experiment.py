@@ -62,6 +62,7 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
+    acc_sum_dict = defaultdict(float)
     result_table = None
 
     for k, (conf_matrix, fold_accuracy, result_dict, model_params,
@@ -76,10 +77,11 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
         if conf_matrix:
             classes = sorted(iterkeys(result_tuples[0][2]))
             result_table = Texttable(max_width=0)
-            result_table.set_cols_align(["r"] * (len(classes) + 4))
+            result_table.set_cols_align(["r"] * (len(classes) + 5))
             result_table.add_rows([[""] + classes + ["Precision",
                                                      "Recall",
-                                                     "F-measure"]],
+                                                     "F-measure",
+                                                     "Accuracy"]],
                                   header=True)
 
             for i, actual_class in enumerate(classes):
@@ -90,15 +92,19 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                                                "Recall")
                 class_f = get_stat_string(result_dict[actual_class],
                                           "F-measure")
+                class_acc = get_stat_string(result_dict[actual_class],
+                                            "Accuracy")
                 if class_prec != 'N/A':
                     prec_sum_dict[actual_class] += float(class_prec[:-1])
                 if class_recall != 'N/A':
                     recall_sum_dict[actual_class] += float(class_recall[:-1])
                 if class_f != 'N/A':
                     f_sum_dict[actual_class] += float(class_f[:-1])
+                if class_acc != 'N/A':
+                    acc_sum_dict[actual_class] += float(class_acc[:-1])
                 try:
                     result_row = ([actual_class] + conf_matrix[i] +
-                                  [class_prec, class_recall, class_f])
+                                  [class_prec, class_recall, class_f, class_acc])
                     result_table.add_row(result_row)
                 except ArraySizeError as e:
                     print(("Row does not contain enough elements.\n " +
@@ -106,10 +112,11 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
                            "conf_matrix[i]: {}\n" +
                            "class_prec: {}\n" +
                            "class_recall: {}\n" +
-                           "class_f: {}\n").format(actual_class,
-                                                   conf_matrix[i],
-                                                   class_prec, class_recall,
-                                                   class_f),
+                           "class_f: {}\n" +
+                           "class_acc: {}\n").format(actual_class,
+                                                     conf_matrix[i],
+                                                     class_prec, class_recall,
+                                                     class_f, class_acc),
                           file=sys.stderr)
                     raise e
             print(result_table.draw(), file=output_file)
@@ -130,18 +137,20 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
         print("\nAverage:", file=output_file)
         if result_table:
             result_table = Texttable(max_width=0)
-            result_table.set_cols_align(["l", "r", "r", "r"])
+            result_table.set_cols_align(["l", "r", "r", "r", "r"])
             result_table.add_rows(
-                [["Class", "Precision", "Recall", "F-measure"]], header=True)
+                [["Class", "Precision", "Recall", "F-measure", "Accuracy"]], header=True)
             for actual_class in classes:
                 # Convert sums to means
                 prec_mean = prec_sum_dict[actual_class] / num_folds
                 recall_mean = recall_sum_dict[actual_class] / num_folds
                 f_mean = f_sum_dict[actual_class] / num_folds
+                acc_mean = acc_sum_dict[actual_class] / num_folds
                 result_table.add_row([actual_class] +
                                      ["{:.1f}%".format(prec_mean),
                                       "{:.1f}%".format(recall_mean),
-                                      "{:.1f}%".format(f_mean)])
+                                      "{:.1f}%".format(f_mean),
+                                      "{:.1f}%".format(acc_mean)])
             print(result_table.draw(), file=output_file)
             print("Accuracy = {:.1f}%".format(accuracy_sum / num_folds),
                   file=output_file)
@@ -288,6 +297,7 @@ def munge_featureset_name(featureset):
 
     res = '+'.join(featureset)
     return res
+
 
 def fix_json(json_string):
     '''
