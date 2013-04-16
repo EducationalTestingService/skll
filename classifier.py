@@ -896,14 +896,17 @@ class Classifier(object):
             self._model_type = 'rforest'
         elif isinstance(self._model, GradientBoostingClassifier):
             self._model_type = 'gradient'
+        elif isinstance(self._model, RescaledRidge):
+            # this needs to be before ridge because RescaledRidge extends Ridge
+            self._model_type = 'rescaled_ridge'
+        elif isinstance(self._model, RescaledSVR):
+            # this needs to be before SVR because RescaledSVR extends SVR
+            self._model_type = 'rescaled_svr_linear'
         elif isinstance(self._model, Ridge):
             self._model_type = 'ridge'
-        elif isinstance(self._model, RescaledRidge):
-            self._model_type = 'rescaled_ridge'
         elif isinstance(self._model, SVR):
             self._model_type = 'svr_linear'
-        elif isinstance(self._model, RescaledSVR):
-            self._model_type = 'rescaled_svr_linear'
+        
 
     def save_model(self, modelfile):
         '''
