@@ -851,6 +851,8 @@ class Classifier(object):
             self._model_kwargs['n_estimators'] = 1000
         if self._model_type == 'rforest' or self._model_type == 'dtree':
             self._model_kwargs['compute_importances'] = True
+        if self._model_type in ['rforest', 'svm_linear', 'logistic', 'dtree', 'gradient']:
+            self._model_kwargs['random_state'] = 123456789
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
 
