@@ -422,7 +422,7 @@ class SelectByMinCount(SelectKBest):
 
         if sp.issparse(X):
             # find() is scipy.sparse's equivalent of nonzero()
-            _, col_indices, _ = sp.find(X.copy())
+            _, col_indices, _ = sp.find(X)
         else:
             # assume it's a numpy array (not a numpy matrix)
             col_indices = X.nonzero()[1].tolist()
@@ -907,6 +907,20 @@ class Classifier(object):
         elif isinstance(self._model, SVR):
             self._model_type = 'svr_linear'
         
+    def get_model_params(self):
+        res = {}
+        if isinstance(self._model, Ridge):
+            # also includes RescaledRidge
+            coef = self.feat_selector.inverse_transform(self.model.coef_)[0]
+            for feat, idx in self.feat_vectorizer.vocabulary_.items():
+                if coef[idx]:
+                    res[feat] = coef[idx]
+        else:
+            # not supported
+            raise ValueError("{} is not supported by"
+                " get_model_params.".format(self._model_type))
+
+        return res
 
     def save_model(self, modelfile):
         '''
