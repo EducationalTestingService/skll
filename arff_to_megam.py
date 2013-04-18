@@ -16,6 +16,8 @@ import re
 import sys
 
 from bs4 import UnicodeDammit
+from six import text_type
+from six.moves import xrange
 
 
 # Globals
@@ -24,11 +26,15 @@ args = None
 
 def parse_num_list(num_string):
     '''
-        Convert a string representing a range of numbers to a list of integers.
+    Convert a string representing a range of numbers to a list of integers.
     '''
     range_list = []
-    if (num_string != '') and (not re.match(r'^(\d+(-\d+)?,)*\d+(-\d+)?$', num_string)):
-        raise argparse.ArgumentTypeError("'" + num_string + "' is not a range of numbers. Expected forms are '8-15', '4,8,15,16,23,42', or '3-16,42'.")
+    if (num_string != '') and (not re.match(r'^(\d+(-\d+)?,)*\d+(-\d+)?$',
+                                            num_string)):
+        raise argparse.ArgumentTypeError("'" + num_string + "' is not a range" +
+                                         " of numbers. Expected forms are " +
+                                         "'8-15', '4,8,15,16,23,42', or " +
+                                         "'3-16,42'.")
     for rng in num_string.split(','):
         if rng.count('-'):
             split_range = [int(x) for x in rng.split('-')]
@@ -41,14 +47,17 @@ def parse_num_list(num_string):
 
 def split_with_quotes(s, delimiter=' ', quotechar="'", escapechar='\\'):
     '''
-        A replacement for string.split that won't split delimiters enclosed in quotes.
+    A replacement for string.split that won't split delimiters enclosed in
+    quotes.
     '''
-    return csv.reader([s], delimiter=delimiter, quotechar=quotechar, escapechar=escapechar).next()
+    return csv.reader([s], delimiter=delimiter, quotechar=quotechar,
+                      escapechar=escapechar).next()
 
 
 def nominal_to_numeric_dict(nominal_list):
     '''
-        Create a dict for a list of nominal values that will convert the strings to integers
+    Create a dict for a list of nominal values that will convert the strings to
+    integers
     '''
     num_dict = {}
     for i in xrange(len(nominal_list)):
@@ -102,17 +111,23 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
         Process an instance set and output MegaM-style instances
     '''
     for inst_index in inst_set:
-        instance = split_with_quotes(inst_str_list[inst_index], quotechar=args.quotechar, delimiter=',')  # Split on demand to save tons of memory
+        # Split on demand to save tons of memory
+        instance = split_with_quotes(inst_str_list[inst_index],
+                                     quotechar=args.quotechar, delimiter=',')
         if args.idindex is not None:
             print("# {}".format(instance[args.idindex]))
-        print((sanitize_name(instance[args.classindex]) if args.namedclasses else unicode(nominal_dict[args.classindex][instance[args.classindex]])) + "\t", end=" ")
+        print((sanitize_name(instance[args.classindex]) if args.namedclasses
+               else text_type(nominal_dict[args.classindex][instance[args.classindex]])) + "\t", end=" ")
         # Use explicit output format if superclasses are specified
         if args.superclasses:
             for class_name in attr_list[args.classindex][2]:
                 print("#", end=" ")
-                print_instance(instance, nominal_dict, attr_list, suffix=" " + class_name)
+                print_instance(instance, nominal_dict, attr_list,
+                               suffix=" " + class_name)
                 for superclass_feat in args.superclasses:
-                    print_instance(instance, nominal_dict, attr_list, suffix=" {} {}".format(attr_list[superclass_feat - 1][0], instance[superclass_feat - 1]))
+                    print_instance(instance, nominal_dict, attr_list,
+                                   suffix=" {} {}".format(attr_list[superclass_feat - 1][0],
+                                                          instance[superclass_feat - 1]))
         # Otherwise use implicit output format
         else:
             print_instance(instance, nominal_dict, attr_list)
@@ -132,40 +147,93 @@ def shift_index(index, attr_list):
 
 if __name__ == '__main__':
     # Get command line arguments
-    parser = argparse.ArgumentParser(description="Takes an ARFF file an outputs a MegaM-compatible file to be run with the '-fvals' switch." +
-                                                 " Assumes last field is class. Ignores any relational, string, or date fields. Automatically converts nominals" +
-                                                 " to numerals.",
+    parser = argparse.ArgumentParser(description="Takes an ARFF file an outputs\
+                                                  a MegaM-compatible file to be\
+                                                  run with the '-fvals' switch.\
+                                                  Assumes last field is class. \
+                                                  Ignores any relational, \
+                                                  string, or date fields. \
+                                                  Automatically converts \
+                                                  nominals to numerals.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('infile', help='ARFF input file', type=argparse.FileType('r'), default='-', nargs='?')
-    parser.add_argument('-b', '--binary', help='Converts the specified range of numeric features to presence/absence binary features. Features are numbered ' +
-                                               'starting from 1, and if 0 is specified with this flag, all numeric features are converted. Note: Any string ' +
-                                               'features within the specified range are just ignored.', type=parse_num_list)
-    parser.add_argument('--doubleup', help='Keep both the binary and numeric versions of any feature numeric feature you convert to binary.', action='store_true')
-    parser.add_argument('-c', '--classindex', help='Index of feature that is the class. Numbering starts at 1 like --features. Supports negative numbers (i.e., ' +
-                                                   '-1 is the last feature).',
-                        type=int, default=-1)
-    parser.add_argument('-d', '--dev', help='Number of instances per class to reserve for development.', type=int, default=0)
-    parser.add_argument('-f', '--features', help='Only keep the specified range of features in the MegaM output. Features are numbered starting from 1.',
+    parser.add_argument('infile',
+                        help='ARFF input file', type=argparse.FileType('r'),
+                        default='-', nargs='?')
+    parser.add_argument('-b', '--binary',
+                        help='Converts the specified range of numeric features \
+                              to presence/absence binary features. Features are\
+                              numbered starting from 1, and if 0 is specified \
+                              with this flag, all numeric features are \
+                              converted. Note: Any string features within the \
+                              specified range are just ignored.',
                         type=parse_num_list)
-    parser.add_argument('-i', '--idindex', help='Index of feature that is the ID for the instances (if there is one). This will be included as a comment before each ' +
-                                                'line. Numbering starts at 1 like --features.', type=int)
-    parser.add_argument('-m', '--max', help='Maximum number of instances to use for training for each class.', type=int, default=0)
-    parser.add_argument('-n', '--namedclasses', help='Keep class names in MegaM file instead of converting the nomimal field to numeric.', action='store_true')
-    parser.add_argument('-q', '--quotechar', help='Character to use for quoting strings in attribute names.', default="'")
-    parser.add_argument('-r', '--randomize', help='Randomly shuffle the instances before splitting into training, dev, and test sets.', action='store_true')
-    parser.add_argument('-s', '--superclasses', help='List of features that are super-classes of the classes we want to have MegaM predict. If specified, the ' +
-                                                     'MegaM "explicit" output format will be used.',
+    parser.add_argument('--doubleup',
+                        help='Keep both the binary and numeric versions of any\
+                              feature numeric feature you convert to binary.',
+                        action='store_true')
+    parser.add_argument('-c', '--classindex',
+                        help='Index of feature that is the class. Numbering \
+                              starts at 1 like --features. Supports negative \
+                              numbers (i.e., -1 is the last feature).',
+                        type=int, default=-1)
+    parser.add_argument('-d', '--dev',
+                        help='Number of instances per class to reserve for \
+                              development.',
+                        type=int, default=0)
+    parser.add_argument('-f', '--features',
+                        help='Only keep the specified range of features in the\
+                              MegaM output. Features are numbered starting from\
+                              1.',
+                        type=parse_num_list)
+    parser.add_argument('-i', '--idindex',
+                        help='Index of feature that is the ID for the instances\
+                              (if there is one). This will be included as a \
+                              comment before each line. Numbering starts at 1 \
+                              like --features.',
+                        type=int)
+    parser.add_argument('-m', '--max',
+                        help='Maximum number of instances to use for training \
+                              for each class.',
+                        type=int, default=0)
+    parser.add_argument('-n', '--namedclasses',
+                        help='Keep class names in MegaM file instead of \
+                              converting the nomimal field to numeric.',
+                        action='store_true')
+    parser.add_argument('-q', '--quotechar',
+                        help='Character to use for quoting strings in attribute\
+                              names.',
+                        default="'")
+    parser.add_argument('-r', '--randomize',
+                        help='Randomly shuffle the instances before splitting \
+                              into training, dev, and test sets.',
+                        action='store_true')
+    parser.add_argument('-s', '--superclasses',
+                        help='List of features that are super-classes of the \
+                              classes we want to have MegaM predict. If \
+                              specified, the MegaM "explicit" output format \
+                              will be used.',
                         type=parse_num_list, default=[])
-    parser.add_argument('-t', '--test', help='Number of instances per class to reserve for testing.', type=int, default=0)
-    parser.add_argument('-v', '--verbose', help='Print out fields that were not added output to MegaM file on STDERR.', action='store_true')
+    parser.add_argument('-t', '--test',
+                        help='Number of instances per class to reserve for \
+                              testing.',
+                        type=int, default=0)
+    parser.add_argument('-v', '--verbose',
+                        help='Print out fields that were not added output to \
+                              MegaM file on STDERR.',
+                        action='store_true')
     args = parser.parse_args()
 
     # Check for valid classindex
     if args.classindex == 0:
-        raise argparse.ArgumentTypeError("0 is not a valid value for --classindex.  Feature numbering starts at 1 (although --classindex can also be negative).")
+        raise argparse.ArgumentTypeError("0 is not a valid value for " +
+                                         "--classindex.  Feature numbering " +
+                                         "starts at 1 (although --classindex " +
+                                         "can also be negative).")
 
     if args.infile.isatty():
-        print("You are running this script interactively. Press CTRL-D at the start of a blank line to signal the end of your input. For help, run it with --help\n", 
+        print("You are running this script interactively. Press CTRL-D at the" +
+              " start of a blank line to signal the end of your input. For " +
+              "help, run it with --help\n",
               file=sys.stderr)
 
     # Process ARFF header
@@ -176,17 +244,19 @@ if __name__ == '__main__':
         line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
 
         if line.strip():
-            # Split the line using CSV reader because it can handle quoted delimiters.
+            # Split the line using CSV reader because it can handle quoted
+            # delimiters.
             split_header = split_with_quotes(line, quotechar=args.quotechar)
             row_type = split_header[0].lower()
             if row_type == '@attribute':
                 # Nominal
                 if split_header[2][0] == '{':
-                    attr_list.append([split_header[1], 2, [x.strip() for x in split_with_quotes(' '.join(split_header[2:]).strip('{}'),
-                                                                                            quotechar=args.quotechar, delimiter=',')]])
+                    attr_list.append([split_header[1], 2, [x.strip() for x in split_with_quotes(' '.join(split_header[2:]).strip('{}'), quotechar=args.quotechar, delimiter=',')]])
                 # Numeric or String
                 else:
-                    attr_list.append([split_header[1], int(split_header[2] == 'numeric'), []])
+                    attr_list.append([split_header[1],
+                                      int(split_header[2] == 'numeric'),
+                                      []])
             elif row_type == '@data':
                 break
             elif row_type == '@relation':
@@ -200,7 +270,8 @@ if __name__ == '__main__':
         args.idindex = None
 
     # Convert nominal features to numeric
-    nominal_dict = dict([(i, nominal_to_numeric_dict(attr_list[i][2])) for i in xrange(len(attr_list)) if attr_list[i][1] == 2])
+    nominal_dict = {i: nominal_to_numeric_dict(attr_list[i][2])
+                    for i in xrange(len(attr_list)) if attr_list[i][1] == 2}
     class_list = attr_list[args.classindex][2]
     class_dict = nominal_dict[args.classindex]
 
@@ -210,7 +281,8 @@ if __name__ == '__main__':
     train_sets = [set() for x in class_list]
 
     # Process data instances
-    inst_str_list = [line.strip() for line in args.infile if line.strip()]  # Picks up on line after @data because of break in loop that processes header
+    # Picks up on line after @data because of break in loop that processes header
+    inst_str_list = [line.strip() for line in args.infile if line.strip()]
     args.infile.close()
 
     # Randomize if asked
@@ -219,7 +291,8 @@ if __name__ == '__main__':
 
     # Split instance list into dev, test, and training sets
     for i, inst_str in enumerate(inst_str_list):
-        instance = split_with_quotes(inst_str, quotechar=args.quotechar, delimiter=',')
+        instance = split_with_quotes(inst_str, quotechar=args.quotechar,
+                                     delimiter=',')
         if len(dev_sets[class_dict[instance[args.classindex]]]) < args.dev:
             dev_sets[class_dict[instance[args.classindex]]].add(i)
         elif len(test_sets[class_dict[instance[args.classindex]]]) < args.test:
