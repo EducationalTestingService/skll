@@ -1,4 +1,4 @@
-#!/usr/bin python
+#!/usr/bin/env python
 '''
 Simple script for printing out model weights.
 '''
