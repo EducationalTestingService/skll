@@ -40,18 +40,19 @@ from sklearn.utils import safe_mask, check_arrays
 from sklearn.utils.validation import _num_samples
 from sklearn.feature_selection import SelectKBest
 from six import iteritems
-from six.moves import zip, xrange
+from six.moves import zip
+from six.moves import xrange as range
 from six.moves import cPickle as pickle
 
 
-#### Globals ####
+# Globals #
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
                                 'rescaled_svr_linear'])
 
 
-#### METRICS ####
+# METRICS #
 def quadratic_weighted_kappa(y_true, y_pred):
     '''
     Returns the quadratic weighted kappa.
@@ -174,40 +175,7 @@ def accuracy(y_true, y_pred):
     return metrics.accuracy_score(y_true, y_pred)
 
 
-def compute_class_accuracies(confusion_matrix):
-    '''
-    Compute the per-class accuracies from the confusion matrix.
-    '''
-
-    # get the number of classes in the matrix
-    num_classes = confusion_matrix.shape[0]
-
-    # initialize a list that will store the class accuracies
-    accuracies = []
-
-    # compute the accuracy of each class
-    for i in range(num_classes):
-
-        # get the true positives
-        true_pos = confusion_matrix[i][i]
-
-        # compute the true negatives
-        mask = np.ma.make_mask_none(confusion_matrix.shape)
-        mask[i, i] = True
-        masked_matrix = np.ma.masked_array(confusion_matrix, mask)
-        masked_matrix = np.ma.mask_rowcols(masked_matrix)
-        true_neg = np.ma.sum(masked_matrix)
-
-        # compute the total
-        total = np.sum(confusion_matrix)
-
-        accuracy = float(true_pos + true_neg) / total
-        accuracies.append(accuracy)
-
-    return accuracies
-
-
-#### DATA LOADING FUNCTIONS ###
+# DATA LOADING FUNCTIONS #
 def _sanitize_line(line):
     '''
     Return copy of line with all non-ASCII characters replaced with
@@ -409,6 +377,7 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func,
 
 
 class SelectByMinCount(SelectKBest):
+
     """
     Select features ocurring in more (and/or fewer than) than a specified
     number of examples in the training data (or a CV training fold).
@@ -554,6 +523,7 @@ class _FixedStandardScaler(StandardScaler):
 
 
 class _GridSearchCVBinary(GridSearchCV):
+
     '''
     GridSearchCV for use with binary classification problems where you want to
     optimize the learner based on the probabilities assigned to each class,
@@ -614,7 +584,7 @@ class _GridSearchCVBinary(GridSearchCV):
 
         scores = list()
         cv_scores = list()
-        for grid_start in xrange(0, n_fits, n_folds):
+        for grid_start in range(0, n_fits, n_folds):
             n_test_samples = 0
             score = 0
             these_points = list()
@@ -671,11 +641,13 @@ class _GridSearchCVBinary(GridSearchCV):
 
 
 class RescaledRidge(Ridge):
+
     '''
     This is an extension of the Ridge classifier that stores a min and
     a max for the training data.  It makes sure its predictions fall within
     that range.
     '''
+
     def __init__(self, rescale=True, constrain=True, alpha=1.0,
                  fit_intercept=True, normalize=False, copy_X=True,
                  max_iter=None, tol=1e-3, solver="auto"):
@@ -719,7 +691,7 @@ class RescaledRidge(Ridge):
             # convert the predictions to z-scores,
             # then rescale to match the training set distribution
             res = (((res - self.yhat_mean) / self.yhat_sd)
-                * self.y_sd) + self.y_mean
+                   * self.y_sd) + self.y_mean
 
         if self.constrain:
             # apply min and max constraints
@@ -730,15 +702,16 @@ class RescaledRidge(Ridge):
 
 
 class RescaledSVR(SVR):
+
     '''
     This is an extension of the SVR classifier that stores a min and
     a max for the training data.  It makes sure its predictions fall within
     that range.
     '''
     def __init__(self, rescale=True, constrain=True, kernel='rbf', degree=3,
-        gamma=0.0, coef0=0.0, tol=0.001, C=1.0, epsilon=0.10000000000000001,
-        shrinking=True, probability=False, cache_size=200, verbose=False,
-        max_iter=-1):
+                 gamma=0.0, coef0=0.0, tol=0.001, C=1.0,
+                 epsilon=0.10000000000000001, shrinking=True, probability=False,
+                 cache_size=200, verbose=False, max_iter=-1):
         self.constrain = constrain
         self.rescale = rescale
         self.y_min = None
@@ -748,9 +721,12 @@ class RescaledSVR(SVR):
         self.y_mean = None
         self.y_sd = None
         super(RescaledSVR, self).__init__(kernel=kernel, degree=degree,
-              gamma=gamma, coef0=coef0, tol=tol, C=C, epsilon=epsilon,
-              shrinking=shrinking, probability=probability,
-              cache_size=cache_size, verbose=verbose, max_iter=max_iter)
+                                          gamma=gamma, coef0=coef0, tol=tol,
+                                          C=C, epsilon=epsilon,
+                                          shrinking=shrinking,
+                                          probability=probability,
+                                          cache_size=cache_size,
+                                          verbose=verbose, max_iter=max_iter)
 
     def fit(self, X, y=None):
         # fit a regular regression model
@@ -777,7 +753,7 @@ class RescaledSVR(SVR):
             # convert the predictions to z-scores,
             # then rescale to match the training set distribution
             res = (((res - self.yhat_mean) / self.yhat_sd)
-                * self.y_sd) + self.y_mean
+                   * self.y_sd) + self.y_mean
 
         if self.constrain:
             # apply min and max constraints
@@ -788,6 +764,7 @@ class RescaledSVR(SVR):
 
 
 class Classifier(object):
+
     """
     A simpler classifier interface around many sklearn classification
     functions.
@@ -907,13 +884,13 @@ class Classifier(object):
             self._model_type = 'ridge'
         elif isinstance(self._model, SVR):
             self._model_type = 'svr_linear'
-        
+
     def get_model_params(self):
         res = {}
         if isinstance(self._model, Ridge):
             # also includes RescaledRidge
             coef = self.feat_selector.inverse_transform(self.model.coef_)[0]
-            for feat, idx in self.feat_vectorizer.vocabulary_.items():
+            for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                 if coef[idx]:
                     res[feat] = coef[idx]
         elif isinstance(self._model, BaseLibLinear):
@@ -924,8 +901,8 @@ class Classifier(object):
                         res['{}\t{}'.format(label, feat)] = coef[idx]
         else:
             # not supported
-            raise ValueError("{} is not supported by"
-                " get_model_params.".format(self._model_type))
+            raise ValueError(("{} is not supported by" +
+                              " get_model_params.").format(self._model_type))
 
         return res
 
@@ -1195,7 +1172,7 @@ class Classifier(object):
                     grid_objective.__name__ in _CORRELATION_METRICS):
                 grid_score = grid_objective(ytest, yhat[:, 1])
             yhat = np.array(
-                [max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
+                [max(range(len(row)), key=lambda i: row[i]) for row in yhat])
 
         # calculate grid search objective function score, if specified
         if (grid_objective is not None and
@@ -1213,7 +1190,6 @@ class Classifier(object):
                                                 )
             # Calculate metrics
             overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
-            class_accuracies = compute_class_accuracies(conf_mat)
             result_matrix = metrics.precision_recall_fscore_support(
                 ytest, yhat, labels=list(range(num_labels)), average=None)
 
@@ -1224,7 +1200,6 @@ class Classifier(object):
                 result_dict[actual_class]["Precision"] = result_matrix[0][c_num]
                 result_dict[actual_class]["Recall"] = result_matrix[1][c_num]
                 result_dict[actual_class]["F-measure"] = result_matrix[2][c_num]
-                result_dict[actual_class]["Accuracy"] = class_accuracies[c_num]
 
             res = (conf_mat.tolist(), overall_accuracy, result_dict,
                    self._model.get_params(), grid_score)
