@@ -43,14 +43,14 @@ from six.moves import zip, xrange
 from six.moves import cPickle as pickle
 
 
-#### Globals ####
+# Globals #
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
                                 'rescaled_svr_linear'])
 
 
-#### METRICS ####
+# METRICS #
 def quadratic_weighted_kappa(y_true, y_pred):
     '''
     Returns the quadratic weighted kappa.
@@ -173,7 +173,7 @@ def accuracy(y_true, y_pred):
     return metrics.accuracy_score(y_true, y_pred)
 
 
-#### DATA LOADING FUNCTIONS ###
+# DATA LOADING FUNCTIONS #
 def _sanitize_line(line):
     '''
     Return copy of line with all non-ASCII characters replaced with
@@ -375,6 +375,7 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func,
 
 
 class SelectByMinCount(SelectKBest):
+
     """
     Select features ocurring in more (and/or fewer than) than a specified
     number of examples in the training data (or a CV training fold).
@@ -520,6 +521,7 @@ class _FixedStandardScaler(StandardScaler):
 
 
 class _GridSearchCVBinary(GridSearchCV):
+
     '''
     GridSearchCV for use with binary classification problems where you want to
     optimize the learner based on the probabilities assigned to each class,
@@ -637,11 +639,13 @@ class _GridSearchCVBinary(GridSearchCV):
 
 
 class RescaledRidge(Ridge):
+
     '''
     This is an extension of the Ridge classifier that stores a min and
     a max for the training data.  It makes sure its predictions fall within
     that range.
     '''
+
     def __init__(self, rescale=True, constrain=True, alpha=1.0,
                  fit_intercept=True, normalize=False, copy_X=True,
                  max_iter=None, tol=1e-3, solver="auto"):
@@ -685,7 +689,7 @@ class RescaledRidge(Ridge):
             # convert the predictions to z-scores,
             # then rescale to match the training set distribution
             res = (((res - self.yhat_mean) / self.yhat_sd)
-                * self.y_sd) + self.y_mean
+                   * self.y_sd) + self.y_mean
 
         if self.constrain:
             # apply min and max constraints
@@ -696,15 +700,16 @@ class RescaledRidge(Ridge):
 
 
 class RescaledSVR(SVR):
+
     '''
     This is an extension of the SVR classifier that stores a min and
     a max for the training data.  It makes sure its predictions fall within
     that range.
     '''
     def __init__(self, rescale=True, constrain=True, kernel='rbf', degree=3,
-        gamma=0.0, coef0=0.0, tol=0.001, C=1.0, epsilon=0.10000000000000001,
-        shrinking=True, probability=False, cache_size=200, verbose=False,
-        max_iter=-1):
+                 gamma=0.0, coef0=0.0, tol=0.001, C=1.0,
+                 epsilon=0.10000000000000001, shrinking=True, probability=False,
+                 cache_size=200, verbose=False, max_iter=-1):
         self.constrain = constrain
         self.rescale = rescale
         self.y_min = None
@@ -714,9 +719,12 @@ class RescaledSVR(SVR):
         self.y_mean = None
         self.y_sd = None
         super(RescaledSVR, self).__init__(kernel=kernel, degree=degree,
-              gamma=gamma, coef0=coef0, tol=tol, C=C, epsilon=epsilon,
-              shrinking=shrinking, probability=probability,
-              cache_size=cache_size, verbose=verbose, max_iter=max_iter)
+                                          gamma=gamma, coef0=coef0, tol=tol,
+                                          C=C, epsilon=epsilon,
+                                          shrinking=shrinking,
+                                          probability=probability,
+                                          cache_size=cache_size,
+                                          verbose=verbose, max_iter=max_iter)
 
     def fit(self, X, y=None):
         # fit a regular regression model
@@ -743,7 +751,7 @@ class RescaledSVR(SVR):
             # convert the predictions to z-scores,
             # then rescale to match the training set distribution
             res = (((res - self.yhat_mean) / self.yhat_sd)
-                * self.y_sd) + self.y_mean
+                   * self.y_sd) + self.y_mean
 
         if self.constrain:
             # apply min and max constraints
@@ -754,6 +762,7 @@ class RescaledSVR(SVR):
 
 
 class Classifier(object):
+
     """
     A simpler classifier interface around many sklearn classification
     functions.
@@ -884,8 +893,8 @@ class Classifier(object):
                     res[feat] = coef[idx]
         else:
             # not supported
-            raise ValueError("{} is not supported by"
-                " get_model_params.".format(self._model_type))
+            raise ValueError(("{} is not supported by" +
+                              " get_model_params.").format(self._model_type))
 
         return res
 
