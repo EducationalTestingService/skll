@@ -39,7 +39,8 @@ from sklearn.utils import safe_mask, check_arrays
 from sklearn.utils.validation import _num_samples
 from sklearn.feature_selection import SelectKBest
 from six import iteritems
-from six.moves import zip, xrange
+from six.moves import zip
+from six.moves import xrange as range
 from six.moves import cPickle as pickle
 
 
@@ -582,7 +583,7 @@ class _GridSearchCVBinary(GridSearchCV):
 
         scores = list()
         cv_scores = list()
-        for grid_start in xrange(0, n_fits, n_folds):
+        for grid_start in range(0, n_fits, n_folds):
             n_test_samples = 0
             score = 0
             these_points = list()
@@ -888,7 +889,7 @@ class Classifier(object):
         if isinstance(self._model, Ridge):
             # also includes RescaledRidge
             coef = self.feat_selector.inverse_transform(self.model.coef_)[0]
-            for feat, idx in self.feat_vectorizer.vocabulary_.items():
+            for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                 if coef[idx]:
                     res[feat] = coef[idx]
         else:
@@ -1164,7 +1165,7 @@ class Classifier(object):
                     grid_objective.__name__ in _CORRELATION_METRICS):
                 grid_score = grid_objective(ytest, yhat[:, 1])
             yhat = np.array(
-                [max(xrange(len(row)), key=lambda i: row[i]) for row in yhat])
+                [max(range(len(row)), key=lambda i: row[i]) for row in yhat])
 
         # calculate grid search objective function score, if specified
         if (grid_objective is not None and
