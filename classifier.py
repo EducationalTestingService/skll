@@ -34,6 +34,7 @@ from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, SVR
+from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import safe_mask, check_arrays
 from sklearn.utils.validation import _num_samples
@@ -915,6 +916,12 @@ class Classifier(object):
             for feat, idx in self.feat_vectorizer.vocabulary_.items():
                 if coef[idx]:
                     res[feat] = coef[idx]
+        elif isinstance(self._model, BaseLibLinear):
+            for i, label in enumerate(self.label_list):
+                coef = self.feat_selector.inverse_transform(self.model.coef_[i])[0]
+                for feat, idx in self.feat_vectorizer.vocabulary_.items():
+                    if coef[idx]:
+                        res['{}\t{}'.format(label, feat)] = coef[idx]
         else:
             # not supported
             raise ValueError("{} is not supported by"
