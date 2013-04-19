@@ -490,10 +490,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                         prediction_prefix, do_grid_search,
                         grid_objective, do_scale_features, cross_validate,
                         evaluate, suffix, temp_logfile, probability,
-                        resultspath, fixed_parameter_list[classifier_num]
-                                     if fixed_parameter_list else dict(),
-                        param_grid_list[classifier_num] if param_grid_list
-                                                        else None,
+                        resultspath, (fixed_parameter_list[classifier_num]
+                                      if fixed_parameter_list else dict()),
+                        (param_grid_list[classifier_num] if param_grid_list
+                         else None),
                         pos_label_str, overwrite, use_dense_features,
                         min_feature_count, grid_search_jobs]
             if not local:
