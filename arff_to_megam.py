@@ -17,7 +17,7 @@ import sys
 
 from bs4 import UnicodeDammit
 from six import text_type
-from six.moves import xrange
+from six.moves import xrange as range
 
 
 # Globals
@@ -39,7 +39,7 @@ def parse_num_list(num_string):
         if rng.count('-'):
             split_range = [int(x) for x in rng.split('-')]
             split_range[1] += 1
-            range_list.extend(range(*split_range))
+            range_list.extend(list(range(*split_range)))
         else:
             range_list.append(int(rng))
     return range_list
@@ -60,7 +60,7 @@ def nominal_to_numeric_dict(nominal_list):
     integers
     '''
     num_dict = {}
-    for i in xrange(len(nominal_list)):
+    for i in range(len(nominal_list)):
         num_dict[nominal_list[i]] = i
     return num_dict
 
@@ -77,7 +77,7 @@ def print_instance(instance, nominal_dict, attr_list, suffix=None):
         Print out the current instance to STDOUT
     '''
     # Loop through all attributes in instance set.
-    for i in xrange(len(instance)):
+    for i in range(len(instance)):
         # Skip over the class feature
         if i != args.classindex:
             # Check if this a feature we want to keep
@@ -271,7 +271,7 @@ if __name__ == '__main__':
 
     # Convert nominal features to numeric
     nominal_dict = {i: nominal_to_numeric_dict(attr_list[i][2])
-                    for i in xrange(len(attr_list)) if attr_list[i][1] == 2}
+                    for i in range(len(attr_list)) if attr_list[i][1] == 2}
     class_list = attr_list[args.classindex][2]
     class_dict = nominal_dict[args.classindex]
 
