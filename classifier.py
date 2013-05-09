@@ -43,6 +43,7 @@ from six import iteritems
 from six.moves import zip
 from six.moves import xrange as range
 from six.moves import cPickle as pickle
+from six import string_types
 
 
 # Globals #
@@ -996,6 +997,29 @@ class Classifier(object):
 
         return estimator, default_param_grid
 
+    def check_input(self, examples):
+        '''
+        check that the examples are properly formatted.
+        '''
+
+        # Make sure the labels for a regression task are not strings.
+        # Note: this is redundant because of how _extract_label is used 
+        # in train setup, but it's probably useful to leave it in 
+        # just in case.
+        if self._model_type in _REGRESSION_MODELS:
+            for ex in examples:
+                if isinstance(ex['y'], string_types):
+                    raise TypeError("You are doing regression with" +
+                                    " string labels.  Convert them to" +
+                                    " integers or floats.")
+
+        # make sure that feature values are not strings
+        for ex in examples:
+            for val in ex['x'].values():
+                if isinstance(val, string_types):
+                    raise TypeError("You have feature values that are" +
+                                    " strings.  Convert them to floats.")
+
     def train_setup(self, examples):
         '''
         Set up the feature vectorizer, the scaler and the label dict and
@@ -1004,6 +1028,8 @@ class Classifier(object):
 
         # extract the features and the labels
         features = [self._extract_features(x) for x in examples]
+
+        self.check_input(examples)
 
         # Create label_dict if we weren't passed one
         if self._model_type not in _REGRESSION_MODELS:
