@@ -1008,7 +1008,7 @@ class Classifier(object):
         # just in case.
         if self._model_type in _REGRESSION_MODELS:
             for ex in examples:
-                if isinstance(ex['y'], string_types):
+                if isinstance(self._extract_label(ex), string_types):
                     raise TypeError("You are doing regression with" +
                                     " string labels.  Convert them to" +
                                     " integers or floats.")
