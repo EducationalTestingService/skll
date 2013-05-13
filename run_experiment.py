@@ -160,16 +160,28 @@ def load_featureset(dirpath, featureset, suffix):
         featureset = [featureset]
 
     example_dict = OrderedDict()
-    for feats in featureset:
+    for i, feats in enumerate(featureset):
         examples = classifier.load_examples(os.path.join(dirpath,
                                                          feats + suffix))
+
+        # check that the inputs match
+        if i > 0:
+            if set([example['id'] for example in examples]) \
+               != set(example_dict.keys()):
+                raise ValueError('The sets of IDs in two feature files \
+                                  do not match')
+
         for example in examples:
             if example['id'] not in example_dict:
                 example_dict[example['id']] = example
             else:
-                example_dict[example['id']]['x'].update(example['x'])
+                # check that the new features don't already exist 
+                # (i.e., intersection is null set)
+                if set(example['x'].keys()) \
+                   & set(example_dict[example['id']]['x'].keys()):
+                    raise ValueError('Two feature files have the same feature!')
 
-    # TODO add checks to make sure that the set of IDs and the ys are the same
+                example_dict[example['id']]['x'].update(example['x'])
 
     return np.array(list(itervalues(example_dict)))  # Python 2/3 compatible
 

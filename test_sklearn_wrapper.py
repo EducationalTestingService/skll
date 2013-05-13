@@ -10,6 +10,8 @@ _my_path = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.append(_my_path)
 
+from run_experiment import load_featureset
+
 
 class TestSklearnWrapper(TestCase):
     def setUp(self):
@@ -40,5 +42,24 @@ class TestSklearnWrapper(TestCase):
         self.assertTrue(np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected))
 
 
+    def test_input_checking(self):
+        dirpath = os.path.join(_my_path, 'tests')
+        featureset = ['']
+        suffix = '.jsonlines'
+    
+        featureset = ['test_input_2examples_1', 'test_input_3examples_1']
+        with self.assertRaises(ValueError):
+            load_featureset(dirpath, featureset, suffix)
+
+
+        featureset = ['test_input_3examples_1', 'test_input_3examples_1']
+        with self.assertRaises(ValueError):
+            load_featureset(dirpath, featureset, suffix)
+
+        featureset = ['test_input_3examples_1', 'test_input_3examples_2']
+        feats = load_featureset(dirpath, featureset, suffix)
+        self.assertTrue(len(feats) == 3, "Wrong number of examples.")
+       
+       
 if __name__ == '__main__':
     main()
