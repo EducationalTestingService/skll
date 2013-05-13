@@ -26,6 +26,7 @@ from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn import metrics
 from sklearn.base import is_classifier, clone
 from sklearn.cross_validation import KFold, StratifiedKFold, check_cv
+from sklearn.cross_validation import LeaveOneLabelOut
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.externals.joblib import Parallel, delayed, logger
 from sklearn.feature_extraction import DictVectorizer
@@ -1090,8 +1091,9 @@ class Classifier(object):
         @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to
                           C{list}s of parameter values
         @param grid_search_folds: The number of folds to use when doing the
-                                  grid search.
-        @type grid_search_folds: C{int}
+                                  grid search, or a mapping from
+                                  example IDs to folds.
+        @type grid_search_folds: C{int} or C{dict}
         @param grid_search: Should we do grid search?
         @type grid_search: C{bool}
         @param grid_objective: The objective function to use when doing the
@@ -1107,10 +1109,6 @@ class Classifier(object):
         @rtype: C{float}
         '''
 
-        # Set number of grid_jobs if None
-        if grid_jobs is None:
-            grid_jobs = grid_search_folds
-
         # seed the random number generator so that randomized algorithms are
         # replicable
         np.random.seed(9876315986142)
@@ -1118,6 +1116,16 @@ class Classifier(object):
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
         features, ytrain = self.train_setup(examples)
+
+        # set up grid search folds
+        if isinstance(grid_search_folds, int):
+            grid_jobs = grid_search_folds
+            folds = grid_search_folds
+        else:
+            # use the number of unique fold IDs as the number of grid jobs
+            grid_jobs = len(np.unique(grid_search_folds))
+            labels = [grid_search_folds[ex['id']] for ex in examples]
+            folds = LeaveOneLabelOut(labels)
 
         # vectorize the features
         xtrain = self.feat_vectorizer.fit_transform(features)
@@ -1143,19 +1151,18 @@ class Classifier(object):
                 grid_search_class = GridSearchCV
             grid_searcher = grid_search_class(estimator, param_grid,
                                               score_func=grid_objective,
-                                              cv=grid_search_folds,
-                                              n_jobs=grid_jobs)
+                                              cv=folds, n_jobs=grid_jobs)
 
             # run the grid search for hyperparameters
             # print('\tstarting grid search', file=sys.stderr)
             grid_searcher.fit(xtrain, ytrain)
             self._model = grid_searcher.best_estimator_
-            score = grid_searcher.best_score_
+            grid_score = grid_searcher.best_score_
         else:
             self._model = estimator.fit(xtrain, ytrain)
-            score = 0.0
+            grid_score = 0.0
 
-        return score
+        return grid_score
 
     def evaluate(self, examples, prediction_prefix=None, append=False,
                  grid_objective=None):
@@ -1325,13 +1332,15 @@ class Classifier(object):
         @param stratified: Should we stratify the folds to ensure an even
                            distribution of classes for each fold?
         @type stratified: C{bool}
-        @param cv_folds: The number of folds to use for cross-validation.
-        @type cv_folds: C{int}
+        @param cv_folds: The number of folds to use for cross-validation, or
+                         a mapping from example IDs to folds.
+        @type cv_folds: C{int} or C{dict}
         @param grid_search: Should we do grid search when training each fold?
                             Note: This will make this take *much* longer.
         @type grid_search: C{bool}
         @param grid_search_folds: The number of folds to use when doing the
-                                  grid search.
+                                  grid search (ignored if cv_folds is set to 
+                                  a dictionary mapping examples to folds).
         @type grid_search_folds: C{int}
         @param grid_jobs: The number of jobs to run in parallel when doing the
                           grid search. If unspecified or C{None}, the number of
@@ -1368,21 +1377,33 @@ class Classifier(object):
         _, y = self.train_setup(examples)
 
         # setup the cross-validation iterator
-        stratified = stratified and not self._model_type in _REGRESSION_MODELS
-        kfold = StratifiedKFold(y, n_folds=cv_folds) if stratified else KFold(
-            len(examples), n_folds=cv_folds)
+        if isinstance(cv_folds, int):
+            stratified = stratified and not self._model_type \
+                         in _REGRESSION_MODELS
+            kfold = StratifiedKFold(y, n_folds=cv_folds) if stratified \
+                    else KFold(len(examples), n_folds=cv_folds)
+        else:
+            # if we have a mapping from IDs to folds, use it for the overall
+            # cross-validation as well as the grid search within each
+            # training fold.  Note that this means that the grid search
+            # will use K-1 folds because the Kth will be the test fold for
+            # the outer cross-validation.
+            labels = [cv_folds[ex['id']] for ex in examples]
+            kfold = LeaveOneLabelOut(labels)
+            grid_search_folds = cv_folds
 
         # handle each fold separately and accumulate the predictions and the
         # numbers
         results = []
+        grid_search_scores = []
         append_predictions = False
         for train_index, test_index in kfold:
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
-            self.train(
+            grid_search_scores.append(self.train(
                 examples[train_index], grid_search_folds=grid_search_folds,
                 grid_search=grid_search, grid_objective=grid_objective,
-                param_grid=param_grid, grid_jobs=grid_jobs)
+                param_grid=param_grid, grid_jobs=grid_jobs))
 
             # Evaluate model
             results.append(
@@ -1393,4 +1414,4 @@ class Classifier(object):
             append_predictions = True
 
         # return list of results for all folds
-        return results
+        return results, grid_search_scores
