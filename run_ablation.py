@@ -15,26 +15,33 @@ from run_experiment import fix_json, run_configuration
 from multiprocessing import Pool
 
 
-def run_experiment_without_feature(feature_type, given_features, config, args, machines):
+def run_experiment_without_feature(arg_tuple):
+    feature_type, given_features, config, local, queue, \
+                                  cfg_path, machines = arg_tuple
     featureset = [[x for x in given_features if x != feature_type]]
-    featureset_name = "{}_minus_{}".format(given_featureset_name, 
+
+    if feature_type:
+        featureset_name = "{}_minus_{}".format(given_featureset_name, 
                                            feature_type)
+    else:
+        featureset_name = "{}_all".format(given_featureset_name)             
 
     config.set("Input", "featuresets", json.dumps(featureset))
     config.set("Input", "featureset_names", "['{}']".format(featureset_name))
 
-    m = re.search(r'^(.*)\.cfg$', args.config_file)
+    m = re.search(r'^(.*)\.cfg$', cfg_path)
     if not m:
         raise ValueError("Configuration file should end in .cfg.")
-    new_config_path = "{}_minus_{}.cfg".format(m.groups()[0], feature_type)
+    new_cfg_path = "{}_minus_{}.cfg".format(m.groups()[0], feature_type) \
+                   if feature_type else "{}_all".format(m.groups()[0])
 
-    with open(new_config_path, 'w') as new_config_file:
+    with open(new_cfg_path, 'w') as new_config_file:
         config.write(new_config_file)
 
-    with open(new_config_path, 'r') as new_config_file:
+    with open(new_cfg_path, 'r') as new_config_file:
         run_configuration(new_config_file,
-                          local=args.local,
-                          queue=args.queue,
+                          local=local,
+                          queue=queue,
                           hosts=machines)
 
 
@@ -80,20 +87,25 @@ if __name__ == '__main__':
                                                  "featureset_names")))
 
     # make sure there is only one list of features
-    if (isinstance(given_featuresets[0], list) and len(given_featuresets) > 0) \
-       or (isinstance(given_featureset_names[0], list) 
-       and len(given_featureset_names) > 0):
+    if (isinstance(given_featuresets[0], list) and len(given_featuresets) > 1) \
+        or (isinstance(given_featureset_names[0], list) 
+        and len(given_featureset_names) > 1):
         raise ValueError("More than one feature set or list of names given.")
 
     # make a list of features rather than a list of lists
     given_features = given_featuresets[0]
     given_featureset_name = given_featureset_names[0]
 
-    pool = Pool(processes=len(given_features))
-
     # for each feature file, make a copy of the config file
     # with all but that feature, and run the jobs.
-    pool.apply_async(run_experiment_without_feature, 
-                     [(feature_type, given_features, config, args, machines) for 
-                      feature_type in given_features])
+    if args.local:
+        for feature_type in given_features + [None]:
+            run_experiment_without_feature((feature_type, given_features,
+                                            config, args, machines))
+    else:
+        pool = Pool(processes=len(given_features))
+        pool.map(run_experiment_without_feature, 
+                       [(feature_type, given_features, config, args.local, 
+                         args.queue, args.config_file.name, machines)
+                        for feature_type in given_features + [None]])
         
