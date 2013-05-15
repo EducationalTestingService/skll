@@ -1078,7 +1078,8 @@ class Classifier(object):
         return features, y
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
-              grid_search=True, grid_objective=f1_score_micro, grid_jobs=None):
+              grid_search=True, grid_objective=f1_score_micro, grid_jobs=None,
+              shuffle=True):
         '''
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -1103,6 +1104,8 @@ class Classifier(object):
                           grid search. If unspecified or C{None}, the number of
                           grid search folds will be used.
         @type grid_jobs: C{int}
+        @param shuffle: Shuffle examples (e.g., for grid search CV.)
+        @type shuffle: C{bool}
 
         @return: The best grid search objective function score, or 0 if we're
                  not doing grid search.
@@ -1112,6 +1115,10 @@ class Classifier(object):
         # seed the random number generator so that randomized algorithms are
         # replicable
         np.random.seed(9876315986142)
+
+        # shuffle so that the folds are random for the inner grid search CV
+        if shuffle:
+            np.random.shuffle(examples)
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
@@ -1403,7 +1410,10 @@ class Classifier(object):
             grid_search_scores.append(self.train(
                 examples[train_index], grid_search_folds=grid_search_folds,
                 grid_search=grid_search, grid_objective=grid_objective,
-                param_grid=param_grid, grid_jobs=grid_jobs))
+                param_grid=param_grid, grid_jobs=grid_jobs, shuffle=False))
+            # note: there is no need to shuffle again within each fold,
+            # regardless of what the shuffle keyword argument is set to.
+
 
             # Evaluate model
             results.append(
