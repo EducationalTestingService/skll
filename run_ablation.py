@@ -33,7 +33,7 @@ def run_experiment_without_feature(arg_tuple):
     if not m:
         raise ValueError("Configuration file should end in .cfg.")
     new_cfg_path = "{}_minus_{}.cfg".format(m.groups()[0], feature_type) \
-                   if feature_type else "{}_all".format(m.groups()[0])
+                   if feature_type else "{}_all.cfg".format(m.groups()[0])
 
     with open(new_cfg_path, 'w') as new_config_file:
         config.write(new_config_file)
@@ -103,7 +103,7 @@ if __name__ == '__main__':
             run_experiment_without_feature((feature_type, given_features,
                                             config, args, machines))
     else:
-        pool = Pool(processes=len(given_features))
+        pool = Pool(processes=len(given_features) + 1)
         pool.map(run_experiment_without_feature, 
                        [(feature_type, given_features, config, args.local, 
                          args.queue, args.config_file.name, machines)
