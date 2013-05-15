@@ -14,6 +14,7 @@ import json
 import re
 import os
 import sys
+import csv
 from collections import defaultdict, namedtuple, OrderedDict
 
 import numpy as np
@@ -27,7 +28,7 @@ from six.moves import configparser
 ClassifierResultInfo = namedtuple('ClassifierResultInfo',
                                   ['train_set_name', 'test_set_name',
                                    'featureset', 'given_classifier', 'task',
-                                   'task_results'])
+                                   'task_results', 'grid_scores'])
 
 
 def clean_path(path):
@@ -51,27 +52,30 @@ def get_stat_string(class_result_dict, stat):
         return "N/A"
 
 
-def print_fancy_output(result_tuples, output_file=sys.stdout):
+def print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
     '''
     Function to take all of the results from all of the folds and print
     nice tables with the results.
     '''
     num_folds = len(result_tuples)
     accuracy_sum = 0.0
-    grid_score_sum = None
+    score_sum = None
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
     result_table = None
 
-    for k, (conf_matrix, fold_accuracy, result_dict, model_params,
-            grid_score) in enumerate(result_tuples, start=1):
+    for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
+            score), grid_score) \
+            in enumerate(zip(result_tuples, grid_scores), start=1):
+
         if num_folds > 1:
             print("\nFold: {}".format(k), file=output_file)
         param_out = ('{}: {}'.format(param_name, param_value)
                      for param_name, param_value in iteritems(model_params))
         print('Model parameters: {}'.format(
             ', '.join(param_out)), file=output_file)
+        print('Grid search score = {:.5f}'.format(grid_score), file=output_file)
 
         if conf_matrix:
             classes = sorted(iterkeys(result_tuples[0][2]))
@@ -117,13 +121,13 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
             print("Accuracy = {:.1f}%".format(fold_accuracy), file=output_file)
             accuracy_sum += fold_accuracy
 
-        if grid_score is not None:
-            if grid_score_sum is None:
-                grid_score_sum = grid_score
+        if score is not None:
+            if score_sum is None:
+                score_sum = score
             else:
-                grid_score_sum += grid_score
+                score_sum += score
             print('Objective function score = {:.5f}'.format(
-                grid_score), file=output_file)
+                score), file=output_file)
         print(file=output_file)
 
     if num_folds > 1:
@@ -145,8 +149,8 @@ def print_fancy_output(result_tuples, output_file=sys.stdout):
             print(result_table.draw(), file=output_file)
             print("Accuracy = {:.1f}%".format(accuracy_sum / num_folds),
                   file=output_file)
-        if grid_score_sum is not None:
-            print("Objective function score = {:.5f}".format(grid_score_sum
+        if score_sum is not None:
+            print("Objective function score = {:.5f}".format(score_sum
                                                              / num_folds),
                   file=output_file)
 
@@ -193,7 +197,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
                         evaluate, suffix, log_path, probability, resultspath,
                         fixed_parameters, param_grid, pos_label_str,
                         overwrite, use_dense_features, min_feature_count,
-                        grid_search_jobs):
+                        grid_search_jobs, cv_folds):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -237,14 +241,22 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
             else:
                 print('\tfeaturizing and training new {} model'.format(
                     given_classifier), file=log_file)
+
+                grid_search_folds = 5
+                if not isinstance(cv_folds, int):
+                    grid_search_folds = cv_folds
+
                 best_score = learner.train(train_examples,
                                            grid_search=grid_search,
+                                           grid_search_folds=grid_search_folds,
                                            grid_objective=grid_objective,
                                            param_grid=param_grid,
                                            grid_jobs=grid_search_jobs)
+                grid_scores = [best_score]
 
                 # save model
                 learner.save_model(modelfile)
+
 
                 if grid_search:
                     print('\tbest {} score: {}'.format(grid_objective.__name__,
@@ -262,9 +274,10 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
         # was asked for
         if cross_validate:
             print('\tcross-validating', file=log_file)
-            results = learner.cross_validate(train_examples,
+            results, grid_scores = learner.cross_validate(train_examples,
                                              prediction_prefix=prediction_prefix,
                                              grid_search=grid_search,
+                                             cv_folds=cv_folds,
                                              grid_objective=grid_objective,
                                              param_grid=param_grid,
                                              grid_jobs=grid_search_jobs)
@@ -284,11 +297,12 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
         # write out results to file if we're not predicting
         result_info = ClassifierResultInfo(train_set_name, test_set_name,
                                            featureset, given_classifier, task,
-                                           results)
+                                           results, grid_scores)
         if task != 'predict':
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
                       'w') as output_file:
-                print_fancy_output(result_info.task_results, output_file)
+                print_fancy_output(result_info.task_results, 
+                                   result_info.grid_scores, output_file)
 
     return result_info
 
@@ -313,6 +327,21 @@ def fix_json(json_string):
     return json_string
 
 
+def load_cv_folds(cv_folds_location):
+    '''
+    Loads CV folds from a CSV file with columns for example ID and fold ID
+    (and a header).
+    '''
+    with open(cv_folds_location, 'rb') as f:
+        reader = csv.reader(f)
+        reader.next()  # discard the header
+        res = {}
+        for row in reader:
+            res[row[0]] = row[1]
+
+    return res
+
+
 def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                       hosts=None):
     '''
@@ -333,7 +362,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                                             'featureset_names': '[]',
                                             'use_dense_features': 'False',
                                             'min_feature_count': '1',
-                                            'grid_search_jobs': '0'})
+                                            'grid_search_jobs': '0',
+                                            'cv_folds_location': None})
     config.readfp(config_file)
 
     if not local:
@@ -362,6 +392,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     train_path = config.get("Input", "train_location").rstrip('/')
     test_path = config.get("Input", "test_location").rstrip('/')
     suffix = config.get("Input", "suffix")
+    
+    # get the cv folds file and make a dictionary from it
+    cv_folds_location = config.get("Input", "cv_folds_location")
+    if cv_folds_location:
+        cv_folds = load_cv_folds(cv_folds_location)
+    else:
+        cv_folds = 10
 
     # get all the output files and directories
     resultspath = config.get("Output", "results")
@@ -507,7 +544,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                         (param_grid_list[classifier_num] if param_grid_list
                          else None),
                         pos_label_str, overwrite, use_dense_features,
-                        min_feature_count, grid_search_jobs]
+                        min_feature_count, grid_search_jobs, cv_folds]
             if not local:
                 jobs.append(Job(classify_featureset, job_args,
                                 num_slots=(5 if do_grid_search else 1),
