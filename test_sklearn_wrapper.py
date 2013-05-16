@@ -70,7 +70,7 @@ def make_cv_folds_data():
     num_folds = 3
 
     with open(os.path.join(_my_path, 'tests', 'test_cv_folds1.jsonlines'), 'w') as f, open(os.path.join(_my_path, 'tests', 'test_cv_folds1.csv'), 'w') as csv_out:
-        csv_out.write('id\tfold\n')
+        csv_out.write('id,fold\n')
         for k in range(num_folds):
             for i in range(num_examples_per_fold):
                 y = "dog" if i % 2 == 0 else "cat"

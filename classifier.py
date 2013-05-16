@@ -1014,12 +1014,25 @@ class Classifier(object):
                                     " string labels.  Convert them to" +
                                     " integers or floats.")
 
+        #min_feat_abs = float("inf")
+        max_feat_abs = float("-inf")
+
         # make sure that feature values are not strings
         for ex in examples:
             for val in ex['x'].values():
+                #min_feat_abs = min(min_feat_abs, abs(val)) if val 
+                #                                           else min_feat_abs
+                max_feat_abs = max(max_feat_abs, abs(val))
                 if isinstance(val, string_types):
                     raise TypeError("You have feature values that are" +
                                     " strings.  Convert them to floats.")
+
+        if max_feat_abs > 1000.0:
+            print("You have a feature with a very large absolute value ({})." +
+                  " That may cause the learning algorithm to crash or" +
+                  " perform poorly.",
+                  file=sys.stderr)
+
 
     def train_setup(self, examples):
         '''
