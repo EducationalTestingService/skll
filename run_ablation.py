@@ -101,7 +101,8 @@ if __name__ == '__main__':
     if args.local:
         for feature_type in given_features + [None]:
             run_experiment_without_feature((feature_type, given_features,
-                                            config, args, machines))
+                                            config, args.local, args.queue,
+                                            args.config_file.name, machines))
     else:
         pool = Pool(processes=len(given_features) + 1)
         pool.map(run_experiment_without_feature, 
