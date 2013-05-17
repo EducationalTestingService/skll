@@ -308,7 +308,10 @@ def _preprocess_tsv_row(row, header, example_num, has_labels=True):
         if fname == "id":
             example_id = fval
         else:
-            x["{}".format(fname)] = float(fval)
+            fval_float = float(fval)
+            # we don't need to explicitly store zeros
+            if fval_float != 0.0:
+                x["{}".format(fname)] = fval_float
 
     return {"y": y, "x": x, "id": example_id}
 
