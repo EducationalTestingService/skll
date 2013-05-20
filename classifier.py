@@ -964,13 +964,13 @@ class Classifier(object):
 
         if self._model_type == 'logistic':
             estimator = LogisticRegression(**self._model_kwargs)
-            default_param_grid = [{'C': [1e-4, 1e-2, 1.0, 1e2, 1e4]}]
+            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'svm_linear':  # No predict_proba support
             estimator = LinearSVC(**self._model_kwargs)
-            default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
+            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'svm_radial':
             estimator = SVC(**self._model_kwargs)
-            default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
+            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'naivebayes':
             estimator = MultinomialNB(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
@@ -985,16 +985,16 @@ class Classifier(object):
             default_param_grid = [{'learning_rate': [0.01, 0.1, 0.5]}]
         elif self._model_type == 'ridge':
             estimator = Ridge(**self._model_kwargs)
-            default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
+            default_param_grid = [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'rescaled_ridge':
             estimator = RescaledRidge(**self._model_kwargs)
-            default_param_grid = [{'alpha': [0.1, 1.0, 10, 100, 1000]}]
+            default_param_grid = [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'svr_linear':
             estimator = SVR(kernel='linear', **self._model_kwargs)
-            default_param_grid = [{'C': [0.1, 1.0, 10, 100, 1000]}]
+            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'rescaled_svr_linear':
             estimator = RescaledSVR(kernel='linear', **self._model_kwargs)
-            default_param_grid = [{'C': [0.2, 2.0, 20, 200, 2000]}]
+            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         else:
             raise ValueError(
                 "{} is not a valid classifier type.".format(self._model_type))
