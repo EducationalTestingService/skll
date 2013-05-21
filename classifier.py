@@ -10,6 +10,7 @@ Module with many functions to use for easily creating an sklearn classifier
 from __future__ import print_function, unicode_literals
 
 import csv
+import inspect
 import json
 import os
 import subprocess
@@ -24,7 +25,7 @@ import scipy.sparse as sp
 from bs4 import UnicodeDammit
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn import metrics
-from sklearn.base import is_classifier, clone
+from sklearn.base import is_classifier, clone, BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold, check_cv
 from sklearn.cross_validation import LeaveOneLabelOut
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -645,35 +646,23 @@ class _GridSearchCVBinary(GridSearchCV):
         return self.score_func(y, y_predicted)
 
 
-class RescaledRidge(Ridge):
 
+class RescaledRegressionMixin(BaseEstimator):
     '''
-    This is an extension of the Ridge classifier that stores a min and
-    a max for the training data.  It makes sure its predictions fall within
-    that range.
+    This is a mixin to create regressors that store a min and
+    a max for the training data and make sure that predictions fall within
+    that range.  It also stores the means and SDs of the gold standard
+    and the predictions on the training set to rescale the predictions
+    (e.g., as in e-rater).
     '''
+    def rescale_fit(self, X, y=None):
+        '''
+        Fit a model, then store the mean, SD, max and min of the training set 
+        and the mean and SD of the predictions on the training set.
+        '''
 
-    def __init__(self, rescale=True, constrain=True, alpha=1.0,
-                 fit_intercept=True, normalize=False, copy_X=True,
-                 max_iter=None, tol=1e-3, solver="auto"):
-        self.constrain = constrain
-        self.rescale = rescale
-        self.y_min = None
-        self.y_max = None
-        self.yhat_mean = None
-        self.yhat_sd = None
-        self.y_mean = None
-        self.y_sd = None
-        super(RescaledRidge, self).__init__(alpha=alpha,
-                                            fit_intercept=fit_intercept,
-                                            normalize=normalize,
-                                            copy_X=copy_X,
-                                            max_iter=max_iter,
-                                            tol=tol, solver=solver)
-
-    def fit(self, X, y=None):
         # fit a regular regression model
-        super(RescaledRidge, self).fit(X, y=y)
+        super(self.__class__, self).fit(X, y=y)
 
         if self.constrain:
             # also record the training data min and max
@@ -682,15 +671,19 @@ class RescaledRidge(Ridge):
 
         if self.rescale:
             # also record the means and SDs for the training set
-            y_hat = super(RescaledRidge, self).predict(X)
+            y_hat = super(self.__class__, self).predict(X)
             self.yhat_mean = np.mean(y_hat)
             self.yhat_sd = np.std(y_hat)
             self.y_mean = np.mean(y)
             self.y_sd = np.std(y)
 
-    def predict(self, X):
+    def rescale_predict(self, X):
+        '''
+        Make predictions with the super class, and then adjust them using the 
+        stored min, max, means, and standard deviations.
+        '''
         # get the unconstrained predictions
-        res = super(RescaledRidge, self).predict(X)
+        res = super(self.__class__, self).predict(X)
 
         if self.rescale:
             # convert the predictions to z-scores,
@@ -705,18 +698,34 @@ class RescaledRidge(Ridge):
 
         return res
 
+    def rescale_get_param_names(self):
+        '''
+        This is adapted from sklearn's BaseEstimator class.
+        It gets the kwargs for the superclass's init method and adds the 
+        kwargs for the rescale_init method.
+        '''
+        try:
+            init = getattr(super(self.__class__, self).__init__, 'deprecated_original', super(self.__class__, self).__init__)
 
-class RescaledSVR(SVR):
+            args, varargs, __, __ = inspect.getargspec(init)
+            if not varargs is None:
+                raise RuntimeError('scikit learn estimators should always '
+                                   'specify their parameters in the signature'
+                                   ' of their init (no varargs).')
+            # Remove 'self'
+            args.pop(0)
+        except TypeError:
+            args = []
 
-    '''
-    This is an extension of the SVR classifier that stores a min and
-    a max for the training data.  It makes sure its predictions fall within
-    that range.
-    '''
-    def __init__(self, rescale=True, constrain=True, kernel='rbf', degree=3,
-                 gamma=0.0, coef0=0.0, tol=0.001, C=1.0,
-                 epsilon=0.10000000000000001, shrinking=True, probability=False,
-                 cache_size=200, verbose=False, max_iter=-1):
+        rescale_args, __, __, __ = inspect.getargspec(self.rescale_init)
+        # Remove 'self'
+        rescale_args.pop(0)
+
+        args += rescale_args
+        args.sort()
+        return args
+
+    def rescale_init(self, constrain=True, rescale=True, **kwargs):
         self.constrain = constrain
         self.rescale = rescale
         self.y_min = None
@@ -725,47 +734,39 @@ class RescaledSVR(SVR):
         self.yhat_sd = None
         self.y_mean = None
         self.y_sd = None
-        super(RescaledSVR, self).__init__(kernel=kernel, degree=degree,
-                                          gamma=gamma, coef0=coef0, tol=tol,
-                                          C=C, epsilon=epsilon,
-                                          shrinking=shrinking,
-                                          probability=probability,
-                                          cache_size=cache_size,
-                                          verbose=verbose, max_iter=max_iter)
+        super(self.__class__, self).__init__(**kwargs)
+
+
+
+class RescaledRidge(Ridge, RescaledRegressionMixin):
+    def __init__(self, constrain=True, rescale=True, **kwargs):
+        self.rescale_init(constrain=constrain, rescale=rescale, **kwargs)
+
+    def _get_param_names(self):
+        return self.rescale_get_param_names()
 
     def fit(self, X, y=None):
-        # fit a regular regression model
-        super(RescaledSVR, self).fit(X, y=y)
-
-        if self.constrain:
-            # also record the training data min and max
-            self.y_min = min(y)
-            self.y_max = max(y)
-
-        if self.rescale:
-            # also record the means and SDs for the training set
-            y_hat = super(RescaledSVR, self).predict(X)
-            self.yhat_mean = np.mean(y_hat)
-            self.yhat_sd = np.std(y_hat)
-            self.y_mean = np.mean(y)
-            self.y_sd = np.std(y)
+        self.rescale_fit(X, y=y)
 
     def predict(self, X):
-        # get the unconstrained predictions
-        res = super(RescaledSVR, self).predict(X)
+        return self.rescale_predict(X)
 
-        if self.rescale:
-            # convert the predictions to z-scores,
-            # then rescale to match the training set distribution
-            res = (((res - self.yhat_mean) / self.yhat_sd)
-                   * self.y_sd) + self.y_mean
 
-        if self.constrain:
-            # apply min and max constraints
-            res = np.array([max(self.y_min, min(self.y_max, pred))
-                            for pred in res])
+class RescaledSVR(SVR, RescaledRegressionMixin):
+    def __init__(self, constrain=True, rescale=True, **kwargs):
+        self.rescale_init(constrain=constrain, rescale=rescale, **kwargs)
 
-        return res
+    def _get_param_names(self):
+        return self.rescale_get_param_names()
+
+    def fit(self, X, y=None):
+        self.rescale_fit(X, y=y)
+
+    def predict(self, X):
+        return self.rescale_predict(X)
+
+
+#################
 
 
 class Classifier(object):
