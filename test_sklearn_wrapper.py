@@ -1,6 +1,7 @@
 
 import scipy.sparse as sp
 import sys
+import csv
 import os
 import numpy as np
 import classifier
@@ -14,6 +15,10 @@ sys.path.append(_my_path)
 from run_experiment import load_featureset, run_configuration, load_cv_folds
 from classifier import Classifier, accuracy
 from nose.tools import *
+
+
+score_output_re = re.compile(r'Average:.+Objective function score = ([\-\d\.]+)', re.DOTALL)
+grid_re = re.compile(r'Grid search score = ([\-\d\.]+)')
 
 
 def test_SelectByMinCount():
@@ -82,9 +87,6 @@ def make_cv_folds_data():
 
 def test_specified_cv_folds():
     make_cv_folds_data()
-    
-    output_re = re.compile(r'Objective function score = ([\-\d\.]+)')
-    grid_re = re.compile(r'Grid search score = ([\-\d\.]+)', re.M)
 
     # test_cv_folds1.cfg is with prespecified folds and should have about 50% performance
     # test_cv_folds2.cfg is without prespecified folds and should have very high performance
@@ -94,7 +96,7 @@ def test_specified_cv_folds():
         with open(os.path.join(_my_path, 'tests', 'tests_cv_test_cv_folds1_logistic_scaled_tuned_accuracy_cross-validate.results')) as f:
             # check held out scores
             outstr = f.read()
-            score = float(output_re.search(outstr).groups()[0])
+            score = float(score_output_re.search(outstr).groups()[0])
             assert test_func(score)
 
             grid_score_matches = grid_re.findall(outstr)
@@ -114,3 +116,53 @@ def test_specified_cv_folds():
     assert grid_search_score < 0.6
     grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective=accuracy, grid_jobs=1)
     assert grid_search_score > 0.95
+
+
+def make_regression_data():
+    num_examples = 1000
+
+    np.random.seed(1234567890)
+    f1 = np.random.rand(num_examples)
+    f2 = np.random.rand(num_examples)
+    f3 = np.random.rand(num_examples)
+    err = np.random.randn(num_examples) / 2.0
+    y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
+
+    with open(os.path.join(_my_path, 'tests', 'test_regression1.jsonlines'), 'w') as f:
+        for i in range(num_examples):
+            ex_id = "EXAMPLE{}".format(i)
+            x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
+            f.write(json.dumps({"y": y[i], "id": ex_id, "x":x}) + '\n')
+
+    return x, y
+
+
+def test_regression1():
+    '''
+    This is a bit of a contrived test, but it should fail 
+    if anything drastic happens to the regression code.
+    '''
+
+    _, y = make_regression_data()
+    cfg_filename = "test_regression1.cfg"
+    test_func = lambda x: x > 0.7
+
+    with open(os.path.join(_my_path, 'tests', cfg_filename)) as cfg:
+        run_configuration(cfg, local=True)
+    with open(os.path.join(_my_path, 'tests', 'tests_cv_test_regression1_rescaled_ridge_scaled_tuned_pearson_cross-validate.results')) as f:
+        # check held out scores
+        outstr = f.read()
+        score = float(score_output_re.search(outstr).groups()[0])
+        assert test_func(score)
+
+    with open(os.path.join(_my_path, 'tests', 'tests_cv_test_regression1_rescaled_ridge_scaled_tuned_pearson_cross-validate.predictions'), 'rb') as f:
+        reader = csv.reader(f, dialect='excel-tab')
+        reader.next()
+        pred = [float(row[1]) for row in reader]
+
+        assert np.min(pred) >= np.min(y)
+        assert np.max(pred) <= np.max(y)
+
+        assert abs(np.mean(pred) - np.mean(y)) < 0.1
+        assert abs(np.std(pred) - np.std(y)) < 0.1
+
