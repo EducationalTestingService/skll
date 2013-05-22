@@ -168,22 +168,32 @@ def load_featureset(dirpath, featureset, suffix):
         examples = classifier.load_examples(os.path.join(dirpath,
                                                          feats + suffix))
 
-        # check that the inputs match
+
+        # check that the IDs are unique
+        ex_ids = [example['id'] for example in examples]
+        if len(ex_ids) != len(set(ex_ids)):
+            raise ValueError('The example IDs are not unique.')
+
+        # check that the different feature files have the same IDs
         if i > 0:
-            if set([example['id'] for example in examples]) \
-               != set(example_dict.keys()):
-                raise ValueError('The sets of IDs in two feature files \
+            if set(ex_ids) != set(example_dict.keys()):
+                raise ValueError('The sets of example IDs in two feature files \
                                   do not match')
 
         for example in examples:
-            if example['id'] not in example_dict:
+            if i == 0:
                 example_dict[example['id']] = example
             else:
-                # check that the new features don't already exist 
-                # (i.e., intersection is null set)
+                # Check that two feature files have unique feature names by
+                # checking that the new features don't already exist 
+                # (i.e., that the intersection is null set).
                 if set(example['x'].keys()) \
                    & set(example_dict[example['id']]['x'].keys()):
                     raise ValueError('Two feature files have the same feature!')
+
+                if example['y'] != example_dict[example['id']]['y']:
+                    raise ValueError('Two feature files have different labels' +
+                                     ' (i.e., y values) for the same ID.')
 
                 example_dict[example['id']]['x'].update(example['x'])
 
