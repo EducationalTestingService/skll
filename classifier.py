@@ -29,6 +29,7 @@ from sklearn.base import is_classifier, clone, BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold, check_cv
 from sklearn.cross_validation import LeaveOneLabelOut
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.externals.joblib import Parallel, delayed, logger
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.grid_search import GridSearchCV, IterGrid, _has_one_grid_point
@@ -49,10 +50,11 @@ from six import string_types
 
 
 # Globals #
-_REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree'])
+_REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree', 
+                             'gb_regressor'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
-                                'rescaled_svr_linear'])
+                                'rescaled_svr_linear', 'gb_regressor'])
 
 
 # METRICS #
@@ -705,7 +707,9 @@ class RescaledRegressionMixin(BaseEstimator):
         kwargs for the rescale_init method.
         '''
         try:
-            init = getattr(super(self.__class__, self).__init__, 'deprecated_original', super(self.__class__, self).__init__)
+            init = getattr(super(self.__class__, self).__init__, 
+                           'deprecated_original', 
+                           super(self.__class__, self).__init__)
 
             args, varargs, __, __ = inspect.getargspec(init)
             if not varargs is None:
@@ -764,6 +768,7 @@ class RescaledSVR(SVR, RescaledRegressionMixin):
 
     def predict(self, X):
         return self.rescale_predict(X)
+
 
 
 #################
@@ -831,12 +836,16 @@ class Classifier(object):
             self._model_kwargs['probability'] = self.probability
         elif self._model_type == 'dtree':
             self._model_kwargs['criterion'] = 'entropy'
-        elif self._model_type == 'rforest' or self._model_type == 'gradient':
-            self._model_kwargs['n_estimators'] = 1000
-        if self._model_type == 'rforest' or self._model_type == 'dtree':
+        elif self._model_type in ['rforest', 'gradient', 'gb_regressor']:
+            self._model_kwargs['n_estimators'] = 500
+
+        if self._model_type in ['rforest', 'dtree']:
             self._model_kwargs['compute_importances'] = True
-        if self._model_type in ['rforest', 'svm_linear', 'logistic', 'dtree', 'gradient']:
+
+        if self._model_type in ['rforest', 'svm_linear', 'logistic', 'dtree', 
+                                'gradient', 'gb_regressor']:
             self._model_kwargs['random_state'] = 123456789
+
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
 
@@ -890,6 +899,8 @@ class Classifier(object):
             self._model_type = 'ridge'
         elif isinstance(self._model, SVR):
             self._model_type = 'svr_linear'
+        elif isinstance(self._model, GradientBoostingRegressor):
+            self._model_type = 'gb_regressor'
 
     def get_model_params(self):
         res = {}
@@ -983,7 +994,8 @@ class Classifier(object):
             default_param_grid = [{'max_depth': [1, 5, 10, None]}]
         elif self._model_type == "gradient":
             estimator = GradientBoostingClassifier(**self._model_kwargs)
-            default_param_grid = [{'learning_rate': [0.01, 0.1, 0.5]}]
+            default_param_grid = [{'max_depth': [1, 3, 5], 
+                                   'n_estimators': [500]}]
         elif self._model_type == 'ridge':
             estimator = Ridge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
@@ -996,6 +1008,10 @@ class Classifier(object):
         elif self._model_type == 'rescaled_svr_linear':
             estimator = RescaledSVR(kernel='linear', **self._model_kwargs)
             default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+        elif self._model_type == 'gb_regressor':
+            estimator = GradientBoostingRegressor(**self._model_kwargs)
+            default_param_grid = [{'max_depth': [1, 3, 5], 
+                                   'n_estimators': [500]}]
         else:
             raise ValueError(
                 "{} is not a valid classifier type.".format(self._model_type))
