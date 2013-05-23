@@ -15,6 +15,7 @@ import re
 import os
 import sys
 import csv
+import itertools
 from collections import defaultdict, namedtuple, OrderedDict
 
 import numpy as np
@@ -163,39 +164,55 @@ def load_featureset(dirpath, featureset, suffix):
     if isinstance(featureset, string_types):
         featureset = [featureset]
 
-    example_dict = OrderedDict()
-    for i, feats in enumerate(featureset):
-        examples = classifier.load_examples(os.path.join(dirpath,
-                                                         feats + suffix))
+    # Load a list of lists of examples, one list of examples per featureset.
+    example_lists = [classifier.load_examples(os.path.join(dirpath, 
+                                                           featfile + suffix)) 
+                     for featfile in featureset]
 
-
-        # check that the IDs are unique
+    # Check that the IDs are unique.
+    for examples in example_lists:
         ex_ids = [example['id'] for example in examples]
         if len(ex_ids) != len(set(ex_ids)):
             raise ValueError('The example IDs are not unique.')
 
-        # check that the different feature files have the same IDs
-        if i > 0:
-            if set(ex_ids) != set(example_dict.keys()):
-                raise ValueError('The sets of example IDs in two feature files \
-                                  do not match')
+    # Check that the different feature files have the same IDs.
+    # To do this, make a sorted tuple of unique IDs for each feature file,
+    # and then make sure they are all the same by making sure the set is size 1.
+    if len(set([tuple(sorted(set([ex['id'] for ex in examples]))) 
+                for examples in example_lists])) != 1:
+        raise ValueError('The sets of example IDs in two feature files do not \
+                          match')
 
+    # Make sure there is a unique label for every example (or no label, for 
+    # "unseen" examples).
+    # To do this, find the unique (id, y) tuples, and then make sure that all
+    # those ids are unique.
+    unique_tuples = set(itertools.chain(*[[(ex['id'], ex['y']) for ex 
+                                           in examples if 'y' in ex] 
+                                          for examples in example_lists]))
+    if len(set([tup[0] for tup in unique_tuples])) != len(unique_tuples):
+        raise ValueError('Two feature files have different labels (i.e., y' +
+                         ' values) for the same ID.')
+
+    # Now, create the final dictionary of examples with merged features
+    example_dict = OrderedDict()
+    for examples in example_lists:
         for example in examples:
-            if i == 0:
-                example_dict[example['id']] = example
-            else:
-                # Check that two feature files have unique feature names by
-                # checking that the new features don't already exist 
-                # (i.e., that the intersection is null set).
-                if set(example['x'].keys()) \
-                   & set(example_dict[example['id']]['x'].keys()):
-                    raise ValueError('Two feature files have the same feature!')
+            ex_id = example['id']
+            if ex_id not in example_dict:
+                example_dict[ex_id] = {'x': {}, 'id': ex_id}
 
-                if example['y'] != example_dict[example['id']]['y']:
-                    raise ValueError('Two feature files have different labels' +
-                                     ' (i.e., y values) for the same ID.')
+            # Check that two feature files have unique feature names by
+            # checking that the new features don't already exist 
+            # (i.e., that the intersection is null set).
+            if set(example['x'].keys()) \
+               & set(example_dict[ex_id]['x'].keys()):
+                raise ValueError('Two feature files have the same feature!')
 
-                example_dict[example['id']]['x'].update(example['x'])
+            # update x and y values
+            if 'y' in example:
+                example_dict[ex_id]['y'] = example['y']
+            example_dict[ex_id]['x'].update(example['x'])
 
     return np.array(list(itervalues(example_dict)))  # Python 2/3 compatible
 
