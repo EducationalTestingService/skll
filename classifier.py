@@ -911,8 +911,17 @@ class Classifier(object):
                 if coef[idx]:
                     res[feat] = coef[idx]
         elif isinstance(self._model, BaseLibLinear):
-            for i, label in enumerate(self.label_list):
-                coef = self.feat_selector.inverse_transform(self.model.coef_[i])[0]
+            
+            label_list = self.label_list
+
+            # if there are only two classes, sklearn will only have one set of 
+            # parameters and they will be associated with label 1 (not 0)
+            if len(self.label_list) == 2:
+                label_list = self.label_list[-1:]
+
+            for i, label in enumerate(label_list):
+                coef = self.model.coef_[i]
+                coef = self.feat_selector.inverse_transform(coef)[0]
                 for feat, idx in self.feat_vectorizer.vocabulary_.items():
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]

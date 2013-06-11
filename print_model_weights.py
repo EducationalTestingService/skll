@@ -17,9 +17,11 @@ if __name__ == '__main__':
                                      conflict_handler='resolve',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('model_file', help='model file to load')
-    parser.add_argument('--k', help='number of top features to print',
+    parser.add_argument('--k', help='number of top features to print (0 for all)',
                         type=int, default=50)
     args = parser.parse_args()
+
+    k = args.k if args.k > 0 else None
 
     clf = classifier.Classifier()
     clf.load_model(args.model_file)
@@ -27,5 +29,5 @@ if __name__ == '__main__':
    
     print("number of nonzero features:", len(weights), file=sys.stderr)
 
-    for feat, val in sorted(weights.items(), key=lambda x: -abs(x[1]))[:args.k]:
+    for feat, val in sorted(weights.items(), key=lambda x: -abs(x[1]))[:k]:
         print("{:.12f}\t{}".format(val, feat))
