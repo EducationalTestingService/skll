@@ -50,7 +50,7 @@ from six import string_types
 
 
 # Globals #
-_REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree', 
+_REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
                              'gb_regressor'])
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
@@ -203,15 +203,14 @@ def _megam_dict_iter(path, has_labels=True):
     '''
 
     line_count = 0
-    print(
-        "Loading {}...".format(path).encode('utf-8'), end="", file=sys.stderr)
+    print("Loading {}...".format(path).encode('utf-8'), end="", file=sys.stderr)
     sys.stderr.flush()
     with open(path) as megam_file:
         curr_id = None
         for line in megam_file:
             # Process encoding
-            line = _sanitize_line(UnicodeDammit(
-                line, ['utf-8', 'windows-1252']).unicode_markup.strip())
+            line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
+            line = _sanitize_line(line.strip())
             # Handle instance lines
             if line.startswith('#'):
                 curr_id = line[1:].strip()
@@ -260,7 +259,8 @@ def load_examples(path, has_labels=True):
         with open(path) as f:
             reader = csv.reader(f, dialect=csv.excel_tab)
             header = next(reader)
-            out = [_preprocess_tsv_row(row, header, example_num, has_labels=has_labels)
+            out = [_preprocess_tsv_row(row, header, example_num,
+                                       has_labels=has_labels)
                    for example_num, row in enumerate(reader)]
     elif path.endswith(".jsonlines"):
         out = []
@@ -273,15 +273,16 @@ def load_examples(path, has_labels=True):
                 example_num += 1
                 out.append(example)
     elif path.endswith(".megam"):
-        out = [{"y": class_name, "x": feature_dict,
-                "id": "EXAMPLE_{}".format(example_num) if example_id is None
-                else example_id}
+        out = [{"y": class_name,
+                "x": feature_dict,
+                "id": ("EXAMPLE_{}".format(example_num) if example_id is None
+                       else example_id)}
                for example_num, (example_id, class_name, feature_dict)
                in enumerate(_megam_dict_iter(path, has_labels=has_labels))]
     else:
-        raise Exception('Example files must be in either TSV, MegaM, or the \
-                         preprocessed .jsonlines format. \
-                         You specified: {}'.format(path))
+        raise Exception('Example files must be in either TSV, MegaM, or the' +
+                        'preprocessed .jsonlines format. ' +
+                        'You specified: {}'.format(path))
 
     return np.array(out)
 
@@ -449,9 +450,9 @@ class _FixedStandardScaler(StandardScaler):
         X = check_arrays(X, copy=self.copy, sparse_format="csr")[0]
         if sp.issparse(X):
             if self.with_mean:
-                raise ValueError(
-                    "Cannot center sparse matrices: pass `with_mean=False` "
-                    "instead See docstring for motivation and alternatives.")
+                raise ValueError("Cannot center sparse matrices: pass " +
+                                 "`with_mean=False` instead. See docstring " +
+                                 "for motivation and alternatives.")
             warn_if_not_float(X, estimator=self)
             self.mean_ = None
 
@@ -466,8 +467,9 @@ class _FixedStandardScaler(StandardScaler):
             return self
         else:
             warn_if_not_float(X, estimator=self)
-            self.mean_, self.std_ = _mean_and_std(
-                X, axis=0, with_mean=self.with_mean, with_std=self.with_std)
+            self.mean_, self.std_ = _mean_and_std(X, axis=0,
+                                                  with_mean=self.with_mean,
+                                                  with_std=self.with_std)
             return self
 
     def transform(self, X, y=None, copy=None):
@@ -482,9 +484,9 @@ class _FixedStandardScaler(StandardScaler):
         X = check_arrays(X, copy=copy, sparse_format="csr")[0]
         if sp.issparse(X):
             if self.with_mean:
-                raise ValueError(
-                    "Cannot center sparse matrices: pass `with_mean=False` "
-                    "instead See docstring for motivation and alternatives.")
+                raise ValueError("Cannot center sparse matrices: pass " +
+                                 "`with_mean=False` instead. See docstring " +
+                                 "for motivation and alternatives.")
             warn_if_not_float(X, estimator=self)
             if self.with_std:
                 inplace_csr_column_scale(X, 1 / self.std_)
@@ -508,9 +510,9 @@ class _FixedStandardScaler(StandardScaler):
         copy = copy if copy is not None else self.copy
         if sp.issparse(X):
             if self.with_mean:
-                raise ValueError(
-                    "Cannot uncenter sparse matrices: pass `with_mean=False` "
-                    "instead See docstring for motivation and alternatives.")
+                raise ValueError("Cannot center sparse matrices: pass " +
+                                 "`with_mean=False` instead. See docstring " +
+                                 "for motivation and alternatives.")
             if not sp.isspmatrix_csr(X):
                 X = X.tocsr()
                 copy = False
@@ -633,8 +635,9 @@ class _GridSearchCVBinary(GridSearchCV):
             self._set_methods()
 
         # Store the computed scores
-        self.grid_scores_ = [(clf_params, score, all_scores) for clf_params, (
-            score, _), all_scores in zip(grid, scores, cv_scores)]
+        self.grid_scores_ = [(clf_params, score, all_scores) for
+                             clf_params, (score, _), all_scores in
+                             zip(grid, scores, cv_scores)]
         return self
 
     def score(self, X, y=None):
@@ -659,7 +662,7 @@ class RescaledRegressionMixin(BaseEstimator):
     '''
     def rescale_fit(self, X, y=None):
         '''
-        Fit a model, then store the mean, SD, max and min of the training set 
+        Fit a model, then store the mean, SD, max and min of the training set
         and the mean and SD of the predictions on the training set.
         '''
 
@@ -681,7 +684,7 @@ class RescaledRegressionMixin(BaseEstimator):
 
     def rescale_predict(self, X):
         '''
-        Make predictions with the super class, and then adjust them using the 
+        Make predictions with the super class, and then adjust them using the
         stored min, max, means, and standard deviations.
         '''
         # get the unconstrained predictions
@@ -703,12 +706,12 @@ class RescaledRegressionMixin(BaseEstimator):
     def rescale_get_param_names(self):
         '''
         This is adapted from sklearn's BaseEstimator class.
-        It gets the kwargs for the superclass's init method and adds the 
+        It gets the kwargs for the superclass's init method and adds the
         kwargs for the rescale_init method.
         '''
         try:
-            init = getattr(super(self.__class__, self).__init__, 
-                           'deprecated_original', 
+            init = getattr(super(self.__class__, self).__init__,
+                           'deprecated_original',
                            super(self.__class__, self).__init__)
 
             args, varargs, __, __ = inspect.getargspec(init)
@@ -842,7 +845,7 @@ class Classifier(object):
         if self._model_type in ['rforest', 'dtree']:
             self._model_kwargs['compute_importances'] = True
 
-        if self._model_type in ['rforest', 'svm_linear', 'logistic', 'dtree', 
+        if self._model_type in ['rforest', 'svm_linear', 'logistic', 'dtree',
                                 'gradient', 'gb_regressor']:
             self._model_kwargs['random_state'] = 123456789
 
@@ -911,10 +914,10 @@ class Classifier(object):
                 if coef[idx]:
                     res[feat] = coef[idx]
         elif isinstance(self._model, BaseLibLinear):
-            
+
             label_list = self.label_list
 
-            # if there are only two classes, sklearn will only have one set of 
+            # if there are only two classes, sklearn will only have one set of
             # parameters and they will be associated with label 1 (not 0)
             if len(self.label_list) == 2:
                 label_list = self.label_list[-1:]
@@ -1003,7 +1006,7 @@ class Classifier(object):
             default_param_grid = [{'max_depth': [1, 5, 10, None]}]
         elif self._model_type == "gradient":
             estimator = GradientBoostingClassifier(**self._model_kwargs)
-            default_param_grid = [{'max_depth': [1, 3, 5], 
+            default_param_grid = [{'max_depth': [1, 3, 5],
                                    'n_estimators': [500]}]
         elif self._model_type == 'ridge':
             estimator = Ridge(**self._model_kwargs)
@@ -1012,18 +1015,18 @@ class Classifier(object):
             estimator = RescaledRidge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'svr_linear':
-            estimator = SVR(kernel='linear', **self._model_kwargs)
+            estimator = SVR(kernel=b'linear', **self._model_kwargs)
             default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'rescaled_svr_linear':
-            estimator = RescaledSVR(kernel='linear', **self._model_kwargs)
+            estimator = RescaledSVR(kernel=b'linear', **self._model_kwargs)
             default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
         elif self._model_type == 'gb_regressor':
             estimator = GradientBoostingRegressor(**self._model_kwargs)
-            default_param_grid = [{'max_depth': [1, 3, 5], 
+            default_param_grid = [{'max_depth': [1, 3, 5],
                                    'n_estimators': [500]}]
         else:
-            raise ValueError(
-                "{} is not a valid classifier type.".format(self._model_type))
+            raise ValueError(("{} is not a valid classifier " +
+                              "type.").format(self._model_type))
 
         return estimator, default_param_grid
 
@@ -1033,8 +1036,8 @@ class Classifier(object):
         '''
 
         # Make sure the labels for a regression task are not strings.
-        # Note: this is redundant because of how _extract_label is used 
-        # in train setup, but it's probably useful to leave it in 
+        # Note: this is redundant because of how _extract_label is used
+        # in train setup, but it's probably useful to leave it in
         # just in case.
         if self._model_type in _REGRESSION_MODELS:
             for ex in examples:
@@ -1049,7 +1052,7 @@ class Classifier(object):
         # make sure that feature values are not strings
         for ex in examples:
             for val in ex['x'].values():
-                #min_feat_abs = min(min_feat_abs, abs(val)) if val 
+                #min_feat_abs = min(min_feat_abs, abs(val)) if val
                 #                                           else min_feat_abs
                 max_feat_abs = max(max_feat_abs, abs(val))
                 if isinstance(val, string_types):
@@ -1098,24 +1101,23 @@ class Classifier(object):
         y = np.array([self._extract_label(x) for x in examples])
 
         # Create feature name -> value mapping
-        self.feat_vectorizer = DictVectorizer(
-            sparse=not self._use_dense_features)
+        self.feat_vectorizer = DictVectorizer(sparse=not self._use_dense_features)
 
         # initialize feature selector
-        self.feat_selector = SelectByMinCount(
-            min_count=self._min_feature_count)
+        self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
 
         # Create scaler if we weren't passed one
         if self._model_type != 'naivebayes':
             if self.do_scale_features:
-                self.scaler = _FixedStandardScaler(
-                    copy=True, with_mean=self._use_dense_features,
-                    with_std=True)
+                self.scaler = _FixedStandardScaler(copy=True,
+                                                   with_mean=self._use_dense_features,
+                                                   with_std=True)
             else:
                 # Doing this is to prevent any modification of feature values
                 # using a dummy transformation
-                self.scaler = _FixedStandardScaler(
-                    copy=False, with_mean=False, with_std=False)
+                self.scaler = _FixedStandardScaler(copy=False,
+                                                   with_mean=False,
+                                                   with_std=False)
 
         return features, y
 
@@ -1253,8 +1255,9 @@ class Classifier(object):
             if (grid_objective is not None and
                     grid_objective.__name__ in _CORRELATION_METRICS):
                 grid_score = grid_objective(ytest, yhat[:, 1])
-            yhat = np.array(
-                [max(range(len(row)), key=lambda i: row[i]) for row in yhat])
+            yhat = np.array([max(range(len(row)),
+                                 key=lambda i: row[i])
+                             for row in yhat])
 
         # calculate grid search objective function score, if specified
         if (grid_objective is not None and
@@ -1272,8 +1275,10 @@ class Classifier(object):
                                                 )
             # Calculate metrics
             overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
-            result_matrix = metrics.precision_recall_fscore_support(
-                ytest, yhat, labels=list(range(num_labels)), average=None)
+            result_matrix = metrics.precision_recall_fscore_support(ytest,
+                                                                    yhat,
+                                                                    labels=list(range(num_labels)),
+                                                                    average=None)
 
             # Store results
             result_dict = defaultdict(dict)
@@ -1326,13 +1331,14 @@ class Classifier(object):
         try:
             yhat = (self._model.predict_proba(xtest)
                     if (self.probability and
-                        self._model_type != 'svm_linear'
-                        and not class_labels)
+                        self._model_type != 'svm_linear' and
+                        not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
             print(("Model type: {}\nModel: {}\nProbability: " +
                    "{}\n").format(self._model_type, self._model,
-                                  self.probability), file=sys.stderr)
+                                  self.probability),
+                  file=sys.stderr)
             raise e
 
         # write out the predictions if we are asked to
@@ -1343,25 +1349,26 @@ class Classifier(object):
                 # header
                 if not append:
                     if self.probability and self._model_type != 'svm_linear':
-                        print('\t'.join(
-                            ["id"] + self.label_list), file=predictionfh)
+                        print('\t'.join(["id"] + self.label_list),
+                              file=predictionfh)
                     else:
-                        print('\t'.join(
-                            ["id", "prediction"]), file=predictionfh)
+                        print('\t'.join(["id", "prediction"]),
+                              file=predictionfh)
 
                 if self.probability and self._model_type != 'svm_linear':
                     for example_id, class_probs in zip(example_ids, yhat):
-                        print('\t'.join([example_id] + [str(
-                            x) for x in class_probs]), file=predictionfh)
+                        print('\t'.join([example_id] +
+                                        [str(x) for x in class_probs]),
+                              file=predictionfh)
                 else:
                     if self._model_type in _REGRESSION_MODELS:
                         for example_id, pred in zip(example_ids, yhat):
-                            print('\t'.join(
-                                [example_id, str(pred)]), file=predictionfh)
+                            print('\t'.join([example_id, str(pred)]),
+                                  file=predictionfh)
                     else:
                         for example_id, pred in zip(example_ids, yhat):
                             print('\t'.join([example_id,
-                                  self.label_list[int(pred)]]),
+                                             self.label_list[int(pred)]]),
                                   file=predictionfh)
 
         if class_labels and self._model_type not in _REGRESSION_MODELS:
@@ -1388,7 +1395,7 @@ class Classifier(object):
                             Note: This will make this take *much* longer.
         @type grid_search: C{bool}
         @param grid_search_folds: The number of folds to use when doing the
-                                  grid search (ignored if cv_folds is set to 
+                                  grid search (ignored if cv_folds is set to
                                   a dictionary mapping examples to folds).
         @type grid_search_folds: C{int}
         @param grid_jobs: The number of jobs to run in parallel when doing the
@@ -1427,10 +1434,10 @@ class Classifier(object):
 
         # setup the cross-validation iterator
         if isinstance(cv_folds, int):
-            stratified = stratified and not self._model_type \
-                         in _REGRESSION_MODELS
-            kfold = StratifiedKFold(y, n_folds=cv_folds) if stratified \
-                    else KFold(len(examples), n_folds=cv_folds)
+            stratified = (stratified and
+                          not self._model_type in _REGRESSION_MODELS)
+            kfold = (StratifiedKFold(y, n_folds=cv_folds) if stratified
+                     else KFold(len(examples), n_folds=cv_folds))
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
@@ -1449,19 +1456,22 @@ class Classifier(object):
         for train_index, test_index in kfold:
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
-            grid_search_scores.append(self.train(
-                examples[train_index], grid_search_folds=grid_search_folds,
-                grid_search=grid_search, grid_objective=grid_objective,
-                param_grid=param_grid, grid_jobs=grid_jobs, shuffle=False))
+            grid_search_scores.append(self.train(examples[train_index],
+                                                 grid_search_folds=grid_search_folds,
+                                                 grid_search=grid_search,
+                                                 grid_objective=grid_objective,
+                                                 param_grid=param_grid,
+                                                 grid_jobs=grid_jobs,
+                                                 shuffle=False))
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
 
 
             # Evaluate model
-            results.append(
-                self.evaluate(
-                    examples[test_index], prediction_prefix=prediction_prefix,
-                    append=append_predictions, grid_objective=grid_objective))
+            results.append(self.evaluate(examples[test_index],
+                                         prediction_prefix=prediction_prefix,
+                                         append=append_predictions,
+                                         grid_objective=grid_objective))
 
             append_predictions = True
 
