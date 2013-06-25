@@ -1060,9 +1060,9 @@ class Classifier(object):
                                     " strings.  Convert them to floats.")
 
         if max_feat_abs > 1000.0:
-            print("You have a feature with a very large absolute value ({})." +
-                  " That may cause the learning algorithm to crash or" +
-                  " perform poorly.",
+            print(("You have a feature with a very large absolute value ({})." +
+                   " That may cause the learning algorithm to crash or" +
+                   " perform poorly.").format(max_feat_abs),
                   file=sys.stderr)
 
 
