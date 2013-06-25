@@ -165,8 +165,8 @@ def load_featureset(dirpath, featureset, suffix):
         featureset = [featureset]
 
     # Load a list of lists of examples, one list of examples per featureset.
-    example_lists = [classifier.load_examples(os.path.join(dirpath, 
-                                                           featfile + suffix)) 
+    example_lists = [classifier.load_examples(os.path.join(dirpath,
+                                                           featfile + suffix))
                      for featfile in featureset]
 
     # Check that the IDs are unique.
@@ -178,17 +178,17 @@ def load_featureset(dirpath, featureset, suffix):
     # Check that the different feature files have the same IDs.
     # To do this, make a sorted tuple of unique IDs for each feature file,
     # and then make sure they are all the same by making sure the set is size 1.
-    if len(set([tuple(sorted(set([ex['id'] for ex in examples]))) 
+    if len(set([tuple(sorted(set([ex['id'] for ex in examples])))
                 for examples in example_lists])) != 1:
         raise ValueError('The sets of example IDs in two feature files do not \
                           match')
 
-    # Make sure there is a unique label for every example (or no label, for 
+    # Make sure there is a unique label for every example (or no label, for
     # "unseen" examples).
     # To do this, find the unique (id, y) tuples, and then make sure that all
     # those ids are unique.
-    unique_tuples = set(itertools.chain(*[[(ex['id'], ex['y']) for ex 
-                                           in examples if 'y' in ex] 
+    unique_tuples = set(itertools.chain(*[[(ex['id'], ex['y']) for ex
+                                           in examples if 'y' in ex]
                                           for examples in example_lists]))
     if len(set([tup[0] for tup in unique_tuples])) != len(unique_tuples):
         raise ValueError('Two feature files have different labels (i.e., y' +
@@ -203,7 +203,7 @@ def load_featureset(dirpath, featureset, suffix):
                 example_dict[ex_id] = {'x': {}, 'id': ex_id}
 
             # Check that two feature files have unique feature names by
-            # checking that the new features don't already exist 
+            # checking that the new features don't already exist
             # (i.e., that the intersection is null set).
             if set(example['x'].keys()) \
                & set(example_dict[ex_id]['x'].keys()):
@@ -328,7 +328,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
         if task != 'predict':
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
                       'w') as output_file:
-                print_fancy_output(result_info.task_results, 
+                print_fancy_output(result_info.task_results,
                                    result_info.grid_scores, output_file)
 
     return result_info
@@ -419,7 +419,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     train_path = config.get("Input", "train_location").rstrip('/')
     test_path = config.get("Input", "test_location").rstrip('/')
     suffix = config.get("Input", "suffix")
-    
+
     # get the cv folds file and make a dictionary from it
     cv_folds_location = config.get("Input", "cv_folds_location")
     if cv_folds_location:
@@ -617,10 +617,10 @@ if __name__ == '__main__':
                               available machines are used). Note that full \
                               names must be specified, e.g., \
                               \"nlp.research.ets.org\"",
-                        type=str, default=None)
+                        default=None)
     parser.add_argument('-q', '--queue',
                         help="Use this queue for python grid.",
-                        type=str, default='nlp.q')
+                        default='nlp.q')
 
     args = parser.parse_args()
     machines = None
