@@ -65,14 +65,16 @@ sklearn.linear_model.base.LinearModel --+
                                             |    
              sklearn.linear_model.ridge.Ridge --+
                                                 |
+                               object --+       |
+                                        |       |
+               sklearn.base.BaseEstimator --+   |
+                                            |   |
+                      <a href="classifier.RescaledRegressionMixin-class.html">RescaledRegressionMixin</a> --+
+                                                |
                                                <strong class="uidshort">RescaledRidge</strong>
 </pre>
 
 <hr />
-<p>This is an extension of the Ridge classifier that stores a min and a 
-  max for the training data.  It makes sure its predictions fall within 
-  that range.</p>
-
 <!-- ==================== NESTED CLASSES ==================== -->
 <a name="section-NestedClasses"></a>
 <table class="summary" border="1" cellpadding="3"
@@ -104,15 +106,9 @@ sklearn.linear_model.base.LinearModel --+
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td><span class="summary-sig"><a href="classifier.RescaledRidge-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
-        <span class="summary-sig-arg">rescale</span>=<span class="summary-sig-default">True</span>,
         <span class="summary-sig-arg">constrain</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">alpha</span>=<span class="summary-sig-default">1.0</span>,
-        <span class="summary-sig-arg">fit_intercept</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">normalize</span>=<span class="summary-sig-default">False</span>,
-        <span class="summary-sig-arg">copy_X</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">max_iter</span>=<span class="summary-sig-default">None</span>,
-        <span class="summary-sig-arg">tol</span>=<span class="summary-sig-default">0.001</span>,
-        <span class="summary-sig-arg">solver</span>=<span class="summary-sig-default"><code class="variable-quote">u'</code><code class="variable-string">auto</code><code class="variable-quote">'</code></span>)</span><br />
+        <span class="summary-sig-arg">rescale</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">**kwargs</span>)</span><br />
       x.__init__(...) initializes x; see help(type(x)) for signature</td>
           <td align="right" valign="top">
             <span class="codelink"><a href="classifier-pysrc.html#RescaledRidge.__init__">source&nbsp;code</a></span>
@@ -164,6 +160,12 @@ sklearn.linear_model.base.LinearModel --+
     <td colspan="2" class="summary">
     <p class="indent-wrapped-lines"><b>Inherited from <code>sklearn.linear_model.base.LinearModel</code></b>:
       <code>decision_function</code>
+      </p>
+    <p class="indent-wrapped-lines"><b>Inherited from <code><a href="classifier.RescaledRegressionMixin-class.html">RescaledRegressionMixin</a></code></b>:
+      <code><a href="classifier.RescaledRegressionMixin-class.html#rescale_fit">rescale_fit</a></code>,
+      <code><a href="classifier.RescaledRegressionMixin-class.html#rescale_get_param_names">rescale_get_param_names</a></code>,
+      <code><a href="classifier.RescaledRegressionMixin-class.html#rescale_init">rescale_init</a></code>,
+      <code><a href="classifier.RescaledRegressionMixin-class.html#rescale_predict">rescale_predict</a></code>
       </p>
     <p class="indent-wrapped-lines"><b>Inherited from <code>sklearn.base.BaseEstimator</code></b>:
       <code>__repr__</code>,
@@ -238,15 +240,9 @@ sklearn.linear_model.base.LinearModel --+
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr valign="top"><td>
   <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
-        <span class="sig-arg">rescale</span>=<span class="sig-default">True</span>,
         <span class="sig-arg">constrain</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">alpha</span>=<span class="sig-default">1.0</span>,
-        <span class="sig-arg">fit_intercept</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">normalize</span>=<span class="sig-default">False</span>,
-        <span class="sig-arg">copy_X</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">max_iter</span>=<span class="sig-default">None</span>,
-        <span class="sig-arg">tol</span>=<span class="sig-default">0.001</span>,
-        <span class="sig-arg">solver</span>=<span class="sig-default"><code class="variable-quote">u'</code><code class="variable-string">auto</code><code class="variable-quote">'</code></span>)</span>
+        <span class="sig-arg">rescale</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">**kwargs</span>)</span>
     <br /><em class="fname">(Constructor)</em>
   </h3>
   </td><td align="right" valign="top"
@@ -369,7 +365,7 @@ C : array, shape = [n_samples]
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Wed May 15 15:19:12 2013
+    Generated by Epydoc 3.0.1 on Wed Jun 26 12:19:50 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"

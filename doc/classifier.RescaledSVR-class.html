@@ -63,14 +63,16 @@ sklearn.base.BaseEstimator --+
                                  |    
            sklearn.svm.classes.SVR --+
                                      |
+                    object --+       |
+                             |       |
+    sklearn.base.BaseEstimator --+   |
+                                 |   |
+           <a href="classifier.RescaledRegressionMixin-class.html">RescaledRegressionMixin</a> --+
+                                     |
                                     <strong class="uidshort">RescaledSVR</strong>
 </pre>
 
 <hr />
-<p>This is an extension of the SVR classifier that stores a min and a max
-  for the training data.  It makes sure its predictions fall within that 
-  range.</p>
-
 <!-- ==================== NESTED CLASSES ==================== -->
 <a name="section-NestedClasses"></a>
 <table class="summary" border="1" cellpadding="3"
@@ -102,20 +104,9 @@ sklearn.base.BaseEstimator --+
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td><span class="summary-sig"><a href="classifier.RescaledSVR-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
-        <span class="summary-sig-arg">rescale</span>=<span class="summary-sig-default">True</span>,
         <span class="summary-sig-arg">constrain</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">kernel</span>=<span class="summary-sig-default"><code class="variable-quote">u'</code><code class="variable-string">rbf</code><code class="variable-quote">'</code></span>,
-        <span class="summary-sig-arg">degree</span>=<span class="summary-sig-default">3</span>,
-        <span class="summary-sig-arg">gamma</span>=<span class="summary-sig-default">0.0</span>,
-        <span class="summary-sig-arg">coef0</span>=<span class="summary-sig-default">0.0</span>,
-        <span class="summary-sig-arg">tol</span>=<span class="summary-sig-default">0.001</span>,
-        <span class="summary-sig-arg">C</span>=<span class="summary-sig-default">1.0</span>,
-        <span class="summary-sig-arg">epsilon</span>=<span class="summary-sig-default">0.1</span>,
-        <span class="summary-sig-arg">shrinking</span>=<span class="summary-sig-default">True</span>,
-        <span class="summary-sig-arg">probability</span>=<span class="summary-sig-default">False</span>,
-        <span class="summary-sig-arg">cache_size</span>=<span class="summary-sig-default">200</span>,
-        <span class="summary-sig-arg">verbose</span>=<span class="summary-sig-default">False</span>,
-        <span class="summary-sig-arg">max_iter</span>=<span class="summary-sig-default">-1</span>)</span><br />
+        <span class="summary-sig-arg">rescale</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">**kwargs</span>)</span><br />
       x.__init__(...) initializes x; see help(type(x)) for signature</td>
           <td align="right" valign="top">
             <span class="codelink"><a href="classifier-pysrc.html#RescaledSVR.__init__">source&nbsp;code</a></span>
@@ -167,6 +158,12 @@ sklearn.base.BaseEstimator --+
     <td colspan="2" class="summary">
     <p class="indent-wrapped-lines"><b>Inherited from <code>sklearn.svm.base.BaseLibSVM</code></b>:
       <code>decision_function</code>
+      </p>
+    <p class="indent-wrapped-lines"><b>Inherited from <code><a href="classifier.RescaledRegressionMixin-class.html">RescaledRegressionMixin</a></code></b>:
+      <code><a href="classifier.RescaledRegressionMixin-class.html#rescale_fit">rescale_fit</a></code>,
+      <code><a href="classifier.RescaledRegressionMixin-class.html#rescale_get_param_names">rescale_get_param_names</a></code>,
+      <code><a href="classifier.RescaledRegressionMixin-class.html#rescale_init">rescale_init</a></code>,
+      <code><a href="classifier.RescaledRegressionMixin-class.html#rescale_predict">rescale_predict</a></code>
       </p>
     <p class="indent-wrapped-lines"><b>Inherited from <code>sklearn.base.BaseEstimator</code></b>:
       <code>__repr__</code>,
@@ -244,20 +241,9 @@ sklearn.base.BaseEstimator --+
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr valign="top"><td>
   <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
-        <span class="sig-arg">rescale</span>=<span class="sig-default">True</span>,
         <span class="sig-arg">constrain</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">kernel</span>=<span class="sig-default"><code class="variable-quote">u'</code><code class="variable-string">rbf</code><code class="variable-quote">'</code></span>,
-        <span class="sig-arg">degree</span>=<span class="sig-default">3</span>,
-        <span class="sig-arg">gamma</span>=<span class="sig-default">0.0</span>,
-        <span class="sig-arg">coef0</span>=<span class="sig-default">0.0</span>,
-        <span class="sig-arg">tol</span>=<span class="sig-default">0.001</span>,
-        <span class="sig-arg">C</span>=<span class="sig-default">1.0</span>,
-        <span class="sig-arg">epsilon</span>=<span class="sig-default">0.1</span>,
-        <span class="sig-arg">shrinking</span>=<span class="sig-default">True</span>,
-        <span class="sig-arg">probability</span>=<span class="sig-default">False</span>,
-        <span class="sig-arg">cache_size</span>=<span class="sig-default">200</span>,
-        <span class="sig-arg">verbose</span>=<span class="sig-default">False</span>,
-        <span class="sig-arg">max_iter</span>=<span class="sig-default">-1</span>)</span>
+        <span class="sig-arg">rescale</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">**kwargs</span>)</span>
     <br /><em class="fname">(Constructor)</em>
   </h3>
   </td><td align="right" valign="top"
@@ -392,7 +378,7 @@ y_pred : array, shape = [n_samples]
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Wed May 15 15:19:12 2013
+    Generated by Epydoc 3.0.1 on Wed Jun 26 12:19:50 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"
