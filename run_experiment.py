@@ -11,8 +11,9 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 import json
-import re
+import math
 import os
+import re
 import sys
 import csv
 import itertools
@@ -20,7 +21,7 @@ from collections import defaultdict, namedtuple, OrderedDict
 
 import numpy as np
 import classifier
-from texttable import ArraySizeError, Texttable
+from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems, itervalues  # Python 2/3
 from six.moves import configparser
 
@@ -42,15 +43,15 @@ def clean_path(path):
     return path
 
 
-def get_stat_string(class_result_dict, stat):
+def get_stat_float(class_result_dict, stat):
     '''
     Little helper for getting output for precision, recall, and f-score
     columns in confusion matrix.
     '''
     if stat in class_result_dict and class_result_dict[stat] is not None:
-        return "{:.1f}%".format(class_result_dict[stat] * 100)
+        return class_result_dict[stat]
     else:
-        return "N/A"
+        return float('nan')
 
 
 def print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
@@ -80,46 +81,32 @@ def print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
 
         if conf_matrix:
             classes = sorted(iterkeys(result_tuples[0][2]))
-            result_table = Texttable(max_width=0)
-            result_table.set_cols_align(["r"] * (len(classes) + 4))
-            result_table.add_rows([[""] + classes + ["Precision",
-                                                     "Recall",
-                                                     "F-measure"]],
-                                  header=True)
-
+            result_table = PrettyTable([""] + classes + ["Precision",
+                                                         "Recall",
+                                                         "F-measure"],
+                                       header=True, hrules=ALL)
+            result_table.align = 'r'
+            result_table.float_format = '.3'
             for i, actual_class in enumerate(classes):
                 conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
-                class_prec = get_stat_string(result_dict[actual_class],
-                                             "Precision")
-                class_recall = get_stat_string(result_dict[actual_class],
-                                               "Recall")
-                class_f = get_stat_string(result_dict[actual_class],
-                                          "F-measure")
-                if class_prec != 'N/A':
-                    prec_sum_dict[actual_class] += float(class_prec[:-1])
-                if class_recall != 'N/A':
-                    recall_sum_dict[actual_class] += float(class_recall[:-1])
-                if class_f != 'N/A':
-                    f_sum_dict[actual_class] += float(class_f[:-1])
-                try:
-                    result_row = ([actual_class] + conf_matrix[i] +
-                                  [class_prec, class_recall, class_f])
-                    result_table.add_row(result_row)
-                except ArraySizeError as e:
-                    print(("Row does not contain enough elements.\n " +
-                           "actual_class: {}\n" +
-                           "conf_matrix[i]: {}\n" +
-                           "class_prec: {}\n" +
-                           "class_recall: {}\n" +
-                           "class_f: {}\n").format(actual_class,
-                                                   conf_matrix[i],
-                                                   class_prec, class_recall,
-                                                   class_f),
-                          file=sys.stderr)
-                    raise e
-            print(result_table.draw(), file=output_file)
+                class_prec = get_stat_float(result_dict[actual_class],
+                                            "Precision")
+                class_recall = get_stat_float(result_dict[actual_class],
+                                              "Recall")
+                class_f = get_stat_float(result_dict[actual_class],
+                                         "F-measure")
+                if not math.isnan(class_prec):
+                    prec_sum_dict[actual_class] += float(class_prec)
+                if not math.isnan(class_recall):
+                    recall_sum_dict[actual_class] += float(class_recall)
+                if not math.isnan(class_f):
+                    f_sum_dict[actual_class] += float(class_f)
+                result_row = ([actual_class] + conf_matrix[i] +
+                              [class_prec, class_recall, class_f])
+                result_table.add_row(result_row)
+            print(result_table, file=output_file)
             print("(row = reference; column = predicted)", file=output_file)
-            print("Accuracy = {:.1f}%".format(fold_accuracy), file=output_file)
+            print("Accuracy = {:.3f}".format(fold_accuracy), file=output_file)
             accuracy_sum += fold_accuracy
 
         if score is not None:
@@ -134,21 +121,21 @@ def print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
     if num_folds > 1:
         print("\nAverage:", file=output_file)
         if result_table:
-            result_table = Texttable(max_width=0)
-            result_table.set_cols_align(["l", "r", "r", "r"])
-            result_table.add_rows(
-                [["Class", "Precision", "Recall", "F-measure"]], header=True)
+            result_table = PrettyTable(["Class", "Precision", "Recall",
+                                        "F-measure"],
+                                       header=True)
+            result_table.align = "r"
+            result_table["Class"].align = "l"
+            result_table.float_format = '.3'
             for actual_class in classes:
                 # Convert sums to means
                 prec_mean = prec_sum_dict[actual_class] / num_folds
                 recall_mean = recall_sum_dict[actual_class] / num_folds
                 f_mean = f_sum_dict[actual_class] / num_folds
                 result_table.add_row([actual_class] +
-                                     ["{:.1f}%".format(prec_mean),
-                                      "{:.1f}%".format(recall_mean),
-                                      "{:.1f}%".format(f_mean)])
-            print(result_table.draw(), file=output_file)
-            print("Accuracy = {:.1f}%".format(accuracy_sum / num_folds),
+                                     [prec_mean, recall_mean, f_mean])
+            print(result_table, file=output_file)
+            print("Accuracy = {:.3f}".format(accuracy_sum / num_folds),
                   file=output_file)
         if score_sum is not None:
             print("Objective function score = {:.5f}".format(score_sum
