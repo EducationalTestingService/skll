@@ -1274,7 +1274,7 @@ class Classifier(object):
                                                 labels=list(range(num_labels))
                                                 )
             # Calculate metrics
-            overall_accuracy = metrics.accuracy_score(ytest, yhat) * 100
+            overall_accuracy = metrics.accuracy_score(ytest, yhat)
             result_matrix = metrics.precision_recall_fscore_support(ytest,
                                                                     yhat,
                                                                     labels=list(range(num_labels)),
