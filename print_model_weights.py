@@ -6,8 +6,9 @@ Simple script for printing out model weights.
 from __future__ import print_function, unicode_literals
 
 import argparse
-import classifier
 import sys
+
+from skll import Learner
 
 
 if __name__ == '__main__':
@@ -22,9 +23,9 @@ if __name__ == '__main__':
 
     k = args.k if args.k > 0 else None
 
-    clf = classifier.Classifier()
-    clf.load_model(args.model_file)
-    weights = clf.get_model_params()
+    learner = Learner()
+    learner.load_model(args.model_file)
+    weights = learner.get_model_params()
 
     print("number of nonzero features:", len(weights), file=sys.stderr)
 
