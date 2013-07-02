@@ -187,9 +187,9 @@ def load_featureset(dirpath, featureset, suffix):
     # To do this, make a sorted tuple of unique IDs for each feature file,
     # and then make sure they are all the same by making sure the set is size 1.
     if len({tuple(sorted({ex['id'] for ex in examples}))
-            for examples in example_list}) != 1:
+            for examples in example_lists}) != 1:
         raise ValueError('The sets of example IDs in two feature files do not' +
-                          'match')
+                         'match')
 
     # Make sure there is a unique label for every example (or no label, for
     # "unseen" examples).
@@ -250,7 +250,7 @@ def classify_featureset(jobname, featureset, given_learner, train_path,
 
         # initialize a classifer object
         learner = Learner(probability=probability,
-                          model_type=given_classifier,
+                          model_type=given_learner,
                           do_scale_features=do_scale_features,
                           model_kwargs=fixed_parameters,
                           pos_label_str=pos_label_str,
@@ -269,13 +269,13 @@ def classify_featureset(jobname, featureset, given_learner, train_path,
             # load the model if it already exists
             if os.path.exists(modelfile) and not overwrite:
                 print('\tloading pre-existing {} model: {}'.format(
-                    given_classifier, modelfile))
+                    given_learner, modelfile))
                 learner.load_model(modelfile)
 
             # if we have do not have a saved model, we need to train one.
             else:
                 print('\tfeaturizing and training new {} model'.format(
-                    given_classifier), file=log_file)
+                    given_learner), file=log_file)
 
                 grid_search_folds = 5
                 if not isinstance(cv_folds, int):
@@ -330,7 +330,7 @@ def classify_featureset(jobname, featureset, given_learner, train_path,
 
         # write out results to file if we're not predicting
         result_info = LearnerResultInfo(train_set_name, test_set_name,
-                                           featureset, given_classifier, task,
+                                           featureset, given_learner, task,
                                            results, grid_scores)
         if task != 'predict':
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
@@ -410,8 +410,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
                   file=sys.stderr)
 
     # extract sklearn parameters from the config file
-    given_classifiers = json.loads(fix_json(config.get("Input",
-                                                       "classifiers")))
+    given_learners = json.loads(fix_json(config.get("Input",
+                                                    "classifiers")))
     given_featuresets = json.loads(fix_json(config.get("Input",
                                                        "featuresets")))
     given_featureset_names = json.loads(fix_json(config.get(
