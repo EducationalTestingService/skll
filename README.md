@@ -1,12 +1,21 @@
-## sklearn wrapper ##
+## SciKit-Learn Lab ##
 
-This project consists of two utilities to make running common sklearn experiments on pre-generated features much simpler.
+This package provides a number of utilities to make it simpler to run common scikit-learn experiments with pre-generated features.
 
-classifier.py contains a `Classifier` class and `load_examples` function that have a simple well-documented API for training, testing, cross-validation, and running grid search on a variety of sklearn models (for details see [the documentation](../raw/master/doc/_build/html/index.html)).
+### Command-line Interface ###
 
-run_experiment.py is a command-line utility for running a series of classifiers on datasets specified in a configuration file. For more information about the configuration file format, see the example configuration file `example.cfg`.
+`run_experiment.py` is a command-line utility for running a series of learners on datasets specified in a configuration file. For more information about the configuration file format, see the example configuration file [example.cfg](../blob/master/example.cfg).
+
+
+### Python API ###
+
+If you just want to avoid writing a lot of boilerplate learning code, you can use our simple well-documented Python API. The main way you'll want to use the API is through the `load_examples` function and the `Learner` class. For more details on how to simply train, test, cross-validate, and run grid search on a variety of scikit-learn models see [the documentation](../raw/master/doc/_build/html/index.html).
+
 
 ### Requirements ###
 
-*  `pythongrid` must be in your `PYTHONPATH`
-*  `export DRMAA_LIBRARY_PATH=/local/research/linux/sge6_2u6/lib/lx24-amd64/libdrmaa.so` must be present in your `.bashrc`
+* Python 2.7+
+* [scikit-learn](http://scikit-learn.org/stable/)
+* [six](https://pypi.python.org/pypi/six)
+* [PrettyTable](https://pypi.python.org/pypi/PrettyTable)
+* To automatically run things in parallel on a [DRMAA](http://www.drmaa.org/)-compatible cluster, you must have the [ETS fork of Python Grid](https://github.com/EducationalTestingService/pythongrid) in your `PYTHONPATH`, and `DRMAA_LIBRARY_PATH` must be set to the path to `libdrmaa.so` for your cluster installation.
