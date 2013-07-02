@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>metrics</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        Module&nbsp;metrics
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="metrics-module.html">Module metrics</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-docstring">'''</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-docstring">This module contains a bunch of evaluation metrics that can be used to</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-docstring">evaluate the performance of learners.</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-docstring">@author: Michael Heilman (mheilman@ets.org)</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-docstring">@author: Nitin Madnani (nmadnani@ets.org)</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-docstring">@author: Dan Blanchard (dblanchard@ets.org)</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-docstring">@organization: ETS</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-docstring">'''</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">__future__</tt> <tt class="py-keyword">import</tt> <tt class="py-name">print_function</tt><tt class="py-op">,</tt> <tt class="py-name">unicode_literals</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">sys</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line"> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">ml_metrics</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">numpy</tt> <tt class="py-keyword">as</tt> <tt class="py-name">np</tt> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">scipy</tt><tt class="py-op">.</tt><tt class="py-name">stats</tt> <tt class="py-keyword">import</tt> <tt class="py-name">kendalltau</tt><tt class="py-op">,</tt> <tt class="py-name">spearmanr</tt><tt class="py-op">,</tt> <tt class="py-name">pearsonr</tt> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">sklearn</tt> <tt class="py-keyword">import</tt> <tt id="link-0" class="py-name" targets="Module metrics=metrics-module.html"><a title="metrics" class="py-name" href="#" onclick="return doclink('link-0', 'metrics', 'link-0');">metrics</a></tt> <tt class="py-keyword">as</tt> <tt class="py-name">sk_metrics</tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"> </tt>
+<a name="quadratic_weighted_kappa"></a><div id="quadratic_weighted_kappa-def"><a name="L21"></a><tt class="py-lineno"> 21</tt> <a class="py-toggle" href="#" id="quadratic_weighted_kappa-toggle" onclick="return toggle('quadratic_weighted_kappa');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#quadratic_weighted_kappa">quadratic_weighted_kappa</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="quadratic_weighted_kappa-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="quadratic_weighted_kappa-expanded"><a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-docstring">    Returns the quadratic weighted kappa.</tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt class="py-docstring">    This rounds the inputs before passing them to the ml_metrics module.</tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line">    <tt class="py-comment"># This rather crazy looking typecast is intended to work as follows:</tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line">    <tt class="py-comment"># If an input is an int, the operations will have no effect.</tt> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line">    <tt class="py-comment"># If it is a float, it will be rounded and then converted to an int</tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line">    <tt class="py-comment"># because the ml_metrics package requires ints.</tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line">    <tt class="py-comment"># If it is a str like "1", then it will be converted to a (rounded) int.</tt> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line">    <tt class="py-comment"># If it is a str that can't be typecast, then the user is</tt> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line">    <tt class="py-comment"># given a hopefully useful error message.</tt> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line">        <tt class="py-name">y_true_rounded</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">round</tt><tt class="py-op">(</tt><tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">y</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">y</tt> <tt class="py-keyword">in</tt> <tt class="py-name">y_true</tt><tt class="py-op">]</tt> </tt>
+<a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line">        <tt class="py-name">y_pred_rounded</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">round</tt><tt class="py-op">(</tt><tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">y</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">y</tt> <tt class="py-keyword">in</tt> <tt class="py-name">y_pred</tt><tt class="py-op">]</tt> </tt>
+<a name="L37"></a><tt class="py-lineno"> 37</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">ValueError</tt> <tt class="py-keyword">as</tt> <tt class="py-name">e</tt><tt class="py-op">:</tt> </tt>
+<a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-string">"For kappa, the labels should be integers or strings that"</tt> <tt class="py-op">+</tt> </tt>
+<a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line">              <tt class="py-string">" can be converted to ints (E.g., '4.0' or '3')."</tt><tt class="py-op">,</tt> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line">              <tt class="py-name">file</tt><tt class="py-op">=</tt><tt class="py-name">sys</tt><tt class="py-op">.</tt><tt class="py-name">stderr</tt><tt class="py-op">)</tt> </tt>
+<a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line">        <tt class="py-keyword">raise</tt> <tt class="py-name">e</tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line"> </tt>
+<a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line">    <tt class="py-name">res</tt> <tt class="py-op">=</tt> <tt class="py-name">ml_metrics</tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Function metrics.quadratic_weighted_kappa()=metrics-module.html#quadratic_weighted_kappa"><a title="metrics.quadratic_weighted_kappa" class="py-name" href="#" onclick="return doclink('link-1', 'quadratic_weighted_kappa', 'link-1');">quadratic_weighted_kappa</a></tt><tt class="py-op">(</tt><tt class="py-name">y_true_rounded</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred_rounded</tt><tt class="py-op">)</tt> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">res</tt> </tt>
+</div><a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line"> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line"> </tt>
+<a name="unweighted_kappa"></a><div id="unweighted_kappa-def"><a name="L47"></a><tt class="py-lineno"> 47</tt> <a class="py-toggle" href="#" id="unweighted_kappa-toggle" onclick="return toggle('unweighted_kappa');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#unweighted_kappa">unweighted_kappa</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="unweighted_kappa-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="unweighted_kappa-expanded"><a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line"><tt class="py-docstring">    Returns the unweighted Cohen's kappa.</tt> </tt>
+<a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L51"></a><tt class="py-lineno"> 51</tt>  <tt class="py-line">    <tt class="py-comment"># See quadratic_weighted_kappa for comments about the typecasting below.</tt> </tt>
+<a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line">        <tt class="py-name">y_true_rounded</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">round</tt><tt class="py-op">(</tt><tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">y</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">y</tt> <tt class="py-keyword">in</tt> <tt class="py-name">y_true</tt><tt class="py-op">]</tt> </tt>
+<a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line">        <tt class="py-name">y_pred_rounded</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">round</tt><tt class="py-op">(</tt><tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">y</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> <tt class="py-keyword">for</tt> <tt class="py-name">y</tt> <tt class="py-keyword">in</tt> <tt class="py-name">y_pred</tt><tt class="py-op">]</tt> </tt>
+<a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">ValueError</tt> <tt class="py-keyword">as</tt> <tt class="py-name">e</tt><tt class="py-op">:</tt> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-string">"For kappa, the labels should be integers or strings that"</tt> <tt class="py-op">+</tt> </tt>
+<a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line">              <tt class="py-string">" can be converted to ints (E.g., '4.0' or '3')."</tt><tt class="py-op">,</tt> </tt>
+<a name="L58"></a><tt class="py-lineno"> 58</tt>  <tt class="py-line">              <tt class="py-name">file</tt><tt class="py-op">=</tt><tt class="py-name">sys</tt><tt class="py-op">.</tt><tt class="py-name">stderr</tt><tt class="py-op">)</tt> </tt>
+<a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line">        <tt class="py-keyword">raise</tt> <tt class="py-name">e</tt> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line"> </tt>
+<a name="L61"></a><tt class="py-lineno"> 61</tt>  <tt class="py-line">    <tt class="py-name">res</tt> <tt class="py-op">=</tt> <tt class="py-name">ml_metrics</tt><tt class="py-op">.</tt><tt class="py-name">kappa</tt><tt class="py-op">(</tt><tt class="py-name">y_true_rounded</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred_rounded</tt><tt class="py-op">)</tt> </tt>
+<a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">res</tt> </tt>
+</div><a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line"> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line"> </tt>
+<a name="kendall_tau"></a><div id="kendall_tau-def"><a name="L65"></a><tt class="py-lineno"> 65</tt> <a class="py-toggle" href="#" id="kendall_tau-toggle" onclick="return toggle('kendall_tau');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#kendall_tau">kendall_tau</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="kendall_tau-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="kendall_tau-expanded"><a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line"><tt class="py-docstring">    Optimize the hyperparameter values during the grid search based on</tt> </tt>
+<a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line"><tt class="py-docstring">    Kendall's tau.</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line"><tt class="py-docstring">    This is useful in cases where you want to use the actual probabilities of</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line"><tt class="py-docstring">    the different classes after the fact, and not just the optimize based on</tt> </tt>
+<a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line"><tt class="py-docstring">    the classification accuracy.</tt> </tt>
+<a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line">    <tt class="py-name">ret_score</tt> <tt class="py-op">=</tt> <tt class="py-name">kendalltau</tt><tt class="py-op">(</tt><tt class="py-name">y_true</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+<a name="L75"></a><tt class="py-lineno"> 75</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">ret_score</tt> <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">np</tt><tt class="py-op">.</tt><tt class="py-name">isnan</tt><tt class="py-op">(</tt><tt class="py-name">ret_score</tt><tt class="py-op">)</tt> <tt class="py-keyword">else</tt> <tt class="py-number">0.0</tt> </tt>
+</div><a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line"> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line"> </tt>
+<a name="spearman"></a><div id="spearman-def"><a name="L78"></a><tt class="py-lineno"> 78</tt> <a class="py-toggle" href="#" id="spearman-toggle" onclick="return toggle('spearman');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#spearman">spearman</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="spearman-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="spearman-expanded"><a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line"><tt class="py-docstring">    Optimize the hyperparameter values during the grid search based on</tt> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line"><tt class="py-docstring">    Spearman rank correlation.</tt> </tt>
+<a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line"><tt class="py-docstring">    This is useful in cases where you want to use the actual probabilities of</tt> </tt>
+<a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line"><tt class="py-docstring">    the different classes after the fact, and not just the optimize based on</tt> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line"><tt class="py-docstring">    the classification accuracy.</tt> </tt>
+<a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line">    <tt class="py-name">ret_score</tt> <tt class="py-op">=</tt> <tt class="py-name">spearmanr</tt><tt class="py-op">(</tt><tt class="py-name">y_true</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+<a name="L88"></a><tt class="py-lineno"> 88</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">ret_score</tt> <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">np</tt><tt class="py-op">.</tt><tt class="py-name">isnan</tt><tt class="py-op">(</tt><tt class="py-name">ret_score</tt><tt class="py-op">)</tt> <tt class="py-keyword">else</tt> <tt class="py-number">0.0</tt> </tt>
+</div><a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line"> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line"> </tt>
+<a name="pearson"></a><div id="pearson-def"><a name="L91"></a><tt class="py-lineno"> 91</tt> <a class="py-toggle" href="#" id="pearson-toggle" onclick="return toggle('pearson');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#pearson">pearson</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="pearson-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="pearson-expanded"><a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line"><tt class="py-docstring">    Optimize the hyperparameter values during the grid search based on Pearson</tt> </tt>
+<a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line"><tt class="py-docstring">    correlation.</tt> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line">    <tt class="py-name">ret_score</tt> <tt class="py-op">=</tt> <tt class="py-name">pearsonr</tt><tt class="py-op">(</tt><tt class="py-name">y_true</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">ret_score</tt> <tt class="py-keyword">if</tt> <tt class="py-keyword">not</tt> <tt class="py-name">np</tt><tt class="py-op">.</tt><tt class="py-name">isnan</tt><tt class="py-op">(</tt><tt class="py-name">ret_score</tt><tt class="py-op">)</tt> <tt class="py-keyword">else</tt> <tt class="py-number">0.0</tt> </tt>
+</div><a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line"> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line"> </tt>
+<a name="f1_score_least_frequent"></a><div id="f1_score_least_frequent-def"><a name="L100"></a><tt class="py-lineno">100</tt> <a class="py-toggle" href="#" id="f1_score_least_frequent-toggle" onclick="return toggle('f1_score_least_frequent');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#f1_score_least_frequent">f1_score_least_frequent</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="f1_score_least_frequent-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="f1_score_least_frequent-expanded"><a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line"><tt class="py-docstring">    Optimize the hyperparameter values during the grid search based on the F1</tt> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line"><tt class="py-docstring">    measure of the least frequent class.</tt> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line"><tt class="py-docstring">    This is mostly intended for use when you're doing binary classification</tt> </tt>
+<a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line"><tt class="py-docstring">    and your data is highly skewed. You should probably use f1_score_macro if</tt> </tt>
+<a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line"><tt class="py-docstring">    your data is skewed and you're doing multi-class classification.</tt> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L109"></a><tt class="py-lineno">109</tt>  <tt class="py-line">    <tt class="py-name">least_frequent</tt> <tt class="py-op">=</tt> <tt class="py-name">np</tt><tt class="py-op">.</tt><tt class="py-name">bincount</tt><tt class="py-op">(</tt><tt class="py-name">y_true</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">argmin</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">sk_metrics</tt><tt class="py-op">.</tt><tt class="py-name">f1_score</tt><tt class="py-op">(</tt><tt class="py-name">y_true</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred</tt><tt class="py-op">,</tt> <tt class="py-name">average</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-name">least_frequent</tt><tt class="py-op">]</tt> </tt>
+</div><a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line"> </tt>
+<a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line"> </tt>
+<a name="f1_score_macro"></a><div id="f1_score_macro-def"><a name="L113"></a><tt class="py-lineno">113</tt> <a class="py-toggle" href="#" id="f1_score_macro-toggle" onclick="return toggle('f1_score_macro');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#f1_score_macro">f1_score_macro</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="f1_score_macro-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="f1_score_macro-expanded"><a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line"><tt class="py-docstring">    Use the macro-averaged F1 measure to select hyperparameter values during</tt> </tt>
+<a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line"><tt class="py-docstring">    the cross-validation grid search during training.</tt> </tt>
+<a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line"><tt class="py-docstring">    This method averages over classes (does not take imbalance into account).</tt> </tt>
+<a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line"><tt class="py-docstring">    You should use this if each class is equally important.</tt> </tt>
+<a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">sk_metrics</tt><tt class="py-op">.</tt><tt class="py-name">f1_score</tt><tt class="py-op">(</tt><tt class="py-name">y_true</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred</tt><tt class="py-op">,</tt> <tt class="py-name">average</tt><tt class="py-op">=</tt><tt class="py-string">"macro"</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L122"></a><tt class="py-lineno">122</tt>  <tt class="py-line"> </tt>
+<a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line"> </tt>
+<a name="f1_score_micro"></a><div id="f1_score_micro-def"><a name="L124"></a><tt class="py-lineno">124</tt> <a class="py-toggle" href="#" id="f1_score_micro-toggle" onclick="return toggle('f1_score_micro');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#f1_score_micro">f1_score_micro</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="f1_score_micro-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="f1_score_micro-expanded"><a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line"><tt class="py-docstring">    Use the micro-averaged F1 measure to select hyperparameter values during</tt> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line"><tt class="py-docstring">    the cross-validation grid search during training.</tt> </tt>
+<a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line"><tt class="py-docstring">    This method averages over instances (takes imbalance into account). This</tt> </tt>
+<a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line"><tt class="py-docstring">    implies that precision == recall == F1.</tt> </tt>
+<a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L132"></a><tt class="py-lineno">132</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">sk_metrics</tt><tt class="py-op">.</tt><tt class="py-name">f1_score</tt><tt class="py-op">(</tt><tt class="py-name">y_true</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred</tt><tt class="py-op">,</tt> <tt class="py-name">average</tt><tt class="py-op">=</tt><tt class="py-string">"micro"</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L133"></a><tt class="py-lineno">133</tt>  <tt class="py-line"> </tt>
+<a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line"> </tt>
+<a name="accuracy"></a><div id="accuracy-def"><a name="L135"></a><tt class="py-lineno">135</tt> <a class="py-toggle" href="#" id="accuracy-toggle" onclick="return toggle('accuracy');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="metrics-module.html#accuracy">accuracy</a><tt class="py-op">(</tt><tt class="py-param">y_true</tt><tt class="py-op">,</tt> <tt class="py-param">y_pred</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="accuracy-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="accuracy-expanded"><a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line"><tt class="py-docstring">    Use the overall accuracy to select hyperparameter values during the cross-</tt> </tt>
+<a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line"><tt class="py-docstring">    validation grid search during training.</tt> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">sk_metrics</tt><tt class="py-op">.</tt><tt class="py-name">accuracy_score</tt><tt class="py-op">(</tt><tt class="py-name">y_true</tt><tt class="py-op">,</tt> <tt class="py-name">y_pred</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Jul  2 11:16:44 2013
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

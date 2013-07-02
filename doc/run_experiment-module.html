@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>run_experiment</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        Module&nbsp;run_experiment
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== MODULE DESCRIPTION ==================== -->
+<h1 class="epydoc">Module run_experiment</h1><p class="nomargin-top"><span class="codelink"><a href="run_experiment-pysrc.html">source&nbsp;code</a></span></p>
+<p>Runs a bunch of scikit-learn jobs in parallel on the cluster given a 
+  config file.</p>
+
+<hr />
+<div class="fields">      <dl><dt>Authors:</dt>
+        <dd>
+          Nitin Madnani (nmadnani@ets.org),
+          Dan Blanchard (dblanchard@ets.org),
+          Michael Heilman (mheilman@ets.org)
+        </dd>
+      </dl>
+</div><!-- ==================== CLASSES ==================== -->
+<a name="section-Classes"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td align="left" colspan="2" class="table-header">
+    <span class="table-header">Classes</span></td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="run_experiment.LearnerResultInfo-class.html" class="summary-name">LearnerResultInfo</a><br />
+      LearnerResultInfo(train_set_name, test_set_name, featureset, 
+        given_learner, task, task_results, grid_scores)
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTIONS ==================== -->
+<a name="section-Functions"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td align="left" colspan="2" class="table-header">
+    <span class="table-header">Functions</span></td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="classify_featureset"></a><span class="summary-sig-name">classify_featureset</span>(<span class="summary-sig-arg">jobname</span>,
+        <span class="summary-sig-arg">featureset</span>,
+        <span class="summary-sig-arg">given_learner</span>,
+        <span class="summary-sig-arg">train_path</span>,
+        <span class="summary-sig-arg">test_path</span>,
+        <span class="summary-sig-arg">train_set_name</span>,
+        <span class="summary-sig-arg">test_set_name</span>,
+        <span class="summary-sig-arg">modelpath</span>,
+        <span class="summary-sig-arg">prediction_prefix</span>,
+        <span class="summary-sig-arg">grid_search</span>,
+        <span class="summary-sig-arg">grid_objective</span>,
+        <span class="summary-sig-arg">do_scale_features</span>,
+        <span class="summary-sig-arg">cross_validate</span>,
+        <span class="summary-sig-arg">evaluate</span>,
+        <span class="summary-sig-arg">suffix</span>,
+        <span class="summary-sig-arg">log_path</span>,
+        <span class="summary-sig-arg">probability</span>,
+        <span class="summary-sig-arg">resultspath</span>,
+        <span class="summary-sig-arg">fixed_parameters</span>,
+        <span class="summary-sig-arg">param_grid</span>,
+        <span class="summary-sig-arg">pos_label_str</span>,
+        <span class="summary-sig-arg">overwrite</span>,
+        <span class="summary-sig-arg">use_dense_features</span>,
+        <span class="summary-sig-arg">min_feature_count</span>,
+        <span class="summary-sig-arg">grid_search_jobs</span>,
+        <span class="summary-sig-arg">cv_folds</span>)</span><br />
+      Classification job to be submitted to grid</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#classify_featureset">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="clean_path"></a><span class="summary-sig-name">clean_path</span>(<span class="summary-sig-arg">path</span>)</span><br />
+      Replace all weird SAN paths with normal paths</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#clean_path">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="fix_json"></a><span class="summary-sig-name">fix_json</span>(<span class="summary-sig-arg">json_string</span>)</span><br />
+      Takes a bit of JSON that might have bad quotes or capitalized 
+      booleans and fixes that stuff.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#fix_json">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="get_stat_float"></a><span class="summary-sig-name">get_stat_float</span>(<span class="summary-sig-arg">class_result_dict</span>,
+        <span class="summary-sig-arg">stat</span>)</span><br />
+      Little helper for getting output for precision, recall, and f-score 
+      columns in confusion matrix.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#get_stat_float">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="load_cv_folds"></a><span class="summary-sig-name">load_cv_folds</span>(<span class="summary-sig-arg">cv_folds_location</span>)</span><br />
+      Loads CV folds from a CSV file with columns for example ID and fold 
+      ID (and a header).</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#load_cv_folds">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="load_featureset"></a><span class="summary-sig-name">load_featureset</span>(<span class="summary-sig-arg">dirpath</span>,
+        <span class="summary-sig-arg">featureset</span>,
+        <span class="summary-sig-arg">suffix</span>)</span><br />
+      loads a list of feature files and merges them (or loads just one if 
+      featureset is a string).</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#load_featureset">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="munge_featureset_name"></a><span class="summary-sig-name">munge_featureset_name</span>(<span class="summary-sig-arg">featureset</span>)</span><br />
+      Converts feature set into</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#munge_featureset_name">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="print_fancy_output"></a><span class="summary-sig-name">print_fancy_output</span>(<span class="summary-sig-arg">result_tuples</span>,
+        <span class="summary-sig-arg">grid_scores</span>,
+        <span class="summary-sig-arg">output_file</span>=<span class="summary-sig-default">&lt;epydoc.docintrospecter._DevNull instance at 0x1b9e9e0&gt;</span>)</span><br />
+      Function to take all of the results from all of the folds and print 
+      nice tables with the results.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#print_fancy_output">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="run_configuration"></a><span class="summary-sig-name">run_configuration</span>(<span class="summary-sig-arg">config_file</span>,
+        <span class="summary-sig-arg">local</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">overwrite</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">queue</span>=<span class="summary-sig-default"><code class="variable-quote">u'</code><code class="variable-string">nlp.q</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">hosts</span>=<span class="summary-sig-default">None</span>)</span><br />
+      Takes a configuration file and runs the specified jobs on the grid.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_experiment-pysrc.html#run_configuration">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== VARIABLES ==================== -->
+<a name="section-Variables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td align="left" colspan="2" class="table-header">
+    <span class="table-header">Variables</span></td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="ALL"></a><span class="summary-name">ALL</span> = <code title="1">1</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__package__"></a><span class="summary-name">__package__</span> = <code title="None">None</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="string_types"></a><span class="summary-name">string_types</span> = <code title="(&lt;type 'basestring'&gt;)"><code class="variable-group">(</code>&lt;type 'basestring'&gt;<code class="variable-group">)</code></code>
+    </td>
+  </tr>
+</table>
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Jul  2 11:16:44 2013
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>
