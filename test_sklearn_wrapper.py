@@ -1,20 +1,16 @@
-
-import scipy.sparse as sp
-import sys
 import csv
-import os
-import numpy as np
-import classifier
 import json
+import os
 import re
+import sys
 
-_my_path = os.path.dirname(os.path.abspath(__file__))
-
-sys.path.append(_my_path)
-
-from run_experiment import load_featureset, run_configuration, load_cv_folds
-from classifier import Classifier, accuracy
+import numpy as np
+import scipy.sparse as sp
 from nose.tools import *
+
+import skle.learner
+from skle.run_experiment import load_featureset, run_configuration, load_cv_folds
+from skle.learner import Learner, accuracy
 
 
 score_output_re = re.compile(r'Average:.+Objective function score = ([\-\d\.]+)', re.DOTALL)
@@ -24,23 +20,23 @@ grid_re = re.compile(r'Grid search score = ([\-\d\.]+)')
 def test_SelectByMinCount():
     m2 = [[0.001,   0.0,    0.0,    0.0],
           [0.00001, -2.0,   0.0,    0.0],
-          [0.001,   0.0,    0.0,    4.0], 
+          [0.001,   0.0,    0.0,    4.0],
           [0.0101,  -200.0, 0.0,    0.0]]
 
     # default should keep all nonzero features (i.e., ones that appear 1+ times)
-    feat_selector = classifier.SelectByMinCount()
+    feat_selector = learner.SelectByMinCount()
     expected = np.array([[0.001, 0.0, 0.0], [0.00001, -2.0, 0.0], [0.001, 0.0, 4.0], [0.0101, -200.0, 0.0]])
     assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
 
     # keep features that happen 2+ times
-    feat_selector = classifier.SelectByMinCount(min_count=2)
+    feat_selector = learner.SelectByMinCount(min_count=2)
     expected = np.array([[0.001, 0.0], [0.00001, -2.0], [0.001, 0.0], [0.0101, -200.0]])
     assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
 
     # keep features that happen 3+ times
-    feat_selector = classifier.SelectByMinCount(min_count=3)
+    feat_selector = learner.SelectByMinCount(min_count=3)
     expected = np.array([[0.001], [0.00001], [0.001], [0.0101]])
     assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
@@ -110,7 +106,7 @@ def test_specified_cv_folds():
     suffix = '.jsonlines'
     featureset = ['test_cv_folds1']
     examples = load_featureset(dirpath, featureset, suffix)
-    clf = Classifier(probability=True)
+    clf = Learner(probability=True)
     cv_folds = load_cv_folds(os.path.join(_my_path, 'tests', 'test_cv_folds1.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective=accuracy, grid_jobs=1)
     assert grid_search_score < 0.6
@@ -139,7 +135,7 @@ def make_regression_data():
 
 def test_regression1():
     '''
-    This is a bit of a contrived test, but it should fail 
+    This is a bit of a contrived test, but it should fail
     if anything drastic happens to the regression code.
     '''
 

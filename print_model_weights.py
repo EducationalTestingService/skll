@@ -10,7 +10,6 @@ import classifier
 import sys
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Prints out the weights of a \
                                                   given model.",
@@ -26,7 +25,7 @@ if __name__ == '__main__':
     clf = classifier.Classifier()
     clf.load_model(args.model_file)
     weights = clf.get_model_params()
-   
+
     print("number of nonzero features:", len(weights), file=sys.stderr)
 
     for feat, val in sorted(weights.items(), key=lambda x: -abs(x[1]))[:k]:

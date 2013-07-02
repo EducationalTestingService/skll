@@ -11,12 +11,13 @@ Loads a trained model and outputs predictions based on input feature files.
 from __future__ import print_function, unicode_literals
 
 import argparse
-from classifier import Classifier, load_examples, _REGRESSION_MODELS
+
+from skle.learner import Learner, load_examples, _REGRESSION_MODELS
 
 
 class Predictor(object):
     """
-    Little wrapper around a L{Classifier} to load models and get
+    Little wrapper around a L{Learner} to load models and get
     predictions for feature strings.
     """
 
@@ -38,8 +39,8 @@ class Predictor(object):
                                for binary classification.
         @type positive_class: C{int}
         '''
-        self._classifier = Classifier()
-        self._classifier.load_model('{}.model'.format(model_prefix))
+        self._learner = Learner()
+        self._learner.load_model('{}.model'.format(model_prefix))
         self._pos_index = positive_class
         self.threshold = threshold
 
@@ -49,19 +50,19 @@ class Predictor(object):
         (which are dicts)
         '''
         # Must make a list around a dictionary to fit format that
-        # Classifier.predict expects
-        preds = self._classifier.predict(data).tolist()
+        # Learner.predict expects
+        preds = self._learner.predict(data).tolist()
 
-        if self._classifier.probability:
+        if self._learner.probability:
             if self.threshold is None:
                 return [pred[self._pos_index] for pred in preds]
             else:
                 return [int(pred[self._pos_index] >= self.threshold)
                         for pred in preds]
-        elif self._classifier.model_type in _REGRESSION_MODELS:
+        elif self._learner.model_type in _REGRESSION_MODELS:
             return preds
         else:
-            return [self._classifier.label_list[int(pred[0])] for pred in preds]
+            return [self._learner.label_list[int(pred[0])] for pred in preds]
 
 
 def main():

@@ -5,26 +5,26 @@ Runs an ablation study, removing one feature file at a time.
 @author: Michael Heilman (mheilman@ets.org)
 '''
 
-
-from six.moves import configparser
-from six import string_types, iterkeys, iteritems, itervalues  # Python 2/3
 import argparse
 import json
 import re
-from run_experiment import fix_json, run_configuration
 from multiprocessing import Pool
+
+from six.moves import configparser
+
+from skle.run_experiment import fix_json, run_configuration
 
 
 def run_experiment_without_feature(arg_tuple):
-    feature_type, given_features, config, local, queue, \
-                                  cfg_path, machines = arg_tuple
+    (feature_type, given_features, config, local, queue,
+     cfg_path, machines) = arg_tuple
     featureset = [[x for x in given_features if x != feature_type]]
 
     if feature_type:
-        featureset_name = "{}_minus_{}".format(given_featureset_name, 
-                                           feature_type)
+        featureset_name = "{}_minus_{}".format(given_featureset_name,
+                                               feature_type)
     else:
-        featureset_name = "{}_all".format(given_featureset_name)             
+        featureset_name = "{}_all".format(given_featureset_name)
 
     config.set("Input", "featuresets", json.dumps(featureset))
     config.set("Input", "featureset_names", "['{}']".format(featureset_name))
@@ -77,19 +77,18 @@ if __name__ == '__main__':
     if args.machines:
         machines = args.machines.split(',')
 
-
     config = configparser.SafeConfigParser()
     config.readfp(args.config_file)
 
     given_featuresets = json.loads(fix_json(config.get("Input",
                                                        "featuresets")))
-    given_featureset_names = json.loads(fix_json(config.get("Input", 
+    given_featureset_names = json.loads(fix_json(config.get("Input",
                                                  "featureset_names")))
 
     # make sure there is only one list of features
-    if (isinstance(given_featuresets[0], list) and len(given_featuresets) > 1) \
-        or (isinstance(given_featureset_names[0], list) 
-        and len(given_featureset_names) > 1):
+    if (isinstance(given_featuresets[0], list) and len(given_featuresets) > 1)
+        or (isinstance(given_featureset_names[0], list)
+            and len(given_featureset_names) > 1):
         raise ValueError("More than one feature set or list of names given.")
 
     # make a list of features rather than a list of lists
@@ -105,8 +104,9 @@ if __name__ == '__main__':
                                             args.config_file.name, machines))
     else:
         pool = Pool(processes=len(given_features) + 1)
-        pool.map(run_experiment_without_feature, 
-                       [(feature_type, given_features, config, args.local, 
+        pool.map(run_experiment_without_feature,
+                       [(feature_type, given_features, config, args.local,
                          args.queue, args.config_file.name, machines)
                         for feature_type in given_features + [None]])
-        
+
+

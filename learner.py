@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 '''
-Module with many functions to use for easily creating an sklearn classifier
+Module with many functions to use for easily creating a scikit-learn learner
 
 @author: Michael Heilman (mheilman@ets.org)
 @author: Nitin Madnani (nmadnani@ets.org)
 @author: Dan Blanchard (dblanchard@ets.org)
+@organization: ETS
 '''
 
 from __future__ import print_function, unicode_literals
@@ -19,12 +20,9 @@ import time
 from collections import defaultdict
 from itertools import islice
 
-import ml_metrics
 import numpy as np
 import scipy.sparse as sp
 from bs4 import UnicodeDammit
-from scipy.stats import kendalltau, spearmanr, pearsonr
-from sklearn import metrics
 from sklearn.base import is_classifier, clone, BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold, check_cv
 from sklearn.cross_validation import LeaveOneLabelOut
@@ -48,6 +46,8 @@ from six.moves import xrange as range
 from six.moves import cPickle as pickle
 from six import string_types
 
+from .metrics import (quadratic_weighted_kappa, unweighted_kappa, kendall_tau,
+                      f1_score_micro, accuracy)
 
 # Globals #
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
@@ -55,129 +55,6 @@ _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
                                 'rescaled_svr_linear', 'gb_regressor'])
-
-
-# METRICS #
-def quadratic_weighted_kappa(y_true, y_pred):
-    '''
-    Returns the quadratic weighted kappa.
-    This rounds the inputs before passing them to the ml_metrics module.
-    '''
-
-    # This rather crazy looking typecast is intended to work as follows:
-    # If an input is an int, the operations will have no effect.
-    # If it is a float, it will be rounded and then converted to an int
-    # because the ml_metrics package requires ints.
-    # If it is a str like "1", then it will be converted to a (rounded) int.
-    # If it is a str that can't be typecast, then the user is
-    # given a hopefully useful error message.
-    try:
-        y_true_rounded = [int(round(float(y))) for y in y_true]
-        y_pred_rounded = [int(round(float(y))) for y in y_pred]
-    except ValueError as e:
-        print("For kappa, the labels should be integers or strings that" +
-              " can be converted to ints (E.g., '4.0' or '3').",
-              file=sys.stderr)
-        raise e
-
-    res = ml_metrics.quadratic_weighted_kappa(y_true_rounded, y_pred_rounded)
-    return res
-
-
-def unweighted_kappa(y_true, y_pred):
-    '''
-    Returns the unweighted Cohen's kappa.
-    '''
-    # See quadratic_weighted_kappa for comments about the typecasting below.
-    try:
-        y_true_rounded = [int(round(float(y))) for y in y_true]
-        y_pred_rounded = [int(round(float(y))) for y in y_pred]
-    except ValueError as e:
-        print("For kappa, the labels should be integers or strings that" +
-              " can be converted to ints (E.g., '4.0' or '3').",
-              file=sys.stderr)
-        raise e
-
-    res = ml_metrics.kappa(y_true_rounded, y_pred_rounded)
-    return res
-
-
-def kendall_tau(y_true, y_pred):
-    '''
-    Optimize the hyperparameter values during the grid search based on
-    Kendall's tau.
-
-    This is useful in cases where you want to use the actual probabilities of
-    the different classes after the fact, and not just the optimize based on
-    the classification accuracy.
-    '''
-    ret_score = kendalltau(y_true, y_pred)[0]
-    return ret_score if not np.isnan(ret_score) else 0.0
-
-
-def spearman(y_true, y_pred):
-    '''
-    Optimize the hyperparameter values during the grid search based on
-    Spearman rank correlation.
-
-    This is useful in cases where you want to use the actual probabilities of
-    the different classes after the fact, and not just the optimize based on
-    the classification accuracy.
-    '''
-    ret_score = spearmanr(y_true, y_pred)[0]
-    return ret_score if not np.isnan(ret_score) else 0.0
-
-
-def pearson(y_true, y_pred):
-    '''
-    Optimize the hyperparameter values during the grid search based on Pearson
-    correlation.
-    '''
-    ret_score = pearsonr(y_true, y_pred)[0]
-    return ret_score if not np.isnan(ret_score) else 0.0
-
-
-def f1_score_least_frequent(y_true, y_pred):
-    '''
-    Optimize the hyperparameter values during the grid search based on the F1
-    measure of the least frequent class.
-
-    This is mostly intended for use when you're doing binary classification
-    and your data is highly skewed. You should probably use f1_score_macro if
-    your data is skewed and you're doing multi-class classification.
-    '''
-    least_frequent = np.bincount(y_true).argmin()
-    return metrics.f1_score(y_true, y_pred, average=None)[least_frequent]
-
-
-def f1_score_macro(y_true, y_pred):
-    '''
-    Use the macro-averaged F1 measure to select hyperparameter values during
-    the cross-validation grid search during training.
-
-    This method averages over classes (does not take imbalance into account).
-    You should use this if each class is equally important.
-    '''
-    return metrics.f1_score(y_true, y_pred, average="macro")
-
-
-def f1_score_micro(y_true, y_pred):
-    '''
-    Use the micro-averaged F1 measure to select hyperparameter values during
-    the cross-validation grid search during training.
-
-    This method averages over instances (takes imbalance into account). This
-    implies that precision == recall == F1.
-    '''
-    return metrics.f1_score(y_true, y_pred, average="micro")
-
-
-def accuracy(y_true, y_pred):
-    '''
-    Use the overall accuracy to select hyperparameter values during the cross-
-    validation grid search during training.
-    '''
-    return metrics.accuracy_score(y_true, y_pred)
 
 
 # DATA LOADING FUNCTIONS #
@@ -325,14 +202,14 @@ def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func,
     """
     Run fit on one set of parameters
 
-    Returns the score and the instance of the classifier
+    Returns the score and the instance of the learner
     """
     if verbose > 1:
         start_time = time.time()
         msg = '%s' % (', '.join('%s=%s' % (k, v)
                                 for k, v in iteritems(clf_params)))
         print("[GridSearchCV] %s %s" % (msg, (64 - len(msg)) * '.'))
-    # update parameters of the classifier after a copy of its base structure
+    # update parameters of the learner after a copy of its base structure
     clf = clone(base_clf)
     clf.set_params(**clf_params)
 
@@ -651,7 +528,6 @@ class _GridSearchCVBinary(GridSearchCV):
         return self.score_func(y, y_predicted)
 
 
-
 class RescaledRegressionMixin(BaseEstimator):
     '''
     This is a mixin to create regressors that store a min and
@@ -744,7 +620,6 @@ class RescaledRegressionMixin(BaseEstimator):
         super(self.__class__, self).__init__(**kwargs)
 
 
-
 class RescaledRidge(Ridge, RescaledRegressionMixin):
     def __init__(self, constrain=True, rescale=True, **kwargs):
         self.rescale_init(constrain=constrain, rescale=rescale, **kwargs)
@@ -773,31 +648,27 @@ class RescaledSVR(SVR, RescaledRegressionMixin):
         return self.rescale_predict(X)
 
 
-
-#################
-
-
-class Classifier(object):
+class Learner(object):
 
     """
-    A simpler classifier interface around many sklearn classification
-    functions.
+    A simpler learner interface around many sklearn classification
+    and regression functions.
     """
 
     def __init__(self, probability=False, do_scale_features=False,
                  model_type='logistic', model_kwargs=None, pos_label_str=None,
                  use_dense_features=False, min_feature_count=1):
         '''
-        Initializes a classifier object with the specified settings.
+        Initializes a learner object with the specified settings.
 
         @param do_scale_features: Should we scale features with this
-                                  classifier?
+                                  learner?
         @type do_scale_features: C{bool}
         @param model_type: Type of estimator to create. Options are:
                            'logistic', 'svm_linear', 'svm_radial',
                            'naivebayes', 'dtree', 'rforest', and 'gradient'
         @type model_type: C{basestring}
-        @param probability: Should classifier return probabilities of all
+        @param probability: Should learner return probabilities of all
                             classes (instead of just class with highest
                             probability)?
         @type probability: C{bool}
@@ -815,7 +686,7 @@ class Classifier(object):
                                   must have a nonzero value in to be included.
         @type min_feature_count: C{int}
         '''
-        super(Classifier, self).__init__()
+        super(Learner, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
         self.feat_vectorizer = None
         self.do_scale_features = do_scale_features
@@ -1025,7 +896,7 @@ class Classifier(object):
             default_param_grid = [{'max_depth': [1, 3, 5],
                                    'n_estimators': [500]}]
         else:
-            raise ValueError(("{} is not a valid classifier " +
+            raise ValueError(("{} is not a valid learner " +
                               "type.").format(self._model_type))
 
         return estimator, default_param_grid
@@ -1064,7 +935,6 @@ class Classifier(object):
                    " That may cause the learning algorithm to crash or" +
                    " perform poorly.").format(max_feat_abs),
                   file=sys.stderr)
-
 
     def train_setup(self, examples):
         '''
@@ -1311,7 +1181,7 @@ class Classifier(object):
                              indices to their (str) labels?
         @type class_labels: C{bool}
 
-        @return: The predictions returned by the classifier.
+        @return: The predictions returned by the learner.
         @rtype: C{array}
         '''
         features = [self._extract_features(x) for x in examples]
@@ -1383,7 +1253,7 @@ class Classifier(object):
         '''
         Cross-validates a given model on the training examples.
 
-        @param examples: The data to cross-validate classifier performance on.
+        @param examples: The data to cross-validate learner performance on.
         @type examples: C{array}
         @param stratified: Should we stratify the folds to ensure an even
                            distribution of classes for each fold?
@@ -1465,7 +1335,6 @@ class Classifier(object):
                                                  shuffle=False))
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
-
 
             # Evaluate model
             results.append(self.evaluate(examples[test_index],

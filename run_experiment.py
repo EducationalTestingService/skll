@@ -20,11 +20,11 @@ import itertools
 from collections import defaultdict, namedtuple, OrderedDict
 
 import numpy as np
-import classifier
 from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems, itervalues  # Python 2/3
 from six.moves import configparser
 
+import skle.learner
 
 # Named tuple for storing job results
 ClassifierResultInfo = namedtuple('ClassifierResultInfo',
