@@ -1,3 +1,27 @@
+# Copyright (C) 2012-2013 Educational Testing Service
+
+# This file is part of SciKit-Learn Lab.
+
+# SciKit-Learn Lab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SciKit-Learn Lab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
+
+'''
+Module for running a bunch of simple unit tests. Should be expanded more in
+the future.
+
+@author: Michael Heilman (mheilman@ets.org)
+'''
+
 import csv
 import json
 import os
@@ -8,13 +32,14 @@ import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
 
-import skle.learner
-from skle.run_experiment import load_featureset, run_configuration, load_cv_folds
-from skle.learner import Learner, accuracy
+import skll.learner
+from skll.run_experiment import load_featureset, run_configuration, load_cv_folds
+from skll.learner import Learner
+from skll.metrics import accuracy
 
 
-score_output_re = re.compile(r'Average:.+Objective function score = ([\-\d\.]+)', re.DOTALL)
-grid_re = re.compile(r'Grid search score = ([\-\d\.]+)')
+SCORE_OUTPUT_RE = re.compile(r'Average:.+Objective function score = ([\-\d\.]+)', re.DOTALL)
+GRID_RE = re.compile(r'Grid search score = ([\-\d\.]+)')
 
 
 def test_SelectByMinCount():
@@ -92,10 +117,10 @@ def test_specified_cv_folds():
         with open(os.path.join(_my_path, 'tests', 'tests_cv_test_cv_folds1_logistic_scaled_tuned_accuracy_cross-validate.results')) as f:
             # check held out scores
             outstr = f.read()
-            score = float(score_output_re.search(outstr).groups()[0])
+            score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
             assert test_func(score)
 
-            grid_score_matches = grid_re.findall(outstr)
+            grid_score_matches = GRID_RE.findall(outstr)
             assert len(grid_score_matches) == grid_size
             for match_str in grid_score_matches:
                 assert test_func(float(match_str))
@@ -148,7 +173,7 @@ def test_regression1():
     with open(os.path.join(_my_path, 'tests', 'tests_cv_test_regression1_rescaled_ridge_scaled_tuned_pearson_cross-validate.results')) as f:
         # check held out scores
         outstr = f.read()
-        score = float(score_output_re.search(outstr).groups()[0])
+        score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
         assert test_func(score)
 
     with open(os.path.join(_my_path, 'tests', 'tests_cv_test_regression1_rescaled_ridge_scaled_tuned_pearson_cross-validate.predictions'), 'rb') as f:

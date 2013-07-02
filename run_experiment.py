@@ -1,6 +1,25 @@
 #!/usr/bin/env python
+
+# Copyright (C) 2012-2013 Educational Testing Service
+
+# This file is part of SciKit-Learn Lab.
+
+# SciKit-Learn Lab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SciKit-Learn Lab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
+
 '''
-Runs a bunch of sklearn jobs in parallel on the cluster given a config file.
+Runs a bunch of scikit-learn jobs in parallel on the cluster given a
+config file.
 
 @author: Nitin Madnani (nmadnani@ets.org)
 @author: Dan Blanchard (dblanchard@ets.org)
@@ -24,13 +43,15 @@ from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems, itervalues  # Python 2/3
 from six.moves import configparser
 
-import skle.learner
+from skll import Learner, metrics
+from skll.learner import load_examples
+
 
 # Named tuple for storing job results
-ClassifierResultInfo = namedtuple('ClassifierResultInfo',
-                                  ['train_set_name', 'test_set_name',
-                                   'featureset', 'given_classifier', 'task',
-                                   'task_results', 'grid_scores'])
+LearnerResultInfo = namedtuple('LearnerResultInfo',
+                               ['train_set_name', 'test_set_name',
+                                'featureset', 'given_learner', 'task',
+                                'task_results', 'grid_scores'])
 
 
 def clean_path(path):
@@ -152,8 +173,8 @@ def load_featureset(dirpath, featureset, suffix):
         featureset = [featureset]
 
     # Load a list of lists of examples, one list of examples per featureset.
-    example_lists = [classifier.load_examples(os.path.join(dirpath,
-                                                           featfile + suffix))
+    example_lists = [load_examples(os.path.join(dirpath,
+                                                featfile + suffix))
                      for featfile in featureset]
 
     # Check that the IDs are unique.
@@ -165,10 +186,10 @@ def load_featureset(dirpath, featureset, suffix):
     # Check that the different feature files have the same IDs.
     # To do this, make a sorted tuple of unique IDs for each feature file,
     # and then make sure they are all the same by making sure the set is size 1.
-    if len(set([tuple(sorted(set([ex['id'] for ex in examples])))
-                for examples in example_lists])) != 1:
-        raise ValueError('The sets of example IDs in two feature files do not \
-                          match')
+    if len({tuple(sorted({ex['id'] for ex in examples}))
+            for examples in example_list}) != 1:
+        raise ValueError('The sets of example IDs in two feature files do not' +
+                          'match')
 
     # Make sure there is a unique label for every example (or no label, for
     # "unseen" examples).
@@ -177,7 +198,7 @@ def load_featureset(dirpath, featureset, suffix):
     unique_tuples = set(itertools.chain(*[[(ex['id'], ex['y']) for ex
                                            in examples if 'y' in ex]
                                           for examples in example_lists]))
-    if len(set([tup[0] for tup in unique_tuples])) != len(unique_tuples):
+    if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
         raise ValueError('Two feature files have different labels (i.e., y' +
                          ' values) for the same ID.')
 
@@ -204,7 +225,7 @@ def load_featureset(dirpath, featureset, suffix):
     return np.array(list(itervalues(example_dict)))  # Python 2/3 compatible
 
 
-def classify_featureset(jobname, featureset, given_classifier, train_path,
+def classify_featureset(jobname, featureset, given_learner, train_path,
                         test_path, train_set_name, test_set_name, modelpath,
                         prediction_prefix, grid_search,
                         grid_objective, do_scale_features, cross_validate,
@@ -228,13 +249,13 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
             test_examples = load_featureset(test_path, featureset, suffix)
 
         # initialize a classifer object
-        learner = classifier.Classifier(probability=probability,
-                                        model_type=given_classifier,
-                                        do_scale_features=do_scale_features,
-                                        model_kwargs=fixed_parameters,
-                                        pos_label_str=pos_label_str,
-                                        use_dense_features=use_dense_features,
-                                        min_feature_count=min_feature_count)
+        learner = Learner(probability=probability,
+                          model_type=given_classifier,
+                          do_scale_features=do_scale_features,
+                          model_kwargs=fixed_parameters,
+                          pos_label_str=pos_label_str,
+                          use_dense_features=use_dense_features,
+                          min_feature_count=min_feature_count)
 
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it (and the feature
@@ -271,7 +292,6 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
                 # save model
                 learner.save_model(modelfile)
 
-
                 if grid_search:
                     print('\tbest {} score: {}'.format(grid_objective.__name__,
                                                        round(best_score, 3)),
@@ -289,12 +309,12 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
         if cross_validate:
             print('\tcross-validating', file=log_file)
             results, grid_scores = learner.cross_validate(train_examples,
-                                             prediction_prefix=prediction_prefix,
-                                             grid_search=grid_search,
-                                             cv_folds=cv_folds,
-                                             grid_objective=grid_objective,
-                                             param_grid=param_grid,
-                                             grid_jobs=grid_search_jobs)
+                                                          prediction_prefix=prediction_prefix,
+                                                          grid_search=grid_search,
+                                                          cv_folds=cv_folds,
+                                                          grid_objective=grid_objective,
+                                                          param_grid=param_grid,
+                                                          grid_jobs=grid_search_jobs)
             task = 'cross-validate'
         elif evaluate:
             print('\tevaluating predictions', file=log_file)
@@ -309,7 +329,7 @@ def classify_featureset(jobname, featureset, given_classifier, train_path,
             learner.predict(test_examples, prediction_prefix=prediction_prefix)
 
         # write out results to file if we're not predicting
-        result_info = ClassifierResultInfo(train_set_name, test_set_name,
+        result_info = LearnerResultInfo(train_set_name, test_set_name,
                                            featureset, given_classifier, task,
                                            results, grid_scores)
         if task != 'predict':
@@ -465,7 +485,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
         print('Error: invalid grid objective function.', file=sys.stderr)
         sys.exit(2)
     else:
-        grid_objective = getattr(classifier, grid_objective_func)
+        grid_objective = getattr(metrics, grid_objective_func)
 
     # do we need to scale the feature values?
     do_scale_features = config.getboolean("Tuning", "scale_features")
@@ -511,8 +531,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     for featureset, featureset_name in zip(given_featuresets,
                                            given_featureset_names):
 
-        # and for each classifier
-        for classifier_num, given_classifier in enumerate(given_classifiers):
+        # and for each learner
+        for learner_num, given_learner in enumerate(given_learners):
 
             # store training/test set names for later use
             train_set_name = os.path.basename(train_path)
@@ -520,7 +540,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
 
             # create a name for the job
             name_components = [train_set_name, test_set_name,
-                               featureset_name, given_classifier]
+                               featureset_name, given_learner]
 
             # add scaling information to name
             if do_scale_features:
@@ -548,14 +568,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
             temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
 
             # create job if we're doing things on the grid
-            job_args = [jobname, featureset, given_classifier, train_path,
+            job_args = [jobname, featureset, given_learner, train_path,
                         test_path, train_set_name, test_set_name, modelpath,
                         prediction_prefix, do_grid_search,
                         grid_objective, do_scale_features, cross_validate,
                         evaluate, suffix, temp_logfile, probability,
-                        resultspath, (fixed_parameter_list[classifier_num]
+                        resultspath, (fixed_parameter_list[learner_num]
                                       if fixed_parameter_list else dict()),
-                        (param_grid_list[classifier_num] if param_grid_list
+                        (param_grid_list[learner_num] if param_grid_list
                          else None),
                         pos_label_str, overwrite, use_dense_features,
                         min_feature_count, grid_search_jobs, cv_folds]

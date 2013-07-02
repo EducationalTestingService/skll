@@ -1,4 +1,22 @@
 #!/usr/bin/env python
+
+# Copyright (C) 2012-2013 Educational Testing Service
+
+# This file is part of SciKit-Learn Lab.
+
+# SciKit-Learn Lab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SciKit-Learn Lab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
+
 '''
 Module with many functions to use for easily creating a scikit-learn learner
 
@@ -22,6 +40,7 @@ from itertools import islice
 
 import numpy as np
 import scipy.sparse as sp
+import sklearn.metrics as sk_metrics
 from bs4 import UnicodeDammit
 from sklearn.base import is_classifier, clone, BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold, check_cv
@@ -46,8 +65,8 @@ from six.moves import xrange as range
 from six.moves import cPickle as pickle
 from six import string_types
 
-from .metrics import (quadratic_weighted_kappa, unweighted_kappa, kendall_tau,
-                      f1_score_micro, accuracy)
+from skll.metrics import (quadratic_weighted_kappa, unweighted_kappa,
+                          kendall_tau, f1_score_micro, accuracy)
 
 # Globals #
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
@@ -1140,15 +1159,15 @@ class Learner(object):
         else:
             # compute the confusion matrix
             num_labels = len(self.label_list)
-            conf_mat = metrics.confusion_matrix(ytest, yhat,
-                                                labels=list(range(num_labels))
+            conf_mat = sk_metrics.confusion_matrix(ytest, yhat,
+                                                   labels=list(range(num_labels))
                                                 )
             # Calculate metrics
-            overall_accuracy = metrics.accuracy_score(ytest, yhat)
-            result_matrix = metrics.precision_recall_fscore_support(ytest,
-                                                                    yhat,
-                                                                    labels=list(range(num_labels)),
-                                                                    average=None)
+            overall_accuracy = sk_metrics.accuracy_score(ytest, yhat)
+            result_matrix = sk_metrics.precision_recall_fscore_support(ytest,
+                                                                       yhat,
+                                                                       labels=list(range(num_labels)),
+                                                                       average=None)
 
             # Store results
             result_dict = defaultdict(dict)

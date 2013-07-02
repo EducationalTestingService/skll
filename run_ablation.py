@@ -1,4 +1,22 @@
 #!/usr/bin/env python
+
+# Copyright (C) 2012-2013 Educational Testing Service
+
+# This file is part of SciKit-Learn Lab.
+
+# SciKit-Learn Lab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SciKit-Learn Lab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
+
 '''
 Runs an ablation study, removing one feature file at a time.
 
@@ -12,7 +30,7 @@ from multiprocessing import Pool
 
 from six.moves import configparser
 
-from skle.run_experiment import fix_json, run_configuration
+from skll.run_experiment import fix_json, run_configuration
 
 
 def run_experiment_without_feature(arg_tuple):
@@ -86,9 +104,9 @@ if __name__ == '__main__':
                                                  "featureset_names")))
 
     # make sure there is only one list of features
-    if (isinstance(given_featuresets[0], list) and len(given_featuresets) > 1)
+    if ((isinstance(given_featuresets[0], list) and len(given_featuresets) > 1)
         or (isinstance(given_featureset_names[0], list)
-            and len(given_featureset_names) > 1):
+            and len(given_featureset_names) > 1)):
         raise ValueError("More than one feature set or list of names given.")
 
     # make a list of features rather than a list of lists
@@ -105,8 +123,6 @@ if __name__ == '__main__':
     else:
         pool = Pool(processes=len(given_features) + 1)
         pool.map(run_experiment_without_feature,
-                       [(feature_type, given_features, config, args.local,
-                         args.queue, args.config_file.name, machines)
-                        for feature_type in given_features + [None]])
-
-
+                 [(feature_type, given_features, config, args.local,
+                   args.queue, args.config_file.name, machines)
+                  for feature_type in given_features + [None]])

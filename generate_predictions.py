@@ -1,4 +1,21 @@
 #!/usr/bin/env python
+# Copyright (C) 2012-2013 Educational Testing Service
+
+# This file is part of SciKit-Learn Lab.
+
+# SciKit-Learn Lab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SciKit-Learn Lab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
+
 '''
 Loads a trained model and outputs predictions based on input feature files.
 
@@ -12,7 +29,7 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 
-from skle.learner import Learner, load_examples, _REGRESSION_MODELS
+from skll.learner import Learner, load_examples, _REGRESSION_MODELS
 
 
 class Predictor(object):
