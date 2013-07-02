@@ -14,9 +14,6 @@
 <table class="navbar" border="0" width="100%" cellpadding="0"
        bgcolor="#a0c0ff" cellspacing="0">
   <tr valign="middle">
-  <!-- Home link -->
-      <th>&nbsp;&nbsp;&nbsp;<a
-        href="classifier-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
 
   <!-- Tree link -->
       <th bgcolor="#70b0f0" class="navbar-select"
@@ -61,7 +58,7 @@
     <li> <strong class="uidlink">sklearn.svm.classes.SVR</strong>:
       <em class="summary">epsilon-Support Vector Regression.</em>
     <ul>
-    <li> <strong class="uidlink"><a href="classifier.RescaledSVR-class.html">classifier.RescaledSVR</a></strong>
+    <li> <strong class="uidlink"><a href="learner.RescaledSVR-class.html">learner.RescaledSVR</a></strong>
     </li>
     </ul>
     </li>
@@ -75,7 +72,7 @@
     <li> <strong class="uidlink">sklearn.linear_model.ridge.Ridge</strong>:
       <em class="summary">Linear least squares with l2 regularization.</em>
     <ul>
-    <li> <strong class="uidlink"><a href="classifier.RescaledRidge-class.html">classifier.RescaledRidge</a></strong>
+    <li> <strong class="uidlink"><a href="learner.RescaledRidge-class.html">learner.RescaledRidge</a></strong>
     </li>
     </ul>
     </li>
@@ -83,14 +80,14 @@
     </li>
     </ul>
     </li>
-    <li> <strong class="uidlink"><a href="classifier.RescaledRegressionMixin-class.html">classifier.RescaledRegressionMixin</a></strong>:
+    <li> <strong class="uidlink"><a href="learner.RescaledRegressionMixin-class.html">learner.RescaledRegressionMixin</a></strong>:
       <em class="summary">This is a mixin to create regressors that store a min and a max for
         the training data and make sure that predictions fall within that 
         range.</em>
     <ul>
-    <li> <strong class="uidlink"><a href="classifier.RescaledRidge-class.html">classifier.RescaledRidge</a></strong>
+    <li> <strong class="uidlink"><a href="learner.RescaledRidge-class.html">learner.RescaledRidge</a></strong>
     </li>
-    <li> <strong class="uidlink"><a href="classifier.RescaledSVR-class.html">classifier.RescaledSVR</a></strong>
+    <li> <strong class="uidlink"><a href="learner.RescaledSVR-class.html">learner.RescaledSVR</a></strong>
     </li>
     </ul>
     </li>
@@ -101,7 +98,7 @@
     <li> <strong class="uidlink">sklearn.feature_selection.univariate_selection.SelectKBest</strong>:
       <em class="summary">Select features according to the k highest scores.</em>
     <ul>
-    <li> <strong class="uidlink"><a href="classifier.SelectByMinCount-class.html">classifier.SelectByMinCount</a></strong>:
+    <li> <strong class="uidlink"><a href="learner.SelectByMinCount-class.html">learner.SelectByMinCount</a></strong>:
       <em class="summary">Select features ocurring in more (and/or fewer than) than a 
         specified number of examples in the training data (or a CV training
         fold).</em>
@@ -114,9 +111,13 @@
     </li>
     </ul>
     </li>
-    <li> <strong class="uidlink"><a href="classifier.Classifier-class.html">classifier.Classifier</a></strong>:
-      <em class="summary">A simpler classifier interface around many sklearn classification 
-        functions.</em>
+    <li> <strong class="uidlink"><a href="learner.Learner-class.html">learner.Learner</a></strong>:
+      <em class="summary">A simpler learner interface around many sklearn classification and 
+        regression functions.</em>
+    </li>
+    <li> <strong class="uidlink"><a href="generate_predictions.Predictor-class.html">generate_predictions.Predictor</a></strong>:
+      <em class="summary">Little wrapper around a Learner to load models and get predictions 
+        for feature strings.</em>
     </li>
     <li> <strong class="uidlink">sklearn.base.RegressorMixin</strong>:
       <em class="summary">Mixin class for all regression estimators in scikit-learn</em>
@@ -124,14 +125,14 @@
     <li> <strong class="uidlink">sklearn.linear_model.ridge.Ridge</strong>:
       <em class="summary">Linear least squares with l2 regularization.</em>
     <ul>
-    <li> <strong class="uidlink"><a href="classifier.RescaledRidge-class.html">classifier.RescaledRidge</a></strong>
+    <li> <strong class="uidlink"><a href="learner.RescaledRidge-class.html">learner.RescaledRidge</a></strong>
     </li>
     </ul>
     </li>
     <li> <strong class="uidlink">sklearn.svm.classes.SVR</strong>:
       <em class="summary">epsilon-Support Vector Regression.</em>
     <ul>
-    <li> <strong class="uidlink"><a href="classifier.RescaledSVR-class.html">classifier.RescaledSVR</a></strong>
+    <li> <strong class="uidlink"><a href="learner.RescaledSVR-class.html">learner.RescaledSVR</a></strong>
     </li>
     </ul>
     </li>
@@ -147,7 +148,7 @@
     <li> <strong class="uidlink">sklearn.feature_selection.univariate_selection.SelectKBest</strong>:
       <em class="summary">Select features according to the k highest scores.</em>
     <ul>
-    <li> <strong class="uidlink"><a href="classifier.SelectByMinCount-class.html">classifier.SelectByMinCount</a></strong>:
+    <li> <strong class="uidlink"><a href="learner.SelectByMinCount-class.html">learner.SelectByMinCount</a></strong>:
       <em class="summary">Select features ocurring in more (and/or fewer than) than a 
         specified number of examples in the training data (or a CV training
         fold).</em>
@@ -157,6 +158,16 @@
     </ul>
     </li>
     </ul>
+    </li>
+    </ul>
+    </li>
+    <li> <strong class="uidlink">tuple</strong>:
+      <em class="summary">tuple() -&gt; empty tuple tuple(iterable) -&gt; tuple initialized 
+        from iterable's items</em>
+    <ul>
+    <li> <strong class="uidlink"><a href="run_experiment.LearnerResultInfo-class.html">run_experiment.LearnerResultInfo</a></strong>:
+      <em class="summary">LearnerResultInfo(train_set_name, test_set_name, featureset, 
+        given_learner, task, task_results, grid_scores)</em>
     </li>
     </ul>
     </li>
@@ -176,9 +187,6 @@
 <table class="navbar" border="0" width="100%" cellpadding="0"
        bgcolor="#a0c0ff" cellspacing="0">
   <tr valign="middle">
-  <!-- Home link -->
-      <th>&nbsp;&nbsp;&nbsp;<a
-        href="classifier-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
 
   <!-- Tree link -->
       <th bgcolor="#70b0f0" class="navbar-select"
@@ -198,7 +206,7 @@
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Wed Jun 26 12:19:50 2013
+    Generated by Epydoc 3.0.1 on Tue Jul  2 11:16:44 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"

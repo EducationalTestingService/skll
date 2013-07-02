@@ -3,7 +3,7 @@
           "DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <title>classifier</title>
+  <title>Module Hierarchy</title>
   <link rel="stylesheet" href="epydoc.css" type="text/css" />
   <script type="text/javascript" src="epydoc.js"></script>
 </head>
@@ -14,13 +14,10 @@
 <table class="navbar" border="0" width="100%" cellpadding="0"
        bgcolor="#a0c0ff" cellspacing="0">
   <tr valign="middle">
-  <!-- Home link -->
-      <th bgcolor="#70b0f0" class="navbar-select"
-          >&nbsp;&nbsp;&nbsp;Home&nbsp;&nbsp;&nbsp;</th>
 
   <!-- Tree link -->
-      <th>&nbsp;&nbsp;&nbsp;<a
-        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+      <th bgcolor="#70b0f0" class="navbar-select"
+          >&nbsp;&nbsp;&nbsp;Trees&nbsp;&nbsp;&nbsp;</th>
 
   <!-- Index link -->
       <th>&nbsp;&nbsp;&nbsp;<a
@@ -35,11 +32,7 @@
 </table>
 <table width="100%" cellpadding="0" cellspacing="0">
   <tr valign="top">
-    <td width="100%">
-      <span class="breadcrumbs">
-        Module&nbsp;classifier
-      </span>
-    </td>
+    <td width="100%">&nbsp;</td>
     <td>
       <table cellpadding="0" cellspacing="0">
         <!-- hide/show private -->
@@ -47,474 +40,31 @@
     </td>
   </tr>
 </table>
-<!-- ==================== MODULE DESCRIPTION ==================== -->
-<h1 class="epydoc">Module classifier</h1><p class="nomargin-top"><span class="codelink"><a href="classifier-pysrc.html">source&nbsp;code</a></span></p>
-<p>Module with many functions to use for easily creating an sklearn 
-  classifier</p>
-
-<hr />
-<div class="fields">      <dl><dt>Authors:</dt>
-        <dd>
-          Michael Heilman (mheilman@ets.org),
-          Nitin Madnani (nmadnani@ets.org),
-          Dan Blanchard (dblanchard@ets.org)
-        </dd>
-      </dl>
-</div><!-- ==================== CLASSES ==================== -->
-<a name="section-Classes"></a>
-<table class="summary" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr bgcolor="#70b0f0" class="table-header">
-  <td align="left" colspan="2" class="table-header">
-    <span class="table-header">Classes</span></td>
-</tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-        <a href="classifier.SelectByMinCount-class.html" class="summary-name">SelectByMinCount</a><br />
-      Select features ocurring in more (and/or fewer than) than a 
-        specified number of examples in the training data (or a CV training
-        fold).
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-        <a href="classifier.RescaledRegressionMixin-class.html" class="summary-name">RescaledRegressionMixin</a><br />
-      This is a mixin to create regressors that store a min and a max for
-        the training data and make sure that predictions fall within that 
-        range.
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-        <a href="classifier.RescaledRidge-class.html" class="summary-name">RescaledRidge</a>
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-        <a href="classifier.RescaledSVR-class.html" class="summary-name">RescaledSVR</a>
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-        <a href="classifier.Classifier-class.html" class="summary-name">Classifier</a><br />
-      A simpler classifier interface around many sklearn classification 
-        functions.
-    </td>
-  </tr>
-</table>
-<!-- ==================== FUNCTIONS ==================== -->
-<a name="section-Functions"></a>
-<table class="summary" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr bgcolor="#70b0f0" class="table-header">
-  <td align="left" colspan="2" class="table-header">
-    <span class="table-header">Functions</span></td>
-</tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a href="classifier-module.html#quadratic_weighted_kappa" class="summary-sig-name">quadratic_weighted_kappa</a>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Returns the quadratic weighted kappa.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#quadratic_weighted_kappa">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a name="unweighted_kappa"></a><span class="summary-sig-name">unweighted_kappa</span>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Returns the unweighted Cohen's kappa.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#unweighted_kappa">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a href="classifier-module.html#kendall_tau" class="summary-sig-name">kendall_tau</a>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Optimize the hyperparameter values during the grid search based on 
-      Kendall's tau.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#kendall_tau">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a href="classifier-module.html#spearman" class="summary-sig-name">spearman</a>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Optimize the hyperparameter values during the grid search based on 
-      Spearman rank correlation.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#spearman">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a name="pearson"></a><span class="summary-sig-name">pearson</span>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Optimize the hyperparameter values during the grid search based on 
-      Pearson correlation.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#pearson">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a href="classifier-module.html#f1_score_least_frequent" class="summary-sig-name">f1_score_least_frequent</a>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Optimize the hyperparameter values during the grid search based on 
-      the F1 measure of the least frequent class.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#f1_score_least_frequent">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a href="classifier-module.html#f1_score_macro" class="summary-sig-name">f1_score_macro</a>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Use the macro-averaged F1 measure to select hyperparameter values 
-      during the cross-validation grid search during training.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#f1_score_macro">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a href="classifier-module.html#f1_score_micro" class="summary-sig-name">f1_score_micro</a>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Use the micro-averaged F1 measure to select hyperparameter values 
-      during the cross-validation grid search during training.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#f1_score_micro">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a name="accuracy"></a><span class="summary-sig-name">accuracy</span>(<span class="summary-sig-arg">y_true</span>,
-        <span class="summary-sig-arg">y_pred</span>)</span><br />
-      Use the overall accuracy to select hyperparameter values during the 
-      cross- validation grid search during training.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#accuracy">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td><span class="summary-sig"><a href="classifier-module.html#load_examples" class="summary-sig-name">load_examples</a>(<span class="summary-sig-arg">path</span>,
-        <span class="summary-sig-arg">has_labels</span>=<span class="summary-sig-default">True</span>)</span><br />
-      Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
-      formats.</td>
-          <td align="right" valign="top">
-            <span class="codelink"><a href="classifier-pysrc.html#load_examples">source&nbsp;code</a></span>
-            
-          </td>
-        </tr>
-      </table>
-      
-    </td>
-  </tr>
-</table>
-<!-- ==================== VARIABLES ==================== -->
-<a name="section-Variables"></a>
-<table class="summary" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr bgcolor="#70b0f0" class="table-header">
-  <td align="left" colspan="2" class="table-header">
-    <span class="table-header">Variables</span></td>
-</tr>
-<tr>
-    <td width="15%" align="right" valign="top" class="summary">
-      <span class="summary-type">&nbsp;</span>
-    </td><td class="summary">
-        <a name="__package__"></a><span class="summary-name">__package__</span> = <code title="None">None</code>
-    </td>
-  </tr>
-</table>
-<!-- ==================== FUNCTION DETAILS ==================== -->
-<a name="section-FunctionDetails"></a>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr bgcolor="#70b0f0" class="table-header">
-  <td align="left" colspan="2" class="table-header">
-    <span class="table-header">Function Details</span></td>
-</tr>
-</table>
-<a name="quadratic_weighted_kappa"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">quadratic_weighted_kappa</span>(<span class="sig-arg">y_true</span>,
-        <span class="sig-arg">y_pred</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#quadratic_weighted_kappa">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Returns the quadratic weighted kappa. This rounds the inputs before 
-  passing them to the ml_metrics module.</p>
-  <dl class="fields">
-  </dl>
-</td></tr></table>
-</div>
-<a name="kendall_tau"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">kendall_tau</span>(<span class="sig-arg">y_true</span>,
-        <span class="sig-arg">y_pred</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#kendall_tau">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Optimize the hyperparameter values during the grid search based on 
-  Kendall's tau.</p>
-  <p>This is useful in cases where you want to use the actual probabilities
-  of the different classes after the fact, and not just the optimize based 
-  on the classification accuracy.</p>
-  <dl class="fields">
-  </dl>
-</td></tr></table>
-</div>
-<a name="spearman"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">spearman</span>(<span class="sig-arg">y_true</span>,
-        <span class="sig-arg">y_pred</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#spearman">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Optimize the hyperparameter values during the grid search based on 
-  Spearman rank correlation.</p>
-  <p>This is useful in cases where you want to use the actual probabilities
-  of the different classes after the fact, and not just the optimize based 
-  on the classification accuracy.</p>
-  <dl class="fields">
-  </dl>
-</td></tr></table>
-</div>
-<a name="f1_score_least_frequent"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">f1_score_least_frequent</span>(<span class="sig-arg">y_true</span>,
-        <span class="sig-arg">y_pred</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#f1_score_least_frequent">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Optimize the hyperparameter values during the grid search based on the
-  F1 measure of the least frequent class.</p>
-  <p>This is mostly intended for use when you're doing binary 
-  classification and your data is highly skewed. You should probably use 
-  f1_score_macro if your data is skewed and you're doing multi-class 
-  classification.</p>
-  <dl class="fields">
-  </dl>
-</td></tr></table>
-</div>
-<a name="f1_score_macro"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">f1_score_macro</span>(<span class="sig-arg">y_true</span>,
-        <span class="sig-arg">y_pred</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#f1_score_macro">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Use the macro-averaged F1 measure to select hyperparameter values 
-  during the cross-validation grid search during training.</p>
-  <p>This method averages over classes (does not take imbalance into 
-  account). You should use this if each class is equally important.</p>
-  <dl class="fields">
-  </dl>
-</td></tr></table>
-</div>
-<a name="f1_score_micro"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">f1_score_micro</span>(<span class="sig-arg">y_true</span>,
-        <span class="sig-arg">y_pred</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#f1_score_micro">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Use the micro-averaged F1 measure to select hyperparameter values 
-  during the cross-validation grid search during training.</p>
-  <p>This method averages over instances (takes imbalance into account). 
-  This implies that precision == recall == F1.</p>
-  <dl class="fields">
-  </dl>
-</td></tr></table>
-</div>
-<a name="load_examples"></a>
-<div>
-<table class="details" border="1" cellpadding="3"
-       cellspacing="0" width="100%" bgcolor="white">
-<tr><td>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr valign="top"><td>
-  <h3 class="epydoc"><span class="sig"><span class="sig-name">load_examples</span>(<span class="sig-arg">path</span>,
-        <span class="sig-arg">has_labels</span>=<span class="sig-default">True</span>)</span>
-  </h3>
-  </td><td align="right" valign="top"
-    ><span class="codelink"><a href="classifier-pysrc.html#load_examples">source&nbsp;code</a></span>&nbsp;
-    </td>
-  </tr></table>
-  
-  <p>Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM 
-  formats.</p>
-  <dl class="fields">
-    <dt>Parameters:</dt>
-    <dd><ul class="nomargin-top">
-        <li><strong class="pname"><code>path</code></strong> (<code>basestring</code>) - The path to the file to load the examples from.</li>
-    </ul></dd>
-    <dt>Returns:</dt>
-        <dd>2-column <code>numpy.array</code> of examples with the 
-          &quot;y&quot; containing the class labels and &quot;x&quot; 
-          containing the features for each example.</dd>
-  </dl>
-</td></tr></table>
-</div>
-<br />
+<center><b>
+ [ <a href="module-tree.html">Module Hierarchy</a>
+ | <a href="class-tree.html">Class Hierarchy</a> ]
+</b></center><br />
+<h1 class="epydoc">Module Hierarchy</h1>
+<ul class="nomargin-top">
+    <li> <strong class="uidlink"><a href="generate_predictions-module.html">generate_predictions</a></strong>: <em class="summary">Loads a trained model and outputs predictions based on input 
+        feature files.</em>    </li>
+    <li> <strong class="uidlink"><a href="learner-module.html">learner</a></strong>: <em class="summary">Module with many functions to use for easily creating a 
+        scikit-learn learner</em>    </li>
+    <li> <strong class="uidlink"><a href="metrics-module.html">metrics</a></strong>: <em class="summary">This module contains a bunch of evaluation metrics that can be used
+        to evaluate the performance of learners.</em>    </li>
+    <li> <strong class="uidlink"><a href="print_model_weights-module.html">print_model_weights</a></strong>: <em class="summary">Simple script for printing out model weights.</em>    </li>
+    <li> <strong class="uidlink"><a href="run_ablation-module.html">run_ablation</a></strong>: <em class="summary">Runs an ablation study, removing one feature file at a time.</em>    </li>
+    <li> <strong class="uidlink"><a href="run_experiment-module.html">run_experiment</a></strong>: <em class="summary">Runs a bunch of scikit-learn jobs in parallel on the cluster given 
+        a config file.</em>    </li>
+</ul>
 <!-- ==================== NAVIGATION BAR ==================== -->
 <table class="navbar" border="0" width="100%" cellpadding="0"
        bgcolor="#a0c0ff" cellspacing="0">
   <tr valign="middle">
-  <!-- Home link -->
-      <th bgcolor="#70b0f0" class="navbar-select"
-          >&nbsp;&nbsp;&nbsp;Home&nbsp;&nbsp;&nbsp;</th>
 
   <!-- Tree link -->
-      <th>&nbsp;&nbsp;&nbsp;<a
-        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+      <th bgcolor="#70b0f0" class="navbar-select"
+          >&nbsp;&nbsp;&nbsp;Trees&nbsp;&nbsp;&nbsp;</th>
 
   <!-- Index link -->
       <th>&nbsp;&nbsp;&nbsp;<a
@@ -530,7 +80,7 @@
 <table border="0" cellpadding="0" cellspacing="0" width="100%%">
   <tr>
     <td align="left" class="footer">
-    Generated by Epydoc 3.0.1 on Wed Jun 26 12:19:50 2013
+    Generated by Epydoc 3.0.1 on Tue Jul  2 11:16:44 2013
     </td>
     <td align="right" class="footer">
       <a target="mainFrame" href="http://epydoc.sourceforge.net"
