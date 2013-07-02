@@ -20,11 +20,12 @@
 '''
 Module with many functions to use for easily creating a scikit-learn learner
 
-@author: Michael Heilman (mheilman@ets.org)
-@author: Nitin Madnani (nmadnani@ets.org)
-@author: Dan Blanchard (dblanchard@ets.org)
-@organization: ETS
+:author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
+:author: Dan Blanchard (dblanchard@ets.org)
+:organization: ETS
 '''
+
 
 from __future__ import print_function, unicode_literals
 
@@ -94,8 +95,8 @@ def _megam_dict_iter(path, has_labels=True):
     Generator that yields tuples of classes and dictionaries mapping from
     features to values for each pair of lines in path
 
-    @param path: Path to MegaM file
-    @type path: C{basestring}
+    :param path: Path to MegaM file
+    :type path: basestring
     '''
 
     line_count = 0
@@ -144,11 +145,11 @@ def load_examples(path, has_labels=True):
     Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
     formats.
 
-    @param path: The path to the file to load the examples from.
-    @type path: C{basestring}
+    :param path: The path to the file to load the examples from.
+    :type path: basestring
 
-    @return: 2-column C{numpy.array} of examples with the "y" containing the
-    class labels and "x" containing the features for each example.
+    :return: 2-column numpy.array of examples with the "y" containing the
+             class labels and "x" containing the features for each example.
     '''
     if path.endswith(".tsv"):
         out = []
@@ -680,30 +681,30 @@ class Learner(object):
         '''
         Initializes a learner object with the specified settings.
 
-        @param do_scale_features: Should we scale features with this
+        :param do_scale_features: Should we scale features with this
                                   learner?
-        @type do_scale_features: C{bool}
-        @param model_type: Type of estimator to create. Options are:
+        :type do_scale_features: bool
+        :param model_type: Type of estimator to create. Options are:
                            'logistic', 'svm_linear', 'svm_radial',
                            'naivebayes', 'dtree', 'rforest', and 'gradient'
-        @type model_type: C{basestring}
-        @param probability: Should learner return probabilities of all
+        :type model_type: basestring
+        :param probability: Should learner return probabilities of all
                             classes (instead of just class with highest
                             probability)?
-        @type probability: C{bool}
-        @param model_kwargs: A dictionary of keyword arguments to pass to the
+        :type probability: bool
+        :param model_kwargs: A dictionary of keyword arguments to pass to the
                              initializer for the specified model.
-        @type model_kwargs: C{dict}
-        @param pos_label_str: The string for the positive class in the binary
+        :type model_kwargs: dict
+        :param pos_label_str: The string for the positive class in the binary
                               classification setting.  Otherwise, an arbitrary
                               class is picked.
-        @type pos_label_str: C{str}
-        @param use_dense_features: Whether to require conversion to dense
+        :type pos_label_str: str
+        :param use_dense_features: Whether to require conversion to dense
                                    feature matrices.
-        @type use_dense_features: C{bool}
-        @param min_feature_count: The minimum number of examples a feature
+        :type use_dense_features: bool
+        :param min_feature_count: The minimum number of examples a feature
                                   must have a nonzero value in to be included.
-        @type min_feature_count: C{int}
+        :type min_feature_count: int
         '''
         super(Learner, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
@@ -761,8 +762,8 @@ class Learner(object):
         '''
         Load a saved model.
 
-        @param modelfile: The path to the model file to load.
-        @type modelfile: C{basestring}
+        :param modelfile: The path to the model file to load.
+        :type modelfile: basestring
         '''
         with open(modelfile, "rb") as f:
             (self._model, self.probability, self.feat_vectorizer,
@@ -829,8 +830,8 @@ class Learner(object):
         '''
         Save the model to file.
 
-        @param modelfile: The path to where you want to save the model.
-        @type modelfile: C{basestring}
+        :param modelfile: The path to where you want to save the model.
+        :type modelfile: basestring
         '''
         # create the directory if it doesn't exist
         modeldir = os.path.dirname(modelfile)
@@ -870,7 +871,7 @@ class Learner(object):
 
     def _create_estimator(self):
         '''
-        @return: A tuple containing an instantiation of the requested
+        :return: A tuple containing an instantiation of the requested
         estimator, and a parameter grid to search.
         '''
         estimator = None
@@ -1017,32 +1018,32 @@ class Learner(object):
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
 
-        @param examples: The examples to train the model on.
-        @type examples: C{array}
-        @param param_grid: The parameter grid to search through for grid
+        :param examples: The examples to train the model on.
+        :type examples: array
+        :param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter grid
                            will be used.
-        @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to
-                          C{list}s of parameter values
-        @param grid_search_folds: The number of folds to use when doing the
+        :type param_grid: list of dicts mapping from basestrings to
+                          lists of parameter values
+        :param grid_search_folds: The number of folds to use when doing the
                                   grid search, or a mapping from
                                   example IDs to folds.
-        @type grid_search_folds: C{int} or C{dict}
-        @param grid_search: Should we do grid search?
-        @type grid_search: C{bool}
-        @param grid_objective: The objective function to use when doing the
+        :type grid_search_folds: int or dict
+        :param grid_search: Should we do grid search?
+        :type grid_search: bool
+        :param grid_objective: The objective function to use when doing the
                                grid search.
-        @type grid_objective: C{function}
-        @param grid_jobs: The number of jobs to run in parallel when doing the
-                          grid search. If unspecified or C{None}, the number of
+        :type grid_objective: function
+        :param grid_jobs: The number of jobs to run in parallel when doing the
+                          grid search. If unspecified or None, the number of
                           grid search folds will be used.
-        @type grid_jobs: C{int}
-        @param shuffle: Shuffle examples (e.g., for grid search CV.)
-        @type shuffle: C{bool}
+        :type grid_jobs: int
+        :param shuffle: Shuffle examples (e.g., for grid search CV.)
+        :type shuffle: bool
 
-        @return: The best grid search objective function score, or 0 if we're
+        :return: The best grid search objective function score, or 0 if we're
                  not doing grid search.
-        @rtype: C{float}
+        :rtype: float
         '''
 
         # seed the random number generator so that randomized algorithms are
@@ -1109,24 +1110,24 @@ class Learner(object):
         '''
         Evaluates a given model on a given dev or test example set.
 
-        @param examples: The examples to evaluate the performance of the model
+        :param examples: The examples to evaluate the performance of the model
             on.
-        @type examples: C{array}
-        @param prediction_prefix: If saving the predictions, this is the
+        :type examples: array
+        :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
                                   It will be followed by ".predictions"
-        @type prediction_prefix: C{basestring}
-        @param append: Should we append the current predictions to the file if
+        :type prediction_prefix: basestring
+        :param append: Should we append the current predictions to the file if
                        it exists?
-        @type append: C{bool}
-        @param grid_objective: The objective function that was used when doing
+        :type append: bool
+        :param grid_objective: The objective function that was used when doing
                                the grid search.
-        @type grid_objective: C{function}
+        :type grid_objective: function
 
-        @return: The confusion matrix, the overall accuracy, the per-class
+        :return: The confusion matrix, the overall accuracy, the per-class
                  PRFs, the model parameters, and the grid search objective
                  function score.
-        @rtype: 3-C{tuple}
+        :rtype: 3-tuple
         '''
         # initialize grid score
         grid_score = None
@@ -1186,22 +1187,22 @@ class Learner(object):
         '''
         Uses a given model to generate predictions on a given data set
 
-        @param examples: The examples to predict the classes for.
-        @type examples: C{array}
-        @param prediction_prefix: If saving the predictions, this is the
+        :param examples: The examples to predict the classes for.
+        :type examples: array
+        :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the
                                   filename. It will be followed by
                                   ".predictions"
-        @type prediction_prefix: C{basestring}
-        @param append: Should we append the current predictions to the file if
+        :type prediction_prefix: basestring
+        :param append: Should we append the current predictions to the file if
                        it exists?
-        @type append: C{bool}
-        @param class_labels: For classifier, should we convert class
+        :type append: bool
+        :param class_labels: For classifier, should we convert class
                              indices to their (str) labels?
-        @type class_labels: C{bool}
+        :type class_labels: bool
 
-        @return: The predictions returned by the learner.
-        @rtype: C{array}
+        :return: The predictions returned by the learner.
+        :rtype: array
         '''
         features = [self._extract_features(x) for x in examples]
         example_ids = [self._extract_id(x) for x in examples]
@@ -1272,43 +1273,43 @@ class Learner(object):
         '''
         Cross-validates a given model on the training examples.
 
-        @param examples: The data to cross-validate learner performance on.
-        @type examples: C{array}
-        @param stratified: Should we stratify the folds to ensure an even
+        :param examples: The data to cross-validate learner performance on.
+        :type examples: array
+        :param stratified: Should we stratify the folds to ensure an even
                            distribution of classes for each fold?
-        @type stratified: C{bool}
-        @param cv_folds: The number of folds to use for cross-validation, or
+        :type stratified: bool
+        :param cv_folds: The number of folds to use for cross-validation, or
                          a mapping from example IDs to folds.
-        @type cv_folds: C{int} or C{dict}
-        @param grid_search: Should we do grid search when training each fold?
+        :type cv_folds: int or dict
+        :param grid_search: Should we do grid search when training each fold?
                             Note: This will make this take *much* longer.
-        @type grid_search: C{bool}
-        @param grid_search_folds: The number of folds to use when doing the
+        :type grid_search: bool
+        :param grid_search_folds: The number of folds to use when doing the
                                   grid search (ignored if cv_folds is set to
                                   a dictionary mapping examples to folds).
-        @type grid_search_folds: C{int}
-        @param grid_jobs: The number of jobs to run in parallel when doing the
-                          grid search. If unspecified or C{None}, the number of
+        :type grid_search_folds: int
+        :param grid_jobs: The number of jobs to run in parallel when doing the
+                          grid search. If unspecified or None, the number of
                           grid search folds will be used.
-        @type grid_jobs: C{int}
-        @param grid_objective: The objective function to use when doing the
+        :type grid_jobs: int
+        :param grid_objective: The objective function to use when doing the
                                grid search.
-        @type grid_objective: C{function}
-        @param param_grid: The parameter grid to search through for grid
+        :type grid_objective: function
+        :param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter
                            grid will be used.
-        @type param_grid: C{list} of C{dict}s mapping from C{basestring}s to
-                          C{list}s of parameter values
-        @param prediction_prefix: If saving the predictions, this is the
+        :type param_grid: list of dicts mapping from basestrings to
+                          lists of parameter values
+        :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
                                   It will be followed by ".predictions"
-        @type prediction_prefix: C{basestring}
-        @param shuffle: Shuffle examples before splitting into folds for CV.
-        @type shuffle: C{bool}
+        :type prediction_prefix: basestring
+        :param shuffle: Shuffle examples before splitting into folds for CV.
+        :type shuffle: bool
 
-        @return: The confusion matrix, overall accuracy, per-class PRFs, and
+        :return: The confusion matrix, overall accuracy, per-class PRFs, and
                  model parameters for each fold.
-        @rtype: C{list} of 4-C{tuple}s
+        :rtype: list of 4-tuples
         '''
         # seed the random number generator so that randomized folds are
         # replicable

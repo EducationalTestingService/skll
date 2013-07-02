@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>skll.metrics &mdash; SciKit-Learn Lab 1.0rc1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0rc1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="SciKit-Learn Lab 1.0rc1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for skll.metrics</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This module contains a bunch of evaluation metrics that can be used to</span>
+<span class="sd">evaluate the performance of learners.</span>
+
+<span class="sd">:author: Michael Heilman (mheilman@ets.org)</span>
+<span class="sd">:author: Nitin Madnani (nmadnani@ets.org)</span>
+<span class="sd">:author: Dan Blanchard (dblanchard@ets.org)</span>
+<span class="sd">:organization: ETS</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">ml_metrics</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">kendalltau</span><span class="p">,</span> <span class="n">spearmanr</span><span class="p">,</span> <span class="n">pearsonr</span>
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">metrics</span> <span class="k">as</span> <span class="n">sk_metrics</span>
+
+
+<div class="viewcode-block" id="quadratic_weighted_kappa"><a class="viewcode-back" href="../../skll.html#skll.metrics.quadratic_weighted_kappa">[docs]</a><span class="k">def</span> <span class="nf">quadratic_weighted_kappa</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Returns the quadratic weighted kappa.</span>
+<span class="sd">    This rounds the inputs before passing them to the ml_metrics module.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c"># This rather crazy looking typecast is intended to work as follows:</span>
+    <span class="c"># If an input is an int, the operations will have no effect.</span>
+    <span class="c"># If it is a float, it will be rounded and then converted to an int</span>
+    <span class="c"># because the ml_metrics package requires ints.</span>
+    <span class="c"># If it is a str like &quot;1&quot;, then it will be converted to a (rounded) int.</span>
+    <span class="c"># If it is a str that can&#39;t be typecast, then the user is</span>
+    <span class="c"># given a hopefully useful error message.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">y_true_rounded</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">)))</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">y_true</span><span class="p">]</span>
+        <span class="n">y_pred_rounded</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">)))</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">y_pred</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;For kappa, the labels should be integers or strings that&quot;</span> <span class="o">+</span>
+              <span class="s">&quot; can be converted to ints (E.g., &#39;4.0&#39; or &#39;3&#39;).&quot;</span><span class="p">,</span>
+              <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">ml_metrics</span><span class="o">.</span><span class="n">quadratic_weighted_kappa</span><span class="p">(</span><span class="n">y_true_rounded</span><span class="p">,</span> <span class="n">y_pred_rounded</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+</div>
+<div class="viewcode-block" id="unweighted_kappa"><a class="viewcode-back" href="../../skll.html#skll.metrics.unweighted_kappa">[docs]</a><span class="k">def</span> <span class="nf">unweighted_kappa</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Returns the unweighted Cohen&#39;s kappa.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># See quadratic_weighted_kappa for comments about the typecasting below.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">y_true_rounded</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">)))</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">y_true</span><span class="p">]</span>
+        <span class="n">y_pred_rounded</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">)))</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">y_pred</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;For kappa, the labels should be integers or strings that&quot;</span> <span class="o">+</span>
+              <span class="s">&quot; can be converted to ints (E.g., &#39;4.0&#39; or &#39;3&#39;).&quot;</span><span class="p">,</span>
+              <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">ml_metrics</span><span class="o">.</span><span class="n">kappa</span><span class="p">(</span><span class="n">y_true_rounded</span><span class="p">,</span> <span class="n">y_pred_rounded</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+</div>
+<div class="viewcode-block" id="kendall_tau"><a class="viewcode-back" href="../../skll.html#skll.metrics.kendall_tau">[docs]</a><span class="k">def</span> <span class="nf">kendall_tau</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Optimize the hyperparameter values during the grid search based on</span>
+<span class="sd">    Kendall&#39;s tau.</span>
+
+<span class="sd">    This is useful in cases where you want to use the actual probabilities of</span>
+<span class="sd">    the different classes after the fact, and not just the optimize based on</span>
+<span class="sd">    the classification accuracy.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">ret_score</span> <span class="o">=</span> <span class="n">kendalltau</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">ret_score</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ret_score</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+</div>
+<div class="viewcode-block" id="spearman"><a class="viewcode-back" href="../../skll.html#skll.metrics.spearman">[docs]</a><span class="k">def</span> <span class="nf">spearman</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Optimize the hyperparameter values during the grid search based on</span>
+<span class="sd">    Spearman rank correlation.</span>
+
+<span class="sd">    This is useful in cases where you want to use the actual probabilities of</span>
+<span class="sd">    the different classes after the fact, and not just the optimize based on</span>
+<span class="sd">    the classification accuracy.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">ret_score</span> <span class="o">=</span> <span class="n">spearmanr</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">ret_score</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ret_score</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+</div>
+<div class="viewcode-block" id="pearson"><a class="viewcode-back" href="../../skll.html#skll.metrics.pearson">[docs]</a><span class="k">def</span> <span class="nf">pearson</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Optimize the hyperparameter values during the grid search based on Pearson</span>
+<span class="sd">    correlation.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">ret_score</span> <span class="o">=</span> <span class="n">pearsonr</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">ret_score</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ret_score</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+</div>
+<div class="viewcode-block" id="f1_score_least_frequent"><a class="viewcode-back" href="../../skll.html#skll.metrics.f1_score_least_frequent">[docs]</a><span class="k">def</span> <span class="nf">f1_score_least_frequent</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Optimize the hyperparameter values during the grid search based on the F1</span>
+<span class="sd">    measure of the least frequent class.</span>
+
+<span class="sd">    This is mostly intended for use when you&#39;re doing binary classification</span>
+<span class="sd">    and your data is highly skewed. You should probably use f1_score_macro if</span>
+<span class="sd">    your data is skewed and you&#39;re doing multi-class classification.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">least_frequent</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">sk_metrics</span><span class="o">.</span><span class="n">f1_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="bp">None</span><span class="p">)[</span><span class="n">least_frequent</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="f1_score_macro"><a class="viewcode-back" href="../../skll.html#skll.metrics.f1_score_macro">[docs]</a><span class="k">def</span> <span class="nf">f1_score_macro</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Use the macro-averaged F1 measure to select hyperparameter values during</span>
+<span class="sd">    the cross-validation grid search during training.</span>
+
+<span class="sd">    This method averages over classes (does not take imbalance into account).</span>
+<span class="sd">    You should use this if each class is equally important.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">sk_metrics</span><span class="o">.</span><span class="n">f1_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s">&quot;macro&quot;</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="f1_score_micro"><a class="viewcode-back" href="../../skll.html#skll.metrics.f1_score_micro">[docs]</a><span class="k">def</span> <span class="nf">f1_score_micro</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Use the micro-averaged F1 measure to select hyperparameter values during</span>
+<span class="sd">    the cross-validation grid search during training.</span>
+
+<span class="sd">    This method averages over instances (takes imbalance into account). This</span>
+<span class="sd">    implies that precision == recall == F1.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">sk_metrics</span><span class="o">.</span><span class="n">f1_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s">&quot;micro&quot;</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="accuracy"><a class="viewcode-back" href="../../skll.html#skll.metrics.accuracy">[docs]</a><span class="k">def</span> <span class="nf">accuracy</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Use the overall accuracy to select hyperparameter values during the cross-</span>
+<span class="sd">    validation grid search during training.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">sk_metrics</span><span class="o">.</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Nitin Madnani.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+  </body>
+</html>

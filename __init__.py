@@ -18,11 +18,12 @@
 '''
 Takes care of housekeeping for the package.
 
-@author: Dan Blanchard
-@contact: dblanchard@ets.org
-@organization: ETS
-@date: July 2013
+:author: Dan Blanchard
+:contact: dblanchard@ets.org
+:organization: ETS
+:date: July 2013
 '''
+
 
 from skll.learner import Learner
 

@@ -19,10 +19,10 @@
 '''
 Loads a trained model and outputs predictions based on input feature files.
 
-@author: Dan Blanchard
-@contact: dblanchard@ets.org
-@organization: ETS
-@date: February 2013
+:author: Dan Blanchard
+:contact: dblanchard@ets.org
+:organization: ETS
+:date: February 2013
 '''
 
 from __future__ import print_function, unicode_literals
@@ -34,7 +34,7 @@ from skll.learner import Learner, load_examples, _REGRESSION_MODELS
 
 class Predictor(object):
     """
-    Little wrapper around a L{Learner} to load models and get
+    Little wrapper around a ``Learner`` to load models and get
     predictions for feature strings.
     """
 
@@ -42,19 +42,19 @@ class Predictor(object):
         '''
         Initialize the predictor.
 
-        @param model_prefix: Prefix to use when loading trained model (and its
+        :param model_prefix: Prefix to use when loading trained model (and its
                              vocab).
-        @type model_prefix: C{basestring}
-        @param threshold: If the model we're using is generating probabilities
+        :type model_prefix: basestring
+        :param threshold: If the model we're using is generating probabilities
                           of the positive class, return 1 if it meets/exceeds
                           the given threshold and 0 otherwise.
-        @type threshold: C{float}
-        @param positive_class: If the model is only being used to predict the
+        :type threshold: float
+        :param positive_class: If the model is only being used to predict the
                                probability of a particular class, this
                                specifies the index of the class we're
                                predicting. 1 = second class, which is default
                                for binary classification.
-        @type positive_class: C{int}
+        :type positive_class: int
         '''
         self._learner = Learner()
         self._learner.load_model('{}.model'.format(model_prefix))

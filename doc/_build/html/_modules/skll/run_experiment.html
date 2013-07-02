@@ -1,0 +1,748 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>skll.run_experiment &mdash; SciKit-Learn Lab 1.0rc1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0rc1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="SciKit-Learn Lab 1.0rc1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for skll.run_experiment</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+
+<span class="c"># Copyright (C) 2012-2013 Educational Testing Service</span>
+
+<span class="c"># This file is part of SciKit-Learn Lab.</span>
+
+<span class="c"># SciKit-Learn Lab is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+
+<span class="c"># SciKit-Learn Lab is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with SciKit-Learn Lab.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Runs a bunch of scikit-learn jobs in parallel on the cluster given a</span>
+<span class="sd">config file.</span>
+
+<span class="sd">:author: Nitin Madnani (nmadnani@ets.org)</span>
+<span class="sd">:author: Dan Blanchard (dblanchard@ets.org)</span>
+<span class="sd">:author: Michael Heilman (mheilman@ets.org)</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">namedtuple</span><span class="p">,</span> <span class="n">OrderedDict</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">prettytable</span> <span class="kn">import</span> <span class="n">PrettyTable</span><span class="p">,</span> <span class="n">ALL</span>
+<span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">iterkeys</span><span class="p">,</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">itervalues</span>  <span class="c"># Python 2/3</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">configparser</span>
+
+<span class="kn">from</span> <span class="nn">skll</span> <span class="kn">import</span> <span class="n">Learner</span><span class="p">,</span> <span class="n">metrics</span>
+<span class="kn">from</span> <span class="nn">skll.learner</span> <span class="kn">import</span> <span class="n">load_examples</span>
+
+
+<span class="c"># Named tuple for storing job results</span>
+<span class="n">LearnerResultInfo</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;LearnerResultInfo&#39;</span><span class="p">,</span>
+                               <span class="p">[</span><span class="s">&#39;train_set_name&#39;</span><span class="p">,</span> <span class="s">&#39;test_set_name&#39;</span><span class="p">,</span>
+                                <span class="s">&#39;featureset&#39;</span><span class="p">,</span> <span class="s">&#39;given_learner&#39;</span><span class="p">,</span> <span class="s">&#39;task&#39;</span><span class="p">,</span>
+                                <span class="s">&#39;task_results&#39;</span><span class="p">,</span> <span class="s">&#39;grid_scores&#39;</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="clean_path"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.clean_path">[docs]</a><span class="k">def</span> <span class="nf">clean_path</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Replace all weird SAN paths with normal paths</span>
+
+<span class="sd">    :param path: Path to clean</span>
+<span class="sd">    :type path: basestring</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">path</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;/\.automount/\w+/SAN/NLP/(\w+)-(dynamic|static)&#39;</span><span class="p">,</span>
+                  <span class="s">r&#39;/home/nlp-\1/\2&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&#39;/\.automount/[^/]+/SAN/Research/HomeResearch&#39;</span><span class="p">,</span>
+                  <span class="s">&#39;/home/research&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+</div>
+<div class="viewcode-block" id="get_stat_float"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.get_stat_float">[docs]</a><span class="k">def</span> <span class="nf">get_stat_float</span><span class="p">(</span><span class="n">class_result_dict</span><span class="p">,</span> <span class="n">stat</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Little helper for getting output for precision, recall, and f-score</span>
+<span class="sd">    columns in confusion matrix.</span>
+
+<span class="sd">    :param class_result_dict: Dictionary containing the stat we&#39;d like</span>
+<span class="sd">                              to retrieve for a particular class.</span>
+<span class="sd">    :type class_result_dict: dict</span>
+<span class="sd">    :param stat: The statistic we&#39;re looking for in the dictionary.</span>
+<span class="sd">    :type stat: basestring</span>
+
+<span class="sd">    :return: The value of the stat if it&#39;s in the dictionary, and NaN</span>
+<span class="sd">             otherwise.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">stat</span> <span class="ow">in</span> <span class="n">class_result_dict</span> <span class="ow">and</span> <span class="n">class_result_dict</span><span class="p">[</span><span class="n">stat</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">class_result_dict</span><span class="p">[</span><span class="n">stat</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s">&#39;nan&#39;</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="print_fancy_output"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.print_fancy_output">[docs]</a><span class="k">def</span> <span class="nf">print_fancy_output</span><span class="p">(</span><span class="n">result_tuples</span><span class="p">,</span> <span class="n">grid_scores</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Function to take all of the results from all of the folds and print</span>
+<span class="sd">    nice tables with the results.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">num_folds</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">result_tuples</span><span class="p">)</span>
+    <span class="n">accuracy_sum</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">score_sum</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">prec_sum_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">recall_sum_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">f_sum_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">result_table</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">((</span><span class="n">conf_matrix</span><span class="p">,</span> <span class="n">fold_accuracy</span><span class="p">,</span> <span class="n">result_dict</span><span class="p">,</span> <span class="n">model_params</span><span class="p">,</span>
+            <span class="n">score</span><span class="p">),</span> <span class="n">grid_score</span><span class="p">)</span> \
+            <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">result_tuples</span><span class="p">,</span> <span class="n">grid_scores</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">num_folds</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Fold: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+        <span class="n">param_out</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;{}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">)</span>
+                     <span class="k">for</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">model_params</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Model parameters: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">param_out</span><span class="p">)),</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Grid search score = {:.5f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">grid_score</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">conf_matrix</span><span class="p">:</span>
+            <span class="n">classes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">iterkeys</span><span class="p">(</span><span class="n">result_tuples</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]))</span>
+            <span class="n">result_table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">([</span><span class="s">&quot;&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">classes</span> <span class="o">+</span> <span class="p">[</span><span class="s">&quot;Precision&quot;</span><span class="p">,</span>
+                                                         <span class="s">&quot;Recall&quot;</span><span class="p">,</span>
+                                                         <span class="s">&quot;F-measure&quot;</span><span class="p">],</span>
+                                       <span class="n">header</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">hrules</span><span class="o">=</span><span class="n">ALL</span><span class="p">)</span>
+            <span class="n">result_table</span><span class="o">.</span><span class="n">align</span> <span class="o">=</span> <span class="s">&#39;r&#39;</span>
+            <span class="n">result_table</span><span class="o">.</span><span class="n">float_format</span> <span class="o">=</span> <span class="s">&#39;.3&#39;</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">actual_class</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">classes</span><span class="p">):</span>
+                <span class="n">conf_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;[{}]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">conf_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">class_prec</span> <span class="o">=</span> <span class="n">get_stat_float</span><span class="p">(</span><span class="n">result_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">],</span>
+                                            <span class="s">&quot;Precision&quot;</span><span class="p">)</span>
+                <span class="n">class_recall</span> <span class="o">=</span> <span class="n">get_stat_float</span><span class="p">(</span><span class="n">result_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">],</span>
+                                              <span class="s">&quot;Recall&quot;</span><span class="p">)</span>
+                <span class="n">class_f</span> <span class="o">=</span> <span class="n">get_stat_float</span><span class="p">(</span><span class="n">result_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">],</span>
+                                         <span class="s">&quot;F-measure&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">class_prec</span><span class="p">):</span>
+                    <span class="n">prec_sum_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">class_prec</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">class_recall</span><span class="p">):</span>
+                    <span class="n">recall_sum_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">class_recall</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">class_f</span><span class="p">):</span>
+                    <span class="n">f_sum_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">class_f</span><span class="p">)</span>
+                <span class="n">result_row</span> <span class="o">=</span> <span class="p">([</span><span class="n">actual_class</span><span class="p">]</span> <span class="o">+</span> <span class="n">conf_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span>
+                              <span class="p">[</span><span class="n">class_prec</span><span class="p">,</span> <span class="n">class_recall</span><span class="p">,</span> <span class="n">class_f</span><span class="p">])</span>
+                <span class="n">result_table</span><span class="o">.</span><span class="n">add_row</span><span class="p">(</span><span class="n">result_row</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">result_table</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;(row = reference; column = predicted)&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Accuracy = {:.3f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fold_accuracy</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+            <span class="n">accuracy_sum</span> <span class="o">+=</span> <span class="n">fold_accuracy</span>
+
+        <span class="k">if</span> <span class="n">score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">score_sum</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">score_sum</span> <span class="o">=</span> <span class="n">score</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">score_sum</span> <span class="o">+=</span> <span class="n">score</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;Objective function score = {:.5f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">score</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">num_folds</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Average:&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result_table</span><span class="p">:</span>
+            <span class="n">result_table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">([</span><span class="s">&quot;Class&quot;</span><span class="p">,</span> <span class="s">&quot;Precision&quot;</span><span class="p">,</span> <span class="s">&quot;Recall&quot;</span><span class="p">,</span>
+                                        <span class="s">&quot;F-measure&quot;</span><span class="p">],</span>
+                                       <span class="n">header</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">result_table</span><span class="o">.</span><span class="n">align</span> <span class="o">=</span> <span class="s">&quot;r&quot;</span>
+            <span class="n">result_table</span><span class="p">[</span><span class="s">&quot;Class&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">align</span> <span class="o">=</span> <span class="s">&quot;l&quot;</span>
+            <span class="n">result_table</span><span class="o">.</span><span class="n">float_format</span> <span class="o">=</span> <span class="s">&#39;.3&#39;</span>
+            <span class="k">for</span> <span class="n">actual_class</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">:</span>
+                <span class="c"># Convert sums to means</span>
+                <span class="n">prec_mean</span> <span class="o">=</span> <span class="n">prec_sum_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_folds</span>
+                <span class="n">recall_mean</span> <span class="o">=</span> <span class="n">recall_sum_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_folds</span>
+                <span class="n">f_mean</span> <span class="o">=</span> <span class="n">f_sum_dict</span><span class="p">[</span><span class="n">actual_class</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_folds</span>
+                <span class="n">result_table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">actual_class</span><span class="p">]</span> <span class="o">+</span>
+                                     <span class="p">[</span><span class="n">prec_mean</span><span class="p">,</span> <span class="n">recall_mean</span><span class="p">,</span> <span class="n">f_mean</span><span class="p">])</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">result_table</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Accuracy = {:.3f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">accuracy_sum</span> <span class="o">/</span> <span class="n">num_folds</span><span class="p">),</span>
+                  <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">score_sum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Objective function score = {:.5f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score_sum</span>
+                                                             <span class="o">/</span> <span class="n">num_folds</span><span class="p">),</span>
+                  <span class="nb">file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="load_featureset"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.load_featureset">[docs]</a><span class="k">def</span> <span class="nf">load_featureset</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">featureset</span><span class="p">,</span> <span class="n">suffix</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    loads a list of feature files and merges them (or loads just one if</span>
+<span class="sd">    featureset is a string).</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">featureset</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+        <span class="n">featureset</span> <span class="o">=</span> <span class="p">[</span><span class="n">featureset</span><span class="p">]</span>
+
+    <span class="c"># Load a list of lists of examples, one list of examples per featureset.</span>
+    <span class="n">example_lists</span> <span class="o">=</span> <span class="p">[</span><span class="n">load_examples</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span>
+                                                <span class="n">featfile</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">))</span>
+                     <span class="k">for</span> <span class="n">featfile</span> <span class="ow">in</span> <span class="n">featureset</span><span class="p">]</span>
+
+    <span class="c"># Check that the IDs are unique.</span>
+    <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_lists</span><span class="p">:</span>
+        <span class="n">ex_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">example</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ex_ids</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ex_ids</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The example IDs are not unique.&#39;</span><span class="p">)</span>
+
+    <span class="c"># Check that the different feature files have the same IDs.</span>
+    <span class="c"># To do this, make a sorted tuple of unique IDs for each feature file,</span>
+    <span class="c"># and then make sure they are all the same by making sure the set is size 1.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">({</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">({</span><span class="n">ex</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">}))</span>
+            <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_lists</span><span class="p">})</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The sets of example IDs in two feature files do not&#39;</span> <span class="o">+</span>
+                         <span class="s">&#39;match&#39;</span><span class="p">)</span>
+
+    <span class="c"># Make sure there is a unique label for every example (or no label, for</span>
+    <span class="c"># &quot;unseen&quot; examples).</span>
+    <span class="c"># To do this, find the unique (id, y) tuples, and then make sure that all</span>
+    <span class="c"># those ids are unique.</span>
+    <span class="n">unique_tuples</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="p">[[(</span><span class="n">ex</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">],</span> <span class="n">ex</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">ex</span>
+                                           <span class="ow">in</span> <span class="n">examples</span> <span class="k">if</span> <span class="s">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">ex</span><span class="p">]</span>
+                                          <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_lists</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">({</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">unique_tuples</span><span class="p">})</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_tuples</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Two feature files have different labels (i.e., y&#39;</span> <span class="o">+</span>
+                         <span class="s">&#39; values) for the same ID.&#39;</span><span class="p">)</span>
+
+    <span class="c"># Now, create the final dictionary of examples with merged features</span>
+    <span class="n">example_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_lists</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">:</span>
+            <span class="n">ex_id</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">ex_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">example_dict</span><span class="p">:</span>
+                <span class="n">example_dict</span><span class="p">[</span><span class="n">ex_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;x&#39;</span><span class="p">:</span> <span class="p">{},</span> <span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="n">ex_id</span><span class="p">}</span>
+
+            <span class="c"># Check that two feature files have unique feature names by</span>
+            <span class="c"># checking that the new features don&#39;t already exist</span>
+            <span class="c"># (i.e., that the intersection is null set).</span>
+            <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> \
+               <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">example_dict</span><span class="p">[</span><span class="n">ex_id</span><span class="p">][</span><span class="s">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Two feature files have the same feature!&#39;</span><span class="p">)</span>
+
+            <span class="c"># update x and y values</span>
+            <span class="k">if</span> <span class="s">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
+                <span class="n">example_dict</span><span class="p">[</span><span class="n">ex_id</span><span class="p">][</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span>
+            <span class="n">example_dict</span><span class="p">[</span><span class="n">ex_id</span><span class="p">][</span><span class="s">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itervalues</span><span class="p">(</span><span class="n">example_dict</span><span class="p">)))</span>  <span class="c"># Python 2/3 compatible</span>
+
+</div>
+<div class="viewcode-block" id="classify_featureset"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.classify_featureset">[docs]</a><span class="k">def</span> <span class="nf">classify_featureset</span><span class="p">(</span><span class="n">jobname</span><span class="p">,</span> <span class="n">featureset</span><span class="p">,</span> <span class="n">given_learner</span><span class="p">,</span> <span class="n">train_path</span><span class="p">,</span>
+                        <span class="n">test_path</span><span class="p">,</span> <span class="n">train_set_name</span><span class="p">,</span> <span class="n">test_set_name</span><span class="p">,</span> <span class="n">modelpath</span><span class="p">,</span>
+                        <span class="n">prediction_prefix</span><span class="p">,</span> <span class="n">grid_search</span><span class="p">,</span>
+                        <span class="n">grid_objective</span><span class="p">,</span> <span class="n">do_scale_features</span><span class="p">,</span> <span class="n">cross_validate</span><span class="p">,</span>
+                        <span class="n">evaluate</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="n">log_path</span><span class="p">,</span> <span class="n">probability</span><span class="p">,</span> <span class="n">resultspath</span><span class="p">,</span>
+                        <span class="n">fixed_parameters</span><span class="p">,</span> <span class="n">param_grid</span><span class="p">,</span> <span class="n">pos_label_str</span><span class="p">,</span>
+                        <span class="n">overwrite</span><span class="p">,</span> <span class="n">use_dense_features</span><span class="p">,</span> <span class="n">min_feature_count</span><span class="p">,</span>
+                        <span class="n">grid_search_jobs</span><span class="p">,</span> <span class="n">cv_folds</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Classification job to be submitted to grid &#39;&#39;&#39;</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">log_file</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cross_validate</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Cross-validating on {}, feature set {} ...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">train_set_name</span><span class="p">,</span> <span class="n">featureset</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">log_file</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Training on {}, Test on {}, feature set {} ...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">train_set_name</span><span class="p">,</span> <span class="n">test_set_name</span><span class="p">,</span> <span class="n">featureset</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">log_file</span><span class="p">)</span>
+
+        <span class="c"># load the training and test examples</span>
+        <span class="n">train_examples</span> <span class="o">=</span> <span class="n">load_featureset</span><span class="p">(</span><span class="n">train_path</span><span class="p">,</span> <span class="n">featureset</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cross_validate</span><span class="p">:</span>
+            <span class="n">test_examples</span> <span class="o">=</span> <span class="n">load_featureset</span><span class="p">(</span><span class="n">test_path</span><span class="p">,</span> <span class="n">featureset</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
+
+        <span class="c"># initialize a classifer object</span>
+        <span class="n">learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">(</span><span class="n">probability</span><span class="o">=</span><span class="n">probability</span><span class="p">,</span>
+                          <span class="n">model_type</span><span class="o">=</span><span class="n">given_learner</span><span class="p">,</span>
+                          <span class="n">do_scale_features</span><span class="o">=</span><span class="n">do_scale_features</span><span class="p">,</span>
+                          <span class="n">model_kwargs</span><span class="o">=</span><span class="n">fixed_parameters</span><span class="p">,</span>
+                          <span class="n">pos_label_str</span><span class="o">=</span><span class="n">pos_label_str</span><span class="p">,</span>
+                          <span class="n">use_dense_features</span><span class="o">=</span><span class="n">use_dense_features</span><span class="p">,</span>
+                          <span class="n">min_feature_count</span><span class="o">=</span><span class="n">min_feature_count</span><span class="p">)</span>
+
+        <span class="c"># check whether a trained model on the same data with the same</span>
+        <span class="c"># featureset already exists if so, load it (and the feature</span>
+        <span class="c"># vocabulary) and then use it on the test data</span>
+        <span class="n">modelfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">modelpath</span><span class="p">,</span> <span class="s">&#39;{}.model&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jobname</span><span class="p">))</span>
+
+        <span class="c"># check if we&#39;re doing cross-validation, because we only load/save</span>
+        <span class="c"># models when we&#39;re not.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cross_validate</span><span class="p">:</span>
+
+            <span class="c"># load the model if it already exists</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">modelfile</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">loading pre-existing {} model: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">given_learner</span><span class="p">,</span> <span class="n">modelfile</span><span class="p">))</span>
+                <span class="n">learner</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">modelfile</span><span class="p">)</span>
+
+            <span class="c"># if we have do not have a saved model, we need to train one.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">featurizing and training new {} model&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">given_learner</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">log_file</span><span class="p">)</span>
+
+                <span class="n">grid_search_folds</span> <span class="o">=</span> <span class="mi">5</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cv_folds</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="n">grid_search_folds</span> <span class="o">=</span> <span class="n">cv_folds</span>
+
+                <span class="n">best_score</span> <span class="o">=</span> <span class="n">learner</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">train_examples</span><span class="p">,</span>
+                                           <span class="n">grid_search</span><span class="o">=</span><span class="n">grid_search</span><span class="p">,</span>
+                                           <span class="n">grid_search_folds</span><span class="o">=</span><span class="n">grid_search_folds</span><span class="p">,</span>
+                                           <span class="n">grid_objective</span><span class="o">=</span><span class="n">grid_objective</span><span class="p">,</span>
+                                           <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
+                                           <span class="n">grid_jobs</span><span class="o">=</span><span class="n">grid_search_jobs</span><span class="p">)</span>
+                <span class="n">grid_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">best_score</span><span class="p">]</span>
+
+                <span class="c"># save model</span>
+                <span class="n">learner</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">modelfile</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">grid_search</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">best {} score: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">grid_objective</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+                                                       <span class="nb">round</span><span class="p">(</span><span class="n">best_score</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span>
+                          <span class="nb">file</span><span class="o">=</span><span class="n">log_file</span><span class="p">)</span>
+
+            <span class="c"># print out the tuned parameters and best CV score</span>
+            <span class="n">param_out</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;{}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">)</span>
+                         <span class="k">for</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span> <span class="ow">in</span>
+                         <span class="n">iteritems</span><span class="p">(</span><span class="n">learner</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_params</span><span class="p">()))</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">hyperparameters: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">param_out</span><span class="p">)),</span>
+                  <span class="nb">file</span><span class="o">=</span><span class="n">log_file</span><span class="p">)</span>
+
+        <span class="c"># run on test set or cross-validate on training data, depending on what</span>
+        <span class="c"># was asked for</span>
+        <span class="k">if</span> <span class="n">cross_validate</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">cross-validating&#39;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">log_file</span><span class="p">)</span>
+            <span class="n">results</span><span class="p">,</span> <span class="n">grid_scores</span> <span class="o">=</span> <span class="n">learner</span><span class="o">.</span><span class="n">cross_validate</span><span class="p">(</span><span class="n">train_examples</span><span class="p">,</span>
+                                                          <span class="n">prediction_prefix</span><span class="o">=</span><span class="n">prediction_prefix</span><span class="p">,</span>
+                                                          <span class="n">grid_search</span><span class="o">=</span><span class="n">grid_search</span><span class="p">,</span>
+                                                          <span class="n">cv_folds</span><span class="o">=</span><span class="n">cv_folds</span><span class="p">,</span>
+                                                          <span class="n">grid_objective</span><span class="o">=</span><span class="n">grid_objective</span><span class="p">,</span>
+                                                          <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
+                                                          <span class="n">grid_jobs</span><span class="o">=</span><span class="n">grid_search_jobs</span><span class="p">)</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="s">&#39;cross-validate&#39;</span>
+        <span class="k">elif</span> <span class="n">evaluate</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">evaluating predictions&#39;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">log_file</span><span class="p">)</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">learner</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
+                <span class="n">test_examples</span><span class="p">,</span> <span class="n">prediction_prefix</span><span class="o">=</span><span class="n">prediction_prefix</span><span class="p">,</span>
+                <span class="n">grid_objective</span><span class="o">=</span><span class="n">grid_objective</span><span class="p">)]</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="s">&#39;evaluate&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">writing predictions&#39;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">log_file</span><span class="p">)</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="s">&#39;predict&#39;</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">learner</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_examples</span><span class="p">,</span> <span class="n">prediction_prefix</span><span class="o">=</span><span class="n">prediction_prefix</span><span class="p">)</span>
+
+        <span class="c"># write out results to file if we&#39;re not predicting</span>
+        <span class="n">result_info</span> <span class="o">=</span> <span class="n">LearnerResultInfo</span><span class="p">(</span><span class="n">train_set_name</span><span class="p">,</span> <span class="n">test_set_name</span><span class="p">,</span>
+                                           <span class="n">featureset</span><span class="p">,</span> <span class="n">given_learner</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span>
+                                           <span class="n">results</span><span class="p">,</span> <span class="n">grid_scores</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="o">!=</span> <span class="s">&#39;predict&#39;</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">resultspath</span><span class="p">,</span> <span class="s">&#39;{}.results&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jobname</span><span class="p">)),</span>
+                      <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output_file</span><span class="p">:</span>
+                <span class="n">print_fancy_output</span><span class="p">(</span><span class="n">result_info</span><span class="o">.</span><span class="n">task_results</span><span class="p">,</span>
+                                   <span class="n">result_info</span><span class="o">.</span><span class="n">grid_scores</span><span class="p">,</span> <span class="n">output_file</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result_info</span>
+
+</div>
+<div class="viewcode-block" id="munge_featureset_name"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.munge_featureset_name">[docs]</a><span class="k">def</span> <span class="nf">munge_featureset_name</span><span class="p">(</span><span class="n">featureset</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Converts feature set into &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">featureset</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">featureset</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="s">&#39;+&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">featureset</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+</div>
+<div class="viewcode-block" id="fix_json"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.fix_json">[docs]</a><span class="k">def</span> <span class="nf">fix_json</span><span class="p">(</span><span class="n">json_string</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Takes a bit of JSON that might have bad quotes or capitalized booleans</span>
+<span class="sd">    and fixes that stuff.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">json_string</span> <span class="o">=</span> <span class="n">json_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;True&#39;</span><span class="p">,</span> <span class="s">&#39;true&#39;</span><span class="p">)</span>
+    <span class="n">json_string</span> <span class="o">=</span> <span class="n">json_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;False&#39;</span><span class="p">,</span> <span class="s">&#39;false&#39;</span><span class="p">)</span>
+    <span class="n">json_string</span> <span class="o">=</span> <span class="n">json_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s">&#39;&quot;&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">json_string</span>
+
+</div>
+<div class="viewcode-block" id="load_cv_folds"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.load_cv_folds">[docs]</a><span class="k">def</span> <span class="nf">load_cv_folds</span><span class="p">(</span><span class="n">cv_folds_location</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Loads CV folds from a CSV file with columns for example ID and fold ID</span>
+<span class="sd">    (and a header).</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cv_folds_location</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">reader</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>  <span class="c"># discard the header</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">res</span>
+
+</div>
+<div class="viewcode-block" id="run_configuration"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.run_configuration">[docs]</a><span class="k">def</span> <span class="nf">run_configuration</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="s">&#39;nlp.q&#39;</span><span class="p">,</span>
+                      <span class="n">hosts</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Takes a configuration file and runs the specified jobs on the grid.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># initialize config parser</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">SafeConfigParser</span><span class="p">({</span><span class="s">&#39;test_location&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;log&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;results&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;predictions&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;grid_search&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;objective&#39;</span><span class="p">:</span> <span class="s">&quot;f1_score_micro&quot;</span><span class="p">,</span>
+                                            <span class="s">&#39;scale_features&#39;</span><span class="p">:</span> <span class="s">&#39;True&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;probability&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;fixed_parameters&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;param_grids&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;pos_label_str&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+                                            <span class="s">&#39;featureset_names&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;use_dense_features&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;min_feature_count&#39;</span><span class="p">:</span> <span class="s">&#39;1&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;grid_search_jobs&#39;</span><span class="p">:</span> <span class="s">&#39;0&#39;</span><span class="p">,</span>
+                                            <span class="s">&#39;cv_folds_location&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">})</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">readfp</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">local</span><span class="p">:</span>
+        <span class="c"># import pythongrid if available</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">pythongrid</span> <span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">process_jobs</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="n">local</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;pythongrid not available.  Forcing local mode.&#39;</span><span class="p">,</span>
+                  <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+    <span class="c"># extract sklearn parameters from the config file</span>
+    <span class="n">given_learners</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">fix_json</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span>
+                                                    <span class="s">&quot;classifiers&quot;</span><span class="p">)))</span>
+    <span class="n">given_featuresets</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">fix_json</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span>
+                                                       <span class="s">&quot;featuresets&quot;</span><span class="p">)))</span>
+    <span class="n">given_featureset_names</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">fix_json</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s">&quot;Input&quot;</span><span class="p">,</span> <span class="s">&quot;featureset_names&quot;</span><span class="p">)))</span>
+    <span class="n">fixed_parameter_list</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">fix_json</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s">&quot;Input&quot;</span><span class="p">,</span> <span class="s">&quot;fixed_parameters&quot;</span><span class="p">)))</span>
+    <span class="n">param_grid_list</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">fix_json</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Tuning&quot;</span><span class="p">,</span> <span class="s">&quot;param_grids&quot;</span><span class="p">)))</span>
+    <span class="n">pos_label_str</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Tuning&quot;</span><span class="p">,</span> <span class="s">&quot;pos_label_str&quot;</span><span class="p">)</span>
+    <span class="n">use_dense_features</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s">&quot;Tuning&quot;</span><span class="p">,</span> <span class="s">&quot;use_dense_features&quot;</span><span class="p">)</span>
+
+    <span class="c"># get all the input paths and directories (without trailing slashes)</span>
+    <span class="n">train_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span> <span class="s">&quot;train_location&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+    <span class="n">test_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span> <span class="s">&quot;test_location&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+    <span class="n">suffix</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span> <span class="s">&quot;suffix&quot;</span><span class="p">)</span>
+
+    <span class="c"># get the cv folds file and make a dictionary from it</span>
+    <span class="n">cv_folds_location</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span> <span class="s">&quot;cv_folds_location&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cv_folds_location</span><span class="p">:</span>
+        <span class="n">cv_folds</span> <span class="o">=</span> <span class="n">load_cv_folds</span><span class="p">(</span><span class="n">cv_folds_location</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cv_folds</span> <span class="o">=</span> <span class="mi">10</span>
+
+    <span class="c"># get all the output files and directories</span>
+    <span class="n">resultspath</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Output&quot;</span><span class="p">,</span> <span class="s">&quot;results&quot;</span><span class="p">)</span>
+    <span class="n">logpath</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Output&quot;</span><span class="p">,</span> <span class="s">&quot;log&quot;</span><span class="p">)</span>
+    <span class="n">modelpath</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Output&quot;</span><span class="p">,</span> <span class="s">&quot;models&quot;</span><span class="p">)</span>
+    <span class="n">probability</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s">&quot;Output&quot;</span><span class="p">,</span> <span class="s">&quot;probability&quot;</span><span class="p">)</span>
+
+    <span class="c"># do we want to keep the predictions?</span>
+    <span class="n">prediction_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Output&quot;</span><span class="p">,</span> <span class="s">&quot;predictions&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">prediction_dir</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s">&quot;mkdir -p {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prediction_dir</span><span class="p">))</span>
+
+    <span class="c"># make sure log path exists</span>
+    <span class="k">if</span> <span class="n">logpath</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s">&quot;mkdir -p {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logpath</span><span class="p">))</span>
+
+    <span class="c"># make sure results path exists</span>
+    <span class="k">if</span> <span class="n">resultspath</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s">&quot;mkdir -p {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">resultspath</span><span class="p">))</span>
+
+    <span class="c"># make sure all the specified paths exist</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">train_path</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">((</span><span class="s">&quot;Error: the training path specified in config file ({}) does &quot;</span> <span class="o">+</span>
+               <span class="s">&quot;not exist.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">train_path</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">test_path</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">test_path</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">((</span><span class="s">&quot;Error: the test path specified in config file ({}) does &quot;</span> <span class="o">+</span>
+               <span class="s">&quot;not exist.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test_path</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c"># do we need to run a grid search for the hyperparameters or are we just</span>
+    <span class="c"># using the defaults</span>
+    <span class="n">do_grid_search</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s">&quot;Tuning&quot;</span><span class="p">,</span> <span class="s">&quot;grid_search&quot;</span><span class="p">)</span>
+
+    <span class="c"># the minimum number of examples a feature must be nonzero in to be included</span>
+    <span class="n">min_feature_count</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s">&quot;Tuning&quot;</span><span class="p">,</span> <span class="s">&quot;min_feature_count&quot;</span><span class="p">)</span>
+
+    <span class="c"># how many jobs should we run in parallel for grid search</span>
+    <span class="n">grid_search_jobs</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s">&quot;Tuning&quot;</span><span class="p">,</span> <span class="s">&quot;grid_search_jobs&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">grid_search_jobs</span><span class="p">:</span>
+        <span class="n">grid_search_jobs</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c"># what is the objective function for the grid search?</span>
+    <span class="n">grid_objective_func</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Tuning&quot;</span><span class="p">,</span> <span class="s">&quot;objective&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">grid_objective_func</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s">&#39;f1_score_micro&#39;</span><span class="p">,</span> <span class="s">&#39;f1_score_macro&#39;</span><span class="p">,</span>
+                                   <span class="s">&#39;accuracy&#39;</span><span class="p">,</span> <span class="s">&#39;f1_score_least_frequent&#39;</span><span class="p">,</span>
+                                   <span class="s">&#39;spearman&#39;</span><span class="p">,</span> <span class="s">&#39;pearson&#39;</span><span class="p">,</span> <span class="s">&#39;kendall_tau&#39;</span><span class="p">,</span>
+                                   <span class="s">&#39;quadratic_weighted_kappa&#39;</span><span class="p">,</span>
+                                   <span class="s">&#39;unweighted_kappa&#39;</span><span class="p">}:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Error: invalid grid objective function.&#39;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">grid_objective</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">grid_objective_func</span><span class="p">)</span>
+
+    <span class="c"># do we need to scale the feature values?</span>
+    <span class="n">do_scale_features</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s">&quot;Tuning&quot;</span><span class="p">,</span> <span class="s">&quot;scale_features&quot;</span><span class="p">)</span>
+
+    <span class="c"># are we doing cross validation or actual testing or just generating</span>
+    <span class="c"># predictions on a new test set? If no test set was specified then assume</span>
+    <span class="c"># that we are doing cross validation. If the results field was not</span>
+    <span class="c"># specified then assume that we are just generating predictions</span>
+    <span class="n">evaluate</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">cross_validate</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">predict</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="n">test_path</span> <span class="ow">and</span> <span class="n">resultspath</span><span class="p">:</span>
+        <span class="n">evaluate</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">test_path</span><span class="p">:</span>
+        <span class="n">cross_validate</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">predict</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">if</span> <span class="n">cross_validate</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="s">&#39;cross-validate&#39;</span>
+    <span class="k">elif</span> <span class="n">evaluate</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="s">&#39;evaluate&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="s">&#39;predict&#39;</span>
+
+    <span class="c"># make sure that, if we are in prediction mode, we have a prediction_dir</span>
+    <span class="k">if</span> <span class="n">predict</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">prediction_dir</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Error: you need to specify a prediction directory if you are &#39;</span> <span class="o">+</span>
+              <span class="s">&#39;using prediction mode (no &quot;results&quot; option in config file).&#39;</span><span class="p">,</span>
+              <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c"># the list of jobs submitted (if running on grid)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">local</span><span class="p">:</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">given_featureset_names</span><span class="p">:</span>
+        <span class="n">given_featureset_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">munge_featureset_name</span><span class="p">(</span>
+            <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">given_featuresets</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">given_featureset_names</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">given_featuresets</span><span class="p">)</span>
+
+    <span class="c"># For each feature set</span>
+    <span class="k">for</span> <span class="n">featureset</span><span class="p">,</span> <span class="n">featureset_name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">given_featuresets</span><span class="p">,</span>
+                                           <span class="n">given_featureset_names</span><span class="p">):</span>
+
+        <span class="c"># and for each learner</span>
+        <span class="k">for</span> <span class="n">learner_num</span><span class="p">,</span> <span class="n">given_learner</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">given_learners</span><span class="p">):</span>
+
+            <span class="c"># store training/test set names for later use</span>
+            <span class="n">train_set_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">train_path</span><span class="p">)</span>
+            <span class="n">test_set_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">test_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">test_path</span> <span class="k">else</span> <span class="s">&quot;cv&quot;</span>
+
+            <span class="c"># create a name for the job</span>
+            <span class="n">name_components</span> <span class="o">=</span> <span class="p">[</span><span class="n">train_set_name</span><span class="p">,</span> <span class="n">test_set_name</span><span class="p">,</span>
+                               <span class="n">featureset_name</span><span class="p">,</span> <span class="n">given_learner</span><span class="p">]</span>
+
+            <span class="c"># add scaling information to name</span>
+            <span class="k">if</span> <span class="n">do_scale_features</span><span class="p">:</span>
+                <span class="n">name_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;scaled&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;unscaled&#39;</span><span class="p">)</span>
+
+            <span class="c"># add tuning information to name</span>
+            <span class="k">if</span> <span class="n">do_grid_search</span><span class="p">:</span>
+                <span class="n">name_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;tuned&#39;</span><span class="p">)</span>
+                <span class="n">name_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grid_objective</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;untuned&#39;</span><span class="p">)</span>
+
+            <span class="c"># add task name</span>
+            <span class="n">name_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+            <span class="n">jobname</span> <span class="o">=</span> <span class="s">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name_components</span><span class="p">)</span>
+
+            <span class="c"># change the prediction prefix to include the feature set</span>
+            <span class="n">prediction_prefix</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prediction_dir</span><span class="p">,</span> <span class="n">jobname</span><span class="p">)</span>
+
+            <span class="c"># the log file that stores the actual output of this script (e.g.,</span>
+            <span class="c"># the tuned parameters, what kind of experiment was run, etc.)</span>
+            <span class="n">temp_logfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">logpath</span><span class="p">,</span> <span class="s">&#39;{}.log&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jobname</span><span class="p">))</span>
+
+            <span class="c"># create job if we&#39;re doing things on the grid</span>
+            <span class="n">job_args</span> <span class="o">=</span> <span class="p">[</span><span class="n">jobname</span><span class="p">,</span> <span class="n">featureset</span><span class="p">,</span> <span class="n">given_learner</span><span class="p">,</span> <span class="n">train_path</span><span class="p">,</span>
+                        <span class="n">test_path</span><span class="p">,</span> <span class="n">train_set_name</span><span class="p">,</span> <span class="n">test_set_name</span><span class="p">,</span> <span class="n">modelpath</span><span class="p">,</span>
+                        <span class="n">prediction_prefix</span><span class="p">,</span> <span class="n">do_grid_search</span><span class="p">,</span>
+                        <span class="n">grid_objective</span><span class="p">,</span> <span class="n">do_scale_features</span><span class="p">,</span> <span class="n">cross_validate</span><span class="p">,</span>
+                        <span class="n">evaluate</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="n">temp_logfile</span><span class="p">,</span> <span class="n">probability</span><span class="p">,</span>
+                        <span class="n">resultspath</span><span class="p">,</span> <span class="p">(</span><span class="n">fixed_parameter_list</span><span class="p">[</span><span class="n">learner_num</span><span class="p">]</span>
+                                      <span class="k">if</span> <span class="n">fixed_parameter_list</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">()),</span>
+                        <span class="p">(</span><span class="n">param_grid_list</span><span class="p">[</span><span class="n">learner_num</span><span class="p">]</span> <span class="k">if</span> <span class="n">param_grid_list</span>
+                         <span class="k">else</span> <span class="bp">None</span><span class="p">),</span>
+                        <span class="n">pos_label_str</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">,</span> <span class="n">use_dense_features</span><span class="p">,</span>
+                        <span class="n">min_feature_count</span><span class="p">,</span> <span class="n">grid_search_jobs</span><span class="p">,</span> <span class="n">cv_folds</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">local</span><span class="p">:</span>
+                <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Job</span><span class="p">(</span><span class="n">classify_featureset</span><span class="p">,</span> <span class="n">job_args</span><span class="p">,</span>
+                                <span class="n">num_slots</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span> <span class="k">if</span> <span class="n">do_grid_search</span> <span class="k">else</span> <span class="mi">1</span><span class="p">),</span>
+                                <span class="n">name</span><span class="o">=</span><span class="n">jobname</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="n">queue</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">classify_featureset</span><span class="p">(</span><span class="o">*</span><span class="n">job_args</span><span class="p">)</span>
+
+    <span class="c"># submit the jobs (if running on grid)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">local</span><span class="p">:</span>
+        <span class="n">job_results</span> <span class="o">=</span> <span class="n">process_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">white_list</span><span class="o">=</span><span class="n">hosts</span><span class="p">)</span>
+
+        <span class="c"># Check for errors</span>
+        <span class="k">for</span> <span class="n">result_info</span> <span class="ow">in</span> <span class="n">job_results</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">result_info</span><span class="p">,</span> <span class="s">&#39;task&#39;</span><span class="p">):</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&#39;There was an error running the experiment:</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span>
+                      <span class="s">&#39;{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result_info</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c"># Get command line arguments</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s">&quot;Runs sklearn jobs in parallel on the cluster given a </span><span class="se">\</span>
+<span class="s">                     config file.&quot;</span><span class="p">,</span>
+        <span class="n">formatter_class</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span>
+        <span class="n">conflict_handler</span><span class="o">=</span><span class="s">&#39;resolve&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;config_file&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Configuration file describing the sklearn task</span><span class="se">\</span>
+<span class="s">                              to run.&#39;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">FileType</span><span class="p">(</span><span class="s">&#39;r&#39;</span><span class="p">))</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-k&#39;</span><span class="p">,</span> <span class="s">&#39;--keep_models&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;If models and/or vocabs exists, re-use them</span><span class="se">\</span>
+<span class="s">                              instead of overwriting them.&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-l&#39;</span><span class="p">,</span> <span class="s">&#39;--local&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Do not use the Grid Engine for running jobs and</span><span class="se">\</span>
+<span class="s">                              just run everything sequential on the local </span><span class="se">\</span>
+<span class="s">                              machine. This is for debugging.&#39;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-m&#39;</span><span class="p">,</span> <span class="s">&#39;--machines&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;comma-separated list of machines to add to</span><span class="se">\</span>
+<span class="s">                              pythongrid&#39;s whitelist (if not specified, all</span><span class="se">\</span>
+<span class="s">                              available machines are used). Note that full </span><span class="se">\</span>
+<span class="s">                              names must be specified, e.g., </span><span class="se">\</span>
+<span class="s">                              </span><span class="se">\&quot;</span><span class="s">nlp.research.ets.org</span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-q&#39;</span><span class="p">,</span> <span class="s">&#39;--queue&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Use this queue for python grid.&quot;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;nlp.q&#39;</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="n">machines</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">machines</span><span class="p">:</span>
+        <span class="n">machines</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">machines</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+    <span class="n">run_configuration</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config_file</span><span class="p">,</span>
+                      <span class="n">local</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">local</span><span class="p">,</span>
+                      <span class="n">overwrite</span><span class="o">=</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">keep_models</span><span class="p">,</span>
+                      <span class="n">queue</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">queue</span><span class="p">,</span>
+                      <span class="n">hosts</span><span class="o">=</span><span class="n">machines</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Nitin Madnani.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+  </body>
+</html>

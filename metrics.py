@@ -2,10 +2,10 @@
 This module contains a bunch of evaluation metrics that can be used to
 evaluate the performance of learners.
 
-@author: Michael Heilman (mheilman@ets.org)
-@author: Nitin Madnani (nmadnani@ets.org)
-@author: Dan Blanchard (dblanchard@ets.org)
-@organization: ETS
+:author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
+:author: Dan Blanchard (dblanchard@ets.org)
+:organization: ETS
 '''
 
 from __future__ import print_function, unicode_literals

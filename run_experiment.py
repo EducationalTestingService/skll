@@ -21,10 +21,11 @@
 Runs a bunch of scikit-learn jobs in parallel on the cluster given a
 config file.
 
-@author: Nitin Madnani (nmadnani@ets.org)
-@author: Dan Blanchard (dblanchard@ets.org)
-@author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
+:author: Dan Blanchard (dblanchard@ets.org)
+:author: Michael Heilman (mheilman@ets.org)
 '''
+
 
 from __future__ import print_function, unicode_literals
 
@@ -55,7 +56,12 @@ LearnerResultInfo = namedtuple('LearnerResultInfo',
 
 
 def clean_path(path):
-    ''' Replace all weird SAN paths with normal paths '''
+    '''
+    Replace all weird SAN paths with normal paths
+
+    :param path: Path to clean
+    :type path: basestring
+    '''
 
     path = re.sub(r'/\.automount/\w+/SAN/NLP/(\w+)-(dynamic|static)',
                   r'/home/nlp-\1/\2', path)
@@ -68,6 +74,16 @@ def get_stat_float(class_result_dict, stat):
     '''
     Little helper for getting output for precision, recall, and f-score
     columns in confusion matrix.
+
+    :param class_result_dict: Dictionary containing the stat we'd like
+                              to retrieve for a particular class.
+    :type class_result_dict: dict
+    :param stat: The statistic we're looking for in the dictionary.
+    :type stat: basestring
+
+    :return: The value of the stat if it's in the dictionary, and NaN
+             otherwise.
+    :rtype: float
     '''
     if stat in class_result_dict and class_result_dict[stat] is not None:
         return class_result_dict[stat]

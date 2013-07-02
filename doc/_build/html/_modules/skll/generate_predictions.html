@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>skll.generate_predictions &mdash; SciKit-Learn Lab 1.0rc1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0rc1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="SciKit-Learn Lab 1.0rc1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for skll.generate_predictions</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># Copyright (C) 2012-2013 Educational Testing Service</span>
+
+<span class="c"># This file is part of SciKit-Learn Lab.</span>
+
+<span class="c"># SciKit-Learn Lab is free software: you can redistribute it and/or modify</span>
+<span class="c"># it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c"># (at your option) any later version.</span>
+
+<span class="c"># SciKit-Learn Lab is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with SciKit-Learn Lab.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Loads a trained model and outputs predictions based on input feature files.</span>
+
+<span class="sd">:author: Dan Blanchard</span>
+<span class="sd">:contact: dblanchard@ets.org</span>
+<span class="sd">:organization: ETS</span>
+<span class="sd">:date: February 2013</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="kn">from</span> <span class="nn">skll.learner</span> <span class="kn">import</span> <span class="n">Learner</span><span class="p">,</span> <span class="n">load_examples</span><span class="p">,</span> <span class="n">_REGRESSION_MODELS</span>
+
+
+<div class="viewcode-block" id="Predictor"><a class="viewcode-back" href="../../skll.html#skll.generate_predictions.Predictor">[docs]</a><span class="k">class</span> <span class="nc">Predictor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Little wrapper around a ``Learner`` to load models and get</span>
+<span class="sd">    predictions for feature strings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_prefix</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">positive_class</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Initialize the predictor.</span>
+
+<span class="sd">        :param model_prefix: Prefix to use when loading trained model (and its</span>
+<span class="sd">                             vocab).</span>
+<span class="sd">        :type model_prefix: basestring</span>
+<span class="sd">        :param threshold: If the model we&#39;re using is generating probabilities</span>
+<span class="sd">                          of the positive class, return 1 if it meets/exceeds</span>
+<span class="sd">                          the given threshold and 0 otherwise.</span>
+<span class="sd">        :type threshold: float</span>
+<span class="sd">        :param positive_class: If the model is only being used to predict the</span>
+<span class="sd">                               probability of a particular class, this</span>
+<span class="sd">                               specifies the index of the class we&#39;re</span>
+<span class="sd">                               predicting. 1 = second class, which is default</span>
+<span class="sd">                               for binary classification.</span>
+<span class="sd">        :type positive_class: int</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_learner</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="s">&#39;{}.model&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_prefix</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pos_index</span> <span class="o">=</span> <span class="n">positive_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+
+<div class="viewcode-block" id="Predictor.predict"><a class="viewcode-back" href="../../skll.html#skll.generate_predictions.Predictor.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return a list of predictions for a given numpy array of examples</span>
+<span class="sd">        (which are dicts)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># Must make a list around a dictionary to fit format that</span>
+        <span class="c"># Learner.predict expects</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_learner</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_learner</span><span class="o">.</span><span class="n">probability</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">pred</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_pos_index</span><span class="p">]</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">pred</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_pos_index</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_learner</span><span class="o">.</span><span class="n">model_type</span> <span class="ow">in</span> <span class="n">_REGRESSION_MODELS</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">preds</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_learner</span><span class="o">.</span><span class="n">label_list</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">pred</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]</span>
+
+</div></div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../skll.html#skll.generate_predictions.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39; Main function that does all the work. &#39;&#39;&#39;</span>
+    <span class="c"># Get command line arguments</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s">&quot;Loads a trained model and outputs predictions based </span><span class="se">\</span>
+<span class="s">                     on input feature files.&quot;</span><span class="p">,</span>
+        <span class="n">formatter_class</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span>
+        <span class="n">conflict_handler</span><span class="o">=</span><span class="s">&#39;resolve&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;model_prefix&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Prefix to use when loading </span><span class="se">\</span>
+<span class="s">                                              trained model (and its vocab).&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;input_file&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;A csv file, json file, or megam file </span><span class="se">\</span>
+<span class="s">                              (with or without the label column), </span><span class="se">\</span>
+<span class="s">                              with the appropriate suffix.&#39;</span><span class="p">,</span>
+                        <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;+&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-l&#39;</span><span class="p">,</span> <span class="s">&#39;--has_labels&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Indicates that the input file includes </span><span class="se">\</span>
+<span class="s">                              labels and that the features start at the </span><span class="se">\</span>
+<span class="s">                              2nd column for csv and megam files.&quot;</span><span class="p">,</span>
+                        <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-p&#39;</span><span class="p">,</span> <span class="s">&#39;--positive_class&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;If the model is only being used to predict the </span><span class="se">\</span>
+<span class="s">                              probability of a particular class, this </span><span class="se">\</span>
+<span class="s">                              specifies the index of the class we&#39;re </span><span class="se">\</span>
+<span class="s">                              predicting. 1 = second class, which is default </span><span class="se">\</span>
+<span class="s">                              for binary classification. Keep in mind that </span><span class="se">\</span>
+<span class="s">                              classes are sorted lexicographically.&quot;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-t&#39;</span><span class="p">,</span> <span class="s">&#39;--threshold&#39;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;If the model we&#39;re using is generating </span><span class="se">\</span>
+<span class="s">                              probabilities of the positive class, return 1 </span><span class="se">\</span>
+<span class="s">                              if it meets/exceeds the given threshold and 0 </span><span class="se">\</span>
+<span class="s">                              otherwise.&quot;</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c"># Create the classifier and load the model</span>
+    <span class="n">predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">model_prefix</span><span class="p">,</span>
+                          <span class="n">positive_class</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">positive_class</span><span class="p">,</span>
+                          <span class="n">threshold</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">threshold</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">input_file</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">input_file</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">load_examples</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">has_labels</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Nitin Madnani.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+  </body>
+</html>

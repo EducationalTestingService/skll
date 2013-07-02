@@ -20,8 +20,9 @@
 '''
 Runs an ablation study, removing one feature file at a time.
 
-@author: Michael Heilman (mheilman@ets.org)
+:author: Michael Heilman (mheilman@ets.org)
 '''
+
 
 import argparse
 import json
