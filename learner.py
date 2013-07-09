@@ -745,17 +745,19 @@ class Learner(object):
 
     @property
     def model_type(self):
-        ''' Getter for model type '''
+        ''' A string representation of the underlying modeltype '''
         return self._model_type
 
     @property
     def model_kwargs(self):
-        ''' Getter for model keyword arguments '''
+        '''
+        A dictionary of the underlying scikit-learn model's keyword arguments
+        '''
         return self._model_kwargs
 
     @property
     def model(self):
-        ''' Getter for underlying model '''
+        ''' The underlying scikit-learn model '''
         return self._model
 
     def load(self, learner_file):
@@ -799,7 +801,8 @@ class Learner(object):
     @property
     def model_params(self):
         '''
-        Getter for model parameters.
+        Returns model parameters (i.e., weights) for ridge regression and
+        liblinear models.
         '''
         res = {}
         if isinstance(self._model, Ridge):
@@ -925,7 +928,7 @@ class Learner(object):
 
         return estimator, default_param_grid
 
-    def check_input(self, examples):
+    def _check_input(self, examples):
         '''
         check that the examples are properly formatted.
         '''
@@ -960,7 +963,7 @@ class Learner(object):
                    " perform poorly.").format(max_feat_abs),
                   file=sys.stderr)
 
-    def train_setup(self, examples):
+    def _train_setup(self, examples):
         '''
         Set up the feature vectorizer, the scaler and the label dict and
         return the features and the labels
@@ -969,7 +972,7 @@ class Learner(object):
         # extract the features and the labels
         features = [self._extract_features(x) for x in examples]
 
-        self.check_input(examples)
+        self._check_input(examples)
 
         # Create label_dict if we weren't passed one
         if self._model_type not in _REGRESSION_MODELS:
@@ -1060,7 +1063,7 @@ class Learner(object):
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
-        features, ytrain = self.train_setup(examples)
+        features, ytrain = self._train_setup(examples)
 
         # set up grid search folds
         if isinstance(grid_search_folds, int):
@@ -1324,7 +1327,7 @@ class Learner(object):
             np.random.shuffle(examples)
 
         # call train setup
-        _, y = self.train_setup(examples)
+        _, y = self._train_setup(examples)
 
         # setup the cross-validation iterator
         if isinstance(cv_folds, int):
