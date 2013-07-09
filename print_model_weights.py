@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     learner = Learner()
     learner.load_model(args.model_file)
-    weights = learner.get_model_params()
+    weights = learner.model_params
 
     print("number of nonzero features:", len(weights), file=sys.stderr)
 

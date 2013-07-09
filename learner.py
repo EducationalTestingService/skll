@@ -796,7 +796,11 @@ class Learner(object):
         elif isinstance(self._model, GradientBoostingRegressor):
             self._model_type = 'gb_regressor'
 
-    def get_model_params(self):
+    @property
+    def model_params(self):
+        '''
+        Getter for model parameters.
+        '''
         res = {}
         if isinstance(self._model, Ridge):
             # also includes RescaledRidge
@@ -822,7 +826,7 @@ class Learner(object):
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
-                              " get_model_params.").format(self._model_type))
+                              " model_params.").format(self._model_type))
 
         return res
 
