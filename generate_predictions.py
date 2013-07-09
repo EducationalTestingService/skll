@@ -57,7 +57,7 @@ class Predictor(object):
         :type positive_class: int
         '''
         self._learner = Learner()
-        self._learner.load_model('{}.model'.format(model_prefix))
+        self._learner.load('{}.model'.format(model_prefix))
         self._pos_index = positive_class
         self.threshold = threshold
 

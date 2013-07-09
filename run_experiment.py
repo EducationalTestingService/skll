@@ -286,7 +286,7 @@ def classify_featureset(jobname, featureset, given_learner, train_path,
             if os.path.exists(modelfile) and not overwrite:
                 print('\tloading pre-existing {} model: {}'.format(
                     given_learner, modelfile))
-                learner.load_model(modelfile)
+                learner.load(modelfile)
 
             # if we have do not have a saved model, we need to train one.
             else:
@@ -306,7 +306,7 @@ def classify_featureset(jobname, featureset, given_learner, train_path,
                 grid_scores = [best_score]
 
                 # save model
-                learner.save_model(modelfile)
+                learner.save(modelfile)
 
                 if grid_search:
                     print('\tbest {} score: {}'.format(grid_objective.__name__,

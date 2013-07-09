@@ -758,14 +758,14 @@ class Learner(object):
         ''' Getter for underlying model '''
         return self._model
 
-    def load_model(self, modelfile):
+    def load(self, learner_file):
         '''
-        Load a saved model.
+        Load a saved learner.
 
-        :param modelfile: The path to the model file to load.
-        :type modelfile: basestring
+        :param learner_file: The path to the file to load.
+        :type learner_file: basestring
         '''
-        with open(modelfile, "rb") as f:
+        with open(learner_file, "rb") as f:
             (self._model, self.probability, self.feat_vectorizer,
              self.feat_selector, self.scaler, self.label_dict,
              self.label_list) = pickle.load(f)
@@ -830,19 +830,19 @@ class Learner(object):
 
         return res
 
-    def save_model(self, modelfile):
+    def save(self, learner_file):
         '''
-        Save the model to file.
+        Save the learner to a file.
 
-        :param modelfile: The path to where you want to save the model.
-        :type modelfile: basestring
+        :param learner_file: The path to where you want to save the learner.
+        :type learner_file: basestring
         '''
         # create the directory if it doesn't exist
-        modeldir = os.path.dirname(modelfile)
-        if not os.path.exists(modeldir):
-            subprocess.call("mkdir -p {}".format(modeldir), shell=True)
+        learner_dir = os.path.dirname(learner_file)
+        if not os.path.exists(learner_dir):
+            subprocess.call("mkdir -p {}".format(learner_dir), shell=True)
         # write out the files
-        with open(modelfile, "wb") as f:
+        with open(learner_file, "wb") as f:
             pickle.dump([self._model, self.probability,
                          self.feat_vectorizer, self.feat_selector,
                          self.scaler, self.label_dict, self.label_list],
