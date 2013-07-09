@@ -669,10 +669,35 @@ class RescaledSVR(SVR, RescaledRegressionMixin):
 
 
 class Learner(object):
-
     """
     A simpler learner interface around many sklearn classification
     and regression functions.
+
+    :param do_scale_features: Should we scale features with this
+                              learner?
+    :type do_scale_features: bool
+    :param model_type: Type of estimator to create. Options are:
+                       'logistic', 'svm_linear', 'svm_radial',
+                       'naivebayes', 'dtree', 'rforest', and 'gradient'
+    :type model_type: basestring
+    :param probability: Should learner return probabilities of all
+                        classes (instead of just class with highest
+                        probability)?
+    :type probability: bool
+    :param model_kwargs: A dictionary of keyword arguments to pass to the
+                         initializer for the specified model.
+    :type model_kwargs: dict
+    :param pos_label_str: The string for the positive class in the binary
+                          classification setting.  Otherwise, an arbitrary
+                          class is picked.
+    :type pos_label_str: str
+    :param use_dense_features: Whether to require conversion to dense
+                               feature matrices.
+    :type use_dense_features: bool
+    :param min_feature_count: The minimum number of examples a feature
+                              must have a nonzero value in to be included.
+    :type min_feature_count: int
+
     """
 
     def __init__(self, probability=False, do_scale_features=False,
@@ -680,31 +705,6 @@ class Learner(object):
                  use_dense_features=False, min_feature_count=1):
         '''
         Initializes a learner object with the specified settings.
-
-        :param do_scale_features: Should we scale features with this
-                                  learner?
-        :type do_scale_features: bool
-        :param model_type: Type of estimator to create. Options are:
-                           'logistic', 'svm_linear', 'svm_radial',
-                           'naivebayes', 'dtree', 'rforest', and 'gradient'
-        :type model_type: basestring
-        :param probability: Should learner return probabilities of all
-                            classes (instead of just class with highest
-                            probability)?
-        :type probability: bool
-        :param model_kwargs: A dictionary of keyword arguments to pass to the
-                             initializer for the specified model.
-        :type model_kwargs: dict
-        :param pos_label_str: The string for the positive class in the binary
-                              classification setting.  Otherwise, an arbitrary
-                              class is picked.
-        :type pos_label_str: str
-        :param use_dense_features: Whether to require conversion to dense
-                                   feature matrices.
-        :type use_dense_features: bool
-        :param min_feature_count: The minimum number of examples a feature
-                                  must have a nonzero value in to be included.
-        :type min_feature_count: int
         '''
         super(Learner, self).__init__()
         self.probability = probability if model_type != 'svm_linear' else False
