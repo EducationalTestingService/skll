@@ -130,6 +130,33 @@ predictions for feature strings.</p>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <p>A simpler learner interface around many sklearn classification
 and regression functions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>do_scale_features</strong> (<em>bool</em>) &#8211; Should we scale features with this
+learner?</li>
+<li><strong>model_type</strong> (<em>basestring</em>) &#8211; Type of estimator to create. Options are:
+&#8216;logistic&#8217;, &#8216;svm_linear&#8217;, &#8216;svm_radial&#8217;,
+&#8216;naivebayes&#8217;, &#8216;dtree&#8217;, &#8216;rforest&#8217;, and &#8216;gradient&#8217;</li>
+<li><strong>probability</strong> (<em>bool</em>) &#8211; Should learner return probabilities of all
+classes (instead of just class with highest
+probability)?</li>
+<li><strong>model_kwargs</strong> (<em>dict</em>) &#8211; A dictionary of keyword arguments to pass to the
+initializer for the specified model.</li>
+<li><strong>pos_label_str</strong> (<em>str</em>) &#8211; The string for the positive class in the binary
+classification setting.  Otherwise, an arbitrary
+class is picked.</li>
+<li><strong>use_dense_features</strong> (<em>bool</em>) &#8211; Whether to require conversion to dense
+feature matrices.</li>
+<li><strong>min_feature_count</strong> (<em>int</em>) &#8211; The minimum number of examples a feature
+must have a nonzero value in to be included.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="skll.learner.Learner.check_input">
 <tt class="descname">check_input</tt><big>(</big><em>examples</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.check_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.check_input" title="Permalink to this definition">¶</a></dt>
@@ -138,7 +165,7 @@ and regression functions.</p>
 
 <dl class="method">
 <dt id="skll.learner.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x355a320&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x491a2a8&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -216,19 +243,14 @@ function score.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="skll.learner.Learner.get_model_params">
-<tt class="descname">get_model_params</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.get_model_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.get_model_params" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="skll.learner.Learner.load_model">
-<tt class="descname">load_model</tt><big>(</big><em>modelfile</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.load_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.load_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load a saved model.</p>
+<dt id="skll.learner.Learner.load">
+<tt class="descname">load</tt><big>(</big><em>learner_file</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a saved learner.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>modelfile</strong> (<em>basestring</em>) &#8211; The path to the model file to load.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>learner_file</strong> (<em>basestring</em>) &#8211; The path to the file to load.</td>
 </tr>
 </tbody>
 </table>
@@ -244,6 +266,12 @@ function score.</p>
 <dt id="skll.learner.Learner.model_kwargs">
 <tt class="descname">model_kwargs</tt><a class="reference internal" href="_modules/skll/learner.html#Learner.model_kwargs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.model_kwargs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Getter for model keyword arguments</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="skll.learner.Learner.model_params">
+<tt class="descname">model_params</tt><a class="reference internal" href="_modules/skll/learner.html#Learner.model_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.model_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter for model parameters.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -284,14 +312,14 @@ indices to their (str) labels?</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="skll.learner.Learner.save_model">
-<tt class="descname">save_model</tt><big>(</big><em>modelfile</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.save_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.save_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save the model to file.</p>
+<dt id="skll.learner.Learner.save">
+<tt class="descname">save</tt><big>(</big><em>learner_file</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the learner to a file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>modelfile</strong> (<em>basestring</em>) &#8211; The path to where you want to save the model.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>learner_file</strong> (<em>basestring</em>) &#8211; The path to where you want to save the learner.</td>
 </tr>
 </tbody>
 </table>
@@ -299,7 +327,7 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.learner.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x355a320&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x491a2a8&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -703,7 +731,7 @@ featureset is a string).</p>
 
 <dl class="function">
 <dt id="skll.run_experiment.print_fancy_output">
-<tt class="descclassname">skll.run_experiment.</tt><tt class="descname">print_fancy_output</tt><big>(</big><em>result_tuples</em>, <em>grid_scores</em>, <em>output_file=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x7fc529ad71e0&gt;</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#print_fancy_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.print_fancy_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">skll.run_experiment.</tt><tt class="descname">print_fancy_output</tt><big>(</big><em>result_tuples</em>, <em>grid_scores</em>, <em>output_file=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x7f5aec22b1e0&gt;</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#print_fancy_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.print_fancy_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to take all of the results from all of the folds and print
 nice tables with the results.</p>
 </dd></dl>

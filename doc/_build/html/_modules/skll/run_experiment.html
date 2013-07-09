@@ -335,7 +335,7 @@
             <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">modelfile</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
                 <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">loading pre-existing {} model: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                     <span class="n">given_learner</span><span class="p">,</span> <span class="n">modelfile</span><span class="p">))</span>
-                <span class="n">learner</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">modelfile</span><span class="p">)</span>
+                <span class="n">learner</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">modelfile</span><span class="p">)</span>
 
             <span class="c"># if we have do not have a saved model, we need to train one.</span>
             <span class="k">else</span><span class="p">:</span>
@@ -355,7 +355,7 @@
                 <span class="n">grid_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">best_score</span><span class="p">]</span>
 
                 <span class="c"># save model</span>
-                <span class="n">learner</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">modelfile</span><span class="p">)</span>
+                <span class="n">learner</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">modelfile</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="n">grid_search</span><span class="p">:</span>
                     <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">best {} score: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">grid_objective</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>

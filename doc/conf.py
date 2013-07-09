@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # SciKit-Learn Lab documentation build configuration file, created by
-# sphinx-quickstart on Tue Jul  2 14:48:56 2013.
+# sphinx-quickstart on Mon Jul  8 23:42:52 2013.
 #
 # This file is execfile()d with the current directory set to its containing dir.
 #

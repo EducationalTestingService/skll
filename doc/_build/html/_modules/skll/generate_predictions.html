@@ -106,7 +106,7 @@
 <span class="sd">        :type positive_class: int</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_learner</span> <span class="o">=</span> <span class="n">Learner</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_learner</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="s">&#39;{}.model&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_prefix</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_learner</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&#39;{}.model&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_prefix</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pos_index</span> <span class="o">=</span> <span class="n">positive_class</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
 
