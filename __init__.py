@@ -18,13 +18,14 @@
 '''
 Takes care of housekeeping for the package.
 
-:author: Dan Blanchard
-:contact: dblanchard@ets.org
+:author: Dan Blanchard (dblanchard@ets.org)
+:author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
-:date: July 2013
 '''
+from __future__ import print_function, unicode_literals
 
-
+from skll.data import load_examples
 from skll.learner import Learner
 
-__all__ = ['learner', 'metrics']
+__all__ = ['Learner', 'metrics', 'load_examples']

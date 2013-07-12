@@ -18,6 +18,10 @@ from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn import metrics as sk_metrics
 
 
+# Constants
+_CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
+
+
 def quadratic_weighted_kappa(y_true, y_pred):
     '''
     Returns the quadratic weighted kappa.

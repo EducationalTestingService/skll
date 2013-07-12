@@ -21,9 +21,9 @@
 Runs a bunch of scikit-learn jobs in parallel on the cluster given a
 config file.
 
-:author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 '''
 
 
@@ -44,8 +44,7 @@ from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems, itervalues  # Python 2/3
 from six.moves import configparser
 
-from skll import Learner, metrics
-from skll.learner import load_examples
+from skll import Learner, metrics, load_examples
 
 
 # Named tuple for storing job results
@@ -57,7 +56,8 @@ LearnerResultInfo = namedtuple('LearnerResultInfo',
 
 def clean_path(path):
     '''
-    Replace all weird SAN paths with normal paths
+    Replace all weird SAN paths with normal paths. This is a really ETS-specific
+    fix, but shouldn't harm others.
 
     :param path: Path to clean
     :type path: basestring

@@ -26,7 +26,6 @@ Module with many functions to use for easily creating a scikit-learn learner
 :organization: ETS
 '''
 
-
 from __future__ import print_function, unicode_literals
 
 import csv
@@ -67,154 +66,15 @@ from six.moves import cPickle as pickle
 from six import string_types
 
 from skll.metrics import (quadratic_weighted_kappa, unweighted_kappa,
-                          kendall_tau, f1_score_micro, accuracy)
+                          kendall_tau, f1_score_micro, accuracy,
+                          _CORRELATION_METRICS)
+from skll.fixed_standard_scaler import FixedStandardScaler
 
-# Globals #
+# Constants #
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
                              'gb_regressor'])
-_CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
                                 'rescaled_svr_linear', 'gb_regressor'])
-
-
-# DATA LOADING FUNCTIONS #
-def _sanitize_line(line):
-    '''
-    Return copy of line with all non-ASCII characters replaced with
-    <U1234> sequences where 1234 is the value of ord() for the character.
-    '''
-    char_list = []
-    for char in line:
-        char_num = ord(char)
-        char_list.append('<U{}>'.format(char_num) if char_num > 127 else char)
-    return ''.join(char_list)
-
-
-def _megam_dict_iter(path, has_labels=True):
-    '''
-    Generator that yields tuples of classes and dictionaries mapping from
-    features to values for each pair of lines in path
-
-    :param path: Path to MegaM file
-    :type path: basestring
-    '''
-
-    line_count = 0
-    print("Loading {}...".format(path).encode('utf-8'), end="", file=sys.stderr)
-    sys.stderr.flush()
-    with open(path) as megam_file:
-        curr_id = None
-        for line in megam_file:
-            # Process encoding
-            line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
-            line = _sanitize_line(line.strip())
-            # Handle instance lines
-            if line.startswith('#'):
-                curr_id = line[1:].strip()
-            elif line and line not in ['TRAIN', 'TEST', 'DEV']:
-                split_line = line.split()
-                curr_info_dict = {}
-
-                if has_labels:
-                    class_name = split_line[0]
-                    field_pairs = split_line[1:]
-                else:
-                    class_name = None
-                    field_pairs = split_line
-
-                if len(field_pairs) > 0:
-                    # Get current instances feature-value pairs
-                    field_names = islice(field_pairs, 0, None, 2)
-                    # Convert values to floats, because otherwise features'll
-                    # be categorical
-                    field_values = (float(val) for val in islice(field_pairs,
-                                                                 1, None, 2))
-
-                    # Add the feature-value pairs to dictionary
-                    curr_info_dict.update(zip(field_names, field_values))
-                yield curr_id, class_name, curr_info_dict
-                curr_id = None
-            line_count += 1
-            if line_count % 100 == 0:
-                print(".", end="", file=sys.stderr)
-        print("done", file=sys.stderr)
-
-
-def load_examples(path, has_labels=True):
-    '''
-    Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
-    formats.
-
-    :param path: The path to the file to load the examples from.
-    :type path: basestring
-
-    :return: 2-column numpy.array of examples with the "y" containing the
-             class labels and "x" containing the features for each example.
-    '''
-    if path.endswith(".tsv"):
-        out = []
-        with open(path) as f:
-            reader = csv.reader(f, dialect=csv.excel_tab)
-            header = next(reader)
-            out = [_preprocess_tsv_row(row, header, example_num,
-                                       has_labels=has_labels)
-                   for example_num, row in enumerate(reader)]
-    elif path.endswith(".jsonlines"):
-        out = []
-        with open(path) as f:
-            example_num = 0
-            for line in f:
-                example = json.loads(line.strip())
-                if "id" not in example:
-                    example["id"] = "EXAMPLE_{}".format(example_num)
-                example_num += 1
-                out.append(example)
-    elif path.endswith(".megam"):
-        out = [{"y": class_name,
-                "x": feature_dict,
-                "id": ("EXAMPLE_{}".format(example_num) if example_id is None
-                       else example_id)}
-               for example_num, (example_id, class_name, feature_dict)
-               in enumerate(_megam_dict_iter(path, has_labels=has_labels))]
-    else:
-        raise Exception('Example files must be in either TSV, MegaM, or the' +
-                        'preprocessed .jsonlines format. ' +
-                        'You specified: {}'.format(path))
-
-    return np.array(out)
-
-
-def _preprocess_tsv_row(row, header, example_num, has_labels=True):
-    '''
-    Make a dictionary of preprocessed values (e.g., tokens, POS tags, etc.).
-    This should be separate from the feature extraction code so that slow
-    preprocessing steps can be saved and reused, without have to redo
-    preprocessing whenever features change. This parses a TSV row and returns
-    a dictionary {"y": class label, "x": dictionary of feature values} It also
-    takes in an optional list of feature names to be used in the "x"
-    dictionary.
-    '''
-    x = {}
-
-    if has_labels:
-        y = row[0]
-        feature_start_col = 1
-    else:
-        y = None
-        feature_start_col = 0
-
-    example_id = "EXAMPLE_{}".format(example_num)
-    for fname, fval in zip(islice(header, feature_start_col, None),
-                           islice(row, feature_start_col, None)):
-        if fname == "id":
-            example_id = fval
-        else:
-            fval_float = float(fval)
-            # we don't need to explicitly store zeros
-            if fval_float != 0.0:
-                x["{}".format(fname)] = fval_float
-
-    return {"y": y, "x": x, "id": example_id}
 
 
 def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func,
@@ -317,116 +177,6 @@ class SelectByMinCount(SelectKBest):
         mask = np.zeros(self.scores_.shape, dtype=bool)
         mask[self.scores_ >= self.min_count] = True
         return mask
-
-
-# Temporary imports for _FixedStandardScaler
-from sklearn.preprocessing import _mean_and_std
-from sklearn.utils import warn_if_not_float
-from sklearn.utils.sparsefuncs import inplace_csr_column_scale
-from sklearn.utils.sparsefuncs import mean_variance_axis0
-
-
-class _FixedStandardScaler(StandardScaler):
-
-    '''
-    StandardScaler has a bug in that it always scales by the standard
-    deviation for sparse matrices, i.e., it ignores the value of with_std.
-    This is a fixed version. This is just temporary until the bug is fixed in
-    sklearn.
-    '''
-
-    def fit(self, X, y=None):
-        """Compute the mean and std to be used for later scaling.
-
-        Parameters
-        ----------
-        X : array-like or CSR matrix with shape [n_samples, n_features]
-            The data used to compute the mean and standard deviation
-            used for later scaling along the features axis.
-        """
-        X = check_arrays(X, copy=self.copy, sparse_format="csr")[0]
-        if sp.issparse(X):
-            if self.with_mean:
-                raise ValueError("Cannot center sparse matrices: pass " +
-                                 "`with_mean=False` instead. See docstring " +
-                                 "for motivation and alternatives.")
-            warn_if_not_float(X, estimator=self)
-            self.mean_ = None
-
-            # we added this check for with_std
-            if self.with_std:
-                var = mean_variance_axis0(X)[1]
-                self.std_ = np.sqrt(var)
-                self.std_[var == 0.0] = 1.0
-            else:
-                self.std_ = None
-
-            return self
-        else:
-            warn_if_not_float(X, estimator=self)
-            self.mean_, self.std_ = _mean_and_std(X, axis=0,
-                                                  with_mean=self.with_mean,
-                                                  with_std=self.with_std)
-            return self
-
-    def transform(self, X, y=None, copy=None):
-        """Perform standardization by centering and scaling
-
-        Parameters
-        ----------
-        X : array-like with shape [n_samples, n_features]
-            The data used to scale along the features axis.
-        """
-        copy = copy if copy is not None else self.copy
-        X = check_arrays(X, copy=copy, sparse_format="csr")[0]
-        if sp.issparse(X):
-            if self.with_mean:
-                raise ValueError("Cannot center sparse matrices: pass " +
-                                 "`with_mean=False` instead. See docstring " +
-                                 "for motivation and alternatives.")
-            warn_if_not_float(X, estimator=self)
-            if self.with_std:
-                inplace_csr_column_scale(X, 1 / self.std_)
-        else:
-            warn_if_not_float(X, estimator=self)
-            if self.with_mean:
-                X -= self.mean_
-            # we added this check for with_std
-            if self.with_std:
-                X /= self.std_
-        return X
-
-    def inverse_transform(self, X, copy=None):
-        """Scale back the data to the original representation
-
-        Parameters
-        ----------
-        X : array-like with shape [n_samples, n_features]
-            The data used to scale along the features axis.
-        """
-        copy = copy if copy is not None else self.copy
-        if sp.issparse(X):
-            if self.with_mean:
-                raise ValueError("Cannot center sparse matrices: pass " +
-                                 "`with_mean=False` instead. See docstring " +
-                                 "for motivation and alternatives.")
-            if not sp.isspmatrix_csr(X):
-                X = X.tocsr()
-                copy = False
-            if copy:
-                X = X.copy()
-            # we added this check for with_std
-            if self.with_std:
-                inplace_csr_column_scale(X, self.std_)
-        else:
-            X = np.asarray(X)
-            if copy:
-                X = X.copy()
-            if self.with_std:
-                X *= self.std_
-            if self.with_mean:
-                X += self.mean_
-        return X
 
 
 class _GridSearchCVBinary(GridSearchCV):
@@ -743,6 +493,15 @@ class Learner(object):
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
 
+    @classmethod
+    def from_file(cls, learner_path):
+        '''
+        Returns a new instance of Learner from the pickle at the specified
+        path.
+        '''
+        with open(learner_file, "rb") as f:
+            return pickle.load(f)
+
     @property
     def model_type(self):
         ''' A string representation of the underlying modeltype '''
@@ -760,43 +519,15 @@ class Learner(object):
         ''' The underlying scikit-learn model '''
         return self._model
 
-    def load(self, learner_file):
+    def load(self, learner_path):
         '''
-        Load a saved learner.
+        Replace the current learner instance with a saved learner.
 
-        :param learner_file: The path to the file to load.
-        :type learner_file: basestring
+        :param learner_path: The path to the file to load.
+        :type learner_path: basestring
         '''
-        with open(learner_file, "rb") as f:
-            (self._model, self.probability, self.feat_vectorizer,
-             self.feat_selector, self.scaler, self.label_dict,
-             self.label_list) = pickle.load(f)
-        if isinstance(self._model, LogisticRegression):
-            self._model_type = 'logistic'
-        elif isinstance(self._model, LinearSVC):
-            self._model_type = 'svm_linear'
-        elif isinstance(self._model, SVC):
-            self._model_type = 'svm_radial'
-        elif isinstance(self._model, MultinomialNB):
-            self._model_type = 'naivebayes'
-        elif isinstance(self._model, DecisionTreeClassifier):
-            self._model_type = 'dtree'
-        elif isinstance(self._model, RandomForestClassifier):
-            self._model_type = 'rforest'
-        elif isinstance(self._model, GradientBoostingClassifier):
-            self._model_type = 'gradient'
-        elif isinstance(self._model, RescaledRidge):
-            # this needs to be before ridge because RescaledRidge extends Ridge
-            self._model_type = 'rescaled_ridge'
-        elif isinstance(self._model, RescaledSVR):
-            # this needs to be before SVR because RescaledSVR extends SVR
-            self._model_type = 'rescaled_svr_linear'
-        elif isinstance(self._model, Ridge):
-            self._model_type = 'ridge'
-        elif isinstance(self._model, SVR):
-            self._model_type = 'svr_linear'
-        elif isinstance(self._model, GradientBoostingRegressor):
-            self._model_type = 'gb_regressor'
+        del self.__dict__
+        self.__dict__ = Learner.from_file(learner_path).__dict__
 
     @property
     def model_params(self):
@@ -833,23 +564,20 @@ class Learner(object):
 
         return res
 
-    def save(self, learner_file):
+    def save(self, learner_path):
         '''
         Save the learner to a file.
 
-        :param learner_file: The path to where you want to save the learner.
-        :type learner_file: basestring
+        :param learner_path: The path to where you want to save the learner.
+        :type learner_path: basestring
         '''
         # create the directory if it doesn't exist
-        learner_dir = os.path.dirname(learner_file)
+        learner_dir = os.path.dirname(learner_path)
         if not os.path.exists(learner_dir):
             subprocess.call("mkdir -p {}".format(learner_dir), shell=True)
         # write out the files
-        with open(learner_file, "wb") as f:
-            pickle.dump([self._model, self.probability,
-                         self.feat_vectorizer, self.feat_selector,
-                         self.scaler, self.label_dict, self.label_list],
-                        f, -1)
+        with open(learner_path, "wb") as f:
+            pickle.dump(self, f, -1)
 
     @staticmethod
     def _extract_features(example):
@@ -1006,15 +734,15 @@ class Learner(object):
         # Create scaler if we weren't passed one
         if self._model_type != 'naivebayes':
             if self.do_scale_features:
-                self.scaler = _FixedStandardScaler(copy=True,
-                                                   with_mean=self._use_dense_features,
-                                                   with_std=True)
+                self.scaler = FixedStandardScaler(copy=True,
+                                                  with_mean=self._use_dense_features,
+                                                  with_std=True)
             else:
                 # Doing this is to prevent any modification of feature values
                 # using a dummy transformation
-                self.scaler = _FixedStandardScaler(copy=False,
-                                                   with_mean=False,
-                                                   with_std=False)
+                self.scaler = FixedStandardScaler(copy=False,
+                                                  with_mean=False,
+                                                  with_std=False)
 
         return features, y
 
