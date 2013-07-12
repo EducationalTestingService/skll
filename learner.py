@@ -77,69 +77,27 @@ _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
                                 'rescaled_svr_linear', 'gb_regressor'])
 
 
-def _fit_grid_point(X, y, base_clf, clf_params, train, test, loss_func,
-                    score_func, verbose, **fit_params):
-    """
-    Run fit on one set of parameters
+def _predict_binary(self, X):
+    '''
+    Little helper function to allow us to use `GridSearchCV` with objective
+    functions like Kendall's tau for binary classification problems (where the
+    probability of the true class is used as the input to the objective
+    function).
 
-    Returns the score and the instance of the learner
-    """
-    if verbose > 1:
-        start_time = time.time()
-        msg = '%s' % (', '.join('%s=%s' % (k, v)
-                                for k, v in iteritems(clf_params)))
-        print("[GridSearchCV] %s %s" % (msg, (64 - len(msg)) * '.'))
-    # update parameters of the learner after a copy of its base structure
-    clf = clone(base_clf)
-    clf.set_params(**clf_params)
+    This only works if we've also taken the step of storing the old predict
+    function for `self` as `predict_normal`. It's kind of a hack, but it saves
+    us from having to override GridSearchCV to change one little line.
 
-    if hasattr(base_clf, 'kernel') and hasattr(base_clf.kernel, '__call__'):
-        # cannot compute the kernel values with custom function
-        raise ValueError("Cannot use a custom kernel function. "
-                         "Precompute the kernel matrix instead.")
+    :param self: A scikit-learn classifier instance
+    :param X: A set of examples to predict values for.
+    :type X: array
+    '''
 
-    if not hasattr(X, "shape"):
-        if getattr(base_clf, "_pairwise", False):
-            raise ValueError("Precomputed kernels or affinity matrices have " +
-                             "to be passed as arrays or sparse matrices.")
-        X_train = [X[idx] for idx in train]
-        X_test = [X[idx] for idx in test]
+    if self.coef_.shape[0] == 1:
+        res = self.predict_proba(X)[:, 1]
     else:
-        if getattr(base_clf, "_pairwise", False):
-            # X is a precomputed square kernel matrix
-            if X.shape[0] != X.shape[1]:
-                raise ValueError("X should be a square kernel matrix")
-            X_train = X[np.ix_(train, train)]
-            X_test = X[np.ix_(test, train)]
-        else:
-            X_train = X[safe_mask(X, train)]
-            X_test = X[safe_mask(X, test)]
-
-    if y is not None:
-        y_test = y[safe_mask(y, test)]
-        y_train = y[safe_mask(y, train)]
-        clf.fit(X_train, y_train, **fit_params)
-        if loss_func is not None:
-            # Everything is the same as the original version except next line
-            y_pred = clf.predict_proba(X_test)[:, 1]
-            this_score = -loss_func(y_test, y_pred)
-        elif score_func is not None:
-            y_pred = clf.predict_proba(X_test)[:, 1]  # and this one
-            this_score = score_func(y_test, y_pred)
-        else:
-            this_score = clf.score(X_test, y_test)
-    else:
-        clf.fit(X_train, **fit_params)
-        this_score = clf.score(X_test)
-
-    if verbose > 2:
-        msg += ", score=%f" % this_score
-    if verbose > 1:
-        end_msg = "%s -%s" % (msg,
-                              logger.short_format_time(time.time() -
-                                                       start_time))
-        print("[GridSearchCV] %s %s" % ((64 - len(end_msg)) * '.', end_msg))
-    return this_score, clf_params, _num_samples(X)
+        res = self.predict_normal(X)
+    return res
 
 
 class SelectByMinCount(SelectKBest):
@@ -179,132 +137,12 @@ class SelectByMinCount(SelectKBest):
         return mask
 
 
-class _GridSearchCVBinary(GridSearchCV):
-
-    '''
-    GridSearchCV for use with binary classification problems where you want to
-    optimize the learner based on the probabilities assigned to each class,
-    and not just the predicted class.
-    '''
-
-    def fit(self, X, y=None, **params):
-        """Run fit with all sets of parameters
-
-        Returns the best classifier
-
-        Parameters
-        ----------
-
-        X: array, [n_samples, n_features]
-            Training vector, where n_samples in the number of samples and
-            n_features is the number of features.
-
-        y: array-like, shape = [n_samples], optional
-            Target vector relative to X for classification;
-            None for unsupervised learning.
-
-        """
-        estimator = self.estimator
-        cv = self.cv
-
-        X, y = check_arrays(X, y, sparse_format="csr", allow_lists=True)
-        cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
-
-        grid = IterGrid(self.param_grid)
-        base_clf = clone(self.estimator)
-
-        # Return early if there is only one grid point.
-        if _has_one_grid_point(self.param_grid):
-            params = next(iter(grid))
-            base_clf.set_params(**params)
-            if y is not None:
-                base_clf.fit(X, y)
-            else:
-                base_clf.fit(X)
-            self.best_estimator_ = base_clf
-            self._set_methods()
-            return self
-
-        pre_dispatch = self.pre_dispatch
-        out = Parallel(n_jobs=self.n_jobs, verbose=self.verbose,
-                       pre_dispatch=pre_dispatch)(
-                           delayed(_fit_grid_point)(
-                               X, y, base_clf, clf_params, train, test,
-                               self.loss_func, self.score_func, self.verbose,
-                               **self.fit_params)
-                           for clf_params in grid for train, test in cv)
-
-        # Out is a list of triplet: score, estimator, n_test_samples
-        n_grid_points = len(list(grid))
-        n_fits = len(out)
-        n_folds = n_fits // n_grid_points
-
-        scores = list()
-        cv_scores = list()
-        for grid_start in range(0, n_fits, n_folds):
-            n_test_samples = 0
-            score = 0
-            these_points = list()
-            for (this_score, clf_params,
-                    this_n_test_samples) in out[grid_start:grid_start + n_folds]:
-                these_points.append(this_score)
-                if self.iid:
-                    this_score *= this_n_test_samples
-                score += this_score
-                n_test_samples += this_n_test_samples
-            if self.iid:
-                score /= float(n_test_samples)
-            scores.append((score, clf_params))
-            cv_scores.append(these_points)
-
-        cv_scores = np.asarray(cv_scores)
-
-        # Note: we do not use max(out) to make ties deterministic even if
-        # comparison on estimator instances is not deterministic
-        best_score = -np.inf
-        for score, params in scores:
-            if score > best_score:
-                best_score = score
-                best_params = params
-
-        self.best_score_ = best_score
-        self.best_params_ = best_params
-
-        if self.refit:
-            # fit the best estimator using the entire dataset
-            # clone first to work around broken estimators
-            best_estimator = clone(base_clf).set_params(**best_params)
-            if y is not None:
-                best_estimator.fit(X, y, **self.fit_params)
-            else:
-                best_estimator.fit(X, **self.fit_params)
-            self.best_estimator_ = best_estimator
-            self._set_methods()
-
-        # Store the computed scores
-        self.grid_scores_ = [(clf_params, score, all_scores) for
-                             clf_params, (score, _), all_scores in
-                             zip(grid, scores, cv_scores)]
-        return self
-
-    def score(self, X, y=None):
-        if hasattr(self.best_estimator_, 'score'):
-            return self.best_estimator_.score(X, y)
-        if self.score_func is None:
-            raise ValueError("No score function explicitly defined, "
-                             "and the estimator doesn't provide one %s"
-                             % self.best_estimator_)
-        y_predicted = self.predict_proba(X)[:, 1]
-        return self.score_func(y, y_predicted)
-
-
 class RescaledRegressionMixin(BaseEstimator):
     '''
-    This is a mixin to create regressors that store a min and
-    a max for the training data and make sure that predictions fall within
-    that range.  It also stores the means and SDs of the gold standard
-    and the predictions on the training set to rescale the predictions
-    (e.g., as in e-rater).
+    Mixin to create regressors that store a min and a max for the training data
+    and make sure that predictions fall within that range.  It also stores the
+    means and SDs of the gold standard and the predictions on the training set
+    to rescale the predictions (e.g., as in e-rater).
     '''
     def rescale_fit(self, X, y=None):
         '''
@@ -447,7 +285,6 @@ class Learner(object):
     :param min_feature_count: The minimum number of examples a feature
                               must have a nonzero value in to be included.
     :type min_feature_count: int
-
     """
 
     def __init__(self, probability=False, do_scale_features=False,
@@ -496,7 +333,7 @@ class Learner(object):
     @classmethod
     def from_file(cls, learner_path):
         '''
-        Returns a new instance of Learner from the pickle at the specified
+        :returns: A new instance of Learner from the pickle at the specified
         path.
         '''
         with open(learner_file, "rb") as f:
@@ -532,7 +369,7 @@ class Learner(object):
     @property
     def model_params(self):
         '''
-        Returns model parameters (i.e., weights) for ridge regression and
+        Model parameters (i.e., weights) for ridge regression and
         liblinear models.
         '''
         res = {}
@@ -582,15 +419,14 @@ class Learner(object):
     @staticmethod
     def _extract_features(example):
         '''
-        Return a dictionary of feature values extracted from a preprocessed
-        example. This base method expects all the features to be of the form
-        "x1", "x2", etc.
+        :returns: A dictionary of feature values extracted from a preprocessed
+        example.
         '''
         return example["x"]
 
     def _extract_label(self, example):
         '''
-        Return the label for a preprocessed example.
+        :returns: The label for a preprocessed example.
         '''
         if self._model_type in _REGRESSION_MODELS:
             return float(example["y"])
@@ -600,13 +436,13 @@ class Learner(object):
     @staticmethod
     def _extract_id(example):
         '''
-        Return the string ID for a preprocessed example.
+        :returns: The string ID for a preprocessed example.
         '''
         return example["id"]
 
     def _create_estimator(self):
         '''
-        :return: A tuple containing an instantiation of the requested
+        :returns: A tuple containing an instantiation of the requested
         estimator, and a parameter grid to search.
         '''
         estimator = None
@@ -694,7 +530,10 @@ class Learner(object):
     def _train_setup(self, examples):
         '''
         Set up the feature vectorizer, the scaler and the label dict and
-        return the features and the labels
+        return the features and the labels.
+
+        :param examples: The examples to use for training.
+        :type examples: array
         '''
 
         # extract the features and the labels
@@ -822,15 +661,14 @@ class Learner(object):
 
             if (grid_objective.__name__ in _CORRELATION_METRICS and
                     self._model_type not in _REGRESSION_MODELS):
-                grid_search_class = _GridSearchCVBinary
-            else:
-                grid_search_class = GridSearchCV
-            grid_searcher = grid_search_class(estimator, param_grid,
-                                              score_func=grid_objective,
-                                              cv=folds, n_jobs=grid_jobs)
+                self._model.predict_normal = self._model.predict
+                self._model.predict = _predict_binary
+
+            grid_searcher = GridSearchCV(estimator, param_grid,
+                                         score_func=grid_objective, cv=folds,
+                                         n_jobs=grid_jobs)
 
             # run the grid search for hyperparameters
-            # print('\tstarting grid search', file=sys.stderr)
             grid_searcher.fit(xtrain, ytrain)
             self._model = grid_searcher.best_estimator_
             grid_score = grid_searcher.best_score_
@@ -896,8 +734,7 @@ class Learner(object):
             # compute the confusion matrix
             num_labels = len(self.label_list)
             conf_mat = sk_metrics.confusion_matrix(ytest, yhat,
-                                                   labels=list(range(num_labels))
-                                                )
+                                                   labels=list(range(num_labels)))
             # Calculate metrics
             overall_accuracy = sk_metrics.accuracy_score(ytest, yhat)
             result_matrix = sk_metrics.precision_recall_fscore_support(ytest,
