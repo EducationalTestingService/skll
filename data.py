@@ -37,7 +37,10 @@ from six.moves import zip
 
 def _sanitize_line(line):
     '''
-    Return copy of line with all non-ASCII characters replaced with
+    :param line: The line to clean up.
+    :type line: string
+
+    :returns: Copy of line with all non-ASCII characters replaced with
     <U1234> sequences where 1234 is the value of ord() for the character.
     '''
     char_list = []
@@ -50,10 +53,14 @@ def _sanitize_line(line):
 def _megam_dict_iter(path, has_labels=True):
     '''
     Generator that yields tuples of classes and dictionaries mapping from
-    features to values for each pair of lines in path
+    features to values for each pair of lines in the MegaM -fvals file specified
+    by path.
 
-    :param path: Path to MegaM file
+    :param path: Path to MegaM file (-fvals format)
     :type path: basestring
+    :param has_labels: Whether or not the file has a class label separated by
+                       a tab before the space delimited feature-value pairs.
+    :type has_labels: bool
     '''
 
     line_count = 0
@@ -102,8 +109,17 @@ def load_examples(path, has_labels=True):
     Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
     formats.
 
+    If you would like to include example/instance IDs in your files, they must
+    be specified in the following ways:
+
+    * MegaM: As a comment line directly preceding the line with feature values.
+    * TSV: An "id" column.
+    * JSONLINES: An "id" key in each JSON dictionary.
+
     :param path: The path to the file to load the examples from.
     :type path: basestring
+    :param has_labels: Whether or not the file contains class labels.
+    :type has_labels: bool
 
     :return: 2-column numpy.array of examples with the "y" containing the
              class labels and "x" containing the features for each example.
@@ -143,13 +159,17 @@ def load_examples(path, has_labels=True):
 
 def _preprocess_tsv_row(row, header, example_num, has_labels=True):
     '''
-    Make a dictionary of preprocessed values (e.g., tokens, POS tags, etc.).
-    This should be separate from the feature extraction code so that slow
-    preprocessing steps can be saved and reused, without have to redo
-    preprocessing whenever features change. This parses a TSV row and returns
-    a dictionary {"y": class label, "x": dictionary of feature values} It also
-    takes in an optional list of feature names to be used in the "x"
-    dictionary.
+    Convert the current TSV row into a dictionary of the form {"y": class label,
+    "x": dictionary of feature values, "id": instance id}
+
+    :param row: The TSV row to convert.
+    :type row: list
+    :param header: The header row from the TSV file.
+    :type header: list
+    :param example_num: The line number from the TSV file.
+    :type example_num: int
+    :param has_labels: Whether or not the TSV's first column is a class label.
+    :type has_labels: bool
     '''
     x = {}
 
