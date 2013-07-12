@@ -398,23 +398,26 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     Takes a configuration file and runs the specified jobs on the grid.
     '''
     # initialize config parser
-    config = configparser.SafeConfigParser({'test_location': '',
-                                            'log': '',
-                                            'results': '',
-                                            'predictions': '',
-                                            'grid_search': 'False',
-                                            'objective': "f1_score_micro",
-                                            'scale_features': 'True',
-                                            'probability': 'False',
-                                            'fixed_parameters': '[]',
-                                            'param_grids': '[]',
-                                            'pos_label_str': None,
-                                            'featureset_names': '[]',
-                                            'use_dense_features': 'False',
-                                            'min_feature_count': '1',
-                                            'grid_search_jobs': '0',
-                                            'cv_folds_location': None})
-    config.readfp(config_file)
+    config = configparser.ConfigParser({'test_location': '',
+                                        'log': '',
+                                        'results': '',
+                                        'predictions': '',
+                                        'grid_search': 'False',
+                                        'objective': "f1_score_micro",
+                                        'scale_features': 'True',
+                                        'probability': 'False',
+                                        'fixed_parameters': '[]',
+                                        'param_grids': '[]',
+                                        'pos_label_str': None,
+                                        'featureset_names': '[]',
+                                        'use_dense_features': 'False',
+                                        'min_feature_count': '1',
+                                        'grid_search_jobs': '0',
+                                        'cv_folds_location': None})
+    if sys.version_info[:2] >= (3, 2):
+        config.read_file(config_file)
+    else:
+        config.readfp(config_file)
 
     if not local:
         # import pythongrid if available

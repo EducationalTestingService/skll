@@ -189,7 +189,7 @@ class RescaledRegressionMixin(BaseEstimator):
 
     def rescale_get_param_names(self):
         '''
-        This is adapted from sklearn's BaseEstimator class.
+        This is adapted from scikit-learns's BaseEstimator class.
         It gets the kwargs for the superclass's init method and adds the
         kwargs for the rescale_init method.
         '''
@@ -200,7 +200,7 @@ class RescaledRegressionMixin(BaseEstimator):
 
             args, varargs, __, __ = inspect.getargspec(init)
             if not varargs is None:
-                raise RuntimeError('scikit learn estimators should always '
+                raise RuntimeError('scikit-learn estimators should always '
                                    'specify their parameters in the signature'
                                    ' of their init (no varargs).')
             # Remove 'self'
@@ -258,7 +258,7 @@ class RescaledSVR(SVR, RescaledRegressionMixin):
 
 class Learner(object):
     """
-    A simpler learner interface around many sklearn classification
+    A simpler learner interface around many scikit-learn classification
     and regression functions.
 
     :param do_scale_features: Should we scale features with this
@@ -383,8 +383,8 @@ class Learner(object):
 
             label_list = self.label_list
 
-            # if there are only two classes, sklearn will only have one set of
-            # parameters and they will be associated with label 1 (not 0)
+            # if there are only two classes, scikit-learn will only have one set
+            # of parameters and they will be associated with label 1 (not 0)
             if len(self.label_list) == 2:
                 label_list = self.label_list[-1:]
 
