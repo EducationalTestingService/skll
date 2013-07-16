@@ -1,0 +1,4 @@
+include COPYING
+include *.rst
+recursive-include doc *
+recursive-include examples *
