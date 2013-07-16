@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>skll Package &mdash; SciKit-Learn Lab 1.0rc1 documentation</title>
+    <title>skll Package &mdash; SciKit-Learn Lab 0.9 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0rc1',
+        VERSION:     '0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="SciKit-Learn Lab 1.0rc1 documentation" href="index.html" />
+    <link rel="top" title="SciKit-Learn Lab 0.9 documentation" href="index.html" />
     <link rel="prev" title="Welcome to SciKit-Learn Lab’s documentation!" href="index.html" /> 
   </head>
   <body>
@@ -39,7 +39,7 @@
         <li class="right" >
           <a href="index.html" title="Welcome to SciKit-Learn Lab’s documentation!"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SciKit-Learn Lab 0.9 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -52,21 +52,351 @@
 <h1>skll Package<a class="headerlink" href="#skll-package" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="id1">
 <h2><tt class="xref py py-mod docutils literal"><span class="pre">skll</span></tt> Package<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
-<span class="target" id="module-skll.__init__"></span><p>Takes care of housekeeping for the package.</p>
+<span class="target" id="module-skll.__init__"></span><p>This package provides a number of utilities to make it simpler to run
+common scikit-learn experiments with pre-generated features.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Dan Blanchard</td>
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Dan Blanchard (<a class="reference external" href="mailto:dblanchard&#37;&#52;&#48;ets&#46;org">dblanchard<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
 </tr>
-<tr class="field-even field"><th class="field-name">contact:</th><td class="field-body"><a class="reference external" href="mailto:dblanchard&#37;&#52;&#48;ets&#46;org">dblanchard<span>&#64;</span>ets<span>&#46;</span>org</a></td>
+<tr class="field-even field"><th class="field-name">author:</th><td class="field-body">Michael Heilman (<a class="reference external" href="mailto:mheilman&#37;&#52;&#48;ets&#46;org">mheilman<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">organization:</th><td class="field-body">ETS</td>
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Nitin Madnani (<a class="reference external" href="mailto:nmadnani&#37;&#52;&#48;ets&#46;org">nmadnani<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
 </tr>
-<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">July 2013</td>
+<tr class="field-even field"><th class="field-name">organization:</th><td class="field-body">ETS</td>
 </tr>
 </tbody>
 </table>
+<dl class="class">
+<dt id="skll.__init__.Learner">
+<em class="property">class </em><tt class="descclassname">skll.__init__.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type=u'logistic'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A simpler learner interface around many scikit-learn classification
+and regression functions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>do_scale_features</strong> (<em>bool</em>) &#8211; Should we scale features with this
+learner?</li>
+<li><strong>model_type</strong> (<em>basestring</em>) &#8211; Type of estimator to create. Options are:
+&#8216;logistic&#8217;, &#8216;svm_linear&#8217;, &#8216;svm_radial&#8217;,
+&#8216;naivebayes&#8217;, &#8216;dtree&#8217;, &#8216;rforest&#8217;, and &#8216;gradient&#8217;</li>
+<li><strong>probability</strong> (<em>bool</em>) &#8211; Should learner return probabilities of all
+classes (instead of just class with highest
+probability)?</li>
+<li><strong>model_kwargs</strong> (<em>dict</em>) &#8211; A dictionary of keyword arguments to pass to the
+initializer for the specified model.</li>
+<li><strong>pos_label_str</strong> (<em>str</em>) &#8211; The string for the positive class in the binary
+classification setting.  Otherwise, an arbitrary
+class is picked.</li>
+<li><strong>use_dense_features</strong> (<em>bool</em>) &#8211; Whether to require conversion to dense
+feature matrices.</li>
+<li><strong>min_feature_count</strong> (<em>int</em>) &#8211; The minimum number of examples a feature
+must have a nonzero value in to be included.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="skll.__init__.Learner.cross_validate">
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3352578&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross-validates a given model on the training examples.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>examples</strong> (<em>array</em>) &#8211; The data to cross-validate learner performance on.</li>
+<li><strong>stratified</strong> (<em>bool</em>) &#8211; Should we stratify the folds to ensure an even
+distribution of classes for each fold?</li>
+<li><strong>cv_folds</strong> (<em>int or dict</em>) &#8211; The number of folds to use for cross-validation, or
+a mapping from example IDs to folds.</li>
+<li><strong>grid_search</strong> (<em>bool</em>) &#8211; Should we do grid search when training each fold?
+Note: This will make this take <em>much</em> longer.</li>
+<li><strong>grid_search_folds</strong> (<em>int</em>) &#8211; The number of folds to use when doing the
+grid search (ignored if cv_folds is set to
+a dictionary mapping examples to folds).</li>
+<li><strong>grid_jobs</strong> (<em>int</em>) &#8211; The number of jobs to run in parallel when doing the
+grid search. If unspecified or None, the number of
+grid search folds will be used.</li>
+<li><strong>grid_objective</strong> (<em>function</em>) &#8211; The objective function to use when doing the
+grid search.</li>
+<li><strong>param_grid</strong> (<em>list of dicts mapping from basestrings to
+lists of parameter values</em>) &#8211; The parameter grid to search through for grid
+search. If unspecified, a default parameter
+grid will be used.</li>
+<li><strong>prediction_prefix</strong> (<em>basestring</em>) &#8211; If saving the predictions, this is the
+prefix that will be used for the filename.
+It will be followed by &#8221;.predictions&#8221;</li>
+<li><strong>shuffle</strong> (<em>bool</em>) &#8211; Shuffle examples before splitting into folds for CV.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The confusion matrix, overall accuracy, per-class PRFs, and
+model parameters for each fold.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of 4-tuples</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="skll.__init__.Learner.evaluate">
+<tt class="descname">evaluate</tt><big>(</big><em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>grid_objective=None</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates a given model on a given dev or test example set.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>examples</strong> (<em>array</em>) &#8211; The examples to evaluate the performance of the model
+on.</li>
+<li><strong>prediction_prefix</strong> (<em>basestring</em>) &#8211; If saving the predictions, this is the
+prefix that will be used for the filename.
+It will be followed by &#8221;.predictions&#8221;</li>
+<li><strong>append</strong> (<em>bool</em>) &#8211; Should we append the current predictions to the file if
+it exists?</li>
+<li><strong>grid_objective</strong> (<em>function</em>) &#8211; The objective function that was used when doing
+the grid search.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The confusion matrix, the overall accuracy, the per-class
+PRFs, the model parameters, and the grid search objective
+function score.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">3-tuple</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="skll.__init__.Learner.from_file">
+<em class="property">classmethod </em><tt class="descname">from_file</tt><big>(</big><em>learner_path</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A new instance of Learner from the pickle at the specified
+path.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="skll.__init__.Learner.load">
+<tt class="descname">load</tt><big>(</big><em>learner_path</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace the current learner instance with a saved learner.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>learner_path</strong> (<em>basestring</em>) &#8211; The path to the file to load.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="skll.__init__.Learner.model">
+<tt class="descname">model</tt><a class="headerlink" href="#skll.__init__.Learner.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>The underlying scikit-learn model</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="skll.__init__.Learner.model_kwargs">
+<tt class="descname">model_kwargs</tt><a class="headerlink" href="#skll.__init__.Learner.model_kwargs" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary of the underlying scikit-learn model&#8217;s keyword arguments</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="skll.__init__.Learner.model_params">
+<tt class="descname">model_params</tt><a class="headerlink" href="#skll.__init__.Learner.model_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model parameters (i.e., weights) for ridge regression and
+liblinear models.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="skll.__init__.Learner.model_type">
+<tt class="descname">model_type</tt><a class="headerlink" href="#skll.__init__.Learner.model_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string representation of the underlying modeltype</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="skll.__init__.Learner.predict">
+<tt class="descname">predict</tt><big>(</big><em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>class_labels=False</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses a given model to generate predictions on a given data set</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>examples</strong> (<em>array</em>) &#8211; The examples to predict the classes for.</li>
+<li><strong>prediction_prefix</strong> (<em>basestring</em>) &#8211; If saving the predictions, this is the
+prefix that will be used for the
+filename. It will be followed by
+&#8221;.predictions&#8221;</li>
+<li><strong>append</strong> (<em>bool</em>) &#8211; Should we append the current predictions to the file if
+it exists?</li>
+<li><strong>class_labels</strong> (<em>bool</em>) &#8211; For classifier, should we convert class
+indices to their (str) labels?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The predictions returned by the learner.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="skll.__init__.Learner.save">
+<tt class="descname">save</tt><big>(</big><em>learner_path</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the learner to a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>learner_path</strong> (<em>basestring</em>) &#8211; The path to where you want to save the learner.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="skll.__init__.Learner.train">
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3352578&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train a classification model and return the model, score, feature
+vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>examples</strong> (<em>array</em>) &#8211; The examples to train the model on.</li>
+<li><strong>param_grid</strong> (<em>list of dicts mapping from basestrings to
+lists of parameter values</em>) &#8211; The parameter grid to search through for grid
+search. If unspecified, a default parameter grid
+will be used.</li>
+<li><strong>grid_search_folds</strong> (<em>int or dict</em>) &#8211; The number of folds to use when doing the
+grid search, or a mapping from
+example IDs to folds.</li>
+<li><strong>grid_search</strong> (<em>bool</em>) &#8211; Should we do grid search?</li>
+<li><strong>grid_objective</strong> (<em>function</em>) &#8211; The objective function to use when doing the
+grid search.</li>
+<li><strong>grid_jobs</strong> (<em>int</em>) &#8211; The number of jobs to run in parallel when doing the
+grid search. If unspecified or None, the number of
+grid search folds will be used.</li>
+<li><strong>shuffle</strong> (<em>bool</em>) &#8211; Shuffle examples (e.g., for grid search CV.)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The best grid search objective function score, or 0 if we&#8217;re
+not doing grid search.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="skll.__init__.load_examples">
+<tt class="descclassname">skll.__init__.</tt><tt class="descname">load_examples</tt><big>(</big><em>path</em>, <em>has_labels=True</em><big>)</big><a class="headerlink" href="#skll.__init__.load_examples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
+formats.</p>
+<p>If you would like to include example/instance IDs in your files, they must
+be specified in the following ways:</p>
+<ul class="simple">
+<li>MegaM: As a comment line directly preceding the line with feature values.</li>
+<li>TSV: An &#8220;id&#8221; column.</li>
+<li>JSONLINES: An &#8220;id&#8221; key in each JSON dictionary.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>basestring</em>) &#8211; The path to the file to load the examples from.</li>
+<li><strong>has_labels</strong> (<em>bool</em>) &#8211; Whether or not the file contains class labels.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">2-column numpy.array of examples with the &#8220;y&#8221; containing the
+class labels and &#8220;x&#8221; containing the features for each example.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-skll.data">
+<span id="data-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">data</span></tt> Module<a class="headerlink" href="#module-skll.data" title="Permalink to this headline">¶</a></h2>
+<p>Module to handle loading data from various types of data files.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Dan Blanchard (<a class="reference external" href="mailto:dblanchard&#37;&#52;&#48;ets&#46;org">dblanchard<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">author:</th><td class="field-body">Michael Heilman (<a class="reference external" href="mailto:mheilman&#37;&#52;&#48;ets&#46;org">mheilman<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Nitin Madnani (<a class="reference external" href="mailto:nmadnani&#37;&#52;&#48;ets&#46;org">nmadnani<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">organization:</th><td class="field-body">ETS</td>
+</tr>
+</tbody>
+</table>
+<dl class="function">
+<dt id="skll.data.load_examples">
+<tt class="descclassname">skll.data.</tt><tt class="descname">load_examples</tt><big>(</big><em>path</em>, <em>has_labels=True</em><big>)</big><a class="reference internal" href="_modules/skll/data.html#load_examples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.data.load_examples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
+formats.</p>
+<p>If you would like to include example/instance IDs in your files, they must
+be specified in the following ways:</p>
+<ul class="simple">
+<li>MegaM: As a comment line directly preceding the line with feature values.</li>
+<li>TSV: An &#8220;id&#8221; column.</li>
+<li>JSONLINES: An &#8220;id&#8221; key in each JSON dictionary.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>basestring</em>) &#8211; The path to the file to load the examples from.</li>
+<li><strong>has_labels</strong> (<em>bool</em>) &#8211; Whether or not the file contains class labels.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">2-column numpy.array of examples with the &#8220;y&#8221; containing the
+class labels and &#8220;x&#8221; containing the features for each example.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="module-skll.generate_predictions">
 <span id="generate-predictions-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">generate_predictions</span></tt> Module<a class="headerlink" href="#module-skll.generate_predictions" title="Permalink to this headline">¶</a></h2>
@@ -128,7 +458,7 @@ predictions for feature strings.</p>
 <dt id="skll.learner.Learner">
 <em class="property">class </em><tt class="descclassname">skll.learner.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type=u'logistic'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
-<p>A simpler learner interface around many sklearn classification
+<p>A simpler learner interface around many scikit-learn classification
 and regression functions.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -158,14 +488,8 @@ must have a nonzero value in to be included.</li>
 </tbody>
 </table>
 <dl class="method">
-<dt id="skll.learner.Learner.check_input">
-<tt class="descname">check_input</tt><big>(</big><em>examples</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.check_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.check_input" title="Permalink to this definition">¶</a></dt>
-<dd><p>check that the examples are properly formatted.</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="skll.learner.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x491a2a8&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3352578&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -242,15 +566,29 @@ function score.</p>
 </table>
 </dd></dl>
 
+<dl class="classmethod">
+<dt id="skll.learner.Learner.from_file">
+<em class="property">classmethod </em><tt class="descname">from_file</tt><big>(</big><em>learner_path</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A new instance of Learner from the pickle at the specified
+path.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="skll.learner.Learner.load">
-<tt class="descname">load</tt><big>(</big><em>learner_file</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load a saved learner.</p>
+<tt class="descname">load</tt><big>(</big><em>learner_path</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace the current learner instance with a saved learner.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>learner_file</strong> (<em>basestring</em>) &#8211; The path to the file to load.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>learner_path</strong> (<em>basestring</em>) &#8211; The path to the file to load.</td>
 </tr>
 </tbody>
 </table>
@@ -259,25 +597,26 @@ function score.</p>
 <dl class="attribute">
 <dt id="skll.learner.Learner.model">
 <tt class="descname">model</tt><a class="reference internal" href="_modules/skll/learner.html#Learner.model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Getter for underlying model</p>
+<dd><p>The underlying scikit-learn model</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="skll.learner.Learner.model_kwargs">
 <tt class="descname">model_kwargs</tt><a class="reference internal" href="_modules/skll/learner.html#Learner.model_kwargs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.model_kwargs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Getter for model keyword arguments</p>
+<dd><p>A dictionary of the underlying scikit-learn model&#8217;s keyword arguments</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="skll.learner.Learner.model_params">
 <tt class="descname">model_params</tt><a class="reference internal" href="_modules/skll/learner.html#Learner.model_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.model_params" title="Permalink to this definition">¶</a></dt>
-<dd><p>Getter for model parameters.</p>
+<dd><p>Model parameters (i.e., weights) for ridge regression and
+liblinear models.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="skll.learner.Learner.model_type">
 <tt class="descname">model_type</tt><a class="reference internal" href="_modules/skll/learner.html#Learner.model_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.model_type" title="Permalink to this definition">¶</a></dt>
-<dd><p>Getter for model type</p>
+<dd><p>A string representation of the underlying modeltype</p>
 </dd></dl>
 
 <dl class="method">
@@ -313,13 +652,13 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.learner.Learner.save">
-<tt class="descname">save</tt><big>(</big><em>learner_file</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.save" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">save</tt><big>(</big><em>learner_path</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save the learner to a file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>learner_file</strong> (<em>basestring</em>) &#8211; The path to where you want to save the learner.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>learner_path</strong> (<em>basestring</em>) &#8211; The path to where you want to save the learner.</td>
 </tr>
 </tbody>
 </table>
@@ -327,7 +666,7 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.learner.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x491a2a8&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3352578&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -364,24 +703,16 @@ not doing grid search.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="skll.learner.Learner.train_setup">
-<tt class="descname">train_setup</tt><big>(</big><em>examples</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train_setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set up the feature vectorizer, the scaler and the label dict and
-return the features and the labels</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="class">
 <dt id="skll.learner.RescaledRegressionMixin">
 <em class="property">class </em><tt class="descclassname">skll.learner.</tt><tt class="descname">RescaledRegressionMixin</tt><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sklearn.base.BaseEstimator</span></tt></p>
-<p>This is a mixin to create regressors that store a min and
-a max for the training data and make sure that predictions fall within
-that range.  It also stores the means and SDs of the gold standard
-and the predictions on the training set to rescale the predictions
-(e.g., as in e-rater).</p>
+<p>Mixin to create regressors that store a min and a max for the training data
+and make sure that predictions fall within that range.  It also stores the
+means and SDs of the gold standard and the predictions on the training set
+to rescale the predictions (e.g., as in e-rater).</p>
 <dl class="method">
 <dt id="skll.learner.RescaledRegressionMixin.rescale_fit">
 <tt class="descname">rescale_fit</tt><big>(</big><em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_fit" title="Permalink to this definition">¶</a></dt>
@@ -392,7 +723,7 @@ and the mean and SD of the predictions on the training set.</p>
 <dl class="method">
 <dt id="skll.learner.RescaledRegressionMixin.rescale_get_param_names">
 <tt class="descname">rescale_get_param_names</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_get_param_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_get_param_names" title="Permalink to this definition">¶</a></dt>
-<dd><p>This is adapted from sklearn&#8217;s BaseEstimator class.
+<dd><p>This is adapted from scikit-learns&#8217;s BaseEstimator class.
 It gets the kwargs for the superclass&#8217;s init method and adds the
 kwargs for the rescale_init method.</p>
 </dd></dl>
@@ -454,24 +785,6 @@ number of examples in the training data (or a CV training fold).</p>
 <tt class="descname">fit</tt><big>(</big><em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#SelectByMinCount.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.SelectByMinCount.fit" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-</dd></dl>
-
-<dl class="function">
-<dt id="skll.learner.load_examples">
-<tt class="descclassname">skll.learner.</tt><tt class="descname">load_examples</tt><big>(</big><em>path</em>, <em>has_labels=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#load_examples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.load_examples" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
-formats.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>basestring</em>) &#8211; The path to the file to load the examples from.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">2-column numpy.array of examples with the &#8220;y&#8221; containing the
-class labels and &#8220;x&#8221; containing the features for each example.</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 </div>
@@ -572,6 +885,16 @@ the classification accuracy.</p>
 <div class="section" id="module-skll.print_model_weights">
 <span id="print-model-weights-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">print_model_weights</span></tt> Module<a class="headerlink" href="#module-skll.print_model_weights" title="Permalink to this headline">¶</a></h2>
 <p>Simple script for printing out model weights.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Michael Heilman (<a class="reference external" href="mailto:mheilman&#37;&#52;&#48;ets&#46;org">mheilman<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">organization:</th><td class="field-body">ETS</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="module-skll.run_ablation">
 <span id="run-ablation-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">run_ablation</span></tt> Module<a class="headerlink" href="#module-skll.run_ablation" title="Permalink to this headline">¶</a></h2>
@@ -598,11 +921,11 @@ config file.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Dan Blanchard (<a class="reference external" href="mailto:dblanchard&#37;&#52;&#48;ets&#46;org">dblanchard<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">author:</th><td class="field-body">Michael Heilman (<a class="reference external" href="mailto:mheilman&#37;&#52;&#48;ets&#46;org">mheilman<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
 <tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Nitin Madnani (<a class="reference external" href="mailto:nmadnani&#37;&#52;&#48;ets&#46;org">nmadnani<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
-</tr>
-<tr class="field-even field"><th class="field-name">author:</th><td class="field-body">Dan Blanchard (<a class="reference external" href="mailto:dblanchard&#37;&#52;&#48;ets&#46;org">dblanchard<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Michael Heilman (<a class="reference external" href="mailto:mheilman&#37;&#52;&#48;ets&#46;org">mheilman<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -664,7 +987,8 @@ config file.</p>
 <dl class="function">
 <dt id="skll.run_experiment.clean_path">
 <tt class="descclassname">skll.run_experiment.</tt><tt class="descname">clean_path</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#clean_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.clean_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Replace all weird SAN paths with normal paths</p>
+<dd><p>Replace all weird SAN paths with normal paths. This is a really ETS-specific
+fix, but shouldn&#8217;t harm others.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -731,64 +1055,16 @@ featureset is a string).</p>
 
 <dl class="function">
 <dt id="skll.run_experiment.print_fancy_output">
-<tt class="descclassname">skll.run_experiment.</tt><tt class="descname">print_fancy_output</tt><big>(</big><em>result_tuples</em>, <em>grid_scores</em>, <em>output_file=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x7f5aec22b1e0&gt;</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#print_fancy_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.print_fancy_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">skll.run_experiment.</tt><tt class="descname">print_fancy_output</tt><big>(</big><em>result_tuples</em>, <em>grid_scores</em>, <em>output_file=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x7fb2002d51e0&gt;</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#print_fancy_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.print_fancy_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to take all of the results from all of the folds and print
 nice tables with the results.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="skll.run_experiment.run_configuration">
-<tt class="descclassname">skll.run_experiment.</tt><tt class="descname">run_configuration</tt><big>(</big><em>config_file</em>, <em>local=False</em>, <em>overwrite=True</em>, <em>queue=u'nlp.q'</em>, <em>hosts=None</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#run_configuration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.run_configuration" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">skll.run_experiment.</tt><tt class="descname">run_configuration</tt><big>(</big><em>config_file</em>, <em>local=False</em>, <em>overwrite=True</em>, <em>queue=u'all.q'</em>, <em>hosts=None</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#run_configuration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.run_configuration" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes a configuration file and runs the specified jobs on the grid.</p>
 </dd></dl>
-
-</div>
-<div class="section" id="module-skll.test_sklearn_wrapper">
-<span id="test-sklearn-wrapper-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">test_sklearn_wrapper</span></tt> Module<a class="headerlink" href="#module-skll.test_sklearn_wrapper" title="Permalink to this headline">¶</a></h2>
-<p>Module for running a bunch of simple unit tests. Should be expanded more in
-the future.</p>
-<p>&#64;author: Michael Heilman (<a class="reference external" href="mailto:mheilman&#37;&#52;&#48;ets&#46;org">mheilman<span>&#64;</span>ets<span>&#46;</span>org</a>)</p>
-<dl class="function">
-<dt id="skll.test_sklearn_wrapper.make_cv_folds_data">
-<tt class="descclassname">skll.test_sklearn_wrapper.</tt><tt class="descname">make_cv_folds_data</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/test_sklearn_wrapper.html#make_cv_folds_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.test_sklearn_wrapper.make_cv_folds_data" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="skll.test_sklearn_wrapper.make_regression_data">
-<tt class="descclassname">skll.test_sklearn_wrapper.</tt><tt class="descname">make_regression_data</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/test_sklearn_wrapper.html#make_regression_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.test_sklearn_wrapper.make_regression_data" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="skll.test_sklearn_wrapper.test_SelectByMinCount">
-<tt class="descclassname">skll.test_sklearn_wrapper.</tt><tt class="descname">test_SelectByMinCount</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/test_sklearn_wrapper.html#test_SelectByMinCount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.test_sklearn_wrapper.test_SelectByMinCount" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="skll.test_sklearn_wrapper.test_input_checking1">
-<tt class="descclassname">skll.test_sklearn_wrapper.</tt><tt class="descname">test_input_checking1</tt><big>(</big><em>*arg</em>, <em>**kw</em><big>)</big><a class="reference internal" href="_modules/skll/test_sklearn_wrapper.html#test_input_checking1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.test_sklearn_wrapper.test_input_checking1" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="skll.test_sklearn_wrapper.test_input_checking2">
-<tt class="descclassname">skll.test_sklearn_wrapper.</tt><tt class="descname">test_input_checking2</tt><big>(</big><em>*arg</em>, <em>**kw</em><big>)</big><a class="reference internal" href="_modules/skll/test_sklearn_wrapper.html#test_input_checking2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.test_sklearn_wrapper.test_input_checking2" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="skll.test_sklearn_wrapper.test_input_checking3">
-<tt class="descclassname">skll.test_sklearn_wrapper.</tt><tt class="descname">test_input_checking3</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/test_sklearn_wrapper.html#test_input_checking3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.test_sklearn_wrapper.test_input_checking3" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="skll.test_sklearn_wrapper.test_regression1">
-<tt class="descclassname">skll.test_sklearn_wrapper.</tt><tt class="descname">test_regression1</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/test_sklearn_wrapper.html#test_regression1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.test_sklearn_wrapper.test_regression1" title="Permalink to this definition">¶</a></dt>
-<dd><p>This is a bit of a contrived test, but it should fail
-if anything drastic happens to the regression code.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="skll.test_sklearn_wrapper.test_specified_cv_folds">
-<tt class="descclassname">skll.test_sklearn_wrapper.</tt><tt class="descname">test_specified_cv_folds</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/test_sklearn_wrapper.html#test_specified_cv_folds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.test_sklearn_wrapper.test_specified_cv_folds" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </div>
 </div>
@@ -803,13 +1079,13 @@ if anything drastic happens to the regression code.</p>
   <ul>
 <li><a class="reference internal" href="#">skll Package</a><ul>
 <li><a class="reference internal" href="#id1"><tt class="docutils literal"><span class="pre">skll</span></tt> Package</a></li>
+<li><a class="reference internal" href="#module-skll.data"><tt class="docutils literal"><span class="pre">data</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-skll.generate_predictions"><tt class="docutils literal"><span class="pre">generate_predictions</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-skll.learner"><tt class="docutils literal"><span class="pre">learner</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-skll.metrics"><tt class="docutils literal"><span class="pre">metrics</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-skll.print_model_weights"><tt class="docutils literal"><span class="pre">print_model_weights</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-skll.run_ablation"><tt class="docutils literal"><span class="pre">run_ablation</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-skll.run_experiment"><tt class="docutils literal"><span class="pre">run_experiment</span></tt> Module</a></li>
-<li><a class="reference internal" href="#module-skll.test_sklearn_wrapper"><tt class="docutils literal"><span class="pre">test_sklearn_wrapper</span></tt> Module</a></li>
 </ul>
 </li>
 </ul>
@@ -851,11 +1127,11 @@ if anything drastic happens to the regression code.</p>
         <li class="right" >
           <a href="index.html" title="Welcome to SciKit-Learn Lab’s documentation!"
              >previous</a> |</li>
-        <li><a href="index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SciKit-Learn Lab 0.9 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2013, Nitin Madnani.
+        &copy; Copyright 2012-2013, Educational Testing Service.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>

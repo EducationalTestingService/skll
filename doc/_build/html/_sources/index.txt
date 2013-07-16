@@ -1,5 +1,5 @@
 .. SciKit-Learn Lab documentation master file, created by
-   sphinx-quickstart on Mon Jul  8 23:42:52 2013.
+   sphinx-quickstart on Tue Jul 16 09:06:32 2013.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 

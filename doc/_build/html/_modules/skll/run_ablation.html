@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>skll.run_ablation &mdash; SciKit-Learn Lab 1.0rc1 documentation</title>
+    <title>skll.run_ablation &mdash; SciKit-Learn Lab 0.9 documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0rc1',
+        VERSION:     '0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="SciKit-Learn Lab 1.0rc1 documentation" href="../../index.html" />
+    <link rel="top" title="SciKit-Learn Lab 0.9 documentation" href="../../index.html" />
     <link rel="up" title="Module code" href="../index.html" /> 
   </head>
   <body>
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 0.9 documentation</a> &raquo;</li>
           <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
@@ -131,14 +131,14 @@
                         <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-m&#39;</span><span class="p">,</span> <span class="s">&#39;--machines&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;comma-separated list of machines to add to</span><span class="se">\</span>
-<span class="s">                              pythongrid&#39;s whitelist (if not specified, all</span><span class="se">\</span>
+<span class="s">                              gridmap&#39;s whitelist (if not specified, all</span><span class="se">\</span>
 <span class="s">                              available machines are used). Note that full </span><span class="se">\</span>
 <span class="s">                              names must be specified, e.g., </span><span class="se">\</span>
 <span class="s">                              </span><span class="se">\&quot;</span><span class="s">nlp.research.ets.org</span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">,</span>
-                        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+                        <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-q&#39;</span><span class="p">,</span> <span class="s">&#39;--queue&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Use this queue for python grid.&quot;</span><span class="p">,</span>
-                        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;nlp.q&#39;</span><span class="p">)</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Use this queue for gridmap.&quot;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;all.q&#39;</span><span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
     <span class="n">machines</span> <span class="o">=</span> <span class="bp">None</span>
@@ -209,12 +209,12 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 0.9 documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2013, Nitin Madnani.
+        &copy; Copyright 2012-2013, Educational Testing Service.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>

@@ -9,6 +9,14 @@ skll Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`data` Module
+------------------
+
+.. automodule:: skll.data
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`generate_predictions` Module
 ----------------------------------
 
@@ -53,14 +61,6 @@ skll Package
 ----------------------------
 
 .. automodule:: skll.run_experiment
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`test_sklearn_wrapper` Module
-----------------------------------
-
-.. automodule:: skll.test_sklearn_wrapper
     :members:
     :undoc-members:
     :show-inheritance:

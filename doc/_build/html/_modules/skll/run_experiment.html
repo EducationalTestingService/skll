@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>skll.run_experiment &mdash; SciKit-Learn Lab 1.0rc1 documentation</title>
+    <title>skll.run_experiment &mdash; SciKit-Learn Lab 0.9 documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0rc1',
+        VERSION:     '0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="SciKit-Learn Lab 1.0rc1 documentation" href="../../index.html" />
+    <link rel="top" title="SciKit-Learn Lab 0.9 documentation" href="../../index.html" />
     <link rel="up" title="Module code" href="../index.html" /> 
   </head>
   <body>
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 0.9 documentation</a> &raquo;</li>
           <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
@@ -70,9 +70,9 @@
 <span class="sd">Runs a bunch of scikit-learn jobs in parallel on the cluster given a</span>
 <span class="sd">config file.</span>
 
-<span class="sd">:author: Nitin Madnani (nmadnani@ets.org)</span>
 <span class="sd">:author: Dan Blanchard (dblanchard@ets.org)</span>
 <span class="sd">:author: Michael Heilman (mheilman@ets.org)</span>
+<span class="sd">:author: Nitin Madnani (nmadnani@ets.org)</span>
 <span class="sd">&#39;&#39;&#39;</span>
 
 
@@ -93,8 +93,7 @@
 <span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">iterkeys</span><span class="p">,</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">itervalues</span>  <span class="c"># Python 2/3</span>
 <span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">configparser</span>
 
-<span class="kn">from</span> <span class="nn">skll</span> <span class="kn">import</span> <span class="n">Learner</span><span class="p">,</span> <span class="n">metrics</span>
-<span class="kn">from</span> <span class="nn">skll.learner</span> <span class="kn">import</span> <span class="n">load_examples</span>
+<span class="kn">from</span> <span class="nn">skll</span> <span class="kn">import</span> <span class="n">Learner</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">load_examples</span>
 
 
 <span class="c"># Named tuple for storing job results</span>
@@ -106,7 +105,8 @@
 
 <div class="viewcode-block" id="clean_path"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.clean_path">[docs]</a><span class="k">def</span> <span class="nf">clean_path</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    Replace all weird SAN paths with normal paths</span>
+<span class="sd">    Replace all weird SAN paths with normal paths. This is a really ETS-specific</span>
+<span class="sd">    fix, but shouldn&#39;t harm others.</span>
 
 <span class="sd">    :param path: Path to clean</span>
 <span class="sd">    :type path: basestring</span>
@@ -441,37 +441,41 @@
     <span class="k">return</span> <span class="n">res</span>
 
 </div>
-<div class="viewcode-block" id="run_configuration"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.run_configuration">[docs]</a><span class="k">def</span> <span class="nf">run_configuration</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="s">&#39;nlp.q&#39;</span><span class="p">,</span>
+<div class="viewcode-block" id="run_configuration"><a class="viewcode-back" href="../../skll.html#skll.run_experiment.run_configuration">[docs]</a><span class="k">def</span> <span class="nf">run_configuration</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="s">&#39;all.q&#39;</span><span class="p">,</span>
                       <span class="n">hosts</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Takes a configuration file and runs the specified jobs on the grid.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="c"># initialize config parser</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">SafeConfigParser</span><span class="p">({</span><span class="s">&#39;test_location&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;log&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;results&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;predictions&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;grid_search&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;objective&#39;</span><span class="p">:</span> <span class="s">&quot;f1_score_micro&quot;</span><span class="p">,</span>
-                                            <span class="s">&#39;scale_features&#39;</span><span class="p">:</span> <span class="s">&#39;True&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;probability&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;fixed_parameters&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;param_grids&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;pos_label_str&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
-                                            <span class="s">&#39;featureset_names&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;use_dense_features&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;min_feature_count&#39;</span><span class="p">:</span> <span class="s">&#39;1&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;grid_search_jobs&#39;</span><span class="p">:</span> <span class="s">&#39;0&#39;</span><span class="p">,</span>
-                                            <span class="s">&#39;cv_folds_location&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">})</span>
-    <span class="n">config</span><span class="o">.</span><span class="n">readfp</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">({</span><span class="s">&#39;test_location&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;log&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;results&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;predictions&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;grid_search&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;objective&#39;</span><span class="p">:</span> <span class="s">&quot;f1_score_micro&quot;</span><span class="p">,</span>
+                                        <span class="s">&#39;scale_features&#39;</span><span class="p">:</span> <span class="s">&#39;True&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;probability&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;fixed_parameters&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;param_grids&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;pos_label_str&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+                                        <span class="s">&#39;featureset_names&#39;</span><span class="p">:</span> <span class="s">&#39;[]&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;use_dense_features&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;min_feature_count&#39;</span><span class="p">:</span> <span class="s">&#39;1&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;grid_search_jobs&#39;</span><span class="p">:</span> <span class="s">&#39;0&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;cv_folds_location&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">})</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">readfp</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">local</span><span class="p">:</span>
-        <span class="c"># import pythongrid if available</span>
+        <span class="c"># import gridmap if available</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">pythongrid</span> <span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">process_jobs</span>
+            <span class="kn">from</span> <span class="nn">gridmap</span> <span class="kn">import</span> <span class="n">Job</span><span class="p">,</span> <span class="n">process_jobs</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="n">local</span> <span class="o">=</span> <span class="bp">True</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&#39;pythongrid not available.  Forcing local mode.&#39;</span><span class="p">,</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&#39;gridmap not available. Forcing local mode. To run things &#39;</span> <span class="o">+</span>
+                  <span class="s">&#39;on DRMAA-compatible cluster, install gridmap via pip.&#39;</span><span class="p">,</span>
                   <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
 
     <span class="c"># extract sklearn parameters from the config file</span>
@@ -685,14 +689,14 @@
                         <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-m&#39;</span><span class="p">,</span> <span class="s">&#39;--machines&#39;</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s">&quot;comma-separated list of machines to add to</span><span class="se">\</span>
-<span class="s">                              pythongrid&#39;s whitelist (if not specified, all</span><span class="se">\</span>
+<span class="s">                              gridmap&#39;s whitelist (if not specified, all</span><span class="se">\</span>
 <span class="s">                              available machines are used). Note that full </span><span class="se">\</span>
 <span class="s">                              names must be specified, e.g., </span><span class="se">\</span>
 <span class="s">                              </span><span class="se">\&quot;</span><span class="s">nlp.research.ets.org</span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">,</span>
                         <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-q&#39;</span><span class="p">,</span> <span class="s">&#39;--queue&#39;</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Use this queue for python grid.&quot;</span><span class="p">,</span>
-                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;nlp.q&#39;</span><span class="p">)</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Use this queue for gridmap.&quot;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="s">&#39;all.q&#39;</span><span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
     <span class="n">machines</span> <span class="o">=</span> <span class="bp">None</span>
@@ -736,12 +740,12 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">SciKit-Learn Lab 1.0rc1 documentation</a> &raquo;</li>
+        <li><a href="../../index.html">SciKit-Learn Lab 0.9 documentation</a> &raquo;</li>
           <li><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2013, Nitin Madnani.
+        &copy; Copyright 2012-2013, Educational Testing Service.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>
