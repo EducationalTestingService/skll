@@ -103,7 +103,7 @@ must have a nonzero value in to be included.</li>
 </table>
 <dl class="method">
 <dt id="skll.__init__.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3352578&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3320cf8&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -280,7 +280,7 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.__init__.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3352578&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3320cf8&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -489,7 +489,7 @@ must have a nonzero value in to be included.</li>
 </table>
 <dl class="method">
 <dt id="skll.learner.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3352578&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3320cf8&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -666,7 +666,7 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.learner.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3352578&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3320cf8&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1055,7 +1055,7 @@ featureset is a string).</p>
 
 <dl class="function">
 <dt id="skll.run_experiment.print_fancy_output">
-<tt class="descclassname">skll.run_experiment.</tt><tt class="descname">print_fancy_output</tt><big>(</big><em>result_tuples</em>, <em>grid_scores</em>, <em>output_file=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x7fb2002d51e0&gt;</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#print_fancy_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.print_fancy_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">skll.run_experiment.</tt><tt class="descname">print_fancy_output</tt><big>(</big><em>result_tuples</em>, <em>grid_scores</em>, <em>output_file=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x7f89af25e1e0&gt;</em><big>)</big><a class="reference internal" href="_modules/skll/run_experiment.html#print_fancy_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.run_experiment.print_fancy_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to take all of the results from all of the folds and print
 nice tables with the results.</p>
 </dd></dl>

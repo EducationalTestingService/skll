@@ -383,7 +383,7 @@
 <div class="viewcode-block" id="Learner.from_file"><a class="viewcode-back" href="../../skll.html#skll.learner.Learner.from_file">[docs]</a>    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">learner_path</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :returns: A new instance of Learner from the pickle at the specified</span>
-<span class="sd">        path.</span>
+<span class="sd">                  path.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">learner_file</span><span class="p">,</span> <span class="s">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
