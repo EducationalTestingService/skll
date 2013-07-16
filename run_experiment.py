@@ -383,10 +383,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='nlp.q',
     if not local:
         # import pythongrid if available
         try:
-            from pythongrid import Job, process_jobs
+            from gridmap import Job, process_jobs
         except ImportError:
             local = True
-            print('pythongrid not available.  Forcing local mode.',
+            print('gridmap not available. Forcing local mode. To run things ' +
+                  'on DRMAA-compatible cluster, install gridmap via pip.',
                   file=sys.stderr)
 
     # extract sklearn parameters from the config file
@@ -600,14 +601,14 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('-m', '--machines',
                         help="comma-separated list of machines to add to\
-                              pythongrid's whitelist (if not specified, all\
+                              gridmap's whitelist (if not specified, all\
                               available machines are used). Note that full \
                               names must be specified, e.g., \
                               \"nlp.research.ets.org\"",
                         default=None)
     parser.add_argument('-q', '--queue',
-                        help="Use this queue for python grid.",
-                        default='nlp.q')
+                        help="Use this queue for gridmap.",
+                        default='all.q')
 
     args = parser.parse_args()
     machines = None
