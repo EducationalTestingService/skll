@@ -16,7 +16,8 @@
 # along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-Takes care of housekeeping for the package.
+This package provides a number of utilities to make it simpler to run
+common scikit-learn experiments with pre-generated features.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
@@ -26,6 +27,7 @@ Takes care of housekeeping for the package.
 
 from __future__ import print_function, unicode_literals
 
+import skll.metrics as metrics
 from skll.data import load_examples
 from skll.learner import Learner
 

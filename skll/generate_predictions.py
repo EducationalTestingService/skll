@@ -29,7 +29,8 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 
-from skll.learner import Learner, load_examples, _REGRESSION_MODELS
+from skll import Learner, load_examples
+from skll.learner import _REGRESSION_MODELS
 
 
 class Predictor(object):

@@ -334,7 +334,7 @@ class Learner(object):
     def from_file(cls, learner_path):
         '''
         :returns: A new instance of Learner from the pickle at the specified
-        path.
+                  path.
         '''
         with open(learner_file, "rb") as f:
             return pickle.load(f)
