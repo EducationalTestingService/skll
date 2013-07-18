@@ -349,7 +349,7 @@ def load_cv_folds(cv_folds_location):
     with open(cv_folds_location, 'rb') as f:
         reader = csv.reader(f)
         reader.next()  # discard the header
-        res = {res[row[0]]: row[1] for row in reader if row}
+        res = {row[0]: row[1] for row in reader if row}
 
     return res
 
