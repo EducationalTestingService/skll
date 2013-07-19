@@ -18,7 +18,11 @@ setup(name='skll',
       author_email='dblanchard@ets.org',
       license='GPL',
       packages=['skll'],
-      scripts=['scripts/generate_predictions.py', 'scripts/print_model_weights.py', 'scripts/run_ablation.py', 'scripts/run_experiment.py']
+      scripts=['scripts/arff_to_megam', 'scripts/csv_to_megam',
+               'scripts/filter_megam', 'scripts/generate_predictions',
+               'scripts/join_megam', 'scripts/megam_to_arff',
+               'scripts/megam_to_libsvm', 'scripts/print_model_weights',
+               'scripts/run_ablation', 'scripts/run_experiment',
+               'scripts/split_megam'],
       install_requires=['scikit-learn', 'six', 'PrettyTable'],
-      classifiers=
       zip_safe=False)
