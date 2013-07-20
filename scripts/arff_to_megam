@@ -2,9 +2,8 @@
 '''
 Script that converts ARFF files to MegaM format
 
-@author: Dan Blanchard, dblanchard@ets.org
-@date: September 2011
-
+:author: Dan Blanchard (dblanchard@ets.org)
+:date: September 2011
 '''
 
 from __future__ import print_function, unicode_literals
@@ -67,14 +66,14 @@ def nominal_to_numeric_dict(nominal_list):
 
 def sanitize_name(feature_name):
     '''
-        Replaces bad characters in feature names.
+    Replaces bad characters in feature names.
     '''
     return feature_name.replace(" ", "_").replace("#", "HASH")
 
 
 def print_instance(instance, nominal_dict, attr_list, suffix=None):
     '''
-        Print out the current instance to STDOUT
+    Print out the current instance to STDOUT
     '''
     # Loop through all attributes in instance set.
     for i in range(len(instance)):
@@ -108,7 +107,7 @@ def print_instance(instance, nominal_dict, attr_list, suffix=None):
 
 def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
     '''
-        Process an instance set and output MegaM-style instances
+    Process an instance set and output MegaM-style instances
     '''
     for inst_index in inst_set:
         # Split on demand to save tons of memory
@@ -136,7 +135,7 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
 
 def shift_index(index, attr_list):
     '''
-        Take an index into the attribute list that starts at 1 (and could be negative) and converts it into a proper array index.
+    Take an index into the attribute list that starts at 1 (and could be negative) and converts it into a proper array index.
     '''
     if index > 0:
         index -= 1

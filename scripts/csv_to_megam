@@ -2,9 +2,8 @@
 '''
 Script that converts from CSV to MegaM format
 
-@author: Dan Blanchard, dblanchard@ets.org
-@date: June 2012
-
+:author: Dan Blanchard (dblanchard@ets.org)
+:date: June 2012
 '''
 
 from __future__ import unicode_literals, print_function
@@ -17,7 +16,7 @@ from bs4 import UnicodeDammit
 
 def sanitize_name(feature_name):
     '''
-        Replaces bad characters in feature names.
+    Replaces bad characters in feature names.
     '''
     return feature_name.replace(" ", "_").replace("#", "HASH")
 

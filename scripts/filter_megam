@@ -2,9 +2,8 @@
 '''
 Filter MegaM file to remove non-content word features
 
-@author: Dan Blanchard, dblanchard@ets.org
-@date: Feb 2012
-
+:author: Dan Blanchard (dblanchard@ets.org)
+:date: Feb 2012
 '''
 
 from __future__ import print_function, unicode_literals

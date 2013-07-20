@@ -2,8 +2,8 @@
 '''
 Script that converts MegaM files to ARFF format
 
-@author: Dan Blanchard, dblanchard@ets.org
-@date: Oct 2011
+:author: Dan Blanchard (dblanchard@ets.org)
+:date: Oct 2011
 '''
 
 from __future__ import print_function, unicode_literals
