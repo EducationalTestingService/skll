@@ -38,6 +38,7 @@ import sys
 import csv
 import itertools
 from collections import defaultdict, namedtuple, OrderedDict
+from multiprocessing import Pool
 
 import numpy as np
 from prettytable import PrettyTable, ALL
@@ -178,6 +179,34 @@ def print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
             print("Objective function score = {:.5f}".format(score_sum
                                                              / num_folds),
                   file=output_file)
+
+def parse_config_file(config_file):
+    '''
+    Parses a given SKLL experiment configuration file.
+    '''
+    # initialize config parser
+    config = configparser.ConfigParser({'test_location': '',
+                                        'log': '',
+                                        'results': '',
+                                        'predictions': '',
+                                        'grid_search': 'False',
+                                        'objective': "f1_score_micro",
+                                        'scale_features': 'True',
+                                        'probability': 'False',
+                                        'fixed_parameters': '[]',
+                                        'param_grids': '[]',
+                                        'pos_label_str': None,
+                                        'featureset_names': '[]',
+                                        'use_dense_features': 'False',
+                                        'min_feature_count': '1',
+                                        'grid_search_jobs': '0',
+                                        'cv_folds_location': None})
+    if sys.version_info[:2] >= (3, 2):
+        config.read_file(config_file)
+    else:
+        config.readfp(config_file)
+
+    return config
 
 
 def load_featureset(dirpath, featureset, suffix):
@@ -397,27 +426,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     '''
     Takes a configuration file and runs the specified jobs on the grid.
     '''
-    # initialize config parser
-    config = configparser.ConfigParser({'test_location': '',
-                                        'log': '',
-                                        'results': '',
-                                        'predictions': '',
-                                        'grid_search': 'False',
-                                        'objective': "f1_score_micro",
-                                        'scale_features': 'True',
-                                        'probability': 'False',
-                                        'fixed_parameters': '[]',
-                                        'param_grids': '[]',
-                                        'pos_label_str': None,
-                                        'featureset_names': '[]',
-                                        'use_dense_features': 'False',
-                                        'min_feature_count': '1',
-                                        'grid_search_jobs': '0',
-                                        'cv_folds_location': None})
-    if sys.version_info[:2] >= (3, 2):
-        config.read_file(config_file)
-    else:
-        config.readfp(config_file)
+    # Read configuration
+    config = parse_config_file(config_file)
 
     if not local:
         # import gridmap if available
@@ -434,10 +444,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                                     "classifiers")))
     given_featuresets = json.loads(fix_json(config.get("Input",
                                                        "featuresets")))
-    given_featureset_names = json.loads(fix_json(config.get(
-        "Input", "featureset_names")))
-    fixed_parameter_list = json.loads(fix_json(config.get(
-        "Input", "fixed_parameters")))
+    given_featureset_names = json.loads(fix_json(config.get("Input", 
+                                                            "featureset_names")))
+    fixed_parameter_list = json.loads(fix_json(config.get("Input", 
+                                                          "fixed_parameters")))
     param_grid_list = json.loads(fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
     use_dense_features = config.getboolean("Tuning", "use_dense_features")
@@ -618,7 +628,98 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 sys.exit(2)
 
 
-if __name__ == '__main__':
+def run_experiment_without_feature(arg_tuple):
+    '''
+    Creates a new configuration file with a given feature
+    removed and runs that experiment.
+
+    :param arg_tuple: A tuple of the actual arguments for this function: 
+                      feature_type, given_features, config, local, queue
+                      cfg_path, and machines.
+
+                      - feature_type: The name of the feature set to exclude
+                      - given_features: A list of all features in config
+                      - given_featureset_name: The original featureset name
+                      - config: A parsed configuration file
+                      - local: Are we running things locally or on the grid?
+                      - queue: Grid Map queue to use for scheduling
+                      - cfg_path: Path to main configuration file
+                      - machines: List of machines to use for scheduling jobs 
+                                  with Grid Map
+                      - overwrite: Should we overwrite existing models?
+
+    :type arg_tuple: tuple
+    '''
+    (feature_type, given_features, given_featureset_name, config, local, queue, 
+     cfg_path, machines, overwrite) = arg_tuple
+
+    featureset = [[x for x in given_features if x != feature_type]]
+
+    if feature_type:
+        featureset_name = "{}_minus_{}".format(given_featureset_name,
+                                               feature_type)
+    else:
+        featureset_name = "{}_all".format(given_featureset_name)
+
+    config.set("Input", "featuresets", json.dumps(featureset))
+    config.set("Input", "featureset_names", "['{}']".format(featureset_name))
+
+    m = re.search(r'^(.*)\.cfg$', cfg_path)
+    if not m:
+        raise ValueError("Configuration file should end in .cfg.")
+    new_cfg_path = "{}_minus_{}.cfg".format(m.groups()[0], feature_type) \
+                   if feature_type else "{}_all.cfg".format(m.groups()[0])
+
+    with open(new_cfg_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    with open(new_cfg_path, 'r') as new_config_file:
+        run_configuration(new_config_file, local=local, queue=queue,
+                          hosts=machines, overwrite=overwrite)
+
+
+def run_ablation(config_file, local=False, overwrite=True, queue='all.q',
+                 hosts=None):
+    '''
+    Takes a configuration file and runs repeated experiments where each 
+    feature set has been removed from the configuration.
+    '''
+    # Read configuration
+    config = parse_config_file(config_file)
+
+    given_featuresets = json.loads(fix_json(config.get("Input",
+                                                       "featuresets")))
+    given_featureset_names = json.loads(fix_json(config.get("Input", 
+                                                            "featureset_names")))
+
+    # make sure there is only one list of features
+    if ((isinstance(given_featuresets[0], list) and len(given_featuresets) > 1)
+        or (isinstance(given_featureset_names[0], list)
+            and len(given_featureset_names) > 1)):
+        raise ValueError("More than one feature set or list of names given.")
+
+    # make a list of features rather than a list of lists
+    given_features = given_featuresets[0]
+    given_featureset_name = given_featureset_names[0]
+
+    # for each feature file, make a copy of the config file
+    # with all but that feature, and run the jobs.
+    arg_tuples = ((feature_type, given_features, given_featureset_name,
+                   config, local, queue, config_file.name, hosts, overwrite)
+                  for feature_type in given_features + [None])
+
+    if local:
+        for arg_tuple in arg_tuples:
+            run_experiment_without_feature(arg_tuple)
+    else:
+        pool = Pool(processes=len(given_features) + 1)
+        pool.map(run_experiment_without_feature, list(arg_tuples))
+
+
+def main():
+    '''
+    Handles command line arguments and gets things started.
+    '''
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Runs sklearn jobs in parallel on the cluster given a \
@@ -629,6 +730,11 @@ if __name__ == '__main__':
                         help='Configuration file describing the sklearn task\
                               to run.',
                         type=argparse.FileType('r'))
+    parser.add_argument('-a', '--ablation',
+                        help='Runs an ablation study where repeated \
+                              experiments are conducted where each feature\
+                              set in the configuration file is held out.',
+                        action='store_true')
     parser.add_argument('-k', '--keep_models',
                         help='If models and/or vocabs exists, re-use them\
                               instead of overwriting them.',
@@ -653,8 +759,21 @@ if __name__ == '__main__':
     machines = None
     if args.machines:
         machines = args.machines.split(',')
-    run_configuration(args.config_file,
-                      local=args.local,
-                      overwrite=not args.keep_models,
-                      queue=args.queue,
-                      hosts=machines)
+
+    # Are we doing an ablation study?
+    if args.ablation:
+        run_ablation(args.config_file, 
+                     local=args.local,
+                     overwrite=not args.keep_models,
+                     queue=args.queue,
+                     hosts=machines)
+    else:
+        run_configuration(args.config_file,
+                          local=args.local,
+                          overwrite=not args.keep_models,
+                          queue=args.queue,
+                          hosts=machines)
+
+
+if __name__ == '__main__':
+    main()
