@@ -24,5 +24,5 @@ setup(name='skll',
                'scripts/megam_to_libsvm', 'scripts/print_model_weights',
                'scripts/run_ablation', 'scripts/run_experiment',
                'scripts/split_megam'],
-      install_requires=['scikit-learn', 'six', 'PrettyTable'],
+      install_requires=['scikit-learn', 'six', 'PrettyTable', 'beautifulsoup4', 'numpy', 'gridmap'],
       zip_safe=False)
