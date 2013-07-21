@@ -24,6 +24,7 @@ the future.
 
 
 import csv
+import imp
 import json
 import os
 import re
@@ -33,10 +34,15 @@ import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
 
-import skll.learner
-from skll.run_experiment import load_featureset, run_configuration, load_cv_folds
-from skll.learner import Learner
+from skll.learner import Learner, SelectByMinCount
 from skll.metrics import accuracy
+
+# This crazy mess handles importing run_experiment from the scripts directory
+sys.dont_write_bytecode = True
+run_experiment = imp.load_source("run_experiment",
+                                 os.path.join("..", "scripts",
+                                              "run_experiment"))
+from run_experiment import load_featureset, run_configuration, load_cv_folds
 
 
 SCORE_OUTPUT_RE = re.compile(r'Average:.+Objective function score = ([\-\d\.]+)', re.DOTALL)
@@ -50,19 +56,19 @@ def test_SelectByMinCount():
           [0.0101,  -200.0, 0.0,    0.0]]
 
     # default should keep all nonzero features (i.e., ones that appear 1+ times)
-    feat_selector = learner.SelectByMinCount()
+    feat_selector = SelectByMinCount()
     expected = np.array([[0.001, 0.0, 0.0], [0.00001, -2.0, 0.0], [0.001, 0.0, 4.0], [0.0101, -200.0, 0.0]])
     assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
 
     # keep features that happen 2+ times
-    feat_selector = learner.SelectByMinCount(min_count=2)
+    feat_selector = SelectByMinCount(min_count=2)
     expected = np.array([[0.001, 0.0], [0.00001, -2.0], [0.001, 0.0], [0.0101, -200.0]])
     assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
 
     # keep features that happen 3+ times
-    feat_selector = learner.SelectByMinCount(min_count=3)
+    feat_selector = SelectByMinCount(min_count=3)
     expected = np.array([[0.001], [0.00001], [0.001], [0.0101]])
     assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
@@ -103,7 +109,7 @@ def make_cv_folds_data():
                 y = "dog" if i % 2 == 0 else "cat"
                 ex_id = "{}{}".format(y, num_examples_per_fold * k + i)
                 x = {"f1": 1.0, "f2": -1.0, "f3": 1.0, "is_{}{}".format(y, k): 1.0}
-                f.write(json.dumps({"y": y, "id": ex_id, "x":x}) + '\n')
+                f.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
                 csv_out.write('{},{}\n'.format(ex_id, k))
 
 
@@ -125,7 +131,6 @@ def test_specified_cv_folds():
             assert len(grid_score_matches) == grid_size
             for match_str in grid_score_matches:
                 assert test_func(float(match_str))
-
 
     # try the same tests for just training (and specifying the folds for the grid search)
     dirpath = os.path.join(_my_path, 'tests')
@@ -154,7 +159,7 @@ def make_regression_data():
         for i in range(num_examples):
             ex_id = "EXAMPLE{}".format(i)
             x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
-            f.write(json.dumps({"y": y[i], "id": ex_id, "x":x}) + '\n')
+            f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
 
     return x, y
 
