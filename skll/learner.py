@@ -28,36 +28,27 @@ Module with many functions to use for easily creating a scikit-learn learner
 
 from __future__ import print_function, unicode_literals
 
-import csv
 import inspect
-import json
 import os
 import subprocess
 import sys
-import time
 from collections import defaultdict
-from itertools import islice
 
 import numpy as np
 import scipy.sparse as sp
 import sklearn.metrics as sk_metrics
-from bs4 import UnicodeDammit
-from sklearn.base import is_classifier, clone, BaseEstimator
-from sklearn.cross_validation import KFold, StratifiedKFold, check_cv
+from sklearn.base import BaseEstimator
+from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.cross_validation import LeaveOneLabelOut
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.externals.joblib import Parallel, delayed, logger
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.grid_search import GridSearchCV, IterGrid, _has_one_grid_point
+from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.utils import safe_mask, check_arrays
-from sklearn.utils.validation import _num_samples
 from sklearn.feature_selection import SelectKBest
 from six import iteritems
 from six.moves import zip
@@ -65,10 +56,9 @@ from six.moves import xrange as range
 from six.moves import cPickle as pickle
 from six import string_types
 
-from skll.metrics import (quadratic_weighted_kappa, unweighted_kappa,
-                          kendall_tau, f1_score_micro, accuracy,
-                          _CORRELATION_METRICS)
+from skll.metrics import f1_score_micro, _CORRELATION_METRICS
 from skll.fixed_standard_scaler import FixedStandardScaler
+
 
 # Constants #
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
@@ -336,7 +326,7 @@ class Learner(object):
         :returns: A new instance of Learner from the pickle at the specified
                   path.
         '''
-        with open(learner_file, "rb") as f:
+        with open(learner_path, "rb") as f:
             return pickle.load(f)
 
     @property
