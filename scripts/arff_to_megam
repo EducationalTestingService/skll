@@ -80,8 +80,10 @@ def print_instance(instance, nominal_dict, attr_list, suffix=None):
         # Skip over the class feature
         if i != args.classindex:
             # Check if this a feature we want to keep
-            if ((not args.features) or ((i + 1) in args.features)) and ((i + 1) not in args.superclasses):
-                clean_name = sanitize_name(attr_list[i][0] if suffix is None else "F{}{}".format(i + 1, suffix))
+            if ((not args.features) or (i + 1 in args.features)) and 
+                    (i + 1 not in args.superclasses):
+                clean_name = (sanitize_name(attr_list[i][0] if suffix is None 
+                              else "F{}{}".format(i + 1, suffix)))
                 # Feature is numeric
                 if attr_list[i][1] == 1:
                     # Only print feature if it's not zero to save space
@@ -116,7 +118,8 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
         if args.idindex is not None:
             print("# {}".format(instance[args.idindex]))
         print((sanitize_name(instance[args.classindex]) if args.namedclasses
-               else text_type(nominal_dict[args.classindex][instance[args.classindex]])) + "\t", end=" ")
+               else text_type(nominal_dict[args.classindex][instance[args.classindex]])) + "\t", 
+              end=" ")
         # Use explicit output format if superclasses are specified
         if args.superclasses:
             for class_name in attr_list[args.classindex][2]:
@@ -135,7 +138,8 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
 
 def shift_index(index, attr_list):
     '''
-    Take an index into the attribute list that starts at 1 (and could be negative) and converts it into a proper array index.
+    Take an index into the attribute list that starts at 1 (and could be
+    negative) and converts it into a proper array index.
     '''
     if index > 0:
         index -= 1

@@ -141,11 +141,11 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
                         help='MegaM input file',
-                        type=argparse.FileType('r'), default='-', nargs='?')
+                        type=argparse.FileType('rb'), default='-', nargs='?')
     parser.add_argument('-m', '--mappingfile',
                         help='File to output mapping of feature/class indices\
                               to names to',
-                        type=argparse.FileType('w'), default='map.idx')
+                        type=argparse.FileType('wb'), default='map.idx')
     args = parser.parse_args()
 
     if args.infile.isatty():

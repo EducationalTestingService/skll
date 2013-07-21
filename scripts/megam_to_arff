@@ -24,8 +24,7 @@ def main():
                                                   STDOUT.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='MegaM input file',
-                        type=argparse.FileType('r'), default='-', nargs='?')
+                        help='MegaM input file', default='-', nargs='?')
     parser.add_argument('-c', '--class_name',
                         help='Name of nominal class field for ARFF file',
                         default='class')
@@ -33,12 +32,6 @@ def main():
                         help='Name of relation for ARFF file',
                         default='MegaM Relation')
     args = parser.parse_args()
-
-    if args.infile.isatty():
-        print(("You are running this script interactively. Press CTRL-D at " +
-               "the start of a blank line to signal the end of your input. " +
-               "For help, run it with --help\n"),
-              file=sys.stderr)
 
     # Initialize variables
     classes = set()
