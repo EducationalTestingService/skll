@@ -1,0 +1,8 @@
+*.pyc
+*.pyo
+
+*.egg
+gridmap.egg-info/
+dist/
+build/
+__pycache__
