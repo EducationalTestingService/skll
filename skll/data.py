@@ -98,8 +98,11 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
                     field_values = (float(val) for val in islice(field_pairs,
                                                                  1, None, 2))
 
+                    # TODO: Add some sort of check for duplicate feature names
+
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(zip(field_names, field_values))
+
                 yield curr_id, class_name, curr_info_dict
                 curr_id = None
             line_count += 1
