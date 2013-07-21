@@ -13,9 +13,10 @@ import os
 import re
 import sys
 from collections import OrderedDict
-from itertools import izip, islice
 
-from bs4 import UnicodeDammit
+from six import iteritems
+
+from skll.data import _megam_dict_iter
 
 
 # Globals
@@ -24,7 +25,7 @@ warned_about = set()
 
 def parse_num_list(num_string):
     '''
-        Convert a string representing a range of numbers to a list of integers.
+    Convert a string representing a range of numbers to a list of integers.
     '''
     range_list = []
     if (num_string != '') and (not re.match(r'^(\d+(-\d+)?,)*\d+(-\d+)?$',
@@ -45,7 +46,17 @@ def parse_num_list(num_string):
 
 def get_unique_name(feature_name, prev_feature_set, filename):
     '''
-        Get a name that doesn't overlap with the previous features.
+    Get a name that doesn't overlap with the previous features.
+
+    :param feature_name: The feature that we want a unique name for.
+    :type feature_name: string
+    :param prev_feature_set: The feature names encountered so far.
+    :type prev_feature_set: set of strings
+    :param filename: The current MegaM file we're processing.
+    :type filename: string
+
+    :returns: Either feature_name or feature_name with a unique suffix based
+              on the current MegaM file if there was an overlap.
     '''
     global warned_about
 
@@ -74,7 +85,7 @@ if __name__ == '__main__':
                         help='MegaM input file(s). Each feature line must be \
                               preceded by a comment with the filename/ID that \
                               the features should be joined on.',
-                        type=argparse.FileType('r'), nargs='+')
+                        nargs='+')
     parser.add_argument('-b', '--binary',
                         help='Converts all of the features in the specified \
                               range of files to presence/absence binary \
@@ -110,70 +121,47 @@ if __name__ == '__main__':
         curr_filename_set = set()
 
         # Handle current MegaM file
-        print("Loading {}...".format(infile.name).encode('utf-8'),
-              file=sys.stderr)
-        sys.stderr.flush()
-        for line in infile:
-            stripped_line = UnicodeDammit(line.strip(),
-                                          ['utf-8',
-                                           'windows-1252']).unicode_markup
-            # Read current filename from comment
-            if stripped_line.startswith('#'):
-                curr_filename = stripped_line.lstrip('# ')
-                curr_filename_set.add(curr_filename)
-            # Ignore TEST and DEV lines and store features
-            elif stripped_line not in ['TEST', 'DEV']:
-                split_line = stripped_line.split('\t', 1)
-                class_dict[curr_filename] = split_line[0]
-                # If there are non-zero features, process them
-                if len(split_line) == 2:
-                    feature_pairs = split_line[1].split(' ')
-                    feature_names = feature_pairs[0::2]
-                    if len(feature_names) != len(set(feature_names)):
-                        print(("Error: Duplicate features occur on the line of" +
-                               "features for {}.").format(curr_filename).encode('utf-8'),
+        for curr_filename, class_name, feature_dict in _megam_dict_iter(infile):
+            # If there are non-zero features, process them
+            if feature_dict:
+                for feat_name, feat_val in iteritems(feature_dict):
+                    # Handle duplicate features
+                    feat_name = get_unique_name(feat_name, prev_feature_set,
+                                                infile.name)
+                    # Ignore zero-valued features
+                    try:
+                        if feat_val != 'N/A' and float(feat_val) != 0:
+                            # Convert feature to binary if necessary
+                            if (args.binary and ((args.binary == [0]) or (file_num in args.binary))):
+                                if args.doubleup:
+                                    new_feat_pair = '{} {} '.format(feat_name, feat_val)
+                                    feature_dict[curr_filename] = new_feat_pair if curr_filename not in feature_dict else feature_dict[curr_filename] + new_feat_pair
+                                    curr_feature_set.add(feat_name)
+                                    feat_name = get_unique_name(feat_name + "_binary", prev_feature_set, infile.name)
+                                feat_val = 1
+
+                            # Add feature pair to current string of features
+                            new_feat_pair = '{} {} '.format(feat_name,
+                                                            feat_val)
+                            feature_dict[curr_filename] = new_feat_pair if curr_filename not in feature_dict else feature_dict[curr_filename] + new_feat_pair
+                            curr_feature_set.add(feat_name)
+                    except ValueError:
+                        print(("Error: Invalid feature value in feature " +
+                               "pair '{} {}' for file {}").format(feat_name,
+                                                                  feat_val,
+                                                                  curr_filename).encode('utf-8'),
                               file=sys.stderr)
                         sys.exit(1)
-                    feature_values = islice(feature_pairs, 1, None, 2)
-                    for feat_name, feat_val in izip(feature_names,
-                                                    feature_values):
-                        # Handle duplicate features
-                        feat_name = get_unique_name(feat_name, prev_feature_set,
-                                                    infile.name)
-                        # Ignore zero-valued features
-                        try:
-                            if feat_val != 'N/A' and float(feat_val) != 0:
-                                # Convert feature to binary if necessary
-                                if (args.binary and ((args.binary == [0]) or (file_num in args.binary))):
-                                    if args.doubleup:
-                                        new_feat_pair = '{} {} '.format(feat_name, feat_val)
-                                        feature_dict[curr_filename] = new_feat_pair if curr_filename not in feature_dict else feature_dict[curr_filename] + new_feat_pair
-                                        curr_feature_set.add(feat_name)
-                                        feat_name = get_unique_name(feat_name + "_binary", prev_feature_set, infile.name)
-                                    feat_val = 1
 
-                                # Add feature pair to current string of features
-                                new_feat_pair = '{} {} '.format(feat_name,
-                                                                feat_val)
-                                feature_dict[curr_filename] = new_feat_pair if curr_filename not in feature_dict else feature_dict[curr_filename] + new_feat_pair
-                                curr_feature_set.add(feat_name)
-                        except ValueError:
-                            print(("Error: Invalid feature value in feature " +
-                                   "pair '{} {}' for file {}").format(feat_name,
-                                                                      feat_val,
-                                                                      curr_filename).encode('utf-8'),
-                                  file=sys.stderr)
-                            sys.exit(1)
-
-                # Otherwise warn about lack of features (although that really
-                # just means all of them have zero values)
-                else:
-                    if curr_filename not in feature_dict:
-                        feature_dict[curr_filename] = ""
-                    print(("Warning: No features found for {} in {}. All are " +
-                           "assumed to be zero.").format(curr_filename,
-                                                         infile.name).encode('utf-8'),
-                          file=sys.stderr)
+            # Otherwise warn about lack of features (although that really
+            # just means all of them have zero values)
+            else:
+                if curr_filename not in feature_dict:
+                    feature_dict[curr_filename] = ""
+                print(("Warning: No features found for {} in {}. All are " +
+                       "assumed to be zero.").format(curr_filename,
+                                                     infile.name).encode('utf-8'),
+                      file=sys.stderr)
 
         # Add current file's features to set of seen features
         prev_feature_set.update(curr_feature_set)
