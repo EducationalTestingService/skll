@@ -10,7 +10,9 @@ def readme():
 
 setup(name='skll',
       version=__version__,
-      description='SciKit-Learn Lab provides a number of utilities to make it simpler to run common scikit-learn experiments with pre-generated features.',
+      description=('SciKit-Learn Lab provides a number of utilities to make ' +
+                   'it simpler to run common scikit-learn experiments with ' +
+                   'pre-generated features.'),
       long_description=readme(),
       keywords='learning scikit-learn',
       url='http://github.com/EducationalTestingService/skll',
@@ -22,8 +24,7 @@ setup(name='skll',
                'scripts/filter_megam', 'scripts/generate_predictions',
                'scripts/join_megam', 'scripts/megam_to_arff',
                'scripts/megam_to_libsvm', 'scripts/print_model_weights',
-               'scripts/run_ablation', 'scripts/run_experiment',
-               'scripts/split_megam'],
+               'scripts/run_experiment'],
       install_requires=['scikit-learn', 'six', 'PrettyTable', 'beautifulsoup4',
                         'numpy', 'gridmap', 'ml_metrics'],
       zip_safe=False)
