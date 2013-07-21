@@ -51,7 +51,7 @@ def _sanitize_line(line):
     return ''.join(char_list)
 
 
-def _megam_dict_iter(path, has_labels=True):
+def _megam_dict_iter(path, has_labels=True, quiet=False):
     '''
     Generator that yields tuples of classes and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
@@ -62,11 +62,14 @@ def _megam_dict_iter(path, has_labels=True):
     :param has_labels: Whether or not the file has a class label separated by
                        a tab before the space delimited feature-value pairs.
     :type has_labels: bool
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
     '''
 
     line_count = 0
-    print("Loading {}...".format(path), end="", file=sys.stderr)
-    sys.stderr.flush()
+    if not quiet:
+        print("Loading {}...".format(path), end="", file=sys.stderr)
+        sys.stderr.flush()
     with open(path, 'rb') as megam_file:
         curr_id = None
         for line in megam_file:
@@ -100,9 +103,10 @@ def _megam_dict_iter(path, has_labels=True):
                 yield curr_id, class_name, curr_info_dict
                 curr_id = None
             line_count += 1
-            if line_count % 100 == 0:
+            if not quiet and line_count % 100 == 0:
                 print(".", end="", file=sys.stderr)
-        print("done", file=sys.stderr)
+        if not quiet:
+            print("done", file=sys.stderr)
 
 
 def load_examples(path, has_labels=True):
