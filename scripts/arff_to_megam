@@ -160,7 +160,7 @@ if __name__ == '__main__':
                                                   nominals to numerals.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='ARFF input file', type=argparse.FileType('r'),
+                        help='ARFF input file', type=argparse.FileType('rb'),
                         default='-', nargs='?')
     parser.add_argument('-b', '--binary',
                         help='Converts the specified range of numeric features \
