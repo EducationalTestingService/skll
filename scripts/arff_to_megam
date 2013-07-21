@@ -80,9 +80,9 @@ def print_instance(instance, nominal_dict, attr_list, suffix=None):
         # Skip over the class feature
         if i != args.classindex:
             # Check if this a feature we want to keep
-            if ((not args.features) or (i + 1 in args.features)) and 
-                    (i + 1 not in args.superclasses):
-                clean_name = (sanitize_name(attr_list[i][0] if suffix is None 
+            if (((not args.features) or (i + 1 in args.features)) and
+                    (i + 1 not in args.superclasses)):
+                clean_name = (sanitize_name(attr_list[i][0] if suffix is None
                               else "F{}{}".format(i + 1, suffix)))
                 # Feature is numeric
                 if attr_list[i][1] == 1:
@@ -118,7 +118,7 @@ def process_set(inst_set, nominal_dict, attr_list, inst_str_list):
         if args.idindex is not None:
             print("# {}".format(instance[args.idindex]))
         print((sanitize_name(instance[args.classindex]) if args.namedclasses
-               else text_type(nominal_dict[args.classindex][instance[args.classindex]])) + "\t", 
+               else text_type(nominal_dict[args.classindex][instance[args.classindex]])) + "\t",
               end=" ")
         # Use explicit output format if superclasses are specified
         if args.superclasses:
