@@ -22,6 +22,15 @@ It can also be downloaded directly from
 `Github <http://github.com/EducationalTestingService/skll>`_.
 
 
+Contents:
+
+.. toctree::
+   :maxdepth: 4
+
+   run_experiment
+   skll
+
+
 Indices and tables
 ==================
 
