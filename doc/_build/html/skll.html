@@ -103,7 +103,7 @@ must have a nonzero value in to be included.</li>
 </table>
 <dl class="method">
 <dt id="skll.__init__.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2fcc488&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2d1c410&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -279,7 +279,7 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.__init__.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2fcc488&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2d1c410&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -423,10 +423,23 @@ implies that precision == recall == F1.</p>
 validation grid search during training.</p>
 </dd></dl>
 
+<dl class="function">
+<dt id="skll.__init__.run_configuration">
+<tt class="descclassname">skll.__init__.</tt><tt class="descname">run_configuration</tt><big>(</big><em>config_file</em>, <em>local=False</em>, <em>overwrite=True</em>, <em>queue=u'all.q'</em>, <em>hosts=None</em><big>)</big><a class="headerlink" href="#skll.__init__.run_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a configuration file and runs the specified jobs on the grid.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="skll.__init__.run_ablation">
+<tt class="descclassname">skll.__init__.</tt><tt class="descname">run_ablation</tt><big>(</big><em>config_file</em>, <em>local=False</em>, <em>overwrite=True</em>, <em>queue=u'all.q'</em>, <em>hosts=None</em><big>)</big><a class="headerlink" href="#skll.__init__.run_ablation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a configuration file and runs repeated experiments where each
+feature set has been removed from the configuration.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="module-skll.data">
 <span id="data-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">data</span></tt> Module<a class="headerlink" href="#module-skll.data" title="Permalink to this headline">¶</a></h2>
-<p>Module to handle loading data from various types of data files.</p>
+<p>Handles loading data from various types of data files.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -472,9 +485,38 @@ class labels and &#8220;x&#8221; containing the features for each example.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-skll.experiments">
+<span id="experiments-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">experiments</span></tt> Module<a class="headerlink" href="#module-skll.experiments" title="Permalink to this headline">¶</a></h2>
+<p>Functions related to running experiments and parsing configuration files.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Dan Blanchard (<a class="reference external" href="mailto:dblanchard&#37;&#52;&#48;ets&#46;org">dblanchard<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">author:</th><td class="field-body">Michael Heilman (<a class="reference external" href="mailto:mheilman&#37;&#52;&#48;ets&#46;org">mheilman<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Nitin Madnani (<a class="reference external" href="mailto:nmadnani&#37;&#52;&#48;ets&#46;org">nmadnani<span>&#64;</span>ets<span>&#46;</span>org</a>)</td>
+</tr>
+</tbody>
+</table>
+<dl class="function">
+<dt id="skll.experiments.run_ablation">
+<tt class="descclassname">skll.experiments.</tt><tt class="descname">run_ablation</tt><big>(</big><em>config_file</em>, <em>local=False</em>, <em>overwrite=True</em>, <em>queue=u'all.q'</em>, <em>hosts=None</em><big>)</big><a class="reference internal" href="_modules/skll/experiments.html#run_ablation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.experiments.run_ablation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a configuration file and runs repeated experiments where each
+feature set has been removed from the configuration.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="skll.experiments.run_configuration">
+<tt class="descclassname">skll.experiments.</tt><tt class="descname">run_configuration</tt><big>(</big><em>config_file</em>, <em>local=False</em>, <em>overwrite=True</em>, <em>queue=u'all.q'</em>, <em>hosts=None</em><big>)</big><a class="reference internal" href="_modules/skll/experiments.html#run_configuration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.experiments.run_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a configuration file and runs the specified jobs on the grid.</p>
+</dd></dl>
+
+</div>
 <div class="section" id="module-skll.learner">
 <span id="learner-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">learner</span></tt> Module<a class="headerlink" href="#module-skll.learner" title="Permalink to this headline">¶</a></h2>
-<p>Module with many functions to use for easily creating a scikit-learn learner</p>
+<p>Provides easy-to-use wrapper around scikit-learn.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -524,7 +566,7 @@ must have a nonzero value in to be included.</li>
 </table>
 <dl class="method">
 <dt id="skll.learner.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2fcc488&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2d1c410&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -700,7 +742,7 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.learner.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2fcc488&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2d1c410&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -929,6 +971,7 @@ the classification accuracy.</p>
 <li><a class="reference internal" href="#">skll Package</a><ul>
 <li><a class="reference internal" href="#id1"><tt class="docutils literal"><span class="pre">skll</span></tt> Package</a></li>
 <li><a class="reference internal" href="#module-skll.data"><tt class="docutils literal"><span class="pre">data</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-skll.experiments"><tt class="docutils literal"><span class="pre">experiments</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-skll.learner"><tt class="docutils literal"><span class="pre">learner</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-skll.metrics"><tt class="docutils literal"><span class="pre">metrics</span></tt> Module</a></li>
 </ul>

@@ -18,7 +18,7 @@
 # along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-Module with many functions to use for easily creating a scikit-learn learner
+Provides easy-to-use wrapper around scikit-learn.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)

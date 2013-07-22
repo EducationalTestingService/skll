@@ -28,6 +28,7 @@ common scikit-learn experiments with pre-generated features.
 from __future__ import absolute_import, print_function, unicode_literals
 
 from .data import load_examples
+from .experiments import run_ablation, run_configuration
 from .learner import Learner
 from .metrics import (quadratic_weighted_kappa, unweighted_kappa, kendall_tau,
                       spearman, pearson, f1_score_least_frequent,
@@ -40,4 +41,4 @@ VERSION = tuple(int(x) for x in __version__.split('.'))
 __all__ = ['Learner', 'load_examples', 'quadratic_weighted_kappa',
            'unweighted_kappa', 'kendall_tau', 'spearman', 'pearson',
            'f1_score_least_frequent', 'f1_score_macro', 'f1_score_micro',
-           'accuracy']
+           'accuracy', 'run_configuration', 'run_ablation']

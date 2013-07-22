@@ -17,6 +17,14 @@ skll Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`experiments` Module
+-------------------------
+
+.. automodule:: skll.experiments
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`learner` Module
 ---------------------
 

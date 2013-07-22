@@ -16,7 +16,7 @@
 # along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-Module to handle loading data from various types of data files.
+Handles loading data from various types of data files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
