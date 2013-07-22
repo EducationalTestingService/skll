@@ -1,17 +1,25 @@
 .. SciKit-Learn Lab documentation master file, created by
    sphinx-quickstart on Tue Jul 16 09:06:32 2013.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
-Welcome to SciKit-Learn Lab's documentation!
-============================================
+SciKit-Learn Lab (SKLL) Documentation
+=====================================
 
-Contents:
+There are two primary means of using SKLL: :doc:`the Python API <skll>` and by
+using :doc:`the run_experiment script <run_experiment>`.
 
-.. toctree::
-   :maxdepth: 4
 
-   skll
+License
+=======
+SKLL is distributed under version 3 of the GNU Public License (GPLv3).
+
+
+Installation
+============
+SKLL can easily be installed via pip::
+	pip install skll
+
+It can also be downloaded directly from
+`Github <http://github.com/EducationalTestingService/skll>`_.
 
 
 Indices and tables
