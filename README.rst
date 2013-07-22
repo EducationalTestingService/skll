@@ -7,10 +7,10 @@ common scikit-learn experiments with pre-generated features.
 Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~
 
-``run_experiment.py`` is a command-line utility for running a series of
+``run_experiment`` is a command-line utility for running a series of
 learners on datasets specified in a configuration file. For more
-information about the configuration file format, see the example
-configuration file `example.cfg <../blob/master/example.cfg>`__.
+information about using run_experiment,
+go `here <http://htmlpreview.github.io/?http://github.com/EducationalTestingService/skll/blob/master/doc/_build/html/run_experiment.html>`__.
 
 Python API
 ~~~~~~~~~~
@@ -20,7 +20,7 @@ you can use our simple well-documented Python API. The main way you'll
 want to use the API is through the ``load_examples`` function and the
 ``Learner`` class. For more details on how to simply train, test,
 cross-validate, and run grid search on a variety of scikit-learn models
-see `the documentation <../raw/master/doc/_build/html/index.html>`__.
+see `the documentation <http://htmlpreview.github.io/?http://github.com/EducationalTestingService/skll/blob/master/doc/_build/html/index.html>`__.
 
 Requirements
 ~~~~~~~~~~~~
