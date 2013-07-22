@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -15,7 +13,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     '0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -72,8 +70,8 @@ common scikit-learn experiments with pre-generated features.</p>
 </table>
 <dl class="class">
 <dt id="skll.__init__.Learner">
-<em class="property">class </em><tt class="descclassname">skll.__init__.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type='logistic'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<em class="property">class </em><tt class="descclassname">skll.__init__.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type=u'logistic'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <p>A simpler learner interface around many scikit-learn classification
 and regression functions.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -103,9 +101,9 @@ must have a nonzero value in to be included.</li>
 </tr>
 </tbody>
 </table>
-<dl class="function">
+<dl class="method">
 <dt id="skll.__init__.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>self</em>, <em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x112b79680&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3e15578&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -149,9 +147,9 @@ model parameters for each fold.</p>
 </table>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.__init__.Learner.evaluate">
-<tt class="descname">evaluate</tt><big>(</big><em>self</em>, <em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>grid_objective=None</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.evaluate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">evaluate</tt><big>(</big><em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>grid_objective=None</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.evaluate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Evaluates a given model on a given dev or test example set.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -195,9 +193,9 @@ function score.</p>
 </table>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.__init__.Learner.load">
-<tt class="descname">load</tt><big>(</big><em>self</em>, <em>learner_path</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.load" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">load</tt><big>(</big><em>learner_path</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Replace the current learner instance with a saved learner.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -234,9 +232,9 @@ liblinear models.</p>
 <dd><p>A string representation of the underlying modeltype</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.__init__.Learner.predict">
-<tt class="descname">predict</tt><big>(</big><em>self</em>, <em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>class_labels=False</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.predict" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">predict</tt><big>(</big><em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>class_labels=False</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Uses a given model to generate predictions on a given data set</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -265,9 +263,9 @@ indices to their (str) labels?</li>
 </table>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.__init__.Learner.save">
-<tt class="descname">save</tt><big>(</big><em>self</em>, <em>learner_path</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.save" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">save</tt><big>(</big><em>learner_path</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save the learner to a file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -279,9 +277,9 @@ indices to their (str) labels?</li>
 </table>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.__init__.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>self</em>, <em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x112b79680&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3e15578&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -493,8 +491,8 @@ class labels and &#8220;x&#8221; containing the features for each example.</p>
 </table>
 <dl class="class">
 <dt id="skll.learner.Learner">
-<em class="property">class </em><tt class="descclassname">skll.learner.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type='logistic'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<em class="property">class </em><tt class="descclassname">skll.learner.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type=u'logistic'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <p>A simpler learner interface around many scikit-learn classification
 and regression functions.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -524,9 +522,9 @@ must have a nonzero value in to be included.</li>
 </tr>
 </tbody>
 </table>
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>self</em>, <em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x112b79680&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3e15578&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -570,9 +568,9 @@ model parameters for each fold.</p>
 </table>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.Learner.evaluate">
-<tt class="descname">evaluate</tt><big>(</big><em>self</em>, <em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>grid_objective=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.evaluate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">evaluate</tt><big>(</big><em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>grid_objective=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.evaluate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Evaluates a given model on a given dev or test example set.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -616,9 +614,9 @@ function score.</p>
 </table>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.Learner.load">
-<tt class="descname">load</tt><big>(</big><em>self</em>, <em>learner_path</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.load" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">load</tt><big>(</big><em>learner_path</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Replace the current learner instance with a saved learner.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -655,9 +653,9 @@ liblinear models.</p>
 <dd><p>A string representation of the underlying modeltype</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.Learner.predict">
-<tt class="descname">predict</tt><big>(</big><em>self</em>, <em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>class_labels=False</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.predict" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">predict</tt><big>(</big><em>examples</em>, <em>prediction_prefix=None</em>, <em>append=False</em>, <em>class_labels=False</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Uses a given model to generate predictions on a given data set</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -686,9 +684,9 @@ indices to their (str) labels?</li>
 </table>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.Learner.save">
-<tt class="descname">save</tt><big>(</big><em>self</em>, <em>learner_path</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.save" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">save</tt><big>(</big><em>learner_path</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save the learner to a file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -700,9 +698,9 @@ indices to their (str) labels?</li>
 </table>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>self</em>, <em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x112b79680&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x3e15578&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -749,29 +747,29 @@ not doing grid search.</p>
 and make sure that predictions fall within that range.  It also stores the
 means and SDs of the gold standard and the predictions on the training set
 to rescale the predictions (e.g., as in e-rater).</p>
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.RescaledRegressionMixin.rescale_fit">
-<tt class="descname">rescale_fit</tt><big>(</big><em>self</em>, <em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">rescale_fit</tt><big>(</big><em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit a model, then store the mean, SD, max and min of the training set
 and the mean and SD of the predictions on the training set.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.RescaledRegressionMixin.rescale_get_param_names">
-<tt class="descname">rescale_get_param_names</tt><big>(</big><em>self</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_get_param_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_get_param_names" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">rescale_get_param_names</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_get_param_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_get_param_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is adapted from scikit-learns&#8217;s BaseEstimator class.
 It gets the kwargs for the superclass&#8217;s init method and adds the
 kwargs for the rescale_init method.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.RescaledRegressionMixin.rescale_init">
-<tt class="descname">rescale_init</tt><big>(</big><em>self</em>, <em>constrain=True</em>, <em>rescale=True</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_init" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">rescale_init</tt><big>(</big><em>constrain=True</em>, <em>rescale=True</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_init" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.RescaledRegressionMixin.rescale_predict">
-<tt class="descname">rescale_predict</tt><big>(</big><em>self</em>, <em>X</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_predict" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">rescale_predict</tt><big>(</big><em>X</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRegressionMixin.rescale_predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRegressionMixin.rescale_predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make predictions with the super class, and then adjust them using the
 stored min, max, means, and standard deviations.</p>
 </dd></dl>
@@ -782,14 +780,14 @@ stored min, max, means, and standard deviations.</p>
 <dt id="skll.learner.RescaledRidge">
 <em class="property">class </em><tt class="descclassname">skll.learner.</tt><tt class="descname">RescaledRidge</tt><big>(</big><em>constrain=True</em>, <em>rescale=True</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRidge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRidge" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sklearn.linear_model.ridge.Ridge</span></tt>, <a class="reference internal" href="#skll.learner.RescaledRegressionMixin" title="skll.learner.RescaledRegressionMixin"><tt class="xref py py-class docutils literal"><span class="pre">skll.learner.RescaledRegressionMixin</span></tt></a></p>
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.RescaledRidge.fit">
-<tt class="descname">fit</tt><big>(</big><em>self</em>, <em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRidge.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRidge.fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">fit</tt><big>(</big><em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRidge.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRidge.fit" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.RescaledRidge.predict">
-<tt class="descname">predict</tt><big>(</big><em>self</em>, <em>X</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRidge.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRidge.predict" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">predict</tt><big>(</big><em>X</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledRidge.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledRidge.predict" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -798,14 +796,14 @@ stored min, max, means, and standard deviations.</p>
 <dt id="skll.learner.RescaledSVR">
 <em class="property">class </em><tt class="descclassname">skll.learner.</tt><tt class="descname">RescaledSVR</tt><big>(</big><em>constrain=True</em>, <em>rescale=True</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledSVR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledSVR" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sklearn.svm.classes.SVR</span></tt>, <a class="reference internal" href="#skll.learner.RescaledRegressionMixin" title="skll.learner.RescaledRegressionMixin"><tt class="xref py py-class docutils literal"><span class="pre">skll.learner.RescaledRegressionMixin</span></tt></a></p>
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.RescaledSVR.fit">
-<tt class="descname">fit</tt><big>(</big><em>self</em>, <em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledSVR.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledSVR.fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">fit</tt><big>(</big><em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledSVR.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledSVR.fit" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.RescaledSVR.predict">
-<tt class="descname">predict</tt><big>(</big><em>self</em>, <em>X</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledSVR.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledSVR.predict" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">predict</tt><big>(</big><em>X</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#RescaledSVR.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.RescaledSVR.predict" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -816,9 +814,9 @@ stored min, max, means, and standard deviations.</p>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">sklearn.feature_selection.univariate_selection.SelectKBest</span></tt></p>
 <p>Select features ocurring in more (and/or fewer than) than a specified
 number of examples in the training data (or a CV training fold).</p>
-<dl class="function">
+<dl class="method">
 <dt id="skll.learner.SelectByMinCount.fit">
-<tt class="descname">fit</tt><big>(</big><em>self</em>, <em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#SelectByMinCount.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.SelectByMinCount.fit" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">fit</tt><big>(</big><em>X</em>, <em>y=None</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#SelectByMinCount.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.SelectByMinCount.fit" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -979,7 +977,7 @@ the classification accuracy.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2012-2013, Educational Testing Service.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
   </body>
 </html>
