@@ -191,7 +191,7 @@ def parse_config_file(config_file):
                                         'predictions': '',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
-                                        'scale_features': 'True',
+                                        'scale_features': 'False',
                                         'probability': 'False',
                                         'fixed_parameters': '[]',
                                         'param_grids': '[]',
@@ -444,9 +444,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                                     "classifiers")))
     given_featuresets = json.loads(fix_json(config.get("Input",
                                                        "featuresets")))
-    given_featureset_names = json.loads(fix_json(config.get("Input", 
+    given_featureset_names = json.loads(fix_json(config.get("Input",
                                                             "featureset_names")))
-    fixed_parameter_list = json.loads(fix_json(config.get("Input", 
+    fixed_parameter_list = json.loads(fix_json(config.get("Input",
                                                           "fixed_parameters")))
     param_grid_list = json.loads(fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
@@ -633,7 +633,7 @@ def run_experiment_without_feature(arg_tuple):
     Creates a new configuration file with a given feature
     removed and runs that experiment.
 
-    :param arg_tuple: A tuple of the actual arguments for this function: 
+    :param arg_tuple: A tuple of the actual arguments for this function:
                       feature_type, given_features, config, local, queue
                       cfg_path, and machines.
 
@@ -644,13 +644,13 @@ def run_experiment_without_feature(arg_tuple):
                       - local: Are we running things locally or on the grid?
                       - queue: Grid Map queue to use for scheduling
                       - cfg_path: Path to main configuration file
-                      - machines: List of machines to use for scheduling jobs 
+                      - machines: List of machines to use for scheduling jobs
                                   with Grid Map
                       - overwrite: Should we overwrite existing models?
 
     :type arg_tuple: tuple
     '''
-    (feature_type, given_features, given_featureset_name, config, local, queue, 
+    (feature_type, given_features, given_featureset_name, config, local, queue,
      cfg_path, machines, overwrite) = arg_tuple
 
     featureset = [[x for x in given_features if x != feature_type]]
@@ -681,7 +681,7 @@ def run_experiment_without_feature(arg_tuple):
 def run_ablation(config_file, local=False, overwrite=True, queue='all.q',
                  hosts=None):
     '''
-    Takes a configuration file and runs repeated experiments where each 
+    Takes a configuration file and runs repeated experiments where each
     feature set has been removed from the configuration.
     '''
     # Read configuration
@@ -689,7 +689,7 @@ def run_ablation(config_file, local=False, overwrite=True, queue='all.q',
 
     given_featuresets = json.loads(fix_json(config.get("Input",
                                                        "featuresets")))
-    given_featureset_names = json.loads(fix_json(config.get("Input", 
+    given_featureset_names = json.loads(fix_json(config.get("Input",
                                                             "featureset_names")))
 
     # make sure there is only one list of features
@@ -762,7 +762,7 @@ def main():
 
     # Are we doing an ablation study?
     if args.ablation:
-        run_ablation(args.config_file, 
+        run_ablation(args.config_file,
                      local=args.local,
                      overwrite=not args.keep_models,
                      queue=args.queue,
