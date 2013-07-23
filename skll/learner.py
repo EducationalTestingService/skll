@@ -650,8 +650,8 @@ class Learner(object):
 
             if (grid_objective.__name__ in _CORRELATION_METRICS and
                     self._model_type not in _REGRESSION_MODELS):
-                self._model.predict_normal = self._model.predict
-                self._model.predict = _predict_binary
+                estimator.predict_normal = estimator.predict
+                estimator.predict = _predict_binary
 
             grid_searcher = GridSearchCV(estimator, param_grid,
                                          score_func=grid_objective, cv=folds,
