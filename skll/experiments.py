@@ -147,7 +147,7 @@ def _print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
                                         "F-measure"],
                                        header=True)
             result_table.align = "r"
-            result_table["Class"].align = "l"
+            result_table.align["Class"] = "l"
             result_table.float_format = '.3'
             for actual_class in classes:
                 # Convert sums to means
