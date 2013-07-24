@@ -35,16 +35,16 @@ import re
 import sys
 import csv
 import itertools
-from collections import defaultdict, namedtuple, OrderedDict
+from collections import defaultdict, namedtuple
 from multiprocessing import Pool
 
-import numpy as np
+import scipy.sparse as sp
 from prettytable import PrettyTable, ALL
-from six import string_types, iterkeys, iteritems, itervalues  # Python 2/3
-from six.moves import configparser
+from six import string_types, iterkeys, iteritems  # Python 2/3
+from six.moves import configparser, zip
 
 from skll import metrics
-from skll.data import load_examples
+from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner
 
 
@@ -203,23 +203,25 @@ def _load_featureset(dirpath, featureset, suffix):
         featureset = [featureset]
 
     # Load a list of lists of examples, one list of examples per featureset.
-    example_lists = [load_examples(os.path.join(dirpath,
-                                                featfile + suffix))
-                     for featfile in featureset]
+    file_names = [os.path.join(dirpath, featfile + suffix) for featfile
+                  in featureset]
+    example_tuples = [load_examples(file_name) for file_name in file_names]
 
-    # Check that the IDs are unique.
-    for examples in example_lists:
-        ex_ids = [example['id'] for example in examples]
+    # Check that the IDs are unique within each file.
+    for file_name, examples in zip(file_names, example_tuples):
+        ex_ids = examples.ids
         if len(ex_ids) != len(set(ex_ids)):
-            raise ValueError('The example IDs are not unique.')
+            raise ValueError(('The example IDs are not unique in ' +
+                              '{}.').format(file_name))
 
     # Check that the different feature files have the same IDs.
     # To do this, make a sorted tuple of unique IDs for each feature file,
     # and then make sure they are all the same by making sure the set is size 1.
-    if len({tuple(sorted({ex['id'] for ex in examples}))
-            for examples in example_lists}) != 1:
-        raise ValueError('The sets of example IDs in two feature files do not' +
-                         'match')
+    mismatch_num = len({tuple(sorted(examples.ids)) for examples in
+                        example_tuples})
+    if mismatch_num != 1:
+        raise ValueError(('The sets of example IDs in {} feature files do not' +
+                          ' match').format(mismatch_num))
 
     # Make sure there is a unique label for every example (or no label, for
     # "unseen" examples).
@@ -227,32 +229,52 @@ def _load_featureset(dirpath, featureset, suffix):
     # those ids are unique.
     unique_tuples = set(itertools.chain(*[[(ex['id'], ex['y']) for ex
                                            in examples if 'y' in ex]
-                                          for examples in example_lists]))
+                                          for examples in example_tuples]))
     if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
-        raise ValueError('Two feature files have different labels (i.e., y' +
-                         ' values) for the same ID.')
+        raise ValueError('At least two feature files have different labels ' +
+                         '(i.e., y values) for the same ID.')
 
-    # Now, create the final dictionary of examples with merged features
-    example_dict = OrderedDict()
-    for examples in example_lists:
-        for example in examples:
-            ex_id = example['id']
-            if ex_id not in example_dict:
-                example_dict[ex_id] = {'x': {}, 'id': ex_id}
+    # Now, create the final ExamplesTuple of examples with merged features
+    merged_vectorizer = None
+    merged_features = None
+    merged_ids = None
+    merged_classes = None
+    for ids, classes, features, feat_vectorizer in example_tuples:
+        # Check for duplicate feature names
+        if (set(merged_vectorizer.get_feature_names()) &
+                set(feat_vectorizer.get_feature_names())):
+            raise ValueError('Two feature files have the same feature!')
 
-            # Check that two feature files have unique feature names by
-            # checking that the new features don't already exist
-            # (i.e., that the intersection is null set).
-            if set(example['x'].keys()) \
-               & set(example_dict[ex_id]['x'].keys()):
-                raise ValueError('Two feature files have the same feature!')
+        # Combine feature matrices and vectorizers
+        if merged_features is not None:
+            merged_features = sp.hstack([merged_features, features], 'csr')
+            num_merged = len(merged_features)
+            for feat_name, index in feat_vectorizer.vocabulary_:
+                merged_features.vocabulary_[feat_name] = index + num_merged
+                merged_features.feature_names_.append(feat_name)
+        else:
+            merged_features = features
+            merged_vectorizer = feat_vectorizer
 
-            # update x and y values
-            if 'y' in example:
-                example_dict[ex_id]['y'] = example['y']
-            example_dict[ex_id]['x'].update(example['x'])
+        # These should be the same for each ExamplesTuple, so only store once
+        if merged_ids is None:
+            merged_ids = ids
+            merged_classes = classes
+        # Check that IDs are in the same order
+        elif merged_ids != ids:
+            raise ValueError('IDs are not in the same order in each feature ' +
+                             'file!')
+        # Check that classes don't conflict
+        elif merged_classes != classes:
+            raise ValueError('Feature files have conflicting labels for ' +
+                             'examples with the same ID!')
 
-    return np.array(list(itervalues(example_dict)))  # Python 2/3 compatible
+    # Sort merged_features.feature_names_, because that happens whenever the list
+    # is modified internally by DictVectorizer
+    merged_features.feature_names_.sort()
+
+    return ExamplesTuple(merged_ids, merged_classes, merged_features,
+                         merged_vectorizer)
 
 
 def _classify_featureset(jobname, featureset, given_learner, train_path,
