@@ -34,9 +34,17 @@ from operator import itemgetter
 
 import numpy as np
 from bs4 import UnicodeDammit
+from collections import namedtuple
 from six import iteritems
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer
+
+
+ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
+                                             'feat_vectorizer'])
+
+
+
 
 
 def load_examples(path, has_labels=True, sparse=True):
@@ -81,19 +89,15 @@ def load_examples(path, has_labels=True, sparse=True):
 
     # Create generators that we can use to create numpy arrays without wasting
     # memory (even though this requires reading the file multiple times)
-    id_generator = map(itemgetter(0),
-                       example_gen_func(path, has_labels=has_labels))
-    class_generator = map(itemgetter(1),
-                          example_gen_func(path, has_labels=has_labels))
-    example_generator = map(itemgetter(2),
-                            example_gen_func(path, has_labels=has_labels))
+    ids = np.array([curr_id for curr_id, class_name, feature_dict in
+                    example_gen_func(path, has_labels=has_labels)])
+    classes = np.array([class_name for curr_id, class_name, feature_dict in
+                        example_gen_func(path, has_labels=has_labels)])
+    feat_dict_generator = map(itemgetter(2),
+                              example_gen_func(path, has_labels=has_labels))
+    features = feat_vectorizer.fit_transform(feat_dict_generator)
 
-    # Create actual arrays/matrices
-    ids = np.array(id_generator)
-    classes = np.array(class_generator)
-    features = feat_vectorizer.fit_transform(example_generator)
-
-    return ids, classes, features, feat_vectorizer
+    return ExamplesTuple(ids, classes, features, feat_vectorizer)
 
 
 def _sanitize_line(line):
