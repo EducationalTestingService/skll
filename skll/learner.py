@@ -56,6 +56,7 @@ from six.moves import xrange as range
 from six.moves import cPickle as pickle
 from six import string_types
 
+from . import VERSION
 from skll.metrics import f1_score_micro, _CORRELATION_METRICS
 from skll.fixed_standard_scaler import FixedStandardScaler
 
@@ -326,7 +327,18 @@ class Learner(object):
         :returns: New instance of Learner from the pickle at the specified path.
         '''
         with open(learner_path, "rb") as f:
-            return pickle.load(f)
+            skll_version, learner = pickle.load(f)
+            # Check that versions are compatible. (Currently, this just checks
+            # that major versions match)
+            if skll_version[0] == VERSION[0]:
+                return learner
+            else:
+                raise Exception(("Learner stored in pickle file {} was " + 
+                                 "created with version {} of SKLL, which is " + 
+                                 "incompatible with the current version " + 
+                                 "{}").format(learner_path, 
+                                              '.'.join(skll_version),
+                                              '.'.join(VERSION)))
 
     @property
     def model_type(self):
@@ -403,7 +415,7 @@ class Learner(object):
             subprocess.call("mkdir -p {}".format(learner_dir), shell=True)
         # write out the files
         with open(learner_path, "wb") as f:
-            pickle.dump(self, f, -1)
+            pickle.dump((VERSION, self), f, -1)
 
     @staticmethod
     def _extract_features(example):
