@@ -5,7 +5,7 @@ Running Experiments
 The simplest way to use SKLL is to create configuration files that describe
 experiments you would like to run on pre-generated features. This document
 describes the supported feature file formats, how to create configuration files
-(and layout your directories), and how use ``run_experiment`` to get things
+(and layout your directories), and how to use ``run_experiment`` to get things
 going.
 
 Feature file formats
