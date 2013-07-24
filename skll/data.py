@@ -28,13 +28,72 @@ from __future__ import print_function, unicode_literals
 
 import json
 import sys
-from csv import DictReader
+from csv import DictReader, excel_tab
 from itertools import islice
+from operator import itemgetter
 
 import numpy as np
 from bs4 import UnicodeDammit
-from six.moves import zip
+from six import iteritems
+from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer
+
+
+def load_examples(path, has_labels=True, sparse=True):
+    '''
+    Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
+    formats.
+
+    If you would like to include example/instance IDs in your files, they must
+    be specified in the following ways:
+
+    * MegaM: As a comment line directly preceding the line with feature values.
+    * TSV: An "id" column.
+    * JSONLINES: An "id" key in each JSON dictionary.
+
+    :param path: The path to the file to load the examples from.
+    :type path: basestring
+    :param has_labels: Whether or not the file contains class labels.
+    :type has_labels: bool
+    :param sparse: Whether or not to store the features in a numpy CSR matrix.
+    :type sparse: bool
+
+    :return: 4-tuple of an array example ids, an array of class labels, a
+             scipy CSR matrix of features, and a DictVectorizer containing
+             the mapping between feature names and the column indices in
+             the feature matrix.
+    '''
+
+    feat_vectorizer = DictVectorizer(sparse=sparse)
+
+    # Build an appropriate generator for examples so we process the input file
+    # through the feature vectorizer without using tons of memory
+    if path.endswith(".tsv"):
+        example_gen_func  = _tsv_dict_iter
+    elif path.endswith(".jsonlines"):
+        example_gen_func  = _json_dict_iter
+    elif path.endswith(".megam"):
+        example_gen_func = _megam_dict_iter
+    else:
+        raise Exception('Example files must be in either TSV, MegaM, or ' +
+                        '.jsonlines format. ' +
+                        'You specified: {}'.format(path))
+
+    # Create generators that we can use to create numpy arrays without wasting
+    # memory (even though this requires reading the file multiple times)
+    id_generator = map(itemgetter(0),
+                       example_gen_func(path, has_labels=has_labels))
+    class_generator = map(itemgetter(1),
+                          example_gen_func(path, has_labels=has_labels))
+    example_generator = map(itemgetter(2),
+                            example_gen_func(path, has_labels=has_labels))
+
+    # Create actual arrays/matrices
+    ids = np.array(id_generator)
+    classes = np.array(class_generator)
+    features = feat_vectorizer.fit_transform(example_generator)
+
+    return ids, classes, features, feat_vectorizer
 
 
 def _sanitize_line(line):
@@ -63,9 +122,33 @@ def _safe_float(text):
         return text
 
 
+def _json_dict_iter(path, has_labels=True):
+    '''
+    Convert current line in .jsonlines file to a dictionary with the
+    following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
+    (originally "y"), and all of the feature-values in the sub-dictionary
+    "x". Basically, we're flattening the structure, but renaming "y" and "id"
+    to prevent possible conflicts with feature names in "x".
+
+    :param path: Path to .jsonlines file
+    :type path: string
+    :param has_labels: Whether or not the JSON dicts will contain a class label,
+                       "y".
+    :type has_labels: bool
+    '''
+    with open(path) as f:
+        for line, example_num in enumerate(f):
+            example = json.loads(line.strip())
+            curr_id = example.get("id", "EXAMPLE_{}".format(example_num))
+            class_name = example["y"] if has_labels else None
+            example = example["x"]
+
+            yield curr_id, class_name, example
+
+
 def _megam_dict_iter(path, has_labels=True, quiet=False):
     '''
-    Generator that yields tuples of classes and dictionaries mapping from
+    Generator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
     by path.
 
@@ -78,12 +161,12 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
     :type quiet: bool
     '''
 
-    line_count = 0
     if not quiet:
         print("Loading {}...".format(path), end="", file=sys.stderr)
         sys.stderr.flush()
     with open(path, 'rb') as megam_file:
-        curr_id = None
+        example_num = 0
+        curr_id = 'EXAMPLE_0'
         for line in megam_file:
             # Process encoding
             line = UnicodeDammit(line, ['utf-8', 'windows-1252']).unicode_markup
@@ -107,7 +190,7 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
                     field_names = islice(field_pairs, 0, None, 2)
                     # Convert values to floats, because otherwise features'll
                     # be categorical
-                    field_values = (_safe_float(val) for val in 
+                    field_values = (_safe_float(val) for val in
                                     islice(field_pairs, 1, None, 2))
 
                     # TODO: Add some sort of check for duplicate feature names
@@ -116,157 +199,49 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
                     curr_info_dict.update(zip(field_names, field_values))
 
                 yield curr_id, class_name, curr_info_dict
-                curr_id = None
-            line_count += 1
-            if not quiet and line_count % 100 == 0:
-                print(".", end="", file=sys.stderr)
+
+                # Set default example ID for next instance, in case we see a
+                # line without an ID.
+                example_num += 1
+                curr_id = 'EXAMPLE_{}'.format(example_num)
+
+                if not quiet and example_num % 100 == 0:
+                    print(".", end="", file=sys.stderr)
         if not quiet:
             print("done", file=sys.stderr)
 
 
-def load_examples(path, has_labels=True, sparse=True):
+def _tsv_dict_iter(path, has_labels=True):
     '''
-    Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
-    formats.
+    Generator that yields tuples of IDs, classes, and dictionaries mapping from
+    features to values for each pair of lines in the MegaM -fvals file specified
+    by path.
 
-    If you would like to include example/instance IDs in your files, they must
-    be specified in the following ways:
-
-    * MegaM: As a comment line directly preceding the line with feature values.
-    * TSV: An "id" column.
-    * JSONLINES: An "id" key in each JSON dictionary.
-
-    :param path: The path to the file to load the examples from.
-    :type path: basestring
-    :param has_labels: Whether or not the file contains class labels.
-    :type has_labels: bool
-    :param sparse: Whether or not to store the features in a numpy CSR matrix.
-    :type sparse: bool
-
-    :return: 2-tuple of a (2 + n)-column numpy.array (where n is the number of 
-             feature) of examples (with "SKLL_CLASS_LABEL" containing the class 
-             labels, "SKLL_ID" containing the example IDs, and the remaining
-             columns containing the features) and a DictVectorizer containing 
-             the mapping between column/feature names and the column indices in 
-             the example matrix.
-    '''
-
-    feat_vectorizer = DictVectorizer(sparse=sparse)
-
-    # Build an appropriate generator for examples so we process the input file
-    # through the feature vectorizer without using tons of memory
-    if path.endswith(".tsv"):
-        with open(path) as f:
-            reader = DictReader(f, dialect=csv.excel_tab)
-            example_generator = (_preprocess_tsv_row(row, reader.fieldnames, 
-                                                     example_num, 
-                                                     has_labels=has_labels) for 
-                                 row in enumerate(reader))
-    elif path.endswith(".jsonlines"):
-        with open(path) as f:
-            example_generator = (_preprocess_json_line(line, example_num) for 
-                                 line, example_num in enumerate(f))
-    elif path.endswith(".megam"):
-        example_generator = (_preprocess_megam_example(curr_id, class_name, 
-                                                       feature_dict) for 
-                             curr_id, class_name, feature_dict in 
-                             _megam_dict_iter(path))
-    else:
-        raise Exception('Example files must be in either TSV, MegaM, or ' +
-                        '.jsonlines format. ' +
-                        'You specified: {}'.format(path))
-
-    return feat_vectorizer.fit_transform(example_generator), feat_vectorizer 
-
-
-def _preprocess_tsv_row(row, header, example_num, has_labels=True):
-    '''
-    Convert current row dict from TSV file to a dictionary with the
-    following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
-    (originally "y"), and all of the feature-values in the sub-dictionary
-    "x". Basically, we're flattening the structure, but renaming "y" and "id"
-    to prevent possible conflicts with feature names in "x".
-
-    :param row: The TSV row to convert.
-    :type row: dict
-    :param header: The header row from the TSV file.
-    :type header: list
-    :param example_num: The line number from the TSV file.
-    :type example_num: int
+    :param path: Path to TSV
+    :type path: string
     :param has_labels: Whether or not the TSV's first column is a class label.
     :type has_labels: bool
     '''
-    example = row
+    with open(path) as f:
+        reader = DictReader(f, dialect=excel_tab)
+        for example_num, row in reader:
+            if has_labels:
+                class_name = row[reader.fieldnames[0]]
+                del row[reader.fieldnames[0]]
+            else:
+                class_name = None
 
-    if has_labels:
-        example_y = row[header[0]]
-        del row[header[0]]
-    else:
-        example_y = None
+            if "id" not in row:
+                curr_id = "EXAMPLE_{}".format(example_num)
+            else:
+                curr_id = row["id"]
+                del row["id"]
 
-    if "id" not in example:
-        example_id = "EXAMPLE_{}".format(example_num)
-    else:
-        example_id = example["id"]
-        del example["id"]
-    example["SKLL_CLASS_LABEL"] = example_y
-    example["SKLL_ID"] = example_id
+            # Convert features to flaot
+            for fname, fval in iteritems(row):
+                fval_float = _safe_float(fval)
+                # we don't need to explicitly store zeros
+                if fval_float != 0.0:
+                    row[fname] = fval_float
 
-    # Convert features to flaot
-    for fname, fval in iteritems(example):
-        fval_float = _safe_float(fval)
-        # we don't need to explicitly store zeros
-        if fval_float != 0.0:
-            x["{}".format(fname)] = fval_float
-    
-    return example
-
-
-def _preprocess_json_line(line, example_num):
-    '''
-    Convert current line in .jsonlines file to a dictionary with the
-    following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
-    (originally "y"), and all of the feature-values in the sub-dictionary
-    "x". Basically, we're flattening the structure, but renaming "y" and "id"
-    to prevent possible conflicts with feature names in "x".
-    
-    :param line: The JSON dictionary as a string.
-    :type line: string
-    :param example_num: The line number.
-    :type example_num: int
-    '''
-    example = json.loads(line.strip())
-    if "id" not in example:
-        example_id = "EXAMPLE_{}".format(example_num)
-    else:
-        example_id = example["id"]
-        del example["id"]
-    example_y = example["y"]
-    example = example["x"]
-    example["SKLL_CLASS_LABEL"] = example_y
-    example["SKLL_ID"] = example_id
-    
-    return example
-
-
-def _preprocess_megam_example(curr_id, class_name, feature_dict):
-    '''
-    Takes the fields yielded by the _megam_dict_iter and converts them to the
-    correct format for use as input to a DictVectorizer.
-
-    :param curr_id: The ID of the current example
-    :type curr_id: string
-    :param class_name: The class label for the current example.
-    :type class_name: string
-    :param feature_dict: A dictionary of the feature values for the current
-                         example.
-    :type feature_dict: dictionary mapping from strings to floats
-    
-    :returns: a dictionary with the following fields: "SKLL_ID", 
-              "SKLL_CLASS_LABEL", and all of the feature-values in feature_dict.
-    '''
-    example = feature_dict
-    example["SKLL_CLASS_LABEL"] = class_name
-    example["SKLL_ID"] = curr_id
-    
-    return example
+            yield curr_id, class_name, row
