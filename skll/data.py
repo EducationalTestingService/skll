@@ -123,7 +123,7 @@ def _safe_float(text):
     try:
         return float(text)
     except ValueError:
-        return text
+        return text 
 
 
 def _json_dict_iter(path, has_labels=True):

@@ -745,6 +745,11 @@ class Learner(object):
         '''
         example_ids = examples.ids
 
+        # Need to do some transformations so the features are in the right
+        # columns for the test set.
+        xtest = self.feat_vectorizer.transform(
+                    examples.feat_vectorizer.inverse_transform(examples.features))
+
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(examples.features)
 
@@ -861,8 +866,8 @@ class Learner(object):
         if isinstance(cv_folds, int):
             stratified = (stratified and
                           not self._model_type in _REGRESSION_MODELS)
-            kfold = (StratifiedKFold(examples.classes, n_folds=cv_folds) if 
-                     stratified else KFold(len(examples.classes), 
+            kfold = (StratifiedKFold(examples.classes, n_folds=cv_folds) if
+                     stratified else KFold(len(examples.classes),
                                            n_folds=cv_folds))
         else:
             # if we have a mapping from IDs to folds, use it for the overall
@@ -882,8 +887,8 @@ class Learner(object):
         for train_index, test_index in kfold:
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
-            train_tuple = ExamplesTuple(ids=examples.ids[train_index], 
-                                        classes=examples.classes[train_index], 
+            train_tuple = ExamplesTuple(ids=examples.ids[train_index],
+                                        classes=examples.classes[train_index],
                                         features=examples.features[train_index],
                                         feat_vectorizer=examples.feat_vectorizer)
             grid_search_scores.append(self.train(train_tuple,
@@ -897,8 +902,8 @@ class Learner(object):
             # regardless of what the shuffle keyword argument is set to.
 
             # Evaluate model
-            test_tuple = ExamplesTuple(ids=examples.ids[test_index], 
-                                       classes=examples.classes[test_index], 
+            test_tuple = ExamplesTuple(ids=examples.ids[test_index],
+                                       classes=examples.classes[test_index],
                                        features=examples.features[test_index],
                                        feat_vectorizer=examples.feat_vectorizer)
             results.append(self.evaluate(test_tuple,
