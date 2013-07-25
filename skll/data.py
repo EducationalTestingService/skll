@@ -89,9 +89,9 @@ def load_examples(path, has_labels=True, sparse=True):
 
     # Create generators that we can use to create numpy arrays without wasting
     # memory (even though this requires reading the file multiple times)
-    ids = np.array([curr_id for curr_id, class_name, feature_dict in
+    ids = np.array([curr_id for curr_id, _, _ in 
                     example_gen_func(path, has_labels=has_labels)])
-    classes = np.array([class_name for curr_id, class_name, feature_dict in
+    classes = np.array([class_name for _, class_name, _ in
                         example_gen_func(path, has_labels=has_labels)])
     feat_dict_generator = map(itemgetter(2),
                               example_gen_func(path, has_labels=has_labels))

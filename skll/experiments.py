@@ -227,8 +227,9 @@ def _load_featureset(dirpath, featureset, suffix):
     # "unseen" examples).
     # To do this, find the unique (id, y) tuples, and then make sure that all
     # those ids are unique.
-    unique_tuples = set(itertools.chain(*[[(ex['id'], ex['y']) for ex
-                                           in examples if 'y' in ex]
+    unique_tuples = set(itertools.chain(*[[(curr_id, curr_label) for curr_id, 
+                                           curr_label in zip(examples.ids, 
+                                                             examples.classes)]
                                           for examples in example_tuples]))
     if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
         raise ValueError('At least two feature files have different labels ' +
@@ -240,18 +241,18 @@ def _load_featureset(dirpath, featureset, suffix):
     merged_ids = None
     merged_classes = None
     for ids, classes, features, feat_vectorizer in example_tuples:
-        # Check for duplicate feature names
-        if (set(merged_vectorizer.get_feature_names()) &
-                set(feat_vectorizer.get_feature_names())):
-            raise ValueError('Two feature files have the same feature!')
-
         # Combine feature matrices and vectorizers
         if merged_features is not None:
+            # Check for duplicate feature names
+            if (set(merged_vectorizer.get_feature_names()) &
+                    set(feat_vectorizer.get_feature_names())):
+                raise ValueError('Two feature files have the same feature!')
+
             merged_features = sp.hstack([merged_features, features], 'csr')
             num_merged = len(merged_features)
             for feat_name, index in feat_vectorizer.vocabulary_:
-                merged_features.vocabulary_[feat_name] = index + num_merged
-                merged_features.feature_names_.append(feat_name)
+                merged_vectorizer.vocabulary_[feat_name] = index + num_merged
+                merged_vectorizer.feature_names_.append(feat_name)
         else:
             merged_features = features
             merged_vectorizer = feat_vectorizer
@@ -271,7 +272,7 @@ def _load_featureset(dirpath, featureset, suffix):
 
     # Sort merged_features.feature_names_, because that happens whenever the list
     # is modified internally by DictVectorizer
-    merged_features.feature_names_.sort()
+    merged_vectorizer.feature_names_.sort()
 
     return ExamplesTuple(merged_ids, merged_classes, merged_features,
                          merged_vectorizer)

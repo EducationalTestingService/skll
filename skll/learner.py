@@ -26,7 +26,7 @@ Provides easy-to-use wrapper around scikit-learn.
 :organization: ETS
 '''
 
-from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, print_function, unicode_literals
 
 import inspect
 import os
@@ -42,7 +42,6 @@ from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.cross_validation import LeaveOneLabelOut
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.feature_extraction import DictVectorizer
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
@@ -56,16 +55,19 @@ from six.moves import xrange as range
 from six.moves import cPickle as pickle
 from six import string_types
 
-from . import VERSION
+from skll.data import ExamplesTuple
 from skll.metrics import f1_score_micro, _CORRELATION_METRICS
 from skll.fixed_standard_scaler import FixedStandardScaler
 
 
 # Constants #
+__version__ = '0.9'  # Couldn't figure out how to import this otherwise
+VERSION = tuple(int(x) for x in __version__.split('.'))
 _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
                              'gb_regressor'])
 _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
                                 'rescaled_svr_linear', 'gb_regressor'])
+
 
 
 def _predict_binary(self, X):
@@ -607,7 +609,7 @@ class Learner(object):
         else:
             # use the number of unique fold IDs as the number of grid jobs
             grid_jobs = len(np.unique(grid_search_folds))
-            labels = [grid_search_folds[ex['id']] for ex in examples]
+            labels = [grid_search_folds[curr_id] for curr_id in examples.ids]
             folds = LeaveOneLabelOut(labels)
 
         # select features
@@ -859,15 +861,16 @@ class Learner(object):
         if isinstance(cv_folds, int):
             stratified = (stratified and
                           not self._model_type in _REGRESSION_MODELS)
-            kfold = (StratifiedKFold(y, n_folds=cv_folds) if stratified
-                     else KFold(len(examples), n_folds=cv_folds))
+            kfold = (StratifiedKFold(examples.classes, n_folds=cv_folds) if 
+                     stratified else KFold(len(examples.classes), 
+                                           n_folds=cv_folds))
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
             # training fold.  Note that this means that the grid search
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
-            labels = [cv_folds[ex['id']] for ex in examples]
+            labels = [cv_folds[curr_id] for curr_id in examples.ids]
             kfold = LeaveOneLabelOut(labels)
             grid_search_folds = cv_folds
 
