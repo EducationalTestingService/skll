@@ -29,14 +29,11 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from .data import load_examples
 from .experiments import run_ablation, run_configuration
-from .learner import Learner
+from .learner import Learner, __version__, VERSION
 from .metrics import (quadratic_weighted_kappa, unweighted_kappa, kendall_tau,
                       spearman, pearson, f1_score_least_frequent,
                       f1_score_macro, f1_score_micro, accuracy)
 
-
-__version__ = '0.9'
-VERSION = tuple(int(x) for x in __version__.split('.'))
 
 __all__ = ['Learner', 'load_examples', 'quadratic_weighted_kappa',
            'unweighted_kappa', 'kendall_tau', 'spearman', 'pearson',
