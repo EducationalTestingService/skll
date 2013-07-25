@@ -883,7 +883,7 @@ class Learner(object):
                                         classes=examples.classes[train_index], 
                                         features=examples.features[train_index],
                                         feat_vectorizer=examples.feat_vectorizer)
-            grid_search_scores.append(self.train(train_tuple
+            grid_search_scores.append(self.train(train_tuple,
                                                  grid_search_folds=grid_search_folds,
                                                  grid_search=grid_search,
                                                  grid_objective=grid_objective,
