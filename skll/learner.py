@@ -333,10 +333,10 @@ class Learner(object):
             if skll_version[0] == VERSION[0]:
                 return learner
             else:
-                raise Exception(("Learner stored in pickle file {} was " + 
-                                 "created with version {} of SKLL, which is " + 
-                                 "incompatible with the current version " + 
-                                 "{}").format(learner_path, 
+                raise Exception(("Learner stored in pickle file {} was " +
+                                 "created with version {} of SKLL, which is " +
+                                 "incompatible with the current version " +
+                                 "{}").format(learner_path,
                                               '.'.join(skll_version),
                                               '.'.join(VERSION)))
 
@@ -392,7 +392,7 @@ class Learner(object):
             for i, label in enumerate(label_list):
                 coef = self.model.coef_[i]
                 coef = self.feat_selector.inverse_transform(coef)[0]
-                for feat, idx in self.feat_vectorizer.vocabulary_.items():
+                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
         else:
@@ -416,30 +416,6 @@ class Learner(object):
         # write out the files
         with open(learner_path, "wb") as f:
             pickle.dump((VERSION, self), f, -1)
-
-    @staticmethod
-    def _extract_features(example):
-        '''
-        :returns: A dictionary of feature values extracted from a preprocessed
-        example.
-        '''
-        return example["x"]
-
-    def _extract_label(self, example):
-        '''
-        :returns: The label for a preprocessed example.
-        '''
-        if self._model_type in _REGRESSION_MODELS:
-            return float(example["y"])
-        else:
-            return self.label_dict[example["y"]]
-
-    @staticmethod
-    def _extract_id(example):
-        '''
-        :returns: The string ID for a preprocessed example.
-        '''
-        return example["id"]
 
     def _create_estimator(self):
         '''
@@ -499,12 +475,9 @@ class Learner(object):
         '''
 
         # Make sure the labels for a regression task are not strings.
-        # Note: this is redundant because of how _extract_label is used
-        # in train setup, but it's probably useful to leave it in
-        # just in case.
         if self._model_type in _REGRESSION_MODELS:
-            for ex in examples:
-                if isinstance(self._extract_label(ex), string_types):
+            for label in examples.classes:
+                if isinstance(label, string_types):
                     raise TypeError("You are doing regression with" +
                                     " string labels.  Convert them to" +
                                     " integers or floats.")
@@ -513,8 +486,8 @@ class Learner(object):
         max_feat_abs = float("-inf")
 
         # make sure that feature values are not strings
-        for ex in examples:
-            for val in ex['x'].values():
+        for row in examples.features:
+            for val in row:
                 #min_feat_abs = min(min_feat_abs, abs(val)) if val
                 #                                           else min_feat_abs
                 max_feat_abs = max(max_feat_abs, abs(val))
@@ -534,20 +507,17 @@ class Learner(object):
         return the features and the labels.
 
         :param examples: The examples to use for training.
-        :type examples: array
+        :type examples: ExamplesTuple
         '''
 
-        # extract the features and the labels
-        features = [self._extract_features(x) for x in examples]
-
+        # Check feature values and labels
         self._check_input(examples)
 
         # Create label_dict if we weren't passed one
         if self._model_type not in _REGRESSION_MODELS:
 
             # extract list of unique labels if we are doing classification
-            self.label_list = np.unique([example["y"] for example
-                                         in examples]).tolist()
+            self.label_list = np.unique(examples.classes).tolist()
 
             # if one label is specified as the positive class, make sure it's
             # last
@@ -563,10 +533,8 @@ class Learner(object):
             for i, label in enumerate(self.label_list):
                 self.label_dict[label] = i
 
-        y = np.array([self._extract_label(x) for x in examples])
-
         # Create feature name -> value mapping
-        self.feat_vectorizer = DictVectorizer(sparse=not self._use_dense_features)
+        self.feat_vectorizer = examples.feat_vectorizer
 
         # initialize feature selector
         self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
@@ -584,7 +552,6 @@ class Learner(object):
                                                   with_mean=False,
                                                   with_std=False)
 
-        return features, y
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
               grid_search=True, grid_objective=f1_score_micro, grid_jobs=None,
@@ -594,7 +561,7 @@ class Learner(object):
         vectorizer, scaler, label dictionary, and inverse label dictionary.
 
         :param examples: The examples to train the model on.
-        :type examples: array
+        :type examples: ExamplesTuple
         :param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter grid
                            will be used.
@@ -631,7 +598,7 @@ class Learner(object):
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
-        features, ytrain = self._train_setup(examples)
+        self._train_setup(examples)
 
         # set up grid search folds
         if isinstance(grid_search_folds, int):
@@ -643,11 +610,8 @@ class Learner(object):
             labels = [grid_search_folds[ex['id']] for ex in examples]
             folds = LeaveOneLabelOut(labels)
 
-        # vectorize the features
-        xtrain = self.feat_vectorizer.fit_transform(features)
-
         # select features
-        xtrain = self.feat_selector.fit_transform(xtrain)
+        xtrain = self.feat_selector.fit_transform(examples.features)
 
         # Scale features if necessary
         if self._model_type != 'naivebayes':
@@ -670,11 +634,11 @@ class Learner(object):
                                          n_jobs=grid_jobs)
 
             # run the grid search for hyperparameters
-            grid_searcher.fit(xtrain, ytrain)
+            grid_searcher.fit(xtrain, examples.classes)
             self._model = grid_searcher.best_estimator_
             grid_score = grid_searcher.best_score_
         else:
-            self._model = estimator.fit(xtrain, ytrain)
+            self._model = estimator.fit(xtrain, examples.classes)
             grid_score = 0.0
 
         return grid_score
@@ -686,7 +650,7 @@ class Learner(object):
 
         :param examples: The examples to evaluate the performance of the model
             on.
-        :type examples: array
+        :type examples: ExamplesTuple
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
                                   It will be followed by ".predictions"
@@ -711,7 +675,7 @@ class Learner(object):
                             append=append)
 
         # extract actual labels
-        ytest = np.array([self._extract_label(x) for x in examples])
+        ytest = examples.classes
 
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
@@ -761,7 +725,7 @@ class Learner(object):
         Uses a given model to generate predictions on a given data set
 
         :param examples: The examples to predict the classes for.
-        :type examples: array
+        :type examples: ExamplesTuple
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the
                                   filename. It will be followed by
@@ -777,14 +741,10 @@ class Learner(object):
         :return: The predictions returned by the learner.
         :rtype: array
         '''
-        features = [self._extract_features(x) for x in examples]
-        example_ids = [self._extract_id(x) for x in examples]
-
-        # transform the features
-        xtest = self.feat_vectorizer.transform(features)
+        example_ids = examples.ids
 
         # filter features based on those selected from training set
-        xtest = self.feat_selector.transform(xtest)
+        xtest = self.feat_selector.transform(examples.features)
 
         # Scale xtest
         if self._model_type != 'naivebayes':
@@ -847,7 +807,7 @@ class Learner(object):
         Cross-validates a given model on the training examples.
 
         :param examples: The data to cross-validate learner performance on.
-        :type examples: array
+        :type examples: ExamplesTuple
         :param stratified: Should we stratify the folds to ensure an even
                            distribution of classes for each fold?
         :type stratified: bool
@@ -893,7 +853,7 @@ class Learner(object):
             np.random.shuffle(examples)
 
         # call train setup
-        _, y = self._train_setup(examples)
+        self._train_setup(examples)
 
         # setup the cross-validation iterator
         if isinstance(cv_folds, int):
@@ -919,7 +879,11 @@ class Learner(object):
         for train_index, test_index in kfold:
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
-            grid_search_scores.append(self.train(examples[train_index],
+            train_tuple = ExamplesTuple(ids=examples.ids[train_index], 
+                                        classes=examples.classes[train_index], 
+                                        features=examples.features[train_index],
+                                        feat_vectorizer=examples.feat_vectorizer)
+            grid_search_scores.append(self.train(train_tuple
                                                  grid_search_folds=grid_search_folds,
                                                  grid_search=grid_search,
                                                  grid_objective=grid_objective,
@@ -930,7 +894,11 @@ class Learner(object):
             # regardless of what the shuffle keyword argument is set to.
 
             # Evaluate model
-            results.append(self.evaluate(examples[test_index],
+            test_tuple = ExamplesTuple(ids=examples.ids[test_index], 
+                                       classes=examples.classes[test_index], 
+                                       features=examples.features[test_index],
+                                       feat_vectorizer=examples.feat_vectorizer)
+            results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
                                          append=append_predictions,
                                          grid_objective=grid_objective))
