@@ -141,7 +141,7 @@ def _json_dict_iter(path, has_labels=True):
     :type has_labels: bool
     '''
     with open(path) as f:
-        for line, example_num in enumerate(f):
+        for example_num, line in enumerate(f):
             example = json.loads(line.strip())
             curr_id = example.get("id", "EXAMPLE_{}".format(example_num))
             class_name = example["y"] if has_labels else None
@@ -228,7 +228,7 @@ def _tsv_dict_iter(path, has_labels=True):
     '''
     with open(path) as f:
         reader = DictReader(f, dialect=excel_tab)
-        for example_num, row in reader:
+        for example_num, row in enumerate(reader):
             if has_labels:
                 class_name = row[reader.fieldnames[0]]
                 del row[reader.fieldnames[0]]
