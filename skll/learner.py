@@ -621,7 +621,7 @@ class Learner(object):
 
         # limit the number of grid_jobs to be no higher than five or
         # the number of cores for the machine, whichever is lower
-        grid_jobs = min(grid_jobs, cpu_count(), _MAX_CONCURRENT_PROCESSES)
+        grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
 
         # select features
         xtrain = self.feat_selector.fit_transform(examples.features)
