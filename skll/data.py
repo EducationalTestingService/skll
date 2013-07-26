@@ -190,7 +190,7 @@ def _json_dict_iter(path, has_labels=True, quiet=False):
         for example_num, line in enumerate(f):
             example = json.loads(line.strip())
             curr_id = example.get("id", "EXAMPLE_{}".format(example_num))
-            class_name = example["y"] if has_labels else None
+            class_name = _safe_float(example["y"]) if has_labels else None
             example = example["x"]
 
             yield curr_id, class_name, example
@@ -235,7 +235,7 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
                 curr_info_dict = {}
 
                 if has_labels:
-                    class_name = split_line[0]
+                    class_name = _safe_float(split_line[0])
                     field_pairs = split_line[1:]
                 else:
                     class_name = None
@@ -289,7 +289,7 @@ def _tsv_dict_iter(path, has_labels=True, quiet=False):
         reader = DictReader(f, dialect=excel_tab)
         for example_num, row in enumerate(reader):
             if has_labels:
-                class_name = row[reader.fieldnames[0]]
+                class_name = _safe_float(row[reader.fieldnames[0]])
                 del row[reader.fieldnames[0]]
             else:
                 class_name = None
