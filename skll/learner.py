@@ -37,23 +37,24 @@ from collections import defaultdict
 import numpy as np
 import scipy.sparse as sp
 import sklearn.metrics as sk_metrics
+from six import iteritems
+from six import string_types
+from six.moves import cPickle as pickle
+from six.moves import xrange as range
+from six.moves import zip
 from sklearn.base import BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.cross_validation import LeaveOneLabelOut
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.feature_selection import SelectKBest
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.feature_selection import SelectKBest
-from six import iteritems
-from six.moves import zip
-from six.moves import xrange as range
-from six.moves import cPickle as pickle
-from six import string_types
+from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import ExamplesTuple
 from skll.metrics import f1_score_micro, _CORRELATION_METRICS
@@ -592,11 +593,18 @@ class Learner(object):
 
         # seed the random number generator so that randomized algorithms are
         # replicable
-        np.random.seed(9876315986142)
+        rand_seed = 9876315986142
+        np.random.seed(rand_seed)
 
-        # shuffle so that the folds are random for the inner grid search CV
+        # Shuffle so that the folds are random for the inner grid search CV.
+        # You can't shuffle a scipy sparse matrix in place, so unfortunately
+        # we make a copy of everything (and then get rid of the old version)
         if shuffle:
-            np.random.shuffle(examples)
+            ids, classes, features = sk_shuffle(examples.ids, examples.classes,
+                                                examples.features,
+                                                random_state=rand_seed)
+            examples = ExamplesTuple(ids, classes, features,
+                                     examples.feat_vectorizer)
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler

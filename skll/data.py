@@ -44,9 +44,6 @@ ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
                                              'feat_vectorizer'])
 
 
-
-
-
 def load_examples(path, has_labels=True, sparse=True):
     '''
     Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
@@ -77,9 +74,9 @@ def load_examples(path, has_labels=True, sparse=True):
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
     if path.endswith(".tsv"):
-        example_gen_func  = _tsv_dict_iter
+        example_gen_func = _tsv_dict_iter
     elif path.endswith(".jsonlines"):
-        example_gen_func  = _json_dict_iter
+        example_gen_func = _json_dict_iter
     elif path.endswith(".megam"):
         example_gen_func = _megam_dict_iter
     else:
@@ -89,7 +86,7 @@ def load_examples(path, has_labels=True, sparse=True):
 
     # Create generators that we can use to create numpy arrays without wasting
     # memory (even though this requires reading the file multiple times)
-    ids = np.array([curr_id for curr_id, _, _ in 
+    ids = np.array([curr_id for curr_id, _, _ in
                     example_gen_func(path, has_labels=has_labels)])
     classes = np.array([class_name for _, class_name, _ in
                         example_gen_func(path, has_labels=has_labels)])
@@ -123,7 +120,7 @@ def _safe_float(text):
     try:
         return float(text)
     except ValueError:
-        return text 
+        return text
 
 
 def _json_dict_iter(path, has_labels=True):
