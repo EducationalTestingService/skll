@@ -45,7 +45,7 @@ ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
                                              'feat_vectorizer'])
 
 
-def _ids_for_gen_func(example_gen_func, has_labels):
+def _ids_for_gen_func(example_gen_func, path, has_labels):
     '''
     Little helper function to return an array of IDs for a given example
     generator (and whether or not the examples have labels).
@@ -54,7 +54,7 @@ def _ids_for_gen_func(example_gen_func, has_labels):
                      example_gen_func(path, has_labels=has_labels, quiet=True)])
 
 
-def _classes_for_gen_func(example_gen_func, has_labels):
+def _classes_for_gen_func(example_gen_func, path, has_labels):
     '''
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
@@ -63,7 +63,7 @@ def _classes_for_gen_func(example_gen_func, has_labels):
                      example_gen_func(path, has_labels=has_labels, quiet=True)])
 
 
-def _features_for_gen_func(example_gen_func, has_labels, sparse, quiet):
+def _features_for_gen_func(example_gen_func, path, has_labels, sparse, quiet):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
@@ -123,15 +123,17 @@ def load_examples(path, has_labels=True, sparse=True, quiet=False):
     pool = Pool(3)
 
     ids_result = pool.apply_async(_ids_for_gen_func, args=(example_gen_func,
+                                                           path,
                                                            has_labels))
     classes_result = pool.apply_async(_classes_for_gen_func,
-                                      args=(example_gen_func, has_labels))
+                                      args=(example_gen_func, path, has_labels))
     features_result = pool.apply_async(_features_for_gen_func,
-                                       args=(example_gen_func, has_labels,
+                                       args=(example_gen_func, path, has_labels,
                                              sparse, quiet))
 
     # Wait for processes to complete and store results
     pool.close()
+    pool.join()
     ids = ids_result.get()
     classes = classes_result.get()
     features, feat_vectorizer = features_result.get()
