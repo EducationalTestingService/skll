@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (C) 2012-2013 Educational Testing Service
 
 # This file is part of SciKit-Learn Lab.
@@ -44,7 +42,7 @@ from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import configparser, zip
 
 from skll import metrics
-from skll.data import ExamplesTuple, load_examples
+from skll.data import ExamplesTuple, load_examples, MAX_CONCURRENT_PROCESSES
 from skll.learner import Learner
 
 
@@ -227,8 +225,8 @@ def _load_featureset(dirpath, featureset, suffix):
     # "unseen" examples).
     # To do this, find the unique (id, y) tuples, and then make sure that all
     # those ids are unique.
-    unique_tuples = set(itertools.chain(*[[(curr_id, curr_label) for curr_id, 
-                                           curr_label in zip(examples.ids, 
+    unique_tuples = set(itertools.chain(*[[(curr_id, curr_label) for curr_id,
+                                           curr_label in zip(examples.ids,
                                                              examples.classes)]
                                           for examples in example_tuples]))
     if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
@@ -619,7 +617,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                         min_feature_count, grid_search_jobs, cv_folds]
             if not local:
                 jobs.append(Job(_classify_featureset, job_args,
-                                num_slots=(5 if do_grid_search else 1),
+                                num_slots=(MAX_CONCURRENT_PROCESSES if
+                                           do_grid_search else 1),
                                 name=jobname, queue=queue))
             else:
                 _classify_featureset(*job_args)

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (C) 2012-2013 Educational Testing Service
 
 # This file is part of SciKit-Learn Lab.
@@ -33,6 +31,7 @@ import os
 import subprocess
 import sys
 from collections import defaultdict
+from multiprocessing import cpu_count
 
 import numpy as np
 import scipy.sparse as sp
@@ -68,7 +67,7 @@ _REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
                              'gb_regressor'])
 _REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
                                 'rescaled_svr_linear', 'gb_regressor'])
-
+MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
 def _predict_binary(self, X):
@@ -619,6 +618,10 @@ class Learner(object):
             grid_jobs = len(np.unique(grid_search_folds))
             labels = [grid_search_folds[curr_id] for curr_id in examples.ids]
             folds = LeaveOneLabelOut(labels)
+
+        # limit the number of grid_jobs to be no higher than five or
+        # the number of cores for the machine, whichever is lower
+        grid_jobs = min(grid_jobs, cpu_count(), _MAX_CONCURRENT_PROCESSES)
 
         # select features
         xtrain = self.feat_selector.fit_transform(examples.features)
