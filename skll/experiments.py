@@ -42,8 +42,8 @@ from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import configparser, zip
 
 from skll import metrics
-from skll.data import ExamplesTuple, load_examples, MAX_CONCURRENT_PROCESSES
-from skll.learner import Learner
+from skll.data import ExamplesTuple, load_examples
+from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 
 
 # Named tuple for storing job results
