@@ -30,6 +30,7 @@ import json
 import sys
 from csv import DictReader, excel_tab
 from itertools import islice
+from multiprocessing import Pool
 from operator import itemgetter
 
 import numpy as np
@@ -44,7 +45,39 @@ ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
                                              'feat_vectorizer'])
 
 
-def load_examples(path, has_labels=True, sparse=True):
+def _ids_for_gen_func(example_gen_func, has_labels):
+    '''
+    Little helper function to return an array of IDs for a given example
+    generator (and whether or not the examples have labels).
+    '''
+    return np.array([curr_id for curr_id, _, _ in
+                     example_gen_func(path, has_labels=has_labels, quiet=True)])
+
+
+def _classes_for_gen_func(example_gen_func, has_labels):
+    '''
+    Little helper function to return an array of classes for a given example
+    generator (and whether or not the examples have labels).
+    '''
+    return np.array([class_name for _, class_name, _ in
+                     example_gen_func(path, has_labels=has_labels, quiet=True)])
+
+
+def _features_for_gen_func(example_gen_func, has_labels, sparse, quiet):
+    '''
+    Little helper function to return a sparse matrix of features and feature
+    vectorizer for a given example generator (and whether or not the examples
+    have labels).
+    '''
+    feat_vectorizer = DictVectorizer(sparse=sparse)
+    feat_dict_generator = map(itemgetter(2),
+                              example_gen_func(path, has_labels=has_labels,
+                                               quiet=quiet))
+    features = feat_vectorizer.fit_transform(feat_dict_generator)
+    return features, feat_vectorizer
+
+
+def load_examples(path, has_labels=True, sparse=True, quiet=False):
     '''
     Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
     formats.
@@ -62,15 +95,14 @@ def load_examples(path, has_labels=True, sparse=True):
     :type has_labels: bool
     :param sparse: Whether or not to store the features in a numpy CSR matrix.
     :type sparse: bool
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
 
     :return: 4-tuple of an array example ids, an array of class labels, a
              scipy CSR matrix of features, and a DictVectorizer containing
              the mapping between feature names and the column indices in
              the feature matrix.
     '''
-
-    feat_vectorizer = DictVectorizer(sparse=sparse)
-
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
     if path.endswith(".tsv"):
@@ -85,14 +117,24 @@ def load_examples(path, has_labels=True, sparse=True):
                         'You specified: {}'.format(path))
 
     # Create generators that we can use to create numpy arrays without wasting
-    # memory (even though this requires reading the file multiple times)
-    ids = np.array([curr_id for curr_id, _, _ in
-                    example_gen_func(path, has_labels=has_labels)])
-    classes = np.array([class_name for _, class_name, _ in
-                        example_gen_func(path, has_labels=has_labels)])
-    feat_dict_generator = map(itemgetter(2),
-                              example_gen_func(path, has_labels=has_labels))
-    features = feat_vectorizer.fit_transform(feat_dict_generator)
+    # memory (even though this requires reading the file multiple times).
+    # Do this using a process pool so that we can clear out the temporary
+    # variables more easily and do these in parallel.
+    pool = Pool(3)
+
+    ids_result = pool.apply_async(_ids_for_gen_func, args=(example_gen_func,
+                                                           has_labels))
+    classes_result = pool.apply_async(_classes_for_gen_func,
+                                      args=(example_gen_func, has_labels))
+    features_result = pool.apply_async(_features_for_gen_func,
+                                       args=(example_gen_func, has_labels,
+                                             sparse, quiet))
+
+    # Wait for processes to complete and store results
+    pool.close()
+    ids = ids_result.get()
+    classes = classes_result.get()
+    features, feat_vectorizer = features_result.get()
 
     return ExamplesTuple(ids, classes, features, feat_vectorizer)
 
@@ -123,7 +165,7 @@ def _safe_float(text):
         return text
 
 
-def _json_dict_iter(path, has_labels=True):
+def _json_dict_iter(path, has_labels=True, quiet=False):
     '''
     Convert current line in .jsonlines file to a dictionary with the
     following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
@@ -136,8 +178,13 @@ def _json_dict_iter(path, has_labels=True):
     :param has_labels: Whether or not the JSON dicts will contain a class label,
                        "y".
     :type has_labels: bool
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
     '''
     with open(path) as f:
+        if not quiet:
+            print("Loading {}...".format(path), end="", file=sys.stderr)
+            sys.stderr.flush()
         for example_num, line in enumerate(f):
             example = json.loads(line.strip())
             curr_id = example.get("id", "EXAMPLE_{}".format(example_num))
@@ -145,6 +192,11 @@ def _json_dict_iter(path, has_labels=True):
             example = example["x"]
 
             yield curr_id, class_name, example
+
+            if not quiet and example_num % 100 == 0:
+                print(".", end="", file=sys.stderr)
+        if not quiet:
+            print("done", file=sys.stderr)
 
 
 def _megam_dict_iter(path, has_labels=True, quiet=False):
@@ -212,7 +264,7 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
             print("done", file=sys.stderr)
 
 
-def _tsv_dict_iter(path, has_labels=True):
+def _tsv_dict_iter(path, has_labels=True, quiet=False):
     '''
     Generator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
@@ -222,7 +274,12 @@ def _tsv_dict_iter(path, has_labels=True):
     :type path: string
     :param has_labels: Whether or not the TSV's first column is a class label.
     :type has_labels: bool
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
     '''
+    if not quiet:
+        print("Loading {}...".format(path), end="", file=sys.stderr)
+        sys.stderr.flush()
     with open(path) as f:
         reader = DictReader(f, dialect=excel_tab)
         for example_num, row in enumerate(reader):
@@ -246,3 +303,9 @@ def _tsv_dict_iter(path, has_labels=True):
                     row[fname] = fval_float
 
             yield curr_id, class_name, row
+
+            if not quiet and example_num % 100 == 0:
+                print(".", end="", file=sys.stderr)
+        if not quiet:
+            print("done", file=sys.stderr)
+
