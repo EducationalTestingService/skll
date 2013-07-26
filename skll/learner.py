@@ -859,13 +859,20 @@ class Learner(object):
                  model parameters for each fold.
         :rtype: list of 4-tuples
         '''
-        # seed the random number generator so that randomized folds are
+        # seed the random number generator so that randomized algorithms are
         # replicable
-        np.random.seed(9876315986142)
+        rand_seed = 9876315986142
+        np.random.seed(rand_seed)
 
-        # Shuffle examples before splitting
+        # Shuffle so that the folds are random for CV.
+        # You can't shuffle a scipy sparse matrix in place, so unfortunately
+        # we make a copy of everything (and then get rid of the old version)
         if shuffle:
-            np.random.shuffle(examples)
+            ids, classes, features = sk_shuffle(examples.ids, examples.classes,
+                                                examples.features,
+                                                random_state=rand_seed)
+            examples = ExamplesTuple(ids, classes, features,
+                                     examples.feat_vectorizer)
 
         # call train setup
         self._train_setup(examples)

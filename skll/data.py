@@ -231,6 +231,7 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
                 curr_id = line[1:].strip()
             elif line and line not in ['TRAIN', 'TEST', 'DEV']:
                 split_line = line.split()
+                del line
                 curr_info_dict = {}
 
                 if has_labels:
@@ -251,7 +252,9 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
                     # TODO: Add some sort of check for duplicate feature names
 
                     # Add the feature-value pairs to dictionary
-                    curr_info_dict.update(zip(field_names, field_values))
+                    curr_info_dict = {field_name: field_value for field_name,
+                                      field_value in zip(field_names,
+                                                         field_values)}
 
                 yield curr_id, class_name, curr_info_dict
 
