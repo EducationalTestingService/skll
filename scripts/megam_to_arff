@@ -83,7 +83,7 @@ def main():
 
     print("\n@data")
     # Loop through the list of instances, writing the ARFF file
-    for instance_dict in _megam_dict_iter(instances):
+    for instance_dict in instances:
         writer.writerow(instance_dict)
 
 

@@ -140,6 +140,13 @@ if __name__ == '__main__':
 
         # Handle current MegaM file
         for curr_filename, class_name, feature_dict in _megam_dict_iter(infile):
+            if curr_filename in class_dict:
+                if class_dict[curr_filename] != class_name:
+                    raise ValueError(("Inconsisten class label for instance " +
+                                      "{} in {}.").format(curr_filename,
+                                                          infile.name))
+            else:
+                class_dict[curr_filename] = class_name
             # If there are non-zero features, process them
             if feature_dict:
                 for feat_name, feat_val in iteritems(feature_dict):
