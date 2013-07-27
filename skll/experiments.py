@@ -183,7 +183,8 @@ def _parse_config_file(config_file):
                                         'use_dense_features': 'False',
                                         'min_feature_count': '1',
                                         'grid_search_jobs': '0',
-                                        'cv_folds_location': None})
+                                        'cv_folds_location': None,
+                                        'suffix': ''})
     if sys.version_info[:2] >= (3, 2):
         config.read_file(config_file)
     else:
