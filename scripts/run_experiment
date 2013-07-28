@@ -54,7 +54,7 @@ def main():
                               set in the configuration file is held out.',
                         action='store_true')
     parser.add_argument('-k', '--keep_models',
-                        help='If models and/or vocabs exists, re-use them\
+                        help='If trained models already exists, re-use them\
                               instead of overwriting them.',
                         action='store_true')
     parser.add_argument('-l', '--local',
