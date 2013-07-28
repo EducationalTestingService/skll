@@ -29,5 +29,5 @@ Requirements
 -  `scikit-learn <http://scikit-learn.org/stable/>`__
 -  `six <https://pypi.python.org/pypi/six>`__
 -  `PrettyTable <http://pypi.python.org/pypi/PrettyTable>`__
--  `Grid Map <http://github.com/EducationalTestingService/gridmap>`__ (only
-   required if you plan to run things in parallel on a DRMAA-compatible cluster)
+-  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
+   to run things in parallel on a DRMAA-compatible cluster)

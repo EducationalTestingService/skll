@@ -184,7 +184,8 @@ def _parse_config_file(config_file):
                                         'min_feature_count': '1',
                                         'grid_search_jobs': '0',
                                         'cv_folds_location': None,
-                                        'suffix': ''})
+                                        'suffix': '',
+                                        'classifiers': ''})
     if sys.version_info[:2] >= (3, 2):
         config.read_file(config_file)
     else:
@@ -446,9 +447,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                   'on DRMAA-compatible cluster, install gridmap via pip.',
                   file=sys.stderr)
 
-    # extract sklearn parameters from the config file
-    given_learners = json.loads(_fix_json(config.get("Input",
-                                                     "classifiers")))
+    # extract parameters from the config file
+    learners_string = config.get("Input", "learners")
+    if not learners_string:
+        learners_string = config.get("Input", "classifiers")  # For old files
+    given_learners = json.loads(_fix_json(learners_string))
     given_featuresets = json.loads(_fix_json(config.get("Input",
                                                         "featuresets")))
     given_featureset_names = json.loads(_fix_json(config.get("Input",
