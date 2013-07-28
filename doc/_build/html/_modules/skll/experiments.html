@@ -1,3 +1,4 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -6,9 +7,14 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
+
     <title>skll.experiments &mdash; SciKit-Learn Lab 0.9 documentation</title>
+
+<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
+
+
     
-    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/rtd.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
@@ -23,6 +29,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/searchtools.js"></script>
     <link rel="top" title="SciKit-Learn Lab 0.9 documentation" href="../../index.html" />
     <link rel="up" title="Module code" href="../index.html" /> 
   </head>
@@ -47,8 +54,6 @@
           <div class="body">
             
   <h1>Source code for skll.experiments</h1><div class="highlight"><pre>
-<span class="c">#!/usr/bin/env python</span>
-
 <span class="c"># Copyright (C) 2012-2013 Educational Testing Service</span>
 
 <span class="c"># This file is part of SciKit-Learn Lab.</span>
@@ -84,24 +89,24 @@
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">csv</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">namedtuple</span><span class="p">,</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">namedtuple</span>
 <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.sparse</span> <span class="kn">as</span> <span class="nn">sp</span>
 <span class="kn">from</span> <span class="nn">prettytable</span> <span class="kn">import</span> <span class="n">PrettyTable</span><span class="p">,</span> <span class="n">ALL</span>
-<span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">iterkeys</span><span class="p">,</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">itervalues</span>  <span class="c"># Python 2/3</span>
-<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">configparser</span>
+<span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">iterkeys</span><span class="p">,</span> <span class="n">iteritems</span>  <span class="c"># Python 2/3</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">configparser</span><span class="p">,</span> <span class="nb">zip</span>
 
-<span class="kn">from</span> <span class="nn">skll.learner</span> <span class="kn">import</span> <span class="n">Learner</span>
-<span class="kn">from</span> <span class="nn">skll.metrics</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">skll.data</span> <span class="kn">import</span> <span class="n">load_examples</span>
+<span class="kn">from</span> <span class="nn">skll</span> <span class="kn">import</span> <span class="n">metrics</span>
+<span class="kn">from</span> <span class="nn">skll.data</span> <span class="kn">import</span> <span class="n">ExamplesTuple</span><span class="p">,</span> <span class="n">load_examples</span>
+<span class="kn">from</span> <span class="nn">skll.learner</span> <span class="kn">import</span> <span class="n">Learner</span><span class="p">,</span> <span class="n">MAX_CONCURRENT_PROCESSES</span>
 
 
 <span class="c"># Named tuple for storing job results</span>
-<span class="n">LearnerResultInfo</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;LearnerResultInfo&#39;</span><span class="p">,</span>
-                               <span class="p">[</span><span class="s">&#39;train_set_name&#39;</span><span class="p">,</span> <span class="s">&#39;test_set_name&#39;</span><span class="p">,</span>
-                                <span class="s">&#39;featureset&#39;</span><span class="p">,</span> <span class="s">&#39;given_learner&#39;</span><span class="p">,</span> <span class="s">&#39;task&#39;</span><span class="p">,</span>
-                                <span class="s">&#39;task_results&#39;</span><span class="p">,</span> <span class="s">&#39;grid_scores&#39;</span><span class="p">])</span>
+<span class="n">_LearnerResultInfo</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;_LearnerResultInfo&#39;</span><span class="p">,</span>
+                                <span class="p">[</span><span class="s">&#39;train_set_name&#39;</span><span class="p">,</span> <span class="s">&#39;test_set_name&#39;</span><span class="p">,</span>
+                                 <span class="s">&#39;featureset&#39;</span><span class="p">,</span> <span class="s">&#39;given_learner&#39;</span><span class="p">,</span> <span class="s">&#39;task&#39;</span><span class="p">,</span>
+                                 <span class="s">&#39;task_results&#39;</span><span class="p">,</span> <span class="s">&#39;grid_scores&#39;</span><span class="p">])</span>
 
 
 <span class="k">def</span> <span class="nf">_get_stat_float</span><span class="p">(</span><span class="n">class_result_dict</span><span class="p">,</span> <span class="n">stat</span><span class="p">):</span>
@@ -196,7 +201,7 @@
                                         <span class="s">&quot;F-measure&quot;</span><span class="p">],</span>
                                        <span class="n">header</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
             <span class="n">result_table</span><span class="o">.</span><span class="n">align</span> <span class="o">=</span> <span class="s">&quot;r&quot;</span>
-            <span class="n">result_table</span><span class="p">[</span><span class="s">&quot;Class&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">align</span> <span class="o">=</span> <span class="s">&quot;l&quot;</span>
+            <span class="n">result_table</span><span class="o">.</span><span class="n">align</span><span class="p">[</span><span class="s">&quot;Class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;l&quot;</span>
             <span class="n">result_table</span><span class="o">.</span><span class="n">float_format</span> <span class="o">=</span> <span class="s">&#39;.3&#39;</span>
             <span class="k">for</span> <span class="n">actual_class</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">:</span>
                 <span class="c"># Convert sums to means</span>
@@ -234,7 +239,8 @@
                                         <span class="s">&#39;use_dense_features&#39;</span><span class="p">:</span> <span class="s">&#39;False&#39;</span><span class="p">,</span>
                                         <span class="s">&#39;min_feature_count&#39;</span><span class="p">:</span> <span class="s">&#39;1&#39;</span><span class="p">,</span>
                                         <span class="s">&#39;grid_search_jobs&#39;</span><span class="p">:</span> <span class="s">&#39;0&#39;</span><span class="p">,</span>
-                                        <span class="s">&#39;cv_folds_location&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">})</span>
+                                        <span class="s">&#39;cv_folds_location&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+                                        <span class="s">&#39;suffix&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">})</span>
     <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
         <span class="n">config</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -252,56 +258,79 @@
         <span class="n">featureset</span> <span class="o">=</span> <span class="p">[</span><span class="n">featureset</span><span class="p">]</span>
 
     <span class="c"># Load a list of lists of examples, one list of examples per featureset.</span>
-    <span class="n">example_lists</span> <span class="o">=</span> <span class="p">[</span><span class="n">load_examples</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span>
-                                                <span class="n">featfile</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">))</span>
-                     <span class="k">for</span> <span class="n">featfile</span> <span class="ow">in</span> <span class="n">featureset</span><span class="p">]</span>
+    <span class="n">file_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">featfile</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">)</span> <span class="k">for</span> <span class="n">featfile</span>
+                  <span class="ow">in</span> <span class="n">featureset</span><span class="p">]</span>
+    <span class="n">example_tuples</span> <span class="o">=</span> <span class="p">[</span><span class="n">load_examples</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="n">file_names</span><span class="p">]</span>
 
-    <span class="c"># Check that the IDs are unique.</span>
-    <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_lists</span><span class="p">:</span>
-        <span class="n">ex_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">example</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">]</span>
+    <span class="c"># Check that the IDs are unique within each file.</span>
+    <span class="k">for</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">examples</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">file_names</span><span class="p">,</span> <span class="n">example_tuples</span><span class="p">):</span>
+        <span class="n">ex_ids</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">ids</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ex_ids</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ex_ids</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The example IDs are not unique.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">((</span><span class="s">&#39;The example IDs are not unique in &#39;</span> <span class="o">+</span>
+                              <span class="s">&#39;{}.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_name</span><span class="p">))</span>
 
     <span class="c"># Check that the different feature files have the same IDs.</span>
     <span class="c"># To do this, make a sorted tuple of unique IDs for each feature file,</span>
     <span class="c"># and then make sure they are all the same by making sure the set is size 1.</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">({</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">({</span><span class="n">ex</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">}))</span>
-            <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_lists</span><span class="p">})</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The sets of example IDs in two feature files do not&#39;</span> <span class="o">+</span>
-                         <span class="s">&#39;match&#39;</span><span class="p">)</span>
+    <span class="n">mismatch_num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">({</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">ids</span><span class="p">))</span> <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span>
+                        <span class="n">example_tuples</span><span class="p">})</span>
+    <span class="k">if</span> <span class="n">mismatch_num</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">((</span><span class="s">&#39;The sets of example IDs in {} feature files do not&#39;</span> <span class="o">+</span>
+                          <span class="s">&#39; match&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mismatch_num</span><span class="p">))</span>
 
     <span class="c"># Make sure there is a unique label for every example (or no label, for</span>
     <span class="c"># &quot;unseen&quot; examples).</span>
     <span class="c"># To do this, find the unique (id, y) tuples, and then make sure that all</span>
     <span class="c"># those ids are unique.</span>
-    <span class="n">unique_tuples</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="p">[[(</span><span class="n">ex</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">],</span> <span class="n">ex</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">ex</span>
-                                           <span class="ow">in</span> <span class="n">examples</span> <span class="k">if</span> <span class="s">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">ex</span><span class="p">]</span>
-                                          <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_lists</span><span class="p">]))</span>
+    <span class="n">unique_tuples</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="p">[[(</span><span class="n">curr_id</span><span class="p">,</span> <span class="n">curr_label</span><span class="p">)</span> <span class="k">for</span> <span class="n">curr_id</span><span class="p">,</span>
+                                           <span class="n">curr_label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">ids</span><span class="p">,</span>
+                                                             <span class="n">examples</span><span class="o">.</span><span class="n">classes</span><span class="p">)]</span>
+                                          <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_tuples</span><span class="p">]))</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">({</span><span class="n">tup</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">unique_tuples</span><span class="p">})</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_tuples</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Two feature files have different labels (i.e., y&#39;</span> <span class="o">+</span>
-                         <span class="s">&#39; values) for the same ID.&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;At least two feature files have different labels &#39;</span> <span class="o">+</span>
+                         <span class="s">&#39;(i.e., y values) for the same ID.&#39;</span><span class="p">)</span>
 
-    <span class="c"># Now, create the final dictionary of examples with merged features</span>
-    <span class="n">example_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">examples</span> <span class="ow">in</span> <span class="n">example_lists</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">:</span>
-            <span class="n">ex_id</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">ex_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">example_dict</span><span class="p">:</span>
-                <span class="n">example_dict</span><span class="p">[</span><span class="n">ex_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;x&#39;</span><span class="p">:</span> <span class="p">{},</span> <span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="n">ex_id</span><span class="p">}</span>
-
-            <span class="c"># Check that two feature files have unique feature names by</span>
-            <span class="c"># checking that the new features don&#39;t already exist</span>
-            <span class="c"># (i.e., that the intersection is null set).</span>
-            <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> \
-               <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">example_dict</span><span class="p">[</span><span class="n">ex_id</span><span class="p">][</span><span class="s">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+    <span class="c"># Now, create the final ExamplesTuple of examples with merged features</span>
+    <span class="n">merged_vectorizer</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">merged_features</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">merged_ids</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">merged_classes</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">ids</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">feat_vectorizer</span> <span class="ow">in</span> <span class="n">example_tuples</span><span class="p">:</span>
+        <span class="c"># Combine feature matrices and vectorizers</span>
+        <span class="k">if</span> <span class="n">merged_features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># Check for duplicate feature names</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">merged_vectorizer</span><span class="o">.</span><span class="n">get_feature_names</span><span class="p">())</span> <span class="o">&amp;</span>
+                    <span class="nb">set</span><span class="p">(</span><span class="n">feat_vectorizer</span><span class="o">.</span><span class="n">get_feature_names</span><span class="p">())):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Two feature files have the same feature!&#39;</span><span class="p">)</span>
 
-            <span class="c"># update x and y values</span>
-            <span class="k">if</span> <span class="s">&#39;y&#39;</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
-                <span class="n">example_dict</span><span class="p">[</span><span class="n">ex_id</span><span class="p">][</span><span class="s">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span>
-            <span class="n">example_dict</span><span class="p">[</span><span class="n">ex_id</span><span class="p">][</span><span class="s">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">])</span>
+            <span class="n">merged_features</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">merged_features</span><span class="p">,</span> <span class="n">features</span><span class="p">],</span> <span class="s">&#39;csr&#39;</span><span class="p">)</span>
+            <span class="n">num_merged</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">merged_features</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">feat_name</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">feat_vectorizer</span><span class="o">.</span><span class="n">vocabulary_</span><span class="p">:</span>
+                <span class="n">merged_vectorizer</span><span class="o">.</span><span class="n">vocabulary_</span><span class="p">[</span><span class="n">feat_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">index</span> <span class="o">+</span> <span class="n">num_merged</span>
+                <span class="n">merged_vectorizer</span><span class="o">.</span><span class="n">feature_names_</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feat_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">merged_features</span> <span class="o">=</span> <span class="n">features</span>
+            <span class="n">merged_vectorizer</span> <span class="o">=</span> <span class="n">feat_vectorizer</span>
 
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itervalues</span><span class="p">(</span><span class="n">example_dict</span><span class="p">)))</span>  <span class="c"># Python 2/3 compatible</span>
+        <span class="c"># These should be the same for each ExamplesTuple, so only store once</span>
+        <span class="k">if</span> <span class="n">merged_ids</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">merged_ids</span> <span class="o">=</span> <span class="n">ids</span>
+            <span class="n">merged_classes</span> <span class="o">=</span> <span class="n">classes</span>
+        <span class="c"># Check that IDs are in the same order</span>
+        <span class="k">elif</span> <span class="n">merged_ids</span> <span class="o">!=</span> <span class="n">ids</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;IDs are not in the same order in each feature &#39;</span> <span class="o">+</span>
+                             <span class="s">&#39;file!&#39;</span><span class="p">)</span>
+        <span class="c"># Check that classes don&#39;t conflict</span>
+        <span class="k">elif</span> <span class="n">merged_classes</span> <span class="o">!=</span> <span class="n">classes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Feature files have conflicting labels for &#39;</span> <span class="o">+</span>
+                             <span class="s">&#39;examples with the same ID!&#39;</span><span class="p">)</span>
+
+    <span class="c"># Sort merged_features.feature_names_, because that happens whenever the list</span>
+    <span class="c"># is modified internally by DictVectorizer</span>
+    <span class="n">merged_vectorizer</span><span class="o">.</span><span class="n">feature_names_</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">ExamplesTuple</span><span class="p">(</span><span class="n">merged_ids</span><span class="p">,</span> <span class="n">merged_classes</span><span class="p">,</span> <span class="n">merged_features</span><span class="p">,</span>
+                         <span class="n">merged_vectorizer</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_classify_featureset</span><span class="p">(</span><span class="n">jobname</span><span class="p">,</span> <span class="n">featureset</span><span class="p">,</span> <span class="n">given_learner</span><span class="p">,</span> <span class="n">train_path</span><span class="p">,</span>
@@ -408,9 +437,9 @@
             <span class="n">learner</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_examples</span><span class="p">,</span> <span class="n">prediction_prefix</span><span class="o">=</span><span class="n">prediction_prefix</span><span class="p">)</span>
 
         <span class="c"># write out results to file if we&#39;re not predicting</span>
-        <span class="n">result_info</span> <span class="o">=</span> <span class="n">LearnerResultInfo</span><span class="p">(</span><span class="n">train_set_name</span><span class="p">,</span> <span class="n">test_set_name</span><span class="p">,</span>
-                                        <span class="n">featureset</span><span class="p">,</span> <span class="n">given_learner</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span>
-                                        <span class="n">results</span><span class="p">,</span> <span class="n">grid_scores</span><span class="p">)</span>
+        <span class="n">result_info</span> <span class="o">=</span> <span class="n">_LearnerResultInfo</span><span class="p">(</span><span class="n">train_set_name</span><span class="p">,</span> <span class="n">test_set_name</span><span class="p">,</span>
+                                         <span class="n">featureset</span><span class="p">,</span> <span class="n">given_learner</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span>
+                                         <span class="n">results</span><span class="p">,</span> <span class="n">grid_scores</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">task</span> <span class="o">!=</span> <span class="s">&#39;predict&#39;</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">resultspath</span><span class="p">,</span> <span class="s">&#39;{}.results&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">jobname</span><span class="p">)),</span>
                       <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output_file</span><span class="p">:</span>
@@ -645,7 +674,8 @@
                         <span class="n">min_feature_count</span><span class="p">,</span> <span class="n">grid_search_jobs</span><span class="p">,</span> <span class="n">cv_folds</span><span class="p">]</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">local</span><span class="p">:</span>
                 <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Job</span><span class="p">(</span><span class="n">_classify_featureset</span><span class="p">,</span> <span class="n">job_args</span><span class="p">,</span>
-                                <span class="n">num_slots</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span> <span class="k">if</span> <span class="n">do_grid_search</span> <span class="k">else</span> <span class="mi">1</span><span class="p">),</span>
+                                <span class="n">num_slots</span><span class="o">=</span><span class="p">(</span><span class="n">MAX_CONCURRENT_PROCESSES</span> <span class="k">if</span>
+                                           <span class="n">do_grid_search</span> <span class="k">else</span> <span class="mi">1</span><span class="p">),</span>
                                 <span class="n">name</span><span class="o">=</span><span class="n">jobname</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="n">queue</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">_classify_featureset</span><span class="p">(</span><span class="o">*</span><span class="n">job_args</span><span class="p">)</span>
@@ -785,9 +815,16 @@
           <li><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2012-2013, Educational Testing Service.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
-    </div>
+<div class="footer">
+    &copy; Copyright 2012-2013, Educational Testing Service.
+  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+  <br />Theme based on <a href="http://readthedocs.org/">Read The Docs</a>
+
+</div>
+
+
+
+
+
   </body>
 </html>

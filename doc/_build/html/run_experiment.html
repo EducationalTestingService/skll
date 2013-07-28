@@ -1,3 +1,4 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -6,14 +7,19 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
+
     <title>Running Experiments &mdash; SciKit-Learn Lab 0.9 documentation</title>
+
+<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
+
+
     
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/rtd.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
+        URL_ROOT:    '',
         VERSION:     '0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -23,9 +29,10 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/searchtools.js"></script>
     <link rel="top" title="SciKit-Learn Lab 0.9 documentation" href="index.html" />
     <link rel="next" title="skll Package" href="skll.html" />
-    <link rel="prev" title="SciKit-Learn Lab (SKLL) Documentation" href="index.html" /> 
+    <link rel="prev" title="Installation" href="getting_started.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,7 +48,7 @@
           <a href="skll.html" title="skll Package"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="SciKit-Learn Lab (SKLL) Documentation"
+          <a href="getting_started.html" title="Installation"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">SciKit-Learn Lab 0.9 documentation</a> &raquo;</li> 
       </ul>
@@ -57,7 +64,7 @@
 <p>The simplest way to use SKLL is to create configuration files that describe
 experiments you would like to run on pre-generated features. This document
 describes the supported feature file formats, how to create configuration files
-(and layout your directories), and how use <tt class="docutils literal"><span class="pre">run_experiment</span></tt> to get things
+(and layout your directories), and how to use <tt class="docutils literal"><span class="pre">run_experiment</span></tt> to get things
 going.</p>
 <div class="section" id="feature-file-formats">
 <h2>Feature file formats<a class="headerlink" href="#feature-file-formats" title="Permalink to this headline">¶</a></h2>
@@ -96,9 +103,9 @@ be specified (making this a poor choice for sparse data).</li>
 JSON dictionary (the entire contents of a normal JSON file). Each dictionary
 is expected to contain the following keys:</p>
 <ul class="last simple">
-<li>y: The class label.</li>
-<li>x: A dictionary of feature values.</li>
-<li>id: An optional instance ID.</li>
+<li><em>y</em>: The class label.</li>
+<li><em>x</em>: A dictionary of feature values.</li>
+<li><em>id</em>: An optional instance ID.</li>
 </ul>
 </dd>
 </dl>
@@ -106,6 +113,74 @@ is expected to contain the following keys:</p>
 </div>
 <div class="section" id="creating-configuration-files">
 <h2>Creating configuration files<a class="headerlink" href="#creating-configuration-files" title="Permalink to this headline">¶</a></h2>
+<p>The experiment configuration files that run_experiment accepts are standard Python
+configuration files that are similar in format to Windows INI files.[#]_ There are
+three expected sections in a configuration file: <tt class="docutils literal"><span class="pre">Input</span></tt>, <tt class="docutils literal"><span class="pre">Tuning</span></tt>, and
+<tt class="docutils literal"><span class="pre">Output</span></tt>. We discuss each of the possible settings that fall under each heading
+below.</p>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>train_location</strong></dt>
+<dd>Path to directory containing training data files. There must be a file
+for each featureset.</dd>
+<dt><strong>test_location</strong></dt>
+<dd>Path to directory containing training data files. There must be a file
+for each featureset.  <em>If unspecified, cross-validation is performed.</em></dd>
+<dt><strong>cv_folds_location</strong></dt>
+<dd><p class="first">Path to a csv file (with a header that is ignored) specifyingfolds for
+cross-validation. The first column should consist of training set IDs
+and the second should be a string for the fold ID (e.g., 1 through 5,
+A through D, etc.).  If specified, the CV and grid search will leave
+one fold ID out at a time.</p>
+<p class="last"><em>Note</em>: K-1 folds will be used for grid search within CV, so there
+should be more at least 3 fold IDs.</p>
+</dd>
+<dt><strong>featuresets</strong></dt>
+<dd>List of lists of prefixes for the files containing the features you
+would like to train/test on.  Each list will end up being a job.</dd>
+<dt><strong>featureset_names</strong></dt>
+<dd>Optional list of names for the feature sets.  If omitted, then the
+prefixes will be munged together to make names.</dd>
+<dt><strong>classifiers</strong></dt>
+<dd><p class="first">List of sklearn models to try using. Acceptable values are described
+below.</p>
+<ul class="last simple">
+<li><em>logistic</em>: Logistic regression using LibLinear</li>
+<li><em>svm_linear</em>: SVM using LibLinear</li>
+<li><em>svm_radial</em>: SVM using LibSVM</li>
+<li><em>naivebayes</em>: Multinomial Naive Bayes</li>
+<li><em>dtree</em>: Decision Tree</li>
+<li><em>rforest</em>: Random Forest</li>
+<li><em>gradient</em>: Gradient Boosting Classifier</li>
+<li><em>gb_regressor</em>: Gradient Boosting Regressor</li>
+<li><em>ridge</em>: Ridge Regression</li>
+<li><em>rescaled_ridge</em>: Ridge Regression, with predictions rescaled and
+constrained to better match the training set.</li>
+<li><em>svr_linear</em>: Support Vector Regression with a linear kernel.</li>
+<li><em>rescaled_svr_linear</em>: Linear SVR, with predictions rescaled and
+constrained to better match the training set.</li>
+<li><em>rescaled_gb_regressor</em>: Gradient Boosting Regressor, with predictions
+rescaled and constrained to better match the training set.</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="tuning">
+<h3>Tuning<a class="headerlink" href="#tuning" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="output">
+<h3>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h3>
+<table class="docutils footnote" frame="void" id="id1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[1]</td><td>We are considering adding support for JSON configuration files in the future,
+but we have not added this functionality yet.</td></tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="section" id="using-run-experiment">
 <h2>Using run_experiment<a class="headerlink" href="#using-run-experiment" title="Permalink to this headline">¶</a></h2>
@@ -122,15 +197,20 @@ is expected to contain the following keys:</p>
   <ul>
 <li><a class="reference internal" href="#">Running Experiments</a><ul>
 <li><a class="reference internal" href="#feature-file-formats">Feature file formats</a></li>
-<li><a class="reference internal" href="#creating-configuration-files">Creating configuration files</a></li>
+<li><a class="reference internal" href="#creating-configuration-files">Creating configuration files</a><ul>
+<li><a class="reference internal" href="#input">Input</a></li>
+<li><a class="reference internal" href="#tuning">Tuning</a></li>
+<li><a class="reference internal" href="#output">Output</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#using-run-experiment">Using run_experiment</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">SciKit-Learn Lab (SKLL) Documentation</a></p>
+  <p class="topless"><a href="getting_started.html"
+                        title="previous chapter">Installation</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="skll.html"
                         title="next chapter">skll Package</a></p>
@@ -169,14 +249,21 @@ is expected to contain the following keys:</p>
           <a href="skll.html" title="skll Package"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="SciKit-Learn Lab (SKLL) Documentation"
+          <a href="getting_started.html" title="Installation"
              >previous</a> |</li>
         <li><a href="index.html">SciKit-Learn Lab 0.9 documentation</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2012-2013, Educational Testing Service.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
-    </div>
+<div class="footer">
+    &copy; Copyright 2012-2013, Educational Testing Service.
+  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+  <br />Theme based on <a href="http://readthedocs.org/">Read The Docs</a>
+
+</div>
+
+
+
+
+
   </body>
 </html>

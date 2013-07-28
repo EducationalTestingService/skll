@@ -1,3 +1,4 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -6,9 +7,14 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
+
     <title>skll.data &mdash; SciKit-Learn Lab 0.9 documentation</title>
+
+<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
+
+
     
-    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/rtd.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
@@ -23,6 +29,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/searchtools.js"></script>
     <link rel="top" title="SciKit-Learn Lab 0.9 documentation" href="../../index.html" />
     <link rel="up" title="Module code" href="../index.html" /> 
   </head>
@@ -65,7 +72,7 @@
 <span class="c"># along with SciKit-Learn Lab.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
 <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">Module to handle loading data from various types of data files.</span>
+<span class="sd">Handles loading data from various types of data files.</span>
 
 <span class="sd">:author: Dan Blanchard (dblanchard@ets.org)</span>
 <span class="sd">:author: Michael Heilman (mheilman@ets.org)</span>
@@ -75,93 +82,58 @@
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 
-<span class="kn">import</span> <span class="nn">csv</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">csv</span> <span class="kn">import</span> <span class="n">DictReader</span><span class="p">,</span> <span class="n">excel_tab</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">islice</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">itemgetter</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">bs4</span> <span class="kn">import</span> <span class="n">UnicodeDammit</span>
-<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="nb">zip</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">iteritems</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="nb">map</span><span class="p">,</span> <span class="nb">zip</span>
+<span class="kn">from</span> <span class="nn">sklearn.feature_extraction</span> <span class="kn">import</span> <span class="n">DictVectorizer</span>
 
 
-<span class="k">def</span> <span class="nf">_sanitize_line</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+<span class="n">ExamplesTuple</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;ExamplesTuple&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;ids&#39;</span><span class="p">,</span> <span class="s">&#39;classes&#39;</span><span class="p">,</span> <span class="s">&#39;features&#39;</span><span class="p">,</span>
+                                             <span class="s">&#39;feat_vectorizer&#39;</span><span class="p">])</span>
+
+
+<span class="k">def</span> <span class="nf">_ids_for_gen_func</span><span class="p">(</span><span class="n">example_gen_func</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    :param line: The line to clean up.</span>
-<span class="sd">    :type line: string</span>
-
-<span class="sd">    :returns: Copy of line with all non-ASCII characters replaced with</span>
-<span class="sd">    &lt;U1234&gt; sequences where 1234 is the value of ord() for the character.</span>
+<span class="sd">    Little helper function to return an array of IDs for a given example</span>
+<span class="sd">    generator (and whether or not the examples have labels).</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="n">char_list</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
-        <span class="n">char_num</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
-        <span class="n">char_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&lt;U{}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">char_num</span><span class="p">)</span> <span class="k">if</span> <span class="n">char_num</span> <span class="o">&gt;</span> <span class="mi">127</span> <span class="k">else</span> <span class="n">char</span><span class="p">)</span>
-    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">char_list</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">curr_id</span> <span class="k">for</span> <span class="n">curr_id</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span>
+                     <span class="n">example_gen_func</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="n">has_labels</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">True</span><span class="p">)])</span>
 
 
-<span class="k">def</span> <span class="nf">_megam_dict_iter</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_classes_for_gen_func</span><span class="p">(</span><span class="n">example_gen_func</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    Generator that yields tuples of classes and dictionaries mapping from</span>
-<span class="sd">    features to values for each pair of lines in the MegaM -fvals file specified</span>
-<span class="sd">    by path.</span>
-
-<span class="sd">    :param path: Path to MegaM file (-fvals format)</span>
-<span class="sd">    :type path: basestring</span>
-<span class="sd">    :param has_labels: Whether or not the file has a class label separated by</span>
-<span class="sd">                       a tab before the space delimited feature-value pairs.</span>
-<span class="sd">    :type has_labels: bool</span>
-<span class="sd">    :param quiet: Do not print &quot;Loading...&quot; status message to stderr.</span>
-<span class="sd">    :type quiet: bool</span>
+<span class="sd">    Little helper function to return an array of classes for a given example</span>
+<span class="sd">    generator (and whether or not the examples have labels).</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-
-    <span class="n">line_count</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;Loading {}...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">megam_file</span><span class="p">:</span>
-        <span class="n">curr_id</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">megam_file</span><span class="p">:</span>
-            <span class="c"># Process encoding</span>
-            <span class="n">line</span> <span class="o">=</span> <span class="n">UnicodeDammit</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;utf-8&#39;</span><span class="p">,</span> <span class="s">&#39;windows-1252&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">unicode_markup</span>
-            <span class="n">line</span> <span class="o">=</span> <span class="n">_sanitize_line</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-            <span class="c"># Handle instance lines</span>
-            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;#&#39;</span><span class="p">):</span>
-                <span class="n">curr_id</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-            <span class="k">elif</span> <span class="n">line</span> <span class="ow">and</span> <span class="n">line</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;TRAIN&#39;</span><span class="p">,</span> <span class="s">&#39;TEST&#39;</span><span class="p">,</span> <span class="s">&#39;DEV&#39;</span><span class="p">]:</span>
-                <span class="n">split_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-                <span class="n">curr_info_dict</span> <span class="o">=</span> <span class="p">{}</span>
-
-                <span class="k">if</span> <span class="n">has_labels</span><span class="p">:</span>
-                    <span class="n">class_name</span> <span class="o">=</span> <span class="n">split_line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="n">field_pairs</span> <span class="o">=</span> <span class="n">split_line</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">class_name</span> <span class="o">=</span> <span class="bp">None</span>
-                    <span class="n">field_pairs</span> <span class="o">=</span> <span class="n">split_line</span>
-
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">field_pairs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="c"># Get current instances feature-value pairs</span>
-                    <span class="n">field_names</span> <span class="o">=</span> <span class="n">islice</span><span class="p">(</span><span class="n">field_pairs</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-                    <span class="c"># Convert values to floats, because otherwise features&#39;ll</span>
-                    <span class="c"># be categorical</span>
-                    <span class="n">field_values</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">islice</span><span class="p">(</span><span class="n">field_pairs</span><span class="p">,</span>
-                                                                 <span class="mi">1</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-
-                    <span class="c"># TODO: Add some sort of check for duplicate feature names</span>
-
-                    <span class="c"># Add the feature-value pairs to dictionary</span>
-                    <span class="n">curr_info_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">field_names</span><span class="p">,</span> <span class="n">field_values</span><span class="p">))</span>
-
-                <span class="k">yield</span> <span class="n">curr_id</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="n">curr_info_dict</span>
-                <span class="n">curr_id</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="n">line_count</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span> <span class="ow">and</span> <span class="n">line_count</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">print</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;done&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">class_name</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span>
+                     <span class="n">example_gen_func</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="n">has_labels</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">True</span><span class="p">)])</span>
 
 
-<div class="viewcode-block" id="load_examples"><a class="viewcode-back" href="../../skll.html#skll.data.load_examples">[docs]</a><span class="k">def</span> <span class="nf">load_examples</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_features_for_gen_func</span><span class="p">(</span><span class="n">example_gen_func</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="p">,</span> <span class="n">sparse</span><span class="p">,</span> <span class="n">quiet</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Little helper function to return a sparse matrix of features and feature</span>
+<span class="sd">    vectorizer for a given example generator (and whether or not the examples</span>
+<span class="sd">    have labels).</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">feat_vectorizer</span> <span class="o">=</span> <span class="n">DictVectorizer</span><span class="p">(</span><span class="n">sparse</span><span class="o">=</span><span class="n">sparse</span><span class="p">)</span>
+    <span class="n">feat_dict_generator</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+                              <span class="n">example_gen_func</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="n">has_labels</span><span class="p">,</span>
+                                               <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">))</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="n">feat_vectorizer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">feat_dict_generator</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">features</span><span class="p">,</span> <span class="n">feat_vectorizer</span>
+
+
+<div class="viewcode-block" id="load_examples"><a class="viewcode-back" href="../../skll.html#skll.data.load_examples">[docs]</a><span class="k">def</span> <span class="nf">load_examples</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">sparse</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM</span>
 <span class="sd">    formats.</span>
@@ -177,78 +149,224 @@
 <span class="sd">    :type path: basestring</span>
 <span class="sd">    :param has_labels: Whether or not the file contains class labels.</span>
 <span class="sd">    :type has_labels: bool</span>
+<span class="sd">    :param sparse: Whether or not to store the features in a numpy CSR matrix.</span>
+<span class="sd">    :type sparse: bool</span>
+<span class="sd">    :param quiet: Do not print &quot;Loading...&quot; status message to stderr.</span>
+<span class="sd">    :type quiet: bool</span>
 
-<span class="sd">    :return: 2-column numpy.array of examples with the &quot;y&quot; containing the</span>
-<span class="sd">             class labels and &quot;x&quot; containing the features for each example.</span>
+<span class="sd">    :return: 4-tuple of an array example ids, an array of class labels, a</span>
+<span class="sd">             scipy CSR matrix of features, and a DictVectorizer containing</span>
+<span class="sd">             the mapping between feature names and the column indices in</span>
+<span class="sd">             the feature matrix.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># Build an appropriate generator for examples so we process the input file</span>
+    <span class="c"># through the feature vectorizer without using tons of memory</span>
     <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;.tsv&quot;</span><span class="p">):</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">csv</span><span class="o">.</span><span class="n">excel_tab</span><span class="p">)</span>
-            <span class="n">header</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">reader</span><span class="p">)</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">_preprocess_tsv_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">example_num</span><span class="p">,</span>
-                                       <span class="n">has_labels</span><span class="o">=</span><span class="n">has_labels</span><span class="p">)</span>
-                   <span class="k">for</span> <span class="n">example_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reader</span><span class="p">)]</span>
+        <span class="n">example_gen_func</span> <span class="o">=</span> <span class="n">_tsv_dict_iter</span>
     <span class="k">elif</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;.jsonlines&quot;</span><span class="p">):</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">example_num</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">example</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-                <span class="k">if</span> <span class="s">&quot;id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
-                    <span class="n">example</span><span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;EXAMPLE_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">example_num</span><span class="p">)</span>
-                <span class="n">example_num</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+        <span class="n">example_gen_func</span> <span class="o">=</span> <span class="n">_json_dict_iter</span>
     <span class="k">elif</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;.megam&quot;</span><span class="p">):</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="p">[{</span><span class="s">&quot;y&quot;</span><span class="p">:</span> <span class="n">class_name</span><span class="p">,</span>
-                <span class="s">&quot;x&quot;</span><span class="p">:</span> <span class="n">feature_dict</span><span class="p">,</span>
-                <span class="s">&quot;id&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s">&quot;EXAMPLE_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">example_num</span><span class="p">)</span> <span class="k">if</span> <span class="n">example_id</span> <span class="ow">is</span> <span class="bp">None</span>
-                       <span class="k">else</span> <span class="n">example_id</span><span class="p">)}</span>
-               <span class="k">for</span> <span class="n">example_num</span><span class="p">,</span> <span class="p">(</span><span class="n">example_id</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="n">feature_dict</span><span class="p">)</span>
-               <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">_megam_dict_iter</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="n">has_labels</span><span class="p">))]</span>
+        <span class="n">example_gen_func</span> <span class="o">=</span> <span class="n">_megam_dict_iter</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Example files must be in either TSV, MegaM, or the&#39;</span> <span class="o">+</span>
-                        <span class="s">&#39;preprocessed .jsonlines format. &#39;</span> <span class="o">+</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Example files must be in either TSV, MegaM, or &#39;</span> <span class="o">+</span>
+                        <span class="s">&#39;.jsonlines format. &#39;</span> <span class="o">+</span>
                         <span class="s">&#39;You specified: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
 
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+    <span class="c"># Create generators that we can use to create numpy arrays without wasting</span>
+    <span class="c"># memory (even though this requires reading the file multiple times).</span>
+    <span class="c"># Do this using a process pool so that we can clear out the temporary</span>
+    <span class="c"># variables more easily and do these in parallel.</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">ids_result</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_ids_for_gen_func</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">example_gen_func</span><span class="p">,</span>
+                                                           <span class="n">path</span><span class="p">,</span>
+                                                           <span class="n">has_labels</span><span class="p">))</span>
+    <span class="n">classes_result</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_classes_for_gen_func</span><span class="p">,</span>
+                                      <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">example_gen_func</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="p">))</span>
+    <span class="n">features_result</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">_features_for_gen_func</span><span class="p">,</span>
+                                       <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">example_gen_func</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="p">,</span>
+                                             <span class="n">sparse</span><span class="p">,</span> <span class="n">quiet</span><span class="p">))</span>
+
+    <span class="c"># Wait for processes to complete and store results</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="n">ids_result</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="n">classes</span> <span class="o">=</span> <span class="n">classes_result</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="n">features</span><span class="p">,</span> <span class="n">feat_vectorizer</span> <span class="o">=</span> <span class="n">features_result</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">ExamplesTuple</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">feat_vectorizer</span><span class="p">)</span>
 
 </div>
-<span class="k">def</span> <span class="nf">_preprocess_tsv_row</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">example_num</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_sanitize_line</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    Convert the current TSV row into a dictionary of the form {&quot;y&quot;: class label,</span>
-<span class="sd">    &quot;x&quot;: dictionary of feature values, &quot;id&quot;: instance id}</span>
+<span class="sd">    :param line: The line to clean up.</span>
+<span class="sd">    :type line: string</span>
 
-<span class="sd">    :param row: The TSV row to convert.</span>
-<span class="sd">    :type row: list</span>
-<span class="sd">    :param header: The header row from the TSV file.</span>
-<span class="sd">    :type header: list</span>
-<span class="sd">    :param example_num: The line number from the TSV file.</span>
-<span class="sd">    :type example_num: int</span>
+<span class="sd">    :returns: Copy of line with all non-ASCII characters replaced with</span>
+<span class="sd">    &lt;U1234&gt; sequences where 1234 is the value of ord() for the character.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">char_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+        <span class="n">char_num</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+        <span class="n">char_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&lt;U{}&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">char_num</span><span class="p">)</span> <span class="k">if</span> <span class="n">char_num</span> <span class="o">&gt;</span> <span class="mi">127</span> <span class="k">else</span> <span class="n">char</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">char_list</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_safe_float</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Attempts to convert a string to a float, but if that&#39;s not possible, just</span>
+<span class="sd">    returns the original value.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">text</span>
+
+
+<span class="k">def</span> <span class="nf">_json_dict_iter</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Convert current line in .jsonlines file to a dictionary with the</span>
+<span class="sd">    following fields: &quot;SKLL_ID&quot; (originally &quot;id&quot;), &quot;SKLL_CLASS_LABEL&quot;</span>
+<span class="sd">    (originally &quot;y&quot;), and all of the feature-values in the sub-dictionary</span>
+<span class="sd">    &quot;x&quot;. Basically, we&#39;re flattening the structure, but renaming &quot;y&quot; and &quot;id&quot;</span>
+<span class="sd">    to prevent possible conflicts with feature names in &quot;x&quot;.</span>
+
+<span class="sd">    :param path: Path to .jsonlines file</span>
+<span class="sd">    :type path: string</span>
+<span class="sd">    :param has_labels: Whether or not the JSON dicts will contain a class label,</span>
+<span class="sd">                       &quot;y&quot;.</span>
+<span class="sd">    :type has_labels: bool</span>
+<span class="sd">    :param quiet: Do not print &quot;Loading...&quot; status message to stderr.</span>
+<span class="sd">    :type quiet: bool</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;Loading {}...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">example_num</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="n">example</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">curr_id</span> <span class="o">=</span> <span class="n">example</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">,</span> <span class="s">&quot;EXAMPLE_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">example_num</span><span class="p">))</span>
+            <span class="n">class_name</span> <span class="o">=</span> <span class="n">_safe_float</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s">&quot;y&quot;</span><span class="p">])</span> <span class="k">if</span> <span class="n">has_labels</span> <span class="k">else</span> <span class="bp">None</span>
+            <span class="n">example</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s">&quot;x&quot;</span><span class="p">]</span>
+
+            <span class="k">yield</span> <span class="n">curr_id</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="n">example</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span> <span class="ow">and</span> <span class="n">example_num</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;done&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_megam_dict_iter</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Generator that yields tuples of IDs, classes, and dictionaries mapping from</span>
+<span class="sd">    features to values for each pair of lines in the MegaM -fvals file specified</span>
+<span class="sd">    by path.</span>
+
+<span class="sd">    :param path: Path to MegaM file (-fvals format)</span>
+<span class="sd">    :type path: basestring</span>
+<span class="sd">    :param has_labels: Whether or not the file has a class label separated by</span>
+<span class="sd">                       a tab before the space delimited feature-value pairs.</span>
+<span class="sd">    :type has_labels: bool</span>
+<span class="sd">    :param quiet: Do not print &quot;Loading...&quot; status message to stderr.</span>
+<span class="sd">    :type quiet: bool</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;Loading {}...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">megam_file</span><span class="p">:</span>
+        <span class="n">example_num</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">curr_id</span> <span class="o">=</span> <span class="s">&#39;EXAMPLE_0&#39;</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">megam_file</span><span class="p">:</span>
+            <span class="c"># Process encoding</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">UnicodeDammit</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;utf-8&#39;</span><span class="p">,</span> <span class="s">&#39;windows-1252&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">unicode_markup</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">_sanitize_line</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="c"># Handle instance lines</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;#&#39;</span><span class="p">):</span>
+                <span class="n">curr_id</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">line</span> <span class="ow">and</span> <span class="n">line</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;TRAIN&#39;</span><span class="p">,</span> <span class="s">&#39;TEST&#39;</span><span class="p">,</span> <span class="s">&#39;DEV&#39;</span><span class="p">]:</span>
+                <span class="n">split_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="k">del</span> <span class="n">line</span>
+                <span class="n">curr_info_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="k">if</span> <span class="n">has_labels</span><span class="p">:</span>
+                    <span class="n">class_name</span> <span class="o">=</span> <span class="n">_safe_float</span><span class="p">(</span><span class="n">split_line</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">field_pairs</span> <span class="o">=</span> <span class="n">split_line</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">class_name</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="n">field_pairs</span> <span class="o">=</span> <span class="n">split_line</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">field_pairs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c"># Get current instances feature-value pairs</span>
+                    <span class="n">field_names</span> <span class="o">=</span> <span class="n">islice</span><span class="p">(</span><span class="n">field_pairs</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                    <span class="c"># Convert values to floats, because otherwise features&#39;ll</span>
+                    <span class="c"># be categorical</span>
+                    <span class="n">field_values</span> <span class="o">=</span> <span class="p">(</span><span class="n">_safe_float</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span>
+                                    <span class="n">islice</span><span class="p">(</span><span class="n">field_pairs</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+                    <span class="c"># TODO: Add some sort of check for duplicate feature names</span>
+
+                    <span class="c"># Add the feature-value pairs to dictionary</span>
+                    <span class="n">curr_info_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">field_names</span><span class="p">,</span> <span class="n">field_values</span><span class="p">))</span>
+
+                <span class="k">yield</span> <span class="n">curr_id</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="n">curr_info_dict</span>
+
+                <span class="c"># Set default example ID for next instance, in case we see a</span>
+                <span class="c"># line without an ID.</span>
+                <span class="n">example_num</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">curr_id</span> <span class="o">=</span> <span class="s">&#39;EXAMPLE_{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">example_num</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span> <span class="ow">and</span> <span class="n">example_num</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;done&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_tsv_dict_iter</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">has_labels</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Generator that yields tuples of IDs, classes, and dictionaries mapping from</span>
+<span class="sd">    features to values for each pair of lines in the MegaM -fvals file specified</span>
+<span class="sd">    by path.</span>
+
+<span class="sd">    :param path: Path to TSV</span>
+<span class="sd">    :type path: string</span>
 <span class="sd">    :param has_labels: Whether or not the TSV&#39;s first column is a class label.</span>
 <span class="sd">    :type has_labels: bool</span>
+<span class="sd">    :param quiet: Do not print &quot;Loading...&quot; status message to stderr.</span>
+<span class="sd">    :type quiet: bool</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;Loading {}...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">DictReader</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">excel_tab</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">example_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reader</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">has_labels</span><span class="p">:</span>
+                <span class="n">class_name</span> <span class="o">=</span> <span class="n">_safe_float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">reader</span><span class="o">.</span><span class="n">fieldnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+                <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="n">reader</span><span class="o">.</span><span class="n">fieldnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">class_name</span> <span class="o">=</span> <span class="bp">None</span>
 
-    <span class="k">if</span> <span class="n">has_labels</span><span class="p">:</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">feature_start_col</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="n">feature_start_col</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="s">&quot;id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+                <span class="n">curr_id</span> <span class="o">=</span> <span class="s">&quot;EXAMPLE_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">example_num</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">curr_id</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">row</span><span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">]</span>
 
-    <span class="n">example_id</span> <span class="o">=</span> <span class="s">&quot;EXAMPLE_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">example_num</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">fname</span><span class="p">,</span> <span class="n">fval</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">islice</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">feature_start_col</span><span class="p">,</span> <span class="bp">None</span><span class="p">),</span>
-                           <span class="n">islice</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">feature_start_col</span><span class="p">,</span> <span class="bp">None</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">fname</span> <span class="o">==</span> <span class="s">&quot;id&quot;</span><span class="p">:</span>
-            <span class="n">example_id</span> <span class="o">=</span> <span class="n">fval</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">fval_float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fval</span><span class="p">)</span>
-            <span class="c"># we don&#39;t need to explicitly store zeros</span>
-            <span class="k">if</span> <span class="n">fval_float</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
-                <span class="n">x</span><span class="p">[</span><span class="s">&quot;{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname</span><span class="p">)]</span> <span class="o">=</span> <span class="n">fval_float</span>
+            <span class="c"># Convert features to flaot</span>
+            <span class="k">for</span> <span class="n">fname</span><span class="p">,</span> <span class="n">fval</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+                <span class="n">fval_float</span> <span class="o">=</span> <span class="n">_safe_float</span><span class="p">(</span><span class="n">fval</span><span class="p">)</span>
+                <span class="c"># we don&#39;t need to explicitly store zeros</span>
+                <span class="k">if</span> <span class="n">fval_float</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+                    <span class="n">row</span><span class="p">[</span><span class="n">fname</span><span class="p">]</span> <span class="o">=</span> <span class="n">fval_float</span>
 
-    <span class="k">return</span> <span class="p">{</span><span class="s">&quot;y&quot;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s">&quot;id&quot;</span><span class="p">:</span> <span class="n">example_id</span><span class="p">}</span>
+            <span class="k">yield</span> <span class="n">curr_id</span><span class="p">,</span> <span class="n">class_name</span><span class="p">,</span> <span class="n">row</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span> <span class="ow">and</span> <span class="n">example_num</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;done&quot;</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
 </pre></div>
 
           </div>
@@ -286,9 +404,16 @@
           <li><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2012-2013, Educational Testing Service.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
-    </div>
+<div class="footer">
+    &copy; Copyright 2012-2013, Educational Testing Service.
+  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+  <br />Theme based on <a href="http://readthedocs.org/">Read The Docs</a>
+
+</div>
+
+
+
+
+
   </body>
 </html>
