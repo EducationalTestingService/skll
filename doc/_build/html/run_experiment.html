@@ -113,7 +113,7 @@ be specified (making this a poor choice for sparse data).</li>
 <div class="section" id="creating-configuration-files">
 <h2>Creating configuration files<a class="headerlink" href="#creating-configuration-files" title="Permalink to this headline">¶</a></h2>
 <p>The experiment configuration files that run_experiment accepts are standard Python
-configuration files that are similar in format to Windows INI files. <a class="footnote-reference" href="#id4" id="id1">[1]</a>
+configuration files that are similar in format to Windows INI files. <a class="footnote-reference" href="#id5" id="id1">[1]</a>
 There are three expected sections in a configuration file: <tt class="docutils literal"><span class="pre">Input</span></tt>,
 <tt class="docutils literal"><span class="pre">Tuning</span></tt>, and <tt class="docutils literal"><span class="pre">Output</span></tt>.  A detailed description of each possible settings
 for each section is provided below, but to summarize:</p>
@@ -137,18 +137,15 @@ required.</li>
 <dt><strong>train_location</strong></dt>
 <dd>Path to directory containing training data files. There must be a file
 for each featureset.</dd>
-<dt><strong>test_location</strong></dt>
+<dt><strong>test_location</strong> <em>(Optional)</em></dt>
 <dd>Path to directory containing training data files. There must be a file
 for each featureset.  <em>If unspecified, cross-validation is performed.</em></dd>
-<dt><strong>cv_folds_location</strong></dt>
-<dd><p class="first">Path to a csv file (with a header that is ignored) specifyingfolds for
+<dt><strong>cv_folds_location</strong> <em>(Optional)</em></dt>
+<dd>Path to a csv file (with a header that is ignored) specifyingfolds for
 cross-validation. The first column should consist of training set IDs
 and the second should be a string for the fold ID (e.g., 1 through 5,
 A through D, etc.).  If specified, the CV and grid search will leave
-one fold ID out at a time.</p>
-<p class="last"><em>Note</em>: K-1 folds will be used for grid search within CV, so there
-should be more at least 3 fold IDs.</p>
-</dd>
+one fold ID out at a time. <a class="footnote-reference" href="#id6" id="id2">[2]</a></dd>
 <dt><strong>featuresets</strong></dt>
 <dd>List of lists of prefixes for the files containing the features you
 would like to train/test on.  Each list will end up being a job. IDs
@@ -163,10 +160,10 @@ in <tt class="docutils literal"><span class="pre">featuresets</span></tt> are ac
 if you have feature files that are all in different formats that you
 would like to combine.</p>
 </dd>
-<dt><strong>featureset_names</strong></dt>
+<dt><strong>featureset_names</strong> <em>(Optional)</em></dt>
 <dd>Optional list of names for the feature sets.  If omitted, then the
 prefixes will be munged together to make names.</dd>
-<dt><strong>learners</strong> <a class="footnote-reference" href="#id5" id="id2">[2]</a></dt>
+<dt><strong>learners</strong> <a class="footnote-reference" href="#id7" id="id3">[3]</a></dt>
 <dd><p class="first">List of scikit-learn models to try using. A separate job will be
 run for each combination of classifier and feature-set.
 Acceptable values are described below.</p>
@@ -187,7 +184,7 @@ constrained to better match the training set.</li>
 constrained to better match the training set.</li>
 </ul>
 </dd>
-<dt><strong>fixed_parameters</strong></dt>
+<dt><strong>fixed_parameters</strong> <em>(Optional)</em></dt>
 <dd>List of dicts containing parameters you want to have fixed for each
 classifier in <tt class="docutils literal"><span class="pre">classifiers</span></tt> list. Any empty ones will be ignored
 (and the defaults will be used).</dd>
@@ -198,15 +195,15 @@ classifier in <tt class="docutils literal"><span class="pre">classifiers</span><
 <h3>Tuning<a class="headerlink" href="#tuning" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><dl class="docutils">
-<dt><strong>grid_search</strong></dt>
+<dt><strong>grid_search</strong> <em>(Optional)</em></dt>
 <dd>Whether or not to perform grid search to find optimal parameters for
-classifier.</dd>
-<dt><strong>grid_search_jobs</strong></dt>
+classifier. Defaults to <tt class="docutils literal"><span class="pre">False</span></tt>.</dd>
+<dt><strong>grid_search_jobs</strong> <em>(Optional)</em></dt>
 <dd>Number of folds to run in parallel when using grid search. Defaults to
 number of grid search folds.</dd>
-<dt><strong>objective</strong></dt>
+<dt><strong>objective</strong> <em>(Optional)</em></dt>
 <dd><p class="first">The objective function to use for tuning. Valid options are:</p>
-<ul class="last simple">
+<ul class="simple">
 <li><em>f1_score_micro</em>: Micro-averaged f-score</li>
 <li><em>f1_score_macro</em>: Macro-averaged f-score</li>
 <li><em>f1_score_least_frequent</em>: F-score of the least frequent class. The
@@ -221,8 +218,9 @@ floating point values are rounded</li>
 <li><em>unweighted_kappa</em>: Unweighted Cohen&#8217;s kappa, where the classes
 should be ints</li>
 </ul>
+<p class="last">Defaults to <tt class="docutils literal"><span class="pre">f1_score_micro</span></tt>.</p>
 </dd>
-<dt><strong>param_grids</strong></dt>
+<dt><strong>param_grids</strong> <em>(Optional)</em></dt>
 <dd><p class="first">List of parameter grids to search for each classifier. Each parameter
 grid should be a list of of dictionaries mapping from strings to lists
 of parameter values. When you specify an empty list for a classifier,
@@ -277,11 +275,11 @@ the default parameter grid for that classifier will be searched.</p>
 </pre></div>
 </div>
 </dd>
-<dt><strong>scale_features</strong></dt>
+<dt><strong>scale_features</strong> <em>(Optional)</em></dt>
 <dd>Whether to scale features by their mean (for dense data only) and
 standard deviation.  This defaults to <tt class="docutils literal"><span class="pre">False</span></tt>. It is highly
 recommended that you only use this with dense features.</dd>
-<dt><strong>use_dense_features</strong></dt>
+<dt><strong>use_dense_features</strong> <em>(Optional)</em></dt>
 <dd>Whether the features should be converted to dense matrices. This
 defaults to <tt class="docutils literal"><span class="pre">False</span></tt>.</dd>
 </dl>
@@ -291,21 +289,21 @@ defaults to <tt class="docutils literal"><span class="pre">False</span></tt>.</d
 <h3>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><dl class="docutils">
-<dt><strong>probability</strong></dt>
+<dt><strong>probability</strong> <em>(Optional)</em></dt>
 <dd>Whether or not to output probabilities for each class instead of the
 most probable class for each instance. Only really makes a difference
-when storing predictions.</dd>
-<dt><strong>results</strong></dt>
+when storing predictions. Defaults to <tt class="docutils literal"><span class="pre">False</span></tt>.</dd>
+<dt><strong>results</strong> <em>(Optional)</em></dt>
 <dd>Directory to store result files in. If omitted, the current working
 directory is used, <strong>and we&#8217;re assumed to just want to generate
 predictions if the test_location is specified.</strong></dd>
-<dt><strong>log</strong></dt>
+<dt><strong>log</strong> <em>(Optional)</em></dt>
 <dd>Directory to store result files in. If omitted, the current working
 directory is used.</dd>
-<dt><strong>models</strong></dt>
+<dt><strong>models</strong> <em>(Optional)</em></dt>
 <dd>Directory to store trained models in. Can be omitted to not store
 models.</dd>
-<dt><strong>predictions</strong></dt>
+<dt><strong>predictions</strong> <em>(Optional)</em></dt>
 <dd>Directory to store prediction files in. Can be omitted to not store
 predictions.</dd>
 </dl>
@@ -321,8 +319,8 @@ instead of in the configuration file: <tt class="docutils literal"><span class="
 <blockquote>
 <div><dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">--ablation</span></tt></dt>
-<dd>Runs an ablation study where repeated experiments are conducted where
-each feature set in the configuration file is held out.</dd>
+<dd>Runs an ablation study where repeated experiments are conducted with
+each feature set in the configuration file held out.</dd>
 <dt><tt class="docutils literal"><span class="pre">--keep-models</span></tt></dt>
 <dd>If trained models already exist for any of the learner/featureset
 combinations in your configuration file, just load those models and
@@ -332,28 +330,66 @@ do not retrain/overwrite them.</dd>
 <p>If you have <a class="reference external" href="http://pypi.python.org/pypi/gridmap">Grid Map</a> installed,
 run_experiment will automatically schedule jobs on your DRMAA-compatible
 cluster. However, if you would just like to run things locally, you can specify
-the <tt class="docutils literal"><span class="pre">--local</span></tt> option. <a class="footnote-reference" href="#id6" id="id3">[3]</a> You can also customize the queue and machines that
+the <tt class="docutils literal"><span class="pre">--local</span></tt> option. <a class="footnote-reference" href="#id8" id="id4">[4]</a> You can also customize the queue and machines that
 are used for running your jobs via the <tt class="docutils literal"><span class="pre">--queue</span></tt> and <tt class="docutils literal"><span class="pre">--machines</span></tt> arguments.
 For complete details on how to specify these options, just run <tt class="docutils literal"><span class="pre">run_experiment</span>
 <span class="pre">--help</span></tt>.</p>
+<p>The result, log, model, and prediction files generated by run_experiment will
+all share the following automatically generated prefix
+<tt class="docutils literal"><span class="pre">TRAINDIR_TESTDIR_FEATURESET_LEARNER_SCALING_TUNING_TASK</span></tt>, where the following
+definitions hold:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">TRAINDIR</span></tt></dt>
+<dd>The basename of the directory containing the training data.</dd>
+<dt><tt class="docutils literal"><span class="pre">TESTDIR</span></tt></dt>
+<dd>The basename of the directory containing the test data if
+<tt class="docutils literal"><span class="pre">test_location</span></tt> was specified in the configuration file, and &#8220;cv&#8221;
+otherwise.</dd>
+<dt><tt class="docutils literal"><span class="pre">FEATURESET</span></tt></dt>
+<dd>The feature set we&#8217;re training on joined with &#8220;+&#8221;.</dd>
+<dt><tt class="docutils literal"><span class="pre">LEARNER</span></tt></dt>
+<dd>The learner the current results/model/etc. was generated using.</dd>
+<dt><tt class="docutils literal"><span class="pre">SCALING</span></tt></dt>
+<dd>If <tt class="docutils literal"><span class="pre">scale_features</span></tt> is true, &#8220;scaled&#8221;; otherwise, &#8220;unscaled&#8221;.</dd>
+<dt><tt class="docutils literal"><span class="pre">TUNING</span></tt></dt>
+<dd>If <tt class="docutils literal"><span class="pre">grid_search</span></tt> is true, &#8220;tuned&#8221; and the objective function name;
+otherwise, &#8220;untuned&#8221;.</dd>
+<dt><tt class="docutils literal"><span class="pre">TASK</span></tt></dt>
+<dd>If <tt class="docutils literal"><span class="pre">train_location</span></tt>, <tt class="docutils literal"><span class="pre">test_location</span></tt>, and <tt class="docutils literal"><span class="pre">results</span></tt> were specified
+in configuration file, &#8220;evaluate&#8221;. If only <tt class="docutils literal"><span class="pre">train_location</span></tt> and
+<tt class="docutils literal"><span class="pre">test_location</span></tt> were specified, &#8220;predict&#8221;. For configuration files
+with just a <tt class="docutils literal"><span class="pre">train_location</span></tt>, &#8220;cross-validate&#8221;.</dd>
+</dl>
+</div></blockquote>
+<p><em>Warning</em>: The values specified in <tt class="docutils literal"><span class="pre">fixed_parameters</span></tt> do not factor into file
+names, so old results will be overwritten if you change the values of fixed
+parameters but keep everything else the same.</p>
 <p class="rubric">Footnotes</p>
-<table class="docutils footnote" frame="void" id="id4" rules="none">
+<table class="docutils footnote" frame="void" id="id5" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>We are considering adding support for JSON configuration files in the
 future, but we have not added this functionality yet.</td></tr>
 </tbody>
 </table>
-<table class="docutils footnote" frame="void" id="id5" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>This field can also be called &#8220;classifiers&#8221; for backward-compatibility.</td></tr>
-</tbody>
-</table>
 <table class="docutils footnote" frame="void" id="id6" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>This will happen automatically if Grid Map cannot be imported.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>K-1 folds will be used for grid search within CV, so there should be at
+least 3 fold IDs.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id7" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>This field can also be called &#8220;classifiers&#8221; for backward-compatibility.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id8" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>This will happen automatically if Grid Map cannot be imported.</td></tr>
 </tbody>
 </table>
 </div>

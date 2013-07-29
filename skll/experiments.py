@@ -395,7 +395,10 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
 
 
 def _munge_featureset_name(featureset):
-    ''' Converts feature set into '''
+    '''
+    Joins features in featureset by '+' if featureset is not a string, and
+    just returns featureset otherwise.
+    '''
     if isinstance(featureset, string_types):
         return featureset
 
@@ -563,8 +566,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         jobs = []
 
     if not given_featureset_names:
-        given_featureset_names = [_munge_featureset_name(
-            x) for x in given_featuresets]
+        given_featureset_names = [_munge_featureset_name(x) for x in
+                                  given_featuresets]
     assert len(given_featureset_names) == len(given_featuresets)
 
     # For each feature set
