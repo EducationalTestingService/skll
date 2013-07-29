@@ -1,4 +1,3 @@
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -240,7 +239,8 @@
                                         <span class="s">&#39;min_feature_count&#39;</span><span class="p">:</span> <span class="s">&#39;1&#39;</span><span class="p">,</span>
                                         <span class="s">&#39;grid_search_jobs&#39;</span><span class="p">:</span> <span class="s">&#39;0&#39;</span><span class="p">,</span>
                                         <span class="s">&#39;cv_folds_location&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
-                                        <span class="s">&#39;suffix&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">})</span>
+                                        <span class="s">&#39;suffix&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                                        <span class="s">&#39;classifiers&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">})</span>
     <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
         <span class="n">config</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -502,9 +502,11 @@
                   <span class="s">&#39;on DRMAA-compatible cluster, install gridmap via pip.&#39;</span><span class="p">,</span>
                   <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
 
-    <span class="c"># extract sklearn parameters from the config file</span>
-    <span class="n">given_learners</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">_fix_json</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span>
-                                                     <span class="s">&quot;classifiers&quot;</span><span class="p">)))</span>
+    <span class="c"># extract parameters from the config file</span>
+    <span class="n">learners_string</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span> <span class="s">&quot;learners&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">learners_string</span><span class="p">:</span>
+        <span class="n">learners_string</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span> <span class="s">&quot;classifiers&quot;</span><span class="p">)</span>  <span class="c"># For old files</span>
+    <span class="n">given_learners</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">_fix_json</span><span class="p">(</span><span class="n">learners_string</span><span class="p">))</span>
     <span class="n">given_featuresets</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">_fix_json</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span>
                                                         <span class="s">&quot;featuresets&quot;</span><span class="p">)))</span>
     <span class="n">given_featureset_names</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">_fix_json</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;Input&quot;</span><span class="p">,</span>
@@ -817,7 +819,7 @@
     </div>
 <div class="footer">
     &copy; Copyright 2012-2013, Educational Testing Service.
-  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2b1.
   <br />Theme based on <a href="http://readthedocs.org/">Read The Docs</a>
 
 </div>
