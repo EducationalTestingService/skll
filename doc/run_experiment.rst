@@ -294,8 +294,8 @@ said, there are a couple options that are specified via command-line arguments
 instead of in the configuration file: ``--ablation`` and ``--keep-models``.
 
     ``--ablation``
-        Runs an ablation study where repeated experiments are conducted where
-        each feature set in the configuration file is held out.
+        Runs an ablation study where repeated experiments are conducted with
+        each feature set in the configuration file held out.
 
     ``--keep-models``
         If trained models already exist for any of the learner/featureset
