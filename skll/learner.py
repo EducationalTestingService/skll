@@ -484,18 +484,14 @@ class Learner(object):
                                     " string labels.  Convert them to" +
                                     " integers or floats.")
 
-        #min_feat_abs = float("inf")
         max_feat_abs = float("-inf")
 
         # make sure that feature values are not strings
-        for row in examples.features:
-            for val in row:
-                #min_feat_abs = min(min_feat_abs, abs(val)) if val
-                #                                           else min_feat_abs
-                max_feat_abs = max(max_feat_abs, abs(val))
-                if isinstance(val, string_types):
-                    raise TypeError("You have feature values that are" +
-                                    " strings.  Convert them to floats.")
+        for val in examples.features.data:
+            max_feat_abs = max(max_feat_abs, abs(val))
+            if isinstance(val, string_types):
+                raise TypeError("You have feature values that are" +
+                                " strings.  Convert them to floats.")
 
         if max_feat_abs > 1000.0:
             print(("You have a feature with a very large absolute value ({})." +
@@ -511,7 +507,6 @@ class Learner(object):
         :param examples: The examples to use for training.
         :type examples: ExamplesTuple
         '''
-
         # Check feature values and labels
         self._check_input(examples)
 
@@ -589,7 +584,6 @@ class Learner(object):
                  not doing grid search.
         :rtype: float
         '''
-
         # seed the random number generator so that randomized algorithms are
         # replicable
         rand_seed = 9876315986142
@@ -625,6 +619,10 @@ class Learner(object):
 
         # select features
         xtrain = self.feat_selector.fit_transform(examples.features)
+
+        # Convert to dense if necessary
+        if self._use_dense_features:
+            xtrain = xtrain.todense()
 
         # Scale features if necessary
         if self._model_type != 'naivebayes':
@@ -763,6 +761,10 @@ class Learner(object):
 
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(examples.features)
+
+        # Convert to dense if necessary
+        if self._use_dense_features:
+            xtest = xtest.todense()
 
         # Scale xtest
         if self._model_type != 'naivebayes':
