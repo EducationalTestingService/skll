@@ -451,9 +451,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                   file=sys.stderr)
 
     # extract parameters from the config file
-    learners_string = config.get("Input", "learners")
-    if not learners_string:
+    if config.has_option("Input", "learners"):
+        learners_string = config.get("Input", "learners")
+    elif config.has_option("Input", "classifiers"):
         learners_string = config.get("Input", "classifiers")  # For old files
+    else:
+        raise ValueError("Configuration file does not contain list of " +
+                         "learners in [Input] section.")
     given_learners = json.loads(_fix_json(learners_string))
     given_featuresets = json.loads(_fix_json(config.get("Input",
                                                         "featuresets")))
