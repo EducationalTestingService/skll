@@ -63,10 +63,12 @@ from skll.fixed_standard_scaler import FixedStandardScaler
 # Constants #
 __version__ = '0.9'  # Couldn't figure out how to import this otherwise
 VERSION = tuple(int(x) for x in __version__.split('.'))
-_REQUIRES_DENSE = frozenset(['naivebayes', 'rforest', 'gradient', 'dtree',
-                             'gb_regressor'])
-_REGRESSION_MODELS = frozenset(['ridge', 'rescaled_ridge', 'svr_linear',
-                                'rescaled_svr_linear', 'gb_regressor'])
+_REQUIRES_DENSE = frozenset(['MultinomialNB', 'RandomForestClassifier',
+                             'GradientBoostingClassifier',
+                             'DecisionTreeClassifier',
+                             'GradientBoostingRegressor'])
+_REGRESSION_MODELS = frozenset(['Ridge', 'RescaledRidge', 'SVR',
+                                'RescaledSVR', 'GradientBoostingRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
@@ -258,8 +260,11 @@ class Learner(object):
                               learner?
     :type do_scale_features: bool
     :param model_type: Type of estimator to create. Options are:
-                       'logistic', 'svm_linear', 'svm_radial',
-                       'naivebayes', 'dtree', 'rforest', and 'gradient'
+                       'LogisticRegression', 'LinearSVC', 'SVC',
+                       'MultinomialNB', 'DecisionTreeClassifier',
+                       'RandomForestClassifier',
+                       'GradientBoostingClassifier', 'Ridge', 'RescaledRidge',
+                       'SVR', 'RescaledSVR', and 'GradientBoostingRegressor'
     :type model_type: basestring
     :param probability: Should learner return probabilities of all
                         classes (instead of just class with highest
@@ -281,13 +286,16 @@ class Learner(object):
     """
 
     def __init__(self, probability=False, do_scale_features=False,
-                 model_type='logistic', model_kwargs=None, pos_label_str=None,
-                 use_dense_features=False, min_feature_count=1):
+                 model_type='LogisticRegression', model_kwargs=None,
+                 pos_label_str=None, use_dense_features=False,
+                 min_feature_count=1):
         '''
         Initializes a learner object with the specified settings.
         '''
         super(Learner, self).__init__()
-        self.probability = probability if model_type != 'svm_linear' else False
+        #
+        self.probability = probability if model_type != 'LinearSVC' else False
+
         self.feat_vectorizer = None
         self.do_scale_features = do_scale_features
         self.scaler = None
@@ -305,19 +313,24 @@ class Learner(object):
                                     self._use_dense_features)
 
         # Set default keyword arguments for models that we have some for.
-        if self._model_type == 'svm_radial':
+        if self._model_type == 'SVC':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
-        elif self._model_type == 'dtree':
+        elif self._model_type == 'DecisionTreeClassifier':
             self._model_kwargs['criterion'] = 'entropy'
-        elif self._model_type in ['rforest', 'gradient', 'gb_regressor']:
+        elif self._model_type in {'RandomForestClassifier',
+                                  'GradientBoostingClassifier',
+                                  'GradientBoostingRegressor'}:
             self._model_kwargs['n_estimators'] = 500
 
-        if self._model_type in ['rforest', 'dtree']:
+        if self._model_type in {'RandomForestClassifier',
+                                'DecisionTreeClassifier'}:
             self._model_kwargs['compute_importances'] = True
 
-        if self._model_type in ['rforest', 'svm_linear', 'logistic', 'dtree',
-                                'gradient', 'gb_regressor']:
+        if self._model_type in {'RandomForestClassifier', 'LinearSVC',
+                                'LogisticRegression', 'DecisionTreeClassifier',
+                                'GradientBoostingClassifier',
+                                'GradientBoostingRegressor'}:
             self._model_kwargs['random_state'] = 123456789
 
         if model_kwargs:
@@ -372,7 +385,7 @@ class Learner(object):
     @property
     def model_params(self):
         '''
-        Model parameters (i.e., weights) for ridge regression and
+        Model parameters (i.e., weights) for Ridge regression and
         liblinear models.
         '''
         res = {}
@@ -427,41 +440,41 @@ class Learner(object):
         estimator = None
         default_param_grid = None
 
-        if self._model_type == 'logistic':
+        if self._model_type == 'LogisticRegression':
             estimator = LogisticRegression(**self._model_kwargs)
             default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'svm_linear':  # No predict_proba support
+        elif self._model_type == 'LinearSVC':  # No predict_proba support
             estimator = LinearSVC(**self._model_kwargs)
             default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'svm_radial':
+        elif self._model_type == 'SVC':
             estimator = SVC(**self._model_kwargs)
             default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'naivebayes':
+        elif self._model_type == 'MultinomialNB':
             estimator = MultinomialNB(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
-        elif self._model_type == 'dtree':
+        elif self._model_type == 'DecisionTreeClassifier':
             estimator = DecisionTreeClassifier(**self._model_kwargs)
             default_param_grid = [{'max_features': ["auto", None]}]
-        elif self._model_type == 'rforest':
+        elif self._model_type == 'RandomForestClassifier':
             estimator = RandomForestClassifier(**self._model_kwargs)
             default_param_grid = [{'max_depth': [1, 5, 10, None]}]
-        elif self._model_type == "gradient":
+        elif self._model_type == 'GradientBoostingClassifier':
             estimator = GradientBoostingClassifier(**self._model_kwargs)
             default_param_grid = [{'max_depth': [1, 3, 5],
                                    'n_estimators': [500]}]
-        elif self._model_type == 'ridge':
+        elif self._model_type == 'Ridge':
             estimator = Ridge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'rescaled_ridge':
+        elif self._model_type == 'RescaledRidge':
             estimator = RescaledRidge(**self._model_kwargs)
             default_param_grid = [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'svr_linear':
+        elif self._model_type == 'SVR':
             estimator = SVR(kernel=b'linear', **self._model_kwargs)
             default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'rescaled_svr_linear':
+        elif self._model_type == 'RescaledSVR':
             estimator = RescaledSVR(kernel=b'linear', **self._model_kwargs)
             default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'gb_regressor':
+        elif self._model_type == 'GradientBoostingRegressor':
             estimator = GradientBoostingRegressor(**self._model_kwargs)
             default_param_grid = [{'max_depth': [1, 3, 5],
                                    'n_estimators': [500]}]
@@ -537,7 +550,7 @@ class Learner(object):
         self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
 
         # Create scaler if we weren't passed one
-        if self._model_type != 'naivebayes':
+        if self._model_type != 'MultinomialNB':
             if self.do_scale_features:
                 self.scaler = FixedStandardScaler(copy=True,
                                                   with_mean=self._use_dense_features,
@@ -625,7 +638,7 @@ class Learner(object):
             xtrain = xtrain.todense()
 
         # Scale features if necessary
-        if self._model_type != 'naivebayes':
+        if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
 
         # set up a grid searcher if we are asked to
@@ -767,14 +780,14 @@ class Learner(object):
             xtest = xtest.todense()
 
         # Scale xtest
-        if self._model_type != 'naivebayes':
+        if self._model_type != 'MultinomialNB':
             xtest = self.scaler.transform(xtest)
 
         # make the prediction on the test data
         try:
             yhat = (self._model.predict_proba(xtest)
                     if (self.probability and
-                        self._model_type != 'svm_linear' and
+                        self._model_type != 'LinearSVC' and
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
@@ -791,14 +804,14 @@ class Learner(object):
                       "w" if not append else "a") as predictionfh:
                 # header
                 if not append:
-                    if self.probability and self._model_type != 'svm_linear':
+                    if self.probability and self._model_type != 'LinearSVC':
                         print('\t'.join(["id"] + self.label_list),
                               file=predictionfh)
                     else:
                         print('\t'.join(["id", "prediction"]),
                               file=predictionfh)
 
-                if self.probability and self._model_type != 'svm_linear':
+                if self.probability and self._model_type != 'LinearSVC':
                     for example_id, class_probs in zip(example_ids, yhat):
                         print('\t'.join([example_id] +
                                         [str(x) for x in class_probs]),

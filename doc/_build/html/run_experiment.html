@@ -168,26 +168,56 @@ prefixes will be munged together to make names.</dd>
 run for each combination of classifier and feature-set.
 Acceptable values are described below.</p>
 <ul class="last simple">
-<li><em>logistic</em>: Logistic regression using LibLinear</li>
-<li><em>svm_linear</em>: SVM using LibLinear</li>
-<li><em>svm_radial</em>: SVM using LibSVM</li>
-<li><em>naivebayes</em>: Multinomial Naive Bayes</li>
-<li><em>dtree</em>: Decision Tree</li>
-<li><em>rforest</em>: Random Forest</li>
-<li><em>gradient</em>: Gradient Boosting Classifier</li>
-<li><em>gb_regressor</em>: Gradient Boosting Regressor</li>
-<li><em>ridge</em>: Ridge Regression</li>
-<li><em>rescaled_ridge</em>: Ridge Regression, with predictions rescaled and
+<li><em>LogisticRegression (logistic)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression">Logistic regression using LibLinear</a></li>
+<li><em>LinearSVC (svm_linear)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC">SVM using LibLinear</a></li>
+<li><em>SVC (svm_radial)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC">SVM using LibSVM</a></li>
+<li><em>MultinomialNB (naivebayes)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB">Multinomial Naive Bayes</a></li>
+<li><em>DecisionTreeClassifier (dtree)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier">Decision Tree Classifier</a></li>
+<li><em>RandomForestClassifier (rforest)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier">Random Forest Classifier</a></li>
+<li><em>GradientBoostingClassifier (gradient)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier">Gradient Boosting Classifier</a></li>
+<li><em>GradientBoostingRegressor (gb_regressor)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor">Gradient Boosting Regressor</a></li>
+<li><em>Ridge (ridge)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier">Ridge Regression</a></li>
+<li><em>RescaledRidge (rescaled_ridge)</em>: Ridge Regression, with predictions rescaled and
 constrained to better match the training set.</li>
-<li><em>svr_linear</em>: Support Vector Regression with a linear kernel.</li>
-<li><em>rescaled_svr_linear</em>: Linear SVR, with predictions rescaled and
+<li><em>SVR (svr_linear)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR">Support Vector Regression</a> with a linear kernel.</li>
+<li><em>RescaledSVR (rescaled_svr_linear)</em>: Linear SVR, with predictions rescaled and
 constrained to better match the training set.</li>
 </ul>
 </dd>
 <dt><strong>fixed_parameters</strong> <em>(Optional)</em></dt>
-<dd>List of dicts containing parameters you want to have fixed for each
+<dd><p class="first">List of dicts containing parameters you want to have fixed for each
 classifier in <tt class="docutils literal"><span class="pre">classifiers</span></tt> list. Any empty ones will be ignored
-(and the defaults will be used).</dd>
+(and the defaults will be used).</p>
+<p>The default fixed parameters (beyond those that scikit-learn sets) are:</p>
+<p><em>logistic</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>svm_linear</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>svm_radial</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;cache_size&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>dtree</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;criterion&#39;</span><span class="p">:</span> <span class="s">&#39;entropy&#39;</span><span class="p">,</span> <span class="s">&#39;compute_importances&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>rforest</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;compute_importances&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>gradient</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>gb_regressor</em></p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd>
 </dl>
 </div></blockquote>
 </div>

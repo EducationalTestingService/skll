@@ -52,6 +52,20 @@ _LearnerResultInfo = namedtuple('_LearnerResultInfo',
                                  'featureset', 'given_learner', 'task',
                                  'task_results', 'grid_scores'])
 
+# Map from learner short names to full names
+_SHORT_NAMES = {'logistic': 'LogisticRegression',
+                'svm_linear': 'LinearSVC',
+                'svm_radial': 'SVC',
+                'naivebayes': 'MultinomialNB',
+                'dtree': 'DecisionTreeClassifier',
+                'rforest': 'RandomForestClassifier',
+                'gradient': 'GradientBoostingClassifier',
+                'ridge': 'Ridge',
+                'rescaled_ridge': 'RescaledRidge',
+                'svr_linear': 'SVR',
+                'rescaled_svr_linear': 'RescaledSVR',
+                'gb_regressor': 'GradientBoostingRegressor'}
+
 
 def _get_stat_float(class_result_dict, stat):
     '''
@@ -459,6 +473,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
     given_learners = json.loads(_fix_json(learners_string))
+    given_learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else
+                       learner) for learner in learners]
     given_featuresets = json.loads(_fix_json(config.get("Input",
                                                         "featuresets")))
     given_featureset_names = json.loads(_fix_json(config.get("Input",

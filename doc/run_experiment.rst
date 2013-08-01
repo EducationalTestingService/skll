@@ -115,25 +115,69 @@ Input
         run for each combination of classifier and feature-set.
         Acceptable values are described below.
 
-        *   *logistic*: Logistic regression using LibLinear
-        *   *svm_linear*: SVM using LibLinear
-        *   *svm_radial*: SVM using LibSVM
-        *   *naivebayes*: Multinomial Naive Bayes
-        *   *dtree*: Decision Tree
-        *   *rforest*: Random Forest
-        *   *gradient*: Gradient Boosting Classifier
-        *   *gb_regressor*: Gradient Boosting Regressor
-        *   *ridge*: Ridge Regression
-        *   *rescaled_ridge*: Ridge Regression, with predictions rescaled and
+        *   *LogisticRegression (logistic)*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`_
+        *   *LinearSVC (svm_linear)*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`_
+        *   *SVC (svm_radial)*: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`_
+        *   *MultinomialNB (naivebayes)*: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`_
+        *   *DecisionTreeClassifier (dtree)*: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`_
+        *   *RandomForestClassifier (rforest)*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`_
+        *   *GradientBoostingClassifier (gradient)*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`_
+        *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
+        *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`_
+        *   *RescaledRidge (rescaled_ridge)*: Ridge Regression, with predictions rescaled and
             constrained to better match the training set.
-        *   *svr_linear*: Support Vector Regression with a linear kernel.
-        *   *rescaled_svr_linear*: Linear SVR, with predictions rescaled and
+        *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_ with a linear kernel.
+        *   *RescaledSVR (rescaled_svr_linear)*: Linear SVR, with predictions rescaled and
             constrained to better match the training set.
 
     **fixed_parameters** *(Optional)*
         List of dicts containing parameters you want to have fixed for each
         classifier in ``classifiers`` list. Any empty ones will be ignored
         (and the defaults will be used).
+
+        The default fixed parameters (beyond those that scikit-learn sets) are:
+
+        *logistic*
+
+        .. code-block:: python
+
+           {'random_state': 123456789}
+
+        *svm_linear*
+
+        .. code-block:: python
+
+           {'random_state': 123456789}
+
+        *svm_radial*
+
+        .. code-block:: python
+
+           {'cache_size': 1000}
+
+        *dtree*
+
+        .. code-block:: python
+
+           {'criterion': 'entropy', 'compute_importances': True, 'random_state': 123456789}
+
+        *rforest*
+
+        .. code-block:: python
+
+           {'n_estimators': 500, 'compute_importances': True, 'random_state': 123456789}
+
+        *gradient*
+
+        .. code-block:: python
+
+           {'n_estimators': 500, 'random_state': 123456789}
+
+        *gb_regressor*
+
+        .. code-block:: python
+
+           {'n_estimators': 500, 'random_state': 123456789}
 
 
 

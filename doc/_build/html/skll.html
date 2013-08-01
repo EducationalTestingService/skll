@@ -76,7 +76,7 @@ common scikit-learn experiments with pre-generated features.</p>
 </table>
 <dl class="class">
 <dt id="skll.__init__.Learner">
-<em class="property">class </em><tt class="descclassname">skll.__init__.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type=u'logistic'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">skll.__init__.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type=u'LogisticRegression'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <p>A simpler learner interface around many scikit-learn classification
 and regression functions.</p>
@@ -88,8 +88,11 @@ and regression functions.</p>
 <li><strong>do_scale_features</strong> (<em>bool</em>) &#8211; Should we scale features with this
 learner?</li>
 <li><strong>model_type</strong> (<em>basestring</em>) &#8211; Type of estimator to create. Options are:
-&#8216;logistic&#8217;, &#8216;svm_linear&#8217;, &#8216;svm_radial&#8217;,
-&#8216;naivebayes&#8217;, &#8216;dtree&#8217;, &#8216;rforest&#8217;, and &#8216;gradient&#8217;</li>
+&#8216;LogisticRegression&#8217;, &#8216;LinearSVC&#8217;, &#8216;SVC&#8217;,
+&#8216;MultinomialNB&#8217;, &#8216;DecisionTreeClassifier&#8217;,
+&#8216;RandomForestClassifier&#8217;,
+&#8216;GradientBoostingClassifier&#8217;, &#8216;Ridge&#8217;, &#8216;RescaledRidge&#8217;,
+&#8216;SVR&#8217;, &#8216;RescaledSVR&#8217;, and &#8216;GradientBoostingRegressor&#8217;</li>
 <li><strong>probability</strong> (<em>bool</em>) &#8211; Should learner return probabilities of all
 classes (instead of just class with highest
 probability)?</li>
@@ -109,7 +112,7 @@ must have a nonzero value in to be included.</li>
 </table>
 <dl class="method">
 <dt id="skll.__init__.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2bd5848&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x321f938&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -228,7 +231,7 @@ function score.</p>
 <dl class="attribute">
 <dt id="skll.__init__.Learner.model_params">
 <tt class="descname">model_params</tt><a class="headerlink" href="#skll.__init__.Learner.model_params" title="Permalink to this definition">¶</a></dt>
-<dd><p>Model parameters (i.e., weights) for ridge regression and
+<dd><p>Model parameters (i.e., weights) for Ridge regression and
 liblinear models.</p>
 </dd></dl>
 
@@ -285,7 +288,7 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.__init__.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2bd5848&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x321f938&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="headerlink" href="#skll.__init__.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -578,7 +581,7 @@ feature set has been removed from the configuration.</p>
 </table>
 <dl class="class">
 <dt id="skll.learner.Learner">
-<em class="property">class </em><tt class="descclassname">skll.learner.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type=u'logistic'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">skll.learner.</tt><tt class="descname">Learner</tt><big>(</big><em>probability=False</em>, <em>do_scale_features=False</em>, <em>model_type=u'LogisticRegression'</em>, <em>model_kwargs=None</em>, <em>pos_label_str=None</em>, <em>use_dense_features=False</em>, <em>min_feature_count=1</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
 <p>A simpler learner interface around many scikit-learn classification
 and regression functions.</p>
@@ -590,8 +593,11 @@ and regression functions.</p>
 <li><strong>do_scale_features</strong> (<em>bool</em>) &#8211; Should we scale features with this
 learner?</li>
 <li><strong>model_type</strong> (<em>basestring</em>) &#8211; Type of estimator to create. Options are:
-&#8216;logistic&#8217;, &#8216;svm_linear&#8217;, &#8216;svm_radial&#8217;,
-&#8216;naivebayes&#8217;, &#8216;dtree&#8217;, &#8216;rforest&#8217;, and &#8216;gradient&#8217;</li>
+&#8216;LogisticRegression&#8217;, &#8216;LinearSVC&#8217;, &#8216;SVC&#8217;,
+&#8216;MultinomialNB&#8217;, &#8216;DecisionTreeClassifier&#8217;,
+&#8216;RandomForestClassifier&#8217;,
+&#8216;GradientBoostingClassifier&#8217;, &#8216;Ridge&#8217;, &#8216;RescaledRidge&#8217;,
+&#8216;SVR&#8217;, &#8216;RescaledSVR&#8217;, and &#8216;GradientBoostingRegressor&#8217;</li>
 <li><strong>probability</strong> (<em>bool</em>) &#8211; Should learner return probabilities of all
 classes (instead of just class with highest
 probability)?</li>
@@ -611,7 +617,7 @@ must have a nonzero value in to be included.</li>
 </table>
 <dl class="method">
 <dt id="skll.learner.Learner.cross_validate">
-<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2bd5848&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">cross_validate</tt><big>(</big><em>examples</em>, <em>stratified=True</em>, <em>cv_folds=10</em>, <em>grid_search=False</em>, <em>grid_search_folds=5</em>, <em>grid_jobs=None</em>, <em>grid_objective=&lt;function f1_score_micro at 0x321f938&gt;</em>, <em>prediction_prefix=None</em>, <em>param_grid=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.cross_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.cross_validate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cross-validates a given model on the training examples.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -730,7 +736,7 @@ function score.</p>
 <dl class="attribute">
 <dt id="skll.learner.Learner.model_params">
 <tt class="descname">model_params</tt><a class="reference internal" href="_modules/skll/learner.html#Learner.model_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.model_params" title="Permalink to this definition">¶</a></dt>
-<dd><p>Model parameters (i.e., weights) for ridge regression and
+<dd><p>Model parameters (i.e., weights) for Ridge regression and
 liblinear models.</p>
 </dd></dl>
 
@@ -787,7 +793,7 @@ indices to their (str) labels?</li>
 
 <dl class="method">
 <dt id="skll.learner.Learner.train">
-<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x2bd5848&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">train</tt><big>(</big><em>examples</em>, <em>param_grid=None</em>, <em>grid_search_folds=5</em>, <em>grid_search=True</em>, <em>grid_objective=&lt;function f1_score_micro at 0x321f938&gt;</em>, <em>grid_jobs=None</em>, <em>shuffle=True</em><big>)</big><a class="reference internal" href="_modules/skll/learner.html#Learner.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#skll.learner.Learner.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Train a classification model and return the model, score, feature
 vectorizer, scaler, label dictionary, and inverse label dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
