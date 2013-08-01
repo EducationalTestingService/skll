@@ -636,7 +636,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # submit the jobs (if running on grid)
     if not local:
-        job_results = process_jobs(jobs, white_list=hosts)
+        if logpath:
+            job_results = process_jobs(jobs, white_list=hosts, temp_dir=logpath)
+        else:
+            job_results = process_jobs(jobs, white_list=hosts)
 
         # Check for errors
         for result_info in job_results:
