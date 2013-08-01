@@ -19,7 +19,7 @@
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
 
-@author: Michael Heilman (mheilman@ets.org)
+:author: Michael Heilman (mheilman@ets.org)
 '''
 
 
