@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     k = args.k if args.k > 0 else None
 
-    learner = Leaner.from_file(args.model_file)
+    learner = Learner.from_file(args.model_file)
     weights = learner.model_params
 
     print("Number of nonzero features:", len(weights), file=sys.stderr)

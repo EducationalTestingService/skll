@@ -168,14 +168,15 @@ def shift_index(index, attr_list):
 
 if __name__ == '__main__':
     # Get command line arguments
-    parser = argparse.ArgumentParser(description="Takes an ARFF file an outputs\
-                                                  a MegaM-compatible file to be\
-                                                  run with the '-fvals' switch.\
-                                                  Assumes last field is class. \
-                                                  Ignores any relational, \
-                                                  string, or date fields. \
-                                                  Automatically converts \
-                                                  nominals to numerals.",
+    parser = argparse.ArgumentParser(description="Takes an ARFF file and \
+                                                  outputs a MegaM-compatible\
+                                                  file to be run with the\
+                                                  '-fvals' switch. Assumes last\
+                                                  field is class.  Ignores any\
+                                                  relational, string, or date\
+                                                  fields. Automatically\
+                                                  converts nominals to\
+                                                  numerals.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
                         help='ARFF input file', type=argparse.FileType('rb'),
