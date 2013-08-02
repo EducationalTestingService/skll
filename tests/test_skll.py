@@ -34,7 +34,7 @@ import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
 
-from skll.experiments import load_featureset, run_configuration, load_cv_folds
+from skll.experiments import _load_featureset, run_configuration, _load_cv_folds
 from skll.learner import Learner, SelectByMinCount
 from skll.metrics import accuracy
 
