@@ -113,7 +113,8 @@ Input
     **learners** [#]_
         List of scikit-learn models to try using. A separate job will be
         run for each combination of classifier and feature-set.
-        Acceptable values are described below.
+        Acceptable values are described below. Names in parentheses are
+        aliases that can also be used in configuration files.
 
         *   *LogisticRegression (logistic)*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`_
         *   *LinearSVC (svm_linear)*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`_
@@ -137,43 +138,43 @@ Input
 
         The default fixed parameters (beyond those that scikit-learn sets) are:
 
-        *logistic*
+        *LogisticRegression*
 
         .. code-block:: python
 
            {'random_state': 123456789}
 
-        *svm_linear*
+        *LinearSVC*
 
         .. code-block:: python
 
            {'random_state': 123456789}
 
-        *svm_radial*
+        *SVC*
 
         .. code-block:: python
 
            {'cache_size': 1000}
 
-        *dtree*
+        *DecisionTreeClassifier*
 
         .. code-block:: python
 
            {'criterion': 'entropy', 'compute_importances': True, 'random_state': 123456789}
 
-        *rforest*
+        *RandomForestClassifier*
 
         .. code-block:: python
 
            {'n_estimators': 500, 'compute_importances': True, 'random_state': 123456789}
 
-        *gradient*
+        *GradientBoostingClassifier*
 
         .. code-block:: python
 
            {'n_estimators': 500, 'random_state': 123456789}
 
-        *gb_regressor*
+        *GradientBoostingRegressor*
 
         .. code-block:: python
 
@@ -219,73 +220,73 @@ Tuning
 
         The default parameter grids for each classifier are:
 
-        *logistic*
+        *LogisticRegression*
 
         .. code-block:: python
 
            [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        *svm_linear*
+        *LinearSVC*
 
         .. code-block:: python
 
            [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        *svm_radial*
+        *SVC*
 
         .. code-block:: python
 
            [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        *naivebayes*
+        *MultinomialNB*
 
         .. code-block:: python
 
            [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
 
-        *dtree*
+        *DecisionTreeClassifier*
 
         .. code-block:: python
 
            [{'max_features': ["auto", None]}]
 
-        *rforest*
+        *RandomForestClassifier*
 
         .. code-block:: python
 
            [{'max_depth': [1, 5, 10, None]}]
 
-        *gradient*
+        *GradientBoostingClassifier*
 
         .. code-block:: python
 
            [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
 
-        *gb_regressor*
+        *GradientBoostingRegressor*
 
         .. code-block:: python
 
            [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
 
-        *ridge*
+        *Ridge*
 
         .. code-block:: python
 
            [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        *rescaled_ridge*
+        *RescaledRidge*
 
         .. code-block:: python
 
            [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        *svr_linear*
+        *SVR*
 
         .. code-block:: python
 
            [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        *rescaled_svr_linear*
+        *RescaledSVR*
 
         .. code-block:: python
 

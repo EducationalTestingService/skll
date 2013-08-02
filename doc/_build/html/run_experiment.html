@@ -1,3 +1,4 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -18,7 +19,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
+        URL_ROOT:    '',
         VERSION:     '0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -166,7 +167,8 @@ prefixes will be munged together to make names.</dd>
 <dt><strong>learners</strong> <a class="footnote-reference" href="#id7" id="id3">[3]</a></dt>
 <dd><p class="first">List of scikit-learn models to try using. A separate job will be
 run for each combination of classifier and feature-set.
-Acceptable values are described below.</p>
+Acceptable values are described below. Names in parentheses are
+aliases that can also be used in configuration files.</p>
 <ul class="last simple">
 <li><em>LogisticRegression (logistic)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression">Logistic regression using LibLinear</a></li>
 <li><em>LinearSVC (svm_linear)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC">SVM using LibLinear</a></li>
@@ -189,31 +191,31 @@ constrained to better match the training set.</li>
 classifier in <tt class="docutils literal"><span class="pre">classifiers</span></tt> list. Any empty ones will be ignored
 (and the defaults will be used).</p>
 <p>The default fixed parameters (beyond those that scikit-learn sets) are:</p>
-<p><em>logistic</em></p>
+<p><em>LogisticRegression</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
 </pre></div>
 </div>
-<p><em>svm_linear</em></p>
+<p><em>LinearSVC</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
 </pre></div>
 </div>
-<p><em>svm_radial</em></p>
+<p><em>SVC</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;cache_size&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">}</span>
 </pre></div>
 </div>
-<p><em>dtree</em></p>
+<p><em>DecisionTreeClassifier</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;criterion&#39;</span><span class="p">:</span> <span class="s">&#39;entropy&#39;</span><span class="p">,</span> <span class="s">&#39;compute_importances&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
 </pre></div>
 </div>
-<p><em>rforest</em></p>
+<p><em>RandomForestClassifier</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;compute_importances&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
 </pre></div>
 </div>
-<p><em>gradient</em></p>
+<p><em>GradientBoostingClassifier</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
 </pre></div>
 </div>
-<p><em>gb_regressor</em></p>
+<p><em>GradientBoostingRegressor</em></p>
 <div class="last highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
 </pre></div>
 </div>
@@ -256,51 +258,51 @@ grid should be a list of of dictionaries mapping from strings to lists
 of parameter values. When you specify an empty list for a classifier,
 the default parameter grid for that classifier will be searched.</p>
 <p>The default parameter grids for each classifier are:</p>
-<p><em>logistic</em></p>
+<p><em>LogisticRegression</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>svm_linear</em></p>
+<p><em>LinearSVC</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>svm_radial</em></p>
+<p><em>SVC</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>naivebayes</em></p>
+<p><em>MultinomialNB</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>dtree</em></p>
+<p><em>DecisionTreeClassifier</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;max_features&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;auto&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>rforest</em></p>
+<p><em>RandomForestClassifier</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="bp">None</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>gradient</em></p>
+<p><em>GradientBoostingClassifier</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">500</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>gb_regressor</em></p>
+<p><em>GradientBoostingRegressor</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">500</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>ridge</em></p>
+<p><em>Ridge</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>rescaled_ridge</em></p>
+<p><em>RescaledRidge</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>svr_linear</em></p>
+<p><em>SVR</em></p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
 </pre></div>
 </div>
-<p><em>rescaled_svr_linear</em></p>
+<p><em>RescaledSVR</em></p>
 <div class="last highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
 </pre></div>
 </div>
@@ -494,7 +496,7 @@ least 3 fold IDs.</td></tr>
     </div>
 <div class="footer">
     &copy; Copyright 2012-2013, Educational Testing Service.
-  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2b1.
+  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
   <br />Theme based on <a href="http://readthedocs.org/">Read The Docs</a>
 
 </div>
