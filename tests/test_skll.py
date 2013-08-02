@@ -2,18 +2,18 @@
 
 # This file is part of SciKit-Learn Laboratory.
 
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SciKit-Learn Laboratory is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
 
 # SciKit-Learn Laboratory is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-# You should have received a copy of the GNU General Public License
-# along with SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along with
+# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 Module for running a bunch of simple unit tests. Should be expanded more in
@@ -34,15 +34,9 @@ import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
 
+from skll.experiments import load_featureset, run_configuration, load_cv_folds
 from skll.learner import Learner, SelectByMinCount
 from skll.metrics import accuracy
-
-# This crazy mess handles importing run_experiment from the scripts directory
-sys.dont_write_bytecode = True
-run_experiment = imp.load_source("run_experiment",
-                                 os.path.join("..", "scripts",
-                                              "run_experiment"))
-from run_experiment import load_featureset, run_configuration, load_cv_folds
 
 
 SCORE_OUTPUT_RE = re.compile(r'Average:.+Objective function score = ([\-\d\.]+)', re.DOTALL)
