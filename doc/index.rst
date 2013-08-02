@@ -4,7 +4,7 @@
 SciKit-Learn Laboratory (SKLL)
 ==============================
 
-SKLL (prounounced "skull") provides a number of utilities to make it simpler to
+SKLL (pronounced "skull") provides a number of utilities to make it simpler to
 run common scikit-learn experiments with pre-generated features.
 
 There are two primary means of using SKLL: :doc:`the run_experiment script <run_experiment>`
