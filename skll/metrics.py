@@ -2,18 +2,18 @@
 
 # This file is part of SciKit-Learn Laboratory.
 
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SciKit-Learn Laboratory is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
 
 # SciKit-Learn Laboratory is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-# You should have received a copy of the GNU General Public License
-# along with SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along with
+# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 This module contains a bunch of evaluation metrics that can be used to
@@ -27,6 +27,7 @@ evaluate the performance of learners.
 
 from __future__ import print_function, unicode_literals
 
+import logging
 import sys
 
 import ml_metrics
@@ -56,10 +57,10 @@ def quadratic_weighted_kappa(y_true, y_pred):
         y_true_rounded = [int(round(float(y))) for y in y_true]
         y_pred_rounded = [int(round(float(y))) for y in y_pred]
     except ValueError as e:
-        print("For kappa, the labels should be integers or strings that" +
-              " can be converted to ints (E.g., '4.0' or '3').",
-              file=sys.stderr)
+        logging.error("For kappa, the labels should be integers or strings " +
+                      "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
+
 
     res = ml_metrics.quadratic_weighted_kappa(y_true_rounded, y_pred_rounded)
     return res
@@ -74,9 +75,8 @@ def unweighted_kappa(y_true, y_pred):
         y_true_rounded = [int(round(float(y))) for y in y_true]
         y_pred_rounded = [int(round(float(y))) for y in y_pred]
     except ValueError as e:
-        print("For kappa, the labels should be integers or strings that" +
-              " can be converted to ints (E.g., '4.0' or '3').",
-              file=sys.stderr)
+        logging.error("For kappa, the labels should be integers or strings " +
+                      "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
     res = ml_metrics.kappa(y_true_rounded, y_pred_rounded)

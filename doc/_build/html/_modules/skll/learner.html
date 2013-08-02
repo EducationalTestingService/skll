@@ -1,4 +1,3 @@
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -56,20 +55,20 @@
   <h1>Source code for skll.learner</h1><div class="highlight"><pre>
 <span class="c"># Copyright (C) 2012-2013 Educational Testing Service</span>
 
-<span class="c"># This file is part of SciKit-Learn Lab.</span>
+<span class="c"># This file is part of SciKit-Learn Laboratory.</span>
 
-<span class="c"># SciKit-Learn Lab is free software: you can redistribute it and/or modify</span>
-<span class="c"># it under the terms of the GNU General Public License as published by</span>
-<span class="c"># the Free Software Foundation, either version 3 of the License, or</span>
-<span class="c"># (at your option) any later version.</span>
+<span class="c"># SciKit-Learn Laboratory is free software: you can redistribute it and/or</span>
+<span class="c"># modify it under the terms of the GNU General Public License as published by</span>
+<span class="c"># the Free Software Foundation, either version 3 of the License, or (at your</span>
+<span class="c"># option) any later version.</span>
 
-<span class="c"># SciKit-Learn Lab is distributed in the hope that it will be useful,</span>
+<span class="c"># SciKit-Learn Laboratory is distributed in the hope that it will be useful,</span>
 <span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
 <span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
 <span class="c"># GNU General Public License for more details.</span>
 
-<span class="c"># You should have received a copy of the GNU General Public License</span>
-<span class="c"># along with SciKit-Learn Lab.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c"># You should have received a copy of the GNU General Public License along with</span>
+<span class="c"># SciKit-Learn Laboratory.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">Provides easy-to-use wrapper around scikit-learn.</span>
@@ -83,9 +82,9 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 
 <span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">subprocess</span>
-<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">cpu_count</span>
 
@@ -349,7 +348,7 @@
 <span class="sd">        Initializes a learner object with the specified settings.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Learner</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="c">#</span>
+        <span class="c"># LinearSVC doesn&#39;t support predict_proba</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">probability</span> <span class="o">=</span> <span class="n">probability</span> <span class="k">if</span> <span class="n">model_type</span> <span class="o">!=</span> <span class="s">&#39;LinearSVC&#39;</span> <span class="k">else</span> <span class="bp">False</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">feat_vectorizer</span> <span class="o">=</span> <span class="bp">None</span>
@@ -563,10 +562,10 @@
                                 <span class="s">&quot; strings.  Convert them to floats.&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">max_feat_abs</span> <span class="o">&gt;</span> <span class="mf">1000.0</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">((</span><span class="s">&quot;You have a feature with a very large absolute value ({}).&quot;</span> <span class="o">+</span>
-                   <span class="s">&quot; That may cause the learning algorithm to crash or&quot;</span> <span class="o">+</span>
-                   <span class="s">&quot; perform poorly.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_feat_abs</span><span class="p">),</span>
-                  <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">((</span><span class="s">&quot;You have a feature with a very large absolute &quot;</span> <span class="o">+</span>
+                             <span class="s">&quot;value ({}).  That may cause the learning &quot;</span> <span class="o">+</span>
+                             <span class="s">&quot;algorithm to crash or perform &quot;</span> <span class="o">+</span>
+                             <span class="s">&quot;poorly.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_feat_abs</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">_train_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">examples</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -605,7 +604,7 @@
         <span class="c"># initialize feature selector</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">feat_selector</span> <span class="o">=</span> <span class="n">SelectByMinCount</span><span class="p">(</span><span class="n">min_count</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_feature_count</span><span class="p">)</span>
 
-        <span class="c"># Create scaler if we weren&#39;t passed one</span>
+        <span class="c"># Create scaler if we weren&#39;t passed one and it&#39;s necessary</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_type</span> <span class="o">!=</span> <span class="s">&#39;MultinomialNB&#39;</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_scale_features</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="o">=</span> <span class="n">FixedStandardScaler</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
@@ -617,7 +616,6 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span> <span class="o">=</span> <span class="n">FixedStandardScaler</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                                   <span class="n">with_mean</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                                                   <span class="n">with_std</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-
 
 <div class="viewcode-block" id="Learner.train"><a class="viewcode-back" href="../../skll.html#skll.learner.Learner.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">examples</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">grid_search_folds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
               <span class="n">grid_search</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">grid_objective</span><span class="o">=</span><span class="n">f1_score_micro</span><span class="p">,</span> <span class="n">grid_jobs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
@@ -824,9 +822,10 @@
         <span class="n">example_ids</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">ids</span>
 
         <span class="c"># Need to do some transformations so the features are in the right</span>
-        <span class="c"># columns for the test set.</span>
+        <span class="c"># columns for the test set. Obviously a bit hacky, but storing things</span>
+        <span class="c"># in sparse matrices saves memory over our old list of dicts approach.</span>
         <span class="n">xtest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feat_vectorizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
-                    <span class="n">examples</span><span class="o">.</span><span class="n">feat_vectorizer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">features</span><span class="p">))</span>
+            <span class="n">examples</span><span class="o">.</span><span class="n">feat_vectorizer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">features</span><span class="p">))</span>
 
         <span class="c"># filter features based on those selected from training set</span>
         <span class="n">xtest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feat_selector</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
@@ -835,7 +834,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_dense_features</span><span class="p">:</span>
             <span class="n">xtest</span> <span class="o">=</span> <span class="n">xtest</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span>
 
-        <span class="c"># Scale xtest</span>
+        <span class="c"># Scale xtest if necessary</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_type</span> <span class="o">!=</span> <span class="s">&#39;MultinomialNB&#39;</span><span class="p">:</span>
             <span class="n">xtest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">xtest</span><span class="p">)</span>
 
@@ -843,14 +842,13 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">yhat</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">xtest</span><span class="p">)</span>
                     <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">probability</span> <span class="ow">and</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_model_type</span> <span class="o">!=</span> <span class="s">&#39;LinearSVC&#39;</span> <span class="ow">and</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_model_type</span> <span class="o">!=</span> <span class="s">&#39;LinearSVC&#39;</span> <span class="ow">and</span>  <span class="c"># no predict_proba</span>
                         <span class="ow">not</span> <span class="n">class_labels</span><span class="p">)</span>
                     <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">xtest</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">((</span><span class="s">&quot;Model type: {}</span><span class="se">\n</span><span class="s">Model: {}</span><span class="se">\n</span><span class="s">Probability: &quot;</span> <span class="o">+</span>
-                   <span class="s">&quot;{}</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
-                                  <span class="bp">self</span><span class="o">.</span><span class="n">probability</span><span class="p">),</span>
-                  <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">((</span><span class="s">&quot;Model type: {}</span><span class="se">\n</span><span class="s">Model: {}</span><span class="se">\n</span><span class="s">Probability: &quot;</span> <span class="o">+</span>
+                           <span class="s">&quot;{}</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">probability</span><span class="p">))</span>
             <span class="k">raise</span> <span class="n">e</span>
 
         <span class="c"># write out the predictions if we are asked to</span>
@@ -860,6 +858,7 @@
                       <span class="s">&quot;w&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">append</span> <span class="k">else</span> <span class="s">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">predictionfh</span><span class="p">:</span>
                 <span class="c"># header</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">append</span><span class="p">:</span>
+                    <span class="c"># Output probabilities if we&#39;re asked (and able)</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">probability</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_type</span> <span class="o">!=</span> <span class="s">&#39;LinearSVC&#39;</span><span class="p">:</span>
                         <span class="k">print</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&quot;id&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_list</span><span class="p">),</span>
                               <span class="nb">file</span><span class="o">=</span><span class="n">predictionfh</span><span class="p">)</span>
@@ -1043,7 +1042,7 @@
     </div>
 <div class="footer">
     &copy; Copyright 2012-2013, Educational Testing Service.
-  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2b1.
   <br />Theme based on <a href="http://readthedocs.org/">Read The Docs</a>
 
 </div>

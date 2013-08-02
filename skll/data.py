@@ -2,18 +2,18 @@
 
 # This file is part of SciKit-Learn Laboratory.
 
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SciKit-Learn Laboratory is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
 
 # SciKit-Learn Laboratory is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-# You should have received a copy of the GNU General Public License
-# along with SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along with
+# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 Handles loading data from various types of data files.

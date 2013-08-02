@@ -2,18 +2,18 @@
 
 # This file is part of SciKit-Learn Laboratory.
 
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SciKit-Learn Laboratory is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
 
 # SciKit-Learn Laboratory is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-# You should have received a copy of the GNU General Public License
-# along with SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along with
+# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 Provides easy-to-use wrapper around scikit-learn.
@@ -27,9 +27,9 @@ Provides easy-to-use wrapper around scikit-learn.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import inspect
+import logging
 import os
 import subprocess
-import sys
 from collections import defaultdict
 from multiprocessing import cpu_count
 
@@ -507,10 +507,10 @@ class Learner(object):
                                 " strings.  Convert them to floats.")
 
         if max_feat_abs > 1000.0:
-            print(("You have a feature with a very large absolute value ({})." +
-                   " That may cause the learning algorithm to crash or" +
-                   " perform poorly.").format(max_feat_abs),
-                  file=sys.stderr)
+            logging.warning(("You have a feature with a very large absolute " +
+                             "value ({}).  That may cause the learning " +
+                             "algorithm to crash or perform " +
+                             "poorly.").format(max_feat_abs))
 
     def _train_setup(self, examples):
         '''
@@ -791,10 +791,9 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            print(("Model type: {}\nModel: {}\nProbability: " +
-                   "{}\n").format(self._model_type, self._model,
-                                  self.probability),
-                  file=sys.stderr)
+            logging.error(("Model type: {}\nModel: {}\nProbability: " +
+                           "{}\n").format(self._model_type, self._model,
+                                          self.probability))
             raise e
 
         # write out the predictions if we are asked to

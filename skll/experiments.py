@@ -2,18 +2,18 @@
 
 # This file is part of SciKit-Learn Laboratory.
 
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SciKit-Learn Laboratory is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
 
 # SciKit-Learn Laboratory is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-# You should have received a copy of the GNU General Public License
-# along with SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along with
+# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
 Functions related to running experiments and parsing configuration files.
@@ -23,16 +23,17 @@ Functions related to running experiments and parsing configuration files.
 :author: Nitin Madnani (nmadnani@ets.org)
 '''
 
-
 from __future__ import absolute_import, print_function, unicode_literals
 
+import csv
+import errno
+import itertools
 import json
+import logging
 import math
 import os
 import re
 import sys
-import csv
-import itertools
 from collections import defaultdict, namedtuple
 from multiprocessing import Pool
 
@@ -284,8 +285,8 @@ def _load_featureset(dirpath, featureset, suffix):
             raise ValueError('Feature files have conflicting labels for ' +
                              'examples with the same ID!')
 
-    # Sort merged_features.feature_names_, because that happens whenever the list
-    # is modified internally by DictVectorizer
+    # Sort merged_features.feature_names_, because that happens whenever the
+    # list is modified internally by DictVectorizer
     merged_vectorizer.feature_names_.sort()
 
     return ExamplesTuple(merged_ids, merged_classes, merged_features,
@@ -460,9 +461,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             from gridmap import Job, process_jobs
         except ImportError:
             local = True
-            print('gridmap not available. Forcing local mode. To run things ' +
-                  'on DRMAA-compatible cluster, install gridmap via pip.',
-                  file=sys.stderr)
+            logging.warning('gridmap not available. Forcing local mode.  ' +
+                            'To run things on a DRMAA-compatible cluster, ' +
+                            'install gridmap via pip.')
 
     # extract parameters from the config file
     if config.has_option("Input", "learners"):
@@ -474,7 +475,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                          "learners in [Input] section.")
     given_learners = json.loads(_fix_json(learners_string))
     given_learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else
-                       learner) for learner in learners]
+                       learner) for learner in given_learners]
     given_featuresets = json.loads(_fix_json(config.get("Input",
                                                         "featuresets")))
     given_featureset_names = json.loads(_fix_json(config.get("Input",
@@ -518,13 +519,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
-        print(("Error: the training path specified in config file ({}) does " +
-               "not exist.").format(train_path), file=sys.stderr)
-        sys.exit(2)
+        raise IOError(errno.ENOENT, ("The training path specified in config " +
+                                     "file does not exist."), train_path)
     if test_path and not os.path.exists(test_path):
-        print(("Error: the test path specified in config file ({}) does " +
-               "not exist.").format(test_path), file=sys.stderr)
-        sys.exit(2)
+        raise IOError(errno.ENOENT, ("The test path specified in config " +
+                                     "file does not exist."), train_path)
 
     # do we need to run a grid search for the hyperparameters or are we just
     # using the defaults
@@ -545,8 +544,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                    'spearman', 'pearson', 'kendall_tau',
                                    'quadratic_weighted_kappa',
                                    'unweighted_kappa'}:
-        print('Error: invalid grid objective function.', file=sys.stderr)
-        sys.exit(2)
+        raise ValueError(('Invalid grid objective function: ' +
+                          '{}').format(grid_objective_func))
     else:
         grid_objective = getattr(metrics, grid_objective_func)
 
@@ -576,10 +575,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # make sure that, if we are in prediction mode, we have a prediction_dir
     if predict and not prediction_dir:
-        print('Error: you need to specify a prediction directory if you are ' +
-              'using prediction mode (no "results" option in config file).',
-              file=sys.stderr)
-        sys.exit(2)
+        raise ValueError('You must specify a prediction directory if you are ' +
+                         'using prediction mode (no "results" option in ' +
+                         'config file).')
 
     # the list of jobs submitted (if running on grid)
     if not local:
@@ -660,9 +658,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         # Check for errors
         for result_info in job_results:
             if not hasattr(result_info, 'task'):
-                print('There was an error running the experiment:\n' +
-                      '{}'.format(result_info), file=sys.stderr)
-                sys.exit(2)
+                logging.error('There was an error running the experiment:\n' +
+                              '{}'.format(result_info))
 
 
 def _run_experiment_without_feature(arg_tuple):
