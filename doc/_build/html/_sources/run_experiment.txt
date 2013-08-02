@@ -133,7 +133,7 @@ Input
 
     **fixed_parameters** *(Optional)*
         List of dicts containing parameters you want to have fixed for each
-        classifier in ``classifiers`` list. Any empty ones will be ignored
+        classifier in ``learners`` list. Any empty ones will be ignored
         (and the defaults will be used).
 
         The default fixed parameters (beyond those that scikit-learn sets) are:
@@ -328,6 +328,8 @@ Output
         Directory to store prediction files in. Can be omitted to not store
         predictions.
 
+Note: you can use the same directory for ``results``, ``log``, ``models``, and
+``predictions``.
 
 
 Using run_experiment

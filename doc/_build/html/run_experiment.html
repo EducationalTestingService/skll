@@ -188,7 +188,7 @@ constrained to better match the training set.</li>
 </dd>
 <dt><strong>fixed_parameters</strong> <em>(Optional)</em></dt>
 <dd><p class="first">List of dicts containing parameters you want to have fixed for each
-classifier in <tt class="docutils literal"><span class="pre">classifiers</span></tt> list. Any empty ones will be ignored
+classifier in <tt class="docutils literal"><span class="pre">learners</span></tt> list. Any empty ones will be ignored
 (and the defaults will be used).</p>
 <p>The default fixed parameters (beyond those that scikit-learn sets) are:</p>
 <p><em>LogisticRegression</em></p>
@@ -340,6 +340,8 @@ models.</dd>
 predictions.</dd>
 </dl>
 </div></blockquote>
+<p>Note: you can use the same directory for <tt class="docutils literal"><span class="pre">results</span></tt>, <tt class="docutils literal"><span class="pre">log</span></tt>, <tt class="docutils literal"><span class="pre">models</span></tt>, and
+<tt class="docutils literal"><span class="pre">predictions</span></tt>.</p>
 </div>
 </div>
 <div class="section" id="using-run-experiment">

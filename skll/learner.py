@@ -293,7 +293,7 @@ class Learner(object):
         Initializes a learner object with the specified settings.
         '''
         super(Learner, self).__init__()
-        #
+        # LinearSVC doesn't support predict_proba
         self.probability = probability if model_type != 'LinearSVC' else False
 
         self.feat_vectorizer = None
@@ -549,7 +549,7 @@ class Learner(object):
         # initialize feature selector
         self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
 
-        # Create scaler if we weren't passed one
+        # Create scaler if we weren't passed one and it's necessary
         if self._model_type != 'MultinomialNB':
             if self.do_scale_features:
                 self.scaler = FixedStandardScaler(copy=True,
@@ -561,7 +561,6 @@ class Learner(object):
                 self.scaler = FixedStandardScaler(copy=False,
                                                   with_mean=False,
                                                   with_std=False)
-
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
               grid_search=True, grid_objective=f1_score_micro, grid_jobs=None,
@@ -768,9 +767,10 @@ class Learner(object):
         example_ids = examples.ids
 
         # Need to do some transformations so the features are in the right
-        # columns for the test set.
+        # columns for the test set. Obviously a bit hacky, but storing things
+        # in sparse matrices saves memory over our old list of dicts approach.
         xtest = self.feat_vectorizer.transform(
-                    examples.feat_vectorizer.inverse_transform(examples.features))
+            examples.feat_vectorizer.inverse_transform(examples.features))
 
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(examples.features)
@@ -779,7 +779,7 @@ class Learner(object):
         if self._use_dense_features:
             xtest = xtest.todense()
 
-        # Scale xtest
+        # Scale xtest if necessary
         if self._model_type != 'MultinomialNB':
             xtest = self.scaler.transform(xtest)
 
@@ -787,7 +787,7 @@ class Learner(object):
         try:
             yhat = (self._model.predict_proba(xtest)
                     if (self.probability and
-                        self._model_type != 'LinearSVC' and
+                        self._model_type != 'LinearSVC' and  # no predict_proba
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
@@ -804,6 +804,7 @@ class Learner(object):
                       "w" if not append else "a") as predictionfh:
                 # header
                 if not append:
+                    # Output probabilities if we're asked (and able)
                     if self.probability and self._model_type != 'LinearSVC':
                         print('\t'.join(["id"] + self.label_list),
                               file=predictionfh)
