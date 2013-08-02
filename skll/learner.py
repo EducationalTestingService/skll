@@ -671,7 +671,7 @@ class Learner(object):
         Evaluates a given model on a given dev or test example set.
 
         :param examples: The examples to evaluate the performance of the model
-            on.
+                         on.
         :type examples: ExamplesTuple
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
@@ -687,7 +687,7 @@ class Learner(object):
         :return: The confusion matrix, the overall accuracy, the per-class
                  PRFs, the model parameters, and the grid search objective
                  function score.
-        :rtype: 3-tuple
+        :rtype: 5-tuple
         '''
         # initialize grid score
         grid_score = None
