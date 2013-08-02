@@ -1,4 +1,4 @@
-SciKit-Learn Lab
+SciKit-Learn Laboratory
 ----------------
 
 This package provides a number of utilities to make it simpler to run

@@ -10,7 +10,7 @@ def readme():
 
 setup(name='skll',
       version=__version__,
-      description=('SciKit-Learn Lab provides a number of utilities to make ' +
+      description=('SciKit-Learn Laboratory provides a number of utilities to make ' +
                    'it simpler to run common scikit-learn experiments with ' +
                    'pre-generated features.'),
       long_description=readme(),

@@ -1,8 +1,8 @@
-.. SciKit-Learn Lab documentation master file, created by
+.. SciKit-Learn Laboratory documentation master file, created by
    sphinx-quickstart on Tue Jul 16 09:06:32 2013.
 
-SciKit-Learn Lab (SKLL)
-=======================
+SciKit-Learn Laboratory (SKLL)
+==============================
 
 SKLL provides a number of utilities to make it simpler to run
 common scikit-learn experiments with pre-generated features.
@@ -19,6 +19,7 @@ Documentation
 
    getting_started
    run_experiment
+   utilities
    skll
 
 
