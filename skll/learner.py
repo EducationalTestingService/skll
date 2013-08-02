@@ -29,7 +29,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 import inspect
 import logging
 import os
-import subprocess
 from collections import defaultdict
 from multiprocessing import cpu_count
 
@@ -427,7 +426,7 @@ class Learner(object):
         # create the directory if it doesn't exist
         learner_dir = os.path.dirname(learner_path)
         if not os.path.exists(learner_dir):
-            subprocess.call("mkdir -p {}".format(learner_dir), shell=True)
+            os.makedirs(learner_dir)
         # write out the files
         with open(learner_path, "wb") as f:
             pickle.dump((VERSION, self), f, -1)

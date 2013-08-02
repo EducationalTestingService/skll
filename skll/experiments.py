@@ -506,16 +506,16 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # do we want to keep the predictions?
     prediction_dir = config.get("Output", "predictions")
-    if prediction_dir:
-        os.system("mkdir -p {}".format(prediction_dir))
+    if prediction_dir and not os.path.exists(prediction_dir):
+        os.makedirs(prediction_dir)
 
     # make sure log path exists
-    if logpath:
-        os.system("mkdir -p {}".format(logpath))
+    if logpath and not os.path.exists(logpath):
+        os.makedirs(logpath)
 
     # make sure results path exists
-    if resultspath:
-        os.system("mkdir -p {}".format(resultspath))
+    if resultspath and not os.path.exists(resultspath):
+        os.makedirs(resultspath)
 
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
