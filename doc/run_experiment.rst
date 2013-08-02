@@ -51,8 +51,8 @@ The following feature file formats are supported:
 
 Creating configuration files
 ----------------------------
-The experiment configuration files that run_experiment accepts are standard Python
-configuration files that are similar in format to Windows INI files. [#]_
+The experiment configuration files that run_experiment accepts are standard
+`Python configuration files <http://docs.python.org/2/library/configparser.html>`_ that are similar in format to Windows INI files. [#]_
 There are three expected sections in a configuration file: ``Input``,
 ``Tuning``, and ``Output``.  A detailed description of each possible settings
 for each section is provided below, but to summarize:
@@ -71,6 +71,8 @@ for each section is provided below, but to summarize:
 
 *   A list of classifiers/regressors to try on your feature files is
     required.
+
+An example configuration file is available `here <https://github.com/EducationalTestingService/skll/blob/master/examples/example.cfg>`_.
 
 Input
 ^^^^^
