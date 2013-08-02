@@ -1,0 +1,510 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+
+    <title>Running Experiments &mdash; SciKit-Learn Laboratory 0.9 documentation</title>
+
+<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
+
+
+    
+    <link rel="stylesheet" href="_static/rtd.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/searchtools.js"></script>
+    <link rel="top" title="SciKit-Learn Laboratory 0.9 documentation" href="index.html" />
+    <link rel="next" title="Utilitiy Scripts" href="utilities.html" />
+    <link rel="prev" title="Installation" href="getting_started.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utilities.html" title="Utilitiy Scripts"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="getting_started.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">SciKit-Learn Laboratory 0.9 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="running-experiments">
+<h1>Running Experiments<a class="headerlink" href="#running-experiments" title="Permalink to this headline">¶</a></h1>
+<p>The simplest way to use SKLL is to create configuration files that describe
+experiments you would like to run on pre-generated features. This document
+describes the supported feature file formats, how to create configuration files
+(and layout your directories), and how to use <tt class="docutils literal"><span class="pre">run_experiment</span></tt> to get things
+going.</p>
+<div class="section" id="feature-file-formats">
+<h2>Feature file formats<a class="headerlink" href="#feature-file-formats" title="Permalink to this headline">¶</a></h2>
+<p>The following feature file formats are supported:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>jsonlines</strong></dt>
+<dd><p class="first">A twist on the <a class="reference external" href="http://www.json.org/">JSON</a> format where every line is a
+JSON dictionary (the entire contents of a normal JSON file). Each dictionary
+is expected to contain the following keys:</p>
+<ul class="last simple">
+<li><em>y</em>: The class label.</li>
+<li><em>x</em>: A dictionary of feature values.</li>
+<li><em>id</em>: An optional instance ID.</li>
+</ul>
+</dd>
+<dt><strong>megam</strong></dt>
+<dd><p class="first">An expanded form of the input format for the
+<a class="reference external" href="http://www.umiacs.umd.edu/~hal/megam/">MegaM classification package</a>
+with the <tt class="docutils literal"><span class="pre">-fvals</span></tt> switch.</p>
+<p>The basic format is:</p>
+<div class="highlight-python"><pre># Instance1
+CLASS1    F0 2.5 F1 3 FEATURE_2 -152000
+# Instance2
+CLASS2    F1 7.524</pre>
+</div>
+<p class="last">where the comments before each instance are optional IDs for the following
+line, class names are separated from feature-value pairs with a tab, and
+feature-value pairs are separated by spaces. Any omitted features for a
+given instance are assumed to be zero, so this format is handy when dealing
+with sparse data. We also include several utility scripts for converting
+to/from this MegaM format and for adding/removing features from the files.</p>
+</dd>
+<dt><strong>tsv</strong></dt>
+<dd><p class="first">A simple tab-delimited format with the following restrictions:</p>
+<ul class="last simple">
+<li>The first column contains the class label for each instance.</li>
+<li>If there is a column called &#8220;id&#8221; present, this will be treated as the
+ID for each row.</li>
+<li>All other columns contain feature values, and every feature value must
+be specified (making this a poor choice for sparse data).</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="creating-configuration-files">
+<h2>Creating configuration files<a class="headerlink" href="#creating-configuration-files" title="Permalink to this headline">¶</a></h2>
+<p>The experiment configuration files that run_experiment accepts are standard Python
+configuration files that are similar in format to Windows INI files. <a class="footnote-reference" href="#id5" id="id1">[1]</a>
+There are three expected sections in a configuration file: <tt class="docutils literal"><span class="pre">Input</span></tt>,
+<tt class="docutils literal"><span class="pre">Tuning</span></tt>, and <tt class="docutils literal"><span class="pre">Output</span></tt>.  A detailed description of each possible settings
+for each section is provided below, but to summarize:</p>
+<ul class="simple">
+<li>If you want to do <strong>cross-validation</strong>, specify a path to training
+feature files, but not one to test ones. You also can optionally use
+predetermined folds with the <tt class="docutils literal"><span class="pre">cv_folds_location</span></tt> setting.</li>
+<li>If you want to <strong>train a model and evaluate it</strong> on some data, specify both
+a training location, a test location, and a directory to store to store
+results.</li>
+<li>If you want to just <strong>train a model and generate predictions</strong>, specify
+a training location, a test location, but <em>do not</em> specify a results
+directory.</li>
+<li>A list of classifiers/regressors to try on your feature files is
+required.</li>
+</ul>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>train_location</strong></dt>
+<dd>Path to directory containing training data files. There must be a file
+for each featureset.</dd>
+<dt><strong>test_location</strong> <em>(Optional)</em></dt>
+<dd>Path to directory containing training data files. There must be a file
+for each featureset.  <em>If unspecified, cross-validation is performed.</em></dd>
+<dt><strong>cv_folds_location</strong> <em>(Optional)</em></dt>
+<dd>Path to a csv file (with a header that is ignored) specifyingfolds for
+cross-validation. The first column should consist of training set IDs
+and the second should be a string for the fold ID (e.g., 1 through 5,
+A through D, etc.).  If specified, the CV and grid search will leave
+one fold ID out at a time. <a class="footnote-reference" href="#id6" id="id2">[2]</a></dd>
+<dt><strong>featuresets</strong></dt>
+<dd>List of lists of prefixes for the files containing the features you
+would like to train/test on.  Each list will end up being a job. IDs
+are required to be the same in all of the feature files, and a
+<tt class="docutils literal"><span class="pre">ValueError</span></tt> will be raised if this is not the case.</dd>
+<dt><strong>suffix</strong> <em>(Optional)</em></dt>
+<dd><p class="first">The file format the training/test files are in. Valid option are &#8221;.tsv&#8221;,
+&#8221;.megam&#8221;, and &#8221;.jsonlines&#8221; (one complete JSON dict per line in the
+file).</p>
+<p class="last">If you omit this field, it is assumed that the &#8220;prefixes&#8221; listed
+in <tt class="docutils literal"><span class="pre">featuresets</span></tt> are actually complete filenames. This can be useful
+if you have feature files that are all in different formats that you
+would like to combine.</p>
+</dd>
+<dt><strong>featureset_names</strong> <em>(Optional)</em></dt>
+<dd>Optional list of names for the feature sets.  If omitted, then the
+prefixes will be munged together to make names.</dd>
+<dt><strong>learners</strong> <a class="footnote-reference" href="#id7" id="id3">[3]</a></dt>
+<dd><p class="first">List of scikit-learn models to try using. A separate job will be
+run for each combination of classifier and feature-set.
+Acceptable values are described below. Names in parentheses are
+aliases that can also be used in configuration files.</p>
+<ul class="last simple">
+<li><em>LogisticRegression (logistic)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression">Logistic regression using LibLinear</a></li>
+<li><em>LinearSVC (svm_linear)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC">SVM using LibLinear</a></li>
+<li><em>SVC (svm_radial)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC">SVM using LibSVM</a></li>
+<li><em>MultinomialNB (naivebayes)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB">Multinomial Naive Bayes</a></li>
+<li><em>DecisionTreeClassifier (dtree)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier">Decision Tree Classifier</a></li>
+<li><em>RandomForestClassifier (rforest)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier">Random Forest Classifier</a></li>
+<li><em>GradientBoostingClassifier (gradient)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier">Gradient Boosting Classifier</a></li>
+<li><em>GradientBoostingRegressor (gb_regressor)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor">Gradient Boosting Regressor</a></li>
+<li><em>Ridge (ridge)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier">Ridge Regression</a></li>
+<li><em>RescaledRidge (rescaled_ridge)</em>: Ridge Regression, with predictions rescaled and
+constrained to better match the training set.</li>
+<li><em>SVR (svr_linear)</em>: <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR">Support Vector Regression</a> with a linear kernel.</li>
+<li><em>RescaledSVR (rescaled_svr_linear)</em>: Linear SVR, with predictions rescaled and
+constrained to better match the training set.</li>
+</ul>
+</dd>
+<dt><strong>fixed_parameters</strong> <em>(Optional)</em></dt>
+<dd><p class="first">List of dicts containing parameters you want to have fixed for each
+classifier in <tt class="docutils literal"><span class="pre">learners</span></tt> list. Any empty ones will be ignored
+(and the defaults will be used).</p>
+<p>The default fixed parameters (beyond those that scikit-learn sets) are:</p>
+<p><em>LogisticRegression</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>LinearSVC</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>SVC</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;cache_size&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>DecisionTreeClassifier</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;criterion&#39;</span><span class="p">:</span> <span class="s">&#39;entropy&#39;</span><span class="p">,</span> <span class="s">&#39;compute_importances&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>RandomForestClassifier</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;compute_importances&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>GradientBoostingClassifier</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><em>GradientBoostingRegressor</em></p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s">&#39;random_state&#39;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="tuning">
+<h3>Tuning<a class="headerlink" href="#tuning" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>grid_search</strong> <em>(Optional)</em></dt>
+<dd>Whether or not to perform grid search to find optimal parameters for
+classifier. Defaults to <tt class="docutils literal"><span class="pre">False</span></tt>.</dd>
+<dt><strong>grid_search_jobs</strong> <em>(Optional)</em></dt>
+<dd>Number of folds to run in parallel when using grid search. Defaults to
+number of grid search folds.</dd>
+<dt><strong>objective</strong> <em>(Optional)</em></dt>
+<dd><p class="first">The objective function to use for tuning. Valid options are:</p>
+<ul class="simple">
+<li><em>f1_score_micro</em>: Micro-averaged f-score</li>
+<li><em>f1_score_macro</em>: Macro-averaged f-score</li>
+<li><em>f1_score_least_frequent</em>: F-score of the least frequent class. The
+least frequent class may vary from fold to fold for certain data
+distributions.</li>
+<li><em>accuracy</em>: Overall accuracy</li>
+<li><em>spearman</em>: Spearman rank-correlation</li>
+<li><em>pearson</em>: Pearson correlation</li>
+<li><em>kendall_tau</em>: Kendall&#8217;s tau</li>
+<li><em>quadratic_weighted_kappa</em>: The quadratic weighted kappa, where any
+floating point values are rounded</li>
+<li><em>unweighted_kappa</em>: Unweighted Cohen&#8217;s kappa, where the classes
+should be ints</li>
+</ul>
+<p class="last">Defaults to <tt class="docutils literal"><span class="pre">f1_score_micro</span></tt>.</p>
+</dd>
+<dt><strong>param_grids</strong> <em>(Optional)</em></dt>
+<dd><p class="first">List of parameter grids to search for each classifier. Each parameter
+grid should be a list of of dictionaries mapping from strings to lists
+of parameter values. When you specify an empty list for a classifier,
+the default parameter grid for that classifier will be searched.</p>
+<p>The default parameter grids for each classifier are:</p>
+<p><em>LogisticRegression</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>LinearSVC</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>SVC</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>MultinomialNB</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>DecisionTreeClassifier</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;max_features&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;auto&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>RandomForestClassifier</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="bp">None</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>GradientBoostingClassifier</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">500</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>GradientBoostingRegressor</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="s">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">500</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>Ridge</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>RescaledRidge</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;alpha&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>SVR</em></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
+</pre></div>
+</div>
+<p><em>RescaledSVR</em></p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="p">[{</span><span class="s">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">]}]</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>scale_features</strong> <em>(Optional)</em></dt>
+<dd>Whether to scale features by their mean (for dense data only) and
+standard deviation.  This defaults to <tt class="docutils literal"><span class="pre">False</span></tt>. It is highly
+recommended that you only use this with dense features.</dd>
+<dt><strong>use_dense_features</strong> <em>(Optional)</em></dt>
+<dd>Whether the features should be converted to dense matrices. This
+defaults to <tt class="docutils literal"><span class="pre">False</span></tt>.</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="output">
+<h3>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>probability</strong> <em>(Optional)</em></dt>
+<dd>Whether or not to output probabilities for each class instead of the
+most probable class for each instance. Only really makes a difference
+when storing predictions. Defaults to <tt class="docutils literal"><span class="pre">False</span></tt>.</dd>
+<dt><strong>results</strong> <em>(Optional)</em></dt>
+<dd>Directory to store result files in. If omitted, the current working
+directory is used, <strong>and we&#8217;re assumed to just want to generate
+predictions if the test_location is specified.</strong></dd>
+<dt><strong>log</strong> <em>(Optional)</em></dt>
+<dd>Directory to store result files in. If omitted, the current working
+directory is used.</dd>
+<dt><strong>models</strong> <em>(Optional)</em></dt>
+<dd>Directory to store trained models in. Can be omitted to not store
+models.</dd>
+<dt><strong>predictions</strong> <em>(Optional)</em></dt>
+<dd>Directory to store prediction files in. Can be omitted to not store
+predictions.</dd>
+</dl>
+</div></blockquote>
+<p>Note: you can use the same directory for <tt class="docutils literal"><span class="pre">results</span></tt>, <tt class="docutils literal"><span class="pre">log</span></tt>, <tt class="docutils literal"><span class="pre">models</span></tt>, and
+<tt class="docutils literal"><span class="pre">predictions</span></tt>.</p>
+</div>
+</div>
+<div class="section" id="using-run-experiment">
+<h2>Using run_experiment<a class="headerlink" href="#using-run-experiment" title="Permalink to this headline">¶</a></h2>
+<p>Once you have create the configuration file for your experiment, you can usually
+just get your experiment started by running <tt class="docutils literal"><span class="pre">run_experiment</span> <span class="pre">CONFIGFILE</span></tt>. That
+said, there are a couple options that are specified via command-line arguments
+instead of in the configuration file: <tt class="docutils literal"><span class="pre">--ablation</span></tt> and <tt class="docutils literal"><span class="pre">--keep-models</span></tt>.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">--ablation</span></tt></dt>
+<dd>Runs an ablation study where repeated experiments are conducted with
+each feature set in the configuration file held out.</dd>
+<dt><tt class="docutils literal"><span class="pre">--keep-models</span></tt></dt>
+<dd>If trained models already exist for any of the learner/featureset
+combinations in your configuration file, just load those models and
+do not retrain/overwrite them.</dd>
+</dl>
+</div></blockquote>
+<p>If you have <a class="reference external" href="http://pypi.python.org/pypi/gridmap">Grid Map</a> installed,
+run_experiment will automatically schedule jobs on your DRMAA-compatible
+cluster. However, if you would just like to run things locally, you can specify
+the <tt class="docutils literal"><span class="pre">--local</span></tt> option. <a class="footnote-reference" href="#id8" id="id4">[4]</a> You can also customize the queue and machines that
+are used for running your jobs via the <tt class="docutils literal"><span class="pre">--queue</span></tt> and <tt class="docutils literal"><span class="pre">--machines</span></tt> arguments.
+For complete details on how to specify these options, just run <tt class="docutils literal"><span class="pre">run_experiment</span>
+<span class="pre">--help</span></tt>.</p>
+<p>The result, log, model, and prediction files generated by run_experiment will
+all share the following automatically generated prefix
+<tt class="docutils literal"><span class="pre">TRAINDIR_TESTDIR_FEATURESET_LEARNER_SCALING_TUNING_TASK</span></tt>, where the following
+definitions hold:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">TRAINDIR</span></tt></dt>
+<dd>The basename of the directory containing the training data.</dd>
+<dt><tt class="docutils literal"><span class="pre">TESTDIR</span></tt></dt>
+<dd>The basename of the directory containing the test data if
+<tt class="docutils literal"><span class="pre">test_location</span></tt> was specified in the configuration file, and &#8220;cv&#8221;
+otherwise.</dd>
+<dt><tt class="docutils literal"><span class="pre">FEATURESET</span></tt></dt>
+<dd>The feature set we&#8217;re training on joined with &#8220;+&#8221;.</dd>
+<dt><tt class="docutils literal"><span class="pre">LEARNER</span></tt></dt>
+<dd>The learner the current results/model/etc. was generated using.</dd>
+<dt><tt class="docutils literal"><span class="pre">SCALING</span></tt></dt>
+<dd>If <tt class="docutils literal"><span class="pre">scale_features</span></tt> is true, &#8220;scaled&#8221;; otherwise, &#8220;unscaled&#8221;.</dd>
+<dt><tt class="docutils literal"><span class="pre">TUNING</span></tt></dt>
+<dd>If <tt class="docutils literal"><span class="pre">grid_search</span></tt> is true, &#8220;tuned&#8221; and the objective function name;
+otherwise, &#8220;untuned&#8221;.</dd>
+<dt><tt class="docutils literal"><span class="pre">TASK</span></tt></dt>
+<dd>If <tt class="docutils literal"><span class="pre">train_location</span></tt>, <tt class="docutils literal"><span class="pre">test_location</span></tt>, and <tt class="docutils literal"><span class="pre">results</span></tt> were specified
+in configuration file, &#8220;evaluate&#8221;. If only <tt class="docutils literal"><span class="pre">train_location</span></tt> and
+<tt class="docutils literal"><span class="pre">test_location</span></tt> were specified, &#8220;predict&#8221;. For configuration files
+with just a <tt class="docutils literal"><span class="pre">train_location</span></tt>, &#8220;cross-validate&#8221;.</dd>
+</dl>
+</div></blockquote>
+<p><em>Warning</em>: The values specified in <tt class="docutils literal"><span class="pre">fixed_parameters</span></tt> do not factor into file
+names, so old results will be overwritten if you change the values of fixed
+parameters but keep everything else the same.</p>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="id5" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>We are considering adding support for JSON configuration files in the
+future, but we have not added this functionality yet.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id6" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>K-1 folds will be used for grid search within CV, so there should be at
+least 3 fold IDs.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id7" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>This field can also be called &#8220;classifiers&#8221; for backward-compatibility.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id8" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>This will happen automatically if Grid Map cannot be imported.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Running Experiments</a><ul>
+<li><a class="reference internal" href="#feature-file-formats">Feature file formats</a></li>
+<li><a class="reference internal" href="#creating-configuration-files">Creating configuration files</a><ul>
+<li><a class="reference internal" href="#input">Input</a></li>
+<li><a class="reference internal" href="#tuning">Tuning</a></li>
+<li><a class="reference internal" href="#output">Output</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-run-experiment">Using run_experiment</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="getting_started.html"
+                        title="previous chapter">Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="utilities.html"
+                        title="next chapter">Utilitiy Scripts</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/run_experiment.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utilities.html" title="Utilitiy Scripts"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="getting_started.html" title="Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">SciKit-Learn Laboratory 0.9 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+<div class="footer">
+    &copy; Copyright 2012-2013, Educational Testing Service.
+  Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2b1.
+  <br />Theme based on <a href="http://readthedocs.org/">Read The Docs</a>
+
+</div>
+
+
+
+
+
+  </body>
+</html>

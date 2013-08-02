@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2012-2013 Educational Testing Service
+
+# This file is part of SciKit-Learn Lab.
+
+# SciKit-Learn Lab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SciKit-Learn Lab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
+
+'''
+Script that converts MegaM files to ARFF format
+
+:author: Dan Blanchard (dblanchard@ets.org)
+:date: Oct 2011
+'''
+
+from __future__ import print_function, unicode_literals
+
+import argparse
+import csv
+import sys
+
+from skll.data import _megam_dict_iter
+
+
+def main():
+    # Get command line arguments
+    parser = argparse.ArgumentParser(description="Takes a MegaM-compatible file\
+                                                  to be run with the '-fvals' \
+                                                  switch and outputs a \
+                                                  Weka-compatible ARFF file to \
+                                                  STDOUT.",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('infile',
+                        help='MegaM input file', default='-', nargs='?')
+    parser.add_argument('-c', '--class_name',
+                        help='Name of nominal class field for ARFF file',
+                        default='class')
+    parser.add_argument('-r', '--relation',
+                        help='Name of relation for ARFF file',
+                        default='MegaM Relation')
+    args = parser.parse_args()
+
+    # Initialize variables
+    classes = set()
+    instances = []
+    fields = set()
+
+    # Iterate through MegaM file (ignore example ID, because that has to be a
+    # numeric attribute in ARFF)
+    for _, class_name, feature_dict in _megam_dict_iter(args.infile):
+        classes.add(class_name)
+        instances.append(feature_dict)
+        fields.update(feature_dict.keys())
+
+    # Add relation to header
+    print("@relation '{}'\n".format(args.relation))
+
+    # Loop through fields writing the header info for the ARFF file
+    sorted_fields = sorted(fields)
+    for field in sorted_fields:
+        print("@attribute '{}' numeric".format(field.replace('\\', '\\\\')
+                                                    .replace("'", "\\'")))
+    print("@attribute {} ".format(args.class_name) +
+          "{" + ','.join(sorted(classes)) + "}")
+
+    # Create CSV writer to handle missing values for lines in data section
+    csv.excel.lineterminator = '\n'
+    csv.unregister_dialect('excel')
+    csv.register_dialect('excel', csv.excel)
+    writer = csv.DictWriter(sys.stdout, sorted_fields + [args.class_name],
+                            restval=0)
+
+    print("\n@data")
+    # Loop through the list of instances, writing the ARFF file
+    for instance_dict in instances:
+        writer.writerow(instance_dict)
+
+
+if __name__ == '__main__':
+    main()

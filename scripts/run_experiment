@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2012-2013 Educational Testing Service
+
+# This file is part of SciKit-Learn Lab.
+
+# SciKit-Learn Lab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SciKit-Learn Lab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
+
+'''
+Runs a bunch of scikit-learn jobs in parallel on the cluster given a
+config file.
+
+:author: Dan Blanchard (dblanchard@ets.org)
+:author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
+'''
+
+
+from __future__ import print_function, unicode_literals
+
+import argparse
+
+from skll.experiments import run_ablation, run_configuration
+
+
+def main():
+    '''
+    Handles command line arguments and gets things started.
+    '''
+    # Get command line arguments
+    parser = argparse.ArgumentParser(
+        description="Runs sklearn jobs in parallel on the cluster given a \
+                     config file.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        conflict_handler='resolve')
+    parser.add_argument('config_file',
+                        help='Configuration file describing the sklearn task\
+                              to run.',
+                        type=argparse.FileType('r'))
+    parser.add_argument('-a', '--ablation',
+                        help='Runs an ablation study where repeated \
+                              experiments are conducted where each feature\
+                              set in the configuration file is held out.',
+                        action='store_true')
+    parser.add_argument('-k', '--keep_models',
+                        help='If trained models already exists, re-use them\
+                              instead of overwriting them.',
+                        action='store_true')
+    parser.add_argument('-l', '--local',
+                        help='Do not use the Grid Engine for running jobs and\
+                              just run everything sequential on the local \
+                              machine. This is for debugging.',
+                        action='store_true')
+    parser.add_argument('-m', '--machines',
+                        help="comma-separated list of machines to add to\
+                              gridmap's whitelist (if not specified, all\
+                              available machines are used). Note that full \
+                              names must be specified, e.g., \
+                              \"nlp.research.ets.org\"",
+                        default=None)
+    parser.add_argument('-q', '--queue',
+                        help="Use this queue for gridmap.",
+                        default='all.q')
+
+    args = parser.parse_args()
+    machines = None
+    if args.machines:
+        machines = args.machines.split(',')
+
+    # Are we doing an ablation study?
+    if args.ablation:
+        run_ablation(args.config_file,
+                     local=args.local,
+                     overwrite=not args.keep_models,
+                     queue=args.queue,
+                     hosts=machines)
+    else:
+        run_configuration(args.config_file,
+                          local=args.local,
+                          overwrite=not args.keep_models,
+                          queue=args.queue,
+                          hosts=machines)
+
+
+if __name__ == '__main__':
+    main()
