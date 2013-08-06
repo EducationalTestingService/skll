@@ -4,6 +4,15 @@ SciKit-Learn Laboratory
 This package provides a number of utilities to make it simpler to run
 common scikit-learn experiments with pre-generated features.
 
+Example
+~~~~~~~
+
+.. highlight:: bash
+
+> cd examples
+> python make_example_iris_data.py          # download a simple dataset
+> ./run_experiment.py --local example.cfg   # run an experiment
+
 Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~
 
