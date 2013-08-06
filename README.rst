@@ -31,3 +31,12 @@ Requirements
 -  `PrettyTable <http://pypi.python.org/pypi/PrettyTable>`__
 -  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
+
+Changelog
+~~~~~~~~~
+
+-  v0.9.1
+
+   + Fixed bug where classification experiments would raise an error about class
+     labels not being floats
+   + Updated documentation to include quick example for run_experiment.
