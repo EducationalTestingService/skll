@@ -60,7 +60,7 @@ from skll.fixed_standard_scaler import FixedStandardScaler
 
 
 # Constants #
-__version__ = '0.9'  # Couldn't figure out how to import this otherwise
+__version__ = '0.9.1'  # Couldn't figure out how to import this otherwise
 VERSION = tuple(int(x) for x in __version__.split('.'))
 _REQUIRES_DENSE = frozenset(['MultinomialNB', 'RandomForestClassifier',
                              'GradientBoostingClassifier',
@@ -642,6 +642,14 @@ class Learner(object):
         # set up a grid searcher if we are asked to
         estimator, default_param_grid = self._create_estimator()
 
+        # use label dict transformed version of examples.classes if doing
+        # classification
+        if self._model_type not in _REGRESSION_MODELS:
+            classes = np.array([self.label_dict[label] for label in
+                                examples.classes])
+        else:
+            classes = examples.classes
+
         if grid_search:
             if not param_grid:
                 param_grid = default_param_grid
@@ -656,11 +664,11 @@ class Learner(object):
                                          n_jobs=grid_jobs)
 
             # run the grid search for hyperparameters
-            grid_searcher.fit(xtrain, examples.classes)
+            grid_searcher.fit(xtrain, classes)
             self._model = grid_searcher.best_estimator_
             grid_score = grid_searcher.best_score_
         else:
-            self._model = estimator.fit(xtrain, examples.classes)
+            self._model = estimator.fit(xtrain, classes)
             grid_score = 0.0
 
         return grid_score
@@ -696,8 +704,12 @@ class Learner(object):
         yhat = self.predict(examples, prediction_prefix=prediction_prefix,
                             append=append)
 
-        # extract actual labels
-        ytest = examples.classes
+        # extract actual labels (transformed for classification tasks)
+        if self._model_type not in _REGRESSION_MODELS:
+            ytest = np.array([self.label_dict[label] for label in
+                                examples.classes])
+        else:
+            ytest = examples.classes
 
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
