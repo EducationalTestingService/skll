@@ -8,6 +8,18 @@ describes the supported feature file formats, how to create configuration files
 (and layout your directories), and how to use ``run_experiment`` to get things
 going.
 
+Quick Example
+-------------
+If you don't want to read the whole document, and just want an example of how
+things work, do the following from the command prompt:
+
+.. code-block:: bash
+
+    $ cd examples
+    $ python make_example_iris_data.py          # download a simple dataset
+    $ ./run_experiment.py --local example.cfg   # run an experiment
+
+
 Feature file formats
 --------------------
 The following feature file formats are supported:
