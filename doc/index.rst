@@ -15,7 +15,7 @@ Documentation
 =============
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 3
 
    getting_started
    run_experiment

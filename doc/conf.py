@@ -172,10 +172,10 @@ htmlhelp_basename = 'SKLLdoc'
 
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+'papersize': 'letterpaper',
 
 # The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+'pointsize': '12pt'
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
@@ -185,7 +185,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'SKLL.tex', u'SciKit-Learn Laboratory Documentation',
-   u'Daniel Blanchard \and Michael Heilman \and Nitin Madnani', 'manual'),
+   u'Daniel Blanchard \\and Michael Heilman \\and Nitin Madnani', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
