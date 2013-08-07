@@ -38,7 +38,9 @@ Changelog
 
 -  v0.9.2
 
-   +  Fixed example.cfg path issue. Updated some documentation. No actual code changes.
+   +  Fixed example.cfg path issue. Updated some documentation.
+   +  Made path in make_example_iris_data.py consistent with the updated one
+      in example.cfg
 
 -  v0.9.1
 
