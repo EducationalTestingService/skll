@@ -40,8 +40,9 @@ def main():
     '''
     # Get command line arguments
     parser = argparse.ArgumentParser(
-        description="Runs sklearn jobs in parallel on the cluster given a \
-                     config file.",
+        description="Runs the scikit-learn experiments in a given config file. \
+                     If Grid Map is installed, jobs will automatically be \
+                     created and run on a DRMAA-compatible cluster.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         conflict_handler='resolve')
     parser.add_argument('config_file',

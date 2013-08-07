@@ -35,8 +35,13 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+
+-  v0.9.2
+
+   +  Fixed example.cfg path issue. Updated some documentation. No actual code changes.
+
 -  v0.9.1
 
-   + Fixed bug where classification experiments would raise an error about class
-     labels not being floats
-   + Updated documentation to include quick example for run_experiment.
+   +  Fixed bug where classification experiments would raise an error about class
+      labels not being floats
+   +  Updated documentation to include quick example for run_experiment.

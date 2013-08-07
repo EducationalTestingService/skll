@@ -60,7 +60,7 @@ from skll.fixed_standard_scaler import FixedStandardScaler
 
 
 # Constants #
-__version__ = '0.9.1'  # Couldn't figure out how to import this otherwise
+__version__ = '0.9.2'  # Couldn't figure out how to import this otherwise
 VERSION = tuple(int(x) for x in __version__.split('.'))
 _REQUIRES_DENSE = frozenset(['MultinomialNB', 'RandomForestClassifier',
                              'GradientBoostingClassifier',
