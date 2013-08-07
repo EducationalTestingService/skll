@@ -17,7 +17,7 @@ things work, do the following from the command prompt:
 
     $ cd examples
     $ python make_example_iris_data.py          # download a simple dataset
-    $ ./run_experiment.py --local example.cfg   # run an experiment
+    $ run_experiment --local example.cfg        # run an experiment
 
 
 Feature file formats
