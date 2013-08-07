@@ -2,7 +2,7 @@
 *.pyo
 
 *.egg
-gridmap.egg-info/
+skll.egg-info/
 dist/
 build/
 __pycache__
