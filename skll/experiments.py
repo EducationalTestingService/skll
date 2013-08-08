@@ -33,6 +33,7 @@ import logging
 import math
 import os
 import re
+import numpy as np
 import sys
 from collections import defaultdict, namedtuple
 from multiprocessing import Pool
@@ -193,12 +194,12 @@ def _parse_config_file(config_file):
                                         'probability': 'False',
                                         'fixed_parameters': '[]',
                                         'param_grids': '[]',
-                                        'pos_label_str': None,
+                                        'pos_label_str': '',
                                         'featureset_names': '[]',
                                         'use_dense_features': 'False',
                                         'min_feature_count': '1',
                                         'grid_search_jobs': '0',
-                                        'cv_folds_location': None,
+                                        'cv_folds_location': '',
                                         'suffix': '',
                                         'classifiers': ''})
     if sys.version_info[:2] >= (3, 2):
@@ -264,8 +265,8 @@ def _load_featureset(dirpath, featureset, suffix):
                 raise ValueError('Two feature files have the same feature!')
 
             merged_features = sp.hstack([merged_features, features], 'csr')
-            num_merged = len(merged_features)
-            for feat_name, index in feat_vectorizer.vocabulary_:
+            num_merged = merged_features.shape[0]
+            for feat_name, index in feat_vectorizer.vocabulary_.items():
                 merged_vectorizer.vocabulary_[feat_name] = index + num_merged
                 merged_vectorizer.feature_names_.append(feat_name)
         else:
@@ -277,11 +278,11 @@ def _load_featureset(dirpath, featureset, suffix):
             merged_ids = ids
             merged_classes = classes
         # Check that IDs are in the same order
-        elif merged_ids != ids:
+        elif not np.all(merged_ids == ids):
             raise ValueError('IDs are not in the same order in each feature ' +
                              'file!')
         # Check that classes don't conflict
-        elif merged_classes != classes:
+        elif not np.all(merged_classes == classes):
             raise ValueError('Feature files have conflicting labels for ' +
                              'examples with the same ID!')
 
