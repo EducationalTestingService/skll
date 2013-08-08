@@ -49,11 +49,16 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle as sk_shuffle
+
+# Use sklearn's version of StandardScaler for 0.14 and later, otherwise use ours
+if tuple(int(x) for x in sklearn.__version__.split('.')) >= (0, 14):
+    from sklearn.preprocessing import StandardScaler
+else:
+    from skll.fixed_standard_scaler import FixedStandardScaler as StandardScaler
 
 from skll.data import ExamplesTuple
 from skll.metrics import f1_score_micro, _CORRELATION_METRICS
