@@ -35,6 +35,13 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.3
+
+   +  Fixed bug with merging feature sets that used to cause a crash.
+   +  If you're running scikit-learn 0.14+, use their StandardScaler, since the
+      bug fix we include in FixedStandardScaler is in there.
+   +  Unit tests all pass again
+   +  Lots of little things related to using travis (which do not affect users)
 
 -  v0.9.2
 
@@ -52,3 +59,5 @@ Changelog
    :alt: Bitdeli badge
    :target: https://bitdeli.com/free
 
+.. image:: https://api.travis-ci.org/EducationalTestingService/skll.png
+   :alt: Build status

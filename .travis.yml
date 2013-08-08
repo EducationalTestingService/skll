@@ -2,13 +2,22 @@ language: python
 python:
   - "2.6"
   - "2.7"
-#  - "3.2" Can't test Python 3 until ml_metrics gets updated
+# Can't test Python 3 until ml_metrics gets updated
+#  - "3.2"
 #  - "3.3"
 
-# command to install dependencies
+notifications:
+  email: false
+
+# Install stuff
+virtualenv:
+    system_site_packages: true
+before_install:
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq python-scipy python-nose
 install:
   - "pip install -r requirements.txt --use-mirrors"
-  - "python setup.py -q install"
+  - "python setup.py install"
 
-# command to run tests
+# Run test
 script: nosetests tests/test_skll.py
