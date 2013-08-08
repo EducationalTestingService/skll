@@ -16,6 +16,8 @@ before_install:
     - sudo apt-get install -qq python-scipy python-nose python-sklearn
 install:
   - "pip install -r requirements.txt --use-mirrors"
+  - sudo rm -rf /dev/shm
+  - sudo ln -s /run/shm /dev/shm
   - "python setup.py install"
 
 # Run test
