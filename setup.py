@@ -7,6 +7,9 @@ def readme():
     with open('README.rst') as f:
         return f.read()
 
+def requirements():
+    with open('requirements.txt') as f:
+        return f.read().splitlines()
 
 setup(name='skll',
       version=__version__,
@@ -25,6 +28,5 @@ setup(name='skll',
                'scripts/join_megam', 'scripts/megam_to_arff',
                'scripts/megam_to_libsvm', 'scripts/print_model_weights',
                'scripts/run_experiment'],
-      install_requires=['scikit-learn', 'six', 'PrettyTable', 'beautifulsoup4',
-                        'numpy', 'ml_metrics'],
+      install_requires=requirements(),
       zip_safe=False)

@@ -54,13 +54,18 @@ from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle as sk_shuffle
 
+# Use sklearn's version of StandardScaler for 0.14 and later, otherwise use ours
+if tuple(int(x) for x in sklearn.__version__.split('.')) >= (0, 14):
+    from sklearn.preprocessing import StandardScaler
+else:
+    from skll.fixed_standard_scaler import FixedStandardScaler as StandardScaler
+
 from skll.data import ExamplesTuple
 from skll.metrics import f1_score_micro, _CORRELATION_METRICS
-from skll.fixed_standard_scaler import FixedStandardScaler
 
 
 # Constants #
-__version__ = '0.9.2'  # Couldn't figure out how to import this otherwise
+__version__ = '0.9.3'  # Couldn't figure out how to import this otherwise
 VERSION = tuple(int(x) for x in __version__.split('.'))
 _REQUIRES_DENSE = frozenset(['MultinomialNB', 'RandomForestClassifier',
                              'GradientBoostingClassifier',
@@ -551,15 +556,15 @@ class Learner(object):
         # Create scaler if we weren't passed one and it's necessary
         if self._model_type != 'MultinomialNB':
             if self.do_scale_features:
-                self.scaler = FixedStandardScaler(copy=True,
-                                                  with_mean=self._use_dense_features,
-                                                  with_std=True)
+                self.scaler = StandardScaler(copy=True,
+                                             with_mean=self._use_dense_features,
+                                             with_std=True)
             else:
                 # Doing this is to prevent any modification of feature values
                 # using a dummy transformation
-                self.scaler = FixedStandardScaler(copy=False,
-                                                  with_mean=False,
-                                                  with_std=False)
+                self.scaler = StandardScaler(copy=False,
+                                             with_mean=False,
+                                             with_std=False)
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
               grid_search=True, grid_objective=f1_score_micro, grid_jobs=None,
