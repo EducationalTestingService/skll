@@ -1,0 +1,10 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+#  - "3.2" Can't test Python 3 until ml_metrics gets updated
+#  - "3.3"
+# command to install dependencies
+install: "pip install -r requirements.txt --use-mirrors"
+# command to run tests
+script: nosetests tests/test_skll.py
