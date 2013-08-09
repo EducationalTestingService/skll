@@ -1,4 +1,0 @@
-[run]
-source = skll
-omit =
-    */tests*

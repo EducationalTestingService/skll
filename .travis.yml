@@ -27,4 +27,4 @@ script:
 
 # Calculate coverage
 after_success:
-  - coveralls --config_file .coverage.rc
+  - coveralls --config_file .coveragerc
