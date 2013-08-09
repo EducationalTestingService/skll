@@ -7,3 +7,4 @@ omit =
     */site-packages/ordereddict.py
     */site-packages/nose/*
     */unittest2/*
+    *skll/fixed_standard_scaler.py
