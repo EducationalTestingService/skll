@@ -8,6 +8,7 @@ build/
 __pycache__
 
 .DS_Store
+.coverage
 
 tests/test_cv_folds1.cfg
 tests/test_cv_folds1.jsonlines
