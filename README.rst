@@ -60,6 +60,11 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.4
+
+   +  Documentation fixes
+   +  Added requirements.txt to manifest to fix broken PyPI release tarball.
+
 -  v0.9.3
 
    +  Fixed bug with merging feature sets that used to cause a crash.
