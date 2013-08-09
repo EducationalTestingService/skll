@@ -20,8 +20,8 @@ SciKit-Learn Laboratory
    :alt: Bitdeli badge
    :target: https://bitdeli.com/free
 
-This package provides a number of utilities to make it simpler to run
-common scikit-learn experiments with pre-generated features.
+This Python package provides utilities to make it easier to run
+machine learning experiments with scikit-learn.
 
 Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -40,6 +40,12 @@ the ``load_examples`` function and the ``Learner`` class. For more details on
 how to simply train, test, cross-validate, and run grid search on a variety of
 scikit-learn models see
 `the documentation <https://skll.readthedocs.org/en/latest/index.html>`__.
+
+A Note on Pronunciation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+SciKit-Learn Laboratory (SKLL) is pronounced "skull": that's where the learning
+happens.
 
 Requirements
 ~~~~~~~~~~~~
