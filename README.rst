@@ -26,7 +26,7 @@ Command-line Interface
 ``run_experiment`` is a command-line utility for running a series of learners on
 datasets specified in a configuration file. For more information about using
 run_experiment (including a quick example), go
-`here <https://skll.readthedocs.org/en/v0.9.3/run_experiment.html>`__.
+`here <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
 
 Python API
 ~~~~~~~~~~
@@ -36,7 +36,7 @@ use our simple Python API. The main way you'll want to use the API is through
 the ``load_examples`` function and the ``Learner`` class. For more details on
 how to simply train, test, cross-validate, and run grid search on a variety of
 scikit-learn models see
-`the documentation <https://skll.readthedocs.org/en/v0.9.3/index.html>`__.
+`the documentation <https://skll.readthedocs.org/en/latest/index.html>`__.
 
 Requirements
 ~~~~~~~~~~~~
