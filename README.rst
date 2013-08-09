@@ -5,6 +5,9 @@ SciKit-Learn Laboratory
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
+.. image:: https://coveralls.io/repos/EducationalTestingService/skll/badge.png?branch=master
+    :target: https://coveralls.io/r/EducationalTestingService/skll
+
 .. image:: https://pypip.in/d/skll/badge.png
    :target: https://crate.io/packages/skll
    :alt: PyPI downloads
