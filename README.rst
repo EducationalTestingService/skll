@@ -1,6 +1,22 @@
 SciKit-Learn Laboratory
 -----------------------
 
+.. image:: https://api.travis-ci.org/EducationalTestingService/skll.png
+   :alt: Build status
+   :target: https://travis-ci.org/EducationalTestingService/skll
+
+.. image:: https://pypip.in/d/skll/badge.png
+   :target: https://crate.io/packages/skll
+   :alt: PyPI downloads
+
+.. image:: https://pypip.in/v/skll/badge.png
+   :target: https://crate.io/packages/skll
+   :alt: Latest version on PyPI
+
+.. image:: https://d2weczhvl823v0.cloudfront.net/EducationalTestingService/skll/trend.png
+   :alt: Bitdeli badge
+   :target: https://bitdeli.com/free
+
 This package provides a number of utilities to make it simpler to run
 common scikit-learn experiments with pre-generated features.
 
@@ -55,9 +71,3 @@ Changelog
       labels not being floats
    +  Updated documentation to include quick example for run_experiment.
 
-.. image:: https://d2weczhvl823v0.cloudfront.net/EducationalTestingService/skll/trend.png
-   :alt: Bitdeli badge
-   :target: https://bitdeli.com/free
-
-.. image:: https://api.travis-ci.org/EducationalTestingService/skll.png
-   :alt: Build status
