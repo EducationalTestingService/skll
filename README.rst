@@ -38,8 +38,8 @@ Changelog
 -  v0.9.3
 
    +  Fixed bug with merging feature sets that used to cause a crash.
-   +  If you're running scikit-learn 0.14+, use their StandardScaler, since the
-      bug fix we include in FixedStandardScaler is in there.
+   +  If you're running scikit-learn 0.14+, we use their StandardScaler, since
+      the bug fix we include in FixedStandardScaler is in there.
    +  Unit tests all pass again
    +  Lots of little things related to using travis (which do not affect users)
 
