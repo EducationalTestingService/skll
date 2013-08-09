@@ -1,9 +1,9 @@
 language: python
 python:
-  - "2.7"
+  - 2.7
 # Can't test Python 3 until ml_metrics gets updated
-#  - "3.2"
-#  - "3.3"
+#  - 3.2
+#  - 3.3
 
 notifications:
   email: false
@@ -15,10 +15,16 @@ before_install:
     - sudo apt-get update -qq
     - sudo apt-get install -qq python-scipy python-nose
 install:
-  - "pip install -r requirements.txt --use-mirrors"
+  - pip install -r requirements.txt --use-mirrors
+  - pip install coveralls --use-mirrors
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
-  - "python setup.py install"
+  - python setup.py install
 
 # Run test
-script: nosetests tests/test_skll.py
+script:
+  - nosetests --with-coverage --cover-package=skll tests/test_skll.py
+
+# Calculate coverage
+after_success:
+  - coveralls
