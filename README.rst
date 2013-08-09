@@ -23,20 +23,20 @@ common scikit-learn experiments with pre-generated features.
 Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~
 
-``run_experiment`` is a command-line utility for running a series of
-learners on datasets specified in a configuration file. For more
-information about using run_experiment (including a quick example),
-go `here <https://scikit-learn-laboratory.readthedocs.org/en/latest/run_experiment.html>`__.
+``run_experiment`` is a command-line utility for running a series of learners on
+datasets specified in a configuration file. For more information about using
+run_experiment (including a quick example), go
+`here <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
 
 Python API
 ~~~~~~~~~~
 
-If you just want to avoid writing a lot of boilerplate learning code,
-you can use our simple well-documented Python API. The main way you'll
-want to use the API is through the ``load_examples`` function and the
-``Learner`` class. For more details on how to simply train, test,
-cross-validate, and run grid search on a variety of scikit-learn models
-see `the documentation <https://scikit-learn-laboratory.readthedocs.org/en/latest/index.html>`__.
+If you just want to avoid writing a lot of boilerplate learning code, you can
+use our simple Python API. The main way you'll want to use the API is through
+the ``load_examples`` function and the ``Learner`` class. For more details on
+how to simply train, test, cross-validate, and run grid search on a variety of
+scikit-learn models see
+`the documentation <https://skll.readthedocs.org/en/latest/index.html>`__.
 
 Requirements
 ~~~~~~~~~~~~
@@ -70,4 +70,3 @@ Changelog
    +  Fixed bug where classification experiments would raise an error about class
       labels not being floats
    +  Updated documentation to include quick example for run_experiment.
-
