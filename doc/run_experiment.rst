@@ -207,6 +207,10 @@ Tuning
         Number of folds to run in parallel when using grid search. Defaults to
         number of grid search folds.
 
+    **min_feature_count** *(Optional)*
+        The minimum number of examples for a which each feature must be nonzero
+        to be included in the model. Defaults to 1.
+
     **objective** *(Optional)*
         The objective function to use for tuning. Valid options are:
 
@@ -306,6 +310,11 @@ Tuning
 
            [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
+
+    **pos_label_str** *(Optional)*
+        The string label for the positive class in the binary
+        classification setting. If unspecified, an arbitrary class is
+        picked.
 
     **scale_features** *(Optional)*
         Whether to scale features by their mean (for dense data only) and
