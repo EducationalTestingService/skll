@@ -54,6 +54,8 @@ Requirements
 -  `scikit-learn <http://scikit-learn.org/stable/>`__
 -  `six <https://pypi.python.org/pypi/six>`__
 -  `PrettyTable <http://pypi.python.org/pypi/PrettyTable>`__
+-  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
+-  `ML Metrics <https://pypi.python.org/pypi/ml_metrics/0.1.2>`__
 -  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
 
