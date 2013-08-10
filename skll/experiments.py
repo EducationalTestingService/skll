@@ -289,6 +289,11 @@ def _load_featureset(dirpath, featureset, suffix):
             raise ValueError('Feature files have conflicting labels for ' +
                              'examples with the same ID!')
 
+    # Ensure that at least one file had classes
+    if merged_classes is None:
+        raise ValueError('No feature files in feature set contain class' + 
+                         'labels!')
+
     # Sort merged_features.feature_names_, because that happens whenever the
     # list is modified internally by DictVectorizer
     merged_vectorizer.feature_names_.sort()
