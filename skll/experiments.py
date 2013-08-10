@@ -273,16 +273,19 @@ def _load_featureset(dirpath, featureset, suffix):
             merged_features = features
             merged_vectorizer = feat_vectorizer
 
-        # These should be the same for each ExamplesTuple, so only store once
+        # IDs should be the same for each ExamplesTuple, so only store once
         if merged_ids is None:
             merged_ids = ids
-            merged_classes = classes
         # Check that IDs are in the same order
         elif not np.all(merged_ids == ids):
             raise ValueError('IDs are not in the same order in each feature ' +
                              'file!')
-        # Check that classes don't conflict
-        elif not np.all(merged_classes == classes):
+
+        # Classes should be the same for each ExamplesTuple, so only store once
+        if merged_classes is None:
+            merged_classes = classes
+        # Check that classes don't conflict, when specified
+        elif classes is not None and not np.all(merged_classes == classes):
             raise ValueError('Feature files have conflicting labels for ' +
                              'examples with the same ID!')
 
