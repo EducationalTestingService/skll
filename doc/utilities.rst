@@ -40,6 +40,11 @@ megam_to_arff
 Takes a MegaM-compatible file to be run with the ``-fvals`` switch and outputs
 a Weka-compatible ARFF file to STDOUT.
 
+megam_to_csv
+------------
+Takes a MegaM-compatible file to be run with the ``-fvals`` switch and outputs
+a CSV file to STDOUT.
+
 megam_to_libsvm
 ---------------
 Takes a MegaM-compatible file to be run with the ``-fvals`` switch and outputs a
