@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2012-2013 Educational Testing Service
+
+# This file is part of SciKit-Learn Lab.
+
+# SciKit-Learn Lab is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SciKit-Learn Lab is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
+
+'''
+Script that converts MegaM files to CSV/TSV format
+
+:author: Dan Blanchard (dblanchard@ets.org)
+:date: August 2013
+'''
+
+from __future__ import print_function, unicode_literals
+
+import argparse
+import sys
+from csv import DictWriter
+
+from skll.data import _megam_dict_iter
+
+
+def main():
+    # Get command line arguments
+    parser = argparse.ArgumentParser(description="Takes a MegaM-compatible file\
+                                                  to be run with the '-fvals' \
+                                                  switch and outputs a CSV file\
+                                                  to STDOUT.",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('infile',
+                        help='MegaM input file', default='-', nargs='?')
+    parser.add_argument('-c', '--class_name',
+                        help='Name of class column for CSV file',
+                        default='class')
+    parser.add_argument('-d', '--delimiter',
+                        help='Delimiter to use for when writing file.',
+                        default=b',')
+    parser.add_argument('-i', '--id_name',
+                        help='Name of ID column for CSV file.',
+                        default='id')
+    args = parser.parse_args()
+
+    # Initialize variables
+    instances = []
+    fields = set()
+
+    # Iterate through MegaM file
+    for example_id, class_name, feature_dict in _megam_dict_iter(args.infile):
+        # Don't try to add class column if this is label-less data
+        if class_name is not None:
+            if args.class_name not in feature_dict:
+                feature_dict[args.class_name] = class_name
+            else:
+                raise ValueError(('Class column name "{0}" already used as ' +
+                                  'feature name!').format(args.class_name))
+
+        if args.id_name not in feature_dict:
+            feature_dict[args.id_name] = example_id
+        else:
+            raise ValueError(('ID column name "{0}" already used as ' +
+                              'feature name!').format(args.id_name))
+        fields.update(feature_dict.keys())
+        instances.append(feature_dict)
+
+    # Create writer
+    writer = DictWriter(sys.stdout, fieldnames=fields, delimiter=args.delimiter,
+                        restval=0)
+    # Output instance
+    writer.writeheader()
+    writer.writerows(instances)
+
+
+if __name__ == '__main__':
+    main()
