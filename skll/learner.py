@@ -603,7 +603,7 @@ class Learner(object):
         '''
         # seed the random number generator so that randomized algorithms are
         # replicable
-        rand_seed = 9876315986142
+        rand_seed = 123456789
         np.random.seed(rand_seed)
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -897,7 +897,7 @@ class Learner(object):
         '''
         # seed the random number generator so that randomized algorithms are
         # replicable
-        rand_seed = 9876315986142
+        rand_seed = 123456789
         np.random.seed(rand_seed)
 
         # Shuffle so that the folds are random for CV.
