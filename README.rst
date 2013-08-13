@@ -86,3 +86,9 @@ Changelog
    +  Fixed bug where classification experiments would raise an error about class
       labels not being floats
    +  Updated documentation to include quick example for run_experiment.
+
+
+.. image:: https://d2weczhvl823v0.cloudfront.net/EducationalTestingService/skll/trend.png
+   :alt: Bitdeli badge
+   :target: https://bitdeli.com/free
+
