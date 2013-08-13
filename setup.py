@@ -26,7 +26,7 @@ setup(name='skll',
       scripts=['scripts/arff_to_megam', 'scripts/csv_to_megam',
                'scripts/filter_megam', 'scripts/generate_predictions',
                'scripts/join_megam', 'scripts/megam_to_arff',
-	       'scripts/megam_to_csv', 'scripts/megam_to_libsvm', 
+	             'scripts/megam_to_csv', 'scripts/megam_to_libsvm',
                'scripts/print_model_weights', 'scripts/run_experiment'],
       install_requires=requirements(),
       zip_safe=False)
