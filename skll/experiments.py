@@ -211,7 +211,7 @@ def _parse_config_file(config_file):
     return config
 
 
-def _load_featureset(dirpath, featureset, suffix, tsv_label):
+def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
     '''
     loads a list of feature files and merges them (or loads just one if
     featureset is a string).
