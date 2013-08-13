@@ -47,7 +47,7 @@ def main():
                         default='class')
     parser.add_argument('-d', '--delimiter',
                         help='Delimiter to use for when writing file.',
-                        default=',')
+                        default=b',')
     parser.add_argument('-i', '--id_name',
                         help='Name of ID column for CSV file.',
                         default='id')
@@ -59,11 +59,14 @@ def main():
 
     # Iterate through MegaM file
     for example_id, class_name, feature_dict in _megam_dict_iter(args.infile):
-        if args.class_name not in feature_dict:
-            feature_dict[args.class_name] = class_name
-        else:
-            raise ValueError(('Class column name "{0}" already used as ' +
-                              'feature name!').format(args.class_name))
+        # Don't try to add class column if this is label-less data
+        if class_name is not None:
+            if args.class_name not in feature_dict:
+                feature_dict[args.class_name] = class_name
+            else:
+                raise ValueError(('Class column name "{0}" already used as ' +
+                                  'feature name!').format(args.class_name))
+
         if args.id_name not in feature_dict:
             feature_dict[args.id_name] = example_id
         else:
@@ -73,9 +76,10 @@ def main():
         instances.append(feature_dict)
 
     # Create writer
-    writer = DictWriter(sys.stdout, fieldnames=fields, delimiter=args.delimiter)
-
-    # Output instances
+    writer = DictWriter(sys.stdout, fieldnames=fields, delimiter=args.delimiter,
+                        restval=0)
+    # Output instance
+    writer.writeheader()
     writer.writerows(instances)
 
 
