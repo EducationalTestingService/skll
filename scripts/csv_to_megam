@@ -84,6 +84,11 @@ if __name__ == '__main__':
                 # Check for weird commented-out header in tbl files
                 fields = split_line[1:] if split_line[0] == '#' else split_line
                 fields = [sanitize_name(field) for field in fields]
+                # To fix sorting issues, make field indexes positive
+                if args.idfield < 0:
+                    args.idfield += len(fields)
+                if args.classfield < 0:
+                    args.classfield += len(fields)
                 # Delete extra fields
                 if args.idfield is not None:
                     # Have to sort descending so that we don't screw up the
