@@ -201,7 +201,8 @@ def _parse_config_file(config_file):
                                         'grid_search_jobs': '0',
                                         'cv_folds_location': '',
                                         'suffix': '',
-                                        'classifiers': ''})
+                                        'classifiers': '',
+                                        'tsv_label': 'y'})
     if sys.version_info[:2] >= (3, 2):
         config.read_file(config_file)
     else:
@@ -210,7 +211,7 @@ def _parse_config_file(config_file):
     return config
 
 
-def _load_featureset(dirpath, featureset, suffix):
+def _load_featureset(dirpath, featureset, suffix, tsv_label):
     '''
     loads a list of feature files and merges them (or loads just one if
     featureset is a string).
@@ -221,7 +222,8 @@ def _load_featureset(dirpath, featureset, suffix):
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
-    example_tuples = [load_examples(file_name) for file_name in file_names]
+    example_tuples = [load_examples(file_name, tsv_label) for file_name in
+                      file_names]
 
     # Check that the IDs are unique within each file.
     for file_name, examples in zip(file_names, example_tuples):
@@ -291,7 +293,7 @@ def _load_featureset(dirpath, featureset, suffix):
 
     # Ensure that at least one file had classes
     if merged_classes is None:
-        raise ValueError('No feature files in feature set contain class' + 
+        raise ValueError('No feature files in feature set contain class' +
                          'labels!')
 
     # Sort merged_features.feature_names_, because that happens whenever the
@@ -309,7 +311,7 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
                          evaluate, suffix, log_path, probability, resultspath,
                          fixed_parameters, param_grid, pos_label_str,
                          overwrite, use_dense_features, min_feature_count,
-                         grid_search_jobs, cv_folds):
+                         grid_search_jobs, cv_folds, tsv_label):
     ''' Classification job to be submitted to grid '''
 
     with open(log_path, 'w') as log_file:
@@ -321,9 +323,11 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
                 train_set_name, test_set_name, featureset), file=log_file)
 
         # load the training and test examples
-        train_examples = _load_featureset(train_path, featureset, suffix)
+        train_examples = _load_featureset(train_path, featureset, suffix,
+                                          tsv_label)
         if not cross_validate:
-            test_examples = _load_featureset(test_path, featureset, suffix)
+            test_examples = _load_featureset(test_path, featureset, suffix,
+                                             tsv_label)
 
         # initialize a classifer object
         learner = Learner(probability=probability,
@@ -499,6 +503,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     train_path = config.get("Input", "train_location").rstrip('/')
     test_path = config.get("Input", "test_location").rstrip('/')
     suffix = config.get("Input", "suffix")
+    tsv_label = config.get("Input", "tsv_label")
 
     # get the cv folds file and make a dictionary from it
     cv_folds_location = config.get("Input", "cv_folds_location")
@@ -648,7 +653,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                         (param_grid_list[learner_num] if param_grid_list
                          else None),
                         pos_label_str, overwrite, use_dense_features,
-                        min_feature_count, grid_search_jobs, cv_folds]
+                        min_feature_count, grid_search_jobs, cv_folds,
+                        tsv_label]
             if not local:
                 jobs.append(Job(_classify_featureset, job_args,
                                 num_slots=(MAX_CONCURRENT_PROCESSES if

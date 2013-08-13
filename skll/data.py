@@ -45,39 +45,48 @@ ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
                                              'feat_vectorizer'])
 
 
-def _ids_for_gen_func(example_gen_func, path, has_labels):
+def _ids_for_gen_func(example_gen_func, path, tsv_label):
     '''
     Little helper function to return an array of IDs for a given example
     generator (and whether or not the examples have labels).
     '''
-    return np.array([curr_id for curr_id, _, _ in
-                     example_gen_func(path, has_labels=has_labels, quiet=True)])
+    if example_gen_func == _tsv_dict_iter:
+        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
+    else:
+        gen_results = example_gen_func(path, quiet=True)
+    return np.array([curr_id for curr_id, _, _ in gen_results])
 
 
-def _classes_for_gen_func(example_gen_func, path, has_labels):
+def _classes_for_gen_func(example_gen_func, path, tsv_label):
     '''
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
-    return np.array([class_name for _, class_name, _ in
-                     example_gen_func(path, has_labels=has_labels, quiet=True)])
+    if example_gen_func == _tsv_dict_iter:
+        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
+    else:
+        gen_results = example_gen_func(path, quiet=True)
+    return np.array([class_name for _, class_name, _ in gen_results])
 
 
-def _features_for_gen_func(example_gen_func, path, has_labels, sparse, quiet):
+def _features_for_gen_func(example_gen_func, path, quiet, sparse, tsv_label):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
     have labels).
     '''
+    if example_gen_func == _tsv_dict_iter:
+        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
+    else:
+        gen_results = example_gen_func(path, quiet=True)
+
     feat_vectorizer = DictVectorizer(sparse=sparse)
-    feat_dict_generator = map(itemgetter(2),
-                              example_gen_func(path, has_labels=has_labels,
-                                               quiet=quiet))
+    feat_dict_generator = map(itemgetter(2), gen_results)
     features = feat_vectorizer.fit_transform(feat_dict_generator)
     return features, feat_vectorizer
 
 
-def load_examples(path, has_labels=True, sparse=True, quiet=False):
+def load_examples(path, quiet=False, sparse=True, tsv_label='y'):
     '''
     Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
     formats.
@@ -89,14 +98,19 @@ def load_examples(path, has_labels=True, sparse=True, quiet=False):
     * TSV: An "id" column.
     * JSONLINES: An "id" key in each JSON dictionary.
 
+    Also, for TSV files, there must be a column with the name specified by
+    `tsv_label` if the data is labelled.
+
     :param path: The path to the file to load the examples from.
-    :type path: basestring
-    :param has_labels: Whether or not the file contains class labels.
-    :type has_labels: bool
-    :param sparse: Whether or not to store the features in a numpy CSR matrix.
-    :type sparse: bool
+    :type path: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
+    :param sparse: Whether or not to store the features in a numpy CSR matrix.
+    :type sparse: bool
+    :param tsv_label: Name of the column which contains the class labels for
+                      TSV files. If no column with that name exists, or `None`
+                      is specified, the data is considered to be unlabelled.
+    :type tsv_label: str
 
     :return: 4-tuple of an array example ids, an array of class labels, a
              scipy CSR matrix of features, and a DictVectorizer containing
@@ -123,13 +137,12 @@ def load_examples(path, has_labels=True, sparse=True, quiet=False):
     pool = Pool(3)
 
     ids_result = pool.apply_async(_ids_for_gen_func, args=(example_gen_func,
-                                                           path,
-                                                           has_labels))
+                                                           path, tsv_label))
     classes_result = pool.apply_async(_classes_for_gen_func,
-                                      args=(example_gen_func, path, has_labels))
+                                      args=(example_gen_func, path, tsv_label))
     features_result = pool.apply_async(_features_for_gen_func,
-                                       args=(example_gen_func, path, has_labels,
-                                             sparse, quiet))
+                                       args=(example_gen_func, path, quiet,
+                                             sparse, tsv_label))
 
     # Wait for processes to complete and store results
     pool.close()
@@ -144,7 +157,7 @@ def load_examples(path, has_labels=True, sparse=True, quiet=False):
 def _sanitize_line(line):
     '''
     :param line: The line to clean up.
-    :type line: string
+    :type line: str
 
     :returns: Copy of line with all non-ASCII characters replaced with
     <U1234> sequences where 1234 is the value of ord() for the character.
@@ -167,7 +180,7 @@ def _safe_float(text):
         return text
 
 
-def _json_dict_iter(path, has_labels=True, quiet=False):
+def _json_dict_iter(path, quiet=False):
     '''
     Convert current line in .jsonlines file to a dictionary with the
     following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
@@ -176,10 +189,7 @@ def _json_dict_iter(path, has_labels=True, quiet=False):
     to prevent possible conflicts with feature names in "x".
 
     :param path: Path to .jsonlines file
-    :type path: string
-    :param has_labels: Whether or not the JSON dicts will contain a class label,
-                       "y".
-    :type has_labels: bool
+    :type path: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
     '''
@@ -190,7 +200,7 @@ def _json_dict_iter(path, has_labels=True, quiet=False):
         for example_num, line in enumerate(f):
             example = json.loads(line.strip())
             curr_id = example.get("id", "EXAMPLE_{}".format(example_num))
-            class_name = _safe_float(example["y"]) if has_labels else None
+            class_name = _safe_float(example["y"]) if 'y' in example else None
             example = example["x"]
 
             yield curr_id, class_name, example
@@ -201,17 +211,14 @@ def _json_dict_iter(path, has_labels=True, quiet=False):
             print("done", file=sys.stderr)
 
 
-def _megam_dict_iter(path, has_labels=True, quiet=False):
+def _megam_dict_iter(path, quiet=False):
     '''
     Generator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
     by path.
 
     :param path: Path to MegaM file (-fvals format)
-    :type path: basestring
-    :param has_labels: Whether or not the file has a class label separated by
-                       a tab before the space delimited feature-value pairs.
-    :type has_labels: bool
+    :type path: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
     '''
@@ -230,6 +237,7 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
             if line.startswith('#'):
                 curr_id = line[1:].strip()
             elif line and line not in ['TRAIN', 'TEST', 'DEV']:
+                has_labels = '\t' in line
                 split_line = line.split()
                 del line
                 curr_info_dict = {}
@@ -267,18 +275,20 @@ def _megam_dict_iter(path, has_labels=True, quiet=False):
             print("done", file=sys.stderr)
 
 
-def _tsv_dict_iter(path, has_labels=True, quiet=False):
+def _tsv_dict_iter(path, quiet=False, tsv_label='y'):
     '''
     Generator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
     by path.
 
     :param path: Path to TSV
-    :type path: string
-    :param has_labels: Whether or not the TSV's first column is a class label.
-    :type has_labels: bool
+    :type path: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
+    :param tsv_label: Name of the column which contains the class labels.
+                      If no column with that name exists, or `None` is
+                      specified, the data is considered to be unlabelled.
+    :type tsv_label: str
     '''
     if not quiet:
         print("Loading {}...".format(path), end="", file=sys.stderr)
@@ -286,9 +296,9 @@ def _tsv_dict_iter(path, has_labels=True, quiet=False):
     with open(path) as f:
         reader = DictReader(f, dialect=excel_tab)
         for example_num, row in enumerate(reader):
-            if has_labels:
-                class_name = _safe_float(row[reader.fieldnames[0]])
-                del row[reader.fieldnames[0]]
+            if tsv_label is not None and tsv_label in row:
+                class_name = _safe_float(row[tsv_label])
+                del row[tsv_label]
             else:
                 class_name = None
 
