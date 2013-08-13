@@ -28,6 +28,7 @@ from __future__ import unicode_literals, print_function
 
 import argparse
 import sys
+from decimal import Decimal, InvalidOperation
 
 from bs4 import UnicodeDammit
 
@@ -129,14 +130,14 @@ if __name__ == '__main__':
                 try:
                     print(' '.join(['{} {}'.format(field, value) for field, value in
                                     zip(fields, split_line) if (value not in ['.', '?'] and
-                                                                float(value) != 0)]).encode('utf-8'))
-                except ValueError:
+                                                                Decimal(value) != 0)]).encode('utf-8'))
+                except InvalidOperation:
                     for value in split_line:
                         if value not in ['.', '?']:
                             try:
-                                float(value)
-                            except ValueError as e:
-                                print(("Could not convert '{}' to float on " +
+                                Decimal(value)
+                            except InvalidOperation as e:
+                                print(("Could not convert '{}' to Decimal on " +
                                        "line {}.").format(value,
                                                           line_num).encode('utf-8'),
                                       file=sys.stderr)
