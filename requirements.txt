@@ -3,5 +3,5 @@ six
 PrettyTable
 beautifulsoup4
 numpy
-ml_metrics
+ml-metrics
 scipy
