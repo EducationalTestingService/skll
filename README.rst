@@ -62,6 +62,11 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.6
+
+   +  Fixes issue with setup.py importing from package when trying to install
+      it (for real this time).
+
 -  v0.9.5
 
    +  You can now include feature files that don't have class labels in your
