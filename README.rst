@@ -62,6 +62,28 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.5
+
+   +  You can now include feature files that don't have class labels in your
+      featuresets. At least one feature file has to have a label though,
+      because we only support supervised learning so far.
+   +  **Important:** If you're using TSV files in your experiments, you should
+      either name the class label column 'y' or use the new `tsv_label` option
+      in your configuration file to specify the name of the label column. This
+      was necessary to support feature files without labels.
+   +  Fixed an issue with how version number was being imported in setup.py that
+      would prevent installation if you didn't already have the prereqs
+      installed on your machine.
+   +  Made random seeds smaller to fix crash on 32-bit machines. This means that
+      experiments run with previous versions of skll will yield slightly
+      different results if you re-run them with v0.9.5+.
+   +  Added `megam_to_csv` for converting .megam files to CSV/TSV files.
+   +  Fixed a potential rounding problem with `csv_to_megam` that could slightly
+      change feature values in conversion process.
+   +  Cleaned up test_skll.py a little bit.
+   +  Updated documentation to include missing fields that can be specified in
+      config files.
+
 -  v0.9.4
 
    +  Documentation fixes
