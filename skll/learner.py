@@ -55,7 +55,7 @@ from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle as sk_shuffle
 
-# Use sklearn's version of StandardScaler for 0.14 and later, otherwise use ours
+# Use sklearn's version of StandardScaler  0.14+, otherwise use ours
 if tuple(int(x) for x in sklearn_version.split('.')) >= (0, 14):
     from sklearn.preprocessing import StandardScaler
 else:
@@ -63,11 +63,10 @@ else:
 
 from skll.data import ExamplesTuple
 from skll.metrics import f1_score_micro, _CORRELATION_METRICS
+from skll.version import VERSION
 
 
 # Constants #
-__version__ = '0.9.5'  # Couldn't figure out how to import this otherwise
-VERSION = tuple(int(x) for x in __version__.split('.'))
 _REQUIRES_DENSE = frozenset(['MultinomialNB', 'RandomForestClassifier',
                              'GradientBoostingClassifier',
                              'DecisionTreeClassifier',
