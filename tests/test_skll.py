@@ -164,7 +164,7 @@ def test_specified_cv_folds():
 def make_regression_data():
     num_examples = 1000
 
-    np.random.seed(1234567890)
+    np.random.seed(123456789)
     f1 = np.random.rand(num_examples)
     f2 = np.random.rand(num_examples)
     f3 = np.random.rand(num_examples)
