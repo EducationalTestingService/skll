@@ -55,7 +55,9 @@ The following feature file formats are supported:
     **tsv**
         A simple tab-delimited format with the following restrictions:
 
-        *   The first column contains the class label for each instance.
+        *   If the data is labelled, there must be a column with the name
+            specified by `tsv_label` in the `Input` section of the configuartion
+            file you create for your experiment. This defaults to 'y'.
         *   If there is a column called "id" present, this will be treated as the
             ID for each row.
         *   All other columns contain feature values, and every feature value must
@@ -96,6 +98,11 @@ Input
     **test_location** *(Optional)*
         Path to directory containing training data files. There must be a file
         for each featureset.  *If unspecified, cross-validation is performed.*
+
+    **tsv_label** *(Optional)*
+        If you're using TSV files, the class labels for each instance are
+        assumed to be in a column with this name. If no column with this name is
+        found, the data is assumed to be unlabelled. Defaults to 'y'.
 
     **cv_folds_location** *(Optional)*
         Path to a csv file (with a header that is ignored) specifyingfolds for

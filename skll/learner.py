@@ -66,7 +66,7 @@ from skll.metrics import f1_score_micro, _CORRELATION_METRICS
 
 
 # Constants #
-__version__ = '0.9.4'  # Couldn't figure out how to import this otherwise
+__version__ = '0.9.5'  # Couldn't figure out how to import this otherwise
 VERSION = tuple(int(x) for x in __version__.split('.'))
 _REQUIRES_DENSE = frozenset(['MultinomialNB', 'RandomForestClassifier',
                              'GradientBoostingClassifier',
