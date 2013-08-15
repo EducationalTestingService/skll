@@ -269,7 +269,7 @@ class Learner(object):
                        'RandomForestClassifier',
                        'GradientBoostingClassifier', 'Ridge', 'RescaledRidge',
                        'SVR', 'RescaledSVR', and 'GradientBoostingRegressor'
-    :type model_type: basestring
+    :type model_type: str
     :param probability: Should learner return probabilities of all
                         classes (instead of just class with highest
                         probability)?
@@ -381,7 +381,7 @@ class Learner(object):
         Replace the current learner instance with a saved learner.
 
         :param learner_path: The path to the file to load.
-        :type learner_path: basestring
+        :type learner_path: str
         '''
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
@@ -426,7 +426,7 @@ class Learner(object):
         Save the learner to a file.
 
         :param learner_path: The path to where you want to save the learner.
-        :type learner_path: basestring
+        :type learner_path: str
         '''
         # create the directory if it doesn't exist
         learner_dir = os.path.dirname(learner_path)
@@ -578,7 +578,7 @@ class Learner(object):
         :param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter grid
                            will be used.
-        :type param_grid: list of dicts mapping from basestrings to
+        :type param_grid: list of dicts mapping from strs to
                           lists of parameter values
         :param grid_search_folds: The number of folds to use when doing the
                                   grid search, or a mapping from
@@ -689,7 +689,7 @@ class Learner(object):
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
                                   It will be followed by ".predictions"
-        :type prediction_prefix: basestring
+        :type prediction_prefix: str
         :param append: Should we append the current predictions to the file if
                        it exists?
         :type append: bool
@@ -712,7 +712,7 @@ class Learner(object):
         # extract actual labels (transformed for classification tasks)
         if self._model_type not in _REGRESSION_MODELS:
             ytest = np.array([self.label_dict[label] for label in
-                                examples.classes])
+                              examples.classes])
         else:
             ytest = examples.classes
 
@@ -769,7 +769,7 @@ class Learner(object):
                                   prefix that will be used for the
                                   filename. It will be followed by
                                   ".predictions"
-        :type prediction_prefix: basestring
+        :type prediction_prefix: str
         :param append: Should we append the current predictions to the file if
                        it exists?
         :type append: bool
@@ -836,12 +836,12 @@ class Learner(object):
                 else:
                     if self._model_type in _REGRESSION_MODELS:
                         for example_id, pred in zip(example_ids, yhat):
-                            print('\t'.join([example_id, str(pred)]),
+                            print('{0}\t{1}'.format(example_id, pred),
                                   file=predictionfh)
                     else:
                         for example_id, pred in zip(example_ids, yhat):
-                            print('\t'.join([example_id,
-                                             self.label_list[int(pred)]]),
+                            print('{0}\t{1}'.format(example_id,
+                                                    self.label_list[int(pred)]),
                                   file=predictionfh)
 
         if class_labels and self._model_type not in _REGRESSION_MODELS:
@@ -881,12 +881,12 @@ class Learner(object):
         :param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter
                            grid will be used.
-        :type param_grid: list of dicts mapping from basestrings to
+        :type param_grid: list of dicts mapping from strs to
                           lists of parameter values
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
                                   It will be followed by ".predictions"
-        :type prediction_prefix: basestring
+        :type prediction_prefix: str
         :param shuffle: Shuffle examples before splitting into folds for CV.
         :type shuffle: bool
 
