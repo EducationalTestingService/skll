@@ -78,7 +78,7 @@ def _get_stat_float(class_result_dict, stat):
                               to retrieve for a particular class.
     :type class_result_dict: dict
     :param stat: The statistic we're looking for in the dictionary.
-    :type stat: basestring
+    :type stat: str
 
     :return: The value of the stat if it's in the dictionary, and NaN
              otherwise.
