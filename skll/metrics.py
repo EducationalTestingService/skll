@@ -101,16 +101,15 @@ def kappa(y_true, y_pred, weights=None):
     else:
         wt_scheme = ''
     if weights is None:
-        wt_scheme = str(weights)
         weights = np.empty((num_ratings, num_ratings))
         for i in range(num_ratings):
             for j in range(num_ratings):
-                if not wt_scheme:  # unweighted
-                    weights[i, j] = (i != j)
+                if wt_scheme == 'linear':
+                    weights[i, j] = abs(i - j)
                 elif wt_scheme == 'quadratic':
                     weights[i, j] = abs(i - j) ** 2
-                else:  # linear
-                    weights[i, j] = abs(i - j)
+                else:  # unweighted
+                    weights[i, j] = (i != j)
 
     # Figure out normalized expected values
     min_rating = min(min(y_true), min(y_pred))

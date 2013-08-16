@@ -48,6 +48,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.feature_selection import SelectKBest
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.metrics import SCORERS
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, SVR
@@ -715,16 +716,15 @@ class Learner(object):
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
             if (grid_objective and grid_objective in _CORRELATION_METRICS):
-                grid_score = grid_objective(ytest, yhat[:, 1])
+                grid_score = SCORERS[grid_objective]._score_func(ytest, yhat[:, 1])
             yhat = np.array([max(range(len(row)),
                                  key=lambda i: row[i])
                              for row in yhat])
 
         # calculate grid search objective function score, if specified
-        if (grid_objective is not None and
-                (grid_objective not in _CORRELATION_METRICS or
-                 not self.probability)):
-            grid_score = grid_objective(ytest, yhat)
+        if (grid_objective and (grid_objective not in _CORRELATION_METRICS or
+                                not self.probability)):
+            grid_score = SCORERS[grid_objective]._score_func(ytest, yhat)
 
         if self._model_type in _REGRESSION_MODELS:
             res = (None, None, None, self._model.get_params(), grid_score)
