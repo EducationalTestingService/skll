@@ -27,16 +27,29 @@ common scikit-learn experiments with pre-generated features.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+from sklearn.metrics import f1_score, make_scorer, SCORERS
+
 from .data import load_examples
 from .experiments import run_ablation, run_configuration
 from .learner import Learner
-from .metrics import (quadratic_weighted_kappa, unweighted_kappa, kendall_tau,
-                      spearman, pearson, f1_score_least_frequent,
-                      f1_score_macro, f1_score_micro, accuracy)
+from .metrics import (kappa, kendall_tau, spearman, pearson,
+                      f1_score_least_frequent)
 from .version import __version__, VERSION
 
 
-__all__ = ['Learner', 'load_examples', 'quadratic_weighted_kappa',
-           'unweighted_kappa', 'kendall_tau', 'spearman', 'pearson',
-           'f1_score_least_frequent', 'f1_score_macro', 'f1_score_micro',
-           'accuracy', 'run_configuration', 'run_ablation']
+__all__ = ['Learner', 'load_examples', 'kappa', 'kendall_tau', 'spearman',
+           'pearson', 'f1_score_least_frequent', 'run_configuration',
+           'run_ablation']
+
+# Add our scorers to the sklearn dictionary here so that they will always be
+# available if you import anything from skll
+_scorers = {'f1_score_micro': make_scorer(f1_score, average='micro'),
+            'f1_score_macro': make_scorer(f1_score, average='macro'),
+            'f1_score_least_frequent': make_scorer(f1_score_least_frequent),
+            'pearson': make_scorer(pearson),
+            'spearman': make_scorer(spearman),
+            'kendall_tau': make_scorer(kendall_tau),
+            'unweighted_kappa': make_scorer(kappa),
+            'quadratic_weighted_kappa': make_scorer(kappa, weights='quadratic'),
+            'linear_weighted_kappa': make_scorer(kappa, weights='quadratic')}
+SCORERS.update(_scorers)

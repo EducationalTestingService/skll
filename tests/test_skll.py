@@ -31,17 +31,19 @@ import re
 import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
+from sklearn.metrics import confusion_matrix
 
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _parse_config_file)
 from skll.learner import Learner, SelectByMinCount
-from skll.metrics import accuracy
+from skll.metrics import accuracy, kappa
 
 
 SCORE_OUTPUT_RE = re.compile((r'Average:.+Objective function score = ' +
                               r'([\-\d\.]+)'), re.DOTALL)
 GRID_RE = re.compile(r'Grid search score = ([\-\d\.]+)')
 _my_dir = os.path.abspath(os.path.dirname(__file__))
+
 
 def test_SelectByMinCount():
     m2 = [[0.001,   0.0,    0.0,    0.0],
@@ -218,3 +220,37 @@ def test_regression1():
 
         assert abs(np.mean(pred) - np.mean(y)) < 0.1
         assert abs(np.std(pred) - np.std(y)) < 0.1
+
+
+# Test our kappa implementation based on Ben Hamner's unit tests.
+def test_quadratic_weighted_kappa():
+    k = kappa([1, 2, 3], [1, 2, 3], weights='quadratic')
+    assert_almost_equal(k, 1.0)
+
+    k = kappa([1, 2, 1], [1, 2, 2], weights='quadratic')
+    assert_almost_equal(k, 0.4)
+
+    k = kappa([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2], weights='quadratic')
+    assert_almost_equal(k, 0.75)
+
+
+def test_linear_weighted_kappa():
+    k = kappa([1, 2, 3], [1, 2, 3], weights='linear')
+    assert_almost_equal(k, 1.0)
+
+    k = kappa([1, 2, 1], [1, 2, 2], weights='linear')
+    assert_almost_equal(k, 0.4)
+
+    k = kappa([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2], weights='linear')
+    assert_almost_equal(k, 0.65)
+
+
+def test_unweighted_kappa():
+    k = kappa([1, 2, 3], [1, 2, 3])
+    assert_almost_equal(k, 1.0)
+
+    k = kappa([1, 2, 1], [1, 2, 2])
+    assert_almost_equal(k, 0.4)
+
+    k = kappa([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2])
+    assert_almost_equal(k, 0.5625)

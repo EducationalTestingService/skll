@@ -62,7 +62,7 @@ else:
     from skll.fixed_standard_scaler import FixedStandardScaler as StandardScaler
 
 from skll.data import ExamplesTuple
-from skll.metrics import f1_score_micro, _CORRELATION_METRICS
+from skll.metrics import _CORRELATION_METRICS
 from skll.version import VERSION
 
 
@@ -343,7 +343,8 @@ class Learner(object):
     @classmethod
     def from_file(cls, learner_path):
         '''
-        :returns: New instance of Learner from the pickle at the specified path.
+        :returns: New instance of Learner from the pickle at the specified
+                  path.
         '''
         with open(learner_path, "rb") as f:
             skll_version, learner = pickle.load(f)
@@ -567,8 +568,8 @@ class Learner(object):
                                              with_std=False)
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
-              grid_search=True, grid_objective=f1_score_micro, grid_jobs=None,
-              shuffle=True):
+              grid_search=True, grid_objective='f1_score_micro',
+              grid_jobs=None, shuffle=True):
         '''
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -659,13 +660,13 @@ class Learner(object):
             if not param_grid:
                 param_grid = default_param_grid
 
-            if (grid_objective.__name__ in _CORRELATION_METRICS and
+            if (grid_objective in _CORRELATION_METRICS and
                     self._model_type not in _REGRESSION_MODELS):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
 
             grid_searcher = GridSearchCV(estimator, param_grid,
-                                         score_func=grid_objective, cv=folds,
+                                         scorer=grid_objective, cv=folds,
                                          n_jobs=grid_jobs)
 
             # run the grid search for hyperparameters
@@ -719,8 +720,7 @@ class Learner(object):
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
-            if (grid_objective is not None and
-                    grid_objective.__name__ in _CORRELATION_METRICS):
+            if (grid_objective and grid_objective in _CORRELATION_METRICS):
                 grid_score = grid_objective(ytest, yhat[:, 1])
             yhat = np.array([max(range(len(row)),
                                  key=lambda i: row[i])
@@ -728,7 +728,7 @@ class Learner(object):
 
         # calculate grid search objective function score, if specified
         if (grid_objective is not None and
-                (grid_objective.__name__ not in _CORRELATION_METRICS or
+                (grid_objective not in _CORRELATION_METRICS or
                  not self.probability)):
             grid_score = grid_objective(ytest, yhat)
 
@@ -851,7 +851,7 @@ class Learner(object):
 
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=5, grid_jobs=None,
-                       grid_objective=f1_score_micro, prediction_prefix=None,
+                       grid_objective='f1_score_micro', prediction_prefix=None,
                        param_grid=None, shuffle=True):
         '''
         Cross-validates a given model on the training examples.

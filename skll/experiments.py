@@ -42,8 +42,8 @@ import scipy.sparse as sp
 from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import configparser, zip
+from sklearn.metrics import SCORERS
 
-from skll import metrics
 from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 
@@ -113,7 +113,8 @@ def _print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
                      for param_name, param_value in iteritems(model_params))
         print('Model parameters: {}'.format(
             ', '.join(param_out)), file=output_file)
-        print('Grid search score = {:.5f}'.format(grid_score), file=output_file)
+        print('Grid search score = {:.5f}'.format(grid_score),
+              file=output_file)
 
         if conf_matrix:
             classes = sorted(iterkeys(result_tuples[0][2]))
@@ -234,12 +235,13 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
 
     # Check that the different feature files have the same IDs.
     # To do this, make a sorted tuple of unique IDs for each feature file,
-    # and then make sure they are all the same by making sure the set is size 1.
+    # and then make sure they are all the same by making sure the set has one
+    # item in it.
     mismatch_num = len({tuple(sorted(examples.ids)) for examples in
                         example_tuples})
     if mismatch_num != 1:
-        raise ValueError(('The sets of example IDs in {} feature files do not' +
-                          ' match').format(mismatch_num))
+        raise ValueError(('The sets of example IDs in {} feature files do ' +
+                          'not match').format(mismatch_num))
 
     # Make sure there is a unique label for every example (or no label, for
     # "unseen" examples).
@@ -552,16 +554,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         grid_search_jobs = None
 
     # what is the objective function for the grid search?
-    grid_objective_func = config.get("Tuning", "objective")
-    if grid_objective_func not in {'f1_score_micro', 'f1_score_macro',
-                                   'accuracy', 'f1_score_least_frequent',
-                                   'spearman', 'pearson', 'kendall_tau',
-                                   'quadratic_weighted_kappa',
-                                   'unweighted_kappa'}:
+    grid_objective = config.get("Tuning", "objective")
+    if grid_objective not in SCORERS:
         raise ValueError(('Invalid grid objective function: ' +
-                          '{}').format(grid_objective_func))
-    else:
-        grid_objective = getattr(metrics, grid_objective_func)
+                          '{}').format(grid_objective))
 
     # do we need to scale the feature values?
     do_scale_features = config.getboolean("Tuning", "scale_features")
@@ -589,8 +585,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # make sure that, if we are in prediction mode, we have a prediction_dir
     if predict and not prediction_dir:
-        raise ValueError('You must specify a prediction directory if you are ' +
-                         'using prediction mode (no "results" option in ' +
+        raise ValueError('You must specify a prediction directory if you are' +
+                         ' using prediction mode (no "results" option in ' +
                          'config file).')
 
     # the list of jobs submitted (if running on grid)
@@ -626,7 +622,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # add tuning information to name
             if do_grid_search:
                 name_components.append('tuned')
-                name_components.append(grid_objective.__name__)
+                name_components.append(grid_objective)
             else:
                 name_components.append('untuned')
 

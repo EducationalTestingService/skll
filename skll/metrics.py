@@ -29,11 +29,10 @@ from __future__ import print_function, unicode_literals
 
 import logging
 
-import ml_metrics
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from six.moves import xrange as range
-from sklearn.metrics import confusion_matrix, f1_score, make_scorer, SCORERS
+from sklearn.metrics import confusion_matrix, f1_score
 
 
 # Constants
@@ -42,84 +41,37 @@ _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 
 def kappa(y_true, y_pred, weights=None):
     '''
-    Calculates the quadratic weighted kappa
-    quadratic_weighted_kappa calculates the quadratic weighted kappa
-    value, which is a measure of inter-rater agreement between two raters
-    that provide discrete numeric ratings.  Potential values range from -1
-    (representing complete disagreement) to 1 (representing complete
-    agreement).  A kappa value of 0 is expected if all agreement is due to
-    chance.
+    Calculates the kappa inter-rater agreement between two the gold standard
+    and the predicted ratings. Potential values range from -1 (representing
+    complete disagreement) to 1 (representing complete agreement).  A kappa
+    value of 0 is expected if all agreement is due to chance.
 
-    quadratic_weighted_kappa(rater_a, rater_b), where rater_a and rater_b
-    each correspond to a list of integer ratings.  These lists must have the
-    same length.
+    In the course of calculating kappa, all items in `y_true` and `y_pred` will
+    first be converted to floats and then rounded to integers.
 
-    The ratings should be integers, and it is assumed that they contain
-    the complete range of possible ratings.
+    It is assumed that y_true and y_pred contain the complete range of possible
+    ratings.
 
-    quadratic_weighted_kappa(X, min_rating, max_rating), where min_rating
-    is the minimum possible rating, and max_rating is the maximum possible
-    rating
-
-    Simple kappa function adapted from yorchopolis's kappa-stats project on
-    Github.
+    This function contains a combination of code from yorchopolis's kappa-stats
+    and Ben Hamner's Metrics projects on Github.
 
     :param weights: Specifies the weight matrix for the calculation.
                     Options are:
 
                         -  None = unweighted-kappa
-                        -  'squared' = quadratic-weighted kappa
+                        -  'quadratic' = quadratic-weighted kappa
                         -  'linear' = linear-weighted kappa
-                        -  two-dimension
+                        -  two-dimensional numpy array = a custom matrix of
+                           weights. Each weight corresponds to the
+                           :math:`w_{ij}` values in the wikipedia description
+                           of how to calculate weighted Cohen's kappa.
 
 
     :type weights: str or numpy array
     '''
 
+    # Ensure that the lists are both the same length
     assert(len(y_true) == len(y_pred))
-    conf_matrix = confusion_matrix(y_true, y_pred)
-    num_ratings = len(conf_matrix)
-    num_scored_items = float(len(y_true))
-
-    # Build weight array if weren't passed one
-    if (weights is None) or (weights == 'squared') or (weights == 'linear'):
-        weighted = np.empty((num_ratings, num_ratings))
-        for i in range(num_ratings):
-            for j in range(num_ratings):
-                if weights is None:
-                    weighted[i, j] = (i != j)
-                elif weights == 'squared':
-                    weighted[i, j] = abs(i - j) ** 2
-                else:  # linear
-                    weighted[i, j] = abs(i - j)
-
-    # Figure out observed/expected values
-    min_rating = min(min(y_true), min(y_pred))
-    max_rating = max(max(y_true), max(y_pred))
-    hist_y_true = np.bincount(y_true)[min_rating: max_rating + 1]
-    hist_y_pred = np.bincount(y_pred)[min_rating: max_rating + 1]
-
-    numerator = 0.0
-    denominator = 0.0
-
-    for i in range(num_ratings):
-        for j in range(num_ratings):
-            expected_count = (hist_y_true[i] * hist_y_pred[j]
-                              / num_scored_items)
-            d = weighted[i, j]
-            numerator += d * conf_matrix[i][j] / num_scored_items
-            denominator += d * expected_count / num_scored_items
-
-    return 1.0 - numerator / denominator
-
-
-# First we have to define the functions, and then we add them to SCORERS at the
-# end
-def quadratic_weighted_kappa(y_true, y_pred):
-    '''
-    Returns the quadratic weighted kappa.
-    This rounds the inputs before passing them to the ml_metrics module.
-    '''
 
     # This rather crazy looking typecast is intended to work as follows:
     # If an input is an int, the operations will have no effect.
@@ -129,32 +81,43 @@ def quadratic_weighted_kappa(y_true, y_pred):
     # If it is a str that can't be typecast, then the user is
     # given a hopefully useful error message.
     try:
-        y_true_rounded = [int(round(float(y))) for y in y_true]
-        y_pred_rounded = [int(round(float(y))) for y in y_pred]
+        y_true = [int(round(float(y))) for y in y_true]
+        y_pred = [int(round(float(y))) for y in y_pred]
     except ValueError as e:
         logging.error("For kappa, the labels should be integers or strings " +
                       "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
-    res = kappa(y_true_rounded, y_pred_rounded, weights='squared')
-    return res
+    # Build the observed/confusion matrix
+    observed = confusion_matrix(y_true, y_pred)
+    num_ratings = len(observed)
+    num_scored_items = float(len(y_true))
 
+    # Build weight array if weren't passed one
+    if (weights is None) or (weights == 'quadratic') or (weights == 'linear'):
+        weights = np.empty((num_ratings, num_ratings))
+        for i in range(num_ratings):
+            for j in range(num_ratings):
+                if weights is None:
+                    weights[i, j] = (i != j)
+                elif weights == 'quadratic':
+                    weights[i, j] = abs(i - j) ** 2
+                else:  # linear
+                    weights[i, j] = abs(i - j)
 
-def unweighted_kappa(y_true, y_pred):
-    '''
-    Returns the unweighted Cohen's kappa.
-    '''
-    # See quadratic_weighted_kappa for comments about the typecasting below.
-    try:
-        y_true_rounded = [int(round(float(y))) for y in y_true]
-        y_pred_rounded = [int(round(float(y))) for y in y_pred]
-    except ValueError as e:
-        logging.error("For kappa, the labels should be integers or strings " +
-                      "that can be converted to ints (E.g., '4.0' or '3').")
-        raise e
+    # Figure out observed/expected values
+    min_rating = min(min(y_true), min(y_pred))
+    max_rating = max(max(y_true), max(y_pred))
+    hist_true = np.bincount(y_true)[min_rating: max_rating + 1]
+    hist_pred = np.bincount(y_pred)[min_rating: max_rating + 1]
 
-    res = kappa(y_true_rounded, y_pred_rounded)
-    return res
+    # Normalize observed and expected arrays
+    expected = (hist_true * hist_pred) / num_scored_items
+    observed = observed / num_scored_items
+
+    k = 1.0 - (sum(sum(weights * observed)) / sum(sum(weights * expected)))
+
+    return k
 
 
 def kendall_tau(y_true, y_pred):
@@ -203,15 +166,3 @@ def f1_score_least_frequent(y_true, y_pred):
     '''
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
-
-
-# Store our scorers in a dictionary and then update the scikit-learn SCORERS
-_scorers = {'f1_score_micro': make_scorer(f1_score, average='micro'),
-            'f1_score_macro': make_scorer(f1_score, average='macro'),
-            'f1_score_least_frequent': make_scorer(f1_score_least_frequent),
-            'pearson': make_scorer(pearson),
-            'spearman': make_scorer(spearman),
-            'kendall_tau': make_scorer(kendall_tau),
-            'unweighted_kappa': make_scorer(unweighted_kappa),
-            'quadratic_weighted_kappa': make_scorer(quadratic_weighted_kappa)}
-SCORERS.update(_scorers)
