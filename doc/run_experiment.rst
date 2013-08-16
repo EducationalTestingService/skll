@@ -221,21 +221,30 @@ Tuning
     **objective** *(Optional)*
         The objective function to use for tuning. Valid options are:
 
-        *   *accuracy*: Overall accuracy
-        *   *f1_score_micro*: Micro-averaged f-score
-        *   *f1_score_macro*: Macro-averaged f-score
-        *   *f1_score_least_frequent*: F-score of the least frequent class. The
+        *   *accuracy*: Overall `accuracy <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`_
+        *   *precision*: `Precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`_
+        *   *recall*: `Recall <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`_
+        *   *f1_score_micro*: Micro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
+        *   *f1_score_macro*: Macro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
+        *   *f1_score_least_frequent*: F1 score of the least frequent class. The
             least frequent class may vary from fold to fold for certain data
             distributions.
-        *   *unweighted_kappa*: Unweighted Cohen's kappa (any floating point
+        *   *average_precision*: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`_
+            (for binary classification)
+        *   *roc_auc*: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`_
+            (for binary classification)
+        *   *unweighted_kappa*: Unweighted `Cohen's kappa <http://en.wikipedia.org/wiki/Cohen's_kappa>`_ (any floating point
             values are rounded to ints)
         *   *linear_weighted_kappa*: Linear weighted kappa (any floating point
             values are rounded to ints)
         *   *quadratic_weighted_kappa*: Quadratic weighted kappa (any floating
             point values are rounded to ints)
-        *   *kendall_tau*: Kendall's tau
-        *   *pearson*: Pearson correlation
-        *   *spearman*: Spearman rank-correlation
+        *   *kendall_tau*: `Kendall's tau <http://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`_
+        *   *pearson*: `Pearson correlation <http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`_
+        *   *spearman*: `Spearman rank-correlation <http://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`_
+        *   *r2*: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`_
+        *   *mean_squared_error*: `Mean squared error regression loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`_
+
 
         Defaults to ``f1_score_micro``.
 

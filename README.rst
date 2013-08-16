@@ -55,12 +55,28 @@ Requirements
 -  `six <https://pypi.python.org/pypi/six>`__
 -  `PrettyTable <http://pypi.python.org/pypi/PrettyTable>`__
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
--  `ML Metrics <https://pypi.python.org/pypi/ml_metrics/0.1.2>`__
 -  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
 
 Changelog
 ~~~~~~~~~
+
+-  v0.9.7
+
+   +  Can now use any objective function scikit-learn supports for tuning (i.e.,
+      any valid argument for scorer when instantiating GridSearchCV) in addition
+      to those we define.
+   +  Removed ml_metrics dependency and we now support custom weights for kappa
+      (through the API only so far).
+   +  Require's scikit-learn 0.14+.
+   +  `accuracy`, `quadratic_weighted_kappa`, `unweighted_kappa`,
+      `f1_score_micro`, and `f1_score_macro` functions are no longer available
+      under `skll.metrics`. The accuracy and f1 score ones are no longer needed
+      because we just use the built-in ones. As for quadratic_weighted_kappa and
+      unweighted_kappa, they've been superseded by the kappa function that takes
+      a weights argument.
+   +  Fixed issue where you couldn't write prediction files if you were
+      classifying using numeric classes.
 
 -  v0.9.6
 
