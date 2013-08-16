@@ -35,13 +35,14 @@ from nose.tools import *
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _parse_config_file)
 from skll.learner import Learner, SelectByMinCount
-from skll.metrics import accuracy
+from skll.metrics import kappa
 
 
 SCORE_OUTPUT_RE = re.compile((r'Average:.+Objective function score = ' +
                               r'([\-\d\.]+)'), re.DOTALL)
 GRID_RE = re.compile(r'Grid search score = ([\-\d\.]+)')
 _my_dir = os.path.abspath(os.path.dirname(__file__))
+
 
 def test_SelectByMinCount():
     m2 = [[0.001,   0.0,    0.0,    0.0],
@@ -161,9 +162,9 @@ def test_specified_cv_folds():
     examples = _load_featureset(dirpath, featureset, suffix)
     clf = Learner(probability=True)
     cv_folds = _load_cv_folds(os.path.join(_my_dir, 'test_cv_folds1.csv'))
-    grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective=accuracy, grid_jobs=1)
+    grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
-    grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective=accuracy, grid_jobs=1)
+    grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score > 0.95
 
 
@@ -218,3 +219,34 @@ def test_regression1():
 
         assert abs(np.mean(pred) - np.mean(y)) < 0.1
         assert abs(np.std(pred) - np.std(y)) < 0.1
+
+
+# Test our kappa implementation based on Ben Hamner's unit tests.
+kappa_inputs = [([1, 2, 3], [1, 2, 3]),
+                ([1, 2, 1], [1, 2, 2]),
+                ([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2])]
+
+
+def check_kappa(y_true, y_pred, weights, expected):
+    assert_almost_equal(kappa(y_true, y_pred, weights), expected)
+
+
+def test_quadratic_weighted_kappa():
+    outputs = [1.0, 0.4, 0.75]
+
+    for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, 'quadratic', expected
+
+
+def test_linear_weighted_kappa():
+    outputs = [1.0, 0.4, 0.65]
+
+    for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, 'linear', expected
+
+
+def test_unweighted_kappa():
+    outputs = [1.0, 0.4, 0.5625]
+
+    for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, None, expected

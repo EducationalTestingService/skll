@@ -11,6 +11,7 @@ __pycache__
 .coverage
 
 tests/test_cv_folds1.cfg
+tests/test_cv_folds1.csv
 tests/test_cv_folds1.jsonlines
 tests/test_cv_folds2.cfg
 tests/test_regression1.cfg

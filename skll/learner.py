@@ -34,13 +34,11 @@ from multiprocessing import cpu_count
 
 import numpy as np
 import scipy.sparse as sp
-import sklearn.metrics as sk_metrics
 from six import iteritems
 from six import string_types
 from six.moves import cPickle as pickle
 from six.moves import xrange as range
 from six.moves import zip
-from sklearn import __version__ as sklearn_version
 from sklearn.base import BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.cross_validation import LeaveOneLabelOut
@@ -49,20 +47,17 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.feature_selection import SelectKBest
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.metrics import (accuracy_score, confusion_matrix,
+                             precision_recall_fscore_support, SCORERS)
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle as sk_shuffle
 
-# Use sklearn's version of StandardScaler  0.14+, otherwise use ours
-if tuple(int(x) for x in sklearn_version.split('.')) >= (0, 14):
-    from sklearn.preprocessing import StandardScaler
-else:
-    from skll.fixed_standard_scaler import FixedStandardScaler as StandardScaler
-
 from skll.data import ExamplesTuple
-from skll.metrics import f1_score_micro, _CORRELATION_METRICS
+from skll.metrics import _CORRELATION_METRICS
 from skll.version import VERSION
 
 
@@ -343,7 +338,8 @@ class Learner(object):
     @classmethod
     def from_file(cls, learner_path):
         '''
-        :returns: New instance of Learner from the pickle at the specified path.
+        :returns: New instance of Learner from the pickle at the specified
+                  path.
         '''
         with open(learner_path, "rb") as f:
             skll_version, learner = pickle.load(f)
@@ -567,8 +563,8 @@ class Learner(object):
                                              with_std=False)
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
-              grid_search=True, grid_objective=f1_score_micro, grid_jobs=None,
-              shuffle=True):
+              grid_search=True, grid_objective='f1_score_micro',
+              grid_jobs=None, shuffle=True):
         '''
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -659,13 +655,13 @@ class Learner(object):
             if not param_grid:
                 param_grid = default_param_grid
 
-            if (grid_objective.__name__ in _CORRELATION_METRICS and
+            if (grid_objective in _CORRELATION_METRICS and
                     self._model_type not in _REGRESSION_MODELS):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
 
             grid_searcher = GridSearchCV(estimator, param_grid,
-                                         score_func=grid_objective, cv=folds,
+                                         scoring=grid_objective, cv=folds,
                                          n_jobs=grid_jobs)
 
             # run the grid search for hyperparameters
@@ -719,32 +715,30 @@ class Learner(object):
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
-            if (grid_objective is not None and
-                    grid_objective.__name__ in _CORRELATION_METRICS):
-                grid_score = grid_objective(ytest, yhat[:, 1])
+            if (grid_objective and grid_objective in _CORRELATION_METRICS):
+                grid_score = SCORERS[grid_objective]._score_func(ytest, yhat[:, 1])
             yhat = np.array([max(range(len(row)),
                                  key=lambda i: row[i])
                              for row in yhat])
 
         # calculate grid search objective function score, if specified
-        if (grid_objective is not None and
-                (grid_objective.__name__ not in _CORRELATION_METRICS or
-                 not self.probability)):
-            grid_score = grid_objective(ytest, yhat)
+        if (grid_objective and (grid_objective not in _CORRELATION_METRICS or
+                                not self.probability)):
+            grid_score = SCORERS[grid_objective]._score_func(ytest, yhat)
 
         if self._model_type in _REGRESSION_MODELS:
             res = (None, None, None, self._model.get_params(), grid_score)
         else:
             # compute the confusion matrix
             num_labels = len(self.label_list)
-            conf_mat = sk_metrics.confusion_matrix(ytest, yhat,
-                                                   labels=list(range(num_labels)))
+            conf_mat = confusion_matrix(ytest, yhat,
+                                        labels=list(range(num_labels)))
             # Calculate metrics
-            overall_accuracy = sk_metrics.accuracy_score(ytest, yhat)
-            result_matrix = sk_metrics.precision_recall_fscore_support(ytest,
-                                                                       yhat,
-                                                                       labels=list(range(num_labels)),
-                                                                       average=None)
+            overall_accuracy = accuracy_score(ytest, yhat)
+            result_matrix = precision_recall_fscore_support(ytest,
+                                                            yhat,
+                                                            labels=list(range(num_labels)),
+                                                            average=None)
 
             # Store results
             result_dict = defaultdict(dict)
@@ -851,7 +845,7 @@ class Learner(object):
 
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=5, grid_jobs=None,
-                       grid_objective=f1_score_micro, prediction_prefix=None,
+                       grid_objective='f1_score_micro', prediction_prefix=None,
                        param_grid=None, shuffle=True):
         '''
         Cross-validates a given model on the training examples.

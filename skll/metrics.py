@@ -28,23 +28,51 @@ evaluate the performance of learners.
 from __future__ import print_function, unicode_literals
 
 import logging
-import sys
 
-import ml_metrics
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
-from sklearn import metrics as sk_metrics
+from six import string_types
+from six.moves import xrange as range
+from sklearn.metrics import confusion_matrix, f1_score
 
 
 # Constants
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 
 
-def quadratic_weighted_kappa(y_true, y_pred):
+def kappa(y_true, y_pred, weights=None):
     '''
-    Returns the quadratic weighted kappa.
-    This rounds the inputs before passing them to the ml_metrics module.
+    Calculates the kappa inter-rater agreement between two the gold standard
+    and the predicted ratings. Potential values range from -1 (representing
+    complete disagreement) to 1 (representing complete agreement).  A kappa
+    value of 0 is expected if all agreement is due to chance.
+
+    In the course of calculating kappa, all items in `y_true` and `y_pred` will
+    first be converted to floats and then rounded to integers.
+
+    It is assumed that y_true and y_pred contain the complete range of possible
+    ratings.
+
+    This function contains a combination of code from yorchopolis's kappa-stats
+    and Ben Hamner's Metrics projects on Github.
+
+    :param weights: Specifies the weight matrix for the calculation.
+                    Options are:
+
+                        -  None = unweighted-kappa
+                        -  'quadratic' = quadratic-weighted kappa
+                        -  'linear' = linear-weighted kappa
+                        -  two-dimensional numpy array = a custom matrix of
+                           weights. Each weight corresponds to the
+                           :math:`w_{ij}` values in the wikipedia description
+                           of how to calculate weighted Cohen's kappa.
+
+
+    :type weights: str or numpy array
     '''
+
+    # Ensure that the lists are both the same length
+    assert(len(y_true) == len(y_pred))
 
     # This rather crazy looking typecast is intended to work as follows:
     # If an input is an int, the operations will have no effect.
@@ -54,33 +82,53 @@ def quadratic_weighted_kappa(y_true, y_pred):
     # If it is a str that can't be typecast, then the user is
     # given a hopefully useful error message.
     try:
-        y_true_rounded = [int(round(float(y))) for y in y_true]
-        y_pred_rounded = [int(round(float(y))) for y in y_pred]
+        y_true = [int(round(float(y))) for y in y_true]
+        y_pred = [int(round(float(y))) for y in y_pred]
     except ValueError as e:
         logging.error("For kappa, the labels should be integers or strings " +
                       "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
+    # Build the observed/confusion matrix
+    observed = confusion_matrix(y_true, y_pred)
+    num_ratings = len(observed)
+    num_scored_items = float(len(y_true))
 
-    res = ml_metrics.quadratic_weighted_kappa(y_true_rounded, y_pred_rounded)
-    return res
+    # Build weight array if weren't passed one
+    if isinstance(weights, string_types):
+        wt_scheme = weights
+        weights = None
+    else:
+        wt_scheme = ''
+    if weights is None:
+        weights = np.empty((num_ratings, num_ratings))
+        for i in range(num_ratings):
+            for j in range(num_ratings):
+                if wt_scheme == 'linear':
+                    weights[i, j] = abs(i - j)
+                elif wt_scheme == 'quadratic':
+                    weights[i, j] = abs(i - j) ** 2
+                else:  # unweighted
+                    weights[i, j] = (i != j)
 
+    # Figure out normalized expected values
+    min_rating = min(min(y_true), min(y_pred))
+    max_rating = max(max(y_true), max(y_pred))
+    hist_true = (np.bincount(y_true)[min_rating: max_rating + 1] /
+                 num_scored_items)
+    hist_pred = (np.bincount(y_pred)[min_rating: max_rating + 1] /
+                 num_scored_items)
+    expected = np.empty((num_ratings, num_ratings))
+    for i in range(num_ratings):
+        for j in range(num_ratings):
+            expected[i, j] = hist_true[i] * hist_pred[j]
 
-def unweighted_kappa(y_true, y_pred):
-    '''
-    Returns the unweighted Cohen's kappa.
-    '''
-    # See quadratic_weighted_kappa for comments about the typecasting below.
-    try:
-        y_true_rounded = [int(round(float(y))) for y in y_true]
-        y_pred_rounded = [int(round(float(y))) for y in y_pred]
-    except ValueError as e:
-        logging.error("For kappa, the labels should be integers or strings " +
-                      "that can be converted to ints (E.g., '4.0' or '3').")
-        raise e
+    # Normalize observed array
+    observed = observed / num_scored_items
 
-    res = ml_metrics.kappa(y_true_rounded, y_pred_rounded)
-    return res
+    k = 1.0 - (sum(sum(weights * observed)) / sum(sum(weights * expected)))
+
+    return k
 
 
 def kendall_tau(y_true, y_pred):
@@ -128,34 +176,4 @@ def f1_score_least_frequent(y_true, y_pred):
     your data is skewed and you're doing multi-class classification.
     '''
     least_frequent = np.bincount(y_true).argmin()
-    return sk_metrics.f1_score(y_true, y_pred, average=None)[least_frequent]
-
-
-def f1_score_macro(y_true, y_pred):
-    '''
-    Use the macro-averaged F1 measure to select hyperparameter values during
-    the cross-validation grid search during training.
-
-    This method averages over classes (does not take imbalance into account).
-    You should use this if each class is equally important.
-    '''
-    return sk_metrics.f1_score(y_true, y_pred, average="macro")
-
-
-def f1_score_micro(y_true, y_pred):
-    '''
-    Use the micro-averaged F1 measure to select hyperparameter values during
-    the cross-validation grid search during training.
-
-    This method averages over instances (takes imbalance into account). This
-    implies that precision == recall == F1.
-    '''
-    return sk_metrics.f1_score(y_true, y_pred, average="micro")
-
-
-def accuracy(y_true, y_pred):
-    '''
-    Use the overall accuracy to select hyperparameter values during the cross-
-    validation grid search during training.
-    '''
-    return sk_metrics.accuracy_score(y_true, y_pred)
+    return f1_score(y_true, y_pred, average=None)[least_frequent]
