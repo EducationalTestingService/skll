@@ -221,19 +221,21 @@ Tuning
     **objective** *(Optional)*
         The objective function to use for tuning. Valid options are:
 
+        *   *accuracy*: Overall accuracy
         *   *f1_score_micro*: Micro-averaged f-score
         *   *f1_score_macro*: Macro-averaged f-score
         *   *f1_score_least_frequent*: F-score of the least frequent class. The
             least frequent class may vary from fold to fold for certain data
             distributions.
-        *   *accuracy*: Overall accuracy
-        *   *spearman*: Spearman rank-correlation
-        *   *pearson*: Pearson correlation
+        *   *unweighted_kappa*: Unweighted Cohen's kappa (any floating point
+            values are rounded to ints)
+        *   *linear_weighted_kappa*: Linear weighted kappa (any floating point
+            values are rounded to ints)
+        *   *quadratic_weighted_kappa*: Quadratic weighted kappa (any floating
+            point values are rounded to ints)
         *   *kendall_tau*: Kendall's tau
-        *   *quadratic_weighted_kappa*: The quadratic weighted kappa, where any
-            floating point values are rounded
-        *   *unweighted_kappa*: Unweighted Cohen's kappa, where the classes
-            should be ints
+        *   *pearson*: Pearson correlation
+        *   *spearman*: Spearman rank-correlation
 
         Defaults to ``f1_score_micro``.
 
