@@ -31,6 +31,7 @@ import logging
 
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
+from six import string_types
 from six.moves import xrange as range
 from sklearn.metrics import confusion_matrix, f1_score
 
@@ -94,25 +95,36 @@ def kappa(y_true, y_pred, weights=None):
     num_scored_items = float(len(y_true))
 
     # Build weight array if weren't passed one
-    if (weights is None) or (weights == 'quadratic') or (weights == 'linear'):
+    if isinstance(weights, string_types):
+        wt_scheme = weights
+        weights = None
+    else:
+        wt_scheme = ''
+    if weights is None:
+        wt_scheme = str(weights)
         weights = np.empty((num_ratings, num_ratings))
         for i in range(num_ratings):
             for j in range(num_ratings):
-                if weights is None:
+                if not wt_scheme:  # unweighted
                     weights[i, j] = (i != j)
-                elif weights == 'quadratic':
+                elif wt_scheme == 'quadratic':
                     weights[i, j] = abs(i - j) ** 2
                 else:  # linear
                     weights[i, j] = abs(i - j)
 
-    # Figure out observed/expected values
+    # Figure out normalized expected values
     min_rating = min(min(y_true), min(y_pred))
     max_rating = max(max(y_true), max(y_pred))
-    hist_true = np.bincount(y_true)[min_rating: max_rating + 1]
-    hist_pred = np.bincount(y_pred)[min_rating: max_rating + 1]
+    hist_true = (np.bincount(y_true)[min_rating: max_rating + 1] /
+                 num_scored_items)
+    hist_pred = (np.bincount(y_pred)[min_rating: max_rating + 1] /
+                 num_scored_items)
+    expected = np.empty((num_ratings, num_ratings))
+    for i in range(num_ratings):
+        for j in range(num_ratings):
+            expected[i, j] = hist_true[i] * hist_pred[j]
 
-    # Normalize observed and expected arrays
-    expected = (hist_true * hist_pred) / num_scored_items
+    # Normalize observed array
     observed = observed / num_scored_items
 
     k = 1.0 - (sum(sum(weights * observed)) / sum(sum(weights * expected)))
