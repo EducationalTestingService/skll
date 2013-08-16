@@ -31,12 +31,11 @@ import re
 import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
-from sklearn.metrics import confusion_matrix
 
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _parse_config_file)
 from skll.learner import Learner, SelectByMinCount
-from skll.metrics import accuracy, kappa
+from skll.metrics import kappa
 
 
 SCORE_OUTPUT_RE = re.compile((r'Average:.+Objective function score = ' +
@@ -163,9 +162,9 @@ def test_specified_cv_folds():
     examples = _load_featureset(dirpath, featureset, suffix)
     clf = Learner(probability=True)
     cv_folds = _load_cv_folds(os.path.join(_my_dir, 'test_cv_folds1.csv'))
-    grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective=accuracy, grid_jobs=1)
+    grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
-    grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective=accuracy, grid_jobs=1)
+    grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score > 0.95
 
 
