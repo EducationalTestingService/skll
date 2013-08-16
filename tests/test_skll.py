@@ -222,34 +222,31 @@ def test_regression1():
 
 
 # Test our kappa implementation based on Ben Hamner's unit tests.
+kappa_inputs = [([1, 2, 3], [1, 2, 3]),
+                ([1, 2, 1], [1, 2, 2]),
+                ([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2])]
+
+
+def check_kappa(y_true, y_pred, weights, expected):
+    assert_almost_equal(kappa(y_true, y_pred, weights), expected)
+
+
 def test_quadratic_weighted_kappa():
-    k = kappa([1, 2, 3], [1, 2, 3], weights='quadratic')
-    assert_almost_equal(k, 1.0)
+    outputs = [1.0, 0.4, 0.75]
 
-    k = kappa([1, 2, 1], [1, 2, 2], weights='quadratic')
-    assert_almost_equal(k, 0.4)
-
-    k = kappa([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2], weights='quadratic')
-    assert_almost_equal(k, 0.75)
+    for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa(y_true, y_pred, 'quadratic', expected)
 
 
 def test_linear_weighted_kappa():
-    k = kappa([1, 2, 3], [1, 2, 3], weights='linear')
-    assert_almost_equal(k, 1.0)
+    outputs = [1.0, 0.4, 0.65]
 
-    k = kappa([1, 2, 1], [1, 2, 2], weights='linear')
-    assert_almost_equal(k, 0.4)
-
-    k = kappa([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2], weights='linear')
-    assert_almost_equal(k, 0.65)
+    for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa(y_true, y_pred, 'linear', expected)
 
 
 def test_unweighted_kappa():
-    k = kappa([1, 2, 3], [1, 2, 3])
-    assert_almost_equal(k, 1.0)
+    outputs = [1.0, 0.4, 0.5625]
 
-    k = kappa([1, 2, 1], [1, 2, 2])
-    assert_almost_equal(k, 0.4)
-
-    k = kappa([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2])
-    assert_almost_equal(k, 0.5625)
+    for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa(y_true, y_pred, None, expected)
