@@ -34,7 +34,6 @@ from multiprocessing import cpu_count
 
 import numpy as np
 import scipy.sparse as sp
-import sklearn.metrics as sk_metrics
 from six import iteritems
 from six import string_types
 from six.moves import cPickle as pickle
@@ -48,7 +47,8 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.feature_selection import SelectKBest
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression, Ridge
-from sklearn.metrics import SCORERS
+from sklearn.metrics import (accuracy_score, confusion_matrix,
+                             precision_recall_fscore_support, SCORERS)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, SVR
@@ -731,14 +731,14 @@ class Learner(object):
         else:
             # compute the confusion matrix
             num_labels = len(self.label_list)
-            conf_mat = sk_metrics.confusion_matrix(ytest, yhat,
-                                                   labels=list(range(num_labels)))
+            conf_mat = confusion_matrix(ytest, yhat,
+                                        labels=list(range(num_labels)))
             # Calculate metrics
-            overall_accuracy = sk_metrics.accuracy_score(ytest, yhat)
-            result_matrix = sk_metrics.precision_recall_fscore_support(ytest,
-                                                                       yhat,
-                                                                       labels=list(range(num_labels)),
-                                                                       average=None)
+            overall_accuracy = accuracy_score(ytest, yhat)
+            result_matrix = precision_recall_fscore_support(ytest,
+                                                            yhat,
+                                                            labels=list(range(num_labels)),
+                                                            average=None)
 
             # Store results
             result_dict = defaultdict(dict)
