@@ -40,7 +40,6 @@ from six import string_types
 from six.moves import cPickle as pickle
 from six.moves import xrange as range
 from six.moves import zip
-from sklearn import __version__ as sklearn_version
 from sklearn.base import BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.cross_validation import LeaveOneLabelOut
@@ -50,16 +49,11 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle as sk_shuffle
-
-# Use sklearn's version of StandardScaler  0.14+, otherwise use ours
-if tuple(int(x) for x in sklearn_version.split('.')) >= (0, 14):
-    from sklearn.preprocessing import StandardScaler
-else:
-    from skll.fixed_standard_scaler import FixedStandardScaler as StandardScaler
 
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS
@@ -666,7 +660,7 @@ class Learner(object):
                 estimator.predict = _predict_binary
 
             grid_searcher = GridSearchCV(estimator, param_grid,
-                                         scorer=grid_objective, cv=folds,
+                                         scoring=grid_objective, cv=folds,
                                          n_jobs=grid_jobs)
 
             # run the grid search for hyperparameters
