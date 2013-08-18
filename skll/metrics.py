@@ -118,7 +118,7 @@ def kappa(y_true, y_pred, weights=None):
                  num_scored_items)
     hist_pred = (np.bincount(y_pred)[min_rating: max_rating + 1] /
                  num_scored_items)
-    expected = np.outer(hist_true.T, hist_pred)
+    expected = np.outer(hist_true, hist_pred)
 
     # Normalize observed array
     observed = observed / num_scored_items
