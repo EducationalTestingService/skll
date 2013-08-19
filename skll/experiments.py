@@ -36,7 +36,7 @@ import re
 import numpy as np
 import sys
 import datetime
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from multiprocessing import Pool
 
 import scipy.sparse as sp
@@ -48,12 +48,6 @@ from sklearn.metrics import SCORERS
 from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 
-
-# Named tuple for storing job results
-_LearnerResultInfo = namedtuple('_LearnerResultInfo',
-                                ['train_set_name', 'test_set_name',
-                                 'featureset', 'given_learner', 'task',
-                                 'task_results', 'grid_scores'])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -91,6 +85,44 @@ def _get_stat_float(class_result_dict, stat):
         return float('nan')
 
 
+def _write_summary_file(result_json_paths, output_file):
+    '''
+    Function to take a list of paths to individual result
+    json files and returns a single file that summarizes
+    all of them.
+
+    :param result_json_paths: A list of paths to the
+                              individual result json files.
+    :type result_json_paths: list
+    :return output_file: The output file to contain a summary
+                        of the individual result files.
+    :type output_file: file
+    '''
+    headers_written = False
+    no_json_files_found = True
+
+    writer = csv.writer(output_file, dialect=csv.excel_tab)
+    for json_path in result_json_paths:
+        if not os.path.exists(json_path):
+            logging.warning('JSON file {} not found'.format(json_path))
+        else:
+            no_json_files_found = False
+            with open(json_path, 'r') as json_file:
+                result_json = json.load(json_file)
+                if not headers_written:
+                    header = sorted(result_json.keys())
+                    writer.writerow(header)
+                    headers_written = False
+                writer.writerow([result_json[k] for k in header])
+
+    # raise an exception if no json files were found
+    if no_json_files_found:
+        raise IOError(errno.ENOENT, ("No JSON files found"))
+    else:
+        # flushing in case the output file is STDOUT
+        output_file.flush()
+
+
 def _print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
     '''
     Function to take all of the results from all of the folds and print
@@ -104,8 +136,8 @@ def _print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
     f_sum_dict = defaultdict(float)
     result_table = None
 
-    print('Timestamp: {}'.format(datetime.datetime.now() 
-                            .strftime('%d %b %Y %H:%M:%S')), file=output_file)
+    print('Timestamp: {}'.format(datetime.datetime.now()
+                         .strftime('%d %b %Y %H:%M:%S')), file=output_file)
 
     for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
             score), grid_score) \
@@ -395,37 +427,49 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
         # was asked for
         if cross_validate:
             print('\tcross-validating', file=log_file)
-            results, grid_scores = learner.cross_validate(train_examples,
-                                                          prediction_prefix=prediction_prefix,
-                                                          grid_search=grid_search,
-                                                          cv_folds=cv_folds,
-                                                          grid_objective=grid_objective,
-                                                          param_grid=param_grid,
-                                                          grid_jobs=grid_search_jobs)
+            task_results, grid_scores = learner.cross_validate(train_examples,
+                                                               prediction_prefix=prediction_prefix,
+                                                               grid_search=grid_search,
+                                                               cv_folds=cv_folds,
+                                                               grid_objective=grid_objective,
+                                                               param_grid=param_grid,
+                                                               grid_jobs=grid_search_jobs)
             task = 'cross-validate'
         elif evaluate:
             print('\tevaluating predictions', file=log_file)
-            results = [learner.evaluate(
+            task_results = [learner.evaluate(
                 test_examples, prediction_prefix=prediction_prefix,
                 grid_objective=grid_objective)]
             task = 'evaluate'
         else:
             print('\twriting predictions', file=log_file)
             task = 'predict'
-            results = None
+            task_results = None
             learner.predict(test_examples, prediction_prefix=prediction_prefix)
 
-        # write out results to file if we're not predicting
-        result_info = _LearnerResultInfo(train_set_name, test_set_name,
-                                         featureset, given_learner, task,
-                                         results, grid_scores)
+        results_json_path = os.path.join(resultspath, '{}.results.json'.format(jobname))
+
+        # create a dictionary of the results information
+        learner_result_dict = {'train_set_name': train_set_name,
+                               'test_set_name': test_set_name,
+                               'featureset': featureset,
+                               'given_learner': given_learner,
+                               'task': task,
+                               'task_results': task_results,
+                               'grid_scores': grid_scores}
+
         if task != 'predict':
+
+            # write out the result dictionary to a json file
+            with open(results_json_path, 'w') as json_file:
+                json.dump(learner_result_dict, json_file)
+
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
                       'w') as output_file:
-                _print_fancy_output(result_info.task_results,
-                                    result_info.grid_scores, output_file)
+                _print_fancy_output(learner_result_dict['task_results'],
+                                    learner_result_dict['grid_scores'], output_file)
 
-    return result_info
+    return learner_result_dict
 
 
 def _munge_featureset_name(featureset):
@@ -602,6 +646,16 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                   given_featuresets]
     assert len(given_featureset_names) == len(given_featuresets)
 
+    # store training/test set names for later use
+    train_set_name = os.path.basename(train_path)
+    test_set_name = os.path.basename(test_path) if test_path else "cv"
+
+    # the list to hold the paths to all the result json files
+    result_json_paths = []
+
+    # the components for the names of the results and summary files
+    base_name_components = [train_set_name, test_set_name]
+
     # For each feature set
     for featureset, featureset_name in zip(given_featuresets,
                                            given_featureset_names):
@@ -609,31 +663,25 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         # and for each learner
         for learner_num, given_learner in enumerate(given_learners):
 
-            # store training/test set names for later use
-            train_set_name = os.path.basename(train_path)
-            test_set_name = os.path.basename(test_path) if test_path else "cv"
-
-            # create a name for the job
-            name_components = [train_set_name, test_set_name,
-                               featureset_name, given_learner]
-
             # add scaling information to name
             if do_scale_features:
-                name_components.append('scaled')
+                base_name_components.append('scaled')
             else:
-                name_components.append('unscaled')
+                base_name_components.append('unscaled')
 
             # add tuning information to name
             if do_grid_search:
-                name_components.append('tuned')
-                name_components.append(grid_objective)
+                base_name_components.append('tuned')
+                base_name_components.append(grid_objective)
             else:
-                name_components.append('untuned')
+                base_name_components.append('untuned')
 
             # add task name
-            name_components.append(task)
+            base_name_components.append(task)
 
-            jobname = '_'.join(name_components)
+            # for the individual job name, we need to add the feature set name and the learner name
+            job_name_components = base_name_components + [featureset_name, given_learner]
+            jobname = '_'.join(job_name_components)
 
             # change the prediction prefix to include the feature set
             prediction_prefix = os.path.join(prediction_dir, jobname)
@@ -663,6 +711,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             else:
                 _classify_featureset(*job_args)
 
+            # save the path to the results json file that will be written
+            result_json_paths.append(os.path.join(resultspath, '{}.results'.format(jobname)))
+
     # submit the jobs (if running on grid)
     if not local:
         if logpath:
@@ -671,10 +722,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_results = process_jobs(jobs, white_list=hosts)
 
         # Check for errors
-        for result_info in job_results:
-            if not hasattr(result_info, 'task'):
+        for result_dict in job_results:
+            if 'task' not in result_dict:
                 logging.error('There was an error running the experiment:\n' +
-                              '{}'.format(result_info))
+                              '{}'.format(result_dict))
+
+    # write out the summary results file
+    summary_file_name = '_'.join(base_name_components) + '_summary.tsv'
+    with open(os.path.join(resultspath, summary_file_name), 'w') as output_file:
+        _write_summary_file(result_json_paths, output_file)
 
 
 def _run_experiment_without_feature(arg_tuple):
