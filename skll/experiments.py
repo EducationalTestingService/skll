@@ -99,121 +99,58 @@ def _write_summary_file(result_json_paths, output_file):
     :type output_file: file
     '''
     headers_written = False
-    no_json_files_found = True
 
     writer = csv.writer(output_file, dialect=csv.excel_tab)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
-            logging.warning('JSON file {} not found'.format(json_path))
+            raise IOError(errno.ENOENT, (('JSON file {} not found'
+                                          .format(json_path))))
         else:
-            no_json_files_found = False
             with open(json_path, 'r') as json_file:
-                result_json = json.load(json_file)
+                learner_result_dicts = json.load(json_file)
                 if not headers_written:
-                    header = sorted(result_json.keys())
+                    header = sorted(learner_result_dicts[0].keys())
                     writer.writerow(header)
                     headers_written = False
-                writer.writerow([result_json[k] for k in header])
+                for learner_result_dict in learner_result_dicts:
+                    writer.writerow([learner_result_dict.get(k, '')
+                                     for k in header])
 
-    # raise an exception if no json files were found
-    if no_json_files_found:
-        raise IOError(errno.ENOENT, ("No JSON files found"))
-    else:
-        # flushing in case the output file is STDOUT
-        output_file.flush()
+    output_file.flush()
 
 
-def _print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
+def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     '''
     Function to take all of the results from all of the folds and print
     nice tables with the results.
     '''
-    num_folds = len(result_tuples)
-    accuracy_sum = 0.0
-    score_sum = None
-    prec_sum_dict = defaultdict(float)
-    recall_sum_dict = defaultdict(float)
-    f_sum_dict = defaultdict(float)
-    result_table = None
 
-    print('Timestamp: {}'.format(datetime.datetime.now()
-                         .strftime('%d %b %Y %H:%M:%S')), file=output_file)
+    lrd = learner_result_dicts[0]
+    print('Timestamp: {}'.format(lrd['timestamp']), file=output_file)
+    print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
+    print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
+    print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
+    print('Learner: {}'.format(lrd['given_learner']), file=output_file)
+    print('Task: {}'.format(lrd['task']), file=output_file)
+    print('Scaling: {}'.format(lrd['scaling']), file=output_file)
+    print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
+    print('Grid Objective: {}'.format(lrd['grid_objective']), file=output_file)
+    print('\n', file=output_file)
 
-    for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
-            score), grid_score) \
-            in enumerate(zip(result_tuples, grid_scores), start=1):
-
-        if num_folds > 1:
-            print("\nFold: {}".format(k), file=output_file)
-        param_out = ('{}: {}'.format(param_name, param_value)
-                     for param_name, param_value in iteritems(model_params))
-        print('Model parameters: {}'.format(
-            ', '.join(param_out)), file=output_file)
-        print('Grid search score = {:.5f}'.format(grid_score),
+    for lrd in learner_result_dicts:
+        print('Fold: {}'.format(lrd['fold']), file=output_file)
+        print('Model Parameters: {}'.format(lrd.get('model_params', '')),
               file=output_file)
+        print('Grid search score = {}'.format(lrd.get('grid_score', '')),
+              file=output_file)
+        if 'result_table' in lrd:
+            print(lrd['result_table'], file=output_file)
+            print('Accuracy = {}'.format(lrd['accuracy']),
+                  file=output_file)
 
-        if conf_matrix:
-            classes = sorted(iterkeys(result_tuples[0][2]))
-            result_table = PrettyTable([""] + classes + ["Precision",
-                                                         "Recall",
-                                                         "F-measure"],
-                                       header=True, hrules=ALL)
-            result_table.align = 'r'
-            result_table.float_format = '.3'
-            for i, actual_class in enumerate(classes):
-                conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
-                class_prec = _get_stat_float(result_dict[actual_class],
-                                             "Precision")
-                class_recall = _get_stat_float(result_dict[actual_class],
-                                               "Recall")
-                class_f = _get_stat_float(result_dict[actual_class],
-                                          "F-measure")
-                if not math.isnan(class_prec):
-                    prec_sum_dict[actual_class] += float(class_prec)
-                if not math.isnan(class_recall):
-                    recall_sum_dict[actual_class] += float(class_recall)
-                if not math.isnan(class_f):
-                    f_sum_dict[actual_class] += float(class_f)
-                result_row = ([actual_class] + conf_matrix[i] +
-                              [class_prec, class_recall, class_f])
-                result_table.add_row(result_row)
-            print(result_table, file=output_file)
-            print("(row = reference; column = predicted)", file=output_file)
-            print("Accuracy = {:.3f}".format(fold_accuracy), file=output_file)
-            accuracy_sum += fold_accuracy
-
-        if score is not None:
-            if score_sum is None:
-                score_sum = score
-            else:
-                score_sum += score
-            print('Objective function score = {:.5f}'.format(
-                score), file=output_file)
+        print('Objective function score = {}'.format(lrd['score']),
+              file=output_file)
         print(file=output_file)
-
-    if num_folds > 1:
-        print("\nAverage:", file=output_file)
-        if result_table:
-            result_table = PrettyTable(["Class", "Precision", "Recall",
-                                        "F-measure"],
-                                       header=True)
-            result_table.align = "r"
-            result_table.align["Class"] = "l"
-            result_table.float_format = '.3'
-            for actual_class in classes:
-                # Convert sums to means
-                prec_mean = prec_sum_dict[actual_class] / num_folds
-                recall_mean = recall_sum_dict[actual_class] / num_folds
-                f_mean = f_sum_dict[actual_class] / num_folds
-                result_table.add_row([actual_class] +
-                                     [prec_mean, recall_mean, f_mean])
-            print(result_table, file=output_file)
-            print("Accuracy = {:.3f}".format(accuracy_sum / num_folds),
-                  file=output_file)
-        if score_sum is not None:
-            print("Objective function score = {:.5f}".format(score_sum
-                                                             / num_folds),
-                  file=output_file)
 
 
 def _parse_config_file(config_file):
@@ -352,6 +289,8 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
                          grid_search_jobs, cv_folds, tsv_label):
     ''' Classification job to be submitted to grid '''
 
+    timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
+
     with open(log_path, 'w') as log_file:
         if cross_validate:
             print("Cross-validating on {}, feature set {} ...".format(
@@ -447,29 +386,130 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
             task_results = None
             learner.predict(test_examples, prediction_prefix=prediction_prefix)
 
-        results_json_path = os.path.join(resultspath, '{}.results.json'.format(jobname))
+        results_json_path = os.path.join(resultspath,
+                                         '{}.results.json'.format(jobname))
 
-        # create a dictionary of the results information
-        learner_result_dict = {'train_set_name': train_set_name,
-                               'test_set_name': test_set_name,
-                               'featureset': featureset,
-                               'given_learner': given_learner,
-                               'task': task,
-                               'task_results': task_results,
-                               'grid_scores': grid_scores}
+        # create a list of dictionaries of the results information
+        learner_result_dicts = []
+        learner_result_dict_base = {'train_set_name': train_set_name,
+                                    'test_set_name': test_set_name,
+                                    'featureset': featureset,
+                                    'given_learner': given_learner,
+                                    'task': task,
+                                    'timestamp': timestamp,
+                                    'scaling': do_scale_features,
+                                    'grid_search': grid_search,
+                                    'grid_objective': grid_objective}
+
+        res = _create_learner_result_dicts(task_results, grid_scores,
+                                           learner_result_dict_base)
 
         if task != 'predict':
-
             # write out the result dictionary to a json file
             with open(results_json_path, 'w') as json_file:
-                json.dump(learner_result_dict, json_file)
+                json.dump(res, json_file)
 
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
                       'w') as output_file:
-                _print_fancy_output(learner_result_dict['task_results'],
-                                    learner_result_dict['grid_scores'], output_file)
+                _print_fancy_output(res, output_file)
 
-    return learner_result_dict
+    return res
+
+
+def _create_learner_result_dicts(task_results, grid_scores,
+                                 learner_result_dict_base):
+    res = []
+    num_folds = len(task_results)
+    accuracy_sum = 0.0
+    score_sum = None
+    prec_sum_dict = defaultdict(float)
+    recall_sum_dict = defaultdict(float)
+    f_sum_dict = defaultdict(float)
+    result_table = None
+
+    for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
+            score), grid_score) \
+            in enumerate(zip(task_results, grid_scores), start=1):
+
+        # create a new dict for this fold
+        learner_result_dict = {}
+        learner_result_dict.update(learner_result_dict_base)
+
+        if num_folds == 1:
+            learner_result_dict['fold'] = ""
+        else:
+            learner_result_dict['fold'] = k
+            learner_result_dict['model_params'] = model_params
+            learner_result_dict['grid_score'] = grid_score
+
+        if conf_matrix:
+            classes = sorted(iterkeys(task_results[0][2]))
+            result_table = PrettyTable([""] + classes + ["Precision",
+                                                         "Recall",
+                                                         "F-measure"],
+                                       header=True, hrules=ALL)
+            result_table.align = 'r'
+            result_table.float_format = '.3'
+            for i, actual_class in enumerate(classes):
+                conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
+                class_prec = _get_stat_float(result_dict[actual_class],
+                                             "Precision")
+                class_recall = _get_stat_float(result_dict[actual_class],
+                                               "Recall")
+                class_f = _get_stat_float(result_dict[actual_class],
+                                          "F-measure")
+                if not math.isnan(class_prec):
+                    prec_sum_dict[actual_class] += float(class_prec)
+                if not math.isnan(class_recall):
+                    recall_sum_dict[actual_class] += float(class_recall)
+                if not math.isnan(class_f):
+                    f_sum_dict[actual_class] += float(class_f)
+                result_row = ([actual_class] + conf_matrix[i] +
+                              [class_prec, class_recall, class_f])
+                result_table.add_row(result_row)
+
+            result_table_str = '{}'.format(result_table)
+            result_table_str += '(row = reference; column = predicted)'
+            learner_result_dict['result_table'] = '{}'.format(result_table)
+            learner_result_dict['accuracy'] = fold_accuracy
+            accuracy_sum += fold_accuracy
+
+        if score is not None:
+            if score_sum is None:
+                score_sum = score
+            else:
+                score_sum += score
+            learner_result_dict['score'] = score
+        res.append(learner_result_dict)
+
+    if num_folds > 1:
+        learner_result_dict = {}
+        learner_result_dict.update(learner_result_dict_base)
+
+        learner_result_dict['fold'] = 'average'
+
+        if result_table:
+            result_table = PrettyTable(["Class", "Precision", "Recall",
+                                        "F-measure"],
+                                       header=True)
+            result_table.align = "r"
+            result_table.align["Class"] = "l"
+            result_table.float_format = '.3'
+            for actual_class in classes:
+                # Convert sums to means
+                prec_mean = prec_sum_dict[actual_class] / num_folds
+                recall_mean = recall_sum_dict[actual_class] / num_folds
+                f_mean = f_sum_dict[actual_class] / num_folds
+                result_table.add_row([actual_class] +
+                                     [prec_mean, recall_mean, f_mean])
+
+            learner_result_dict['result_table'] = '{}'.format(result_table)
+            learner_result_dict['accuracy'] = accuracy_sum / num_folds
+
+        if score_sum is not None:
+            learner_result_dict['score'] = score_sum / num_folds
+        res.append(learner_result_dict)
+    return res
 
 
 def _munge_featureset_name(featureset):
@@ -712,7 +752,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 _classify_featureset(*job_args)
 
             # save the path to the results json file that will be written
-            result_json_paths.append(os.path.join(resultspath, '{}.results'.format(jobname)))
+            result_json_paths.append(os.path.join(resultspath, '{}.results.json'.format(jobname)))
 
     # submit the jobs (if running on grid)
     if not local:
