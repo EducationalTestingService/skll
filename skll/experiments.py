@@ -35,6 +35,7 @@ import os
 import re
 import numpy as np
 import sys
+import datetime
 from collections import defaultdict, namedtuple
 from multiprocessing import Pool
 
@@ -102,6 +103,9 @@ def _print_fancy_output(result_tuples, grid_scores, output_file=sys.stdout):
     recall_sum_dict = defaultdict(float)
     f_sum_dict = defaultdict(float)
     result_table = None
+
+    print('Timestamp: {}'.format(datetime.datetime.now() 
+                            .strftime('%d %b %Y %H:%M:%S')), file=output_file)
 
     for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
             score), grid_score) \
