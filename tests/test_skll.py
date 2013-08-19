@@ -38,7 +38,7 @@ from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
 
 
-SCORE_OUTPUT_RE = re.compile((r'Average:.+Objective function score = ' +
+SCORE_OUTPUT_RE = re.compile((r'Fold: average.+Objective function score = ' +
                               r'([\-\d\.]+)'), re.DOTALL)
 GRID_RE = re.compile(r'Grid search score = ([\-\d\.]+)')
 _my_dir = os.path.abspath(os.path.dirname(__file__))
@@ -144,10 +144,11 @@ def test_specified_cv_folds():
 
         with open(os.path.join(_my_dir, config_path)) as config:
             run_configuration(config, local=True)
-        with open(os.path.join(_my_dir, 'tests_cv_test_cv_folds1_LogisticRegression_unscaled_tuned_accuracy_cross-validate.results')) as f:
+        with open(os.path.join(_my_dir, 'tests_cv_unscaled_tuned_accuracy_cross-validate_test_cv_folds1_LogisticRegression.results')) as f:
             # check held out scores
             outstr = f.read()
             score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
             assert test_func(score)
 
             grid_score_matches = GRID_RE.findall(outstr)
@@ -203,13 +204,13 @@ def test_regression1():
 
     with open(os.path.join(_my_dir, config_path)) as cfg:
         run_configuration(cfg, local=True)
-    with open(os.path.join(_my_dir, 'tests_cv_test_regression1_RescaledRidge_unscaled_tuned_pearson_cross-validate.results')) as f:
+    with open(os.path.join(_my_dir, 'tests_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.results')) as f:
         # check held out scores
         outstr = f.read()
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
         assert test_func(score)
 
-    with open(os.path.join(_my_dir, 'tests_cv_test_regression1_RescaledRidge_unscaled_tuned_pearson_cross-validate.predictions'), 'rb') as f:
+    with open(os.path.join(_my_dir, 'tests_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.predictions'), 'rb') as f:
         reader = csv.reader(f, dialect='excel-tab')
         reader.next()
         pred = [float(row[1]) for row in reader]
