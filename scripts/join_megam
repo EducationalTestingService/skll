@@ -35,6 +35,7 @@ from collections import OrderedDict
 from six import iteritems
 
 from skll.data import _megam_dict_iter
+from skll.version import __version__
 
 
 # Globals
@@ -119,6 +120,8 @@ if __name__ == '__main__':
                         help='Only output features for filenames that are \
                               common to all MegaM files.',
                         action='store_true')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     # Map from filenames to feature strings

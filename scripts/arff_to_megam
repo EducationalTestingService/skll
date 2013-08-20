@@ -36,6 +36,8 @@ from bs4 import UnicodeDammit
 from six import text_type
 from six.moves import xrange as range
 
+from skll.version import __version__
+
 
 # Globals
 args = None
@@ -243,6 +245,8 @@ if __name__ == '__main__':
                         help='Print out fields that were not added output to \
                               MegaM file on STDERR.',
                         action='store_true')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     # Check for valid classindex

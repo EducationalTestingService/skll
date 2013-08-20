@@ -33,6 +33,7 @@ import sys
 from six import iteritems
 
 from skll.data import _megam_dict_iter
+from skll.version import __version__
 
 
 if __name__ == '__main__':
@@ -56,6 +57,8 @@ if __name__ == '__main__':
                         help='Instead of removing features with names in the\
                               list, keep only those.',
                         action='store_true')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     if args.infile.isatty():

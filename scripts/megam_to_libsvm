@@ -35,6 +35,8 @@ from bs4 import UnicodeDammit
 from six import iteritems
 from six.moves import zip
 
+from skll.version import __version__
+
 
 class UniqueNumberDict(dict):
     """
@@ -164,6 +166,8 @@ def main():
                         help='File to output mapping of feature/class indices\
                               to names to',
                         type=argparse.FileType('wb'), default='map.idx')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     if args.infile.isatty():

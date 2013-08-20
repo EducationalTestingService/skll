@@ -32,6 +32,7 @@ import sys
 from six import iteritems
 
 from skll import Learner
+from skll.version import __version__
 
 
 if __name__ == '__main__':
@@ -43,6 +44,8 @@ if __name__ == '__main__':
     parser.add_argument('--k',
                         help='number of top features to print (0 for all)',
                         type=int, default=50)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     k = args.k if args.k > 0 else None
