@@ -31,6 +31,7 @@ import argparse
 
 from skll import Learner, load_examples
 from skll.learner import _REGRESSION_MODELS
+from skll.version import __version__
 
 
 class Predictor(object):
@@ -117,6 +118,8 @@ def main():
                               if it meets/exceeds the given threshold and 0 \
                               otherwise.",
                         type=float)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     # Create the classifier and load the model

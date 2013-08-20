@@ -31,6 +31,7 @@ import sys
 from csv import DictWriter
 
 from skll.data import _megam_dict_iter
+from skll.version import __version__
 
 
 def main():
@@ -51,6 +52,8 @@ def main():
     parser.add_argument('-i', '--id_name',
                         help='Name of ID column for CSV file.',
                         default='id')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     # Initialize variables

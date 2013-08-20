@@ -31,6 +31,7 @@ import csv
 import sys
 
 from skll.data import _megam_dict_iter
+from skll.version import __version__
 
 
 def main():
@@ -49,6 +50,8 @@ def main():
     parser.add_argument('-r', '--relation',
                         help='Name of relation for ARFF file',
                         default='MegaM Relation')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     # Initialize variables

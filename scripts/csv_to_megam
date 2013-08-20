@@ -32,6 +32,8 @@ from decimal import Decimal, InvalidOperation
 
 from bs4 import UnicodeDammit
 
+from skll.version import __version__
+
 
 def sanitize_name(feature_name):
     '''
@@ -59,6 +61,8 @@ if __name__ == '__main__':
                               This will be included as a comment before each \
                               line.  Note: fields are numbered starting at 0.',
                         type=int)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     if args.infile.isatty():

@@ -61,6 +61,12 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.8
+
+   +  Fixed crash due to trying to print name of grid objective which is now a
+      str and not a function.
+   +  Added --version option to shell scripts.
+
 -  v0.9.7
 
    +  Can now use any objective function scikit-learn supports for tuning (i.e.,
