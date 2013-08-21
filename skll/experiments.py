@@ -98,23 +98,21 @@ def _write_summary_file(result_json_paths, output_file):
                         of the individual result files.
     :type output_file: file
     '''
-    headers_written = False
-
-    writer = csv.writer(output_file, dialect=csv.excel_tab)
+    learner_result_dicts = []
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
             raise IOError(errno.ENOENT, (('JSON file {} not found'
                                           .format(json_path))))
         else:
             with open(json_path, 'r') as json_file:
-                learner_result_dicts = json.load(json_file)
-                if not headers_written:
-                    header = sorted(learner_result_dicts[0].keys())
-                    writer.writerow(header)
-                    headers_written = False
-                for learner_result_dict in learner_result_dicts:
-                    writer.writerow([learner_result_dict.get(k, '')
-                                     for k in header])
+                learner_result_dicts.extend(json.load(json_file))
+
+    header = sorted(set(learner_result_dicts[0].keys()) - {'result_table'})
+    writer = csv.DictWriter(output_file, header, extrasaction='ignore',
+                            dialect=csv.excel_tab)
+    writer.writeheader()
+    for lrd in learner_result_dicts:
+        writer.writerow(lrd)
 
     output_file.flush()
 
