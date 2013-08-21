@@ -246,10 +246,13 @@ def make_summary_data():
             test_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
 
 
+def check_summary_score(result_score, summary_score, learner_name):
+    eq_(result_score, summary_score, msg='mismatched scores for {}'.format(learner_name))
+
+
 def test_summary():
     '''
-    Testing to make sure that the summary file contains the
-    same numbers as the individual results files
+    Test to validate summary file scores
     '''
     make_summary_data()
 
@@ -282,8 +285,8 @@ def test_summary():
             elif row['given_learner'] == 'SVC':
                 svm_summary_score = float(row['score'])
 
-    for result_score, summary_score, learner in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
-        yield assert_equal, result_score, summary_score, learner
+    for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
+        yield check_summary_score, result_score, summary_score, learner_name
 
 
 # Test our kappa implementation based on Ben Hamner's unit tests.
