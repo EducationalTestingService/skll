@@ -292,8 +292,6 @@ class Learner(object):
         Initializes a learner object with the specified settings.
         '''
         super(Learner, self).__init__()
-        # LinearSVC doesn't support predict_proba
-        self.probability = probability if model_type != 'LinearSVC' else False
 
         self.feat_vectorizer = None
         self.do_scale_features = do_scale_features
@@ -302,6 +300,7 @@ class Learner(object):
         self.label_list = None
         self.pos_label_str = pos_label_str
         self._model_type = model_type
+        self.probability = probability
         self._model = None
         self._use_dense_features = use_dense_features
         self.feat_selector = None
@@ -416,6 +415,19 @@ class Learner(object):
                               " model_params.").format(self._model_type))
 
         return res
+
+    @property
+    def probability(self):
+        '''
+        Should learner return probabilities of all classes (instead of just
+        class with highest probability)?
+        '''
+        return self._probability
+
+    @probability.setter
+    def probability(self, value):
+        # LinearSVC doesn't support predict_proba
+        self._probability = value and self.model_type != 'LinearSVC'
 
     def save(self, learner_path):
         '''
@@ -798,7 +810,6 @@ class Learner(object):
         try:
             yhat = (self._model.predict_proba(xtest)
                     if (self.probability and
-                        self._model_type != 'LinearSVC' and  # no predict_proba
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
@@ -815,16 +826,16 @@ class Learner(object):
                 # header
                 if not append:
                     # Output probabilities if we're asked (and able)
-                    if self.probability and self._model_type != 'LinearSVC':
-                        print('\t'.join(["id"] + self.label_list),
+                    if self.probability:
+                        print('\t'.join(["id"] +
+                                        [str(x) for x in self.label_list]),
                               file=predictionfh)
                     else:
-                        print('\t'.join(["id", "prediction"]),
-                              file=predictionfh)
+                        print('id\tprediction', file=predictionfh)
 
-                if self.probability and self._model_type != 'LinearSVC':
+                if self.probability:
                     for example_id, class_probs in zip(example_ids, yhat):
-                        print('\t'.join([example_id] +
+                        print('\t'.join([str(example_id)] +
                                         [str(x) for x in class_probs]),
                               file=predictionfh)
                 else:
