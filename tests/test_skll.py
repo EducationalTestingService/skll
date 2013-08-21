@@ -38,8 +38,6 @@ from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
 
 
-# SCORE_OUTPUT_RE = re.compile((r'Average:.+Objective function score = ' +
-#                               r'([\-\d\.]+)'), re.DOTALL)
 SCORE_OUTPUT_RE = re.compile(r'Objective function score = ([\-\d\.]+)')
 GRID_RE = re.compile(r'Grid search score = ([\-\d\.]+)')
 _my_dir = os.path.abspath(os.path.dirname(__file__))
@@ -148,6 +146,7 @@ def test_specified_cv_folds():
 
         with open(os.path.join(_my_dir, config_path)) as config:
             run_configuration(config, local=True)
+
         with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_accuracy_cross-validate_test_cv_folds1_LogisticRegression.results')) as f:
             # check held out scores
             outstr = f.read()
@@ -207,6 +206,7 @@ def test_regression1():
 
     with open(os.path.join(_my_dir, config_path)) as cfg:
         run_configuration(cfg, local=True)
+
     with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.results')) as f:
         # check held out scores
         outstr = f.read()
@@ -229,17 +229,19 @@ def make_summary_data():
     num_train_examples = 500
     num_test_examples = 100
 
+    np.random.seed(1234567890)
+
     with open(os.path.join(_my_dir, 'train', 'test_summary.jsonlines'), 'w') as train_json, open(os.path.join(_my_dir, 'test', 'test_summary.jsonlines'), 'w') as test_json:
         for i in range(num_train_examples):
             y = "dog" if i % 2 == 0 else "cat"
             ex_id = "{}{}".format(y, i)
-            x = {"f1": 1.0, "f2": 1.0, "f3": 1.0, "is_{}".format(y): 1.0}
+            x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4), "f3": np.random.randint(1, 4)}
             train_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
 
         for i in range(num_test_examples):
             y = "dog" if i % 2 == 0 else "cat"
             ex_id = "{}{}".format(y, i)
-            x = {"f1": 1.5, "f2": 2.0, "f3": 1.0, "is_{}".format(y): 1.0}
+            x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4), "f3": np.random.randint(1, 4)}
             test_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
 
 
@@ -257,27 +259,31 @@ def test_summary():
         run_configuration(cfg, local=True)
 
     with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_LogisticRegression.results')) as f:
-        # check held out scores
         outstr = f.read()
         logistic_score_from_results_file = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_pearson_evaluate_test_summary_MultinomialNB.results')) as f:
-        # check held out scores
+    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_MultinomialNB.results')) as f:
         outstr = f.read()
         naivebayes_score_from_results_file = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'train_test_unscaled_tuned_pearson_evaluate_summary.tsv'), 'r') as f:
+    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_SVC.results')) as f:
+        outstr = f.read()
+        svm_score_from_results_file = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
+    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_summary.tsv'), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
-        reader.next()
 
         for row in reader:
             if row['given_learner'] == 'LogisticRegression':
-                logistic_score_from_summary_file = row['accuracy']
+                logistic_score_from_summary_file = float(row['score'])
             elif row['given_learner'] == 'MultinomialNB':
-                naivebayes_score_from_summary_file = row['accuracy']
+                naivebayes_score_from_summary_file = float(row['score'])
+            elif row['given_learner'] == 'SVC':
+                svm_score_from_summary_file = float(row['score'])
 
     assert logistic_score_from_results_file == logistic_score_from_summary_file
     assert naivebayes_score_from_results_file == naivebayes_score_from_summary_file
+    assert svm_score_from_results_file == svm_score_from_summary_file
 
 
 # Test our kappa implementation based on Ben Hamner's unit tests.

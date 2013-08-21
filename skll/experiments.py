@@ -349,7 +349,7 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
                 learner.save(modelfile)
 
                 if grid_search:
-                    print('\tbest {} score: {}'.format(grid_objective.__name__,
+                    print('\tbest {} score: {}'.format(grid_objective,
                                                        round(best_score, 3)),
                           file=log_file)
 
