@@ -247,7 +247,7 @@ def make_summary_data():
 
 
 def check_summary_score(result_score, summary_score, learner_name):
-    eq_(result_score, summary_score, msg='mismatched scores for {}'.format(learner_name))
+    eq_(result_score, summary_score, msg='mismatched scores for {} (result:{}, summary:{})'.format(learner_name, result_score, summary_score))
 
 
 def test_summary():
