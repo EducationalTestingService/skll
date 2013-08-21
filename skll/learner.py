@@ -293,7 +293,6 @@ class Learner(object):
         '''
         super(Learner, self).__init__()
 
-        self.probability = probability
         self.feat_vectorizer = None
         self.do_scale_features = do_scale_features
         self.scaler = None
@@ -301,6 +300,7 @@ class Learner(object):
         self.label_list = None
         self.pos_label_str = pos_label_str
         self._model_type = model_type
+        self.probability = probability
         self._model = None
         self._use_dense_features = use_dense_features
         self.feat_selector = None
@@ -427,7 +427,7 @@ class Learner(object):
     @probability.setter
     def probability(self, value):
         # LinearSVC doesn't support predict_proba
-        self._probability = value and model_type != 'LinearSVC'
+        self._probability = value and self.model_type != 'LinearSVC'
 
     def save(self, learner_path):
         '''
