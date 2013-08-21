@@ -261,30 +261,29 @@ def test_summary():
 
     with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_LogisticRegression.results')) as f:
         outstr = f.read()
-        logistic_score_from_results_file = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_MultinomialNB.results')) as f:
         outstr = f.read()
-        naivebayes_score_from_results_file = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        naivebayes_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_SVC.results')) as f:
         outstr = f.read()
-        svm_score_from_results_file = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_summary.tsv'), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
             if row['given_learner'] == 'LogisticRegression':
-                logistic_score_from_summary_file = float(row['score'])
+                logistic_summary_score = float(row['score'])
             elif row['given_learner'] == 'MultinomialNB':
-                naivebayes_score_from_summary_file = float(row['score'])
+                naivebayes_summary_score = float(row['score'])
             elif row['given_learner'] == 'SVC':
-                svm_score_from_summary_file = float(row['score'])
+                svm_summary_score = float(row['score'])
 
-    assert logistic_score_from_results_file == logistic_score_from_summary_file
-    assert naivebayes_score_from_results_file == naivebayes_score_from_summary_file
-    assert svm_score_from_results_file == svm_score_from_summary_file
+    for result_score, summary_score, learner in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
+        yield assert_equal, result_score, summary_score, learner
 
 
 # Test our kappa implementation based on Ben Hamner's unit tests.
