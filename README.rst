@@ -61,6 +61,15 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.9
+
+   +  Automatically generate a result summary file with all results for
+      experiment in one TSV.
+   +  Fixed bug where printing predictions to file would cause a crash with some
+      learners.
+   +  Run unit tests for Python 3.3 as well as 2.7.
+   +  More unit tests for increased coverage.
+
 -  v0.9.8
 
    +  Fixed crash due to trying to print name of grid objective which is now a
