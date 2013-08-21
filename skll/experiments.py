@@ -349,7 +349,7 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
                 learner.save(modelfile)
 
                 if grid_search:
-                    print('\tbest {} score: {}'.format(grid_objective,
+                    print('\tbest {} score: {}'.format(grid_objective.__name__,
                                                        round(best_score, 3)),
                           file=log_file)
 
@@ -694,6 +694,22 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # the components for the names of the results and summary files
     base_name_components = [train_set_name, test_set_name]
 
+    # add scaling information to name
+    if do_scale_features:
+        base_name_components.append('scaled')
+    else:
+        base_name_components.append('unscaled')
+
+    # add tuning information to name
+    if do_grid_search:
+        base_name_components.append('tuned')
+        base_name_components.append(grid_objective)
+    else:
+        base_name_components.append('untuned')
+
+    # add task name
+    base_name_components.append(task)
+
     # For each feature set
     for featureset, featureset_name in zip(given_featuresets,
                                            given_featureset_names):
@@ -701,24 +717,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         # and for each learner
         for learner_num, given_learner in enumerate(given_learners):
 
-            # add scaling information to name
-            if do_scale_features:
-                base_name_components.append('scaled')
-            else:
-                base_name_components.append('unscaled')
-
-            # add tuning information to name
-            if do_grid_search:
-                base_name_components.append('tuned')
-                base_name_components.append(grid_objective)
-            else:
-                base_name_components.append('untuned')
-
-            # add task name
-            base_name_components.append(task)
+            job_name_components = base_name_components[:]
 
             # for the individual job name, we need to add the feature set name and the learner name
-            job_name_components = base_name_components + [featureset_name, given_learner]
+            job_name_components.extend([featureset_name, given_learner])
             jobname = '_'.join(job_name_components)
 
             # change the prediction prefix to include the feature set

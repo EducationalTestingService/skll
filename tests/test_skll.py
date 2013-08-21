@@ -233,13 +233,13 @@ def make_summary_data():
         for i in range(num_train_examples):
             y = "dog" if i % 2 == 0 else "cat"
             ex_id = "{}{}".format(y, i)
-            x = {"f1": 1.0, "f2": -1.0, "f3": 1.0, "is_{}".format(y): 1.0}
+            x = {"f1": 1.0, "f2": 1.0, "f3": 1.0, "is_{}".format(y): 1.0}
             train_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
 
         for i in range(num_test_examples):
             y = "dog" if i % 2 == 0 else "cat"
             ex_id = "{}{}".format(y, i)
-            x = {"f1": 1.5, "f2": -2.0, "f3": 1.0, "is_{}".format(y): 1.0}
+            x = {"f1": 1.5, "f2": 2.0, "f3": 1.0, "is_{}".format(y): 1.0}
             test_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
 
 
@@ -253,9 +253,7 @@ def test_summary():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
     config_path = fill_in_config_paths(config_template_path, xval=False)
 
-    config_template_path = "test_summary.cfg"
-
-    with open(os.path.join(_my_dir, config_path)) as cfg:
+    with open(config_path, 'r') as cfg:
         run_configuration(cfg, local=True)
 
     with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_LogisticRegression.results')) as f:
