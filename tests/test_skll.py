@@ -229,7 +229,7 @@ def test_regression1():
 
     with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.predictions'), 'rb') as f:
         reader = csv.reader(f, dialect='excel-tab')
-        reader.next()
+        next(reader)
         pred = [float(row[1]) for row in reader]
 
         assert np.min(pred) >= np.min(y)
