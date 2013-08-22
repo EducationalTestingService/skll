@@ -26,6 +26,7 @@ Functions related to running experiments and parsing configuration files.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import csv
+import datetime
 import errno
 import itertools
 import json
@@ -33,12 +34,12 @@ import logging
 import math
 import os
 import re
-import numpy as np
 import sys
-import datetime
 from collections import defaultdict
+from io import open as open
 from multiprocessing import Pool
 
+import numpy as np
 import scipy.sparse as sp
 from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems  # Python 2/3
@@ -403,11 +404,11 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
 
         if task != 'predict':
             # write out the result dictionary to a json file
-            with open(results_json_path, 'w') as json_file:
+            with open(results_json_path, 'wb') as json_file:
                 json.dump(res, json_file)
 
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
-                      'w') as output_file:
+                      'wb') as output_file:
                 _print_fancy_output(res, output_file)
 
     return res
@@ -773,7 +774,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # write out the summary results file
     if task == 'cross-validate' or task == 'evaluate':
         summary_file_name = '_'.join(base_name_components) + '_summary.tsv'
-        with open(os.path.join(resultspath, summary_file_name), 'w') as output_file:
+        with open(os.path.join(resultspath, summary_file_name), 'wb') as output_file:
             _write_summary_file(result_json_paths, output_file)
 
 
