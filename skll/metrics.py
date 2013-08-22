@@ -114,10 +114,10 @@ def kappa(y_true, y_pred, weights=None):
     # Figure out normalized expected values
     min_rating = min(min(y_true), min(y_pred))
     max_rating = max(max(y_true), max(y_pred))
-    hist_true = (np.bincount(y_true)[min_rating: max_rating + 1] /
-                 num_scored_items)
-    hist_pred = (np.bincount(y_pred)[min_rating: max_rating + 1] /
-                 num_scored_items)
+    hist_true = np.bincount(y_true, minlength=(max_rating + 1))
+    hist_true = hist_true[min_rating: max_rating + 1] / num_scored_items
+    hist_pred = np.bincount(y_pred, minlength=(max_rating + 1))
+    hist_pred = hist_pred[min_rating: max_rating + 1] / num_scored_items
     expected = np.outer(hist_true, hist_pred)
 
     # Normalize observed array

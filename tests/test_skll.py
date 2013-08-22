@@ -330,7 +330,8 @@ def test_summary():
 # Test our kappa implementation based on Ben Hamner's unit tests.
 kappa_inputs = [([1, 2, 3], [1, 2, 3]),
                 ([1, 2, 1], [1, 2, 2]),
-                ([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2])]
+                ([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2]),
+                ([1, 2, 3, 3, 2, 1], [1, 1, 1, 2, 2, 2])]
 
 
 def check_kappa(y_true, y_pred, weights, expected):
@@ -338,21 +339,21 @@ def check_kappa(y_true, y_pred, weights, expected):
 
 
 def test_quadratic_weighted_kappa():
-    outputs = [1.0, 0.4, 0.75]
+    outputs = [1.0, 0.4, 0.75, 0.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, 'quadratic', expected
 
 
 def test_linear_weighted_kappa():
-    outputs = [1.0, 0.4, 0.65]
+    outputs = [1.0, 0.4, 0.65, 0.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, 'linear', expected
 
 
 def test_unweighted_kappa():
-    outputs = [1.0, 0.4, 0.5625]
+    outputs = [1.0, 0.4, 0.5625, 0.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, None, expected
