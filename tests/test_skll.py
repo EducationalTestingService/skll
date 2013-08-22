@@ -29,7 +29,7 @@ import csv
 import json
 import os
 import re
-from io import open as open
+from io import open
 
 import numpy as np
 import scipy.sparse as sp

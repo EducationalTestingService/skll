@@ -36,7 +36,7 @@ import os
 import re
 import sys
 from collections import defaultdict
-from io import open as open
+from io import open
 from multiprocessing import Pool
 
 import numpy as np
