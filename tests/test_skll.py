@@ -23,11 +23,13 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import csv
 import json
 import os
 import re
+from io import open as open
 
 import numpy as np
 import scipy.sparse as sp
@@ -115,7 +117,7 @@ def make_cv_folds_data():
 
 
 def fill_in_config_paths(config_template_path, task='cross-validate'):
-    with open(config_template_path, 'r') as config_template:
+    with open(config_template_path, 'rb') as config_template:
         config = _parse_config_file(config_template)
 
     config.set("Input", "train_location", os.path.join(_my_dir, 'train'))
@@ -138,7 +140,7 @@ def fill_in_config_paths(config_template_path, task='cross-validate'):
 
     new_config_path = '{}.cfg'.format(re.search(r'^(.*)\.template\.cfg', config_template_path).groups()[0])
 
-    with open(new_config_path, 'w') as new_config_file:
+    with open(new_config_path, 'wb') as new_config_file:
         config.write(new_config_file)
 
     return new_config_path
@@ -190,13 +192,13 @@ def make_regression_data():
     y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
 
     with open(os.path.join(_my_dir, 'train', 'test_regression1.jsonlines'), 'w') as f:
-        for i in range(num_examples / 2):
+        for i in range(int(num_examples / 2)):
             ex_id = "EXAMPLE{}".format(i)
             x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
             f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
 
     with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines'), 'w') as f:
-        for i in range(num_examples / 2, num_examples):
+        for i in range(int(num_examples / 2), num_examples):
             ex_id = "EXAMPLE{}".format(i)
             x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
             f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
@@ -227,7 +229,7 @@ def test_regression1():
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
         assert test_func(score)
 
-    with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.predictions'), 'rb') as f:
+    with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.predictions'), 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [float(row[1]) for row in reader]
