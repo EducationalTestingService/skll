@@ -388,7 +388,6 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
                                          '{}.results.json'.format(jobname))
 
         # create a list of dictionaries of the results information
-        learner_result_dicts = []
         learner_result_dict_base = {'train_set_name': train_set_name,
                                     'test_set_name': test_set_name,
                                     'featureset': featureset,
@@ -417,6 +416,10 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
 def _create_learner_result_dicts(task_results, grid_scores,
                                  learner_result_dict_base):
     res = []
+
+    if not task_results:
+        return res
+
     num_folds = len(task_results)
     accuracy_sum = 0.0
     score_sum = None
@@ -768,9 +771,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                               '{}'.format(result_dict))
 
     # write out the summary results file
-    summary_file_name = '_'.join(base_name_components) + '_summary.tsv'
-    with open(os.path.join(resultspath, summary_file_name), 'w') as output_file:
-        _write_summary_file(result_json_paths, output_file)
+    if task == 'cross-validate' or task == 'evaluate':
+        summary_file_name = '_'.join(base_name_components) + '_summary.tsv'
+        with open(os.path.join(resultspath, summary_file_name), 'w') as output_file:
+            _write_summary_file(result_json_paths, output_file)
 
 
 def _run_experiment_without_feature(arg_tuple):

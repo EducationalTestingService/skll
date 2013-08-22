@@ -114,19 +114,26 @@ def make_cv_folds_data():
                 csv_out.write('{},{}\n'.format(ex_id, k))
 
 
-def fill_in_config_paths(config_template_path, xval=True):
+def fill_in_config_paths(config_template_path, task='cross-validate'):
     with open(config_template_path, 'r') as config_template:
         config = _parse_config_file(config_template)
 
     config.set("Input", "train_location", os.path.join(_my_dir, 'train'))
-    for d in ['results', 'log', 'models', 'vocabs', 'predictions']:
+
+    to_fill_in = ['log', 'models', 'vocabs', 'predictions']
+
+    if task == 'evaluate' or task == 'cross-validate':
+        to_fill_in.append('results')
+
+    for d in to_fill_in:
         config.set("Output", d, os.path.join(_my_dir, 'output'))
 
-    if xval:
+    if task == 'cross-validate':
         cv_folds_location = config.get("Input", "cv_folds_location")
         if cv_folds_location:
             config.set("Input", "cv_folds_location", os.path.join(_my_dir, 'train', cv_folds_location))
-    else:
+
+    if task == 'predict' or task == 'evaluate':
         config.set("Input", "test_location", os.path.join(_my_dir, 'test'))
 
     new_config_path = '{}.cfg'.format(re.search(r'^(.*)\.template\.cfg', config_template_path).groups()[0])
@@ -173,7 +180,7 @@ def test_specified_cv_folds():
 
 
 def make_regression_data():
-    num_examples = 1000
+    num_examples = 2000
 
     np.random.seed(1234567890)
     f1 = np.random.rand(num_examples)
@@ -183,7 +190,13 @@ def make_regression_data():
     y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
 
     with open(os.path.join(_my_dir, 'train', 'test_regression1.jsonlines'), 'w') as f:
-        for i in range(num_examples):
+        for i in range(num_examples / 2):
+            ex_id = "EXAMPLE{}".format(i)
+            x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
+            f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
+
+    with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines'), 'w') as f:
+        for i in range(num_examples / 2, num_examples):
             ex_id = "EXAMPLE{}".format(i)
             x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
             f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
@@ -226,6 +239,31 @@ def test_regression1():
         assert abs(np.std(pred) - np.std(y)) < 0.1
 
 
+def test_predict():
+    '''
+    This tests whether predict task runs.
+    '''
+
+    _, y = make_regression_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
+    config_path = fill_in_config_paths(config_template_path, task='predict')
+
+    config_template_path = "test_predict.cfg"
+
+    with open(os.path.join(_my_dir, config_path)) as cfg:
+        run_configuration(cfg, local=True)
+
+    with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
+        inputs = [x for x in test_file]
+        assert len(inputs) == 1000
+
+    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_pearson_predict_test_regression1_RescaledRidge.predictions')) as outfile:
+        reader = csv.DictReader(outfile, dialect=csv.excel_tab)
+        predictions = [x['prediction'] for x in reader]
+        assert len(predictions) == len(inputs)
+
+
 def make_summary_data():
     num_train_examples = 500
     num_test_examples = 100
@@ -257,7 +295,7 @@ def test_summary():
     make_summary_data()
 
     config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
-    config_path = fill_in_config_paths(config_template_path, xval=False)
+    config_path = fill_in_config_paths(config_template_path, task='evaluate')
 
     with open(config_path, 'r') as cfg:
         run_configuration(cfg, local=True)
