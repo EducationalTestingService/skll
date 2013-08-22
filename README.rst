@@ -61,6 +61,9 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.10
+   +  Fixed bug introduced in v0.9.9 that broke "predict" mode.
+
 -  v0.9.9
 
    +  Automatically generate a result summary file with all results for
