@@ -39,11 +39,12 @@ from collections import defaultdict
 from io import open
 from multiprocessing import Pool
 
+import configparser  # Backported version from Python 3
 import numpy as np
 import scipy.sparse as sp
 from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems  # Python 2/3
-from six.moves import configparser, zip
+from six.moves import zip
 from sklearn.metrics import SCORERS
 
 from skll.data import ExamplesTuple, load_examples
@@ -149,12 +150,12 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
 
         print('Objective function score = {}'.format(lrd['score']),
               file=output_file)
-        print(file=output_file)
+        print('', file=output_file)
 
 
-def _parse_config_file(config_file):
+def _parse_config_file(config_path):
     '''
-    Parses a given SKLL experiment configuration file.
+    Parses a SKLL experiment configuration file with the given path.
     '''
     # initialize config parser
     config = configparser.ConfigParser({'test_location': '',
@@ -176,11 +177,7 @@ def _parse_config_file(config_file):
                                         'suffix': '',
                                         'classifiers': '',
                                         'tsv_label': 'y'})
-    if sys.version_info[:2] >= (3, 2):
-        config.read_file(config_file)
-    else:
-        config.readfp(config_file)
-
+    config.read(config_path)
     return config
 
 
@@ -404,11 +401,12 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
 
         if task != 'predict':
             # write out the result dictionary to a json file
-            with open(results_json_path, 'wb') as json_file:
+            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+            with open(results_json_path, file_mode) as json_file:
                 json.dump(res, json_file)
 
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
-                      'wb') as output_file:
+                      'w') as output_file:
                 _print_fancy_output(res, output_file)
 
     return res
@@ -542,7 +540,7 @@ def _load_cv_folds(cv_folds_location):
     Loads CV folds from a CSV file with columns for example ID and fold ID
     (and a header).
     '''
-    with open(cv_folds_location, 'rb') as f:
+    with open(cv_folds_location, 'r') as f:
         reader = csv.reader(f)
         next(reader)  # discard the header
         res = {}
@@ -556,6 +554,19 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                       hosts=None):
     '''
     Takes a configuration file and runs the specified jobs on the grid.
+
+    :param config_path: Path to the configuration file we would like to use.
+    :type config_path: str
+    :param local: Should this be run locally instead of on the cluster?
+    :type local: bool
+    :param overwrite: If the model files already exist, should we overwrite
+                      them instead of re-using them?
+    :type overwrite: bool
+    :param queue: The DRMAA queue to use if we're running on the cluster.
+    :type queue: str
+    :param hosts: If running on the cluster, these are the machines we should
+                  use.
+    :type hosts: list of str
     '''
     # Read configuration
     config = _parse_config_file(config_file)
@@ -774,7 +785,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # write out the summary results file
     if task == 'cross-validate' or task == 'evaluate':
         summary_file_name = '_'.join(base_name_components) + '_summary.tsv'
-        with open(os.path.join(resultspath, summary_file_name), 'wb') as output_file:
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file)
 
 
@@ -820,22 +832,34 @@ def _run_experiment_without_feature(arg_tuple):
     new_cfg_path = "{}_minus_{}.cfg".format(m.groups()[0], feature_type) \
                    if feature_type else "{}_all.cfg".format(m.groups()[0])
 
-    with open(new_cfg_path, 'w') as new_config_file:
+    with open(new_cfg_path, 'wb') as new_config_file:
         config.write(new_config_file)
 
-    with open(new_cfg_path, 'r') as new_config_file:
-        run_configuration(new_config_file, local=local, queue=queue,
-                          hosts=machines, overwrite=overwrite)
+    run_configuration(new_cfg_path, local=local, queue=queue,
+                      hosts=machines, overwrite=overwrite)
 
 
-def run_ablation(config_file, local=False, overwrite=True, queue='all.q',
+def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
                  hosts=None):
     '''
     Takes a configuration file and runs repeated experiments where each
     feature set has been removed from the configuration.
+
+    :param config_path: Path to the configuration file we would like to use.
+    :type config_path: str
+    :param local: Should this be run locally instead of on the cluster?
+    :type local: bool
+    :param overwrite: If the model files already exist, should we overwrite
+                      them instead of re-using them?
+    :type overwrite: bool
+    :param queue: The DRMAA queue to use if we're running on the cluster.
+    :type queue: str
+    :param hosts: If running on the cluster, these are the machines we should
+                  use.
+    :type hosts: list of str
     '''
     # Read configuration
-    config = _parse_config_file(config_file)
+    config = _parse_config_file(config_path)
 
     given_featuresets = json.loads(_fix_json(config.get("Input",
                                                         "featuresets")))
@@ -855,7 +879,8 @@ def run_ablation(config_file, local=False, overwrite=True, queue='all.q',
     # for each feature file, make a copy of the config file
     # with all but that feature, and run the jobs.
     arg_tuples = ((feature_type, given_features, given_featureset_name,
-                   config, local, queue, config_file.name, hosts, overwrite)
+                   config, local, queue, os.path.basename(config_path),
+                   hosts, overwrite)
                   for feature_type in given_features + [None])
 
     if local:

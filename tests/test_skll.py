@@ -117,8 +117,7 @@ def make_cv_folds_data():
 
 
 def fill_in_config_paths(config_template_path, task='cross-validate'):
-    with open(config_template_path, 'rb') as config_template:
-        config = _parse_config_file(config_template)
+    config = _parse_config_file(config_template_path)
 
     config.set("Input", "train_location", os.path.join(_my_dir, 'train'))
 
@@ -140,7 +139,7 @@ def fill_in_config_paths(config_template_path, task='cross-validate'):
 
     new_config_path = '{}.cfg'.format(re.search(r'^(.*)\.template\.cfg', config_template_path).groups()[0])
 
-    with open(new_config_path, 'wb') as new_config_file:
+    with open(new_config_path, 'w') as new_config_file:
         config.write(new_config_file)
 
     return new_config_path
@@ -154,8 +153,7 @@ def test_specified_cv_folds():
     for config_template_file, test_func, grid_size in [('test_cv_folds1.template.cfg', lambda x: x < 0.6, 3), ('test_cv_folds2.template.cfg', lambda x: x > 0.95, 10)]:
         config_path = fill_in_config_paths(os.path.join(_my_dir, 'configs', config_template_file))
 
-        with open(os.path.join(_my_dir, config_path)) as config:
-            run_configuration(config, local=True)
+        run_configuration(os.path.join(_my_dir, config_path), local=True)
 
         with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_accuracy_cross-validate_test_cv_folds1_LogisticRegression.results')) as f:
             # check held out scores
@@ -220,8 +218,7 @@ def test_regression1():
     config_template_path = "test_regression1.cfg"
     test_func = lambda x: x > 0.7
 
-    with open(os.path.join(_my_dir, config_path)) as cfg:
-        run_configuration(cfg, local=True)
+    run_configuration(os.path.join(_my_dir, config_path), local=True)
 
     with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.results')) as f:
         # check held out scores
@@ -253,8 +250,7 @@ def test_predict():
 
     config_template_path = "test_predict.cfg"
 
-    with open(os.path.join(_my_dir, config_path)) as cfg:
-        run_configuration(cfg, local=True)
+    run_configuration(os.path.join(_my_dir, config_path), local=True)
 
     with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
         inputs = [x for x in test_file]
@@ -299,8 +295,7 @@ def test_summary():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
     config_path = fill_in_config_paths(config_template_path, task='evaluate')
 
-    with open(config_path, 'r') as cfg:
-        run_configuration(cfg, local=True)
+    run_configuration(config_path, local=True)
 
     with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_LogisticRegression.results')) as f:
         outstr = f.read()
