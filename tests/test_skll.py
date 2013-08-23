@@ -325,14 +325,14 @@ def test_summary():
 def make_sparse_data():
 
     with open(os.path.join(_my_dir, 'train', 'test_sparse.jsonlines'), 'w') as train_json, open(os.path.join(_my_dir, 'test', 'test_sparse.jsonlines'), 'w') as test_json:
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             y = "dog" if i % 2 == 0 else "cat"
             ex_id = "{}{}".format(y, i)
             # note that f1 and f5 are missing in all instances but f4 is not
             x = {"f2": i+1, "f3": i+2, "f4": i+5}
             train_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
 
-        for i in xrange(1, 51):
+        for i in range(1, 51):
             y = "dog" if i % 2 == 0 else "cat"
             ex_id = "{}{}".format(y, i)
             # f1 and f5 are not missing in any instances here but f4 is
