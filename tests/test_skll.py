@@ -248,8 +248,6 @@ def test_predict():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
     config_path = fill_in_config_paths(config_template_path, task='predict')
 
-    config_template_path = "test_predict.cfg"
-
     run_configuration(os.path.join(_my_dir, config_path), local=True)
 
     with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
@@ -323,6 +321,41 @@ def test_summary():
     for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
         yield check_summary_score, result_score, summary_score, learner_name
 
+
+def make_sparse_data():
+
+    with open(os.path.join(_my_dir, 'train', 'test_sparse.jsonlines'), 'w') as train_json, open(os.path.join(_my_dir, 'test', 'test_sparse.jsonlines'), 'w') as test_json:
+        for i in xrange(1, 101):
+            y = "dog" if i % 2 == 0 else "cat"
+            ex_id = "{}{}".format(y, i)
+            # note that f1 and f5 are missing in all instances but f4 is not
+            x = {"f2": i+1, "f3": i+2, "f4": i+5}
+            train_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+
+        for i in xrange(1, 51):
+            y = "dog" if i % 2 == 0 else "cat"
+            ex_id = "{}{}".format(y, i)
+            # f1 and f5 are not missing in any instances here but f4 is
+            x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
+            test_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+
+
+def test_sparse_predict():
+    '''
+    Test to validate whether predict works with sparse data
+    '''
+    make_sparse_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_sparse.template.cfg')
+    config_path = fill_in_config_paths(config_template_path, task='evaluate')
+
+    run_configuration(config_path, local=True)
+
+    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_untuned_evaluate_test_sparse_LogisticRegression.results')) as f:
+        outstr = f.read()
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
+    assert_almost_equal(logistic_result_score, 0.5)
 
 # Test our kappa implementation based on Ben Hamner's unit tests.
 kappa_inputs = [([1, 2, 3], [1, 2, 3]),
