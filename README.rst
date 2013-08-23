@@ -61,6 +61,21 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.11
+
+   +  Fixed all known remaining compatibility issues with Python 3.
+   +  Fixed bug in `skll.metrics.kappa` which would raise an exception if full
+      range of ratings was not seen in both `y_true` and `y_pred`. Also added a
+      unit test to prevent future regressions.
+   +  Added missing configuration file that would cause a unit test to fail.
+   +  Slightly refactored `skll.Learner._create_estimator` to make it a lot
+      simpler to add new learners/estimators in the future.
+   +  Fixed a bug in handling of sparse matrices that would cause a crash if
+      the number of features in the training and the test set were not the same.
+      Also added a corresponding unit test to prevent future regressions.
+   +  We now require the backported configparser module for Python 2.7 to make
+      maintaining compatibility with both 2.x and 3.x a lot easier.
+
 -  v0.9.10
 
    +  Fixed bug introduced in v0.9.9 that broke "predict" mode.

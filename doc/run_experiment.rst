@@ -146,11 +146,15 @@ Input
         *   *GradientBoostingClassifier (gradient)*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`_
         *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
         *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`_
-        *   *RescaledRidge (rescaled_ridge)*: Ridge Regression, with predictions rescaled and
-            constrained to better match the training set.
-        *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_ with a linear kernel.
-        *   *RescaledSVR (rescaled_svr_linear)*: Linear SVR, with predictions rescaled and
-            constrained to better match the training set.
+        *   *RescaledRidge (rescaled_ridge)*: Ridge Regression, with predictions
+            rescaled and constrained to better match the training set.
+        *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
+            with a linear kernel. Can use other kernels by specifying a 'kernel'
+            fixed parameter in the ``fixed_parameters`` list.
+        *   *RescaledSVR (rescaled_svr_linear)*: Linear SVR, with predictions
+            rescaled and constrained to better match the training set. Can use
+            other kernels by specifying a 'kernel' fixed parameter in the
+            ``fixed_parameters`` list.
 
     **fixed_parameters** *(Optional)*
         List of dicts containing parameters you want to have fixed for each

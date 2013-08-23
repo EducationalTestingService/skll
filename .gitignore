@@ -10,15 +10,14 @@ __pycache__
 .DS_Store
 .coverage
 
-tests/test_cv_folds1.cfg
-tests/test_cv_folds1.csv
-tests/test_cv_folds1.jsonlines
-tests/test_cv_folds2.cfg
-tests/test_regression1.cfg
-tests/test_regression1.jsonlines
-tests/tests_cv_test_cv_folds1_LogisticRegression_unscaled_tuned_accuracy_cross-validate.log
-tests/tests_cv_test_cv_folds1_LogisticRegression_unscaled_tuned_accuracy_cross-validate.predictions
-tests/tests_cv_test_cv_folds1_LogisticRegression_unscaled_tuned_accuracy_cross-validate.results
-tests/tests_cv_test_regression1_RescaledRidge_unscaled_tuned_pearson_cross-validate.log
-tests/tests_cv_test_regression1_RescaledRidge_unscaled_tuned_pearson_cross-validate.predictions
-tests/tests_cv_test_regression1_RescaledRidge_unscaled_tuned_pearson_cross-validate.results
+tests/configs/test_cv_folds1.cfg
+tests/configs/test_cv_folds2.cfg
+tests/configs/test_predict.cfg
+tests/configs/test_regression1.cfg
+tests/configs/test_summary.cfg
+tests/output/
+tests/test/
+tests/train/test_cv_folds1.csv
+tests/train/test_cv_folds1.jsonlines
+tests/train/test_regression1.jsonlines
+tests/train/test_summary.jsonlines

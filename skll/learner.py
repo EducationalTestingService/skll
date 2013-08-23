@@ -42,19 +42,20 @@ from six.moves import zip
 from sklearn.base import BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.cross_validation import LeaveOneLabelOut
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.feature_selection import SelectKBest
 from sklearn.grid_search import GridSearchCV
-from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support, SCORERS)
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.svm.base import BaseLibLinear
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle as sk_shuffle
+# sklearn models: these are used indirectly, so ignore linting messages
+from sklearn.ensemble import (GradientBoostingClassifier,
+                              GradientBoostingRegressor, RandomForestClassifier)
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import LinearSVC, SVC, SVR
+from sklearn.tree import DecisionTreeClassifier
 
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS
@@ -62,12 +63,31 @@ from skll.version import VERSION
 
 
 # Constants #
+_DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
+                                                      100.0]}],
+                        'LinearSVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'SVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'MultinomialNB': [{'alpha': [0.1, 0.25, 0.5, 0.75,
+                                                     1.0]}],
+                        'DecisionTreeClassifier': [{'max_features': ["auto",
+                                                                     None]}],
+                        'RandomForestClassifier': [{'max_depth': [1, 5, 10,
+                                                                  None]}],
+                        'GradientBoostingClassifier': [{'max_depth': [1, 3, 5],
+                                                        'n_estimators': [500]}],
+                        'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'RescaledRidge': [{'alpha': [0.01, 0.1, 1.0, 10.0,
+                                                     100.0]}],
+                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'RescaledSVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'GradientBoostingRegressor': [{'max_depth': [1, 3, 5],
+                                                       'n_estimators': [500]}]}
+_REGRESSION_MODELS = frozenset(['Ridge', 'RescaledRidge', 'SVR',
+                                'RescaledSVR', 'GradientBoostingRegressor'])
 _REQUIRES_DENSE = frozenset(['MultinomialNB', 'RandomForestClassifier',
                              'GradientBoostingClassifier',
                              'DecisionTreeClassifier',
                              'GradientBoostingRegressor'])
-_REGRESSION_MODELS = frozenset(['Ridge', 'RescaledRidge', 'SVR',
-                                'RescaledSVR', 'GradientBoostingRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
@@ -331,6 +351,9 @@ class Learner(object):
                                 'GradientBoostingRegressor'}:
             self._model_kwargs['random_state'] = 123456789
 
+        if self._model_type in {'SVR', 'RescaledSVR'}:
+            self._model_kwargs['kernel'] = b'linear'
+
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
 
@@ -398,8 +421,9 @@ class Learner(object):
 
             label_list = self.label_list
 
-            # if there are only two classes, scikit-learn will only have one set
-            # of parameters and they will be associated with label 1 (not 0)
+            # if there are only two classes, scikit-learn will only have one
+            # set of parameters and they will be associated with label 1 (not
+            # 0)
             if len(self.label_list) == 2:
                 label_list = self.label_list[-1:]
 
@@ -451,45 +475,10 @@ class Learner(object):
         '''
         estimator = None
         default_param_grid = None
-
-        if self._model_type == 'LogisticRegression':
-            estimator = LogisticRegression(**self._model_kwargs)
-            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'LinearSVC':  # No predict_proba support
-            estimator = LinearSVC(**self._model_kwargs)
-            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'SVC':
-            estimator = SVC(**self._model_kwargs)
-            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'MultinomialNB':
-            estimator = MultinomialNB(**self._model_kwargs)
-            default_param_grid = [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
-        elif self._model_type == 'DecisionTreeClassifier':
-            estimator = DecisionTreeClassifier(**self._model_kwargs)
-            default_param_grid = [{'max_features': ["auto", None]}]
-        elif self._model_type == 'RandomForestClassifier':
-            estimator = RandomForestClassifier(**self._model_kwargs)
-            default_param_grid = [{'max_depth': [1, 5, 10, None]}]
-        elif self._model_type == 'GradientBoostingClassifier':
-            estimator = GradientBoostingClassifier(**self._model_kwargs)
-            default_param_grid = [{'max_depth': [1, 3, 5],
-                                   'n_estimators': [500]}]
-        elif self._model_type == 'Ridge':
-            estimator = Ridge(**self._model_kwargs)
-            default_param_grid = [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'RescaledRidge':
-            estimator = RescaledRidge(**self._model_kwargs)
-            default_param_grid = [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'SVR':
-            estimator = SVR(kernel=b'linear', **self._model_kwargs)
-            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'RescaledSVR':
-            estimator = RescaledSVR(kernel=b'linear', **self._model_kwargs)
-            default_param_grid = [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-        elif self._model_type == 'GradientBoostingRegressor':
-            estimator = GradientBoostingRegressor(**self._model_kwargs)
-            default_param_grid = [{'max_depth': [1, 3, 5],
-                                   'n_estimators': [500]}]
+        if self._model_type in _DEFAULT_PARAM_GRIDS:
+            # This crazy looking line creates an estimator based on a string
+            estimator = globals()[self._model_type](**self._model_kwargs)
+            default_param_grid = _DEFAULT_PARAM_GRIDS[self._model_type]
         else:
             raise ValueError(("{} is not a valid learner " +
                               "type.").format(self._model_type))
@@ -791,12 +780,13 @@ class Learner(object):
         # Need to do some transformations so the features are in the right
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
-        if self.feat_vectorizer != examples.feat_vectorizer:
-            xtest = self.feat_vectorizer.transform(
-                examples.feat_vectorizer.inverse_transform(examples.features))
+        if self.feat_vectorizer == examples.feat_vectorizer:
+            xtest = examples.features
+        else:
+            xtest = self.feat_vectorizer.transform(examples.feat_vectorizer.inverse_transform(examples.features))
 
         # filter features based on those selected from training set
-        xtest = self.feat_selector.transform(examples.features)
+        xtest = self.feat_selector.transform(xtest)
 
         # Convert to dense if necessary
         if self._use_dense_features:

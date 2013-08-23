@@ -23,11 +23,13 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import csv
 import json
 import os
 import re
+from io import open
 
 import numpy as np
 import scipy.sparse as sp
@@ -115,8 +117,7 @@ def make_cv_folds_data():
 
 
 def fill_in_config_paths(config_template_path, task='cross-validate'):
-    with open(config_template_path, 'r') as config_template:
-        config = _parse_config_file(config_template)
+    config = _parse_config_file(config_template_path)
 
     config.set("Input", "train_location", os.path.join(_my_dir, 'train'))
 
@@ -152,8 +153,7 @@ def test_specified_cv_folds():
     for config_template_file, test_func, grid_size in [('test_cv_folds1.template.cfg', lambda x: x < 0.6, 3), ('test_cv_folds2.template.cfg', lambda x: x > 0.95, 10)]:
         config_path = fill_in_config_paths(os.path.join(_my_dir, 'configs', config_template_file))
 
-        with open(os.path.join(_my_dir, config_path)) as config:
-            run_configuration(config, local=True)
+        run_configuration(os.path.join(_my_dir, config_path), local=True)
 
         with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_accuracy_cross-validate_test_cv_folds1_LogisticRegression.results')) as f:
             # check held out scores
@@ -190,13 +190,13 @@ def make_regression_data():
     y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
 
     with open(os.path.join(_my_dir, 'train', 'test_regression1.jsonlines'), 'w') as f:
-        for i in range(num_examples / 2):
+        for i in range(int(num_examples / 2)):
             ex_id = "EXAMPLE{}".format(i)
             x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
             f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
 
     with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines'), 'w') as f:
-        for i in range(num_examples / 2, num_examples):
+        for i in range(int(num_examples / 2), num_examples):
             ex_id = "EXAMPLE{}".format(i)
             x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
             f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
@@ -218,8 +218,7 @@ def test_regression1():
     config_template_path = "test_regression1.cfg"
     test_func = lambda x: x > 0.7
 
-    with open(os.path.join(_my_dir, config_path)) as cfg:
-        run_configuration(cfg, local=True)
+    run_configuration(os.path.join(_my_dir, config_path), local=True)
 
     with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.results')) as f:
         # check held out scores
@@ -227,9 +226,9 @@ def test_regression1():
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
         assert test_func(score)
 
-    with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.predictions'), 'rb') as f:
+    with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.predictions'), 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
-        reader.next()
+        next(reader)
         pred = [float(row[1]) for row in reader]
 
         assert np.min(pred) >= np.min(y)
@@ -249,10 +248,7 @@ def test_predict():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
     config_path = fill_in_config_paths(config_template_path, task='predict')
 
-    config_template_path = "test_predict.cfg"
-
-    with open(os.path.join(_my_dir, config_path)) as cfg:
-        run_configuration(cfg, local=True)
+    run_configuration(os.path.join(_my_dir, config_path), local=True)
 
     with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
         inputs = [x for x in test_file]
@@ -297,8 +293,7 @@ def test_summary():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
     config_path = fill_in_config_paths(config_template_path, task='evaluate')
 
-    with open(config_path, 'r') as cfg:
-        run_configuration(cfg, local=True)
+    run_configuration(config_path, local=True)
 
     with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_LogisticRegression.results')) as f:
         outstr = f.read()
@@ -327,10 +322,46 @@ def test_summary():
         yield check_summary_score, result_score, summary_score, learner_name
 
 
+def make_sparse_data():
+
+    with open(os.path.join(_my_dir, 'train', 'test_sparse.jsonlines'), 'w') as train_json, open(os.path.join(_my_dir, 'test', 'test_sparse.jsonlines'), 'w') as test_json:
+        for i in range(1, 101):
+            y = "dog" if i % 2 == 0 else "cat"
+            ex_id = "{}{}".format(y, i)
+            # note that f1 and f5 are missing in all instances but f4 is not
+            x = {"f2": i+1, "f3": i+2, "f4": i+5}
+            train_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+
+        for i in range(1, 51):
+            y = "dog" if i % 2 == 0 else "cat"
+            ex_id = "{}{}".format(y, i)
+            # f1 and f5 are not missing in any instances here but f4 is
+            x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
+            test_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+
+
+def test_sparse_predict():
+    '''
+    Test to validate whether predict works with sparse data
+    '''
+    make_sparse_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_sparse.template.cfg')
+    config_path = fill_in_config_paths(config_template_path, task='evaluate')
+
+    run_configuration(config_path, local=True)
+
+    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_untuned_evaluate_test_sparse_LogisticRegression.results')) as f:
+        outstr = f.read()
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
+    assert_almost_equal(logistic_result_score, 0.5)
+
 # Test our kappa implementation based on Ben Hamner's unit tests.
 kappa_inputs = [([1, 2, 3], [1, 2, 3]),
                 ([1, 2, 1], [1, 2, 2]),
-                ([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2])]
+                ([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2]),
+                ([1, 2, 3, 3, 2, 1], [1, 1, 1, 2, 2, 2])]
 
 
 def check_kappa(y_true, y_pred, weights, expected):
@@ -338,21 +369,21 @@ def check_kappa(y_true, y_pred, weights, expected):
 
 
 def test_quadratic_weighted_kappa():
-    outputs = [1.0, 0.4, 0.75]
+    outputs = [1.0, 0.4, 0.75, 0.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, 'quadratic', expected
 
 
 def test_linear_weighted_kappa():
-    outputs = [1.0, 0.4, 0.65]
+    outputs = [1.0, 0.4, 0.65, 0.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, 'linear', expected
 
 
 def test_unweighted_kappa():
-    outputs = [1.0, 0.4, 0.5625]
+    outputs = [1.0, 0.4, 0.5625, 0.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, None, expected
