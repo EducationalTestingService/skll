@@ -154,7 +154,6 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                                                                           lrd['descriptive']['actual'][desc_stat],
                                                                           lrd['descriptive']['predicted'][desc_stat]), file=output_file)
             print('Pearson:{: f}'.format(lrd['comparative']['pearson']), file=output_file)
-            # print('QW Kappa: {}'.format(lrd['comparative']['qwkappa']), file=output_file)
         print('Objective function score = {}'.format(lrd['score']),
               file=output_file)
         print('', file=output_file)
