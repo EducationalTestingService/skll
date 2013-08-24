@@ -728,7 +728,15 @@ class Learner(object):
             grid_score = SCORERS[grid_objective]._score_func(ytest, yhat)
 
         if self._model_type in _REGRESSION_MODELS:
-            res = (None, None, None, self._model.get_params(), grid_score)
+            result_dict = {'descriptive': defaultdict(dict), 'comparative': {}}
+            for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
+                result_dict['descriptive'][table_label]['min'] = min(y)
+                result_dict['descriptive'][table_label]['max'] = max(y)
+                result_dict['descriptive'][table_label]['avg'] = np.mean(y)
+                result_dict['descriptive'][table_label]['std'] = np.std(y)
+            result_dict['comparative']['pearson'] = SCORERS['pearson']._score_func(ytest, yhat)
+            # result_dict['comparative']['qwkappa'] = SCORERS['quadratic_weighted_kappa']._score_func(ytest, yhat)
+            res = (None, None, result_dict, self._model.get_params(), grid_score)
         else:
             # compute the confusion matrix
             num_labels = len(self.label_list)

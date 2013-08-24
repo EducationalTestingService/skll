@@ -109,7 +109,7 @@ def _write_summary_file(result_json_paths, output_file):
             with open(json_path, 'r') as json_file:
                 learner_result_dicts.extend(json.load(json_file))
 
-    header = sorted(set(learner_result_dicts[0].keys()) - {'result_table'})
+    header = sorted(set(learner_result_dicts[0].keys()) - {'result_table', 'descriptive', 'comparative'})
     writer = csv.DictWriter(output_file, header, extrasaction='ignore',
                             dialect=csv.excel_tab)
     writer.writeheader()
@@ -147,7 +147,14 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
             print(lrd['result_table'], file=output_file)
             print('Accuracy = {}'.format(lrd['accuracy']),
                   file=output_file)
-
+        if 'descriptive' in lrd:
+            print('Descriptive statistics:', file=output_file)
+            for desc_stat in ['min', 'max', 'avg', 'std']:
+                print(' {}: {: .4f} (actual), {: .4f} (predicted)'.format(desc_stat.title(),
+                                                                          lrd['descriptive']['actual'][desc_stat],
+                                                                          lrd['descriptive']['predicted'][desc_stat]), file=output_file)
+            print('Pearson:{: f}'.format(lrd['comparative']['pearson']), file=output_file)
+            # print('QW Kappa: {}'.format(lrd['comparative']['qwkappa']), file=output_file)
         print('Objective function score = {}'.format(lrd['score']),
               file=output_file)
         print('', file=output_file)
@@ -473,6 +480,11 @@ def _create_learner_result_dicts(task_results, grid_scores,
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = fold_accuracy
             accuracy_sum += fold_accuracy
+
+        # if there is no confusion matrix, then we must be dealing
+        # with a regression model
+        else:
+            learner_result_dict.update(result_dict)
 
         if score is not None:
             if score_sum is None:
