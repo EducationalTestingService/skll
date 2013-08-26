@@ -61,6 +61,16 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.12
+
+   +  Fixed serious issue where merging feature sets was not working correctly.
+      **All experiments conducted using feature set merging** (i.e., where you
+      specified a list of feature files and had them merged into one set for
+      training/testing) **should be considered invalid**. In general, your
+      results should previously have been poor and now should be much better.
+   +  Added more verbose regression output including descriptive statistics
+      and Pearson correlation.
+
 -  v0.9.11
 
    +  Fixed all known remaining compatibility issues with Python 3.

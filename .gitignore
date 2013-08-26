@@ -23,3 +23,4 @@ tests/train/test_regression1.jsonlines
 tests/train/test_summary.jsonlines
 tests/configs/test_sparse.cfg
 tests/train/test_sparse.jsonlines
+tests/train/test_merging/
