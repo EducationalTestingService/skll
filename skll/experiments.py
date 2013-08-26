@@ -109,7 +109,7 @@ def _write_summary_file(result_json_paths, output_file):
             with open(json_path, 'r') as json_file:
                 learner_result_dicts.extend(json.load(json_file))
 
-    header = sorted(set(learner_result_dicts[0].keys()) - {'result_table'})
+    header = sorted(set(learner_result_dicts[0].keys()) - {'result_table', 'descriptive', 'comparative'})
     writer = csv.DictWriter(output_file, header, extrasaction='ignore',
                             dialect=csv.excel_tab)
     writer.writeheader()
@@ -147,7 +147,13 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
             print(lrd['result_table'], file=output_file)
             print('Accuracy = {}'.format(lrd['accuracy']),
                   file=output_file)
-
+        if 'descriptive' in lrd:
+            print('Descriptive statistics:', file=output_file)
+            for desc_stat in ['min', 'max', 'avg', 'std']:
+                print(' {}: {: .4f} (actual), {: .4f} (predicted)'.format(desc_stat.title(),
+                                                                          lrd['descriptive']['actual'][desc_stat],
+                                                                          lrd['descriptive']['predicted'][desc_stat]), file=output_file)
+            print('Pearson:{: f}'.format(lrd['comparative']['pearson']), file=output_file)
         print('Objective function score = {}'.format(lrd['score']),
               file=output_file)
         print('', file=output_file)
@@ -237,9 +243,12 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
                     set(feat_vectorizer.get_feature_names())):
                 raise ValueError('Two feature files have the same feature!')
 
+            num_merged = merged_features.shape[1]
             merged_features = sp.hstack([merged_features, features], 'csr')
-            num_merged = merged_features.shape[0]
-            for feat_name, index in feat_vectorizer.vocabulary_.items():
+
+            # dictvectorizer sorts the vocabularies within each file
+            for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
+                                           key=lambda x: x[1]):
                 merged_vectorizer.vocabulary_[feat_name] = index + num_merged
                 merged_vectorizer.feature_names_.append(feat_name)
         else:
@@ -266,10 +275,6 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
     if merged_classes is None:
         raise ValueError('No feature files in feature set contain class' +
                          'labels!')
-
-    # Sort merged_features.feature_names_, because that happens whenever the
-    # list is modified internally by DictVectorizer
-    merged_vectorizer.feature_names_.sort()
 
     return ExamplesTuple(merged_ids, merged_classes, merged_features,
                          merged_vectorizer)
@@ -473,6 +478,11 @@ def _create_learner_result_dicts(task_results, grid_scores,
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = fold_accuracy
             accuracy_sum += fold_accuracy
+
+        # if there is no confusion matrix, then we must be dealing
+        # with a regression model
+        else:
+            learner_result_dict.update(result_dict)
 
         if score is not None:
             if score_sum is None:
