@@ -29,6 +29,7 @@ import csv
 import json
 import os
 import re
+from collections import OrderedDict
 from io import open
 
 import numpy as np
@@ -357,6 +358,7 @@ def test_sparse_predict():
 
     assert_almost_equal(logistic_result_score, 0.5)
 
+
 # Test our kappa implementation based on Ben Hamner's unit tests.
 kappa_inputs = [([1, 2, 3], [1, 2, 3]),
                 ([1, 2, 1], [1, 2, 2]),
@@ -387,3 +389,63 @@ def test_unweighted_kappa():
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, None, expected
+
+
+# Tests related to loading featuresets and merging them
+def make_merging_data(num_feat_files):
+    num_train_examples = 500
+    num_feats_per_file = 17
+
+    np.random.seed(1234567890)
+
+    merge_dir = os.path.join(_my_dir, 'train', 'test_merging')
+    if not os.path.exists(merge_dir):
+        os.makedirs(merge_dir)
+
+    # Create dict list we will write files from
+    examples = []
+    for j in range(num_train_examples):
+        y = "dog" if j % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, j)
+        x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num in
+             range(num_feat_files * num_feats_per_file)}
+        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        examples.append({"y": y, "id": ex_id, "x": x})
+
+    # Unmerged
+    for i in range(num_feat_files):
+        with open(os.path.join(merge_dir, '{}.jsonlines'.format(i)), 'w') as train_json:
+            for example in examples:
+                feat_num = i * num_feats_per_file
+                x = {"f{:03d}".format(feat_num + j): example["x"]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
+                train_json.write(json.dumps({"y": example["y"], "id": example["id"], "x": x}, sort_keys=True) + '\n')
+
+    # Merged
+    with open(os.path.join(merge_dir, 'all.jsonlines'), 'w') as train_json:
+        for example in examples:
+            train_json.write(json.dumps(example, sort_keys=True) + '\n')
+
+def test_load_featureset():
+    num_feat_files = 5
+
+    # Create test data
+    make_merging_data(num_feat_files)
+
+    # Load unmerged data and merge it
+    dirpath = os.path.join(_my_dir, 'train', 'test_merging')
+    suffix = '.jsonlines'
+    featureset = [str(i) for i in range(num_feat_files)]
+    merged_examples = _load_featureset(dirpath, featureset, suffix)
+
+    # Load pre-merged data
+    featureset = ['all']
+    premerged_examples = _load_featureset(dirpath, featureset, suffix)
+
+    assert np.all(merged_examples.ids == premerged_examples.ids)
+    assert np.all(merged_examples.classes == premerged_examples.classes)
+    assert np.all(merged_examples.features.todense() ==
+                  premerged_examples.features.todense())
+    eq_(merged_examples.feat_vectorizer.feature_names_,
+        premerged_examples.feat_vectorizer.feature_names_)
+    eq_(merged_examples.feat_vectorizer.vocabulary_,
+        premerged_examples.feat_vectorizer.vocabulary_)
