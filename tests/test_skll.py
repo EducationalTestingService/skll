@@ -129,6 +129,9 @@ def fill_in_config_paths(config_template_path, task='cross-validate'):
     test_dir = os.path.join(_my_dir, 'test')
     if not os.path.exists(test_dir):
         os.makedirs(test_dir)
+    output_dir = os.path.join(_my_dir, 'output')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     config = _parse_config_file(config_template_path)
 
@@ -140,7 +143,7 @@ def fill_in_config_paths(config_template_path, task='cross-validate'):
         to_fill_in.append('results')
 
     for d in to_fill_in:
-        config.set("Output", d, os.path.join(_my_dir, 'output'))
+        config.set("Output", d, os.path.join(output_dir))
 
     if task == 'cross-validate':
         cv_folds_location = config.get("Input", "cv_folds_location")
