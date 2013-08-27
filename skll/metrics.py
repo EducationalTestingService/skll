@@ -89,6 +89,15 @@ def kappa(y_true, y_pred, weights=None):
                       "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
+    # Figure out normalized expected values
+    min_rating = min(min(y_true), min(y_pred))
+    max_rating = max(max(y_true), max(y_pred))
+
+    # shift the values so that the lowest value is 0
+    # (to support scales that include negative values)
+    y_true = [y - min_rating for y in y_true]
+    y_pred = [y - min_rating for y in y_pred]
+
     # Build the observed/confusion matrix
     observed = confusion_matrix(y_true, y_pred)
     num_ratings = len(observed)
@@ -111,13 +120,10 @@ def kappa(y_true, y_pred, weights=None):
                 else:  # unweighted
                     weights[i, j] = (i != j)
 
-    # Figure out normalized expected values
-    min_rating = min(min(y_true), min(y_pred))
-    max_rating = max(max(y_true), max(y_pred))
-    hist_true = np.bincount(y_true, minlength=(max_rating + 1))
-    hist_true = hist_true[min_rating: max_rating + 1] / num_scored_items
-    hist_pred = np.bincount(y_pred, minlength=(max_rating + 1))
-    hist_pred = hist_pred[min_rating: max_rating + 1] / num_scored_items
+    hist_true = np.bincount(y_true, minlength=(max_rating - min_rating + 1))
+    hist_true = hist_true[: max_rating - min_rating + 1] / num_scored_items
+    hist_pred = np.bincount(y_pred, minlength=(max_rating - min_rating + 1))
+    hist_pred = hist_pred[: max_rating - min_rating + 1] / num_scored_items
     expected = np.outer(hist_true, hist_pred)
 
     # Normalize observed array
