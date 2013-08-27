@@ -61,6 +61,11 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.14
+
+   +  Hotfix to fix issue where `grid_search_jobs` setting was being overriden
+      by `grid_search_folds`.
+
 -  v0.9.13
 
    +  Added `skll.data.write_feature_file` (also available as
