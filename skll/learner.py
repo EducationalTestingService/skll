@@ -626,7 +626,7 @@ class Learner(object):
         else:
             # use the number of unique fold IDs as the number of grid jobs
             if not grid_jobs:
-                grid_jobs = grid_search_folds
+                grid_jobs = len(np.unique(grid_search_folds))
             else:
                 grid_jobs = min(len(np.unique(grid_search_folds)), grid_jobs)
             labels = [grid_search_folds[curr_id] for curr_id in examples.ids]
