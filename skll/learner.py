@@ -724,7 +724,7 @@ class Learner(object):
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
             if (grid_objective and grid_objective in _CORRELATION_METRICS):
-                grid_score = use_score_func(grid_objective, ytest, yhat[:, 1])
+                grid_score = _use_score_func(grid_objective, ytest, yhat[:, 1])
             yhat = np.array([max(range(len(row)),
                                  key=lambda i: row[i])
                              for row in yhat])
@@ -732,7 +732,7 @@ class Learner(object):
         # calculate grid search objective function score, if specified
         if (grid_objective and (grid_objective not in _CORRELATION_METRICS or
                                 not self.probability)):
-            grid_score = use_score_func(grid_objective, ytest, yhat)
+            grid_score = _use_score_func(grid_objective, ytest, yhat)
 
         if self._model_type in _REGRESSION_MODELS:
             result_dict = {'descriptive': defaultdict(dict), 'comparative': {}}
