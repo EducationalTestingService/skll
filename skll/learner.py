@@ -663,7 +663,8 @@ class Learner(object):
 
             grid_searcher = GridSearchCV(estimator, param_grid,
                                          scoring=grid_objective, cv=folds,
-                                         n_jobs=grid_jobs)
+                                         n_jobs=grid_jobs,
+                                         pre_dispatch=grid_jobs)
 
             # run the grid search for hyperparameters
             grid_searcher.fit(xtrain, classes)
