@@ -804,12 +804,6 @@ def _check_job_results(job_results):
             logging.error('There was an error running the experiment:\n' +
                           '{}'.format(result_dicts))
 
-    # # Check for errors
-    # for result_dict in job_results:
-    #     if 'task' not in result_dict:
-    #         logging.error('There was an error running the experiment:\n' +
-    #                       '{}'.format(result_dict))
-
 
 def _run_experiment_without_feature(arg_tuple):
     '''
