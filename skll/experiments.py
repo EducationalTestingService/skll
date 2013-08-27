@@ -787,10 +787,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_results = process_jobs(jobs, white_list=hosts)
 
         # Check for errors
-        for result_dict in job_results:
-            if 'task' not in result_dict:
-                logging.error('There was an error running the experiment:\n' +
-                              '{}'.format(result_dict))
+        _check_job_results(job_results)
 
     # write out the summary results file
     if task == 'cross-validate' or task == 'evaluate':
@@ -798,6 +795,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file)
+
+
+def _check_job_results(job_results):
+    logging.info('checking job results')
+    for result_dicts in job_results:
+        if not result_dicts or 'task' not in result_dicts[0]:
+            logging.error('There was an error running the experiment:\n' +
+                          '{}'.format(result_dicts))
 
 
 def _run_experiment_without_feature(arg_tuple):

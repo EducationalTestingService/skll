@@ -61,6 +61,19 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.13
+
+   +  Added `skll.data.write_feature_file` (also available as
+      `skll.write_feature_file`) to simplify outputting .jsonlines, .megam, and
+      .tsv files.
+   +  Added more unit tests for handling .megam and .tsv files.
+   +  Fixed a bug that caused a crash when using gridmap.
+   +  `grid_search_jobs` now sets both `n_jobs` and `pre_dispatch` for
+      `GridSearchCV` under the hood. This prevents a potential memory issue when
+      dealing with large datasets and learners that cannot handle sparse data.
+   +  Changed logging format when using `run_experiment` to be a little more
+      readable.
+
 -  v0.9.12
 
    +  Fixed serious issue where merging feature sets was not working correctly.
