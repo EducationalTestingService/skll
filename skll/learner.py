@@ -587,7 +587,7 @@ class Learner(object):
                                grid search.
         :type grid_objective: function
         :param grid_jobs: The number of jobs to run in parallel when doing the
-                          grid search. If unspecified or None, the number of
+                          grid search. If unspecified or 0, the number of
                           grid search folds will be used.
         :type grid_jobs: int
         :param shuffle: Shuffle examples (e.g., for grid search CV.)
@@ -618,11 +618,17 @@ class Learner(object):
 
         # set up grid search folds
         if isinstance(grid_search_folds, int):
-            grid_jobs = grid_search_folds
+            if not grid_jobs:
+                grid_jobs = grid_search_folds
+            else:
+                grid_jobs = min(grid_search_folds, grid_jobs)
             folds = grid_search_folds
         else:
             # use the number of unique fold IDs as the number of grid jobs
-            grid_jobs = len(np.unique(grid_search_folds))
+            if not grid_jobs:
+                grid_jobs = grid_search_folds
+            else:
+                grid_jobs = min(len(np.unique(grid_search_folds)), grid_jobs)
             labels = [grid_search_folds[curr_id] for curr_id in examples.ids]
             folds = LeaveOneLabelOut(labels)
 
@@ -875,7 +881,7 @@ class Learner(object):
                                   a dictionary mapping examples to folds).
         :type grid_search_folds: int
         :param grid_jobs: The number of jobs to run in parallel when doing the
-                          grid search. If unspecified or None, the number of
+                          grid search. If unspecified or 0, the number of
                           grid search folds will be used.
         :type grid_jobs: int
         :param grid_objective: The objective function to use when doing the
