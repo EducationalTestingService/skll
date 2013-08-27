@@ -380,7 +380,12 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
 
     # Create TSV file if asked
     if path.endswith(".tsv"):
-        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        if sys.version_info >= (3, 0):
+            file_mode = 'w'
+            delimiter = '\t'
+        else:
+            file_mode = 'wb'
+            delimiter = b'\t'
         with open(path, file_mode) as f:
             instances = []
             fields = set()
@@ -404,8 +409,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                 instances.append(feature_dict)
 
             # Create writer
-            writer = DictWriter(f, fieldnames=sorted(fields), delimiter='\t',
-                                restval=0)
+            writer = DictWriter(f, fieldnames=sorted(fields),
+                                delimiter=delimiter, restval=0)
             # Output instance
             writer.writeheader()
             writer.writerows(instances)
