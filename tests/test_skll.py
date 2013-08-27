@@ -36,6 +36,7 @@ import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
 
+from skll.data import write_feature_file
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _parse_config_file)
 from skll.learner import Learner, SelectByMinCount
@@ -182,6 +183,7 @@ def test_specified_cv_folds():
 
 def make_regression_data():
     num_examples = 2000
+    num_train_examples = int(num_examples / 2)
 
     np.random.seed(1234567890)
     f1 = np.random.rand(num_examples)
@@ -189,20 +191,21 @@ def make_regression_data():
     f3 = np.random.rand(num_examples)
     err = np.random.randn(num_examples) / 2.0
     y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
+    y = y.tolist()
 
-    with open(os.path.join(_my_dir, 'train', 'test_regression1.jsonlines'), 'w') as f:
-        for i in range(int(num_examples / 2)):
-            ex_id = "EXAMPLE{}".format(i)
-            x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
-            f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
+    # Write training file
+    train_path = os.path.join(_my_dir, 'train', 'test_regression1.jsonlines')
+    features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
+                range(num_train_examples)]
+    write_feature_file(train_path, None, y[:num_train_examples], features)
 
-    with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines'), 'w') as f:
-        for i in range(int(num_examples / 2), num_examples):
-            ex_id = "EXAMPLE{}".format(i)
-            x = {"f1": f1[i], "f2": f2[i], "f3": f3[i]}
-            f.write(json.dumps({"y": y[i], "id": ex_id, "x": x}) + '\n')
+    # Write test file
+    test_path = os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')
+    features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
+                range(num_train_examples, num_examples)]
+    write_feature_file(train_path, None, y[num_train_examples: num_examples], features)
 
-    return x, y
+    return y
 
 
 def test_regression1():
@@ -211,13 +214,12 @@ def test_regression1():
     if anything drastic happens to the regression code.
     '''
 
-    _, y = make_regression_data()
+    y = make_regression_data()
 
     config_template_path = os.path.join(_my_dir, 'configs', 'test_regression1.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     config_template_path = "test_regression1.cfg"
-    test_func = lambda x: x > 0.7
 
     run_configuration(os.path.join(_my_dir, config_path), local=True)
 
@@ -225,7 +227,7 @@ def test_regression1():
         # check held out scores
         outstr = f.read()
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
-        assert test_func(score)
+        assert score > 0.7
 
     with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.predictions'), 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
@@ -244,7 +246,7 @@ def test_predict():
     This tests whether predict task runs.
     '''
 
-    _, y = make_regression_data()
+    y = make_regression_data()
 
     config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
     config_path = fill_in_config_paths(config_template_path, task='predict')
@@ -267,18 +269,35 @@ def make_summary_data():
 
     np.random.seed(1234567890)
 
-    with open(os.path.join(_my_dir, 'train', 'test_summary.jsonlines'), 'w') as train_json, open(os.path.join(_my_dir, 'test', 'test_summary.jsonlines'), 'w') as test_json:
-        for i in range(num_train_examples):
-            y = "dog" if i % 2 == 0 else "cat"
-            ex_id = "{}{}".format(y, i)
-            x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4), "f3": np.random.randint(1, 4)}
-            train_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+    # Write training file
+    train_path = os.path.join(_my_dir, 'train', 'test_summary.jsonlines')
+    classes = []
+    ids = []
+    features = []
+    for i in range(num_train_examples):
+        y = "dog" if i % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, i)
+        x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4),
+             "f3": np.random.randint(1, 4)}
+        classes.append(y)
+        ids.append(ex_id)
+        features.append(x)
+    write_feature_file(train_path, ids, classes, features)
 
-        for i in range(num_test_examples):
-            y = "dog" if i % 2 == 0 else "cat"
-            ex_id = "{}{}".format(y, i)
-            x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4), "f3": np.random.randint(1, 4)}
-            test_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+    # Write test file
+    test_path = os.path.join(_my_dir, 'test', 'test_summary.jsonlines')
+    classes = []
+    ids = []
+    features = []
+    for i in range(num_test_examples):
+        y = "dog" if i % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, i)
+        x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4),
+             "f3": np.random.randint(1, 4)}
+        classes.append(y)
+        ids.append(ex_id)
+        features.append(x)
+    write_feature_file(test_path, ids, classes, features)
 
 
 def check_summary_score(result_score, summary_score, learner_name):
@@ -324,21 +343,35 @@ def test_summary():
 
 
 def make_sparse_data():
+    # Create training file
+    train_path = os.path.join(_my_dir, 'train', 'test_sparse.jsonlines')
+    ids = []
+    classes = []
+    features = []
+    for i in range(1, 101):
+        y = "dog" if i % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, i)
+        # note that f1 and f5 are missing in all instances but f4 is not
+        x = {"f2": i+1, "f3": i+2, "f4": i+5}
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+    write_feature_file(train_path, ids, classes, features)
 
-    with open(os.path.join(_my_dir, 'train', 'test_sparse.jsonlines'), 'w') as train_json, open(os.path.join(_my_dir, 'test', 'test_sparse.jsonlines'), 'w') as test_json:
-        for i in range(1, 101):
-            y = "dog" if i % 2 == 0 else "cat"
-            ex_id = "{}{}".format(y, i)
-            # note that f1 and f5 are missing in all instances but f4 is not
-            x = {"f2": i+1, "f3": i+2, "f4": i+5}
-            train_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
-
-        for i in range(1, 51):
-            y = "dog" if i % 2 == 0 else "cat"
-            ex_id = "{}{}".format(y, i)
-            # f1 and f5 are not missing in any instances here but f4 is
-            x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
-            test_json.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+    # Create test file
+    test_path = os.path.join(_my_dir, 'test', 'test_sparse.jsonlines')
+    ids = []
+    classes = []
+    features = []
+    for i in range(1, 51):
+        y = "dog" if i % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, i)
+        # f1 and f5 are not missing in any instances here but f4 is
+        x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+    write_feature_file(test_path, ids, classes, features)
 
 
 def test_sparse_predict():
@@ -392,8 +425,8 @@ def test_unweighted_kappa():
 
 
 # Tests related to loading featuresets and merging them
-def make_merging_data(num_feat_files):
-    num_train_examples = 500
+def make_merging_data(num_feat_files, suffix):
+    num_examples = 500
     num_feats_per_file = 17
 
     np.random.seed(1234567890)
@@ -402,38 +435,43 @@ def make_merging_data(num_feat_files):
     if not os.path.exists(merge_dir):
         os.makedirs(merge_dir)
 
-    # Create dict list we will write files from
-    examples = []
-    for j in range(num_train_examples):
+    # Create lists we will write files from
+    ids = []
+    features = []
+    classes = []
+    for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, j)
         x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num in
              range(num_feat_files * num_feats_per_file)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
-        examples.append({"y": y, "id": ex_id, "x": x})
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
 
     # Unmerged
     for i in range(num_feat_files):
-        with open(os.path.join(merge_dir, '{}.jsonlines'.format(i)), 'w') as train_json:
-            for example in examples:
-                feat_num = i * num_feats_per_file
-                x = {"f{:03d}".format(feat_num + j): example["x"]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
-                train_json.write(json.dumps({"y": example["y"], "id": example["id"], "x": x}, sort_keys=True) + '\n')
+        train_path = os.path.join(merge_dir, '{}{}'.format(i, suffix))
+        sub_features = []
+        for example_num in range(num_examples):
+            feat_num = i * num_feats_per_file
+            x = {"f{:03d}".format(feat_num + j): features[example_num]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
+            sub_features.append(x)
+        write_feature_file(train_path, ids, classes, sub_features)
 
     # Merged
-    with open(os.path.join(merge_dir, 'all.jsonlines'), 'w') as train_json:
-        for example in examples:
-            train_json.write(json.dumps(example, sort_keys=True) + '\n')
+    train_path = os.path.join(merge_dir, 'all{}'.format(suffix))
+    write_feature_file(train_path, ids, classes, features)
 
-def test_load_featureset():
+
+def check_load_featureset(suffix):
     num_feat_files = 5
 
     # Create test data
-    make_merging_data(num_feat_files)
+    make_merging_data(num_feat_files, suffix)
 
     # Load unmerged data and merge it
     dirpath = os.path.join(_my_dir, 'train', 'test_merging')
-    suffix = '.jsonlines'
     featureset = [str(i) for i in range(num_feat_files)]
     merged_examples = _load_featureset(dirpath, featureset, suffix)
 
@@ -449,3 +487,8 @@ def test_load_featureset():
         premerged_examples.feat_vectorizer.feature_names_)
     eq_(merged_examples.feat_vectorizer.vocabulary_,
         premerged_examples.feat_vectorizer.vocabulary_)
+
+
+def test_load_featureset():
+    for suffix in ['.jsonlines', '.megam', '.tsv']:
+        yield check_load_featureset, suffix

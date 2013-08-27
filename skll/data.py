@@ -28,8 +28,10 @@ from __future__ import print_function, unicode_literals
 
 import json
 import sys
-from csv import DictReader, excel_tab
+from csv import DictReader, DictWriter, excel_tab
+from decimal import Decimal
 from itertools import islice
+from io import open
 from multiprocessing import Pool
 from operator import itemgetter
 
@@ -126,9 +128,8 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y'):
     elif path.endswith(".megam"):
         example_gen_func = _megam_dict_iter
     else:
-        raise Exception('Example files must be in either TSV, MegaM, or ' +
-                        '.jsonlines format. ' +
-                        'You specified: {}'.format(path))
+        raise ValueError('Example files must be in either .tsv, .megam, or ' +
+                         '.jsonlines format. You specified: {}'.format(path))
 
     # Create generators that we can use to create numpy arrays without wasting
     # memory (even though this requires reading the file multiple times).
@@ -321,4 +322,126 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y'):
                 print(".", end="", file=sys.stderr)
         if not quiet:
             print("done", file=sys.stderr)
+
+
+def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
+                       id_prefix='EXAMPLE_', tsv_label='y'):
+    '''
+    Writes output a feature file in either .jsonlines, .megam, or .tsv formats
+    with the given a list of IDs, classes, and features.
+
+    :param path: A path to the feature file we would like to create. The suffix
+                 to this filename must be .jsonlines, .megam, or .tsv.
+    :type path: str
+    :param ids: The IDs for each instance in the feature list/array. If None,
+                IDs will be automatically generated with the prefix specified by
+                `id_prefix` followed by the row number. If `id_prefix` is also
+                None, no IDs will be written to the file.
+    :type ids: list of str
+    :param classes: The class labels for each instance in the feature
+                    list/array. If None, no class labels will be added to output
+                    file.
+    :type classes: list of str
+    :param features: The features for each instance represented as either a list
+                     of dictionaries or an array-like (if `feat_vectorizer`
+                     is also specified).
+    :type features: list of dict or array-like
+    :param feat_vectorizer: A `DictVectorizer` to map to/from feature columns
+                            indices and names.
+    :type feat_vectorizer: DictVectorizer
+    :param id_prefix: If we need to automatically generate IDs, put this prefix
+                      infront of the numerical IDs.
+    :type id_prefix: str
+    :param tsv_label: Name of the column which contains the class labels for
+                      TSV files. If no column with that name exists, or `None`
+                      is specified, the data is considered to be unlabelled.
+    :type tsv_label: str
+    '''
+    # Check for valid features
+    if feat_vectorizer is None and features and not isinstance(features[0],
+                                                               dict):
+        raise ValueError('If `feat_vectorizer` is unspecified, you must pass ' +
+                         'a list of dicts for `features`.')
+
+    # Convert features to list of dicts if given an array-like and a vectorizer
+    if feat_vectorizer is not None:
+        features = feat_vectorizer.inverse_transform(features)
+
+    # Create ID generator if necessary
+    if ids is None:
+        if id_prefix is not None:
+            ids = ('{}{}'.format(id_prefix, num) for num in range(len(features)))
+        else:
+            ids = (None for _ in range(len(features)))
+
+    # Create class generator if necessary
+    if classes is None:
+        classes = (None for _ in range(len(features)))
+
+    # Create TSV file if asked
+    if path.endswith(".tsv"):
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        with open(path, file_mode) as f:
+            instances = []
+            fields = set()
+            # Iterate through examples
+            for ex_id, class_name, feature_dict in zip(ids, classes, features):
+                # Don't try to add class column if this is label-less data
+                if tsv_label not in feature_dict:
+                    if class_name is not None:
+                        feature_dict[tsv_label] = class_name
+                else:
+                    raise ValueError(('Class column name "{0}" already used ' +
+                                      'as feature name!').format(tsv_label))
+
+                if 'id' not in feature_dict:
+                    if ex_id is not None:
+                        feature_dict['id'] = ex_id
+                else:
+                    raise ValueError('ID column name "id" already used as ' +
+                                     'feature name!')
+                fields.update(feature_dict.keys())
+                instances.append(feature_dict)
+
+            # Create writer
+            writer = DictWriter(f, fieldnames=sorted(fields), delimiter='\t',
+                                restval=0)
+            # Output instance
+            writer.writeheader()
+            writer.writerows(instances)
+
+    # Create .jsonlines file if asked
+    elif path.endswith(".jsonlines"):
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        with open(path, file_mode) as f:
+            # Iterate through examples
+            for ex_id, class_name, feature_dict in zip(ids, classes, features):
+                # Don't try to add class column if this is label-less data
+                example_dict = {}
+                if class_name is not None:
+                    example_dict['y'] = class_name
+                if ex_id is not None:
+                    example_dict['id'] = ex_id
+                example_dict["x"] = feature_dict
+                print(json.dumps(example_dict, sort_keys=True), file=f)
+
+    # Create .jsonlines file if asked
+    elif path.endswith(".megam"):
+        with open(path, 'w') as f:
+            # Iterate through examples
+            for ex_id, class_name, feature_dict in zip(ids, classes, features):
+                # Don't try to add class column if this is label-less data
+                if ex_id is not None:
+                    print('# {}'.format(ex_id), file=f)
+                if class_name is not None:
+                    print(class_name, end='\t', file=f)
+                print(' '.join(('{} {}'.format(field, value) for field, value in
+                            sorted(feature_dict.items()) if Decimal(value) != 0)),
+                      file=f)
+
+    # Invalid file suffix, raise error
+    else:
+        raise ValueError('Output file must be in either .tsv, .megam, or ' +
+                         '.jsonlines format. You specified: {}'.format(path))
+
 
