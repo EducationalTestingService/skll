@@ -104,10 +104,14 @@ def test_input_checking3():
 
 
 def make_cv_folds_data():
+    train_dir = os.path.join(_my_dir, 'train')
+    if not os.path.exists(train_dir):
+        os.makedirs(train_dir)
+
     num_examples_per_fold = 100
     num_folds = 3
 
-    with open(os.path.join(_my_dir, 'train', 'test_cv_folds1.jsonlines'), 'w') as json_out, open(os.path.join(_my_dir, 'train', 'test_cv_folds1.csv'), 'w') as csv_out:
+    with open(os.path.join(train_dir, 'test_cv_folds1.jsonlines'), 'w') as json_out, open(os.path.join(train_dir, 'test_cv_folds1.csv'), 'w') as csv_out:
         csv_out.write('id,fold\n')
         for k in range(num_folds):
             for i in range(num_examples_per_fold):
@@ -119,9 +123,16 @@ def make_cv_folds_data():
 
 
 def fill_in_config_paths(config_template_path, task='cross-validate'):
+    train_dir = os.path.join(_my_dir, 'train')
+    if not os.path.exists(train_dir):
+        os.makedirs(train_dir)
+    test_dir = os.path.join(_my_dir, 'test')
+    if not os.path.exists(test_dir):
+        os.makedirs(test_dir)
+
     config = _parse_config_file(config_template_path)
 
-    config.set("Input", "train_location", os.path.join(_my_dir, 'train'))
+    config.set("Input", "train_location", train_dir)
 
     to_fill_in = ['log', 'models', 'vocabs', 'predictions']
 
@@ -134,10 +145,10 @@ def fill_in_config_paths(config_template_path, task='cross-validate'):
     if task == 'cross-validate':
         cv_folds_location = config.get("Input", "cv_folds_location")
         if cv_folds_location:
-            config.set("Input", "cv_folds_location", os.path.join(_my_dir, 'train', cv_folds_location))
+            config.set("Input", "cv_folds_location", os.path.join(train_dir, cv_folds_location))
 
     if task == 'predict' or task == 'evaluate':
-        config.set("Input", "test_location", os.path.join(_my_dir, 'test'))
+        config.set("Input", "test_location", test_dir)
 
     new_config_path = '{}.cfg'.format(re.search(r'^(.*)\.template\.cfg', config_template_path).groups()[0])
 
@@ -194,16 +205,23 @@ def make_regression_data():
     y = y.tolist()
 
     # Write training file
-    train_path = os.path.join(_my_dir, 'train', 'test_regression1.jsonlines')
+    train_dir = os.path.join(_my_dir, 'train')
+    if not os.path.exists(train_dir):
+        os.makedirs(train_dir)
+    train_path = os.path.join(train_dir, 'test_regression1.jsonlines')
     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
                 range(num_train_examples)]
     write_feature_file(train_path, None, y[:num_train_examples], features)
 
     # Write test file
-    test_path = os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')
+    test_dir = os.path.join(_my_dir, 'test')
+    if not os.path.exists(test_dir):
+        os.makedirs(test_dir)
+    test_path = os.path.join(test_dir, 'test_regression1.jsonlines')
     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
                 range(num_train_examples, num_examples)]
-    write_feature_file(train_path, None, y[num_train_examples: num_examples], features)
+    write_feature_file(test_path, None, y[num_train_examples: num_examples],
+                       features)
 
     return y
 
