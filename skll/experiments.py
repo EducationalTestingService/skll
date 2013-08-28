@@ -360,6 +360,18 @@ def _classify_featureset(args):
         # vocabulary) and then use it on the test data
         modelfile = os.path.join(modelpath, '{}.model'.format(jobname))
 
+        # create a list of dictionaries of the results information
+        learner_result_dict_base = {'experiment_name': experiment_name,
+                                    'train_set_name': train_set_name,
+                                    'test_set_name': test_set_name,
+                                    'featureset': featureset,
+                                    'given_learner': given_learner,
+                                    'task': task,
+                                    'timestamp': timestamp,
+                                    'scaling': do_scale_features,
+                                    'grid_search': grid_search,
+                                    'grid_objective': grid_objective}
+
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
         task_results = None
@@ -428,18 +440,6 @@ def _classify_featureset(args):
             results_json_path = os.path.join(resultspath,
                                              '{}.results.json'.format(jobname))
 
-            # create a list of dictionaries of the results information
-            learner_result_dict_base = {'experiment_name': experiment_name,
-                                        'train_set_name': train_set_name,
-                                        'test_set_name': test_set_name,
-                                        'featureset': featureset,
-                                        'given_learner': given_learner,
-                                        'task': task,
-                                        'timestamp': timestamp,
-                                        'scaling': do_scale_features,
-                                        'grid_search': grid_search,
-                                        'grid_objective': grid_objective}
-
             res = _create_learner_result_dicts(task_results, grid_scores,
                                                learner_result_dict_base)
 
@@ -452,7 +452,7 @@ def _classify_featureset(args):
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
         else:
-            res = None
+            res = learner_result_dict_base.copy()
 
     return res
 
@@ -824,9 +824,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # submit the jobs (if running on grid)
     if not local:
         if logpath:
-            process_jobs(jobs, white_list=hosts, temp_dir=logpath)
+            job_results = process_jobs(jobs, white_list=hosts, temp_dir=logpath)
         else:
-            process_jobs(jobs, white_list=hosts)
+            job_results = process_jobs(jobs, white_list=hosts)
+
+        _check_job_results(job_results)
 
     # write out the summary results file
     if task == 'cross_validate' or task == 'evaluate':
@@ -834,6 +836,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file)
+
+
+def _check_job_results(job_results):
+    logging.info('checking job results')
+    for result_dicts in job_results:
+        if not result_dicts or 'task' not in result_dicts[0]:
+            logging.error('There was an error running the experiment:\n' +
+                          '{}'.format(result_dicts))
 
 
 def _run_experiment_without_feature(arg_tuple):
