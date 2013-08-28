@@ -671,7 +671,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if cv_folds_location:
         cv_folds = _load_cv_folds(cv_folds_location)
     else:
-      cv_folds = 10
+        cv_folds = 10
 
     # Output
     # get all the output files and directories
@@ -703,7 +703,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # Tuning
     # do we need to run a grid search for the hyperparameters or are we just
-    # using the defaults
+    # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
     # the minimum number of examples a feature must be nonzero in to be included
@@ -723,16 +723,19 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # do we need to scale the feature values?
     do_scale_features = config.getboolean("Tuning", "scale_features")
 
-    # TODO check whether the right things are set for the given task
+    # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set and results locations must be set ' +
                          'when task is evaluate or predict.')
     if (task == 'cross_validate' or task == 'train_only') and test_path:
         raise ValueError('The test set path should not be set ' +
-                         'when task is cross-validate or train_only.')
+                         'when task is cross_validate or train_only.')
     if (task == 'train_only' or task == 'predict') and resultspath:
         raise ValueError('The results path should not be set ' +
                          'when task is predict or train_only.')
+    if task == 'train_only' and not modelpath:
+        raise ValueError('The model path should be set ' +
+                         'when task is train_only.')
 
     ###########################
 
@@ -764,7 +767,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
             job_name_components = base_name_components[:]
 
-            # for the individual job name, we need to add the feature set name and the learner name
+            # for the individual job name, we need to add the feature set name
+            # and the learner name
             job_name_components.extend([featureset_name, given_learner])
             jobname = '_'.join(job_name_components)
 
@@ -775,9 +779,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # the tuned parameters, what kind of experiment was run, etc.)
             temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
 
-            # TODO use frozendict???
             # create job if we're doing things on the grid
-
             job_args = {}
             job_args["experiment_name"] = experiment_name
             job_args["task"] = task
