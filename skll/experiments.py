@@ -452,7 +452,7 @@ def _classify_featureset(args):
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
         else:
-            res = learner_result_dict_base.copy()
+            res = learner_result_dict_base
 
     return res
 
