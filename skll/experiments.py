@@ -50,6 +50,8 @@ from sklearn.metrics import SCORERS
 from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 
+_VALID_TASKS = frozenset(['predict', 'train_only',
+                          'evaluate', 'cross_validate'])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -281,16 +283,41 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
                          merged_vectorizer)
 
 
-def _classify_featureset(experiment_name, task,
-                         jobname, featureset, given_learner, train_path,
-                         test_path, train_set_name, test_set_name, modelpath,
-                         prediction_prefix, grid_search,
-                         grid_objective, do_scale_features,
-                         suffix, log_path, probability, resultspath,
-                         fixed_parameters, param_grid, pos_label_str,
-                         overwrite, use_dense_features, min_feature_count,
-                         grid_search_jobs, cv_folds, tsv_label):
+def _classify_featureset(args):
     ''' Classification job to be submitted to grid '''
+
+    # Extract all the arguments.
+    # (There doesn't seem to be a better way to do this since one can't specify
+    # required keyword arguments.)
+    experiment_name = args.pop("experiment_name")
+    task = args.pop("task")
+    jobname = args.pop("jobname")
+    featureset = args.pop("featureset")
+    given_learner = args.pop("given_learner")
+    train_path = args.pop("train_path")
+    test_path = args.pop("test_path")
+    train_set_name = args.pop("train_set_name")
+    test_set_name = args.pop("test_set_name")
+    modelpath = args.pop("modelpath")
+    prediction_prefix = args.pop("prediction_prefix")
+    grid_search = args.pop("grid_search")
+    grid_objective = args.pop("grid_objective")
+    do_scale_features = args.pop("do_scale_features")
+    suffix = args.pop("suffix")
+    log_path = args.pop("log_path")
+    probability = args.pop("probability")
+    resultspath = args.pop("resultspath")
+    fixed_parameters = args.pop("fixed_parameters")
+    param_grid = args.pop("param_grid")
+    pos_label_str = args.pop("pos_label_str")
+    overwrite = args.pop("overwrite")
+    use_dense_features = args.pop("use_dense_features")
+    min_feature_count = args.pop("min_feature_count")
+    grid_search_jobs = args.pop("grid_search_jobs")
+    cv_folds = args.pop("cv_folds")
+    tsv_label = args.pop("tsv_label")
+    if args:
+        raise ValueError("Extra arguments passed: {}".format(args.keys()))
 
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
@@ -395,7 +422,7 @@ def _classify_featureset(experiment_name, task,
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples, prediction_prefix=prediction_prefix)
-            # do nothing for train_only
+            # do nothing here for train_only
 
         if task == 'cross_validate' or task == 'evaluate':
             results_json_path = os.path.join(resultspath,
@@ -606,6 +633,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # General
     task = config.get("General", "task")
+    if task not in _VALID_TASKS:
+        raise ValueError('An invalid task was specified: {}. '.format(task) +
+                         'Valid tasks are: {}'.format(' '.join(_VALID_TASKS)))
+
     experiment_name = config.get("General", "experiment_name")
 
     # Input
@@ -640,7 +671,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if cv_folds_location:
         cv_folds = _load_cv_folds(cv_folds_location)
     else:
-        cv_folds = 10
+      cv_folds = 10
 
     # Output
     # get all the output files and directories
@@ -746,26 +777,46 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
             # TODO use frozendict???
             # create job if we're doing things on the grid
-            job_args = [experiment_name, task,
-                        jobname, featureset, given_learner, train_path,
-                        test_path, train_set_name, test_set_name, modelpath,
-                        prediction_prefix, do_grid_search,
-                        grid_objective, do_scale_features,
-                        suffix, temp_logfile, probability,
-                        resultspath, (fixed_parameter_list[learner_num]
-                                      if fixed_parameter_list else dict()),
-                        (param_grid_list[learner_num] if param_grid_list
-                         else None),
-                        pos_label_str, overwrite, use_dense_features,
-                        min_feature_count, grid_search_jobs, cv_folds,
-                        tsv_label]
+
+            job_args = {}
+            job_args["experiment_name"] = experiment_name
+            job_args["task"] = task
+            job_args["jobname"] = jobname
+            job_args["featureset"] = featureset
+            job_args["given_learner"] = given_learner
+            job_args["train_path"] = train_path
+            job_args["test_path"] = test_path
+            job_args["train_set_name"] = train_set_name
+            job_args["test_set_name"] = test_set_name
+            job_args["modelpath"] = modelpath
+            job_args["prediction_prefix"] = prediction_prefix
+            job_args["grid_search"] = do_grid_search
+            job_args["grid_objective"] = grid_objective
+            job_args["do_scale_features"] = do_scale_features
+            job_args["suffix"] = suffix
+            job_args["log_path"] = temp_logfile
+            job_args["probability"] = probability
+            job_args["resultspath"] = resultspath
+            job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
+                                            if fixed_parameter_list
+                                            else dict())
+            job_args["param_grid"] = (param_grid_list[learner_num]
+                                      if param_grid_list else None)
+            job_args["pos_label_str"] = pos_label_str
+            job_args["overwrite"] = overwrite
+            job_args["use_dense_features"] = use_dense_features
+            job_args["min_feature_count"] = min_feature_count
+            job_args["grid_search_jobs"] = grid_search_jobs
+            job_args["cv_folds"] = cv_folds
+            job_args["tsv_label"] = tsv_label
+
             if not local:
-                jobs.append(Job(_classify_featureset, job_args,
+                jobs.append(Job(_classify_featureset, [job_args],
                                 num_slots=(MAX_CONCURRENT_PROCESSES if
                                            do_grid_search else 1),
                                 name=jobname, queue=queue))
             else:
-                _classify_featureset(*job_args)
+                _classify_featureset(job_args)
 
             # save the path to the results json file that will be written
             result_json_paths.append(os.path.join(resultspath, '{}.results.json'.format(jobname)))
@@ -773,12 +824,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # submit the jobs (if running on grid)
     if not local:
         if logpath:
-            job_results = process_jobs(jobs, white_list=hosts, temp_dir=logpath)
+            process_jobs(jobs, white_list=hosts, temp_dir=logpath)
         else:
-            job_results = process_jobs(jobs, white_list=hosts)
-
-        # Check for errors
-        _check_job_results(job_results)
+            process_jobs(jobs, white_list=hosts)
 
     # write out the summary results file
     if task == 'cross_validate' or task == 'evaluate':
@@ -786,14 +834,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file)
-
-
-def _check_job_results(job_results):
-    logging.info('checking job results')
-    for result_dicts in job_results:
-        if not result_dicts or 'task' not in result_dicts[0]:
-            logging.error('There was an error running the experiment:\n' +
-                          '{}'.format(result_dicts))
 
 
 def _run_experiment_without_feature(arg_tuple):
