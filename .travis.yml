@@ -16,13 +16,14 @@ install:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install --use-mirrors configparser; fi
   - pip install -r requirements.txt --use-mirrors
   - pip install python-coveralls --use-mirrors
+  - pip install nose-cov --use-mirrors
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
   - python setup.py install
 
 # Run test
 script:
-  - nosetests --with-coverage --cover-package=skll tests/test_skll.py
+  - nosetests --with-cov --cov skll --cov-config .coveragerc tests/test_skll.py
 
 # Calculate coverage
 after_success:

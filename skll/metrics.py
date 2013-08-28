@@ -33,7 +33,7 @@ import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from six import string_types
 from six.moves import xrange as range
-from sklearn.metrics import confusion_matrix, f1_score
+from sklearn.metrics import confusion_matrix, f1_score, SCORERS
 
 
 # Constants
@@ -89,6 +89,15 @@ def kappa(y_true, y_pred, weights=None):
                       "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
+    # Figure out normalized expected values
+    min_rating = min(min(y_true), min(y_pred))
+    max_rating = max(max(y_true), max(y_pred))
+
+    # shift the values so that the lowest value is 0
+    # (to support scales that include negative values)
+    y_true = [y - min_rating for y in y_true]
+    y_pred = [y - min_rating for y in y_pred]
+
     # Build the observed/confusion matrix
     observed = confusion_matrix(y_true, y_pred)
     num_ratings = len(observed)
@@ -111,13 +120,10 @@ def kappa(y_true, y_pred, weights=None):
                 else:  # unweighted
                     weights[i, j] = (i != j)
 
-    # Figure out normalized expected values
-    min_rating = min(min(y_true), min(y_pred))
-    max_rating = max(max(y_true), max(y_pred))
-    hist_true = np.bincount(y_true, minlength=(max_rating + 1))
-    hist_true = hist_true[min_rating: max_rating + 1] / num_scored_items
-    hist_pred = np.bincount(y_pred, minlength=(max_rating + 1))
-    hist_pred = hist_pred[min_rating: max_rating + 1] / num_scored_items
+    hist_true = np.bincount(y_true, minlength=(max_rating - min_rating + 1))
+    hist_true = hist_true[: max_rating - min_rating + 1] / num_scored_items
+    hist_pred = np.bincount(y_pred, minlength=(max_rating - min_rating + 1))
+    hist_pred = hist_pred[: max_rating - min_rating + 1] / num_scored_items
     expected = np.outer(hist_true, hist_pred)
 
     # Normalize observed array
@@ -174,3 +180,14 @@ def f1_score_least_frequent(y_true, y_pred):
     '''
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
+
+
+def _use_score_func(func_name, y_true, y_pred):
+    '''
+    Call the scoring function in `sklearn.metrics.SCORERS` with the given name.
+    This takes care of handling keyword arguments that were pre-specified when
+    creating the scorer. This applies any sign-flipping that was specified by
+    `make_scorer` when the scorer was created.
+    '''
+    scorer = SCORERS[func_name]
+    return scorer._sign * scorer._score_func(y_true, y_pred, **scorer._kwargs)

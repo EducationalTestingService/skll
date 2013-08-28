@@ -50,6 +50,8 @@ from sklearn.metrics import SCORERS
 from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 
+_VALID_TASKS = frozenset(['predict', 'train_only',
+                          'evaluate', 'cross_validate'])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -126,6 +128,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     '''
 
     lrd = learner_result_dicts[0]
+    print('Experiment Name: {}'.format(lrd['experiment_name']), file=output_file)
     print('Timestamp: {}'.format(lrd['timestamp']), file=output_file)
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
@@ -183,6 +186,11 @@ def _parse_config_file(config_path):
                                         'suffix': '',
                                         'classifiers': '',
                                         'tsv_label': 'y'})
+
+    if not os.path.exists(config_path):
+        raise IOError(errno.ENOENT, "The config file doesn't exist.",
+                      config_path)
+
     config.read(config_path)
     return config
 
@@ -198,7 +206,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
-    example_tuples = [load_examples(file_name, tsv_label) for file_name in
+    example_tuples = [load_examples(file_name, tsv_label=tsv_label) for file_name in
                       file_names]
 
     # Check that the IDs are unique within each file.
@@ -280,30 +288,66 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
                          merged_vectorizer)
 
 
-def _classify_featureset(jobname, featureset, given_learner, train_path,
-                         test_path, train_set_name, test_set_name, modelpath,
-                         prediction_prefix, grid_search,
-                         grid_objective, do_scale_features, cross_validate,
-                         evaluate, suffix, log_path, probability, resultspath,
-                         fixed_parameters, param_grid, pos_label_str,
-                         overwrite, use_dense_features, min_feature_count,
-                         grid_search_jobs, cv_folds, tsv_label):
+def _classify_featureset(args):
     ''' Classification job to be submitted to grid '''
+
+    # Extract all the arguments.
+    # (There doesn't seem to be a better way to do this since one can't specify
+    # required keyword arguments.)
+    experiment_name = args.pop("experiment_name")
+    task = args.pop("task")
+    jobname = args.pop("jobname")
+    featureset = args.pop("featureset")
+    given_learner = args.pop("given_learner")
+    train_path = args.pop("train_path")
+    test_path = args.pop("test_path")
+    train_set_name = args.pop("train_set_name")
+    test_set_name = args.pop("test_set_name")
+    modelpath = args.pop("modelpath")
+    prediction_prefix = args.pop("prediction_prefix")
+    grid_search = args.pop("grid_search")
+    grid_objective = args.pop("grid_objective")
+    do_scale_features = args.pop("do_scale_features")
+    suffix = args.pop("suffix")
+    log_path = args.pop("log_path")
+    probability = args.pop("probability")
+    resultspath = args.pop("resultspath")
+    fixed_parameters = args.pop("fixed_parameters")
+    param_grid = args.pop("param_grid")
+    pos_label_str = args.pop("pos_label_str")
+    overwrite = args.pop("overwrite")
+    use_dense_features = args.pop("use_dense_features")
+    min_feature_count = args.pop("min_feature_count")
+    grid_search_jobs = args.pop("grid_search_jobs")
+    cv_folds = args.pop("cv_folds")
+    tsv_label = args.pop("tsv_label")
+    if args:
+        raise ValueError("Extra arguments passed: {}".format(args.keys()))
 
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
     with open(log_path, 'w') as log_file:
-        if cross_validate:
+
+        # logging
+        print("Task: {}".format(task), file=log_file)
+        if task == 'cross_validate':
             print("Cross-validating on {}, feature set {} ...".format(
                 train_set_name, featureset), file=log_file)
-        else:
+        elif task == 'evaluate':
             print("Training on {}, Test on {}, feature set {} ...".format(
+                train_set_name, test_set_name, featureset), file=log_file)
+        elif task == 'train_only':
+            print("Training on {}, feature set {} ...".format(
+                train_set_name, featureset), file=log_file)
+        else:  # predict
+            print("Training on {}, Making predictions about {}, \
+                  feature set {} ...".format(
                 train_set_name, test_set_name, featureset), file=log_file)
 
         # load the training and test examples
         train_examples = _load_featureset(train_path, featureset, suffix,
                                           tsv_label)
-        if not cross_validate:
+        if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              tsv_label)
 
@@ -321,10 +365,31 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
         # vocabulary) and then use it on the test data
         modelfile = os.path.join(modelpath, '{}.model'.format(jobname))
 
+        # create a list of dictionaries of the results information
+        learner_result_dict_base = {'experiment_name': experiment_name,
+                                    'train_set_name': train_set_name,
+                                    'test_set_name': test_set_name,
+                                    'featureset': featureset,
+                                    'given_learner': given_learner,
+                                    'task': task,
+                                    'timestamp': timestamp,
+                                    'scaling': do_scale_features,
+                                    'grid_search': grid_search,
+                                    'grid_objective': grid_objective}
+
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
-        if not cross_validate:
-
+        task_results = None
+        if task == 'cross_validate':
+            print('\tcross-validating', file=log_file)
+            task_results, grid_scores = learner.cross_validate(train_examples,
+                                                               prediction_prefix=prediction_prefix,
+                                                               grid_search=grid_search,
+                                                               cv_folds=cv_folds,
+                                                               grid_objective=grid_objective,
+                                                               param_grid=param_grid,
+                                                               grid_jobs=grid_search_jobs)
+        else:
             # load the model if it already exists
             if os.path.exists(modelfile) and not overwrite:
                 print('\tloading pre-existing {} model: {}'.format(
@@ -352,8 +417,8 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
                 learner.save(modelfile)
 
                 if grid_search:
-                    print('\tbest {} score: {}'.format(grid_objective,
-                                                       round(best_score, 3)),
+                    print('\tbest {} grid search score: {}'
+                          .format(grid_objective, round(best_score, 3)),
                           file=log_file)
 
             # print out the tuned parameters and best CV score
@@ -363,48 +428,26 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
             print('\thyperparameters: {}'.format(', '.join(param_out)),
                   file=log_file)
 
-        # run on test set or cross-validate on training data, depending on what
-        # was asked for
-        if cross_validate:
-            print('\tcross-validating', file=log_file)
-            task_results, grid_scores = learner.cross_validate(train_examples,
-                                                               prediction_prefix=prediction_prefix,
-                                                               grid_search=grid_search,
-                                                               cv_folds=cv_folds,
-                                                               grid_objective=grid_objective,
-                                                               param_grid=param_grid,
-                                                               grid_jobs=grid_search_jobs)
-            task = 'cross-validate'
-        elif evaluate:
-            print('\tevaluating predictions', file=log_file)
-            task_results = [learner.evaluate(
-                test_examples, prediction_prefix=prediction_prefix,
-                grid_objective=grid_objective)]
-            task = 'evaluate'
-        else:
-            print('\twriting predictions', file=log_file)
-            task = 'predict'
-            task_results = None
-            learner.predict(test_examples, prediction_prefix=prediction_prefix)
+            # run on test set or cross-validate on training data,
+            # depending on what was asked for
 
-        results_json_path = os.path.join(resultspath,
-                                         '{}.results.json'.format(jobname))
+            if task == 'evaluate':
+                print('\tevaluating predictions', file=log_file)
+                task_results = [learner.evaluate(
+                    test_examples, prediction_prefix=prediction_prefix,
+                    grid_objective=grid_objective)]
+            elif task == 'predict':
+                print('\twriting predictions', file=log_file)
+                learner.predict(test_examples, prediction_prefix=prediction_prefix)
+            # do nothing here for train_only
 
-        # create a list of dictionaries of the results information
-        learner_result_dict_base = {'train_set_name': train_set_name,
-                                    'test_set_name': test_set_name,
-                                    'featureset': featureset,
-                                    'given_learner': given_learner,
-                                    'task': task,
-                                    'timestamp': timestamp,
-                                    'scaling': do_scale_features,
-                                    'grid_search': grid_search,
-                                    'grid_objective': grid_objective}
+        if task == 'cross_validate' or task == 'evaluate':
+            results_json_path = os.path.join(resultspath,
+                                             '{}.results.json'.format(jobname))
 
-        res = _create_learner_result_dicts(task_results, grid_scores,
-                                           learner_result_dict_base)
+            res = _create_learner_result_dicts(task_results, grid_scores,
+                                               learner_result_dict_base)
 
-        if task != 'predict':
             # write out the result dictionary to a json file
             file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
             with open(results_json_path, file_mode) as json_file:
@@ -413,6 +456,8 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
+        else:
+            res = learner_result_dict_base
 
     return res
 
@@ -420,9 +465,6 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
 def _create_learner_result_dicts(task_results, grid_scores,
                                  learner_result_dict_base):
     res = []
-
-    if not task_results:
-        return res
 
     num_folds = len(task_results)
     accuracy_sum = 0.0
@@ -591,7 +633,18 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                             'To run things on a DRMAA-compatible cluster, ' +
                             'install gridmap via pip.')
 
+    ###########################
     # extract parameters from the config file
+
+    # General
+    task = config.get("General", "task")
+    if task not in _VALID_TASKS:
+        raise ValueError('An invalid task was specified: {}. '.format(task) +
+                         'Valid tasks are: {}'.format(' '.join(_VALID_TASKS)))
+
+    experiment_name = config.get("General", "experiment_name")
+
+    # Input
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -625,6 +678,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     else:
         cv_folds = 10
 
+    # Output
     # get all the output files and directories
     resultspath = config.get("Output", "results")
     logpath = config.get("Output", "log")
@@ -652,8 +706,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         raise IOError(errno.ENOENT, ("The test path specified in config " +
                                      "file does not exist."), train_path)
 
+    # Tuning
     # do we need to run a grid search for the hyperparameters or are we just
-    # using the defaults
+    # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
     # the minimum number of examples a feature must be nonzero in to be included
@@ -673,32 +728,27 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # do we need to scale the feature values?
     do_scale_features = config.getboolean("Tuning", "scale_features")
 
-    # are we doing cross validation or actual testing or just generating
-    # predictions on a new test set? If no test set was specified then assume
-    # that we are doing cross validation. If the results field was not
-    # specified then assume that we are just generating predictions
-    evaluate = False
-    cross_validate = False
-    predict = False
-    if test_path and resultspath:
-        evaluate = True
-    elif not test_path:
-        cross_validate = True
-    else:
-        predict = True
+    # check whether the right things are set for the given task
+    if (task == 'evaluate' or task == 'predict') and not test_path:
+        raise ValueError('The test set and results locations must be set ' +
+                         'when task is evaluate or predict.')
+    if (task == 'cross_validate' or task == 'train_only') and test_path:
+        raise ValueError('The test set path should not be set ' +
+                         'when task is cross_validate or train_only.')
+    if (task == 'train_only' or task == 'predict') and resultspath:
+        raise ValueError('The results path should not be set ' +
+                         'when task is predict or train_only.')
+    if task == 'train_only' and not modelpath:
+        raise ValueError('The model path should be set ' +
+                         'when task is train_only.')
+    if task == 'train_only' and prediction_dir:
+        raise ValueError('The predictions path should not be set ' +
+                         'when task is train_only.')
+    if task == 'cross_validate' and modelpath:
+        raise ValueError('The models path should not be set ' +
+                         'when task is cross_validate.')
 
-    if cross_validate:
-        task = 'cross-validate'
-    elif evaluate:
-        task = 'evaluate'
-    else:
-        task = 'predict'
-
-    # make sure that, if we are in prediction mode, we have a prediction_dir
-    if predict and not prediction_dir:
-        raise ValueError('You must specify a prediction directory if you are' +
-                         ' using prediction mode (no "results" option in ' +
-                         'config file).')
+    ###########################
 
     # the list of jobs submitted (if running on grid)
     if not local:
@@ -717,23 +767,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     result_json_paths = []
 
     # the components for the names of the results and summary files
-    base_name_components = [train_set_name, test_set_name]
-
-    # add scaling information to name
-    if do_scale_features:
-        base_name_components.append('scaled')
-    else:
-        base_name_components.append('unscaled')
-
-    # add tuning information to name
-    if do_grid_search:
-        base_name_components.append('tuned')
-        base_name_components.append(grid_objective)
-    else:
-        base_name_components.append('untuned')
-
-    # add task name
-    base_name_components.append(task)
+    base_name_components = [experiment_name]
 
     # For each feature set
     for featureset, featureset_name in zip(given_featuresets,
@@ -744,7 +778,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
             job_name_components = base_name_components[:]
 
-            # for the individual job name, we need to add the feature set name and the learner name
+            # for the individual job name, we need to add the feature set name
+            # and the learner name
             job_name_components.extend([featureset_name, given_learner])
             jobname = '_'.join(job_name_components)
 
@@ -756,25 +791,45 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
 
             # create job if we're doing things on the grid
-            job_args = [jobname, featureset, given_learner, train_path,
-                        test_path, train_set_name, test_set_name, modelpath,
-                        prediction_prefix, do_grid_search,
-                        grid_objective, do_scale_features, cross_validate,
-                        evaluate, suffix, temp_logfile, probability,
-                        resultspath, (fixed_parameter_list[learner_num]
-                                      if fixed_parameter_list else dict()),
-                        (param_grid_list[learner_num] if param_grid_list
-                         else None),
-                        pos_label_str, overwrite, use_dense_features,
-                        min_feature_count, grid_search_jobs, cv_folds,
-                        tsv_label]
+            job_args = {}
+            job_args["experiment_name"] = experiment_name
+            job_args["task"] = task
+            job_args["jobname"] = jobname
+            job_args["featureset"] = featureset
+            job_args["given_learner"] = given_learner
+            job_args["train_path"] = train_path
+            job_args["test_path"] = test_path
+            job_args["train_set_name"] = train_set_name
+            job_args["test_set_name"] = test_set_name
+            job_args["modelpath"] = modelpath
+            job_args["prediction_prefix"] = prediction_prefix
+            job_args["grid_search"] = do_grid_search
+            job_args["grid_objective"] = grid_objective
+            job_args["do_scale_features"] = do_scale_features
+            job_args["suffix"] = suffix
+            job_args["log_path"] = temp_logfile
+            job_args["probability"] = probability
+            job_args["resultspath"] = resultspath
+            job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
+                                            if fixed_parameter_list
+                                            else dict())
+            job_args["param_grid"] = (param_grid_list[learner_num]
+                                      if param_grid_list else None)
+            job_args["pos_label_str"] = pos_label_str
+            job_args["overwrite"] = overwrite
+            job_args["use_dense_features"] = use_dense_features
+            job_args["min_feature_count"] = min_feature_count
+            job_args["grid_search_jobs"] = grid_search_jobs
+            job_args["cv_folds"] = cv_folds
+            job_args["tsv_label"] = tsv_label
+
             if not local:
-                jobs.append(Job(_classify_featureset, job_args,
+                jobs.append(Job(_classify_featureset, [job_args],
                                 num_slots=(MAX_CONCURRENT_PROCESSES if
                                            do_grid_search else 1),
                                 name=jobname, queue=queue))
             else:
-                _classify_featureset(*job_args)
+                _classify_featureset(job_args)
 
             # save the path to the results json file that will be written
             result_json_paths.append(os.path.join(resultspath, '{}.results.json'.format(jobname)))
@@ -786,11 +841,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         else:
             job_results = process_jobs(jobs, white_list=hosts)
 
-        # Check for errors
         _check_job_results(job_results)
 
     # write out the summary results file
-    if task == 'cross-validate' or task == 'evaluate':
+    if task == 'cross_validate' or task == 'evaluate':
         summary_file_name = '_'.join(base_name_components) + '_summary.tsv'
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:

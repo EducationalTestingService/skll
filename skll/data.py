@@ -78,9 +78,9 @@ def _features_for_gen_func(example_gen_func, path, quiet, sparse, tsv_label):
     have labels).
     '''
     if example_gen_func == _tsv_dict_iter:
-        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
+        gen_results = example_gen_func(path, quiet=quiet, tsv_label=tsv_label)
     else:
-        gen_results = example_gen_func(path, quiet=True)
+        gen_results = example_gen_func(path, quiet=quiet)
 
     feat_vectorizer = DictVectorizer(sparse=sparse)
     feat_dict_generator = map(itemgetter(2), gen_results)
@@ -204,7 +204,7 @@ def _json_dict_iter(path, quiet=False):
             class_name = _safe_float(example["y"]) if 'y' in example else None
             example = example["x"]
 
-            yield curr_id, class_name, example
+            yield _safe_float(curr_id), class_name, example
 
             if not quiet and example_num % 100 == 0:
                 print(".", end="", file=sys.stderr)
@@ -263,7 +263,7 @@ def _megam_dict_iter(path, quiet=False):
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(zip(field_names, field_values))
 
-                yield curr_id, class_name, curr_info_dict
+                yield _safe_float(curr_id), class_name, curr_info_dict
 
                 # Set default example ID for next instance, in case we see a
                 # line without an ID.
@@ -316,7 +316,7 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y'):
                 if fval_float != 0.0:
                     row[fname] = fval_float
 
-            yield curr_id, class_name, row
+            yield _safe_float(curr_id), class_name, row
 
             if not quiet and example_num % 100 == 0:
                 print(".", end="", file=sys.stderr)

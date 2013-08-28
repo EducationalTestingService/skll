@@ -24,3 +24,4 @@ tests/train/test_summary.jsonlines
 tests/configs/test_sparse.cfg
 tests/train/test_sparse.jsonlines
 tests/train/test_merging/
+tests/train/test_cv_folds.*
