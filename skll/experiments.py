@@ -126,6 +126,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     '''
 
     lrd = learner_result_dicts[0]
+    print('Experiment Name: {}'.format(lrd['experiment_name']), file=output_file)
     print('Timestamp: {}'.format(lrd['timestamp']), file=output_file)
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
@@ -280,11 +281,12 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
                          merged_vectorizer)
 
 
-def _classify_featureset(jobname, featureset, given_learner, train_path,
+def _classify_featureset(experiment_name, task,
+                         jobname, featureset, given_learner, train_path,
                          test_path, train_set_name, test_set_name, modelpath,
                          prediction_prefix, grid_search,
-                         grid_objective, do_scale_features, cross_validate,
-                         evaluate, suffix, log_path, probability, resultspath,
+                         grid_objective, do_scale_features,
+                         suffix, log_path, probability, resultspath,
                          fixed_parameters, param_grid, pos_label_str,
                          overwrite, use_dense_features, min_feature_count,
                          grid_search_jobs, cv_folds, tsv_label):
@@ -293,17 +295,27 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
     with open(log_path, 'w') as log_file:
-        if cross_validate:
+
+        # logging
+        print("Task: {}".format(task), file=log_file)
+        if task == 'cross_validate':
             print("Cross-validating on {}, feature set {} ...".format(
                 train_set_name, featureset), file=log_file)
-        else:
+        elif task == 'evaluate':
             print("Training on {}, Test on {}, feature set {} ...".format(
+                train_set_name, test_set_name, featureset), file=log_file)
+        elif task == 'train_only':
+            print("Training on {}, feature set {} ...".format(
+                train_set_name, featureset), file=log_file)
+        else:  # predict
+            print("Training on {}, Making predictions about {}, \
+                  feature set {} ...".format(
                 train_set_name, test_set_name, featureset), file=log_file)
 
         # load the training and test examples
         train_examples = _load_featureset(train_path, featureset, suffix,
                                           tsv_label)
-        if not cross_validate:
+        if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              tsv_label)
 
@@ -323,8 +335,17 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
 
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
-        if not cross_validate:
-
+        task_results = None
+        if task == 'cross_validate':
+            print('\tcross-validating', file=log_file)
+            task_results, grid_scores = learner.cross_validate(train_examples,
+                                                               prediction_prefix=prediction_prefix,
+                                                               grid_search=grid_search,
+                                                               cv_folds=cv_folds,
+                                                               grid_objective=grid_objective,
+                                                               param_grid=param_grid,
+                                                               grid_jobs=grid_search_jobs)
+        else:
             # load the model if it already exists
             if os.path.exists(modelfile) and not overwrite:
                 print('\tloading pre-existing {} model: {}'.format(
@@ -363,48 +384,38 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
             print('\thyperparameters: {}'.format(', '.join(param_out)),
                   file=log_file)
 
-        # run on test set or cross-validate on training data, depending on what
-        # was asked for
-        if cross_validate:
-            print('\tcross-validating', file=log_file)
-            task_results, grid_scores = learner.cross_validate(train_examples,
-                                                               prediction_prefix=prediction_prefix,
-                                                               grid_search=grid_search,
-                                                               cv_folds=cv_folds,
-                                                               grid_objective=grid_objective,
-                                                               param_grid=param_grid,
-                                                               grid_jobs=grid_search_jobs)
-            task = 'cross-validate'
-        elif evaluate:
-            print('\tevaluating predictions', file=log_file)
-            task_results = [learner.evaluate(
-                test_examples, prediction_prefix=prediction_prefix,
-                grid_objective=grid_objective)]
-            task = 'evaluate'
-        else:
-            print('\twriting predictions', file=log_file)
-            task = 'predict'
-            task_results = None
-            learner.predict(test_examples, prediction_prefix=prediction_prefix)
+            # run on test set or cross-validate on training data,
+            # depending on what was asked for
 
-        results_json_path = os.path.join(resultspath,
-                                         '{}.results.json'.format(jobname))
+            if task == 'evaluate':
+                print('\tevaluating predictions', file=log_file)
+                task_results = [learner.evaluate(
+                    test_examples, prediction_prefix=prediction_prefix,
+                    grid_objective=grid_objective)]
+            elif task == 'predict':
+                print('\twriting predictions', file=log_file)
+                learner.predict(test_examples, prediction_prefix=prediction_prefix)
+            # do nothing for train_only
 
-        # create a list of dictionaries of the results information
-        learner_result_dict_base = {'train_set_name': train_set_name,
-                                    'test_set_name': test_set_name,
-                                    'featureset': featureset,
-                                    'given_learner': given_learner,
-                                    'task': task,
-                                    'timestamp': timestamp,
-                                    'scaling': do_scale_features,
-                                    'grid_search': grid_search,
-                                    'grid_objective': grid_objective}
+        if task == 'cross_validate' or task == 'evaluate':
+            results_json_path = os.path.join(resultspath,
+                                             '{}.results.json'.format(jobname))
 
-        res = _create_learner_result_dicts(task_results, grid_scores,
-                                           learner_result_dict_base)
+            # create a list of dictionaries of the results information
+            learner_result_dict_base = {'experiment_name': experiment_name,
+                                        'train_set_name': train_set_name,
+                                        'test_set_name': test_set_name,
+                                        'featureset': featureset,
+                                        'given_learner': given_learner,
+                                        'task': task,
+                                        'timestamp': timestamp,
+                                        'scaling': do_scale_features,
+                                        'grid_search': grid_search,
+                                        'grid_objective': grid_objective}
 
-        if task != 'predict':
+            res = _create_learner_result_dicts(task_results, grid_scores,
+                                               learner_result_dict_base)
+
             # write out the result dictionary to a json file
             file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
             with open(results_json_path, file_mode) as json_file:
@@ -413,6 +424,8 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
             with open(os.path.join(resultspath, '{}.results'.format(jobname)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
+        else:
+            res = None
 
     return res
 
@@ -420,9 +433,6 @@ def _classify_featureset(jobname, featureset, given_learner, train_path,
 def _create_learner_result_dicts(task_results, grid_scores,
                                  learner_result_dict_base):
     res = []
-
-    if not task_results:
-        return res
 
     num_folds = len(task_results)
     accuracy_sum = 0.0
@@ -591,7 +601,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                             'To run things on a DRMAA-compatible cluster, ' +
                             'install gridmap via pip.')
 
+    ###########################
     # extract parameters from the config file
+
+    # General
+    task = config.get("General", "task")
+    experiment_name = config.get("General", "experiment_name")
+
+    # Input
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -625,6 +642,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     else:
         cv_folds = 10
 
+    # Output
     # get all the output files and directories
     resultspath = config.get("Output", "results")
     logpath = config.get("Output", "log")
@@ -652,6 +670,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         raise IOError(errno.ENOENT, ("The test path specified in config " +
                                      "file does not exist."), train_path)
 
+    # Tuning
     # do we need to run a grid search for the hyperparameters or are we just
     # using the defaults
     do_grid_search = config.getboolean("Tuning", "grid_search")
@@ -673,32 +692,18 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # do we need to scale the feature values?
     do_scale_features = config.getboolean("Tuning", "scale_features")
 
-    # are we doing cross validation or actual testing or just generating
-    # predictions on a new test set? If no test set was specified then assume
-    # that we are doing cross validation. If the results field was not
-    # specified then assume that we are just generating predictions
-    evaluate = False
-    cross_validate = False
-    predict = False
-    if test_path and resultspath:
-        evaluate = True
-    elif not test_path:
-        cross_validate = True
-    else:
-        predict = True
+    # TODO check whether the right things are set for the given task
+    if (task == 'evaluate' or task == 'predict') and not test_path:
+        raise ValueError('The test set and results locations must be set ' +
+                         'when task is evaluate or predict.')
+    if (task == 'cross_validate' or task == 'train_only') and test_path:
+        raise ValueError('The test set path should not be set ' +
+                         'when task is cross-validate or train_only.')
+    if (task == 'train_only' or task == 'predict') and resultspath:
+        raise ValueError('The results path should not be set ' +
+                         'when task is predict or train_only.')
 
-    if cross_validate:
-        task = 'cross-validate'
-    elif evaluate:
-        task = 'evaluate'
-    else:
-        task = 'predict'
-
-    # make sure that, if we are in prediction mode, we have a prediction_dir
-    if predict and not prediction_dir:
-        raise ValueError('You must specify a prediction directory if you are' +
-                         ' using prediction mode (no "results" option in ' +
-                         'config file).')
+    ###########################
 
     # the list of jobs submitted (if running on grid)
     if not local:
@@ -717,23 +722,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     result_json_paths = []
 
     # the components for the names of the results and summary files
-    base_name_components = [train_set_name, test_set_name]
-
-    # add scaling information to name
-    if do_scale_features:
-        base_name_components.append('scaled')
-    else:
-        base_name_components.append('unscaled')
-
-    # add tuning information to name
-    if do_grid_search:
-        base_name_components.append('tuned')
-        base_name_components.append(grid_objective)
-    else:
-        base_name_components.append('untuned')
-
-    # add task name
-    base_name_components.append(task)
+    base_name_components = [experiment_name]
 
     # For each feature set
     for featureset, featureset_name in zip(given_featuresets,
@@ -755,12 +744,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # the tuned parameters, what kind of experiment was run, etc.)
             temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
 
+            # TODO use frozendict???
             # create job if we're doing things on the grid
-            job_args = [jobname, featureset, given_learner, train_path,
+            job_args = [experiment_name, task,
+                        jobname, featureset, given_learner, train_path,
                         test_path, train_set_name, test_set_name, modelpath,
                         prediction_prefix, do_grid_search,
-                        grid_objective, do_scale_features, cross_validate,
-                        evaluate, suffix, temp_logfile, probability,
+                        grid_objective, do_scale_features,
+                        suffix, temp_logfile, probability,
                         resultspath, (fixed_parameter_list[learner_num]
                                       if fixed_parameter_list else dict()),
                         (param_grid_list[learner_num] if param_grid_list
@@ -790,7 +781,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         _check_job_results(job_results)
 
     # write out the summary results file
-    if task == 'cross-validate' or task == 'evaluate':
+    if task == 'cross_validate' or task == 'evaluate':
         summary_file_name = '_'.join(base_name_components) + '_summary.tsv'
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:

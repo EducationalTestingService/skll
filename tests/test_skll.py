@@ -111,7 +111,7 @@ def make_cv_folds_data():
     num_examples_per_fold = 100
     num_folds = 3
 
-    with open(os.path.join(train_dir, 'test_cv_folds1.jsonlines'), 'w') as json_out, open(os.path.join(train_dir, 'test_cv_folds1.csv'), 'w') as csv_out:
+    with open(os.path.join(train_dir, 'test_cv_folds.jsonlines'), 'w') as json_out, open(os.path.join(train_dir, 'test_cv_folds.csv'), 'w') as csv_out:
         csv_out.write('id,fold\n')
         for k in range(num_folds):
             for i in range(num_examples_per_fold):
@@ -122,7 +122,7 @@ def make_cv_folds_data():
                 csv_out.write('{},{}\n'.format(ex_id, k))
 
 
-def fill_in_config_paths(config_template_path, task='cross-validate'):
+def fill_in_config_paths(config_template_path):
     train_dir = os.path.join(_my_dir, 'train')
     if not os.path.exists(train_dir):
         os.makedirs(train_dir)
@@ -135,17 +135,20 @@ def fill_in_config_paths(config_template_path, task='cross-validate'):
 
     config = _parse_config_file(config_template_path)
 
+    task = config.get("General", "task")
+    #experiment_name = config.get("General", "experiment_name")
+
     config.set("Input", "train_location", train_dir)
 
     to_fill_in = ['log', 'models', 'vocabs', 'predictions']
 
-    if task == 'evaluate' or task == 'cross-validate':
+    if task == 'evaluate' or task == 'cross_validate':
         to_fill_in.append('results')
 
     for d in to_fill_in:
         config.set("Output", d, os.path.join(output_dir))
 
-    if task == 'cross-validate':
+    if task == 'cross_validate':
         cv_folds_location = config.get("Input", "cv_folds_location")
         if cv_folds_location:
             config.set("Input", "cv_folds_location", os.path.join(train_dir, cv_folds_location))
@@ -166,12 +169,13 @@ def test_specified_cv_folds():
 
     # test_cv_folds1.cfg is with prespecified folds and should have about 50% performance
     # test_cv_folds2.cfg is without prespecified folds and should have very high performance
-    for config_template_file, test_func, grid_size in [('test_cv_folds1.template.cfg', lambda x: x < 0.6, 3), ('test_cv_folds2.template.cfg', lambda x: x > 0.95, 10)]:
+    for experiment_name, test_func, grid_size in [('test_cv_folds1', lambda x: x < 0.6, 3), ('test_cv_folds2', lambda x: x > 0.95, 10)]:
+        config_template_file = '{}.template.cfg'.format(experiment_name)
         config_path = fill_in_config_paths(os.path.join(_my_dir, 'configs', config_template_file))
 
         run_configuration(os.path.join(_my_dir, config_path), local=True)
 
-        with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_accuracy_cross-validate_test_cv_folds1_LogisticRegression.results')) as f:
+        with open(os.path.join(_my_dir, 'output', '{}_test_cv_folds_LogisticRegression.results').format(experiment_name)) as f:
             # check held out scores
             outstr = f.read()
             score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
@@ -185,10 +189,10 @@ def test_specified_cv_folds():
     # try the same tests for just training (and specifying the folds for the grid search)
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
-    featureset = ['test_cv_folds1']
+    featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix)
     clf = Learner(probability=True)
-    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train', 'test_cv_folds1.csv'))
+    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train', 'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
     grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective='accuracy', grid_jobs=1)
@@ -244,13 +248,13 @@ def test_regression1():
 
     run_configuration(os.path.join(_my_dir, config_path), local=True)
 
-    with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.results')) as f:
+    with open(os.path.join(_my_dir, 'output', 'test_regression1_test_regression1_RescaledRidge.results')) as f:
         # check held out scores
         outstr = f.read()
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
         assert score > 0.7
 
-    with open(os.path.join(_my_dir, 'output', 'train_cv_unscaled_tuned_pearson_cross-validate_test_regression1_RescaledRidge.predictions'), 'r') as f:
+    with open(os.path.join(_my_dir, 'output', 'test_regression1_test_regression1_RescaledRidge.predictions'), 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [float(row[1]) for row in reader]
@@ -267,10 +271,10 @@ def test_predict():
     This tests whether predict task runs.
     '''
 
-    y = make_regression_data()
+    make_regression_data()
 
     config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
-    config_path = fill_in_config_paths(config_template_path, task='predict')
+    config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(os.path.join(_my_dir, config_path), local=True)
 
@@ -278,7 +282,7 @@ def test_predict():
         inputs = [x for x in test_file]
         assert len(inputs) == 1000
 
-    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_pearson_predict_test_regression1_RescaledRidge.predictions')) as outfile:
+    with open(os.path.join(_my_dir, 'output', 'test_predict_test_regression1_RescaledRidge.predictions')) as outfile:
         reader = csv.DictReader(outfile, dialect=csv.excel_tab)
         predictions = [x['prediction'] for x in reader]
         assert len(predictions) == len(inputs)
@@ -332,23 +336,23 @@ def test_summary():
     make_summary_data()
 
     config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
-    config_path = fill_in_config_paths(config_template_path, task='evaluate')
+    config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, local=True)
 
-    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_LogisticRegression.results')) as f:
+    with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_LogisticRegression.results')) as f:
         outstr = f.read()
         logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_MultinomialNB.results')) as f:
+    with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_MultinomialNB.results')) as f:
         outstr = f.read()
         naivebayes_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_test_summary_SVC.results')) as f:
+    with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_SVC.results')) as f:
         outstr = f.read()
         svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_tuned_accuracy_evaluate_summary.tsv'), 'r') as f:
+    with open(os.path.join(_my_dir, 'output', 'test_summary_summary.tsv'), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
@@ -402,11 +406,11 @@ def test_sparse_predict():
     make_sparse_data()
 
     config_template_path = os.path.join(_my_dir, 'configs', 'test_sparse.template.cfg')
-    config_path = fill_in_config_paths(config_template_path, task='evaluate')
+    config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, local=True)
 
-    with open(os.path.join(_my_dir, 'output', 'train_test_unscaled_untuned_evaluate_test_sparse_LogisticRegression.results')) as f:
+    with open(os.path.join(_my_dir, 'output', 'test_sparse_test_sparse_LogisticRegression.results')) as f:
         outstr = f.read()
         logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
