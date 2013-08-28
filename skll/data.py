@@ -204,7 +204,7 @@ def _json_dict_iter(path, quiet=False):
             class_name = _safe_float(example["y"]) if 'y' in example else None
             example = example["x"]
 
-            yield curr_id, class_name, example
+            yield _safe_float(curr_id), class_name, example
 
             if not quiet and example_num % 100 == 0:
                 print(".", end="", file=sys.stderr)
@@ -263,7 +263,7 @@ def _megam_dict_iter(path, quiet=False):
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(zip(field_names, field_values))
 
-                yield curr_id, class_name, curr_info_dict
+                yield _safe_float(curr_id), class_name, curr_info_dict
 
                 # Set default example ID for next instance, in case we see a
                 # line without an ID.
@@ -316,7 +316,7 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y'):
                 if fval_float != 0.0:
                     row[fname] = fval_float
 
-            yield curr_id, class_name, row
+            yield _safe_float(curr_id), class_name, row
 
             if not quiet and example_num % 100 == 0:
                 print(".", end="", file=sys.stderr)

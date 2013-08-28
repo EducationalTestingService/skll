@@ -455,7 +455,7 @@ def test_unweighted_kappa():
 
 
 # Tests related to loading featuresets and merging them
-def make_merging_data(num_feat_files, suffix):
+def make_merging_data(num_feat_files, suffix, numeric_ids):
     num_examples = 500
     num_feats_per_file = 17
 
@@ -471,7 +471,7 @@ def make_merging_data(num_feat_files, suffix):
     classes = []
     for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, j)
+        ex_id = "{}{}".format(y, j) if not numeric_ids else j
         x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num in
              range(num_feat_files * num_feats_per_file)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
@@ -494,11 +494,11 @@ def make_merging_data(num_feat_files, suffix):
     write_feature_file(train_path, ids, classes, features)
 
 
-def check_load_featureset(suffix):
+def check_load_featureset(suffix, numeric_ids):
     num_feat_files = 5
 
     # Create test data
-    make_merging_data(num_feat_files, suffix)
+    make_merging_data(num_feat_files, suffix, numeric_ids)
 
     # Load unmerged data and merge it
     dirpath = os.path.join(_my_dir, 'train', 'test_merging')
@@ -520,5 +520,9 @@ def check_load_featureset(suffix):
 
 
 def test_load_featureset():
+    # Test merging with numeric IDs
     for suffix in ['.jsonlines', '.megam', '.tsv']:
-        yield check_load_featureset, suffix
+        yield check_load_featureset, suffix, True
+
+    for suffix in ['.jsonlines', '.megam', '.tsv']:
+        yield check_load_featureset, suffix, False
