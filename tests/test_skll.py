@@ -140,7 +140,10 @@ def fill_in_config_paths(config_template_path):
 
     config.set("Input", "train_location", train_dir)
 
-    to_fill_in = ['log', 'models', 'vocabs', 'predictions']
+    to_fill_in = ['log', 'vocabs', 'predictions']
+
+    if task != 'cross_validate':
+        to_fill_in.append('models')
 
     if task == 'evaluate' or task == 'cross_validate':
         to_fill_in.append('results')

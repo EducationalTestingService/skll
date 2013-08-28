@@ -412,8 +412,8 @@ def _classify_featureset(args):
                 learner.save(modelfile)
 
                 if grid_search:
-                    print('\tbest {} score: {}'.format(grid_objective,
-                                                       round(best_score, 3)),
+                    print('\tbest {} grid search score: {}'
+                          .format(grid_objective, round(best_score, 3)),
                           file=log_file)
 
             # print out the tuned parameters and best CV score
@@ -736,6 +736,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if task == 'train_only' and not modelpath:
         raise ValueError('The model path should be set ' +
                          'when task is train_only.')
+    if task == 'train_only' and prediction_dir:
+        raise ValueError('The predictions path should not be set ' +
+                         'when task is train_only.')
+    if task == 'cross_validate' and modelpath:
+        raise ValueError('The models path should not be set ' +
+                         'when task is cross_validate.')
 
     ###########################
 
