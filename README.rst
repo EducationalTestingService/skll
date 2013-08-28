@@ -57,9 +57,29 @@ Requirements
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
+-  `configparser <http://pypi.python.org/pypi/configparser>` (only required for
+   Python 2.7)
 
 Changelog
 ~~~~~~~~~
+
+-  v0.9.15
+
+   +  Added two new *required* fields to the configuration file format under the
+      `General` heading: `experiment_name` and `task`. See the
+      `run_experiment documentation <http://skll.readthedocs.org/en/latest/run_experiment.html#creating-configuration-files>`__
+      for details.
+   +  Fixed an issue where the "loading..." message was never being printed when
+      loading data files.
+   +  Fixed a bug where keyword arguments were being ignored for metrics when
+      calculating final scores for a tuned model. This means that **previous**
+      **reported results may be wrong for tuning metrics that use keywords**
+      **arguments**: `f1_score_micro`, `f1_score_macro`,
+      `linear_weighted_kappa`, and `quadratic_weighted_kappa`.
+   +  Now try to convert IDs to floats if they look like them to save
+      memory for very large files.
+   +  `kappa` now supports negative ratings.
+   +  Fixed a crash when specifing `grid_search_jobs` and pre-specified folds.
 
 -  v0.9.14
 
