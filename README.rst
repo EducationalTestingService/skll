@@ -66,7 +66,7 @@ Changelog
 -  v0.9.15
 
    +  Added two new *required* fields to the configuration file format under the
-      `General` heading: `experiment_name` and `task`. See the
+      ``General`` heading: ``experiment_name`` and ``task``. See the
       `run_experiment documentation <http://skll.readthedocs.org/en/latest/run_experiment.html#creating-configuration-files>`__
       for details.
    +  Fixed an issue where the "loading..." message was never being printed when
@@ -74,29 +74,30 @@ Changelog
    +  Fixed a bug where keyword arguments were being ignored for metrics when
       calculating final scores for a tuned model. This means that **previous**
       **reported results may be wrong for tuning metrics that use keywords**
-      **arguments**: `f1_score_micro`, `f1_score_macro`,
-      `linear_weighted_kappa`, and `quadratic_weighted_kappa`.
+      **arguments**: ``f1_score_micro``, ``f1_score_macro``,
+      ``linear_weighted_kappa``, and ``quadratic_weighted_kappa``.
    +  Now try to convert IDs to floats if they look like them to save
       memory for very large files.
-   +  `kappa` now supports negative ratings.
-   +  Fixed a crash when specifing `grid_search_jobs` and pre-specified folds.
+   +  ``kappa`` now supports negative ratings.
+   +  Fixed a crash when specifing ``grid_search_jobs`` and pre-specified folds.
 
 -  v0.9.14
 
-   +  Hotfix to fix issue where `grid_search_jobs` setting was being overriden
-      by `grid_search_folds`.
+   +  Hotfix to fix issue where ``grid_search_jobs`` setting was being overriden
+      by ``grid_search_folds``.
 
 -  v0.9.13
 
-   +  Added `skll.data.write_feature_file` (also available as
-      `skll.write_feature_file`) to simplify outputting .jsonlines, .megam, and
-      .tsv files.
+   +  Added ``skll.data.write_feature_file`` (also available as
+      ``skll.write_feature_file``) to simplify outputting .jsonlines, .megam,
+      and .tsv files.
    +  Added more unit tests for handling .megam and .tsv files.
    +  Fixed a bug that caused a crash when using gridmap.
-   +  `grid_search_jobs` now sets both `n_jobs` and `pre_dispatch` for
-      `GridSearchCV` under the hood. This prevents a potential memory issue when
-      dealing with large datasets and learners that cannot handle sparse data.
-   +  Changed logging format when using `run_experiment` to be a little more
+   +  ``grid_search_jobs`` now sets both ``n_jobs`` and ``pre_dispatch`` for
+      ``GridSearchCV`` under the hood. This prevents a potential memory issue
+      when dealing with large datasets and learners that cannot handle sparse
+      data.
+   +  Changed logging format when using ``run_experiment`` to be a little more
       readable.
 
 -  v0.9.12
@@ -112,11 +113,11 @@ Changelog
 -  v0.9.11
 
    +  Fixed all known remaining compatibility issues with Python 3.
-   +  Fixed bug in `skll.metrics.kappa` which would raise an exception if full
-      range of ratings was not seen in both `y_true` and `y_pred`. Also added a
-      unit test to prevent future regressions.
+   +  Fixed bug in ``skll.metrics.kappa`` which would raise an exception if full
+      range of ratings was not seen in both ``y_true`` and ``y_pred``. Also
+      added a unit test to prevent future regressions.
    +  Added missing configuration file that would cause a unit test to fail.
-   +  Slightly refactored `skll.Learner._create_estimator` to make it a lot
+   +  Slightly refactored ``skll.Learner._create_estimator`` to make it a lot
       simpler to add new learners/estimators in the future.
    +  Fixed a bug in handling of sparse matrices that would cause a crash if
       the number of features in the training and the test set were not the same.
@@ -126,7 +127,7 @@ Changelog
 
 -  v0.9.10
 
-   +  Fixed bug introduced in v0.9.9 that broke "predict" mode.
+   +  Fixed bug introduced in v0.9.9 that broke ``predict`` mode.
 
 -  v0.9.9
 
@@ -151,12 +152,12 @@ Changelog
    +  Removed ml_metrics dependency and we now support custom weights for kappa
       (through the API only so far).
    +  Require's scikit-learn 0.14+.
-   +  `accuracy`, `quadratic_weighted_kappa`, `unweighted_kappa`,
-      `f1_score_micro`, and `f1_score_macro` functions are no longer available
-      under `skll.metrics`. The accuracy and f1 score ones are no longer needed
-      because we just use the built-in ones. As for quadratic_weighted_kappa and
-      unweighted_kappa, they've been superseded by the kappa function that takes
-      a weights argument.
+   +  ``accuracy``, ``quadratic_weighted_kappa``, ``unweighted_kappa``,
+      ``f1_score_micro``, and ``f1_score_macro`` functions are no longer
+      available under ``skll.metrics``. The accuracy and f1 score ones are no
+      longer needed because we just use the built-in ones. As for
+      quadratic_weighted_kappa and unweighted_kappa, they've been superseded by
+      the kappa function that takes a weights argument.
    +  Fixed issue where you couldn't write prediction files if you were
       classifying using numeric classes.
 
@@ -171,7 +172,7 @@ Changelog
       featuresets. At least one feature file has to have a label though,
       because we only support supervised learning so far.
    +  **Important:** If you're using TSV files in your experiments, you should
-      either name the class label column 'y' or use the new `tsv_label` option
+      either name the class label column 'y' or use the new ``tsv_label`` option
       in your configuration file to specify the name of the label column. This
       was necessary to support feature files without labels.
    +  Fixed an issue with how version number was being imported in setup.py that
@@ -180,9 +181,9 @@ Changelog
    +  Made random seeds smaller to fix crash on 32-bit machines. This means that
       experiments run with previous versions of skll will yield slightly
       different results if you re-run them with v0.9.5+.
-   +  Added `megam_to_csv` for converting .megam files to CSV/TSV files.
-   +  Fixed a potential rounding problem with `csv_to_megam` that could slightly
-      change feature values in conversion process.
+   +  Added ``megam_to_csv`` for converting .megam files to CSV/TSV files.
+   +  Fixed a potential rounding problem with ``csv_to_megam`` that could
+      slightly change feature values in conversion process.
    +  Cleaned up test_skll.py a little bit.
    +  Updated documentation to include missing fields that can be specified in
       config files.
