@@ -186,6 +186,11 @@ def _parse_config_file(config_path):
                                         'suffix': '',
                                         'classifiers': '',
                                         'tsv_label': 'y'})
+
+    if not os.path.exists(config_path):
+        raise IOError(errno.ENOENT, "The config file doesn't exist.",
+                      config_path)
+
     config.read(config_path)
     return config
 
