@@ -78,9 +78,9 @@ def _features_for_gen_func(example_gen_func, path, quiet, sparse, tsv_label):
     have labels).
     '''
     if example_gen_func == _tsv_dict_iter:
-        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
+        gen_results = example_gen_func(path, quiet=quiet, tsv_label=tsv_label)
     else:
-        gen_results = example_gen_func(path, quiet=True)
+        gen_results = example_gen_func(path, quiet=quiet)
 
     feat_vectorizer = DictVectorizer(sparse=sparse)
     feat_dict_generator = map(itemgetter(2), gen_results)

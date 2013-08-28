@@ -198,7 +198,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
-    example_tuples = [load_examples(file_name, tsv_label) for file_name in
+    example_tuples = [load_examples(file_name, tsv_label=tsv_label) for file_name in
                       file_names]
 
     # Check that the IDs are unique within each file.
