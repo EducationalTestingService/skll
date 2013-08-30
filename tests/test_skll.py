@@ -463,7 +463,7 @@ def test_ablation_cv():
     run_ablation(config_path, local=True)
 
     # read in the summary file and make sure it has
-    # 6 ablated featuresets * 11 folds * 2 learners + 1 header row = 133 lines
+    # 6 ablated featuresets * 11 folds * 2 learners = 132 lines
     with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
