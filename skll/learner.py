@@ -231,6 +231,11 @@ class RescaledRegressionMixin(BaseEstimator):
         return args
 
     def rescale_init(self, constrain=True, rescale=True, **kwargs):
+        '''
+        This special init function is used by the mix-ins to make sure
+        that things get initialized in the right order.
+        '''
+        # pylint: disable=W0201
         self.constrain = constrain
         self.rescale = rescale
         self.y_min = None

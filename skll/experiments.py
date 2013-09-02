@@ -171,6 +171,7 @@ def _parse_config_file(config_path):
                                         'log': '',
                                         'results': '',
                                         'predictions': '',
+                                        'models': '',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
                                         'scale_features': 'False',
@@ -197,11 +198,8 @@ def _parse_config_file(config_path):
 
 def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
     '''
-    loads a list of feature files and merges them (or loads just one if
-    featureset is a string).
+    loads a list of feature files and merges them.
     '''
-    if isinstance(featureset, string_types):
-        featureset = [featureset]
 
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
@@ -603,7 +601,7 @@ def _load_cv_folds(cv_folds_location):
 
 
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
-                      hosts=None):
+                      hosts=None, write_summary=True):
     '''
     Takes a configuration file and runs the specified jobs on the grid.
 
@@ -619,6 +617,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     :param hosts: If running on the cluster, these are the machines we should
                   use.
     :type hosts: list of str
+    :param write_summary: Write a tsv file with a summary of the results.
+    :type write_summary: bool
+
+    :return: A list of paths to .json results files for each variation in the
+             experiment.
+    :rtype: list of str
+
     '''
     # Read configuration
     config = _parse_config_file(config_file)
@@ -657,8 +662,23 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                        learner) for learner in given_learners]
     given_featuresets = json.loads(_fix_json(config.get("Input",
                                                         "featuresets")))
+
+    # ensure that given_featuresets is a list of lists
+    if not isinstance(given_featuresets, list) or \
+       not all([isinstance(fs, list) for fs in given_featuresets]):
+        raise ValueError("The featuresets parameter should be a " +
+                         "list of lists: {}".format(given_featuresets))
+
     given_featureset_names = json.loads(_fix_json(config.get("Input",
                                                              "featureset_names")))
+
+    # ensure that given_featureset_names is a list of strings, if specified
+    if given_featureset_names:
+        if not isinstance(given_featureset_names, list) or \
+           not all([isinstance(fs, string_types) for fs in given_featureset_names]):
+            raise ValueError("The featureset_names parameter should be a " +
+                             "list of strings: {}".format(given_featureset_names))
+
     fixed_parameter_list = json.loads(_fix_json(config.get("Input",
                                                            "fixed_parameters")))
     param_grid_list = json.loads(_fix_json(config.get("Tuning", "param_grids")))
@@ -766,9 +786,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # the list to hold the paths to all the result json files
     result_json_paths = []
 
-    # the components for the names of the results and summary files
-    base_name_components = [experiment_name]
-
     # For each feature set
     for featureset, featureset_name in zip(given_featuresets,
                                            given_featureset_names):
@@ -776,7 +793,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         # and for each learner
         for learner_num, given_learner in enumerate(given_learners):
 
-            job_name_components = base_name_components[:]
+            job_name_components = [experiment_name]
 
             # for the individual job name, we need to add the feature set name
             # and the learner name
@@ -844,11 +861,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         _check_job_results(job_results)
 
     # write out the summary results file
-    if task == 'cross_validate' or task == 'evaluate':
-        summary_file_name = '_'.join(base_name_components) + '_summary.tsv'
+    if (task == 'cross_validate' or task == 'evaluate') and write_summary:
+        summary_file_name = experiment_name + '_summary.tsv'
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file)
+
+    return result_json_paths
 
 
 def _check_job_results(job_results):
@@ -880,6 +899,10 @@ def _run_experiment_without_feature(arg_tuple):
                       - overwrite: Should we overwrite existing models?
 
     :type arg_tuple: tuple
+    :return: A list of paths to .json results files for each variation in the
+             experiment.
+    :rtype: list of str
+
     '''
     (feature_type, given_features, given_featureset_name, config, local, queue,
      cfg_path, machines, overwrite) = arg_tuple
@@ -895,17 +918,22 @@ def _run_experiment_without_feature(arg_tuple):
     config.set("Input", "featuresets", json.dumps(featureset))
     config.set("Input", "featureset_names", "['{}']".format(featureset_name))
 
-    m = re.search(r'^(.*)\.cfg$', cfg_path)
+    cfg_name = os.path.basename(cfg_path)
+    cfg_dir = os.path.dirname(cfg_path)
+
+    m = re.search(r'^(.*)\.cfg$', cfg_name)
     if not m:
         raise ValueError("Configuration file should end in .cfg.")
-    new_cfg_path = "{}_minus_{}.cfg".format(m.groups()[0], feature_type) \
-                   if feature_type else "{}_all.cfg".format(m.groups()[0])
+    new_cfg_path = os.path.join(cfg_dir, "{}_minus_{}.cfg".format(m.groups()[0], feature_type)
+                                if feature_type else "{}_all.cfg".format(m.groups()[0]))
 
-    with open(new_cfg_path, 'wb') as new_config_file:
+    file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+    with open(new_cfg_path, file_mode) as new_config_file:
         config.write(new_config_file)
 
-    run_configuration(new_cfg_path, local=local, queue=queue,
-                      hosts=machines, overwrite=overwrite)
+    return run_configuration(new_cfg_path, local=local, queue=queue,
+                             hosts=machines, overwrite=overwrite,
+                             write_summary=False)
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
@@ -936,25 +964,36 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
                                                              "featureset_names")))
 
     # make sure there is only one list of features
-    if ((isinstance(given_featuresets[0], list) and len(given_featuresets) > 1)
-        or (isinstance(given_featureset_names[0], list)
-            and len(given_featureset_names) > 1)):
+    if len(given_featuresets) > 1 or len(given_featureset_names) > 1:
         raise ValueError("More than one feature set or list of names given.")
 
     # make a list of features rather than a list of lists
     given_features = given_featuresets[0]
-    given_featureset_name = given_featureset_names[0]
+    given_featureset_name = 'ablation'
+    if given_featureset_names:
+        given_featureset_name = given_featureset_names[0]
 
     # for each feature file, make a copy of the config file
     # with all but that feature, and run the jobs.
     arg_tuples = ((feature_type, given_features, given_featureset_name,
-                   config, local, queue, os.path.basename(config_path),
-                   hosts, overwrite)
+                   config, local, queue, config_path, hosts, overwrite)
                   for feature_type in given_features + [None])
 
+    result_json_paths = []
     if local:
         for arg_tuple in arg_tuples:
-            _run_experiment_without_feature(arg_tuple)
+            result_json_paths.extend(_run_experiment_without_feature(arg_tuple))
     else:
         pool = Pool(processes=len(given_features) + 1)
-        pool.map(_run_experiment_without_feature, list(arg_tuples))
+        result_json_paths.extend(pool.map(_run_experiment_without_feature,
+                                          list(arg_tuples)))
+
+    task = config.get("General", "task")
+    experiment_name = config.get("General", "experiment_name")
+    resultspath = config.get("Output", "results")
+
+    if task == 'cross_validate' or task == 'evaluate':
+        summary_file_name = experiment_name + '_summary.tsv'
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:
+            _write_summary_file(result_json_paths, output_file)

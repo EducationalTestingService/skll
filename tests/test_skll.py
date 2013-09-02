@@ -27,6 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import csv
 import json
+import glob
 import os
 import re
 from collections import OrderedDict
@@ -38,7 +39,8 @@ from nose.tools import *
 
 from skll.data import write_feature_file
 from skll.experiments import (_load_featureset, run_configuration,
-                              _load_cv_folds, _parse_config_file)
+                              _load_cv_folds, _parse_config_file,
+                              run_ablation)
 from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
 
@@ -418,6 +420,58 @@ def test_sparse_predict():
         logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     assert_almost_equal(logistic_result_score, 0.5)
+
+
+def make_ablation_data():
+    num_examples = 1000
+
+    np.random.seed(1234567890)
+
+    # Create lists we will write files from
+    ids = []
+    features = []
+    classes = []
+    for j in range(num_examples):
+        y = "dog" if j % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, j)
+        x = {"f{}".format(feat_num): np.random.randint(0, 4) for feat_num in
+             range(5)}
+        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+
+    for i in range(5):
+        train_path = os.path.join(_my_dir, 'train', 'f{}.jsonlines'.format(i))
+        sub_features = []
+        for example_num in range(num_examples):
+            feat_num = i
+            x = {"f{}".format(feat_num): features[example_num]["f{}".format(feat_num)]}
+            sub_features.append(x)
+        write_feature_file(train_path, ids, classes, sub_features)
+
+
+def test_ablation_cv():
+    '''
+    Test to validate whether ablation works with cross-validate
+    '''
+    make_ablation_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_ablation(config_path, local=True)
+
+    # read in the summary file and make sure it has
+    # 6 ablated featuresets * 11 folds * 2 learners = 132 lines
+    with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        all_rows = list(reader)
+        assert_equal(len(all_rows), 132)
+
+    # make sure there are 6 ablated featuresets * 2 learners = 12 results files
+    num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
+    assert_equal(num_result_files, 12)
 
 
 # Test our kappa implementation based on Ben Hamner's unit tests.

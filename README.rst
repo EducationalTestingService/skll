@@ -63,6 +63,13 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.16
+
+   +  Fixed summary output for ablation experiments. Previously summary files
+      would not include all results.
+   +  Added ablation unit tests.
+   +  Fixed issue with generating PDF documentation.
+
 -  v0.9.15
 
    +  Added two new *required* fields to the configuration file format under the
