@@ -935,10 +935,9 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     given_featureset_names = json.loads(_fix_json(config.get("Input",
                                                              "featureset_names")))
 
-    # make sure there is only one list of features
-    if ((isinstance(given_featuresets[0], list) and len(given_featuresets) > 1)
-        or (isinstance(given_featureset_names[0], list)
-            and len(given_featureset_names) > 1)):
+    if (len(given_featuresets) > 1 and (isinstance(given_featuresets[0], list))
+       or (len(given_featureset_names) > 1 and
+           isinstance(given_featureset_names[0], list))):
         raise ValueError("More than one feature set or list of names given.")
 
     # make a list of features rather than a list of lists
