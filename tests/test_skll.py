@@ -545,13 +545,13 @@ def test_scaling():
     # make sure that the result with and without scaling aren't the same
     with open(os.path.join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
-        row = reader.next()
+        row = list(reader)[0]
         without_scaling_score = row['score']
         without_scaling_scaling_value = row['feature_scaling']
 
     with open(os.path.join(_my_dir, 'output', 'with_scaling_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
-        row = reader.next()
+        row = list(reader)[0]
         with_scaling_score = row['score']
         with_scaling_scaling_value = row['feature_scaling']
 
