@@ -57,7 +57,7 @@ Requirements
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
--  `configparser <http://pypi.python.org/pypi/configparser>` (only required for
+-  `configparser <http://pypi.python.org/pypi/configparser>`__ (only required for
    Python 2.7)
 
 Changelog
