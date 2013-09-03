@@ -474,6 +474,92 @@ def test_ablation_cv():
     assert_equal(num_result_files, 12)
 
 
+def make_scaling_data():
+    num_train_examples = 1000
+    num_test_examples = 100
+
+    np.random.seed(1234567890)
+
+    # create training data
+    ids = []
+    features = []
+    classes = []
+    for j in range(num_train_examples):
+        y = "dog" if j % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, j)
+        x = {"g{}".format(feat_num): np.random.randint(0, 4) for feat_num in
+             range(5)}
+        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+
+    for i in range(5):
+        train_path = os.path.join(_my_dir, 'train', 'g{}.jsonlines'.format(i))
+        sub_features = []
+        for example_num in range(num_train_examples):
+            feat_num = i
+            x = {"g{}".format(feat_num): features[example_num]["g{}".format(feat_num)]}
+            sub_features.append(x)
+        write_feature_file(train_path, ids, classes, sub_features)
+
+    # create the test data
+    for j in range(num_test_examples):
+        y = "dog" if j % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, j)
+        x = {"g{}".format(feat_num): np.random.randint(0, 4) for feat_num in
+             range(5)}
+        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+
+    for i in range(5):
+        train_path = os.path.join(_my_dir, 'test', 'g{}.jsonlines'.format(i))
+        sub_features = []
+        for example_num in range(num_test_examples):
+            feat_num = i
+            x = {"g{}".format(feat_num): features[example_num]["g{}".format(feat_num)]}
+            sub_features.append(x)
+        write_feature_file(train_path, ids, classes, sub_features)
+
+
+def test_scaling():
+    '''
+    Test to validate whether feature scaling works
+    '''
+    make_scaling_data()
+
+    # run the experiment without scaling
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_without.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, local=True)
+
+    # now run the version with scaling
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_with.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, local=True)
+
+    # make sure that the result with and without scaling aren't the same
+    with open(os.path.join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        row = list(reader)[0]
+        without_scaling_score = row['score']
+        without_scaling_scaling_value = row['feature_scaling']
+
+    with open(os.path.join(_my_dir, 'output', 'with_scaling_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        row = list(reader)[0]
+        with_scaling_score = row['score']
+        with_scaling_scaling_value = row['feature_scaling']
+
+    assert_not_equal(without_scaling_score, with_scaling_score)
+    eq_(without_scaling_scaling_value, 'none')
+    eq_(with_scaling_scaling_value, 'both')
+
+
 # Test our kappa implementation based on Ben Hamner's unit tests.
 kappa_inputs = [([1, 2, 3], [1, 2, 3]),
                 ([1, 2, 1], [1, 2, 2]),
