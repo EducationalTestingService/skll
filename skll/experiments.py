@@ -174,7 +174,6 @@ def _parse_config_file(config_path):
                                         'models': '',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
-                                        'scale_features': 'False',
                                         'probability': 'False',
                                         'fixed_parameters': '[]',
                                         'param_grids': '[]',
