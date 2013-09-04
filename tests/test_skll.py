@@ -37,7 +37,7 @@ import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
 
-from skll.data import write_feature_file
+from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _parse_config_file,
                               run_ablation)
@@ -666,3 +666,38 @@ def test_load_featureset():
 
     for suffix in ['.jsonlines', '.megam', '.tsv']:
         yield check_load_featureset, suffix, False
+
+
+def test_ids_to_floats():
+    path = os.path.join(_my_dir, 'train', 'test_input_2examples_1.jsonlines')
+
+    examples = load_examples(path, ids_to_floats=True)
+    assert isinstance(examples.ids[0], float)
+
+    examples = load_examples(path)
+    assert not isinstance(examples.ids[0], float)
+    assert isinstance(examples.ids[0], str)
+
+
+def test_convert_examples():
+    examples = [{"id": "example0", "y": 1.0, "x": {"f1": 1.0}},
+                {"id": "example1", "y": 2.0, "x": {"f1": 1.0, "f2": 1.0}},
+                {"id": "example2", "y": 3.0, "x": {"f2": 1.0, "f3": 3.0}}]
+    converted = convert_examples(examples)
+
+    assert converted.ids[0] == "example0"
+    assert converted.ids[1] == "example1"
+    assert converted.ids[2] == "example2"
+
+    assert converted.classes[0] == 1.0
+    assert converted.classes[1] == 2.0
+    assert converted.classes[2] == 3.0
+
+    assert converted.features[0, 0] == 1.0
+    assert converted.features[0, 1] == 0.0
+    assert converted.features[1, 0] == 1.0
+    assert converted.features[1, 1] == 1.0
+    assert converted.features[2, 2] == 3.0
+    assert converted.features[2, 0] == 0.0
+
+    assert converted.feat_vectorizer.get_feature_names() == ['f1', 'f2', 'f3']
