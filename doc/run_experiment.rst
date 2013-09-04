@@ -120,6 +120,13 @@ Input
         assumed to be in a column with this name. If no column with this name is
         found, the data is assumed to be unlabelled. Defaults to 'y'.
 
+    **ids_to_floats** *(Optional)*
+        If you have a dataset with lots of examples, and your input files have
+        IDs that look like numbers (can be converted by float()), then setting
+        this to True will save you some memory by storing IDs as floats.
+        Note that this will cause IDs to be printed as floats in prediction
+        files (e.g., "4.0" instead of "4" or "0004" or "4.000").
+
     **cv_folds_location** *(Optional)*
         Path to a csv file (with a header that is ignored) specifyingfolds for
         cross-validation. The first column should consist of training set IDs
