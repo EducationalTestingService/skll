@@ -47,15 +47,37 @@ ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
                                              'feat_vectorizer'])
 
 
-def _ids_for_gen_func(example_gen_func, path, tsv_label):
+def _make_examples_generator(example_gen_func, path, quiet=True,
+                             tsv_label='y', ids_to_floats=True):
+    '''
+    This function simply calls example_gen_func, which should be
+    one of the data loading functions (e.g., _tsv_dict_iter),
+    with the appropriate arguments.
+
+    Note: ids_to_floats defaults to True to save memory.
+    '''
+    if example_gen_func == _tsv_dict_iter:
+        return example_gen_func(path, quiet=quiet, tsv_label=tsv_label,
+                                ids_to_floats=ids_to_floats)
+    else:
+        return example_gen_func(path, quiet=quiet,
+                                ids_to_floats=ids_to_floats)
+
+
+def _ids_for_gen_func(example_gen_func, path, ids_to_floats=False):
     '''
     Little helper function to return an array of IDs for a given example
     generator (and whether or not the examples have labels).
     '''
-    if example_gen_func == _tsv_dict_iter:
-        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
-    else:
-        gen_results = example_gen_func(path, quiet=True)
+    gen_results = _make_examples_generator(example_gen_func, path,
+                                           ids_to_floats=ids_to_floats)
+    return _ids_for_gen_func_helper(gen_results)
+
+
+def _ids_for_gen_func_helper(gen_results):
+    '''
+    See _ids_for_gen_func.
+    '''
     return np.array([curr_id for curr_id, _, _ in gen_results])
 
 
@@ -64,31 +86,41 @@ def _classes_for_gen_func(example_gen_func, path, tsv_label):
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
-    if example_gen_func == _tsv_dict_iter:
-        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
-    else:
-        gen_results = example_gen_func(path, quiet=True)
+    gen_results = _make_examples_generator(example_gen_func, path,
+                                           tsv_label=tsv_label)
+    return _classes_for_gen_func_helper(gen_results)
+
+
+def _classes_for_gen_func_helper(gen_results):
+    '''
+    See _classes_for_gen_func.
+    '''
     return np.array([class_name for _, class_name, _ in gen_results])
 
 
-def _features_for_gen_func(example_gen_func, path, quiet, sparse, tsv_label):
+def _features_for_gen_func(example_gen_func, path, quiet, sparse):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
     have labels).
     '''
-    if example_gen_func == _tsv_dict_iter:
-        gen_results = example_gen_func(path, quiet=quiet, tsv_label=tsv_label)
-    else:
-        gen_results = example_gen_func(path, quiet=quiet)
+    gen_results = _make_examples_generator(example_gen_func, path,
+                                           quiet=quiet)
+    return _features_for_gen_func_helper(gen_results, sparse)
 
+
+def _features_for_gen_func_helper(gen_results, sparse):
+    '''
+    See _features_for_gen_func.
+    '''
     feat_vectorizer = DictVectorizer(sparse=sparse)
     feat_dict_generator = map(itemgetter(2), gen_results)
     features = feat_vectorizer.fit_transform(feat_dict_generator)
     return features, feat_vectorizer
 
 
-def load_examples(path, quiet=False, sparse=True, tsv_label='y'):
+def load_examples(path, quiet=False, sparse=True, tsv_label='y',
+                  ids_to_floats=False):
     '''
     Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
     formats.
@@ -137,13 +169,15 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y'):
     # variables more easily and do these in parallel.
     pool = Pool(3)
 
-    ids_result = pool.apply_async(_ids_for_gen_func, args=(example_gen_func,
-                                                           path, tsv_label))
+    ids_result = pool.apply_async(_ids_for_gen_func,
+                                  args=(example_gen_func, path,
+                                        ids_to_floats))
     classes_result = pool.apply_async(_classes_for_gen_func,
-                                      args=(example_gen_func, path, tsv_label))
+                                      args=(example_gen_func, path,
+                                            tsv_label))
     features_result = pool.apply_async(_features_for_gen_func,
                                        args=(example_gen_func, path, quiet,
-                                             sparse, tsv_label))
+                                             sparse))
 
     # Wait for processes to complete and store results
     pool.close()
@@ -151,6 +185,32 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y'):
     ids = ids_result.get()
     classes = classes_result.get()
     features, feat_vectorizer = features_result.get()
+
+    return ExamplesTuple(ids, classes, features, feat_vectorizer)
+
+
+def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
+    '''
+    This function is to facilitate programmatic use of Learner.predict()
+    and other functions that take ExamplesTuple objects as input.
+    It converts a .jsonlines-style list of dictionaries into
+    an ExamplesTuple.
+
+    :param example_dicts: A list of dictionaries following the .jsonlines
+                          format (i.e., features 'x', label 'y', and 'id').
+    :type example_dicts: list of dict
+
+    :return an ExamplesTuple representing the examples in example_dicts.
+    '''
+
+    gen_results = [(_safe_float(d['id']) if ids_to_floats else d['id'],
+                    d['y'] if 'y' in d else None,
+                    d['x'])
+                   for d in example_dicts]
+    ids = _ids_for_gen_func_helper(gen_results)
+    classes = _classes_for_gen_func_helper(gen_results)
+    features, feat_vectorizer = _features_for_gen_func_helper(gen_results,
+                                                              sparse)
 
     return ExamplesTuple(ids, classes, features, feat_vectorizer)
 
@@ -181,7 +241,7 @@ def _safe_float(text):
         return text
 
 
-def _json_dict_iter(path, quiet=False):
+def _json_dict_iter(path, quiet=False, ids_to_floats=False):
     '''
     Convert current line in .jsonlines file to a dictionary with the
     following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
@@ -200,11 +260,16 @@ def _json_dict_iter(path, quiet=False):
             sys.stderr.flush()
         for example_num, line in enumerate(f):
             example = json.loads(line.strip())
-            curr_id = example.get("id", "EXAMPLE_{}".format(example_num))
+            # Convert all IDs to strings initially,
+            # for consistency with csv and megam formats.
+            curr_id = str(example.get("id", "EXAMPLE_{}".format(example_num)))
             class_name = _safe_float(example["y"]) if 'y' in example else None
             example = example["x"]
 
-            yield _safe_float(curr_id), class_name, example
+            if ids_to_floats:
+                curr_id = _safe_float(curr_id)
+
+            yield curr_id, class_name, example
 
             if not quiet and example_num % 100 == 0:
                 print(".", end="", file=sys.stderr)
@@ -212,7 +277,7 @@ def _json_dict_iter(path, quiet=False):
             print("done", file=sys.stderr)
 
 
-def _megam_dict_iter(path, quiet=False):
+def _megam_dict_iter(path, quiet=False, ids_to_floats=False):
     '''
     Generator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
@@ -263,7 +328,10 @@ def _megam_dict_iter(path, quiet=False):
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(zip(field_names, field_values))
 
-                yield _safe_float(curr_id), class_name, curr_info_dict
+                if ids_to_floats:
+                    curr_id = _safe_float(curr_id)
+
+                yield curr_id, class_name, curr_info_dict
 
                 # Set default example ID for next instance, in case we see a
                 # line without an ID.
@@ -276,7 +344,7 @@ def _megam_dict_iter(path, quiet=False):
             print("done", file=sys.stderr)
 
 
-def _tsv_dict_iter(path, quiet=False, tsv_label='y'):
+def _tsv_dict_iter(path, quiet=False, tsv_label='y', ids_to_floats=False):
     '''
     Generator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
@@ -309,14 +377,17 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y'):
                 curr_id = row["id"]
                 del row["id"]
 
-            # Convert features to flaot
+            # Convert features to floats
             for fname, fval in iteritems(row):
                 fval_float = _safe_float(fval)
                 # we don't need to explicitly store zeros
                 if fval_float != 0.0:
                     row[fname] = fval_float
 
-            yield _safe_float(curr_id), class_name, row
+            if ids_to_floats:
+                curr_id = _safe_float(curr_id)
+
+            yield curr_id, class_name, row
 
             if not quiet and example_num % 100 == 0:
                 print(".", end="", file=sys.stderr)
@@ -441,12 +512,10 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                 if class_name is not None:
                     print(class_name, end='\t', file=f)
                 print(' '.join(('{} {}'.format(field, value) for field, value in
-                            sorted(feature_dict.items()) if Decimal(value) != 0)),
+                                sorted(feature_dict.items()) if Decimal(value) != 0)),
                       file=f)
 
     # Invalid file suffix, raise error
     else:
         raise ValueError('Output file must be in either .tsv, .megam, or ' +
                          '.jsonlines format. You specified: {}'.format(path))
-
-
