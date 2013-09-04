@@ -47,15 +47,33 @@ ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
                                              'feat_vectorizer'])
 
 
+def _make_examples_generator(example_gen_func, path, quiet=True,
+                             tsv_label='y'):
+    '''
+    This function simply calls example_gen_func, which should be
+    one of the data loading functions (e.g., _tsv_dict_iter),
+    with the appropriate arguments.
+    '''
+    if example_gen_func == _tsv_dict_iter:
+        return example_gen_func(path, quiet=quiet, tsv_label=tsv_label)
+    else:
+        return example_gen_func(path, quiet=quiet)
+
+
 def _ids_for_gen_func(example_gen_func, path, tsv_label):
     '''
     Little helper function to return an array of IDs for a given example
     generator (and whether or not the examples have labels).
     '''
-    if example_gen_func == _tsv_dict_iter:
-        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
-    else:
-        gen_results = example_gen_func(path, quiet=True)
+    gen_results = _make_examples_generator(example_gen_func, path, False,
+                                           tsv_label)
+    return _ids_for_gen_func_helper(gen_results)
+
+
+def _ids_for_gen_func_helper(gen_results):
+    '''
+    See _ids_for_gen_func.
+    '''
     return np.array([curr_id for curr_id, _, _ in gen_results])
 
 
@@ -64,24 +82,33 @@ def _classes_for_gen_func(example_gen_func, path, tsv_label):
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
-    if example_gen_func == _tsv_dict_iter:
-        gen_results = example_gen_func(path, quiet=True, tsv_label=tsv_label)
-    else:
-        gen_results = example_gen_func(path, quiet=True)
+    gen_results = _make_examples_generator(example_gen_func, path, False,
+                                           tsv_label)
+    return _classes_for_gen_func_helper(gen_results)
+
+
+def _classes_for_gen_func_helper(gen_results):
+    '''
+    See _classes_for_gen_func.
+    '''
     return np.array([class_name for _, class_name, _ in gen_results])
 
 
-def _features_for_gen_func(example_gen_func, path, quiet, sparse, tsv_label):
+def _features_for_gen_func(example_gen_func, path, quiet, tsv_label, sparse):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
     have labels).
     '''
-    if example_gen_func == _tsv_dict_iter:
-        gen_results = example_gen_func(path, quiet=quiet, tsv_label=tsv_label)
-    else:
-        gen_results = example_gen_func(path, quiet=quiet)
+    gen_results = _make_examples_generator(example_gen_func, path, quiet,
+                                           tsv_label)
+    return _features_for_gen_func_helper(gen_results, sparse)
 
+
+def _features_for_gen_func_helper(gen_results, sparse):
+    '''
+    See _features_for_gen_func.
+    '''
     feat_vectorizer = DictVectorizer(sparse=sparse)
     feat_dict_generator = map(itemgetter(2), gen_results)
     features = feat_vectorizer.fit_transform(feat_dict_generator)
@@ -137,13 +164,14 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y'):
     # variables more easily and do these in parallel.
     pool = Pool(3)
 
-    ids_result = pool.apply_async(_ids_for_gen_func, args=(example_gen_func,
-                                                           path, tsv_label))
+    ids_result = pool.apply_async(_ids_for_gen_func,
+                                  args=(example_gen_func, path, tsv_label))
     classes_result = pool.apply_async(_classes_for_gen_func,
-                                      args=(example_gen_func, path, tsv_label))
+                                      args=(example_gen_func, path,
+                                            tsv_label))
     features_result = pool.apply_async(_features_for_gen_func,
                                        args=(example_gen_func, path, quiet,
-                                             sparse, tsv_label))
+                                             tsv_label, sparse))
 
     # Wait for processes to complete and store results
     pool.close()
@@ -151,6 +179,32 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y'):
     ids = ids_result.get()
     classes = classes_result.get()
     features, feat_vectorizer = features_result.get()
+
+    return ExamplesTuple(ids, classes, features, feat_vectorizer)
+
+
+def convert_examples(example_dicts, quiet=False, sparse=True):
+    '''
+    This function is to facilitate programmatic use of Learner.predict()
+    and other functions that take ExamplesTuple objects as input.
+    It converts a .jsonlines-style list of dictionaries into
+    an ExamplesTuple.
+
+    :param example_dicts: A list of dictionaries following the .jsonlines
+                          format (i.e., features 'x', label 'y', and 'id').
+    :type example_dicts: list of dict
+
+    :return an ExamplesTuple representing the examples in example_dicts.
+    '''
+
+    gen_results = [(_safe_float(d['id']),
+                    d['y'] if 'y' in d else None,
+                    d['x'])
+                   for d in example_dicts]
+    ids = _ids_for_gen_func_helper(gen_results)
+    classes = _classes_for_gen_func_helper(gen_results)
+    features, feat_vectorizer = _features_for_gen_func_helper(gen_results,
+                                                              sparse)
 
     return ExamplesTuple(ids, classes, features, feat_vectorizer)
 
@@ -441,12 +495,10 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                 if class_name is not None:
                     print(class_name, end='\t', file=f)
                 print(' '.join(('{} {}'.format(field, value) for field, value in
-                            sorted(feature_dict.items()) if Decimal(value) != 0)),
+                                sorted(feature_dict.items()) if Decimal(value) != 0)),
                       file=f)
 
     # Invalid file suffix, raise error
     else:
         raise ValueError('Output file must be in either .tsv, .megam, or ' +
                          '.jsonlines format. You specified: {}'.format(path))
-
-
