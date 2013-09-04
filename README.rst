@@ -63,6 +63,14 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.9.17
+
+   +  Added ``skll.data.convert_examples`` function to convert a list
+      dictionaries to an ExamplesTuple.
+   +  Added a new optional field to configuration file, ``ids_to_floats``, to
+      help save memory if you have a massive number of instances with numeric
+      IDs.
+
 -  v0.9.16
 
    +  Fixed summary output for ablation experiments. Previously summary files
