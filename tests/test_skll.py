@@ -685,19 +685,19 @@ def test_convert_examples():
                 {"id": "example2", "y": 3.0, "x": {"f2": 1.0, "f3": 3.0}}]
     converted = convert_examples(examples)
 
-    assert converted.ids[0] == "example0"
-    assert converted.ids[1] == "example1"
-    assert converted.ids[2] == "example2"
+    eq_(converted.ids[0], "example0")
+    eq_(converted.ids[1], "example1")
+    eq_(converted.ids[2], "example2")
 
-    assert converted.classes[0] == 1.0
-    assert converted.classes[1] == 2.0
-    assert converted.classes[2] == 3.0
+    eq_(converted.classes[0], 1.0)
+    eq_(converted.classes[1], 2.0)
+    eq_(converted.classes[2], 3.0)
 
-    assert converted.features[0, 0] == 1.0
-    assert converted.features[0, 1] == 0.0
-    assert converted.features[1, 0] == 1.0
-    assert converted.features[1, 1] == 1.0
-    assert converted.features[2, 2] == 3.0
-    assert converted.features[2, 0] == 0.0
+    eq_(converted.features[0, 0], 1.0)
+    eq_(converted.features[0, 1], 0.0)
+    eq_(converted.features[1, 0], 1.0)
+    eq_(converted.features[1, 1], 1.0)
+    eq_(converted.features[2, 2], 3.0)
+    eq_(converted.features[2, 0], 0.0)
 
-    assert converted.feat_vectorizer.get_feature_names() == ['f1', 'f2', 'f3']
+    eq_(converted.feat_vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
