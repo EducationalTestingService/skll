@@ -280,9 +280,6 @@ class Learner(object):
     A simpler learner interface around many scikit-learn classification
     and regression functions.
 
-    :param do_scale_features: Should we scale features with this
-                              learner?
-    :type do_scale_features: bool
     :param model_type: Type of estimator to create. Options are:
                        'LogisticRegression', 'LinearSVC', 'SVC',
                        'MultinomialNB', 'DecisionTreeClassifier',
@@ -301,17 +298,19 @@ class Learner(object):
                           classification setting.  Otherwise, an arbitrary
                           class is picked.
     :type pos_label_str: str
-    :param use_dense_features: Whether to require conversion to dense
-                               feature matrices.
-    :type use_dense_features: bool
+    :param feature_scaling: how to scale the features, if at all. Options are:
+                    'with_std': scale features using the standard deviation,
+                    'with_mean': center features using the mean,
+                    'both': do both scaling as well as centering,
+                    'none': do neither scaling nor centering
+    :type feature_scaling: str
     :param min_feature_count: The minimum number of examples a feature
                               must have a nonzero value in to be included.
     :type min_feature_count: int
     """
 
-    def __init__(self, probability=False, do_scale_features=False,
-                 model_type='LogisticRegression', model_kwargs=None,
-                 pos_label_str=None, use_dense_features=False,
+    def __init__(self, probability=False, model_type='LogisticRegression',
+                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
                  min_feature_count=1):
         '''
         Initializes a learner object with the specified settings.
@@ -319,7 +318,6 @@ class Learner(object):
         super(Learner, self).__init__()
 
         self.feat_vectorizer = None
-        self.do_scale_features = do_scale_features
         self.scaler = None
         self.label_dict = None
         self.label_list = None
@@ -327,13 +325,14 @@ class Learner(object):
         self._model_type = model_type
         self.probability = probability
         self._model = None
-        self._use_dense_features = use_dense_features
+        self._feature_scaling = feature_scaling
         self.feat_selector = None
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
 
         self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
-                                    self._use_dense_features)
+                                    self._feature_scaling in
+                                    ['with_mean', 'both'])
 
         # Set default keyword arguments for models that we have some for.
         if self._model_type == 'SVC':
@@ -557,10 +556,12 @@ class Learner(object):
 
         # Create scaler if we weren't passed one and it's necessary
         if self._model_type != 'MultinomialNB':
-            if self.do_scale_features:
+            if self._feature_scaling != 'none':
+                scale_with_mean = self._feature_scaling in ['with_mean', 'both']
+                scale_with_std = self._feature_scaling in ['with_std', 'both']
                 self.scaler = StandardScaler(copy=True,
-                                             with_mean=self._use_dense_features,
-                                             with_std=True)
+                                             with_mean=scale_with_mean,
+                                             with_std=scale_with_std)
             else:
                 # Doing this is to prevent any modification of feature values
                 # using a dummy transformation

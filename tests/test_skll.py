@@ -37,7 +37,7 @@ import numpy as np
 import scipy.sparse as sp
 from nose.tools import *
 
-from skll.data import write_feature_file
+from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _parse_config_file,
                               run_ablation)
@@ -474,6 +474,92 @@ def test_ablation_cv():
     assert_equal(num_result_files, 12)
 
 
+def make_scaling_data():
+    num_train_examples = 1000
+    num_test_examples = 100
+
+    np.random.seed(1234567890)
+
+    # create training data
+    ids = []
+    features = []
+    classes = []
+    for j in range(num_train_examples):
+        y = "dog" if j % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, j)
+        x = {"g{}".format(feat_num): np.random.randint(0, 4) for feat_num in
+             range(5)}
+        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+
+    for i in range(5):
+        train_path = os.path.join(_my_dir, 'train', 'g{}.jsonlines'.format(i))
+        sub_features = []
+        for example_num in range(num_train_examples):
+            feat_num = i
+            x = {"g{}".format(feat_num): features[example_num]["g{}".format(feat_num)]}
+            sub_features.append(x)
+        write_feature_file(train_path, ids, classes, sub_features)
+
+    # create the test data
+    for j in range(num_test_examples):
+        y = "dog" if j % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, j)
+        x = {"g{}".format(feat_num): np.random.randint(0, 4) for feat_num in
+             range(5)}
+        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+
+    for i in range(5):
+        train_path = os.path.join(_my_dir, 'test', 'g{}.jsonlines'.format(i))
+        sub_features = []
+        for example_num in range(num_test_examples):
+            feat_num = i
+            x = {"g{}".format(feat_num): features[example_num]["g{}".format(feat_num)]}
+            sub_features.append(x)
+        write_feature_file(train_path, ids, classes, sub_features)
+
+
+def test_scaling():
+    '''
+    Test to validate whether feature scaling works
+    '''
+    make_scaling_data()
+
+    # run the experiment without scaling
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_without.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, local=True)
+
+    # now run the version with scaling
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_with.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, local=True)
+
+    # make sure that the result with and without scaling aren't the same
+    with open(os.path.join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        row = list(reader)[0]
+        without_scaling_score = row['score']
+        without_scaling_scaling_value = row['feature_scaling']
+
+    with open(os.path.join(_my_dir, 'output', 'with_scaling_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        row = list(reader)[0]
+        with_scaling_score = row['score']
+        with_scaling_scaling_value = row['feature_scaling']
+
+    assert_not_equal(without_scaling_score, with_scaling_score)
+    eq_(without_scaling_scaling_value, 'none')
+    eq_(with_scaling_scaling_value, 'both')
+
+
 # Test our kappa implementation based on Ben Hamner's unit tests.
 kappa_inputs = [([1, 2, 3], [1, 2, 3]),
                 ([1, 2, 1], [1, 2, 2]),
@@ -580,3 +666,38 @@ def test_load_featureset():
 
     for suffix in ['.jsonlines', '.megam', '.tsv']:
         yield check_load_featureset, suffix, False
+
+
+def test_ids_to_floats():
+    path = os.path.join(_my_dir, 'train', 'test_input_2examples_1.jsonlines')
+
+    examples = load_examples(path, ids_to_floats=True)
+    assert isinstance(examples.ids[0], float)
+
+    examples = load_examples(path)
+    assert not isinstance(examples.ids[0], float)
+    assert isinstance(examples.ids[0], str)
+
+
+def test_convert_examples():
+    examples = [{"id": "example0", "y": 1.0, "x": {"f1": 1.0}},
+                {"id": "example1", "y": 2.0, "x": {"f1": 1.0, "f2": 1.0}},
+                {"id": "example2", "y": 3.0, "x": {"f2": 1.0, "f3": 3.0}}]
+    converted = convert_examples(examples)
+
+    eq_(converted.ids[0], "example0")
+    eq_(converted.ids[1], "example1")
+    eq_(converted.ids[2], "example2")
+
+    eq_(converted.classes[0], 1.0)
+    eq_(converted.classes[1], 2.0)
+    eq_(converted.classes[2], 3.0)
+
+    eq_(converted.features[0, 0], 1.0)
+    eq_(converted.features[0, 1], 0.0)
+    eq_(converted.features[1, 0], 1.0)
+    eq_(converted.features[1, 1], 1.0)
+    eq_(converted.features[2, 2], 3.0)
+    eq_(converted.features[2, 0], 0.0)
+
+    eq_(converted.feat_vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])

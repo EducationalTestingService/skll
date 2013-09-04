@@ -135,7 +135,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
     print('Learner: {}'.format(lrd['given_learner']), file=output_file)
     print('Task: {}'.format(lrd['task']), file=output_file)
-    print('Scaling: {}'.format(lrd['scaling']), file=output_file)
+    print('Feature Scaling: {}'.format(lrd['feature_scaling']), file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
     print('Grid Objective: {}'.format(lrd['grid_objective']), file=output_file)
     print('\n', file=output_file)
@@ -174,19 +174,19 @@ def _parse_config_file(config_path):
                                         'models': '',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
-                                        'scale_features': 'False',
                                         'probability': 'False',
                                         'fixed_parameters': '[]',
                                         'param_grids': '[]',
                                         'pos_label_str': '',
                                         'featureset_names': '[]',
-                                        'use_dense_features': 'False',
+                                        'feature_scaling': 'none',
                                         'min_feature_count': '1',
                                         'grid_search_jobs': '0',
                                         'cv_folds_location': '',
                                         'suffix': '',
                                         'classifiers': '',
-                                        'tsv_label': 'y'})
+                                        'tsv_label': 'y',
+                                        'ids_to_floats': 'False'})
 
     if not os.path.exists(config_path):
         raise IOError(errno.ENOENT, "The config file doesn't exist.",
@@ -196,7 +196,8 @@ def _parse_config_file(config_path):
     return config
 
 
-def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
+def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
+                     ids_to_floats=False):
     '''
     loads a list of feature files and merges them.
     '''
@@ -204,8 +205,9 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y'):
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
-    example_tuples = [load_examples(file_name, tsv_label=tsv_label) for file_name in
-                      file_names]
+    example_tuples = [load_examples(file_name, tsv_label=tsv_label,
+                                    ids_to_floats=ids_to_floats)
+                      for file_name in file_names]
 
     # Check that the IDs are unique within each file.
     for file_name, examples in zip(file_names, example_tuples):
@@ -305,7 +307,6 @@ def _classify_featureset(args):
     prediction_prefix = args.pop("prediction_prefix")
     grid_search = args.pop("grid_search")
     grid_objective = args.pop("grid_objective")
-    do_scale_features = args.pop("do_scale_features")
     suffix = args.pop("suffix")
     log_path = args.pop("log_path")
     probability = args.pop("probability")
@@ -314,11 +315,12 @@ def _classify_featureset(args):
     param_grid = args.pop("param_grid")
     pos_label_str = args.pop("pos_label_str")
     overwrite = args.pop("overwrite")
-    use_dense_features = args.pop("use_dense_features")
+    feature_scaling = args.pop("feature_scaling")
     min_feature_count = args.pop("min_feature_count")
     grid_search_jobs = args.pop("grid_search_jobs")
     cv_folds = args.pop("cv_folds")
     tsv_label = args.pop("tsv_label")
+    ids_to_floats = args.pop("ids_to_floats")
     if args:
         raise ValueError("Extra arguments passed: {}".format(args.keys()))
 
@@ -344,18 +346,19 @@ def _classify_featureset(args):
 
         # load the training and test examples
         train_examples = _load_featureset(train_path, featureset, suffix,
-                                          tsv_label)
+                                          tsv_label=tsv_label,
+                                          ids_to_floats=ids_to_floats)
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
-                                             tsv_label)
+                                             tsv_label=tsv_label,
+                                             ids_to_floats=ids_to_floats)
 
         # initialize a classifer object
         learner = Learner(probability=probability,
                           model_type=given_learner,
-                          do_scale_features=do_scale_features,
+                          feature_scaling=feature_scaling,
                           model_kwargs=fixed_parameters,
                           pos_label_str=pos_label_str,
-                          use_dense_features=use_dense_features,
                           min_feature_count=min_feature_count)
 
         # check whether a trained model on the same data with the same
@@ -371,7 +374,7 @@ def _classify_featureset(args):
                                     'given_learner': given_learner,
                                     'task': task,
                                     'timestamp': timestamp,
-                                    'scaling': do_scale_features,
+                                    'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective}
 
@@ -683,13 +686,20 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                                            "fixed_parameters")))
     param_grid_list = json.loads(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
-    use_dense_features = config.getboolean("Tuning", "use_dense_features")
+
+    # ensure that feature_scaling is specified only as one of the
+    # four available choices
+    feature_scaling = config.get("Tuning", "feature_scaling")
+    if feature_scaling not in ['with_std', 'with_mean', 'both', 'none']:
+        raise ValueError("Invalid value for feature_scaling parameter: " +
+                         "{}".format(feature_scaling))
 
     # get all the input paths and directories (without trailing slashes)
     train_path = config.get("Input", "train_location").rstrip('/')
     test_path = config.get("Input", "test_location").rstrip('/')
     suffix = config.get("Input", "suffix")
     tsv_label = config.get("Input", "tsv_label")
+    ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
     # get the cv folds file and make a dictionary from it
     cv_folds_location = config.get("Input", "cv_folds_location")
@@ -744,9 +754,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if grid_objective not in SCORERS:
         raise ValueError(('Invalid grid objective function: ' +
                           '{}').format(grid_objective))
-
-    # do we need to scale the feature values?
-    do_scale_features = config.getboolean("Tuning", "scale_features")
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
@@ -822,7 +829,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["prediction_prefix"] = prediction_prefix
             job_args["grid_search"] = do_grid_search
             job_args["grid_objective"] = grid_objective
-            job_args["do_scale_features"] = do_scale_features
             job_args["suffix"] = suffix
             job_args["log_path"] = temp_logfile
             job_args["probability"] = probability
@@ -834,11 +840,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                       if param_grid_list else None)
             job_args["pos_label_str"] = pos_label_str
             job_args["overwrite"] = overwrite
-            job_args["use_dense_features"] = use_dense_features
+            job_args["feature_scaling"] = feature_scaling
             job_args["min_feature_count"] = min_feature_count
             job_args["grid_search_jobs"] = grid_search_jobs
             job_args["cv_folds"] = cv_folds
             job_args["tsv_label"] = tsv_label
+            job_args["ids_to_floats"] = ids_to_floats
 
             if not local:
                 jobs.append(Job(_classify_featureset, [job_args],

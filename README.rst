@@ -57,11 +57,19 @@ Requirements
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
--  `configparser <http://pypi.python.org/pypi/configparser>` (only required for
+-  `configparser <http://pypi.python.org/pypi/configparser>`__ (only required for
    Python 2.7)
 
 Changelog
 ~~~~~~~~~
+
+-  v0.9.17
+
+   +  Added ``skll.data.convert_examples`` function to convert a list
+      dictionaries to an ExamplesTuple.
+   +  Added a new optional field to configuration file, ``ids_to_floats``, to
+      help save memory if you have a massive number of instances with numeric
+      IDs.
 
 -  v0.9.16
 
