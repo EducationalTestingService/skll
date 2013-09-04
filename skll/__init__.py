@@ -29,7 +29,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from sklearn.metrics import f1_score, make_scorer, SCORERS
 
-from .data import load_examples, write_feature_file
+from .data import convert_examples, load_examples, write_feature_file
 from .experiments import run_ablation, run_configuration
 from .learner import Learner
 from .metrics import (kappa, kendall_tau, spearman, pearson,
@@ -39,7 +39,7 @@ from .version import __version__, VERSION
 
 __all__ = ['Learner', 'load_examples', 'kappa', 'kendall_tau', 'spearman',
            'pearson', 'f1_score_least_frequent', 'run_configuration',
-           'run_ablation', 'write_feature_file']
+           'run_ablation', 'write_feature_file', 'convert_examples']
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll
