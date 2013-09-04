@@ -65,8 +65,9 @@ def _ids_for_gen_func(example_gen_func, path, tsv_label):
     Little helper function to return an array of IDs for a given example
     generator (and whether or not the examples have labels).
     '''
-    gen_results = _make_examples_generator(example_gen_func, path, False,
-                                           tsv_label)
+    gen_results = _make_examples_generator(example_gen_func, path,
+                                           quiet=False,
+                                           tsv_label=tsv_label)
     return _ids_for_gen_func_helper(gen_results)
 
 
@@ -82,8 +83,9 @@ def _classes_for_gen_func(example_gen_func, path, tsv_label):
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
-    gen_results = _make_examples_generator(example_gen_func, path, False,
-                                           tsv_label)
+    gen_results = _make_examples_generator(example_gen_func, path,
+                                           quiet=False,
+                                           tsv_label=tsv_label)
     return _classes_for_gen_func_helper(gen_results)
 
 
@@ -100,8 +102,9 @@ def _features_for_gen_func(example_gen_func, path, quiet, tsv_label, sparse):
     vectorizer for a given example generator (and whether or not the examples
     have labels).
     '''
-    gen_results = _make_examples_generator(example_gen_func, path, quiet,
-                                           tsv_label)
+    gen_results = _make_examples_generator(example_gen_func, path,
+                                           quiet=quiet,
+                                           tsv_label=tsv_label)
     return _features_for_gen_func_helper(gen_results, sparse)
 
 
