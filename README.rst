@@ -70,6 +70,10 @@ Changelog
    +  Added a new optional field to configuration file, ``ids_to_floats``, to
       help save memory if you have a massive number of instances with numeric
       IDs.
+   +  Replaced ``use_dense_features`` and ``scale_features`` options with
+      ``feature_scaling``. See the
+      `run_experiment documentation <http://skll.readthedocs.org/en/latest/run_experiment.html#creating-configuration-files>`__
+      for details.
 
 -  v0.9.16
 
