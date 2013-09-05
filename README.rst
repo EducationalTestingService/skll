@@ -63,6 +63,12 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.10.0
+
+   +  ``run_experiment`` can now take multiple configuration files.
+   +  Fixed issue where model parameters and scores were missing in ``evaluate``
+      mode
+
 -  v0.9.17
 
    +  Added ``skll.data.convert_examples`` function to convert a list
