@@ -303,18 +303,19 @@ def _megam_dict_iter(path, quiet=False, ids_to_floats=False):
             if line.startswith('#'):
                 curr_id = line[1:].strip()
             elif line and line not in ['TRAIN', 'TEST', 'DEV']:
-                has_labels = '\t' in line
                 split_line = line.split()
                 del line
-                curr_info_dict = {}
-
-                if has_labels:
+                if len(split_line) == 1:
+                    class_name = _safe_float(split_line[0])
+                    field_pairs = []
+                elif len(split_line) % 2 == 1:
                     class_name = _safe_float(split_line[0])
                     field_pairs = split_line[1:]
-                else:
+                elif len(split_line) % 2 == 0:
                     class_name = None
-                    field_pairs = split_line
+                    field_pairs = split_line[1:]
 
+                curr_info_dict = {}
                 if len(field_pairs) > 0:
                     # Get current instances feature-value pairs
                     field_names = islice(field_pairs, 0, None, 2)
@@ -377,12 +378,21 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y', ids_to_floats=False):
                 curr_id = row["id"]
                 del row["id"]
 
-            # Convert features to floats
+            # Convert features to floats and if a feature is 0
+            # then store the name of the feature so we can
+            # delete it later since we don't need to explicitly
+            # store zeros in the feature hash
+            columns_to_delete = []
             for fname, fval in iteritems(row):
                 fval_float = _safe_float(fval)
                 # we don't need to explicitly store zeros
                 if fval_float != 0.0:
                     row[fname] = fval_float
+                else:
+                    columns_to_delete.append(fname)
+
+            for cname in columns_to_delete:
+                del row[cname]
 
             if ids_to_floats:
                 curr_id = _safe_float(curr_id)

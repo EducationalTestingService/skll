@@ -26,10 +26,13 @@ the future.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import csv
+import itertools
 import json
 import glob
 import os
 import re
+import shlex
+import subprocess
 from collections import OrderedDict
 from io import open
 
@@ -709,3 +712,102 @@ def test_convert_examples():
     eq_(converted.features[2, 0], 0.0)
 
     eq_(converted.feat_vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
+
+
+# Tests related to converting featuresets
+def make_conversion_data(num_feat_files, from_suffix, to_suffix):
+    num_examples = 500
+    num_feats_per_file = 7
+
+    np.random.seed(1234567890)
+
+    convert_dir = os.path.join(_my_dir, 'train', 'test_conversion')
+    if not os.path.exists(convert_dir):
+        os.makedirs(convert_dir)
+
+    # Create lists we will write files from
+    ids = []
+    features = []
+    classes = []
+    for j in range(num_examples):
+        y = "dog" if j % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, j)
+        x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num in
+             range(num_feat_files * num_feats_per_file)}
+        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+
+    # get the feature name prefix
+    feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'), to_suffix.lstrip('.'))
+
+    # Write out unmerged features in the `from_suffix` file format
+    for i in range(num_feat_files):
+        train_path = os.path.join(convert_dir,
+                                  '{}_{}{}'.format(feature_name_prefix,
+                                                   i, from_suffix))
+        sub_features = []
+        for example_num in range(num_examples):
+            feat_num = i * num_feats_per_file
+            x = {"f{:03d}".format(feat_num + j): features[example_num]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
+            sub_features.append(x)
+        write_feature_file(train_path, ids, classes, sub_features)
+
+    # Write out the merged features in the `to_suffix` file format
+    train_path = os.path.join(convert_dir, '{}_all{}'.format(feature_name_prefix,
+                                                             to_suffix))
+    write_feature_file(train_path, ids, classes, features)
+
+
+def check_convert_featureset(from_suffix, to_suffix):
+    num_feat_files = 5
+
+    # Create test data
+    make_conversion_data(num_feat_files, from_suffix, to_suffix)
+
+    # the path to the unmerged feature files
+    dirpath = os.path.join(_my_dir, 'train', 'test_conversion')
+
+    # get the path to the conversion script
+    converter_path = os.path.abspath(os.path.join(_my_dir, '..', 'scripts', 'skll_convert'))
+
+    # get the feature name prefix
+    feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'), to_suffix.lstrip('.'))
+
+    # Load each unmerged feature file in the `from_suffix` format
+    # and convert it to the `to_suffix` format
+    for feature in range(num_feat_files):
+        input_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
+                                                                 feature, from_suffix))
+        output_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
+                                                                  feature, to_suffix))
+        convert_cmd = shlex.split('{} {} {}'.format(converter_path,
+                                                    input_file_path,
+                                                    output_file_path))
+        subprocess.check_call(convert_cmd)
+
+    # now load and merge all unmerged, converted features in the `to_suffix` format
+    featureset = ['{}_{}'.format(feature_name_prefix, i) for i in range(num_feat_files)]
+    merged_examples = _load_featureset(dirpath, featureset, to_suffix)
+
+    # Load pre-merged data in the `to_suffix` format
+    featureset = ['{}_all'.format(feature_name_prefix)]
+    premerged_examples = _load_featureset(dirpath, featureset, to_suffix)
+
+    # make sure that the pre-generated merged data in the to_suffix format
+    # is the same as the converted, merged data in the to_suffix format
+    assert np.all(merged_examples.ids == premerged_examples.ids)
+    assert np.all(merged_examples.classes == premerged_examples.classes)
+    assert np.all(merged_examples.features.todense() ==
+                  premerged_examples.features.todense())
+    eq_(merged_examples.feat_vectorizer.feature_names_,
+        premerged_examples.feat_vectorizer.feature_names_)
+    eq_(merged_examples.feat_vectorizer.vocabulary_,
+        premerged_examples.feat_vectorizer.vocabulary_)
+
+
+def test_convert_featureset():
+    # Test the conversion from every format to every other format
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.megam', '.tsv'], 2):
+        yield check_convert_featureset, from_suffix, to_suffix
