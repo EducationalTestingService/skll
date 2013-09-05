@@ -370,7 +370,7 @@ def _classify_featureset(args):
         learner_result_dict_base = {'experiment_name': experiment_name,
                                     'train_set_name': train_set_name,
                                     'test_set_name': test_set_name,
-                                    'featureset': featureset,
+                                    'featureset': json.dumps(featureset),
                                     'given_learner': given_learner,
                                     'task': task,
                                     'timestamp': timestamp,
@@ -483,12 +483,18 @@ def _create_learner_result_dicts(task_results, grid_scores,
         learner_result_dict = {}
         learner_result_dict.update(learner_result_dict_base)
 
-        if num_folds == 1:
-            learner_result_dict['fold'] = ""
-        else:
+        # initialize some variables to blanks so that the
+        # set of columns is fixed.
+        learner_result_dict['result_table'] = ''
+        learner_result_dict['accuracy'] = ''
+        learner_result_dict['score'] = ''
+        learner_result_dict['fold'] = ''
+
+        if learner_result_dict_base['task'] == 'cross_validate':
             learner_result_dict['fold'] = k
-            learner_result_dict['model_params'] = model_params
-            learner_result_dict['grid_score'] = grid_score
+
+        learner_result_dict['model_params'] = json.dumps(model_params)
+        learner_result_dict['grid_score'] = grid_score
 
         if conf_matrix:
             classes = sorted(iterkeys(task_results[0][2]))
