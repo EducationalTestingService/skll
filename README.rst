@@ -29,7 +29,7 @@ Command-line Interface
 ``run_experiment`` is a command-line utility for running a series of learners on
 datasets specified in a configuration file. For more information about using
 run_experiment (including a quick example), go
-`here <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
+`here <https://skll2.readthedocs.org/en/latest/run_experiment.html>`__.
 
 Python API
 ~~~~~~~~~~
@@ -39,7 +39,7 @@ use our simple Python API. The main way you'll want to use the API is through
 the ``load_examples`` function and the ``Learner`` class. For more details on
 how to simply train, test, cross-validate, and run grid search on a variety of
 scikit-learn models see
-`the documentation <https://skll.readthedocs.org/en/latest/index.html>`__.
+`the documentation <https://skll2.readthedocs.org/en/latest/index.html>`__.
 
 A Note on Pronunciation
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,6 +63,11 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.10.1
+
+   +  Made processes non-daemonic to fix ``pool.map`` issue with running
+      multiple configurations files at the same time with ``run_experiment``.
+
 -  v0.10.0
 
    +  ``run_experiment`` can now take multiple configuration files.
@@ -78,7 +83,7 @@ Changelog
       IDs.
    +  Replaced ``use_dense_features`` and ``scale_features`` options with
       ``feature_scaling``. See the
-      `run_experiment documentation <http://skll.readthedocs.org/en/latest/run_experiment.html#creating-configuration-files>`__
+      `run_experiment documentation <http://skll2.readthedocs.org/en/latest/run_experiment.html#creating-configuration-files>`__
       for details.
 
 -  v0.9.16
@@ -92,7 +97,7 @@ Changelog
 
    +  Added two new *required* fields to the configuration file format under the
       ``General`` heading: ``experiment_name`` and ``task``. See the
-      `run_experiment documentation <http://skll.readthedocs.org/en/latest/run_experiment.html#creating-configuration-files>`__
+      `run_experiment documentation <http://skll2.readthedocs.org/en/latest/run_experiment.html#creating-configuration-files>`__
       for details.
    +  Fixed an issue where the "loading..." message was never being printed when
       loading data files.
