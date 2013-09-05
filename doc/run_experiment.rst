@@ -112,8 +112,8 @@ Input
         for each featureset.
 
     **test_location** *(Optional)*
-        Path to directory containing training data files. There must be a file
-        for each featureset.  *If unspecified, cross-validation is performed.*
+        Path to directory containing test data files. There must be a file
+        for each featureset.
 
     **tsv_label** *(Optional)*
         If you're using TSV files, the class labels for each instance are
@@ -232,6 +232,11 @@ Input
 
 Tuning
 ^^^^^^
+    **feature_scaling** *(Optional)*
+        Whether to scale features by their mean and/or their standard deviation.
+        This defaults to ``none``, which does no scaling of any kind. If you
+        scale by mean, your data will automatically be converted to dense, so
+        use caution when you have a very large dataset.
 
     **grid_search** *(Optional)*
         Whether or not to perform grid search to find optimal parameters for
@@ -360,15 +365,6 @@ Tuning
         The string label for the positive class in the binary
         classification setting. If unspecified, an arbitrary class is
         picked.
-
-    **scale_features** *(Optional)*
-        Whether to scale features by their mean (for dense data only) and
-        standard deviation.  This defaults to ``False``. It is highly
-        recommended that you only use this with dense features.
-
-    **use_dense_features** *(Optional)*
-        Whether the features should be converted to dense matrices. This
-        defaults to ``False``.
 
 
 Output
