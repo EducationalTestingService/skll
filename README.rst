@@ -63,6 +63,11 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.10.1
+
+   +  Made processes non-daemonic to fix ``pool.map`` issue with running
+      multiple configurations files at the same time with ``run_experiment``.
+
 -  v0.10.0
 
    +  ``run_experiment`` can now take multiple configuration files.
