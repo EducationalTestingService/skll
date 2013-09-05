@@ -361,6 +361,14 @@ def test_summary():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
+            # the learner results dictionaries should have 16 rows,
+            # and all of these except results_table
+            # should be printed (though some columns will be blank).
+            eq_(len(row), 15)
+            assert row['model_params']
+            assert row['grid_score']
+            assert row['score']
+
             if row['given_learner'] == 'LogisticRegression':
                 logistic_summary_score = float(row['score'])
             elif row['given_learner'] == 'MultinomialNB':
