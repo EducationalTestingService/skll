@@ -236,7 +236,15 @@ Tuning
         Whether to scale features by their mean and/or their standard deviation.
         This defaults to ``none``, which does no scaling of any kind. If you
         scale by mean, your data will automatically be converted to dense, so
-        use caution when you have a very large dataset.
+        use caution when you have a very large dataset. Valid options are:
+
+        *   *none*: perform no feature scaling at all.
+        *   *with_std*: Scale feature values by their standard deviation.
+        *   *with_mean*: Center features by subtracting their mean.
+        *   *both*: perform both centering and scaling.
+
+
+        Defaults to ``none``.
 
     **grid_search** *(Optional)*
         Whether or not to perform grid search to find optimal parameters for
