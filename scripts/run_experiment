@@ -49,7 +49,8 @@ def main():
         conflict_handler='resolve')
     parser.add_argument('config_file',
                         help='Configuration file describing the sklearn task\
-                              to run.')
+                              to run.',
+                        nargs='+')
     parser.add_argument('-a', '--ablation',
                         help='Runs an ablation study where repeated \
                               experiments are conducted where each feature\
@@ -79,25 +80,27 @@ def main():
     args = parser.parse_args()
 
     # initialize the logger
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
+                        level=logging.INFO)
 
     machines = None
     if args.machines:
         machines = args.machines.split(',')
 
     # Are we doing an ablation study?
-    if args.ablation:
-        run_ablation(args.config_file,
-                     local=args.local,
-                     overwrite=not args.keep_models,
-                     queue=args.queue,
-                     hosts=machines)
-    else:
-        run_configuration(args.config_file,
-                          local=args.local,
-                          overwrite=not args.keep_models,
-                          queue=args.queue,
-                          hosts=machines)
+    for config_file in args.config_file:
+        if args.ablation:
+            run_ablation(config_file,
+                         local=args.local,
+                         overwrite=not args.keep_models,
+                         queue=args.queue,
+                         hosts=machines)
+        else:
+            run_configuration(config_file,
+                              local=args.local,
+                              overwrite=not args.keep_models,
+                              queue=args.queue,
+                              hosts=machines)
 
 
 if __name__ == '__main__':
