@@ -118,7 +118,10 @@ def _features_for_gen_func_helper(gen_results, sparse):
     '''
     feat_vectorizer = DictVectorizer(sparse=sparse)
     feat_dict_generator = map(itemgetter(2), gen_results)
-    features = feat_vectorizer.fit_transform(feat_dict_generator)
+    try:
+        features = feat_vectorizer.fit_transform(feat_dict_generator)
+    except ValueError:
+        raise ValueError('The last feature file did not include any features.')
     return features, feat_vectorizer
 
 
