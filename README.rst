@@ -63,6 +63,22 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.11.0
+
+   +  Added initial version of ``skll_convert`` script for converting between
+      .jsonlines, .megam, and .tsv data file formats.
+   +  Fixed bug in ``_megam_dict_iter`` where labels for instances with all zero
+      features were being incorrectly set to ``None``.
+   +  Fixed bug in ``_tsv_dict_iter`` where features with zero values were being
+      retained with values set as '0' instead of being removed completely. This
+      caused `DictVectorizer` to create extra features, so **results may **
+      **change** a little bit if you were using .tsv files.
+   +  Fixed crash with predict and train_only modes when running on the grid.
+   +  No longer use process pools to load files if
+      ``SKLL_MAX_CONCURRENT_PROCESSES`` is 1.
+   +  Added more informative error message when trying to load a file without
+      any features.
+
 -  v0.10.1
 
    +  Made processes non-daemonic to fix ``pool.map`` issue with running

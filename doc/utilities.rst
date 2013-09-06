@@ -53,3 +53,8 @@ LibSVM/LibLinear-compatible file to STDOUT.
 print_model_weights
 -------------------
 Prints out the weights of a given trained model.
+
+skll_convert
+------------
+Convert between .jsonlines, .megam, and .tsv formats. In the future this will
+be expanded to replace other conversions scripts.

@@ -27,9 +27,9 @@ Script that converts feature files from one format to another
 from __future__ import print_function, unicode_literals
 
 import argparse
-from functools import partial
 import os
 import sys
+from functools import partial
 
 from skll.data import (_tsv_dict_iter, _json_dict_iter, _megam_dict_iter,
                        write_feature_file)
@@ -39,13 +39,16 @@ if __name__ == '__main__':
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Takes an input feature file \
                                                   and converts it to another \
-                                                  format. Formats are determined \
-                                                  automatically from file extensions.",
+                                                  format. Formats are \
+                                                  determined automatically from\
+                                                  file extensions.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .jsonlines, .tsv, or .megam)')
+                        help='input feature file (ends in .jsonlines, .tsv, or \
+                              .megam)')
     parser.add_argument('outfile',
-                        help='output feature file (ends in .jsonlines, .tsv, or .megam)')
+                        help='output feature file (ends in .jsonlines, .tsv, or\
+                              .megam)')
     parser.add_argument('--tsv_label',
                         help='Name of the column which contains \
                               the class labels in TSV files.',
