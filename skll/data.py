@@ -27,6 +27,7 @@ Handles loading data from various types of data files.
 from __future__ import print_function, unicode_literals
 
 import json
+import os
 import sys
 from csv import DictReader, DictWriter, excel_tab
 from decimal import Decimal
@@ -41,6 +42,8 @@ from collections import namedtuple
 from six import iteritems
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer
+
+MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
 ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
@@ -115,7 +118,10 @@ def _features_for_gen_func_helper(gen_results, sparse):
     '''
     feat_vectorizer = DictVectorizer(sparse=sparse)
     feat_dict_generator = map(itemgetter(2), gen_results)
-    features = feat_vectorizer.fit_transform(feat_dict_generator)
+    try:
+        features = feat_vectorizer.fit_transform(feat_dict_generator)
+    except ValueError:
+        raise ValueError('The last feature file did not include any features.')
     return features, feat_vectorizer
 
 
@@ -167,24 +173,30 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     # memory (even though this requires reading the file multiple times).
     # Do this using a process pool so that we can clear out the temporary
     # variables more easily and do these in parallel.
-    pool = Pool(3)
+    if MAX_CONCURRENT_PROCESSES == 1:
+        ids = _ids_for_gen_func(example_gen_func, path, ids_to_floats)
+        classes = _classes_for_gen_func(example_gen_func, path, tsv_label)
+        features, feat_vectorizer = _features_for_gen_func(example_gen_func,
+                                                           path, quiet, sparse)
+    else:
+        pool = Pool(min(3, MAX_CONCURRENT_PROCESSES))
 
-    ids_result = pool.apply_async(_ids_for_gen_func,
-                                  args=(example_gen_func, path,
-                                        ids_to_floats))
-    classes_result = pool.apply_async(_classes_for_gen_func,
+        ids_result = pool.apply_async(_ids_for_gen_func,
                                       args=(example_gen_func, path,
-                                            tsv_label))
-    features_result = pool.apply_async(_features_for_gen_func,
-                                       args=(example_gen_func, path, quiet,
-                                             sparse))
+                                            ids_to_floats))
+        classes_result = pool.apply_async(_classes_for_gen_func,
+                                          args=(example_gen_func, path,
+                                                tsv_label))
+        features_result = pool.apply_async(_features_for_gen_func,
+                                           args=(example_gen_func, path, quiet,
+                                                 sparse))
 
-    # Wait for processes to complete and store results
-    pool.close()
-    pool.join()
-    ids = ids_result.get()
-    classes = classes_result.get()
-    features, feat_vectorizer = features_result.get()
+        # Wait for processes to complete and store results
+        pool.close()
+        pool.join()
+        ids = ids_result.get()
+        classes = classes_result.get()
+        features, feat_vectorizer = features_result.get()
 
     return ExamplesTuple(ids, classes, features, feat_vectorizer)
 
