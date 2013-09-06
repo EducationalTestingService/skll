@@ -250,7 +250,7 @@ def _safe_float(text):
     try:
         return float(text)
     except ValueError:
-        return text
+        return text.decode('utf-8') if sys.version_info < (3, 0) else text
 
 
 def _json_dict_iter(path, quiet=False, ids_to_floats=False):
@@ -381,6 +381,7 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y', ids_to_floats=False):
             if tsv_label is not None and tsv_label in row:
                 class_name = _safe_float(row[tsv_label])
                 del row[tsv_label]
+
             else:
                 class_name = None
 
@@ -395,19 +396,34 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y', ids_to_floats=False):
             # delete it later since we don't need to explicitly
             # store zeros in the feature hash
             columns_to_delete = []
+            if sys.version_info < (3, 0):
+                columns_to_convert_to_unicode = []
             for fname, fval in iteritems(row):
                 fval_float = _safe_float(fval)
                 # we don't need to explicitly store zeros
                 if fval_float != 0.0:
                     row[fname] = fval_float
+                    if sys.version_info < (3, 0):
+                        columns_to_convert_to_unicode.append(fname)
                 else:
                     columns_to_delete.append(fname)
 
+            # remove the columns with zero values
             for cname in columns_to_delete:
                 del row[cname]
 
+            # convert the names of all the other columns to
+            # unicode for python 2
+            if sys.version_info < (3, 0):
+                for cname in columns_to_convert_to_unicode:
+                    fval = row[cname]
+                    del row[cname]
+                    row[cname.decode('utf-8')] = fval
+
             if ids_to_floats:
                 curr_id = _safe_float(curr_id)
+            elif sys.version_info < (3, 0):
+                curr_id = curr_id.decode('utf-8')
 
             yield curr_id, class_name, row
 
@@ -532,7 +548,11 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                 if ex_id is not None:
                     print('# {}'.format(ex_id), file=f)
                 if class_name is not None:
-                    print(class_name, end='\t', file=f)
+                    try:
+                        print(class_name, end='\t', file=f)
+                    except:
+                        import pdb
+                        pdb.set_trace()
                 print(' '.join(('{} {}'.format(field, value) for field, value in
                                 sorted(feature_dict.items()) if Decimal(value) != 0)),
                       file=f)
