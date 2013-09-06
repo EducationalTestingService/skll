@@ -548,11 +548,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                 if ex_id is not None:
                     print('# {}'.format(ex_id), file=f)
                 if class_name is not None:
-                    try:
-                        print(class_name, end='\t', file=f)
-                    except:
-                        import pdb
-                        pdb.set_trace()
+                    print(class_name, end='\t', file=f)
                 print(' '.join(('{} {}'.format(field, value) for field, value in
                                 sorted(feature_dict.items()) if Decimal(value) != 0)),
                       file=f)
