@@ -71,8 +71,8 @@ Changelog
       features were being incorrectly set to ``None``.
    +  Fixed bug in ``_tsv_dict_iter`` where features with zero values were being
       retained with values set as '0' instead of being removed completely. This
-      caused `DictVectorizer` to create extra features, so **results may **
-      **change** a little bit if you were using .tsv files.
+      caused `DictVectorizer` to create extra features, so **results may
+      change** a little bit if you were using .tsv files.
    +  Fixed crash with predict and train_only modes when running on the grid.
    +  No longer use process pools to load files if
       ``SKLL_MAX_CONCURRENT_PROCESSES`` is 1.
