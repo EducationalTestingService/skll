@@ -43,12 +43,10 @@ if __name__ == '__main__':
                                                   automatically from file extensions.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .jsonlines, .tsv, or .megam)',
-                        type=str)
+                        help='input feature file (ends in .jsonlines, .tsv, or .megam)')
     parser.add_argument('outfile',
-                        help='output feature file (ends in .jsonlines, .tsv, or .megam)',
-                        type=str)
-    parser.add_argument('--tsv_label', type=str,
+                        help='output feature file (ends in .jsonlines, .tsv, or .megam)')
+    parser.add_argument('--tsv_label',
                         help='Name of the column which contains \
                               the class labels in TSV files.',
                         default='y')
