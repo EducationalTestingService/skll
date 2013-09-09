@@ -590,6 +590,10 @@ def test_quadratic_weighted_kappa():
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, 'quadratic', expected
 
+    # Swap y_true and y_pred and test again
+    for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, 'quadratic', expected
+
 
 def test_linear_weighted_kappa():
     outputs = [1.0, 0.4, 0.65, 0.0, 0.8, 0.8]
@@ -597,11 +601,19 @@ def test_linear_weighted_kappa():
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, 'linear', expected
 
+    # Swap y_true and y_pred and test again
+    for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, 'linear', expected
+
 
 def test_unweighted_kappa():
     outputs = [1.0, 0.4, 0.5625, 0.0, 0.6666666666667, 0.6666666666667]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, None, expected
+
+    # Swap y_true and y_pred and test again
+    for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, None, expected
 
 
