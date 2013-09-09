@@ -26,6 +26,7 @@ Little helper script to create a summary file out of a list JSON results files.
 from __future__ import print_function, unicode_literals
 
 import argparse
+import sys
 from io import open
 
 from skll.experiments import _write_summary_file
@@ -51,6 +52,7 @@ def main():
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
+    file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
     with open(args.summary_file) as output_file:
         _write_summary_file(args.json_file, output_file)
 
