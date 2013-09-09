@@ -647,7 +647,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if not local:
         # import gridmap if available
         try:
-            from gridmap import Job, JobException, process_jobs,
+            from gridmap import Job, JobException, process_jobs
         except ImportError:
             local = True
             logging.warning('gridmap 0.10.1+ not available. Forcing local ' +
