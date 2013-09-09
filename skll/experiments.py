@@ -111,7 +111,9 @@ def _write_summary_file(result_json_paths, output_file):
             with open(json_path, 'r') as json_file:
                 learner_result_dicts.extend(json.load(json_file))
 
-    header = sorted(set(learner_result_dicts[0].keys()) - {'result_table', 'descriptive', 'comparative'})
+    header = sorted(set(learner_result_dicts[0].keys()) - {'result_table',
+                                                           'descriptive',
+                                                           'comparative'})
     writer = csv.DictWriter(output_file, header, extrasaction='ignore',
                             dialect=csv.excel_tab)
     writer.writeheader()
@@ -128,14 +130,16 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     '''
 
     lrd = learner_result_dicts[0]
-    print('Experiment Name: {}'.format(lrd['experiment_name']), file=output_file)
+    print('Experiment Name: {}'.format(lrd['experiment_name']),
+          file=output_file)
     print('Timestamp: {}'.format(lrd['timestamp']), file=output_file)
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
     print('Learner: {}'.format(lrd['given_learner']), file=output_file)
     print('Task: {}'.format(lrd['task']), file=output_file)
-    print('Feature Scaling: {}'.format(lrd['feature_scaling']), file=output_file)
+    print('Feature Scaling: {}'.format(lrd['feature_scaling']),
+          file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
     print('Grid Objective: {}'.format(lrd['grid_objective']), file=output_file)
     print('\n', file=output_file)
@@ -153,10 +157,13 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         if 'descriptive' in lrd:
             print('Descriptive statistics:', file=output_file)
             for desc_stat in ['min', 'max', 'avg', 'std']:
-                print(' {}: {: .4f} (actual), {: .4f} (predicted)'.format(desc_stat.title(),
-                                                                          lrd['descriptive']['actual'][desc_stat],
-                                                                          lrd['descriptive']['predicted'][desc_stat]), file=output_file)
-            print('Pearson:{: f}'.format(lrd['comparative']['pearson']), file=output_file)
+                print((' {}: {: .4f} (actual), {: .4f} ' +
+                       '(predicted)').format(desc_stat.title(),
+                                             lrd['descriptive']['actual'][desc_stat],
+                                             lrd['descriptive']['predicted'][desc_stat]),
+                      file=output_file)
+            print('Pearson:{: f}'.format(lrd['comparative']['pearson']),
+                  file=output_file)
         print('Objective function score = {}'.format(lrd['score']),
               file=output_file)
         print('', file=output_file)
@@ -524,7 +531,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
             result_table_str = '{}'.format(result_table)
             result_table_str += '(row = reference; column = predicted)'
-            learner_result_dict['result_table'] = '{}'.format(result_table)
+            learner_result_dict['result_table'] = result_table_str
             learner_result_dict['accuracy'] = fold_accuracy
             accuracy_sum += fold_accuracy
 
@@ -640,12 +647,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if not local:
         # import gridmap if available
         try:
-            from gridmap import Job, process_jobs
+            from gridmap import Job, JobException, process_jobs,
         except ImportError:
             local = True
-            logging.warning('gridmap not available. Forcing local mode.  ' +
-                            'To run things on a DRMAA-compatible cluster, ' +
-                            'install gridmap via pip.')
+            logging.warning('gridmap 0.10.1+ not available. Forcing local ' +
+                            'mode.  To run things on a DRMAA-compatible ' +
+                            'cluster, install gridmap>=0.10.1 via pip.')
 
     ###########################
     # extract parameters from the config file
@@ -862,14 +869,20 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 _classify_featureset(job_args)
 
             # save the path to the results json file that will be written
-            result_json_paths.append(os.path.join(resultspath, '{}.results.json'.format(jobname)))
+            result_json_paths.append(os.path.join(resultspath,
+                                     '{}.results.json'.format(jobname)))
 
     # submit the jobs (if running on grid)
     if not local:
-        if logpath:
-            job_results = process_jobs(jobs, white_list=hosts, temp_dir=logpath)
-        else:
-            job_results = process_jobs(jobs, white_list=hosts)
+        try:
+            if logpath:
+                job_results = process_jobs(jobs, white_list=hosts,
+                                           temp_dir=logpath)
+            else:
+                job_results = process_jobs(jobs, white_list=hosts)
+        except JobException as e:
+            logging.error('gridmap claims that one of your jobs failed, but ' +
+                          'this is not always true. \n{}'.format(e))
 
         _check_job_results(job_results)
 
@@ -877,13 +890,17 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if (task == 'cross_validate' or task == 'evaluate') and write_summary:
         summary_file_name = experiment_name + '_summary.tsv'
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:
+        with open(os.path.join(resultspath, summary_file_name),
+                  file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file)
 
     return result_json_paths
 
 
 def _check_job_results(job_results):
+    '''
+    See if we have a complete results dictionary for every job.
+    '''
     logging.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
@@ -937,7 +954,9 @@ def _run_experiment_without_feature(arg_tuple):
     m = re.search(r'^(.*)\.cfg$', cfg_name)
     if not m:
         raise ValueError("Configuration file should end in .cfg.")
-    new_cfg_path = os.path.join(cfg_dir, "{}_minus_{}.cfg".format(m.groups()[0], feature_type)
+    new_cfg_path = os.path.join(cfg_dir,
+                                "{}_minus_{}.cfg".format(m.groups()[0],
+                                                         feature_type)
                                 if feature_type else "{}_all.cfg".format(m.groups()[0]))
 
     file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
@@ -1008,5 +1027,6 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     if task == 'cross_validate' or task == 'evaluate':
         summary_file_name = experiment_name + '_summary.tsv'
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(os.path.join(resultspath, summary_file_name), file_mode) as output_file:
+        with open(os.path.join(resultspath, summary_file_name),
+                  file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file)
