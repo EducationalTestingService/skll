@@ -123,7 +123,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
                             dialect=csv.excel_tab)
     writer.writeheader()
 
-    # note that right now each learner dict contains json dumped objects
+    # note that at this point each learner dict contains json dumped objects
     # which look really strange when written to a TSV. We want to convert
     # them to more readable string versions.
     for lrd in learner_result_dicts:
@@ -136,9 +136,16 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
 
         for key in lrd:
             try:
-                lrd_with_strings[key] = str(json.loads(lrd[key]))
+                item_to_check = json.loads(lrd[key])
+                if isinstance(item_to_check, list):
+                    val = [x.encode('utf-8') for x in item_to_check]
+                elif isinstance(item_to_check, dict):
+                    val = {}
+                    for inner_key, inner_val in iteritems(item_to_check):
+                        val[inner_key.encode('utf-8')] = inner_val.encode('utf-8') if isinstance(inner_val, string_types) else inner_val
             except:
-                lrd_with_strings[key] = lrd[key]
+                val = lrd[key]
+            lrd_with_strings[key] = val
         writer.writerow(lrd_with_strings)
 
     output_file.flush()
