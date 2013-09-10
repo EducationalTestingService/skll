@@ -199,7 +199,7 @@ def test_specified_cv_folds():
     suffix = '.jsonlines'
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix)
-    clf = Learner(probability=True)
+    clf = Learner('LogisticRegression', probability=True)
     cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train', 'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
