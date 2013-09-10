@@ -979,9 +979,9 @@ def _run_experiment_without_feature(arg_tuple):
     with open(new_cfg_path, file_mode) as new_config_file:
         config.write(new_config_file)
 
-    return run_configuration(new_cfg_path, local=local, queue=queue,
-                             hosts=machines, overwrite=overwrite,
-                             write_summary=False)
+    return (run_configuration(new_cfg_path, local=local, queue=queue,
+                              hosts=machines, overwrite=overwrite,
+                              write_summary=False), new_cfg_path)
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
@@ -1028,13 +1028,22 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
                   for feature_type in given_features + [None])
 
     result_json_paths = []
+    new_cfg_files = []
     if local:
         for arg_tuple in arg_tuples:
-            result_json_paths.extend(_run_experiment_without_feature(arg_tuple))
+            result_jsons, new_cfg_path = _run_experiment_without_feature(arg_tuple)
+            result_json_paths.extend(result_jsons)
+            new_cfg_files.append(new_cfg_path)
     else:
         pool = Pool(processes=len(given_features) + 1)
-        result_json_paths.extend(pool.map(_run_experiment_without_feature,
-                                          list(arg_tuples)))
+        result_jsons, new_cfg_path = pool.map(_run_experiment_without_feature,
+                                              list(arg_tuples))
+        result_json_paths.extend(result_jsons)
+        new_cfg_files.append(new_cfg_path)
+
+    # delete the extra config files that we created
+    for cf in new_cfg_files:
+        os.unlink(cf)
 
     task = config.get("General", "task")
     experiment_name = config.get("General", "experiment_name")
