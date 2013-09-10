@@ -63,6 +63,10 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.13.1
+
+   +  Fixed crash when using ``cv_folds_location`` with ``ids_to_floats``.
+
 -  v0.13.0
 
    +  Will now skip IDs that are missing from ``cv_folds``/``grid_search_folds``
@@ -72,7 +76,7 @@ Changelog
       ``Learner`` constructor, and is now required. This was done to help
       prevent unexpected issues from defaulting to ``LogisticRegression``.
    +  No longer keep extra temporary config files around when running
-      ``run_experiment``in ablation mode.
+      ``run_experiment`` in ablation mode.
 
 -  v0.12.0
 
@@ -91,8 +95,8 @@ Changelog
       features were being incorrectly set to ``None``.
    +  Fixed bug in ``_tsv_dict_iter`` where features with zero values were being
       retained with values set as '0' instead of being removed completely. This
-      caused `DictVectorizer` to create extra features, so **results may **
-      **change** a little bit if you were using .tsv files.
+      caused `DictVectorizer` to create extra features, so **results may
+      change** a little bit if you were using .tsv files.
    +  Fixed crash with predict and train_only modes when running on the grid.
    +  No longer use process pools to load files if
       ``SKLL_MAX_CONCURRENT_PROCESSES`` is 1.

@@ -48,7 +48,7 @@ from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn.metrics import SCORERS
 
-from skll.data import ExamplesTuple, load_examples
+from skll.data import ExamplesTuple, load_examples, _safe_float
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 
 _VALID_TASKS = frozenset(['predict', 'train_only',
@@ -625,7 +625,7 @@ def _fix_json(json_string):
     return json_string
 
 
-def _load_cv_folds(cv_folds_location):
+def _load_cv_folds(cv_folds_location, ids_to_floats=False):
     '''
     Loads CV folds from a CSV file with columns for example ID and fold ID
     (and a header).
@@ -635,6 +635,8 @@ def _load_cv_folds(cv_folds_location):
         next(reader)  # discard the header
         res = {}
         for row in reader:
+            if ids_to_floats:
+                row[0] = _safe_float(row[0])
             res[row[0]] = row[1]
 
     return res
