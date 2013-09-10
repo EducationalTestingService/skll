@@ -634,7 +634,11 @@ class Learner(object):
                 grid_jobs = len(np.unique(grid_search_folds))
             else:
                 grid_jobs = min(len(np.unique(grid_search_folds)), grid_jobs)
-            labels = [grid_search_folds[curr_id] for curr_id in examples.ids]
+            labels = [grid_search_folds[curr_id] for curr_id in examples.ids
+                      if curr_id in grid_search_folds]  # Skip missing IDs
+            if len(labels) != len(examples.ids):
+                logging.warning(('Feature set contains IDs that are not in ' +
+                                 'grid_search_folds.  Skipping those IDs.'))
             folds = LeaveOneLabelOut(labels)
 
         # limit the number of grid_jobs to be no higher than five or
