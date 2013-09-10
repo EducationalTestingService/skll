@@ -108,7 +108,7 @@ def test_input_checking3():
     assert examples_tuple.features.shape[0] == 3
 
 
-def make_cv_folds_data():
+def make_cv_folds_data(numeric_ids):
     train_dir = os.path.join(_my_dir, 'train')
     if not os.path.exists(train_dir):
         os.makedirs(train_dir)
@@ -121,7 +121,10 @@ def make_cv_folds_data():
         for k in range(num_folds):
             for i in range(num_examples_per_fold):
                 y = "dog" if i % 2 == 0 else "cat"
-                ex_id = "{}{}".format(y, num_examples_per_fold * k + i)
+                if numeric_ids:
+                    ex_id = "{}{}".format(y, num_examples_per_fold * k + i)
+                else:
+                    ex_id = num_examples_per_fold * k + i
                 x = {"f1": 1.0, "f2": -1.0, "f3": 1.0, "is_{}{}".format(y, k): 1.0}
                 json_out.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
                 csv_out.write('{},{}\n'.format(ex_id, k))
@@ -172,8 +175,8 @@ def fill_in_config_paths(config_template_path):
     return new_config_path
 
 
-def test_specified_cv_folds():
-    make_cv_folds_data()
+def check_specified_cv_folds(numeric_ids):
+    make_cv_folds_data(numeric_ids)
 
     # test_cv_folds1.cfg is with prespecified folds and should have about 50% performance
     # test_cv_folds2.cfg is without prespecified folds and should have very high performance
@@ -205,6 +208,11 @@ def test_specified_cv_folds():
     assert grid_search_score < 0.6
     grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score > 0.95
+
+
+def test_specified_cv_folds():
+    yield check_specified_cv_folds, True
+    yield check_specified_cv_folds, False
 
 
 def make_regression_data():
