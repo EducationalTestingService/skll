@@ -939,7 +939,11 @@ class Learner(object):
             # training fold.  Note that this means that the grid search
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
-            labels = [cv_folds[curr_id] for curr_id in examples.ids]
+            labels = [cv_folds[curr_id] for curr_id in examples.ids
+                      if curr_id in cv_folds]  # Skip missing IDs
+            if len(labels) != len(examples.ids):
+                logging.warning(('Feature set contains IDs that are not in ' +
+                                 'cv_folds.  Skipping those IDs.'))
             kfold = LeaveOneLabelOut(labels)
             grid_search_folds = cv_folds
 
