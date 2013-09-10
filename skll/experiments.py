@@ -89,7 +89,7 @@ def _get_stat_float(class_result_dict, stat):
         return float('nan')
 
 
-def _write_summary_file(result_json_paths, output_file):
+def _write_summary_file(result_json_paths, output_file, ablation=False):
     '''
     Function to take a list of paths to individual result
     json files and returns a single file that summarizes
@@ -103,21 +103,37 @@ def _write_summary_file(result_json_paths, output_file):
     :type output_file: file
     '''
     learner_result_dicts = []
+    all_features = set()
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
             raise IOError(errno.ENOENT, (('JSON file {} not found'
                                           .format(json_path))))
         else:
             with open(json_path, 'r') as json_file:
-                learner_result_dicts.extend(json.load(json_file))
+                obj = json.load(json_file)
+                if ablation:
+                    all_features.update(json.loads(obj[0]['featureset']))
+                learner_result_dicts.extend(obj)
 
-    header = sorted(set(learner_result_dicts[0].keys()) - {'result_table',
-                                                           'descriptive',
-                                                           'comparative'})
+    header = set(learner_result_dicts[0].keys()) - {'result_table',
+                                                    'descriptive',
+                                                    'comparative'}
+    header = sorted(header.union(['ablated_feature'])) if ablation else sorted(header)
     writer = csv.DictWriter(output_file, header, extrasaction='ignore',
                             dialect=csv.excel_tab)
     writer.writeheader()
+
+    # note that at this point each learner dict contains json dumped objects
+    # which look really strange when written to a TSV. We want to convert
+    # them to more readable string versions.
     for lrd in learner_result_dicts:
+        if ablation:
+            ablated_feature = all_features.difference(json.loads(lrd['featureset']))
+            lrd['ablated_feature'] = ''
+            if ablated_feature:
+                lrd['ablated_feature'] = list(ablated_feature)[0]
+
+        # write out the new learner dict with the readable fields
         writer.writerow(lrd)
 
     output_file.flush()
@@ -1029,4 +1045,4 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(resultspath, summary_file_name),
                   file_mode) as output_file:
-            _write_summary_file(result_json_paths, output_file)
+            _write_summary_file(result_json_paths, output_file, ablation=True)
