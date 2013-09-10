@@ -63,6 +63,10 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.13.1
+
+   +  Fixed crash when using ``cv_folds_location`` with ``ids_to_floats``.
+
 -  v0.13.0
 
    +  Will now skip IDs that are missing from ``cv_folds``/``grid_search_folds``
@@ -72,7 +76,7 @@ Changelog
       ``Learner`` constructor, and is now required. This was done to help
       prevent unexpected issues from defaulting to ``LogisticRegression``.
    +  No longer keep extra temporary config files around when running
-      ``run_experiment``in ablation mode.
+      ``run_experiment`` in ablation mode.
 
 -  v0.12.0
 
