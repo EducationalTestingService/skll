@@ -354,18 +354,23 @@ def _classify_featureset(args):
         # logging
         print("Task: {}".format(task), file=log_file)
         if task == 'cross_validate':
-            print("Cross-validating on {}, feature set {} ...".format(
-                train_set_name, featureset), file=log_file)
+            print(("Cross-validating on {}, feature " +
+                   "set {} ...").format(train_set_name, featureset),
+                  file=log_file)
         elif task == 'evaluate':
-            print("Training on {}, Test on {}, feature set {} ...".format(
-                train_set_name, test_set_name, featureset), file=log_file)
+            print(("Training on {}, Test on {}, " +
+                   "feature set {} ...").format(train_set_name, test_set_name,
+                                                featureset),
+                  file=log_file)
         elif task == 'train_only':
-            print("Training on {}, feature set {} ...".format(
-                train_set_name, featureset), file=log_file)
+            print("Training on {}, feature set {} ...".format(train_set_name,
+                                                              featureset),
+                  file=log_file)
         else:  # predict
-            print("Training on {}, Making predictions about {}, \
-                  feature set {} ...".format(
-                train_set_name, test_set_name, featureset), file=log_file)
+            print(("Training on {}, Making predictions about {}, " +
+                   "feature set {} ...").format(train_set_name, test_set_name,
+                                                featureset),
+                  file=log_file)
 
         # load the training and test examples
         train_examples = _load_featureset(train_path, featureset, suffix,
@@ -377,8 +382,8 @@ def _classify_featureset(args):
                                              ids_to_floats=ids_to_floats)
 
         # initialize a classifer object
-        learner = Learner(probability=probability,
-                          model_type=given_learner,
+        learner = Learner(given_learner,
+                          probability=probability,
                           feature_scaling=feature_scaling,
                           model_kwargs=fixed_parameters,
                           pos_label_str=pos_label_str,
@@ -416,14 +421,15 @@ def _classify_featureset(args):
         else:
             # load the model if it already exists
             if os.path.exists(modelfile) and not overwrite:
-                print('\tloading pre-existing {} model: {}'.format(
-                    given_learner, modelfile))
+                print(('\tloading pre-existing {} ' +
+                       'model: {}').format(given_learner, modelfile))
                 learner.load(modelfile)
 
             # if we have do not have a saved model, we need to train one.
             else:
-                print('\tfeaturizing and training new {} model'.format(
-                    given_learner), file=log_file)
+                print(('\tfeaturizing and training new ' +
+                       '{} model').format(given_learner),
+                      file=log_file)
 
                 grid_search_folds = 5
                 if not isinstance(cv_folds, int):
@@ -462,7 +468,8 @@ def _classify_featureset(args):
                     grid_objective=grid_objective)]
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
-                learner.predict(test_examples, prediction_prefix=prediction_prefix)
+                learner.predict(test_examples,
+                                prediction_prefix=prediction_prefix)
             # do nothing here for train_only
 
         if task == 'cross_validate' or task == 'evaluate':

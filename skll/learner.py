@@ -309,9 +309,8 @@ class Learner(object):
     :type min_feature_count: int
     """
 
-    def __init__(self, probability=False, model_type='LogisticRegression',
-                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
-                 min_feature_count=1):
+    def __init__(self, model_type, probability=False, feature_scaling='none',
+                 model_kwargs=None, pos_label_str=None, min_feature_count=1):
         '''
         Initializes a learner object with the specified settings.
         '''
