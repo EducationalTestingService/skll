@@ -63,6 +63,15 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.12.0
+
+   +  Fixed crash with kappa when given two sets of ratings that are both
+      missing an intermediate value (e.g., ``[1, 2, 4]``).
+   +  Added ``summarize_results`` script for creating a nice summary TSV file
+      from a list of JSON results files.
+   +  Summary files for ablation studies now have an extra column that says
+      which feature was removed.
+
 -  v0.11.0
 
    +  Added initial version of ``skll_convert`` script for converting between

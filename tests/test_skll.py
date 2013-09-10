@@ -577,7 +577,11 @@ kappa_inputs = [([1, 2, 3], [1, 2, 3]),
                 ([1, 2, 3, 1, 2, 2, 3], [1, 2, 3, 1, 2, 3, 2]),
                 ([1, 2, 3, 3, 2, 1], [1, 1, 1, 2, 2, 2]),
                 ([-1, 0, 1, 2], [-1, 0, 0, 2]),
-                ([5, 6, 7, 8], [5, 6, 6, 8])]
+                ([5, 6, 7, 8], [5, 6, 6, 8]),
+                ([1, 1, 2, 2], [3, 3, 4, 4]),
+                ([1, 1, 3, 3], [2, 2, 4, 4]),
+                ([1, 1, 4, 4], [2, 2, 3, 3]),
+                ([1, 2, 4], [1, 2, 4])]
 
 
 def check_kappa(y_true, y_pred, weights, expected):
@@ -585,23 +589,37 @@ def check_kappa(y_true, y_pred, weights, expected):
 
 
 def test_quadratic_weighted_kappa():
-    outputs = [1.0, 0.4, 0.75, 0.0, 0.9, 0.9]
+    outputs = [1.0, 0.4, 0.75, 0.0, 0.9, 0.9, 0.11111111, 0.6666666666667, 0.6,
+               1.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, 'quadratic', expected
 
+    # Swap y_true and y_pred and test again
+    for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, 'quadratic', expected
+
 
 def test_linear_weighted_kappa():
-    outputs = [1.0, 0.4, 0.65, 0.0, 0.8, 0.8]
+    outputs = [1.0, 0.4, 0.65, 0.0, 0.8, 0.8, 0.0, 0.3333333, 0.3333333, 1.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, 'linear', expected
 
+    # Swap y_true and y_pred and test again
+    for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, 'linear', expected
+
 
 def test_unweighted_kappa():
-    outputs = [1.0, 0.4, 0.5625, 0.0, 0.6666666666667, 0.6666666666667]
+    outputs = [1.0, 0.4, 0.5625, 0.0, 0.6666666666667, 0.6666666666667,
+               0.0, 0.0, 0.0, 1.0]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, None, expected
+
+    # Swap y_true and y_pred and test again
+    for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
         yield check_kappa, y_true, y_pred, None, expected
 
 
