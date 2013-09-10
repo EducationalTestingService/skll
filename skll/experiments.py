@@ -143,7 +143,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
                     val = {}
                     for inner_key, inner_val in iteritems(item_to_check):
                         val[inner_key.encode('utf-8')] = inner_val.encode('utf-8') if isinstance(inner_val, string_types) else inner_val
-            except:
+            except Exception as e:
+                logging.warning(('Could not clean up JSON dumped object for' + 
+                                 'TSV output.  Printing raw JSON object to ' + 
+                                 'summary file.  Error was: \n{}').format(e))
                 val = lrd[key]
             lrd_with_strings[key] = val
         writer.writerow(lrd_with_strings)
