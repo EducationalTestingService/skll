@@ -72,7 +72,7 @@ Changelog
       ``Learner`` constructor, and is now required. This was done to help
       prevent unexpected issues from defaulting to ``LogisticRegression``.
    +  No longer keep extra temporary config files around when running
-      ``run_experiment``in ablation mode.
+      ``run_experiment`` in ablation mode.
 
 -  v0.12.0
 
