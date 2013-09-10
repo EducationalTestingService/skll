@@ -127,47 +127,14 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     # which look really strange when written to a TSV. We want to convert
     # them to more readable string versions.
     for lrd in learner_result_dicts:
-        lrd_with_strings = {}
         if ablation:
             ablated_feature = all_features.difference(json.loads(lrd['featureset']))
             lrd['ablated_feature'] = ''
             if ablated_feature:
                 lrd['ablated_feature'] = list(ablated_feature)[0]
 
-        for key in lrd:
-            # try to json-load the value in the learner dict
-            try:
-                item_to_check = json.loads(lrd[key])
-            # except if we have a number, just use it as is
-            except TypeError:
-                val = lrd[key]
-            # except if we have a string, then encode it if we
-            # are running python 2
-            except ValueError:
-                val = lrd[key]
-                if sys.version_info < (3, 0):
-                    val = lrd[key].encode('utf-8')
-            # if we have a list or a dictionary, encode the elements or the
-            # keys & values for python 2
-            else:
-                if isinstance(item_to_check, list):
-                    val = item_to_check
-                    if sys.version_info < (3, 0):
-                        val = [x.encode('utf-8') for x in item_to_check]
-                elif isinstance(item_to_check, dict):
-                    val = item_to_check
-                    if sys.version_info < (3, 0):
-                        val = {}
-                        for inner_key, inner_val in iteritems(item_to_check):
-                            val[inner_key.encode('utf-8')] = inner_val
-                            if isinstance(inner_val, string_types):
-                                val[inner_key.encode('utf-8')] = inner_val.encode('utf-8')
-
-            # store the more readable value in the new learner dict
-            lrd_with_strings[key] = val
-
         # write out the new learner dict with the readable fields
-        writer.writerow(lrd_with_strings)
+        writer.writerow(lrd)
 
     output_file.flush()
 
