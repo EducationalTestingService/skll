@@ -35,6 +35,7 @@ import math
 import os
 import re
 import sys
+import tempfile
 from collections import defaultdict
 from io import open
 from multiprocessing import Pool
@@ -971,24 +972,20 @@ def _run_experiment_without_feature(arg_tuple):
     config.set("Input", "featuresets", json.dumps(featureset))
     config.set("Input", "featureset_names", "['{}']".format(featureset_name))
 
-    cfg_name = os.path.basename(cfg_path)
-    cfg_dir = os.path.dirname(cfg_path)
-
-    m = re.search(r'^(.*)\.cfg$', cfg_name)
-    if not m:
-        raise ValueError("Configuration file should end in .cfg.")
-    new_cfg_path = os.path.join(cfg_dir,
-                                "{}_minus_{}.cfg".format(m.groups()[0],
-                                                         feature_type)
-                                if feature_type else "{}_all.cfg".format(m.groups()[0]))
-
     file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-    with open(new_cfg_path, file_mode) as new_config_file:
+    with tempfile.NamedTemporaryFile(mode=file_mode,
+                                     suffix='.cfg',
+                                     delete=False) as new_config_file:
         config.write(new_config_file)
 
-    return run_configuration(new_cfg_path, local=local, queue=queue,
-                             hosts=machines, overwrite=overwrite,
-                             write_summary=False)
+    result_jsons = run_configuration(new_config_file.name, local=local,
+                                     queue=queue, hosts=machines,
+                                     overwrite=overwrite, write_summary=False)
+
+    # remove the temporary config file that we created
+    os.unlink(new_config_file.name)
+
+    return result_jsons
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
@@ -1042,7 +1039,6 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
         pool = Pool(processes=len(given_features) + 1)
         result_json_paths.extend(pool.map(_run_experiment_without_feature,
                                           list(arg_tuples)))
-
     task = config.get("General", "task")
     experiment_name = config.get("General", "experiment_name")
     resultspath = config.get("Output", "results")
