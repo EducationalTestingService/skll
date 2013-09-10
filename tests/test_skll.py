@@ -182,9 +182,19 @@ def check_specified_cv_folds(numeric_ids):
     # test_cv_folds2.cfg is without prespecified folds and should have very high performance
     for experiment_name, test_func, grid_size in [('test_cv_folds1', lambda x: x < 0.6, 3), ('test_cv_folds2', lambda x: x > 0.95, 10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_path = fill_in_config_paths(os.path.join(_my_dir, 'configs', config_template_file))
+        config_path = os.path.join(_my_dir, fill_in_config_paths(os.path.join(_my_dir, 'configs', config_template_file)))
 
-        run_configuration(os.path.join(_my_dir, config_path), local=True)
+        # Modify config file to change ids_to_floats depending on numeric_ids setting
+        with open(config_path, 'r+') as config_template_file:
+            lines = config_template_file.readlines()
+            config_template_file.seek(0)
+            config_template_file.truncate()
+            for line in lines:
+                if line.startswith('ids_to_floats='):
+                    line = 'ids_to_floats=true\n' if numeric_ids else 'ids_to_floats=false\n'
+                config_template_file.write(line)
+
+        run_configuration(config_path, local=True)
 
         with open(os.path.join(_my_dir, 'output', '{}_test_cv_folds_LogisticRegression.results').format(experiment_name)) as f:
             # check held out scores
@@ -211,8 +221,8 @@ def check_specified_cv_folds(numeric_ids):
 
 
 def test_specified_cv_folds():
-    yield check_specified_cv_folds, True
     yield check_specified_cv_folds, False
+    yield check_specified_cv_folds, True
 
 
 def make_regression_data():
