@@ -17,7 +17,8 @@
 # SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-Little helper script to create a summary file out of a list JSON results files.
+Little helper script to create a summary file out of a list of JSON results
+files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :date: September 2013
