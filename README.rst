@@ -63,6 +63,17 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.13.0
+
+   +  Will now skip IDs that are missing from ``cv_folds``/``grid_search_folds``
+      dicts and print a warning instead of crashing.
+   +  Added additional kappa unit tests to help detect/prevent future issues.
+   +  **API change:** ``model_type`` is no longer a keyword argument to
+      ``Learner`` constructor, and is now required. This was done to help
+      prevent unexpected issues from defaulting to ``LogisticRegression``.
+   +  No longer keep extra temporary config files around when running
+      ``run_experiment``in ablation mode.
+
 -  v0.12.0
 
    +  Fixed crash with kappa when given two sets of ratings that are both
