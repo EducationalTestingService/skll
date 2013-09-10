@@ -120,9 +120,9 @@ def kappa(y_true, y_pred, weights=None):
                 else:  # unweighted
                     weights[i, j] = (i != j)
 
-    hist_true = np.bincount(y_true, minlength=(num_ratings))
+    hist_true = np.bincount(y_true, minlength=num_ratings)
     hist_true = hist_true[: num_ratings] / num_scored_items
-    hist_pred = np.bincount(y_pred, minlength=(num_ratings))
+    hist_pred = np.bincount(y_pred, minlength=num_ratings)
     hist_pred = hist_pred[: num_ratings] / num_scored_items
     expected = np.outer(hist_true, hist_pred)
 
@@ -163,7 +163,7 @@ def spearman(y_true, y_pred):
 def pearson(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on Pearson
-    correlation.
+   correlation.
     '''
     ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0

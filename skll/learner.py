@@ -309,9 +309,8 @@ class Learner(object):
     :type min_feature_count: int
     """
 
-    def __init__(self, probability=False, model_type='LogisticRegression',
-                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
-                 min_feature_count=1):
+    def __init__(self, model_type, probability=False, feature_scaling='none',
+                 model_kwargs=None, pos_label_str=None, min_feature_count=1):
         '''
         Initializes a learner object with the specified settings.
         '''
@@ -635,7 +634,11 @@ class Learner(object):
                 grid_jobs = len(np.unique(grid_search_folds))
             else:
                 grid_jobs = min(len(np.unique(grid_search_folds)), grid_jobs)
-            labels = [grid_search_folds[curr_id] for curr_id in examples.ids]
+            labels = [grid_search_folds[curr_id] for curr_id in examples.ids
+                      if curr_id in grid_search_folds]  # Skip missing IDs
+            if len(labels) != len(examples.ids):
+                logging.warning(('Feature set contains IDs that are not in ' +
+                                 'grid_search_folds.  Skipping those IDs.'))
             folds = LeaveOneLabelOut(labels)
 
         # limit the number of grid_jobs to be no higher than five or
@@ -940,7 +943,11 @@ class Learner(object):
             # training fold.  Note that this means that the grid search
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
-            labels = [cv_folds[curr_id] for curr_id in examples.ids]
+            labels = [cv_folds[curr_id] for curr_id in examples.ids
+                      if curr_id in cv_folds]  # Skip missing IDs
+            if len(labels) != len(examples.ids):
+                logging.warning(('Feature set contains IDs that are not in ' +
+                                 'cv_folds.  Skipping those IDs.'))
             kfold = LeaveOneLabelOut(labels)
             grid_search_folds = cv_folds
 
