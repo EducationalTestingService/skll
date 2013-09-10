@@ -99,8 +99,8 @@ def kappa(y_true, y_pred, weights=None):
     y_pred = [y - min_rating for y in y_pred]
 
     # Build the observed/confusion matrix
-    observed = confusion_matrix(y_true, y_pred)
-    num_ratings = len(observed)
+    num_ratings = max_rating - min_rating + 1
+    observed = confusion_matrix(y_true, y_pred, labels=list(range(num_ratings)))
     num_scored_items = float(len(y_true))
 
     # Build weight array if weren't passed one
@@ -120,10 +120,10 @@ def kappa(y_true, y_pred, weights=None):
                 else:  # unweighted
                     weights[i, j] = (i != j)
 
-    hist_true = np.bincount(y_true, minlength=(max_rating - min_rating + 1))
-    hist_true = hist_true[: max_rating - min_rating + 1] / num_scored_items
-    hist_pred = np.bincount(y_pred, minlength=(max_rating - min_rating + 1))
-    hist_pred = hist_pred[: max_rating - min_rating + 1] / num_scored_items
+    hist_true = np.bincount(y_true, minlength=(num_ratings))
+    hist_true = hist_true[: num_ratings] / num_scored_items
+    hist_pred = np.bincount(y_pred, minlength=(num_ratings))
+    hist_pred = hist_pred[: num_ratings] / num_scored_items
     expected = np.outer(hist_true, hist_pred)
 
     # Normalize observed array
