@@ -368,15 +368,19 @@ class Learner(object):
         '''
         with open(learner_path, "rb") as f:
             skll_version, learner = pickle.load(f)
+            # Check that we've actually loaded a Learner (or sub-class)
+            if not isinstance(learner, cls):
+                raise ValueError(('The pickle stored at {} does not contain ' +
+                                  'a {} object.').format(learner_path, cls))
             # Check that versions are compatible. (Currently, this just checks
             # that major versions match)
-            if skll_version[0] == VERSION[0]:
+            elif skll_version[0] == VERSION[0]:
                 return learner
             else:
-                raise Exception(("Learner stored in pickle file {} was " +
+                raise Exception(("{} stored in pickle file {} was " +
                                  "created with version {} of SKLL, which is " +
                                  "incompatible with the current version " +
-                                 "{}").format(learner_path,
+                                 "{}").format(cls, learner_path,
                                               '.'.join(skll_version),
                                               '.'.join(VERSION)))
 
