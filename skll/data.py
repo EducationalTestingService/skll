@@ -51,13 +51,11 @@ ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
 
 
 def _make_examples_generator(example_gen_func, path, quiet=True,
-                             tsv_label='y', ids_to_floats=True):
+                             tsv_label='y', ids_to_floats=False):
     '''
     This function simply calls example_gen_func, which should be
     one of the data loading functions (e.g., _tsv_dict_iter),
     with the appropriate arguments.
-
-    Note: ids_to_floats defaults to True to save memory.
     '''
     if example_gen_func == _tsv_dict_iter:
         return example_gen_func(path, quiet=quiet, tsv_label=tsv_label,
@@ -67,7 +65,7 @@ def _make_examples_generator(example_gen_func, path, quiet=True,
                                 ids_to_floats=ids_to_floats)
 
 
-def _ids_for_gen_func(example_gen_func, path, ids_to_floats=False):
+def _ids_for_gen_func(example_gen_func, path, ids_to_floats):
     '''
     Little helper function to return an array of IDs for a given example
     generator (and whether or not the examples have labels).
@@ -101,14 +99,14 @@ def _classes_for_gen_func_helper(gen_results):
     return np.array([class_name for _, class_name, _ in gen_results])
 
 
-def _features_for_gen_func(example_gen_func, path, quiet, sparse):
+def _features_for_gen_func(example_gen_func, path, quiet, sparse, tsv_label):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
     have labels).
     '''
     gen_results = _make_examples_generator(example_gen_func, path,
-                                           quiet=quiet)
+                                           quiet=quiet, tsv_label=tsv_label)
     return _features_for_gen_func_helper(gen_results, sparse)
 
 
@@ -189,7 +187,7 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
                                                 tsv_label))
         features_result = pool.apply_async(_features_for_gen_func,
                                            args=(example_gen_func, path, quiet,
-                                                 sparse))
+                                                 sparse, tsv_label))
 
         # Wait for processes to complete and store results
         pool.close()
@@ -279,7 +277,12 @@ def _json_dict_iter(path, quiet=False, ids_to_floats=False):
             example = example["x"]
 
             if ids_to_floats:
-                curr_id = _safe_float(curr_id)
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true, but ' +
+                                      'ID {} could not be converted to ' +
+                                      'float').format(curr_id))
 
             yield curr_id, class_name, example
 
