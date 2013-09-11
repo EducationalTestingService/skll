@@ -63,6 +63,14 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.13.2
+
+   +  Now raise an exception when using ``ids_to_floats`` with non-numeric IDs.
+   +  Fixed a number of inconsistencies with ``cv_folds-location`` and
+      ``ids_to_floats`` (including GH issue #57).
+   +  Fixed unit tests for ``cv_folds_location`` and ``ids_to_floats`` so that
+      they actually test the right things now.
+
 -  v0.13.1
 
    +  Fixed crash when using ``cv_folds_location`` with ``ids_to_floats``.
