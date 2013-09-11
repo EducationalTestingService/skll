@@ -122,9 +122,9 @@ def make_cv_folds_data(numeric_ids):
             for i in range(num_examples_per_fold):
                 y = "dog" if i % 2 == 0 else "cat"
                 if numeric_ids:
-                    ex_id = "{}{}".format(y, num_examples_per_fold * k + i)
-                else:
                     ex_id = num_examples_per_fold * k + i
+                else:
+                    ex_id = "{}{}".format(y, num_examples_per_fold * k + i)
                 x = {"f1": 1.0, "f2": -1.0, "f3": 1.0, "is_{}{}".format(y, k): 1.0}
                 json_out.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
                 csv_out.write('{},{}\n'.format(ex_id, k))
