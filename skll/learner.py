@@ -643,6 +643,9 @@ class Learner(object):
             if len(labels) != len(examples.ids):
                 logging.warning(('Feature set contains IDs that are not in ' +
                                  'grid_search_folds.  Skipping those IDs.'))
+            if not labels:
+                raise ValueError('After skipping missing IDs, no examples ' +
+                                 'remained.')
             folds = LeaveOneLabelOut(labels)
 
         # limit the number of grid_jobs to be no higher than five or
@@ -952,6 +955,9 @@ class Learner(object):
             if len(labels) != len(examples.ids):
                 logging.warning(('Feature set contains IDs that are not in ' +
                                  'cv_folds.  Skipping those IDs.'))
+            if not labels:
+                raise ValueError('After skipping missing IDs, no examples ' +
+                                 'remained.')
             kfold = LeaveOneLabelOut(labels)
             grid_search_folds = cv_folds
 
