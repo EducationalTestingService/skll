@@ -48,7 +48,7 @@ from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn.metrics import SCORERS
 
-from skll.data import ExamplesTuple, load_examples, _safe_float
+from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 
 _VALID_TASKS = frozenset(['predict', 'train_only',
@@ -638,7 +638,12 @@ def _load_cv_folds(cv_folds_location, ids_to_floats=False):
         res = {}
         for row in reader:
             if ids_to_floats:
-                row[0] = _safe_float(row[0])
+                try:
+                    row[0] = float(row[0])
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true, but ' +
+                                      'ID {} could not be converted to ' +
+                                      'float').format(row[0]))
             res[row[0]] = row[1]
 
     return res
@@ -745,7 +750,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # get the cv folds file and make a dictionary from it
     cv_folds_location = config.get("Input", "cv_folds_location")
     if cv_folds_location:
-        cv_folds = _load_cv_folds(cv_folds_location)
+        cv_folds = _load_cv_folds(cv_folds_location,
+                                  ids_to_floats=ids_to_floats)
     else:
         cv_folds = 10
 
