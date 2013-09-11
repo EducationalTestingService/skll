@@ -145,6 +145,8 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     Function to take all of the results from all of the folds and print
     nice tables with the results.
     '''
+    if not learner_result_dicts:
+        raise ValueError('Result dictionary list is empty!')
 
     lrd = learner_result_dicts[0]
     print('Experiment Name: {}'.format(lrd['experiment_name']),
