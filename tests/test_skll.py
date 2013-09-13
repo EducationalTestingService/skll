@@ -149,7 +149,7 @@ def fill_in_config_paths(config_template_path):
 
     config.set("Input", "train_location", train_dir)
 
-    to_fill_in = ['log', 'vocabs', 'predictions']
+    to_fill_in = ['log', 'predictions']
 
     if task != 'cross_validate':
         to_fill_in.append('models')
@@ -826,9 +826,8 @@ def check_convert_featureset(from_suffix, to_suffix):
         else:
             cmd_string = '{} {} {}'.format(converter_path, input_file_path, output_file_path)
         convert_cmd = shlex.split(cmd_string)
-        #subprocess.check_call(convert_cmd)
-        os.system(b' '.join(convert_cmd))
-
+        subprocess.check_call(convert_cmd)
+        
     # now load and merge all unmerged, converted features in the `to_suffix` format
     featureset = ['{}_{}'.format(feature_name_prefix, i) for i in range(num_feat_files)]
     merged_examples = _load_featureset(dirpath, featureset, to_suffix)
