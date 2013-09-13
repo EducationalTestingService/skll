@@ -28,7 +28,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 import csv
 import datetime
 import errno
-import itertools
 import json
 import logging
 import math
@@ -38,6 +37,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from io import open
+from itertools import chain
 from multiprocessing import Pool
 
 import configparser  # Backported version from Python 3
@@ -50,6 +50,14 @@ from sklearn.metrics import SCORERS
 
 from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
+
+# Check if gridmap is available
+try:
+    from gridmap import Job, JobException, process_jobs
+except ImportError:
+    _HAVE_GRIDMAP = False
+else:
+    _HAVE_GRIDMAP = True
 
 _VALID_TASKS = frozenset(['predict', 'train_only',
                           'evaluate', 'cross_validate'])
@@ -67,6 +75,7 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
                 'svr_linear': 'SVR',
                 'rescaled_svr_linear': 'RescaledSVR',
                 'gb_regressor': 'GradientBoostingRegressor'}
+
 
 
 def _get_stat_float(class_result_dict, stat):
@@ -256,10 +265,9 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
     # "unseen" examples).
     # To do this, find the unique (id, y) tuples, and then make sure that all
     # those ids are unique.
-    unique_tuples = set(itertools.chain(*[[(curr_id, curr_label) for curr_id,
-                                           curr_label in zip(examples.ids,
-                                                             examples.classes)]
-                                          for examples in example_tuples]))
+    unique_tuples = set(chain(*[[(curr_id, curr_label) for curr_id, curr_label
+                                 in zip(examples.ids, examples.classes)]
+                                for examples in example_tuples]))
     if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
         raise ValueError('At least two feature files have different labels ' +
                          '(i.e., y values) for the same ID.')
@@ -677,15 +685,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Read configuration
     config = _parse_config_file(config_file)
 
-    if not local:
-        # import gridmap if available
-        try:
-            from gridmap import Job, JobException, process_jobs
-        except ImportError:
-            local = True
-            logging.warning('gridmap 0.10.1+ not available. Forcing local ' +
-                            'mode.  To run things on a DRMAA-compatible ' +
-                            'cluster, install gridmap>=0.10.1 via pip.')
+    if not local and not _HAVE_GRIDMAP:
+        local = True
+        logging.warning('gridmap 0.10.1+ not available. Forcing local ' +
+                        'mode.  To run things on a DRMAA-compatible ' +
+                        'cluster, install gridmap>=0.10.1 via pip.')
 
     ###########################
     # extract parameters from the config file
@@ -907,7 +911,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                      '{}.results.json'.format(jobname)))
 
     # submit the jobs (if running on grid)
-    if not local:
+    if not local and _HAVE_GRIDMAP:
         try:
             if logpath:
                 job_results = process_jobs(jobs, white_list=hosts,
@@ -1042,13 +1046,27 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
                   for feature_type in given_features + [None])
 
     result_json_paths = []
-    if local:
+    if not local and not _HAVE_GRIDMAP:
+        local = True
+        logging.warning('gridmap 0.10.1+ not available. Forcing local ' +
+                        'mode.  To run things on a DRMAA-compatible ' +
+                        'cluster, install gridmap>=0.10.1 via pip.')
+
+    if not local:
+        pool = Pool(processes=len(given_features) + 1)
+        try:
+            result_json_paths.extend(chain(*pool.map(_run_experiment_without_feature,
+                                                     list(arg_tuples))))
+        # If we run_ablation is run via a subprocess (like nose does),
+        # this will fail, so just do things serially then.
+        except AssertionError:
+            del pool
+            for arg_tuple in arg_tuples:
+                result_json_paths.extend(_run_experiment_without_feature(arg_tuple))
+    else:
         for arg_tuple in arg_tuples:
             result_json_paths.extend(_run_experiment_without_feature(arg_tuple))
-    else:
-        pool = Pool(processes=len(given_features) + 1)
-        result_json_paths.extend(pool.map(_run_experiment_without_feature,
-                                          list(arg_tuples)))
+
     task = config.get("General", "task")
     experiment_name = config.get("General", "experiment_name")
     resultspath = config.get("Output", "results")
