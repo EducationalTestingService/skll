@@ -69,26 +69,6 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
                 'gb_regressor': 'GradientBoostingRegressor'}
 
 
-class TrackUnusedConfigParser(configparser.ConfigParser):
-    '''
-    A subclass of ConfigParser that can keep track
-    of which options were never used
-    '''
-    def __init__(self, *args, **kwargs):
-        configparser.ConfigParser.__init__(self, *args, **kwargs)
-        self._used_options = set(self.defaults().keys())
-
-    def get(self, section, option, **kwargs):
-        self._used_options.add(option)
-        return configparser.ConfigParser.get(self, section, option, **kwargs)
-
-    def get_unused_options(self):
-        all_options = set()
-        for section in self.sections():
-            all_options.update(self.options(section))
-        return list(all_options.difference(self._used_options))
-
-
 def _get_stat_float(class_result_dict, stat):
     '''
     Little helper for getting output for precision, recall, and f-score
@@ -213,29 +193,29 @@ def _parse_config_file(config_path):
     Parses a SKLL experiment configuration file with the given path.
     '''
     # initialize config parser
-    config = TrackUnusedConfigParser({'test_location': '',
-                                      'log': '',
-                                      'results': '',
-                                      'predictions': '',
-                                      'models': '',
-                                      'grid_search': 'False',
-                                      'objective': "f1_score_micro",
-                                      'probability': 'False',
-                                      'fixed_parameters': '[]',
-                                      'param_grids': '[]',
-                                      'pos_label_str': '',
-                                      'featureset_names': '[]',
-                                      'feature_scaling': 'none',
-                                      'min_feature_count': '1',
-                                      'grid_search_jobs': '0',
-                                      'cv_folds_location': '',
-                                      'suffix': '',
-                                      'classifiers': '',
-                                      'tsv_label': 'y',
-                                      'ids_to_floats': 'False'})
+    config = configparser.ConfigParser({'test_location': '',
+                                        'log': '',
+                                        'results': '',
+                                        'predictions': '',
+                                        'models': '',
+                                        'grid_search': 'False',
+                                        'objective': "f1_score_micro",
+                                        'probability': 'False',
+                                        'fixed_parameters': '[]',
+                                        'param_grids': '[]',
+                                        'pos_label_str': '',
+                                        'featureset_names': '[]',
+                                        'feature_scaling': 'none',
+                                        'min_feature_count': '1',
+                                        'grid_search_jobs': '0',
+                                        'cv_folds_location': '',
+                                        'suffix': '',
+                                        'classifiers': '',
+                                        'tsv_label': 'y',
+                                        'ids_to_floats': 'False'})
 
     if not os.path.exists(config_path):
-        raise IOError(errno.ENOENT, " The config file doesn't exist.",
+        raise IOError(errno.ENOENT, "The config file doesn't exist.",
                       config_path)
 
     config.read(config_path)
@@ -842,14 +822,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         raise ValueError('The models path should not be set ' +
                          'when task is cross_validate.')
 
-    # check to make sure that the config file did not contain
-    # any options that are not supported (we never get() them)
-    extra_options = config.get_unused_options()
-    if extra_options:
-        raise configparser.Error('The following options are ' +
-                                 'not recognized: {}'.format(
-                                 ', '.join(extra_options)))
-
     ###########################
 
     # the list of jobs submitted (if running on grid)
@@ -945,8 +917,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         except JobException as e:
             logging.error('gridmap claims that one of your jobs failed, but ' +
                           'this is not always true. \n{}'.format(e))
-
-        _check_job_results(job_results)
+        else:
+            _check_job_results(job_results)
 
     # write out the summary results file
     if (task == 'cross_validate' or task == 'evaluate') and write_summary:
