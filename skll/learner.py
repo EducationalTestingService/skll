@@ -644,8 +644,11 @@ class Learner(object):
                 logging.warning(('Feature set contains IDs that are not in ' +
                                  'grid_search_folds.  Skipping those IDs.'))
             if not labels:
-                raise ValueError('After skipping missing IDs, no examples ' +
-                                 'remained.')
+                raise ValueError(('After skipping missing IDs, no examples ' +
+                                  'remained.\nIDs in grid_search_folds: \n{}' + 
+                                  '\nIDs in examples.ids: ' + 
+                                  '{}').format(grid_search_folds.keys(),
+                                               examples.ids))
             folds = LeaveOneLabelOut(labels)
 
         # limit the number of grid_jobs to be no higher than five or
