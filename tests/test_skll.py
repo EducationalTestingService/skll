@@ -194,7 +194,7 @@ def check_specified_cv_folds(numeric_ids):
                     line = 'ids_to_floats=true\n' if numeric_ids else 'ids_to_floats=false\n'
                 config_template_file.write(line)
 
-        run_configuration(config_path, local=True)
+        run_configuration(config_path)
 
         with open(os.path.join(_my_dir, 'output', '{}_test_cv_folds_LogisticRegression.results').format(experiment_name)) as f:
             # check held out scores
@@ -272,7 +272,7 @@ def test_regression1():
 
     config_template_path = "test_regression1.cfg"
 
-    run_configuration(os.path.join(_my_dir, config_path), local=True)
+    run_configuration(os.path.join(_my_dir, config_path))
 
     with open(os.path.join(_my_dir, 'output', 'test_regression1_test_regression1_RescaledRidge.results')) as f:
         # check held out scores
@@ -302,7 +302,7 @@ def test_predict():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(os.path.join(_my_dir, config_path), local=True)
+    run_configuration(os.path.join(_my_dir, config_path))
 
     with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
         inputs = [x for x in test_file]
@@ -364,7 +364,7 @@ def test_summary():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, local=True)
+    run_configuration(config_path)
 
     with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_LogisticRegression.results')) as f:
         outstr = f.read()
@@ -442,7 +442,7 @@ def test_sparse_predict():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_sparse.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, local=True)
+    run_configuration(config_path)
 
     with open(os.path.join(_my_dir, 'output', 'test_sparse_test_sparse_LogisticRegression.results')) as f:
         outstr = f.read()
@@ -489,7 +489,7 @@ def test_ablation_cv():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_ablation(config_path, local=True)
+    run_ablation(config_path)
 
     # read in the summary file and make sure it has
     # 6 ablated featuresets * 11 folds * 2 learners = 132 lines
@@ -563,13 +563,13 @@ def test_scaling():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_without.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, local=True)
+    run_configuration(config_path)
 
     # now run the version with scaling
     config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_with.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, local=True)
+    run_configuration(config_path)
 
     # make sure that the result with and without scaling aren't the same
     with open(os.path.join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
@@ -820,10 +820,13 @@ def check_convert_featureset(from_suffix, to_suffix):
                                                                  feature, from_suffix))
         output_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
                                                                   feature, to_suffix))
-        convert_cmd = shlex.split('{} {} {}'.format(converter_path,
-                                                    input_file_path,
-                                                    output_file_path))
-        subprocess.check_call(convert_cmd)
+        if sys.version_info < (3, 0):
+            cmd_string = b'{} {} {}'.format(converter_path, input_file_path, output_file_path)
+        else:
+            cmd_string = '{} {} {}'.format(converter_path, input_file_path, output_file_path)
+        convert_cmd = shlex.split(cmd_string)
+        #subprocess.check_call(convert_cmd)
+        os.system(b' '.join(convert_cmd))
 
     # now load and merge all unmerged, converted features in the `to_suffix` format
     featureset = ['{}_{}'.format(feature_name_prefix, i) for i in range(num_feat_files)]
