@@ -4,3 +4,4 @@ include requirements.txt
 recursive-include doc *
 recursive-include examples *
 recursive-include scripts *
+recursive-include tests *
