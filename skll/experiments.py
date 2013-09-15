@@ -164,7 +164,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
-    print('Learner: {}'.format(lrd['learner']), file=output_file)
+    print('Learner: {}'.format(lrd['learner_name']), file=output_file)
     print('Task: {}'.format(lrd['task']), file=output_file)
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
@@ -332,7 +332,7 @@ def _classify_featureset(args):
     task = args.pop("task")
     jobname = args.pop("jobname")
     featureset = args.pop("featureset")
-    learner = args.pop("learner")
+    learner_name = args.pop("learner_name")
     train_path = args.pop("train_path")
     test_path = args.pop("test_path")
     train_set_name = args.pop("train_set_name")
@@ -393,7 +393,7 @@ def _classify_featureset(args):
                                              ids_to_floats=ids_to_floats)
 
         # initialize a classifer object
-        learner = Learner(learner,
+        learner = Learner(learner_name,
                           probability=probability,
                           feature_scaling=feature_scaling,
                           model_kwargs=fixed_parameters,
@@ -410,7 +410,7 @@ def _classify_featureset(args):
                                     'train_set_name': train_set_name,
                                     'test_set_name': test_set_name,
                                     'featureset': json.dumps(featureset),
-                                    'learner': learner,
+                                    'learner_name': learner_name,
                                     'task': task,
                                     'timestamp': timestamp,
                                     'feature_scaling': feature_scaling,
@@ -433,13 +433,13 @@ def _classify_featureset(args):
             # load the model if it already exists
             if os.path.exists(modelfile) and not overwrite:
                 print(('\tloading pre-existing {} ' +
-                       'model: {}').format(learner, modelfile))
+                       'model: {}').format(learner_name, modelfile))
                 learner.load(modelfile)
 
             # if we have do not have a saved model, we need to train one.
             else:
                 print(('\tfeaturizing and training new ' +
-                       '{} model').format(learner),
+                       '{} model').format(learner_name),
                       file=log_file)
 
                 grid_search_folds = 5
@@ -848,13 +848,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                            featureset_names):
 
         # and for each learner
-        for learner_num, learner in enumerate(learners):
+        for learner_num, learner_name in enumerate(learners):
 
             job_name_components = [experiment_name]
 
             # for the individual job name, we need to add the feature set name
             # and the learner name
-            job_name_components.extend([featureset_name, learner])
+            job_name_components.extend([featureset_name, learner_name])
             jobname = '_'.join(job_name_components)
 
             # change the prediction prefix to include the feature set
@@ -870,7 +870,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["task"] = task
             job_args["jobname"] = jobname
             job_args["featureset"] = featureset
-            job_args["learner"] = learner
+            job_args["learner_name"] = learner_name
             job_args["train_path"] = train_path
             job_args["test_path"] = test_path
             job_args["train_set_name"] = train_set_name
