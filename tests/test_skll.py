@@ -390,11 +390,11 @@ def test_summary():
             assert row['grid_score']
             assert row['score']
 
-            if row['given_learner'] == 'LogisticRegression':
+            if row['learner_name'] == 'LogisticRegression':
                 logistic_summary_score = float(row['score'])
-            elif row['given_learner'] == 'MultinomialNB':
+            elif row['learner_name'] == 'MultinomialNB':
                 naivebayes_summary_score = float(row['score'])
-            elif row['given_learner'] == 'SVC':
+            elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
 
     for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
