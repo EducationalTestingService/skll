@@ -67,7 +67,7 @@ Changelog
 
    +  Added warning when configuration files contain settings that are invalid.
    +  Fixed a crash because ``job_results`` was not defined in grid-mode.
-   +  Cleaned up a lot of things related to unit tests and they're discovery.
+   +  Cleaned up a lot of things related to unit tests and their discovery.
    +  Added unit tests to manifest so that people who install this through pip
       could run the tests themselves if they wanted.
 
