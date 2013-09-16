@@ -14,6 +14,9 @@ virtualenv:
   system_site_packages: true
 before_install:
   - if [ $GRIDMAP == "true" ]; then travis/install_sge.sh; fi
+  - export SGE_ROOT=/var/lib/gridengine
+  - export SGE_CELL=default
+  - export DRMAA_LIBRARY_PATH=/usr/lib/libdrmaa.so.1.0
   - export GRID_MAP_REDIS_PORT=12345
   - sudo mkdir /scratch/
   - sudo chmod 777 /scratch/

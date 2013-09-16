@@ -21,9 +21,6 @@ export LOCALHOST_IN_SEL=$(qconf -sel | grep -c 'localhost')
 if [ $LOCALHOST_IN_SEL != "1" ]; then sudo qconf -Ae host_template; else sudo qconf -Me host_template; fi
 sed -i -r "s/UNDEFINED/$CORES/" queue_template
 sudo qconf -Aq queue_template
-export SGE_ROOT=/var/lib/gridengine
-export SGE_CELL=default
-export DRMAA_LIBRARY_PATH=/usr/lib/libdrmaa.so.1.0
 echo "Printing queue info to verify that things are working correctly."
 qstat -f -q all.q
 echo "You should see sge_execd and sge_qmaster running below:"
