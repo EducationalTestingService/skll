@@ -194,7 +194,7 @@ def check_specified_cv_folds(numeric_ids):
                     line = 'ids_to_floats=true\n' if numeric_ids else 'ids_to_floats=false\n'
                 config_template_file.write(line)
 
-        run_configuration(config_path, local=True)
+        run_configuration(config_path)
 
         with open(os.path.join(_my_dir, 'output', '{}_test_cv_folds_LogisticRegression.results').format(experiment_name)) as f:
             # check held out scores
@@ -272,7 +272,7 @@ def test_regression1():
 
     config_template_path = "test_regression1.cfg"
 
-    run_configuration(os.path.join(_my_dir, config_path), local=True)
+    run_configuration(os.path.join(_my_dir, config_path))
 
     with open(os.path.join(_my_dir, 'output', 'test_regression1_test_regression1_RescaledRidge.results')) as f:
         # check held out scores
@@ -302,7 +302,7 @@ def test_predict():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(os.path.join(_my_dir, config_path), local=True)
+    run_configuration(os.path.join(_my_dir, config_path))
 
     with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
         inputs = [x for x in test_file]
@@ -364,7 +364,7 @@ def test_summary():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, local=True)
+    run_configuration(config_path)
 
     with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_LogisticRegression.results')) as f:
         outstr = f.read()
@@ -390,11 +390,11 @@ def test_summary():
             assert row['grid_score']
             assert row['score']
 
-            if row['given_learner'] == 'LogisticRegression':
+            if row['learner_name'] == 'LogisticRegression':
                 logistic_summary_score = float(row['score'])
-            elif row['given_learner'] == 'MultinomialNB':
+            elif row['learner_name'] == 'MultinomialNB':
                 naivebayes_summary_score = float(row['score'])
-            elif row['given_learner'] == 'SVC':
+            elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
 
     for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
@@ -442,7 +442,7 @@ def test_sparse_predict():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_sparse.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, local=True)
+    run_configuration(config_path)
 
     with open(os.path.join(_my_dir, 'output', 'test_sparse_test_sparse_LogisticRegression.results')) as f:
         outstr = f.read()
@@ -489,7 +489,7 @@ def test_ablation_cv():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_ablation(config_path, local=True)
+    run_ablation(config_path)
 
     # read in the summary file and make sure it has
     # 6 ablated featuresets * 11 folds * 2 learners = 132 lines
@@ -563,13 +563,13 @@ def test_scaling():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_without.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, local=True)
+    run_configuration(config_path)
 
     # now run the version with scaling
     config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_with.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, local=True)
+    run_configuration(config_path)
 
     # make sure that the result with and without scaling aren't the same
     with open(os.path.join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
