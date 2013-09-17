@@ -14,7 +14,7 @@ virtualenv:
   system_site_packages: true
 before_install:
   - if [ $GRIDMAP == "true" ]; then travis/install_sge.sh; fi
-  - if [ $GRIDMAP == "true" ]; then export SKLL_MAX_CONCURRENT_PROCESSES=1; fi
+#  - if [ $GRIDMAP == "true" ]; then export SKLL_MAX_CONCURRENT_PROCESSES=1; fi
   - export SGE_ROOT=/var/lib/gridengine
   - export SGE_CELL=default
   - export DRMAA_LIBRARY_PATH=/usr/lib/libdrmaa.so.1.0

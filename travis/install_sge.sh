@@ -22,6 +22,7 @@ export LOCALHOST_IN_SEL=$(qconf -sel | grep -c 'localhost')
 if [ $LOCALHOST_IN_SEL != "1" ]; then sudo qconf -Ae host_template; else sudo qconf -Me host_template; fi
 sed -i -r "s/UNDEFINED/$CORES/" queue_template
 sudo qconf -Aq queue_template
+sudo qconf -Ap smp_template
 echo "Printing queue info to verify that things are working correctly."
 qstat -f -q all.q
 echo "You should see sge_execd and sge_qmaster running below:"
