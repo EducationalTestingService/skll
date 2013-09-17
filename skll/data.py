@@ -175,7 +175,8 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
         ids = _ids_for_gen_func(example_gen_func, path, ids_to_floats)
         classes = _classes_for_gen_func(example_gen_func, path, tsv_label)
         features, feat_vectorizer = _features_for_gen_func(example_gen_func,
-                                                           path, quiet, sparse)
+                                                           path, quiet, sparse,
+                                                           tsv_label)
     else:
         pool = Pool(min(3, MAX_CONCURRENT_PROCESSES))
 
