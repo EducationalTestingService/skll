@@ -564,7 +564,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
                 result_table.add_row(result_row)
 
             result_table_str = '{}'.format(result_table)
-            result_table_str += '(row = reference; column = predicted)'
+            result_table_str += '\n(row = reference; column = predicted)'
             learner_result_dict['result_table'] = result_table_str
             learner_result_dict['accuracy'] = fold_accuracy
             accuracy_sum += fold_accuracy
