@@ -4,7 +4,6 @@
 #
 # Written by Dan Blanchard (dblanchard@ets.org), September 2013
 
-
 cd travis
 sudo sed -i -r "s/^(127.0.0.1\s)(localhost\.localdomain\slocalhost)/\1localhost localhost.localdomain $(hostname) /" /etc/hosts
 sudo apt-get update -qq
@@ -21,8 +20,8 @@ sudo qconf -as localhost
 export LOCALHOST_IN_SEL=$(qconf -sel | grep -c 'localhost')
 if [ $LOCALHOST_IN_SEL != "1" ]; then sudo qconf -Ae host_template; else sudo qconf -Me host_template; fi
 sed -i -r "s/UNDEFINED/$CORES/" queue_template
-sudo qconf -Aq queue_template
 sudo qconf -Ap smp_template
+sudo qconf -Aq queue_template
 echo "Printing queue info to verify that things are working correctly."
 qstat -f -q all.q
 echo "You should see sge_execd and sge_qmaster running below:"
