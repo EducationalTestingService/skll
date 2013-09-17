@@ -25,6 +25,6 @@ sed -i -r "s/UNDEFINED/$CORES/" queue_template
 sudo qconf -Ap smp_template
 sudo qconf -Aq queue_template
 echo "Printing queue info to verify that things are working correctly."
-qstat -f -q all.q
+qstat -f -q all.q -explain a
 echo "You should see sge_execd and sge_qmaster running below:"
 ps aux | grep "sge"
