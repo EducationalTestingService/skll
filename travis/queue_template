@@ -10,7 +10,7 @@ min_cpu_interval	00:05:00
 processors	UNDEFINED
 qtype	BATCH	INTERACTIVE
 ckpt_list	NONE
-pe_list	make
+pe_list	make smp
 rerun	FALSE
 slots	UNDEFINED
 tmpdir	/tmp
