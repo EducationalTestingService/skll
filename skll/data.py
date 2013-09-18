@@ -61,8 +61,7 @@ def _make_examples_generator(example_gen_func, path, quiet=True,
         return example_gen_func(path, quiet=quiet, tsv_label=tsv_label,
                                 ids_to_floats=ids_to_floats)
     elif example_gen_func == _dummy_dict_iter:
-        return example_gen_func(path, tsv_label=tsv_label,
-                                ids_to_floats=ids_to_floats)
+        return example_gen_func(path, ids_to_floats=ids_to_floats)
     else:
         return example_gen_func(path, quiet=quiet,
                                 ids_to_floats=ids_to_floats)
