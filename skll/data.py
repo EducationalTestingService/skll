@@ -141,7 +141,7 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     '''
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
-    if isinstance(path, list):
+    if not isinstance(path, str):
         example_gen_func = _dummy_dict_iter
     elif path.endswith(".tsv"):
         example_gen_func = _tsv_dict_iter
@@ -193,9 +193,9 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
     It converts a .jsonlines-style list of dictionaries into
     an ExamplesTuple.
 
-    :param example_dicts: A list of dictionaries following the .jsonlines
+    :param example_dicts: An list of dictionaries following the .jsonlines
                           format (i.e., features 'x', label 'y', and 'id').
-    :type example_dicts: list of dict
+    :type example_dicts: iterable of dicts
 
     :return an ExamplesTuple representing the examples in example_dicts.
     '''
