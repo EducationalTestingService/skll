@@ -61,7 +61,7 @@ def _make_examples_generator(example_gen_func, path, quiet=True,
         return example_gen_func(path, quiet=quiet, tsv_label=tsv_label,
                                 ids_to_floats=ids_to_floats)
     elif example_gen_func == _dummy_dict_iter:
-        return example_gen_func(path, ids_to_floats=ids_to_floats)
+        return example_gen_func(path, ids_to_floats=ids_to_floats, quiet=quiet)
     else:
         return example_gen_func(path, quiet=quiet,
                                 ids_to_floats=ids_to_floats)
@@ -236,7 +236,7 @@ def _dummy_dict_iter(example_dicts, quiet=False, ids_to_floats=False):
     a list of example dictionaries instead of a path to a .jsonlines file.
     '''
     if not quiet:
-        print("Converting examples...", file=sys.stderr)
+        print("Converting examples...", end="", file=sys.stderr)
         sys.stderr.flush()
     for example_num, ex_dict in enumerate(example_dicts):
         yield (float(ex_dict['id']) if ids_to_floats else ex_dict['id'],
