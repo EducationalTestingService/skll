@@ -39,7 +39,7 @@ from operator import itemgetter
 import numpy as np
 from bs4 import UnicodeDammit
 from collections import namedtuple
-from six import iteritems
+from six import iteritems, string_types
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer
 
@@ -141,7 +141,7 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     '''
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
-    if not isinstance(path, str):
+    if not isinstance(path, string_types):
         example_gen_func = _dummy_dict_iter
     elif path.endswith(".tsv"):
         example_gen_func = _tsv_dict_iter
