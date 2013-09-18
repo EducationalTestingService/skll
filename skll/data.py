@@ -199,7 +199,7 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
 
     :return an ExamplesTuple representing the examples in example_dicts.
     '''
-    return load_examples(example_dicts, sparse=sparse, quiet=True
+    return load_examples(example_dicts, sparse=sparse, quiet=True,
                          ids_to_floats=ids_to_floats)
 
 
