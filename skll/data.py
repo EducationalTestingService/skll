@@ -60,6 +60,9 @@ def _make_examples_generator(example_gen_func, path, quiet=True,
     if example_gen_func == _tsv_dict_iter:
         return example_gen_func(path, quiet=quiet, tsv_label=tsv_label,
                                 ids_to_floats=ids_to_floats)
+    elif example_gen_func == _dummy_dict_iter:
+        return example_gen_func(path, tsv_label=tsv_label,
+                                ids_to_floats=ids_to_floats)
     else:
         return example_gen_func(path, quiet=quiet,
                                 ids_to_floats=ids_to_floats)
@@ -72,13 +75,6 @@ def _ids_for_gen_func(example_gen_func, path, ids_to_floats):
     '''
     gen_results = _make_examples_generator(example_gen_func, path,
                                            ids_to_floats=ids_to_floats)
-    return _ids_for_gen_func_helper(gen_results)
-
-
-def _ids_for_gen_func_helper(gen_results):
-    '''
-    See _ids_for_gen_func.
-    '''
     return np.array([curr_id for curr_id, _, _ in gen_results])
 
 
@@ -89,13 +85,6 @@ def _classes_for_gen_func(example_gen_func, path, tsv_label):
     '''
     gen_results = _make_examples_generator(example_gen_func, path,
                                            tsv_label=tsv_label)
-    return _classes_for_gen_func_helper(gen_results)
-
-
-def _classes_for_gen_func_helper(gen_results):
-    '''
-    See _classes_for_gen_func.
-    '''
     return np.array([class_name for _, class_name, _ in gen_results])
 
 
@@ -107,13 +96,6 @@ def _features_for_gen_func(example_gen_func, path, quiet, sparse, tsv_label):
     '''
     gen_results = _make_examples_generator(example_gen_func, path,
                                            quiet=quiet, tsv_label=tsv_label)
-    return _features_for_gen_func_helper(gen_results, sparse)
-
-
-def _features_for_gen_func_helper(gen_results, sparse):
-    '''
-    See _features_for_gen_func.
-    '''
     feat_vectorizer = DictVectorizer(sparse=sparse)
     feat_dict_generator = map(itemgetter(2), gen_results)
     try:
@@ -139,8 +121,10 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     Also, for TSV files, there must be a column with the name specified by
     `tsv_label` if the data is labelled.
 
-    :param path: The path to the file to load the examples from.
-    :type path: str
+    :param path: The path to the file to load the examples from, or a list of
+                 example dictionaries (like you would pass to
+                 `convert_examples`).
+    :type path: str or dict
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
     :param sparse: Whether or not to store the features in a numpy CSR matrix.
@@ -157,7 +141,9 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     '''
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
-    if path.endswith(".tsv"):
+    if isinstance(path, dict):
+        example_gen_func = _dummy_dict_iter
+    elif path.endswith(".tsv"):
         example_gen_func = _tsv_dict_iter
     elif path.endswith(".jsonlines"):
         example_gen_func = _json_dict_iter
@@ -213,17 +199,8 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
 
     :return an ExamplesTuple representing the examples in example_dicts.
     '''
-
-    gen_results = [(_safe_float(d['id']) if ids_to_floats else d['id'],
-                    d['y'] if 'y' in d else None,
-                    d['x'])
-                   for d in example_dicts]
-    ids = _ids_for_gen_func_helper(gen_results)
-    classes = _classes_for_gen_func_helper(gen_results)
-    features, feat_vectorizer = _features_for_gen_func_helper(gen_results,
-                                                              sparse)
-
-    return ExamplesTuple(ids, classes, features, feat_vectorizer)
+    return load_examples(example_dicts, sparse=sparse, quiet=True
+                         ids_to_floats=ids_to_floats)
 
 
 def _sanitize_line(line):
@@ -250,6 +227,26 @@ def _safe_float(text):
         return float(text)
     except ValueError:
         return text.decode('utf-8') if sys.version_info < (3, 0) else text
+
+
+def _dummy_dict_iter(example_dicts, quiet=False, ids_to_floats=False):
+    '''
+    This function is to facilitate programmatic use of Learner.predict()
+    and other functions that take ExamplesTuple objects as input.
+    It iterates over examples in the same way as _json_dict_iter, but uses
+    a list of example dictionaries instead of a path to a .jsonlines file.
+    '''
+    if not quiet:
+        print("Converting examples...", file=sys.stderr)
+        sys.stderr.flush()
+    for example_num, ex_dict in enumerate(example_dicts):
+        yield (float(ex_dict['id']) if ids_to_floats else ex_dict['id'],
+               _safe_float(ex_dict['y']) if 'y' in ex_dict else None,
+               ex_dict['x'])
+        if not quiet and example_num % 100 == 0:
+            print(".", end="", file=sys.stderr)
+    if not quiet:
+        print("done", file=sys.stderr)
 
 
 def _json_dict_iter(path, quiet=False, ids_to_floats=False):
