@@ -157,6 +157,8 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     # Do this using a process pool so that we can clear out the temporary
     # variables more easily and do these in parallel.
     if MAX_CONCURRENT_PROCESSES == 1:
+        if example_gen_func == _dummy_dict_iter and not isinstance(path, list):
+            path = list(path)
         ids = _ids_for_gen_func(example_gen_func, path, ids_to_floats)
         classes = _classes_for_gen_func(example_gen_func, path, tsv_label)
         features, feat_vectorizer = _features_for_gen_func(example_gen_func,
@@ -181,6 +183,9 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
         ids = ids_result.get()
         classes = classes_result.get()
         features, feat_vectorizer = features_result.get()
+
+    # Make sure we have the same number of ids, classes, and features
+    assert len(ids) == len(classes) == len(features)
 
     return ExamplesTuple(ids, classes, features, feat_vectorizer)
 
