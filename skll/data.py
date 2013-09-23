@@ -185,7 +185,7 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
         features, feat_vectorizer = features_result.get()
 
     # Make sure we have the same number of ids, classes, and features
-    assert len(ids) == len(classes) == len(features)
+    assert ids.shape[0] == classes.shape[0] == features.shape[0]
 
     return ExamplesTuple(ids, classes, features, feat_vectorizer)
 
