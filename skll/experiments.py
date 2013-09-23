@@ -76,7 +76,6 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
                 'gb_regressor': 'GradientBoostingRegressor'}
 
 
-
 def _get_stat_float(class_result_dict, stat):
     '''
     Little helper for getting output for precision, recall, and f-score
