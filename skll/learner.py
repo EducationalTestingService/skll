@@ -30,6 +30,7 @@ import inspect
 import logging
 import os
 from collections import defaultdict
+from functools import wraps
 from multiprocessing import cpu_count
 
 import numpy as np
@@ -156,21 +157,27 @@ class SelectByMinCount(SelectKBest):
 
 def rescaled(cls):
     '''
-    Decorator to create regressors that store a min and a max for the training
-    data and make sure that predictions fall within that range.  It also stores
-    the means and SDs of the gold standard and the predictions on the training
-    set to rescale the predictions (e.g., as in e-rater).
+    Function/decorator to create regressors that store a min and a max for the
+    training data and make sure that predictions fall within that range.  It
+    also stores the means and SDs of the gold standard and the predictions on
+    the training set to rescale the predictions (e.g., as in e-rater).
 
     :param cls: A regressor to add rescaling to.
     :type cls: BaseEstimator
+
+    :returns: Modified version of class with rescaled functions added.
     '''
+    # If this class has already been run through the decorator, return it
+    if hasattr(cls, 'rescale'):
+        return cls
+
     # Save original versions of functions to use later.
     orig_init = cls.__init__
     orig_fit = cls.fit
-    orig_get_param_names = cls._get_param_names
     orig_predict = cls.predict
 
     # Define all new versions of functions
+    @wraps(cls.fit)
     def fit(self, X, y=None):
         '''
         Fit a model, then store the mean, SD, max and min of the training set
@@ -193,6 +200,7 @@ def rescaled(cls):
             self.y_mean = np.mean(y)
             self.y_sd = np.std(y)
 
+    @wraps(cls.predict)
     def predict(self, X):
         '''
         Make predictions with the super class, and then adjust them using the
@@ -214,7 +222,9 @@ def rescaled(cls):
 
         return res
 
-    def _get_param_names(self):
+    @classmethod
+    @wraps(cls._get_param_names)
+    def _get_param_names(class_x):
         '''
         This is adapted from scikit-learns's BaseEstimator class.
         It gets the kwargs for the superclass's init method and adds the
@@ -223,8 +233,8 @@ def rescaled(cls):
         try:
             init = getattr(orig_init, 'deprecated_original', orig_init)
 
-            args, varargs, __, __ = inspect.getargspec(init)
-            if not varargs is None:
+            args, varargs, _, _ = inspect.getargspec(init)
+            if varargs is not None:
                 raise RuntimeError('scikit-learn estimators should always '
                                    'specify their parameters in the signature'
                                    ' of their init (no varargs).')
@@ -233,14 +243,16 @@ def rescaled(cls):
         except TypeError:
             args = []
 
-        rescale_args, __, __, __ = inspect.getargspec(self.__init__)
+        rescale_args = inspect.getargspec(class_x.__init__)[0]
         # Remove 'self'
         rescale_args.pop(0)
 
         args += rescale_args
         args.sort()
+
         return args
 
+    @wraps(cls.__init__)
     def init(self, constrain=True, rescale=True, **kwargs):
         '''
         This special init function is used by the decorator to make sure
@@ -262,6 +274,7 @@ def rescaled(cls):
     cls.fit = fit
     cls.predict = predict
     cls._get_param_names = _get_param_names
+    cls.rescale = True
 
     # Return modified class
     return cls
