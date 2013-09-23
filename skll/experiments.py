@@ -1051,7 +1051,7 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     # for each feature file, make a copy of the config file
     # with all but that feature, and run the jobs.
     arg_tuples = ((feature_type, features, featureset_name, config, local,
-                   queue, config_path, hosts, overwrite)
+                   queue, config_path, hosts, overwrite, quiet)
                   for feature_type in features + [None])
 
     result_json_paths = []
