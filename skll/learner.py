@@ -51,11 +51,12 @@ from sklearn.svm.base import BaseLibLinear
 from sklearn.utils import shuffle as sk_shuffle
 # sklearn models: these are used indirectly, so ignore linting messages
 from sklearn.ensemble import (GradientBoostingClassifier,
-                              GradientBoostingRegressor, RandomForestClassifier)
+                              GradientBoostingRegressor, RandomForestClassifier,
+                              RandomForestRegressor)
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC, SVC, SVR
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, _use_score_func
@@ -71,23 +72,25 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                                                      1.0]}],
                         'DecisionTreeClassifier': [{'max_features': ["auto",
                                                                      None]}],
+                        'DecisionTreeRegressor': [{'max_features': ["auto",
+                                                                    None]}],
                         'RandomForestClassifier': [{'max_depth': [1, 5, 10,
                                                                   None]}],
+                        'RandomForestRegressor': [{'max_depth': [1, 5, 10,
+                                                                 None]}],
                         'GradientBoostingClassifier': [{'max_depth': [1, 3, 5],
                                                         'n_estimators': [500]}],
-                        'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'RescaledRidge': [{'alpha': [0.01, 0.1, 1.0, 10.0,
-                                                     100.0]}],
-                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'RescaledSVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'GradientBoostingRegressor': [{'max_depth': [1, 3, 5],
-                                                       'n_estimators': [500]}]}
-_REGRESSION_MODELS = frozenset(['Ridge', 'RescaledRidge', 'SVR',
-                                'RescaledSVR', 'GradientBoostingRegressor'])
-_REQUIRES_DENSE = frozenset(['MultinomialNB', 'RandomForestClassifier',
+                                                       'n_estimators': [500]}],
+                        'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
+_REGRESSION_MODELS = frozenset(['DecisionTreeRegressor',
+                                'GradientBoostingRegressor',
+                                'RandomForestRegressor', 'Ridge', 'SVR'])
+_REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
-                             'DecisionTreeClassifier',
-                             'GradientBoostingRegressor'])
+                             'GradientBoostingRegressor' 'MultinomialNB',
+                             'RandomForestClassifier', 'RandomForestRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
@@ -151,21 +154,31 @@ class SelectByMinCount(SelectKBest):
         return mask
 
 
-class RescaledRegressionMixin(BaseEstimator):
+def rescaled(cls):
     '''
-    Mixin to create regressors that store a min and a max for the training data
-    and make sure that predictions fall within that range.  It also stores the
-    means and SDs of the gold standard and the predictions on the training set
-    to rescale the predictions (e.g., as in e-rater).
+    Decorator to create regressors that store a min and a max for the training
+    data and make sure that predictions fall within that range.  It also stores
+    the means and SDs of the gold standard and the predictions on the training
+    set to rescale the predictions (e.g., as in e-rater).
+
+    :param cls: A regressor to add rescaling to.
+    :type cls: BaseEstimator
     '''
-    def rescale_fit(self, X, y=None):
+    # Save original versions of functions to use later.
+    orig_init = cls.__init__
+    orig_fit = cls.fit
+    orig_get_param_names = cls._get_param_names
+    orig_predict = cls.predict
+
+    # Define all new versions of functions
+    def fit(self, X, y=None):
         '''
         Fit a model, then store the mean, SD, max and min of the training set
         and the mean and SD of the predictions on the training set.
         '''
 
         # fit a regular regression model
-        super(self.__class__, self).fit(X, y=y)
+        orig_fit(self, X, y=y)
 
         if self.constrain:
             # also record the training data min and max
@@ -174,19 +187,19 @@ class RescaledRegressionMixin(BaseEstimator):
 
         if self.rescale:
             # also record the means and SDs for the training set
-            y_hat = super(self.__class__, self).predict(X)
+            y_hat = orig_predict(self, X)
             self.yhat_mean = np.mean(y_hat)
             self.yhat_sd = np.std(y_hat)
             self.y_mean = np.mean(y)
             self.y_sd = np.std(y)
 
-    def rescale_predict(self, X):
+    def predict(self, X):
         '''
         Make predictions with the super class, and then adjust them using the
         stored min, max, means, and standard deviations.
         '''
         # get the unconstrained predictions
-        res = super(self.__class__, self).predict(X)
+        res = orig_predict(self, X)
 
         if self.rescale:
             # convert the predictions to z-scores,
@@ -201,16 +214,14 @@ class RescaledRegressionMixin(BaseEstimator):
 
         return res
 
-    def rescale_get_param_names(self):
+    def _get_param_names(self):
         '''
         This is adapted from scikit-learns's BaseEstimator class.
         It gets the kwargs for the superclass's init method and adds the
-        kwargs for the rescale_init method.
+        kwargs for newly added __init__ method.
         '''
         try:
-            init = getattr(super(self.__class__, self).__init__,
-                           'deprecated_original',
-                           super(self.__class__, self).__init__)
+            init = getattr(orig_init, 'deprecated_original', orig_init)
 
             args, varargs, __, __ = inspect.getargspec(init)
             if not varargs is None:
@@ -222,7 +233,7 @@ class RescaledRegressionMixin(BaseEstimator):
         except TypeError:
             args = []
 
-        rescale_args, __, __, __ = inspect.getargspec(self.rescale_init)
+        rescale_args, __, __, __ = inspect.getargspec(self.__init__)
         # Remove 'self'
         rescale_args.pop(0)
 
@@ -230,9 +241,9 @@ class RescaledRegressionMixin(BaseEstimator):
         args.sort()
         return args
 
-    def rescale_init(self, constrain=True, rescale=True, **kwargs):
+    def init(self, constrain=True, rescale=True, **kwargs):
         '''
-        This special init function is used by the mix-ins to make sure
+        This special init function is used by the decorator to make sure
         that things get initialized in the right order.
         '''
         # pylint: disable=W0201
@@ -244,35 +255,16 @@ class RescaledRegressionMixin(BaseEstimator):
         self.yhat_sd = None
         self.y_mean = None
         self.y_sd = None
-        super(self.__class__, self).__init__(**kwargs)
+        orig_init(self, **kwargs)
 
+    # Override original functions with new ones
+    cls.__init__ = init
+    cls.fit = fit
+    cls.predict = predict
+    cls._get_param_names = _get_param_names
 
-class RescaledRidge(Ridge, RescaledRegressionMixin):
-    def __init__(self, constrain=True, rescale=True, **kwargs):
-        self.rescale_init(constrain=constrain, rescale=rescale, **kwargs)
-
-    def _get_param_names(self):
-        return self.rescale_get_param_names()
-
-    def fit(self, X, y=None):
-        self.rescale_fit(X, y=y)
-
-    def predict(self, X):
-        return self.rescale_predict(X)
-
-
-class RescaledSVR(SVR, RescaledRegressionMixin):
-    def __init__(self, constrain=True, rescale=True, **kwargs):
-        self.rescale_init(constrain=constrain, rescale=rescale, **kwargs)
-
-    def _get_param_names(self):
-        return self.rescale_get_param_names()
-
-    def fit(self, X, y=None):
-        self.rescale_fit(X, y=y)
-
-    def predict(self, X):
-        return self.rescale_predict(X)
+    # Return modified class
+    return cls
 
 
 class Learner(object):
@@ -321,14 +313,21 @@ class Learner(object):
         self.label_dict = None
         self.label_list = None
         self.pos_label_str = pos_label_str
-        self._model_type = model_type
         self.probability = probability
         self._model = None
         self._feature_scaling = feature_scaling
         self.feat_selector = None
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
-
+        if model_type.startswith('Rescaled'):
+            self._model_type = model.replace('Rescaled', '', 1)
+            self._rescale = True
+            if self_.model_type not in _REGRESSION_MODELS:
+                raise ValueError('Classifiers cannot be rescaled. ' +
+                                 'Only regressors can.')
+        else:
+            self._model_type = model_type
+            self._rescale = False
         self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
                                     self._feature_scaling in
                                     ['with_mean', 'both'])
@@ -351,10 +350,12 @@ class Learner(object):
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
-                                'GradientBoostingRegressor'}:
+                                'GradientBoostingRegressor',
+                                'DecisionTreeRegressor',
+                                'RandomForestRegressor'}:
             self._model_kwargs['random_state'] = 123456789
 
-        if self._model_type in {'SVR', 'RescaledSVR'}:
+        if self._model_type in {'SVR'}:
             self._model_kwargs['kernel'] = b'linear'
 
         if model_kwargs:
@@ -425,7 +426,6 @@ class Learner(object):
                 if coef[idx]:
                     res[feat] = coef[idx]
         elif isinstance(self._model, BaseLibLinear):
-
             label_list = self.label_list
 
             # if there are only two classes, scikit-learn will only have one
@@ -478,13 +478,16 @@ class Learner(object):
     def _create_estimator(self):
         '''
         :returns: A tuple containing an instantiation of the requested
-        estimator, and a parameter grid to search.
+                  estimator, and a parameter grid to search.
         '''
         estimator = None
         default_param_grid = None
         if self._model_type in _DEFAULT_PARAM_GRIDS:
             # This crazy looking line creates an estimator based on a string
-            estimator = globals()[self._model_type](**self._model_kwargs)
+            estimator_class = globals()[self._model_type]
+            if self._rescale:
+                estimator_class = rescaled(estimator_class)
+            estimator = estimator_class(**self._model_kwargs)
             default_param_grid = _DEFAULT_PARAM_GRIDS[self._model_type]
         else:
             raise ValueError(("{} is not a valid learner " +
@@ -645,8 +648,8 @@ class Learner(object):
                                  'grid_search_folds.  Skipping those IDs.'))
             if not labels:
                 raise ValueError(('After skipping missing IDs, no examples ' +
-                                  'remained.\nIDs in grid_search_folds: \n{}' + 
-                                  '\nIDs in examples.ids: ' + 
+                                  'remained.\nIDs in grid_search_folds: \n{}' +
+                                  '\nIDs in examples.ids: ' +
                                   '{}').format(grid_search_folds.keys(),
                                                examples.ids))
             folds = LeaveOneLabelOut(labels)
