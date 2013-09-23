@@ -89,7 +89,7 @@ def test_input_checking1():
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_2examples_1', 'test_input_3examples_1']
-    _load_featureset(dirpath, featureset, suffix)
+    _load_featureset(dirpath, featureset, suffix, quiet=True)
 
 
 @raises(ValueError)
@@ -97,14 +97,14 @@ def test_input_checking2():
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_1']
-    _load_featureset(dirpath, featureset, suffix)
+    _load_featureset(dirpath, featureset, suffix, quiet=True)
 
 
 def test_input_checking3():
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_2']
-    examples_tuple = _load_featureset(dirpath, featureset, suffix)
+    examples_tuple = _load_featureset(dirpath, featureset, suffix, quiet=True)
     assert examples_tuple.features.shape[0] == 3
 
 
@@ -194,7 +194,7 @@ def check_specified_cv_folds(numeric_ids):
                     line = 'ids_to_floats=true\n' if numeric_ids else 'ids_to_floats=false\n'
                 config_template_file.write(line)
 
-        run_configuration(config_path)
+        run_configuration(config_path, quiet=True)
 
         with open(os.path.join(_my_dir, 'output', '{}_test_cv_folds_LogisticRegression.results').format(experiment_name)) as f:
             # check held out scores
@@ -211,7 +211,7 @@ def check_specified_cv_folds(numeric_ids):
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_cv_folds']
-    examples = _load_featureset(dirpath, featureset, suffix)
+    examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
     cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train', 'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective='accuracy', grid_jobs=1)
@@ -272,7 +272,7 @@ def test_regression1():
 
     config_template_path = "test_regression1.cfg"
 
-    run_configuration(os.path.join(_my_dir, config_path))
+    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
 
     with open(os.path.join(_my_dir, 'output', 'test_regression1_test_regression1_RescaledRidge.results')) as f:
         # check held out scores
@@ -302,7 +302,7 @@ def test_predict():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(os.path.join(_my_dir, config_path))
+    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
 
     with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
         inputs = [x for x in test_file]
@@ -364,7 +364,7 @@ def test_summary():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path)
+    run_configuration(config_path, quiet=True)
 
     with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_LogisticRegression.results')) as f:
         outstr = f.read()
@@ -442,7 +442,7 @@ def test_sparse_predict():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_sparse.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path)
+    run_configuration(config_path, quiet=True)
 
     with open(os.path.join(_my_dir, 'output', 'test_sparse_test_sparse_LogisticRegression.results')) as f:
         outstr = f.read()
@@ -563,13 +563,13 @@ def test_scaling():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_without.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path)
+    run_configuration(config_path, quiet=True)
 
     # now run the version with scaling
     config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_with.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path)
+    run_configuration(config_path, quiet=True)
 
     # make sure that the result with and without scaling aren't the same
     with open(os.path.join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
@@ -692,11 +692,11 @@ def check_load_featureset(suffix, numeric_ids):
     # Load unmerged data and merge it
     dirpath = os.path.join(_my_dir, 'train', 'test_merging')
     featureset = [str(i) for i in range(num_feat_files)]
-    merged_examples = _load_featureset(dirpath, featureset, suffix)
+    merged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
 
     # Load pre-merged data
     featureset = ['all']
-    premerged_examples = _load_featureset(dirpath, featureset, suffix)
+    premerged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
 
     assert np.all(merged_examples.ids == premerged_examples.ids)
     assert np.all(merged_examples.classes == premerged_examples.classes)
@@ -720,10 +720,10 @@ def test_load_featureset():
 def test_ids_to_floats():
     path = os.path.join(_my_dir, 'train', 'test_input_2examples_1.jsonlines')
 
-    examples = load_examples(path, ids_to_floats=True)
+    examples = load_examples(path, ids_to_floats=True, quiet=True)
     assert isinstance(examples.ids[0], float)
 
-    examples = load_examples(path)
+    examples = load_examples(path, quiet=True)
     assert not isinstance(examples.ids[0], float)
     assert isinstance(examples.ids[0], str)
 
@@ -820,18 +820,18 @@ def check_convert_featureset(from_suffix, to_suffix):
                                                                  feature, from_suffix))
         output_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
                                                                   feature, to_suffix))
-        convert_cmd = shlex.split('{} {} {}'.format(converter_path,
-                                                    input_file_path,
-                                                    output_file_path))
+        convert_cmd = shlex.split('{} --quiet {} {}'.format(converter_path,
+                                                            input_file_path,
+                                                            output_file_path))
         subprocess.check_call(convert_cmd)
 
     # now load and merge all unmerged, converted features in the `to_suffix` format
     featureset = ['{}_{}'.format(feature_name_prefix, i) for i in range(num_feat_files)]
-    merged_examples = _load_featureset(dirpath, featureset, to_suffix)
+    merged_examples = _load_featureset(dirpath, featureset, to_suffix, quiet=True)
 
     # Load pre-merged data in the `to_suffix` format
     featureset = ['{}_all'.format(feature_name_prefix)]
-    premerged_examples = _load_featureset(dirpath, featureset, to_suffix)
+    premerged_examples = _load_featureset(dirpath, featureset, to_suffix, quiet=True)
 
     # make sure that the pre-generated merged data in the to_suffix format
     # is the same as the converted, merged data in the to_suffix format
