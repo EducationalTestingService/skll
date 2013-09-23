@@ -313,7 +313,6 @@ class Learner(object):
         self.label_dict = None
         self.label_list = None
         self.pos_label_str = pos_label_str
-        self.probability = probability
         self._model = None
         self._feature_scaling = feature_scaling
         self.feat_selector = None
@@ -328,6 +327,7 @@ class Learner(object):
         else:
             self._model_type = model_type
             self._rescale = False
+        self.probability = probability
         self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
                                     self._feature_scaling in
                                     ['with_mean', 'both'])
