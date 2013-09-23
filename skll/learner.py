@@ -157,10 +157,10 @@ class SelectByMinCount(SelectKBest):
 
 def rescaled(cls):
     '''
-    Function/decorator to create regressors that store a min and a max for the
-    training data and make sure that predictions fall within that range.  It
-    also stores the means and SDs of the gold standard and the predictions on
-    the training set to rescale the predictions (e.g., as in e-rater).
+    Decorator to create regressors that store a min and a max for the training
+    data and make sure that predictions fall within that range.  It also stores
+    the means and SDs of the gold standard and the predictions on the training
+    set to rescale the predictions (e.g., as in e-rater).
 
     :param cls: A regressor to add rescaling to.
     :type cls: BaseEstimator
@@ -278,6 +278,31 @@ def rescaled(cls):
 
     # Return modified class
     return cls
+
+# Rescaled regressors
+@rescaled
+class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
+    pass
+
+
+@rescaled
+class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
+    pass
+
+
+@rescaled
+class RescaledRandomForestRegressor(RandomForestRegressor):
+    pass
+
+
+@rescaled
+class RescaledRidge(Ridge):
+    pass
+
+
+@rescaled
+class RescaledSVR(SVR):
+    pass
 
 
 class Learner(object):
@@ -496,11 +521,11 @@ class Learner(object):
         estimator = None
         default_param_grid = None
         if self._model_type in _DEFAULT_PARAM_GRIDS:
-            # This crazy looking line creates an estimator based on a string
-            estimator_class = globals()[self._model_type]
+            model_type = self._model_type
             if self._rescale:
-                estimator_class = rescaled(estimator_class)
-            estimator = estimator_class(**self._model_kwargs)
+                model_type = 'Rescaled' + model_type
+            # This crazy looking line creates an estimator based on a string
+            estimator = globals()[model_type](**self._model_kwargs)
             default_param_grid = _DEFAULT_PARAM_GRIDS[self._model_type]
         else:
             raise ValueError(("{} is not a valid learner " +
