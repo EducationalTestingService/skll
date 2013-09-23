@@ -319,9 +319,9 @@ class Learner(object):
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
         if model_type.startswith('Rescaled'):
-            self._model_type = model.replace('Rescaled', '', 1)
+            self._model_type = model_type.replace('Rescaled', '', 1)
             self._rescale = True
-            if self_.model_type not in _REGRESSION_MODELS:
+            if self._model_type not in _REGRESSION_MODELS:
                 raise ValueError('Classifiers cannot be rescaled. ' +
                                  'Only regressors can.')
         else:
