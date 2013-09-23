@@ -489,7 +489,7 @@ def test_ablation_cv():
     config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_ablation(config_path)
+    run_ablation(config_path, quiet=True)
 
     # read in the summary file and make sure it has
     # 6 ablated featuresets * 11 folds * 2 learners = 132 lines
