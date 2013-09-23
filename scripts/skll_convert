@@ -49,6 +49,9 @@ if __name__ == '__main__':
     parser.add_argument('outfile',
                         help='output feature file (ends in .jsonlines, .tsv, or\
                               .megam)')
+    parser.add_argument('-q', '--quiet',
+                        help='Suppress printing of "Loading..." messages.',
+                        action='store_true')
     parser.add_argument('--tsv_label',
                         help='Name of the column which contains \
                               the class labels in TSV files.',
@@ -75,7 +78,8 @@ if __name__ == '__main__':
     ids = []
     classes = []
     feature_dicts = []
-    for example_id, class_name, feature_dict in example_gen_func(args.infile):
+    for example_id, class_name, feature_dict in example_gen_func(args.infile,
+                                                                 quiet=args.quiet):
         feature_dicts.append(feature_dict)
         classes.append(class_name)
         ids.append(example_id)
