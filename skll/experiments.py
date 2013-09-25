@@ -76,7 +76,6 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
                 'gb_regressor': 'GradientBoostingRegressor'}
 
 
-
 def _get_stat_float(class_result_dict, stat):
     '''
     Little helper for getting output for precision, recall, and f-score
@@ -232,7 +231,7 @@ def _parse_config_file(config_path):
 
 
 def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
-                     ids_to_floats=False):
+                     ids_to_floats=False, quiet=False):
     '''
     loads a list of feature files and merges them.
     '''
@@ -241,7 +240,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
     example_tuples = [load_examples(file_name, tsv_label=tsv_label,
-                                    ids_to_floats=ids_to_floats)
+                                    ids_to_floats=ids_to_floats, quiet=quiet)
                       for file_name in file_names]
 
     # Check that the IDs are unique within each file.
@@ -355,6 +354,7 @@ def _classify_featureset(args):
     cv_folds = args.pop("cv_folds")
     tsv_label = args.pop("tsv_label")
     ids_to_floats = args.pop("ids_to_floats")
+    quiet = args.pop('quiet', False)
     if args:
         raise ValueError("Extra arguments passed: {}".format(args.keys()))
 
@@ -386,11 +386,13 @@ def _classify_featureset(args):
         # load the training and test examples
         train_examples = _load_featureset(train_path, featureset, suffix,
                                           tsv_label=tsv_label,
-                                          ids_to_floats=ids_to_floats)
+                                          ids_to_floats=ids_to_floats,
+                                          quiet=quiet)
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              tsv_label=tsv_label,
-                                             ids_to_floats=ids_to_floats)
+                                             ids_to_floats=ids_to_floats,
+                                             quiet=quiet)
 
         # initialize a classifer object
         learner = Learner(learner_name,
@@ -564,7 +566,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
                 result_table.add_row(result_row)
 
             result_table_str = '{}'.format(result_table)
-            result_table_str += '(row = reference; column = predicted)'
+            result_table_str += '\n(row = reference; column = predicted)'
             learner_result_dict['result_table'] = result_table_str
             learner_result_dict['accuracy'] = fold_accuracy
             accuracy_sum += fold_accuracy
@@ -658,7 +660,7 @@ def _load_cv_folds(cv_folds_location, ids_to_floats=False):
 
 
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
-                      hosts=None, write_summary=True):
+                      hosts=None, write_summary=True, quiet=False):
     '''
     Takes a configuration file and runs the specified jobs on the grid.
 
@@ -676,6 +678,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     :type hosts: list of str
     :param write_summary: Write a tsv file with a summary of the results.
     :type write_summary: bool
+    :param quiet: Suppress printing of "Loading..." messages.
+    :type quiet: bool
 
     :return: A list of paths to .json results files for each variation in the
              experiment.
@@ -896,6 +900,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["cv_folds"] = cv_folds
             job_args["tsv_label"] = tsv_label
             job_args["ids_to_floats"] = ids_to_floats
+            job_args["quiet"] = quiet
 
             if not local:
                 jobs.append(Job(_classify_featureset, [job_args],
@@ -964,6 +969,8 @@ def _run_experiment_without_feature(arg_tuple):
                       - machines: List of machines to use for scheduling jobs
                                   with Grid Map
                       - overwrite: Should we overwrite existing models?
+                      - quiet: Should we suppress the printing of "Loading..."
+                               messages?
 
     :type arg_tuple: tuple
     :return: A list of paths to .json results files for each variation in the
@@ -972,7 +979,7 @@ def _run_experiment_without_feature(arg_tuple):
 
     '''
     (feature_type, features, featureset_name, config, local, queue,
-     cfg_path, machines, overwrite) = arg_tuple
+     cfg_path, machines, overwrite, quiet) = arg_tuple
 
     featureset = [[x for x in features if x != feature_type]]
 
@@ -993,7 +1000,8 @@ def _run_experiment_without_feature(arg_tuple):
 
     result_jsons = run_configuration(new_config_file.name, local=local,
                                      queue=queue, hosts=machines,
-                                     overwrite=overwrite, write_summary=False)
+                                     overwrite=overwrite, write_summary=False,
+                                     quiet=quiet)
 
     # remove the temporary config file that we created
     os.unlink(new_config_file.name)
@@ -1002,7 +1010,7 @@ def _run_experiment_without_feature(arg_tuple):
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
-                 hosts=None):
+                 hosts=None, quiet=False):
     '''
     Takes a configuration file and runs repeated experiments where each
     feature set has been removed from the configuration.
@@ -1019,6 +1027,8 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     :param hosts: If running on the cluster, these are the machines we should
                   use.
     :type hosts: list of str
+    :param quiet: Suppress printing of "Loading..." messages.
+    :type quiet: bool
     '''
     # Read configuration
     config = _parse_config_file(config_path)
@@ -1040,7 +1050,7 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     # for each feature file, make a copy of the config file
     # with all but that feature, and run the jobs.
     arg_tuples = ((feature_type, features, featureset_name, config, local,
-                   queue, config_path, hosts, overwrite)
+                   queue, config_path, hosts, overwrite, quiet)
                   for feature_type in features + [None])
 
     result_json_paths = []

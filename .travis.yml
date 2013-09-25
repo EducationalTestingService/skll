@@ -2,6 +2,9 @@ language: python
 python:
   - 2.7
   - 3.2
+env:
+  - GRIDMAP=true
+  - GRIDMAP=false
 
 notifications:
   email: false
@@ -10,13 +13,20 @@ notifications:
 virtualenv:
   system_site_packages: true
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install python-scipy python-nose python3-scipy python3-nose
+  - if [ $GRIDMAP == "true" ]; then travis/install_sge.sh; fi
+  - export SGE_ROOT=/var/lib/gridengine
+  - export SGE_CELL=default
+  - export DRMAA_LIBRARY_PATH=/usr/lib/libdrmaa.so.1.0
+  - export GRID_MAP_REDIS_PORT=12345
+  - sudo mkdir /scratch/
+  - sudo chmod 777 /scratch/
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then sudo apt-get install python-scipy; else sudo apt-get install python3-scipy; fi
 install:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install --use-mirrors configparser; fi
   - pip install -r requirements.txt --use-mirrors
   - pip install python-coveralls --use-mirrors
   - pip install nose-cov --use-mirrors
+  - if [ $GRIDMAP == "true" ]; then pip install --use-mirrors git+git://github.com/dan-blanchard/drmaa-python gridmap; fi
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
   - python setup.py install
@@ -28,3 +38,10 @@ script:
 # Calculate coverage
 after_success:
   - coveralls --config_file .coveragerc
+  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.e*
+  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.o*
+
+# Print out scratch job info if failed
+after_failure:
+  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.e*
+  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.o*
