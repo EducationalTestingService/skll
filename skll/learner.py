@@ -402,6 +402,9 @@ class Learner(object):
                                   'GradientBoostingClassifier',
                                   'GradientBoostingRegressor'}:
             self._model_kwargs['n_estimators'] = 500
+        elif self._model_type == 'SVR':
+            self._model_kwargs['cache_size'] = 1000
+            self._model_kwargs['kernel'] = b'linear'
 
         if self._model_type in {'RandomForestClassifier',
                                 'DecisionTreeClassifier',
@@ -416,9 +419,6 @@ class Learner(object):
                                 'DecisionTreeRegressor',
                                 'RandomForestRegressor'}:
             self._model_kwargs['random_state'] = 123456789
-
-        if self._model_type in {'SVR'}:
-            self._model_kwargs['kernel'] = b'linear'
 
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
