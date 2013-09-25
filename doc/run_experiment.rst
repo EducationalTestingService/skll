@@ -326,25 +326,19 @@ Tuning
 
            [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
 
-        *DecisionTreeClassifier*
+        *DecisionTreeClassifier* and *DecisionTreeRegressor*
 
         .. code-block:: python
 
            [{'max_features': ["auto", None]}]
 
-        *RandomForestClassifier*
+        *RandomForestClassifier* and *RandomForestRegressor*
 
         .. code-block:: python
 
            [{'max_depth': [1, 5, 10, None]}]
 
-        *GradientBoostingClassifier*
-
-        .. code-block:: python
-
-           [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
-
-        *GradientBoostingRegressor*
+        *GradientBoostingClassifier* and *GradientBoostingRegressor*
 
         .. code-block:: python
 
@@ -356,19 +350,7 @@ Tuning
 
            [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        *RescaledRidge*
-
-        .. code-block:: python
-
-           [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
         *SVR*
-
-        .. code-block:: python
-
-           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-        *RescaledSVR*
 
         .. code-block:: python
 
