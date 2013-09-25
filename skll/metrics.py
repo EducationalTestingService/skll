@@ -39,6 +39,9 @@ from sklearn.metrics import confusion_matrix, f1_score, SCORERS
 # Constants
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 
+# Module logger
+logger = logging.getLogger(__name__)
+
 
 def kappa(y_true, y_pred, weights=None):
     '''
@@ -85,8 +88,8 @@ def kappa(y_true, y_pred, weights=None):
         y_true = [int(round(float(y))) for y in y_true]
         y_pred = [int(round(float(y))) for y in y_pred]
     except ValueError as e:
-        logging.error("For kappa, the labels should be integers or strings " +
-                      "that can be converted to ints (E.g., '4.0' or '3').")
+        logger.error("For kappa, the labels should be integers or strings " +
+                     "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
     # Figure out normalized expected values
@@ -163,7 +166,7 @@ def spearman(y_true, y_pred):
 def pearson(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on Pearson
-   correlation.
+    correlation.
     '''
     ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0

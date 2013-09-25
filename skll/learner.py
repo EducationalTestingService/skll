@@ -93,6 +93,9 @@ _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'RandomForestClassifier', 'RandomForestRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
+# Module logger
+logger = logging.getLogger(__name__)
+
 
 class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
     '''
@@ -104,14 +107,23 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         super(FilteredLeaveOneLabelOut, self).__init__(labels)
         self.keep = keep
         self.examples = examples
+        self._warned = False
 
     def __iter__(self):
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
+            train_len = len(train_index)
+            test_len = len(test_index)
             train_index = [i for i in train_index if self.examples.ids[i] in
                            self.keep]
             test_index = [i for i in test_index if self.examples.ids[i] in
                           self.keep]
+            if not self._warned and (train_len != len(train_index) or
+                                     test_len != len(test_index)):
+                logger.warning('Feature set contains IDs that are not in ' +
+                               'folds dictionary. Skipping those IDs.')
+                self._warned = True
+
             yield train_index, test_index
 
 
