@@ -38,7 +38,8 @@ script:
 # Calculate coverage
 after_success:
   - coveralls --config_file .coveragerc
-  - tail -n 1000 /scratch/*
+  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.e*
+  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.o*
 
 # Print out scratch job info if failed
 after_failure:
