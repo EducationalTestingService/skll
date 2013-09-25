@@ -35,12 +35,11 @@ from multiprocessing import cpu_count
 
 import numpy as np
 import scipy.sparse as sp
-from six import iteritems
+from six import iteritems, itervalues
 from six import string_types
 from six.moves import cPickle as pickle
 from six.moves import xrange as range
 from six.moves import zip
-from sklearn.base import BaseEstimator
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.cross_validation import LeaveOneLabelOut
 from sklearn.feature_selection import SelectKBest
@@ -93,6 +92,27 @@ _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingRegressor' 'MultinomialNB',
                              'RandomForestClassifier', 'RandomForestRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
+
+
+class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
+    '''
+    Version of LeaveOneLabelOut cross-validation iterator that only outputs
+    indices of instances with IDs in a prespecified set.
+    '''
+
+    def __init__(self, labels, keep, examples):
+        super(FilteredLeaveOneLabelOut, self).__init__(labels)
+        self.keep = keep
+        self.examples = examples
+
+    def __iter__(self):
+        for train_index, test_index in super(FilteredLeaveOneLabelOut,
+                                             self).__iter__():
+            train_index = [i for i in train_index if self.examples.ids[i] in
+                           self.keep]
+            test_index = [i for i in test_index if self.examples.ids[i] in
+                          self.keep]
+            yield train_index, test_index
 
 
 def _predict_binary(self, X):
@@ -374,15 +394,19 @@ class Learner(object):
         if self._model_type == 'SVC':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
-        elif self._model_type == 'DecisionTreeClassifier':
+        elif self._model_type in {'DecisionTreeClassifier',
+                                  'DecisionTreeRegressor'}:
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type in {'RandomForestClassifier',
+                                  'RandomForestRegressor',
                                   'GradientBoostingClassifier',
                                   'GradientBoostingRegressor'}:
             self._model_kwargs['n_estimators'] = 500
 
         if self._model_type in {'RandomForestClassifier',
-                                'DecisionTreeClassifier'}:
+                                'DecisionTreeClassifier',
+                                'RandomForestRegressor',
+                                'DecisionTreeRegressor'}:
             self._model_kwargs['compute_importances'] = True
 
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
@@ -613,6 +637,7 @@ class Learner(object):
                                              with_mean=False,
                                              with_std=False)
 
+
     def train(self, examples, param_grid=None, grid_search_folds=5,
               grid_search=True, grid_objective='f1_score_micro',
               grid_jobs=None, shuffle=True):
@@ -679,18 +704,12 @@ class Learner(object):
                 grid_jobs = len(np.unique(grid_search_folds))
             else:
                 grid_jobs = min(len(np.unique(grid_search_folds)), grid_jobs)
-            labels = [grid_search_folds[curr_id] for curr_id in examples.ids
-                      if curr_id in grid_search_folds]  # Skip missing IDs
-            if len(labels) != len(examples.ids):
-                logging.warning(('Feature set contains IDs that are not in ' +
-                                 'grid_search_folds.  Skipping those IDs.'))
-            if not labels:
-                raise ValueError(('After skipping missing IDs, no examples ' +
-                                  'remained.\nIDs in grid_search_folds: \n{}' +
-                                  '\nIDs in examples.ids: ' +
-                                  '{}').format(grid_search_folds.keys(),
-                                               examples.ids))
-            folds = LeaveOneLabelOut(labels)
+            # Only retain IDs within folds if they're in grid_search_folds
+            dummy_label = next(itervalues(grid_search_folds))
+            labels = [grid_search_folds.get(curr_id, dummy_label) for curr_id
+                      in examples.ids]
+            folds = FilteredLeaveOneLabelOut(labels, grid_search_folds,
+                                             examples)
 
         # limit the number of grid_jobs to be no higher than five or
         # the number of cores for the machine, whichever is lower
@@ -994,15 +1013,12 @@ class Learner(object):
             # training fold.  Note that this means that the grid search
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
-            labels = [cv_folds[curr_id] for curr_id in examples.ids
-                      if curr_id in cv_folds]  # Skip missing IDs
-            if len(labels) != len(examples.ids):
-                logging.warning(('Feature set contains IDs that are not in ' +
-                                 'cv_folds.  Skipping those IDs.'))
-            if not labels:
-                raise ValueError('After skipping missing IDs, no examples ' +
-                                 'remained.')
-            kfold = LeaveOneLabelOut(labels)
+            # Only retain IDs within folds if they're in grid_search_folds
+            dummy_label = next(itervalues(cv_folds))
+            labels = [cv_folds.get(curr_id, dummy_label) for curr_id in
+                      examples.ids]
+            # Only retain IDs within folds if they're in cv_folds
+            kfold = FilteredLeaveOneLabelOut(labels, cv_folds, examples)
             grid_search_folds = cv_folds
 
         # handle each fold separately and accumulate the predictions and the
