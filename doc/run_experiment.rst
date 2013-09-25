@@ -160,24 +160,30 @@ Input
         Acceptable values are described below. Names in parentheses are
         aliases that can also be used in configuration files.
 
-        *   *LogisticRegression (logistic)*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`_
-        *   *LinearSVC (svm_linear)*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`_
-        *   *SVC (svm_radial)*: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`_
-        *   *MultinomialNB (naivebayes)*: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`_
-        *   *DecisionTreeClassifier (dtree)*: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`_
-        *   *RandomForestClassifier (rforest)*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`_
-        *   *GradientBoostingClassifier (gradient)*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`_
-        *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
-        *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`_
-        *   *RescaledRidge (rescaled_ridge)*: Ridge Regression, with predictions
-            rescaled and constrained to better match the training set.
-        *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
-            with a linear kernel. Can use other kernels by specifying a 'kernel'
-            fixed parameter in the ``fixed_parameters`` list.
-        *   *RescaledSVR (rescaled_svr_linear)*: Linear SVR, with predictions
-            rescaled and constrained to better match the training set. Can use
-            other kernels by specifying a 'kernel' fixed parameter in the
-            ``fixed_parameters`` list.
+        Classifiers:
+
+            *   *LogisticRegression (logistic)*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`_
+            *   *LinearSVC (svm_linear)*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`_
+            *   *SVC (svm_radial)*: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`_
+            *   *MultinomialNB (naivebayes)*: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`_
+            *   *DecisionTreeClassifier (dtree)*: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`_
+            *   *RandomForestClassifier (rforest)*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`_
+            *   *GradientBoostingClassifier (gradient)*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`_
+
+        Regressors:
+
+            *   *DecisionTreeRegressor*: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`_
+            *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
+            *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_
+            *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`_
+            *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
+                with a linear kernel. Can use other kernels by specifying a
+                'kernel' fixed parameter in the ``fixed_parameters`` list.
+
+            For all regressors you can also prepend ``Rescaled`` to the
+            beginning of the full name (e.g., ``RescaledSVR``) to get a version
+            of the regressors where predictions are rescaled and constrained to
+            better match the training set.
 
     **fixed_parameters** *(Optional)*
         List of dicts containing parameters you want to have fixed for each
@@ -204,30 +210,30 @@ Input
 
            {'cache_size': 1000}
 
-        *DecisionTreeClassifier*
+        *DecisionTreeClassifier* and *DecisionTreeRegressor*
 
         .. code-block:: python
 
            {'criterion': 'entropy', 'compute_importances': True, 'random_state': 123456789}
 
-        *RandomForestClassifier*
+        *RandomForestClassifier* and *RandomForestRegressor*
 
         .. code-block:: python
 
            {'n_estimators': 500, 'compute_importances': True, 'random_state': 123456789}
 
-        *GradientBoostingClassifier*
+
+        *GradientBoostingClassifier* and *GradientBoostingRegressor*
 
         .. code-block:: python
 
            {'n_estimators': 500, 'random_state': 123456789}
 
-        *GradientBoostingRegressor*
+        *SVR*
 
         .. code-block:: python
 
-           {'n_estimators': 500, 'random_state': 123456789}
-
+           {'cache_size': 1000, 'kernel': b'linear'}
 
 
 Tuning

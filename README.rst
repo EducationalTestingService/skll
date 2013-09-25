@@ -63,6 +63,23 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.15.0
+
+   +  Added support for ``DecisionTreeRegressor`` and ``RandomForestRegressor``.
+   +  Fixed issue #60 with filtering examples via ``cv_folds_location`` file.
+   +  Added unit tests for Grid Map mode on Travis using the scripts described
+      by `this gist <https://gist.github.com/dan-blanchard/6586533>`__.
+   +  Switched from using mix-in to decorator for handling rescaled versions of
+      regressors. Code's a lot simpler now.
+   +  Added support for suppressing "Loading..." messages to most functions in
+      the ``experiments`` module.
+   +  Refactored ``convert_examples`` to simply call new version of
+      ``load_examples`` that can take a list of example dictionaries in addition
+      to filenames.
+   +  Made all unit tests much less verbose.
+   +  Fix an obscure issue related to loading examples when
+      ``SKLL_MAX_CONCURRENT_PROCESSES`` is set to 1.
+
 -  v0.14.0
 
    +  Added warning when configuration files contain settings that are invalid.
