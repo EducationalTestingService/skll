@@ -175,14 +175,14 @@ Input
             *   *DecisionTreeRegressor*: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`_
             *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
             *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_
-            *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`_
+            *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`_
             *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
                 with a linear kernel. Can use other kernels by specifying a
                 'kernel' fixed parameter in the ``fixed_parameters`` list.
 
             For all regressors you can also prepend ``Rescaled`` to the
             beginning of the full name (e.g., ``RescaledSVR``) to get a version
-            of the regressors where predictions are rescaled and constrained to
+            of the regressor where predictions are rescaled and constrained to
             better match the training set.
 
     **fixed_parameters** *(Optional)*
