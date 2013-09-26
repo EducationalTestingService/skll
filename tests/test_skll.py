@@ -603,8 +603,9 @@ kappa_inputs = [([1, 2, 3], [1, 2, 3]),
                 ([1, 2, 4], [1, 2, 2])]
 
 
-def check_kappa(y_true, y_pred, weights, expected):
-    assert_almost_equal(kappa(y_true, y_pred, weights), expected)
+def check_kappa(y_true, y_pred, weights, allow_off_by_one, expected):
+    assert_almost_equal(kappa(y_true, y_pred, weights=weights,
+                              allow_off_by_one=allow_off_by_one), expected)
 
 
 def test_quadratic_weighted_kappa():
@@ -612,11 +613,23 @@ def test_quadratic_weighted_kappa():
                1.0, 0.4]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
-        yield check_kappa, y_true, y_pred, 'quadratic', expected
+        yield check_kappa, y_true, y_pred, 'quadratic', False, expected
 
     # Swap y_true and y_pred and test again
     for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
-        yield check_kappa, y_true, y_pred, 'quadratic', expected
+        yield check_kappa, y_true, y_pred, 'quadratic', False, expected
+
+
+def test_allow_off_by_one_qwk():
+    outputs = [1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.3333333333333333, 1.0, 1.0,
+               1.0, 0.5]
+
+    for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, 'quadratic', True, expected
+
+    # Swap y_true and y_pred and test again
+    for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
+        yield check_kappa, y_true, y_pred, 'quadratic', True, expected
 
 
 def test_linear_weighted_kappa():
@@ -624,11 +637,11 @@ def test_linear_weighted_kappa():
                0.4]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
-        yield check_kappa, y_true, y_pred, 'linear', expected
+        yield check_kappa, y_true, y_pred, 'linear', False, expected
 
     # Swap y_true and y_pred and test again
     for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
-        yield check_kappa, y_true, y_pred, 'linear', expected
+        yield check_kappa, y_true, y_pred, 'linear', False, expected
 
 
 def test_unweighted_kappa():
@@ -636,11 +649,22 @@ def test_unweighted_kappa():
                0.0, 0.0, 0.0, 1.0, 0.5]
 
     for (y_true, y_pred), expected in zip(kappa_inputs, outputs):
-        yield check_kappa, y_true, y_pred, None, expected
+        yield check_kappa, y_true, y_pred, None, False, expected
 
     # Swap y_true and y_pred and test again
     for (y_pred, y_true), expected in zip(kappa_inputs, outputs):
-        yield check_kappa, y_true, y_pred, None, expected
+        yield check_kappa, y_true, y_pred, None, False, expected
+
+
+@raises(ValueError)
+def test_invalid_weighted_kappa():
+    kappa([1, 2, 1], [1, 2, 1], weights='invalid', allow_off_by_one=False)
+    kappa([1, 2, 1], [1, 2, 1], weights='invalid', allow_off_by_one=True)
+
+
+@raises(ValueError)
+def test_invalid_lists_kappa():
+    kappa(['a', 'b', 'c'], ['a', 'b', 'c'])
 
 
 # Tests related to loading featuresets and merging them
