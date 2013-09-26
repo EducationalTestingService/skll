@@ -418,12 +418,6 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = b'linear'
 
-        if self._model_type in {'RandomForestClassifier',
-                                'DecisionTreeClassifier',
-                                'RandomForestRegressor',
-                                'DecisionTreeRegressor'}:
-            self._model_kwargs['compute_importances'] = True
-
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
