@@ -63,6 +63,23 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.16.0
+
+   +  Added new versions of kappa metrics that make it so adjacent ratings are
+      not penalized.  For example, 1 and 2 will be considered to be equal,
+      whereas 1 and 3 will have a difference of 1 for when building the weights
+      matrix.
+   +  Cleaned up a bit of the Sphinx documentation.
+   +  Each module now has its own separate logger, which should make logging
+      messages more informative.
+   +  Made handling of non-convertible IDs when using ``ids_to_floats`` uniform
+      across date file types. All will now raise a ``ValueError`` when faced
+      with a string that does not look like a float.
+   +  Now raise an error when duplicate feature names are encountered in .megam
+      files.
+   +  No longer set ``compute_importances`` for learner based on decision trees,
+      since that is no longer necessary as of scikit-learn 0.14.
+
 -  v0.15.0
 
    +  Added support for ``DecisionTreeRegressor`` and ``RandomForestRegressor``.
