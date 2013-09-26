@@ -51,5 +51,11 @@ _scorers = {'f1_score_micro': make_scorer(f1_score, average='micro'),
             'kendall_tau': make_scorer(kendall_tau),
             'unweighted_kappa': make_scorer(kappa),
             'quadratic_weighted_kappa': make_scorer(kappa, weights='quadratic'),
-            'linear_weighted_kappa': make_scorer(kappa, weights='linear')}
+            'linear_weighted_kappa': make_scorer(kappa, weights='linear'),
+            'qwk_off_by_one': make_scorer(kappa, weights='quadratic',
+                                          allow_off_by_one=True),
+            'lwk_off_by_one': make_scorer(kappa, weights='linear',
+                                          allow_off_by_one=True),
+            'uwk_off_by_one': make_scorer(kappa, allow_off_by_one=True)}
+
 SCORERS.update(_scorers)

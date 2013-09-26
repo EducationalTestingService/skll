@@ -39,8 +39,11 @@ from sklearn.metrics import confusion_matrix, f1_score, SCORERS
 # Constants
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 
+# Module logger
+logger = logging.getLogger(__name__)
 
-def kappa(y_true, y_pred, weights=None):
+
+def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     '''
     Calculates the kappa inter-rater agreement between two the gold standard
     and the predicted ratings. Potential values range from -1 (representing
@@ -67,8 +70,13 @@ def kappa(y_true, y_pred, weights=None):
                            :math:`w_{ij}` values in the wikipedia description
                            of how to calculate weighted Cohen's kappa.
 
-
     :type weights: str or numpy array
+    :param allow_off_by_one: If true, ratings that are off by one are counted as
+                             equal, and all other differences are reduced by
+                             one. For example, 1 and 2 will be considered to be
+                             equal, whereas 1 and 3 will have a difference of 1
+                             for when building the weights matrix.
+    :type allow_off_by_one: bool
     '''
 
     # Ensure that the lists are both the same length
@@ -85,8 +93,8 @@ def kappa(y_true, y_pred, weights=None):
         y_true = [int(round(float(y))) for y in y_true]
         y_pred = [int(round(float(y))) for y in y_pred]
     except ValueError as e:
-        logging.error("For kappa, the labels should be integers or strings " +
-                      "that can be converted to ints (E.g., '4.0' or '3').")
+        logger.error("For kappa, the labels should be integers or strings " +
+                     "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
     # Figure out normalized expected values
@@ -113,12 +121,18 @@ def kappa(y_true, y_pred, weights=None):
         weights = np.empty((num_ratings, num_ratings))
         for i in range(num_ratings):
             for j in range(num_ratings):
+                diff = abs(i - j)
+                if allow_off_by_one and diff:
+                    diff -= 1
                 if wt_scheme == 'linear':
-                    weights[i, j] = abs(i - j)
+                    weights[i, j] = diff
                 elif wt_scheme == 'quadratic':
-                    weights[i, j] = abs(i - j) ** 2
-                else:  # unweighted
-                    weights[i, j] = (i != j)
+                    weights[i, j] = diff ** 2
+                elif not wt_scheme:  # unweighted
+                    weights[i, j] = bool(diff)
+                else:
+                    raise ValueError(('Invalid weight scheme specified for ' +
+                                      'kappa: {}').format(wt_scheme))
 
     hist_true = np.bincount(y_true, minlength=num_ratings)
     hist_true = hist_true[: num_ratings] / num_scored_items
@@ -129,7 +143,10 @@ def kappa(y_true, y_pred, weights=None):
     # Normalize observed array
     observed = observed / num_scored_items
 
-    k = 1.0 - (sum(sum(weights * observed)) / sum(sum(weights * expected)))
+    # If all weights are zero, that means no disagreements matter.
+    k = 1.0
+    if np.count_nonzero(weights):
+        k -= (sum(sum(weights * observed)) / sum(sum(weights * expected)))
 
     return k
 
@@ -163,7 +180,7 @@ def spearman(y_true, y_pred):
 def pearson(y_true, y_pred):
     '''
     Optimize the hyperparameter values during the grid search based on Pearson
-   correlation.
+    correlation.
     '''
     ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0

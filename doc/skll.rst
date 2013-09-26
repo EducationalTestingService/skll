@@ -30,7 +30,9 @@ Perform ten-fold cross-validation with a radial SVM::
     learner = Learner(model_type='SVC')
     fold_result_list, grid_search_scores = learner.cross-validate(train_examples)
 
-``fold_result_list`` in this case is a list of the results returned by ``learner.evaluate`` for each fold, and ``grid_search_scores`` is the highest objective function value achieved when tuning the model.
+``fold_result_list`` in this case is a list of the results returned by
+``learner.evaluate`` for each fold, and ``grid_search_scores`` is the highest
+objective function value achieved when tuning the model.
 
 
 Generate predictions from a trained model::
@@ -38,15 +40,37 @@ Generate predictions from a trained model::
     predictions = learner.predict(test_examples)
 
 
-
-
 :mod:`skll` Package
 -------------------
+The most useful parts of our API are available at the package level in addition
+to the module level. They are documented in both places for convenience.
 
-.. automodule:: skll.__init__
+From :py:mod:`~skll.data` Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: skll.convert_examples
+.. autofunction:: skll.load_examples
+.. autofunction:: skll.write_feature_file
+
+From :py:mod:`~skll.experiments` Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: skll.run_ablation
+.. autofunction:: skll.run_configuration
+
+From :py:mod:`~skll.learner` Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: skll.Learner
     :members:
     :undoc-members:
     :show-inheritance:
+
+From :py:mod:`~skll.metrics` Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: skll.f1_score_least_frequent
+.. autofunction:: skll.kappa
+.. autofunction:: skll.kendall_tau
+.. autofunction:: skll.spearman
+.. autofunction:: skll.pearson
+
 
 :mod:`data` Module
 ------------------

@@ -78,10 +78,9 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                                                                   None]}],
                         'RandomForestRegressor': [{'max_depth': [1, 5, 10,
                                                                  None]}],
-                        'GradientBoostingClassifier': [{'max_depth': [1, 3, 5],
-                                                        'n_estimators': [500]}],
-                        'GradientBoostingRegressor': [{'max_depth': [1, 3, 5],
-                                                       'n_estimators': [500]}],
+                        'GradientBoostingClassifier': [{'max_depth':
+                                                       [1, 3, 5]}],
+                        'GradientBoostingRegressor': [{'max_depth': [1, 3, 5]}],
                         'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
 _REGRESSION_MODELS = frozenset(['DecisionTreeRegressor',
@@ -92,6 +91,9 @@ _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingRegressor' 'MultinomialNB',
                              'RandomForestClassifier', 'RandomForestRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
+
+# Module logger
+logger = logging.getLogger(__name__)
 
 
 class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
@@ -104,14 +106,23 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         super(FilteredLeaveOneLabelOut, self).__init__(labels)
         self.keep = keep
         self.examples = examples
+        self._warned = False
 
     def __iter__(self):
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
+            train_len = len(train_index)
+            test_len = len(test_index)
             train_index = [i for i in train_index if self.examples.ids[i] in
                            self.keep]
             test_index = [i for i in test_index if self.examples.ids[i] in
                           self.keep]
+            if not self._warned and (train_len != len(train_index) or
+                                     test_len != len(test_index)):
+                logger.warning('Feature set contains IDs that are not in ' +
+                               'folds dictionary. Skipping those IDs.')
+                self._warned = True
+
             yield train_index, test_index
 
 
@@ -406,12 +417,6 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = b'linear'
 
-        if self._model_type in {'RandomForestClassifier',
-                                'DecisionTreeClassifier',
-                                'RandomForestRegressor',
-                                'DecisionTreeRegressor'}:
-            self._model_kwargs['compute_importances'] = True
-
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
@@ -691,30 +696,6 @@ class Learner(object):
         # scaler
         self._train_setup(examples)
 
-        # set up grid search folds
-        if isinstance(grid_search_folds, int):
-            if not grid_jobs:
-                grid_jobs = grid_search_folds
-            else:
-                grid_jobs = min(grid_search_folds, grid_jobs)
-            folds = grid_search_folds
-        else:
-            # use the number of unique fold IDs as the number of grid jobs
-            if not grid_jobs:
-                grid_jobs = len(np.unique(grid_search_folds))
-            else:
-                grid_jobs = min(len(np.unique(grid_search_folds)), grid_jobs)
-            # Only retain IDs within folds if they're in grid_search_folds
-            dummy_label = next(itervalues(grid_search_folds))
-            labels = [grid_search_folds.get(curr_id, dummy_label) for curr_id
-                      in examples.ids]
-            folds = FilteredLeaveOneLabelOut(labels, grid_search_folds,
-                                             examples)
-
-        # limit the number of grid_jobs to be no higher than five or
-        # the number of cores for the machine, whichever is lower
-        grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
-
         # select features
         xtrain = self.feat_selector.fit_transform(examples.features)
 
@@ -726,7 +707,7 @@ class Learner(object):
         if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
 
-        # set up a grid searcher if we are asked to
+        # Instantiate an estimator and get the default parameter grid to search
         estimator, default_param_grid = self._create_estimator()
 
         # use label dict transformed version of examples.classes if doing
@@ -737,14 +718,43 @@ class Learner(object):
         else:
             classes = examples.classes
 
+        # set up a grid searcher if we are asked to
         if grid_search:
+            # set up grid search folds
+            if isinstance(grid_search_folds, int):
+                if not grid_jobs:
+                    grid_jobs = grid_search_folds
+                else:
+                    grid_jobs = min(grid_search_folds, grid_jobs)
+                folds = grid_search_folds
+            else:
+                # use the number of unique fold IDs as the number of grid jobs
+                if not grid_jobs:
+                    grid_jobs = len(np.unique(grid_search_folds))
+                else:
+                    grid_jobs = min(len(np.unique(grid_search_folds)),
+                                    grid_jobs)
+                # Only retain IDs within folds if they're in grid_search_folds
+                dummy_label = next(itervalues(grid_search_folds))
+                labels = [grid_search_folds.get(curr_id, dummy_label) for
+                          curr_id in examples.ids]
+                folds = FilteredLeaveOneLabelOut(labels, grid_search_folds,
+                                                 examples)
+
+            # Use default parameter grid if we weren't passed one
             if not param_grid:
                 param_grid = default_param_grid
 
+            # If we're using a correlation metric for doing binary
+            # classification, override the estimator's predict function
             if (grid_objective in _CORRELATION_METRICS and
                     self._model_type not in _REGRESSION_MODELS):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
+
+            # limit the number of grid_jobs to be no higher than five or the
+            # number of cores for the machine, whichever is lower
+            grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
 
             grid_searcher = GridSearchCV(estimator, param_grid,
                                          scoring=grid_objective, cv=folds,

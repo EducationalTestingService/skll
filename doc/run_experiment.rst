@@ -175,14 +175,14 @@ Input
             *   *DecisionTreeRegressor*: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`_
             *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
             *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_
-            *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`_
+            *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`_
             *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
                 with a linear kernel. Can use other kernels by specifying a
                 'kernel' fixed parameter in the ``fixed_parameters`` list.
 
             For all regressors you can also prepend ``Rescaled`` to the
             beginning of the full name (e.g., ``RescaledSVR``) to get a version
-            of the regressors where predictions are rescaled and constrained to
+            of the regressor where predictions are rescaled and constrained to
             better match the training set.
 
     **fixed_parameters** *(Optional)*
@@ -267,29 +267,47 @@ Tuning
     **objective** *(Optional)*
         The objective function to use for tuning. Valid options are:
 
-        *   *accuracy*: Overall `accuracy <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`_
-        *   *precision*: `Precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`_
-        *   *recall*: `Recall <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`_
-        *   *f1_score_micro*: Micro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
-        *   *f1_score_macro*: Macro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
-        *   *f1_score_least_frequent*: F1 score of the least frequent class. The
-            least frequent class may vary from fold to fold for certain data
-            distributions.
-        *   *average_precision*: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`_
-            (for binary classification)
-        *   *roc_auc*: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`_
-            (for binary classification)
-        *   *unweighted_kappa*: Unweighted `Cohen's kappa <http://en.wikipedia.org/wiki/Cohen's_kappa>`_ (any floating point
-            values are rounded to ints)
-        *   *linear_weighted_kappa*: Linear weighted kappa (any floating point
-            values are rounded to ints)
-        *   *quadratic_weighted_kappa*: Quadratic weighted kappa (any floating
-            point values are rounded to ints)
-        *   *kendall_tau*: `Kendall's tau <http://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`_
-        *   *pearson*: `Pearson correlation <http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`_
-        *   *spearman*: `Spearman rank-correlation <http://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`_
-        *   *r2*: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`_
-        *   *mean_squared_error*: `Mean squared error regression loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`_
+        Classification:
+
+            *   *accuracy*: Overall `accuracy <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`_
+            *   *precision*: `Precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`_
+            *   *recall*: `Recall <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`_
+            *   *f1_score_micro*: Micro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
+            *   *f1_score_macro*: Macro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
+            *   *f1_score_least_frequent*: F1 score of the least frequent class. The
+                least frequent class may vary from fold to fold for certain data
+                distributions.
+            *   *average_precision*: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`_
+                (for binary classification)
+            *   *roc_auc*: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`_
+                (for binary classification)
+
+        Regression or classification with integer classes:
+
+            *   *unweighted_kappa*: Unweighted `Cohen's kappa <http://en.wikipedia.org/wiki/Cohen's_kappa>`_ (any floating point
+                values are rounded to ints)
+            *   *linear_weighted_kappa*: Linear weighted kappa (any floating
+                point values are rounded to ints)
+            *   *quadratic_weighted_kappa*: Quadratic weighted kappa (any
+                floating point values are rounded to ints)
+            *   *uwk_allow_off_by_one*: Same as ``unweighted_kappa``, but all
+                ranking differences are discounted by one. In other words, a
+                ranking of 1 and a ranking of 2 would be considered equal.
+            *   *lwk_allow_off_by_one*: Same as ``linear_weighted_kappa``, but
+                all ranking differences are discounted by one.
+            *   *qwk_allow_off_by_one*: Same as ``quadratic_weighted_kappa``,
+                but all ranking differences are discounted by one.
+
+        Regression or classification with binary classes:
+
+            *   *kendall_tau*: `Kendall's tau <http://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`_
+            *   *pearson*: `Pearson correlation <http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`_
+            *   *spearman*: `Spearman rank-correlation <http://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`_
+
+        Regression:
+
+            *   *r2*: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`_
+            *   *mean_squared_error*: `Mean squared error regression loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`_
 
 
         Defaults to ``f1_score_micro``.
@@ -326,25 +344,19 @@ Tuning
 
            [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
 
-        *DecisionTreeClassifier*
+        *DecisionTreeClassifier* and *DecisionTreeRegressor*
 
         .. code-block:: python
 
            [{'max_features': ["auto", None]}]
 
-        *RandomForestClassifier*
+        *RandomForestClassifier* and *RandomForestRegressor*
 
         .. code-block:: python
 
            [{'max_depth': [1, 5, 10, None]}]
 
-        *GradientBoostingClassifier*
-
-        .. code-block:: python
-
-           [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
-
-        *GradientBoostingRegressor*
+        *GradientBoostingClassifier* and *GradientBoostingRegressor*
 
         .. code-block:: python
 
@@ -356,19 +368,7 @@ Tuning
 
            [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        *RescaledRidge*
-
-        .. code-block:: python
-
-           [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
         *SVR*
-
-        .. code-block:: python
-
-           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-        *RescaledSVR*
 
         .. code-block:: python
 

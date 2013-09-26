@@ -321,14 +321,18 @@ def _megam_dict_iter(path, quiet=False, ids_to_floats=False):
                 curr_id = line[1:].strip()
             elif line and line not in ['TRAIN', 'TEST', 'DEV']:
                 split_line = line.split()
+                num_cols = len(split_line)
                 del line
-                if len(split_line) == 1:
+                # Line is just a class label
+                if num_cols == 1:
                     class_name = _safe_float(split_line[0])
                     field_pairs = []
-                elif len(split_line) % 2 == 1:
+                # Line has a class label and feature-value pairs
+                elif num_cols % 2 == 1:
                     class_name = _safe_float(split_line[0])
                     field_pairs = split_line[1:]
-                elif len(split_line) % 2 == 0:
+                # Line just has feature-value pairs
+                elif num_cols % 2 == 0:
                     class_name = None
                     field_pairs = split_line[1:]
 
@@ -341,13 +345,21 @@ def _megam_dict_iter(path, quiet=False, ids_to_floats=False):
                     field_values = (_safe_float(val) for val in
                                     islice(field_pairs, 1, None, 2))
 
-                    # TODO: Add some sort of check for duplicate feature names
-
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(zip(field_names, field_values))
 
+                    if len(curr_info_dict) != len(field_pairs) / 2:
+                        raise ValueError(('There are duplicate feature names ' +
+                                          'in {} on line for example ' +
+                                          '{}.').format(path, curr_id))
+
                 if ids_to_floats:
-                    curr_id = _safe_float(curr_id)
+                    try:
+                        curr_id = float(curr_id)
+                    except ValueError:
+                        raise ValueError(('You set ids_to_floats to true, but' +
+                                          ' ID {} could not be converted to ' +
+                                          'float in {}').format(curr_id, path))
 
                 yield curr_id, class_name, curr_info_dict
 
@@ -426,7 +438,12 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y', ids_to_floats=False):
                     row[cname.decode('utf-8')] = fval
 
             if ids_to_floats:
-                curr_id = _safe_float(curr_id)
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true, but' +
+                                      ' ID {} could not be converted to ' +
+                                      'float').format(curr_id))
             elif sys.version_info < (3, 0):
                 curr_id = curr_id.decode('utf-8')
 
@@ -484,7 +501,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     # Create ID generator if necessary
     if ids is None:
         if id_prefix is not None:
-            ids = ('{}{}'.format(id_prefix, num) for num in range(len(features)))
+            ids = ('{}{}'.format(id_prefix, num) for num in
+                   range(len(features)))
         else:
             ids = (None for _ in range(len(features)))
 
@@ -555,7 +573,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                 if class_name is not None:
                     print(class_name, end='\t', file=f)
                 print(' '.join(('{} {}'.format(field, value) for field, value in
-                                sorted(feature_dict.items()) if Decimal(value) != 0)),
+                                sorted(feature_dict.items()) if
+                                Decimal(value) != 0)),
                       file=f)
 
     # Invalid file suffix, raise error

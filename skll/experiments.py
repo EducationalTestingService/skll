@@ -75,6 +75,9 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
                 'rescaled_svr_linear': 'RescaledSVR',
                 'gb_regressor': 'GradientBoostingRegressor'}
 
+# Module logger
+logger = logging.getLogger(__name__)
+
 
 def _get_stat_float(class_result_dict, stat):
     '''
@@ -691,9 +694,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     if not local and not _HAVE_GRIDMAP:
         local = True
-        logging.warning('gridmap 0.10.1+ not available. Forcing local ' +
-                        'mode.  To run things on a DRMAA-compatible ' +
-                        'cluster, install gridmap>=0.10.1 via pip.')
+        logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
+                       'mode.  To run things on a DRMAA-compatible ' +
+                       'cluster, install gridmap>=0.10.1 via pip.')
 
     ###########################
     # extract parameters from the config file
@@ -923,8 +926,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             else:
                 job_results = process_jobs(jobs, white_list=hosts)
         except JobException as e:
-            logging.error('gridmap claims that one of your jobs failed, but ' +
-                          'this is not always true. \n{}'.format(e))
+            logger.error('gridmap claims that one of your jobs failed, but ' +
+                         'this is not always true. \n{}'.format(e))
         else:
             _check_job_results(job_results)
 
@@ -943,11 +946,11 @@ def _check_job_results(job_results):
     '''
     See if we have a complete results dictionary for every job.
     '''
-    logging.info('checking job results')
+    logger.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
-            logging.error('There was an error running the experiment:\n' +
-                          '{}'.format(result_dicts))
+            logger.error('There was an error running the experiment:\n' +
+                         '{}'.format(result_dicts))
 
 
 def _run_experiment_without_feature(arg_tuple):
@@ -1056,9 +1059,9 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     result_json_paths = []
     if not local and not _HAVE_GRIDMAP:
         local = True
-        logging.warning('gridmap 0.10.1+ not available. Forcing local ' +
-                        'mode.  To run things on a DRMAA-compatible ' +
-                        'cluster, install gridmap>=0.10.1 via pip.')
+        logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
+                       'mode.  To run things on a DRMAA-compatible ' +
+                       'cluster, install gridmap>=0.10.1 via pip.')
 
     if not local:
         pool = Pool(processes=len(features) + 1)
