@@ -78,10 +78,9 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                                                                   None]}],
                         'RandomForestRegressor': [{'max_depth': [1, 5, 10,
                                                                  None]}],
-                        'GradientBoostingClassifier': [{'max_depth': [1, 3, 5],
-                                                        'n_estimators': [500]}],
-                        'GradientBoostingRegressor': [{'max_depth': [1, 3, 5],
-                                                       'n_estimators': [500]}],
+                        'GradientBoostingClassifier': [{'max_depth':
+                                                       [1, 3, 5]}],
+                        'GradientBoostingRegressor': [{'max_depth': [1, 3, 5]}],
                         'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
 _REGRESSION_MODELS = frozenset(['DecisionTreeRegressor',
