@@ -347,7 +347,12 @@ def _megam_dict_iter(path, quiet=False, ids_to_floats=False):
                     curr_info_dict.update(zip(field_names, field_values))
 
                 if ids_to_floats:
-                    curr_id = _safe_float(curr_id)
+                    try:
+                        curr_id = float(curr_id)
+                    except ValueError:
+                        raise ValueError(('You set ids_to_floats to true, but' +
+                                          ' ID {} could not be converted to ' +
+                                          'float').format(curr_id))
 
                 yield curr_id, class_name, curr_info_dict
 
@@ -426,7 +431,12 @@ def _tsv_dict_iter(path, quiet=False, tsv_label='y', ids_to_floats=False):
                     row[cname.decode('utf-8')] = fval
 
             if ids_to_floats:
-                curr_id = _safe_float(curr_id)
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true, but' +
+                                      ' ID {} could not be converted to ' +
+                                      'float').format(curr_id))
             elif sys.version_info < (3, 0):
                 curr_id = curr_id.decode('utf-8')
 
