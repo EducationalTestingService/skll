@@ -697,30 +697,6 @@ class Learner(object):
         # scaler
         self._train_setup(examples)
 
-        # set up grid search folds
-        if isinstance(grid_search_folds, int):
-            if not grid_jobs:
-                grid_jobs = grid_search_folds
-            else:
-                grid_jobs = min(grid_search_folds, grid_jobs)
-            folds = grid_search_folds
-        else:
-            # use the number of unique fold IDs as the number of grid jobs
-            if not grid_jobs:
-                grid_jobs = len(np.unique(grid_search_folds))
-            else:
-                grid_jobs = min(len(np.unique(grid_search_folds)), grid_jobs)
-            # Only retain IDs within folds if they're in grid_search_folds
-            dummy_label = next(itervalues(grid_search_folds))
-            labels = [grid_search_folds.get(curr_id, dummy_label) for curr_id
-                      in examples.ids]
-            folds = FilteredLeaveOneLabelOut(labels, grid_search_folds,
-                                             examples)
-
-        # limit the number of grid_jobs to be no higher than five or
-        # the number of cores for the machine, whichever is lower
-        grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
-
         # select features
         xtrain = self.feat_selector.fit_transform(examples.features)
 
@@ -732,7 +708,7 @@ class Learner(object):
         if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
 
-        # set up a grid searcher if we are asked to
+        # Instantiate an estimator and get the default parameter grid to search
         estimator, default_param_grid = self._create_estimator()
 
         # use label dict transformed version of examples.classes if doing
@@ -743,14 +719,43 @@ class Learner(object):
         else:
             classes = examples.classes
 
+        # set up a grid searcher if we are asked to
         if grid_search:
+            # set up grid search folds
+            if isinstance(grid_search_folds, int):
+                if not grid_jobs:
+                    grid_jobs = grid_search_folds
+                else:
+                    grid_jobs = min(grid_search_folds, grid_jobs)
+                folds = grid_search_folds
+            else:
+                # use the number of unique fold IDs as the number of grid jobs
+                if not grid_jobs:
+                    grid_jobs = len(np.unique(grid_search_folds))
+                else:
+                    grid_jobs = min(len(np.unique(grid_search_folds)),
+                                    grid_jobs)
+                # Only retain IDs within folds if they're in grid_search_folds
+                dummy_label = next(itervalues(grid_search_folds))
+                labels = [grid_search_folds.get(curr_id, dummy_label) for
+                          curr_id in examples.ids]
+                folds = FilteredLeaveOneLabelOut(labels, grid_search_folds,
+                                                 examples)
+
+            # Use default parameter grid if we weren't passed one
             if not param_grid:
                 param_grid = default_param_grid
 
+            # If we're using a correlation metric for doing binary
+            # classification, override the estimator's predict function
             if (grid_objective in _CORRELATION_METRICS and
                     self._model_type not in _REGRESSION_MODELS):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
+
+            # limit the number of grid_jobs to be no higher than five or the
+            # number of cores for the machine, whichever is lower
+            grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
 
             grid_searcher = GridSearchCV(estimator, param_grid,
                                          scoring=grid_objective, cv=folds,
