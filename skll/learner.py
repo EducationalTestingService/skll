@@ -398,8 +398,8 @@ class Learner(object):
             self._rescale = False
         self.probability = probability
         self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
-                                    self._feature_scaling in
-                                    ['with_mean', 'both'])
+                                    self._feature_scaling in {'with_mean',
+                                                              'both'})
 
         # Set default keyword arguments for models that we have some for.
         if self._model_type == 'SVC':
