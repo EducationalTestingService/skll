@@ -348,7 +348,7 @@ def _megam_dict_iter(path, quiet=False, ids_to_floats=False):
                     # Add the feature-value pairs to dictionary
                     curr_info_dict.update(zip(field_names, field_values))
 
-                    if len(curr_info_dict) != len(field_pairs):
+                    if len(curr_info_dict) != len(field_pairs) / 2:
                         raise ValueError(('There are duplicate feature names ' +
                                           'in {} on line for example ' +
                                           '{}.').format(path, curr_id))
