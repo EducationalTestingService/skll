@@ -307,14 +307,15 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
             raise ValueError('IDs are not in the same order in each feature ' +
                              'file!')
 
-        # Classes should be the same for each ExamplesTuple, so only store once
-        if merged_classes is None:
-            merged_classes = classes
-        # Check that classes don't conflict, when specified
-        elif (any(x is not None for x in classes) and 
-                not np.all(merged_classes == classes)):
-            raise ValueError('Feature files have conflicting labels for ' +
-                             'examples with the same ID!')
+        # If current ExamplesTuple has labels, check that they don't conflict
+        if any(x is not None for x in classes):            
+            # Classes should be the same for each ExamplesTuple, so store once
+            if merged_classes is None and has_classes:
+                merged_classes = classes
+            # Check that classes don't conflict, when specified
+            elif not np.all(merged_classes == classes)):
+                raise ValueError('Feature files have conflicting labels for ' +
+                                 'examples with the same ID!')
 
     # Ensure that at least one file had classes
     if merged_classes is None:
