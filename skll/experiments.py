@@ -310,7 +310,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
         # If current ExamplesTuple has labels, check that they don't conflict
         if any(x is not None for x in classes):            
             # Classes should be the same for each ExamplesTuple, so store once
-            if merged_classes is None and has_classes:
+            if merged_classes is None:
                 merged_classes = classes
             # Check that classes don't conflict, when specified
             elif not np.all(merged_classes == classes):
