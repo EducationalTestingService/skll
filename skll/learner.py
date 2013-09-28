@@ -88,7 +88,7 @@ _REGRESSION_MODELS = frozenset(['DecisionTreeRegressor',
                                 'RandomForestRegressor', 'Ridge', 'SVR'])
 _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
-                             'GradientBoostingRegressor' 'MultinomialNB',
+                             'GradientBoostingRegressor', 'MultinomialNB',
                              'RandomForestClassifier', 'RandomForestRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
