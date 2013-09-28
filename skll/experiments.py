@@ -313,7 +313,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
             if merged_classes is None and has_classes:
                 merged_classes = classes
             # Check that classes don't conflict, when specified
-            elif not np.all(merged_classes == classes)):
+            elif not np.all(merged_classes == classes):
                 raise ValueError('Feature files have conflicting labels for ' +
                                  'examples with the same ID!')
 
