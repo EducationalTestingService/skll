@@ -269,7 +269,8 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
     # those ids are unique.
     unique_tuples = set(chain(*[[(curr_id, curr_label) for curr_id, curr_label
                                  in zip(examples.ids, examples.classes)]
-                                for examples in example_tuples]))
+                                for examples in example_tuples if 
+                                any(x is not None for x in examples.classes)]))
     if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
         raise ValueError('At least two feature files have different labels ' +
                          '(i.e., y values) for the same ID.')
