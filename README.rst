@@ -63,6 +63,14 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.16.1
+
+   +  Fix crash with GradientBoostingRegressor and MultionomialNB from typo in
+      previous release.
+   +  Fix crash related to loading feature sets that contain files that are
+      unlabelled.
+   +  Fix crash related to loading .megam files with unlabelled examples.
+ 
 -  v0.16.0
 
    +  Added new versions of kappa metrics that make it so adjacent ratings are
