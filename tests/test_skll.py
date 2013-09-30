@@ -700,7 +700,7 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
             feat_num = i * num_feats_per_file
             x = {"f{:03d}".format(feat_num + j): features[example_num]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
             sub_features.append(x)
-        write_feature_file(train_path, ids, classes, sub_features)
+        write_feature_file(train_path, ids, classes if i == 0 else [None] * num_examples, sub_features)  # Make one of the files not have labels
 
     # Merged
     train_path = os.path.join(merge_dir, 'all{}'.format(suffix))

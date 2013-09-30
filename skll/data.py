@@ -334,7 +334,7 @@ def _megam_dict_iter(path, quiet=False, ids_to_floats=False):
                 # Line just has feature-value pairs
                 elif num_cols % 2 == 0:
                     class_name = None
-                    field_pairs = split_line[1:]
+                    field_pairs = split_line
 
                 curr_info_dict = {}
                 if len(field_pairs) > 0:

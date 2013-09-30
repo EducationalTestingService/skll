@@ -88,7 +88,7 @@ _REGRESSION_MODELS = frozenset(['DecisionTreeRegressor',
                                 'RandomForestRegressor', 'Ridge', 'SVR'])
 _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
-                             'GradientBoostingRegressor' 'MultinomialNB',
+                             'GradientBoostingRegressor', 'MultinomialNB',
                              'RandomForestClassifier', 'RandomForestRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
@@ -398,8 +398,8 @@ class Learner(object):
             self._rescale = False
         self.probability = probability
         self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
-                                    self._feature_scaling in
-                                    ['with_mean', 'both'])
+                                    self._feature_scaling in {'with_mean',
+                                                              'both'})
 
         # Set default keyword arguments for models that we have some for.
         if self._model_type == 'SVC':
@@ -431,8 +431,7 @@ class Learner(object):
     @classmethod
     def from_file(cls, learner_path):
         '''
-        :returns: New instance of Learner from the pickle at the specified
-                  path.
+        :returns: New instance of Learner from the pickle at the specified path.
         '''
         with open(learner_path, "rb") as f:
             skll_version, learner = pickle.load(f)
