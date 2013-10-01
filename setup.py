@@ -34,6 +34,7 @@ def requirements():
         reqs = f.read().splitlines()
     if sys.version_info < (3, 0):
         reqs.append('configparser')
+    return reqs
 
 
 setup(name='skll',
