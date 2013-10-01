@@ -49,6 +49,7 @@ from sklearn.metrics import SCORERS
 
 from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
+from skll.version import __version__
 
 # Check if gridmap is available
 try:
@@ -57,6 +58,7 @@ except ImportError:
     _HAVE_GRIDMAP = False
 else:
     _HAVE_GRIDMAP = True
+
 
 _VALID_TASKS = frozenset(['predict', 'train_only',
                           'evaluate', 'cross_validate'])
@@ -163,6 +165,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Experiment Name: {}'.format(lrd['experiment_name']),
           file=output_file)
     print('Timestamp: {}'.format(lrd['timestamp']), file=output_file)
+    print('SKLL Version: {}'.format(lrd['version']), file=output_file)
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
@@ -269,7 +272,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
     # those ids are unique.
     unique_tuples = set(chain(*[[(curr_id, curr_label) for curr_id, curr_label
                                  in zip(examples.ids, examples.classes)]
-                                for examples in example_tuples if 
+                                for examples in example_tuples if
                                 any(x is not None for x in examples.classes)]))
     if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
         raise ValueError('At least two feature files have different labels ' +
@@ -309,7 +312,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
                              'file!')
 
         # If current ExamplesTuple has labels, check that they don't conflict
-        if any(x is not None for x in classes):            
+        if any(x is not None for x in classes):
             # Classes should be the same for each ExamplesTuple, so store once
             if merged_classes is None:
                 merged_classes = classes
@@ -421,6 +424,7 @@ def _classify_featureset(args):
                                     'learner_name': learner_name,
                                     'task': task,
                                     'timestamp': timestamp,
+                                    'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective}
@@ -525,8 +529,8 @@ def _create_learner_result_dicts(task_results, grid_scores,
     result_table = None
 
     for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
-            score), grid_score) \
-            in enumerate(zip(task_results, grid_scores), start=1):
+             score), grid_score) in enumerate(zip(task_results, grid_scores),
+                                              start=1):
 
         # create a new dict for this fold
         learner_result_dict = {}
@@ -721,13 +725,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
     learners = json.loads(_fix_json(learners_string))
-    learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else
-                       learner) for learner in learners]
+    learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else learner)
+                for learner in learners]
     featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
-    if not isinstance(featuresets, list) or \
-       not all([isinstance(fs, list) for fs in featuresets]):
+    if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
+                                                     in featuresets]):
         raise ValueError("The featuresets parameter should be a " +
                          "list of lists: {}".format(featuresets))
 
