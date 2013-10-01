@@ -119,8 +119,9 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     all_features = set()
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
-            raise IOError(errno.ENOENT, (('JSON file {} not found'
-                                          .format(json_path))))
+            logger.error(('JSON results file {} not found. Skipping summary ' +
+                          'creation.').format(json_path))
+            return
         else:
             with open(json_path, 'r') as json_file:
                 obj = json.load(json_file)
