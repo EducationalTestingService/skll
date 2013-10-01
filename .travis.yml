@@ -20,7 +20,7 @@ before_install:
   - export GRID_MAP_REDIS_PORT=12345
   - sudo mkdir /scratch/
   - sudo chmod 777 /scratch/
-  - sudo apt-get install libatlas-dev libatlas3-base
+  - sudo apt-get install libatlas-dev libatlas-base-dev
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then sudo apt-get install python-scipy; else sudo apt-get install python3-scipy; fi
 install:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install --use-mirrors configparser; fi
