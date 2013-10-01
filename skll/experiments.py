@@ -129,8 +129,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
                 learner_result_dicts.extend(obj)
 
     header = set(learner_result_dicts[0].keys()) - {'result_table',
-                                                    'descriptive',
-                                                    'comparative'}
+                                                    'descriptive'}
     header = (sorted(header.union(['ablated_feature'])) if ablation
               else sorted(header))
     writer = csv.DictWriter(output_file, header, extrasaction='ignore',
@@ -195,7 +194,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                                              lrd['descriptive']['actual'][desc_stat],
                                              lrd['descriptive']['predicted'][desc_stat]),
                       file=output_file)
-            print('Pearson:{: f}'.format(lrd['comparative']['pearson']),
+            print('Pearson:{: f}'.format(lrd['pearson']),
                   file=output_file)
         print('Objective function score = {}'.format(lrd['score']),
               file=output_file)
@@ -540,6 +539,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
         # set of columns is fixed.
         learner_result_dict['result_table'] = ''
         learner_result_dict['accuracy'] = ''
+        learner_result_dict['pearson'] = ''
         learner_result_dict['score'] = ''
         learner_result_dict['fold'] = ''
 
