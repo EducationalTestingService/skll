@@ -385,7 +385,7 @@ def test_summary():
             # the learner results dictionaries should have 16 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 15)
+            eq_(len(row), 16)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
