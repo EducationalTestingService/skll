@@ -121,7 +121,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
         if not os.path.exists(json_path):
             logger.error(('JSON results file {} not found. Skipping summary ' +
                           'creation. You can manually create the summary file' +
-                          ' after the fact by using the summarize_results ' + 
+                          ' after the fact by using the summarize_results ' +
                           'script.').format(json_path))
             return
         else:
@@ -133,8 +133,13 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
 
     header = set(learner_result_dicts[0].keys()) - {'result_table',
                                                     'descriptive'}
-    header = (sorted(header.union(['ablated_feature'])) if ablation
-              else sorted(header))
+    if ablation:
+        header.add('ablated_feature')
+    # Backward compatibility for older JSON results files.
+    if 'comparative' in header:
+        header.remove('comparative')
+        header.add('pearson')
+    header = sorted(header)
     writer = csv.DictWriter(output_file, header, extrasaction='ignore',
                             dialect=csv.excel_tab)
     writer.writeheader()
@@ -148,6 +153,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
             lrd['ablated_feature'] = ''
             if ablated_feature:
                 lrd['ablated_feature'] = list(ablated_feature)[0]
+        # Backward compatibility for older JSON results files.
+        if 'comparative' in lrd:
+            lrd['pearson'] = lrd['comparative']['pearson']
+            del lrd['comparative']
 
         # write out the new learner dict with the readable fields
         writer.writerow(lrd)
