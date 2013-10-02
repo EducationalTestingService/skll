@@ -63,14 +63,23 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.17.0
+
+   +  Fixed setup.py issue where requirements weren't being installed via pip.
+   +  Added SKLL version number and Pearson correlation to result summary files.
+   +  No longer crash if a result summary file doesn't exist, and instead just
+      print an error message.
+   +  Tweak handling of logging under the hood to make sure logging settings
+      are applied to all loggers.
+
 -  v0.16.1
 
-   +  Fix crash with GradientBoostingRegressor and MultionomialNB from typo in
+   +  Fixed crash with GradientBoostingRegressor and MultionomialNB from typo in
       previous release.
-   +  Fix crash related to loading feature sets that contain files that are
+   +  Fixed crash related to loading feature sets that contain files that are
       unlabelled.
-   +  Fix crash related to loading .megam files with unlabelled examples.
- 
+   +  Fixed crash related to loading .megam files with unlabelled examples.
+
 -  v0.16.0
 
    +  Added new versions of kappa metrics that make it so adjacent ratings are
