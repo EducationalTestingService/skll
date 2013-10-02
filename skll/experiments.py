@@ -77,9 +77,6 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
                 'rescaled_svr_linear': 'RescaledSVR',
                 'gb_regressor': 'GradientBoostingRegressor'}
 
-# Module logger
-logger = logging.getLogger(__name__)
-
 
 def _get_stat_float(class_result_dict, stat):
     '''
@@ -117,6 +114,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     '''
     learner_result_dicts = []
     all_features = set()
+    logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
             logger.error(('JSON results file {} not found. Skipping summary ' +
@@ -711,6 +709,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Read configuration
     config = _parse_config_file(config_file)
 
+    logger = logging.getLogger(__name__)
     if not local and not _HAVE_GRIDMAP:
         local = True
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
@@ -965,6 +964,7 @@ def _check_job_results(job_results):
     '''
     See if we have a complete results dictionary for every job.
     '''
+    logger = logging.getLogger(__name__)
     logger.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
@@ -1054,6 +1054,8 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     '''
     # Read configuration
     config = _parse_config_file(config_path)
+
+    logger = logging.getLogger(__name__)
 
     featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
     featureset_names = json.loads(_fix_json(config.get("Input",

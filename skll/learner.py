@@ -92,9 +92,6 @@ _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'RandomForestClassifier', 'RandomForestRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
-# Module logger
-logger = logging.getLogger(__name__)
-
 
 class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
     '''
@@ -109,6 +106,7 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         self._warned = False
 
     def __iter__(self):
+        logger = logging.getLogger(__name__)
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
             train_len = len(train_index)
