@@ -120,7 +120,9 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
             logger.error(('JSON results file {} not found. Skipping summary ' +
-                          'creation.').format(json_path))
+                          'creation. You can manually create the summary file' +
+                          ' after the fact by using the summarize_results ' + 
+                          'script.').format(json_path))
             return
         else:
             with open(json_path, 'r') as json_file:
