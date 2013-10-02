@@ -39,9 +39,6 @@ from sklearn.metrics import confusion_matrix, f1_score, SCORERS
 # Constants
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 
-# Module logger
-logger = logging.getLogger(__name__)
-
 
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     '''
@@ -78,6 +75,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                              for when building the weights matrix.
     :type allow_off_by_one: bool
     '''
+    logger = logging.getLogger(__name__)
 
     # Ensure that the lists are both the same length
     assert(len(y_true) == len(y_pred))

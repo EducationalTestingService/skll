@@ -49,6 +49,7 @@ from sklearn.metrics import SCORERS
 
 from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
+from skll.version import __version__
 
 # Check if gridmap is available
 try:
@@ -57,6 +58,7 @@ except ImportError:
     _HAVE_GRIDMAP = False
 else:
     _HAVE_GRIDMAP = True
+
 
 _VALID_TASKS = frozenset(['predict', 'train_only',
                           'evaluate', 'cross_validate'])
@@ -74,9 +76,6 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
                 'svr_linear': 'SVR',
                 'rescaled_svr_linear': 'RescaledSVR',
                 'gb_regressor': 'GradientBoostingRegressor'}
-
-# Module logger
-logger = logging.getLogger(__name__)
 
 
 def _get_stat_float(class_result_dict, stat):
@@ -115,10 +114,14 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     '''
     learner_result_dicts = []
     all_features = set()
+    logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
-            raise IOError(errno.ENOENT, (('JSON file {} not found'
-                                          .format(json_path))))
+            logger.error(('JSON results file {} not found. Skipping summary ' +
+                          'creation. You can manually create the summary file' +
+                          ' after the fact by using the summarize_results ' +
+                          'script.').format(json_path))
+            return
         else:
             with open(json_path, 'r') as json_file:
                 obj = json.load(json_file)
@@ -127,10 +130,14 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
                 learner_result_dicts.extend(obj)
 
     header = set(learner_result_dicts[0].keys()) - {'result_table',
-                                                    'descriptive',
-                                                    'comparative'}
-    header = (sorted(header.union(['ablated_feature'])) if ablation
-              else sorted(header))
+                                                    'descriptive'}
+    if ablation:
+        header.add('ablated_feature')
+    # Backward compatibility for older JSON results files.
+    if 'comparative' in header:
+        header.remove('comparative')
+        header.add('pearson')
+    header = sorted(header)
     writer = csv.DictWriter(output_file, header, extrasaction='ignore',
                             dialect=csv.excel_tab)
     writer.writeheader()
@@ -144,6 +151,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
             lrd['ablated_feature'] = ''
             if ablated_feature:
                 lrd['ablated_feature'] = list(ablated_feature)[0]
+        # Backward compatibility for older JSON results files.
+        if 'comparative' in lrd:
+            lrd['pearson'] = lrd['comparative']['pearson']
+            del lrd['comparative']
 
         # write out the new learner dict with the readable fields
         writer.writerow(lrd)
@@ -163,6 +174,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Experiment Name: {}'.format(lrd['experiment_name']),
           file=output_file)
     print('Timestamp: {}'.format(lrd['timestamp']), file=output_file)
+    print('SKLL Version: {}'.format(lrd['version']), file=output_file)
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
@@ -192,7 +204,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                                              lrd['descriptive']['actual'][desc_stat],
                                              lrd['descriptive']['predicted'][desc_stat]),
                       file=output_file)
-            print('Pearson:{: f}'.format(lrd['comparative']['pearson']),
+            print('Pearson:{: f}'.format(lrd['pearson']),
                   file=output_file)
         print('Objective function score = {}'.format(lrd['score']),
               file=output_file)
@@ -269,7 +281,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
     # those ids are unique.
     unique_tuples = set(chain(*[[(curr_id, curr_label) for curr_id, curr_label
                                  in zip(examples.ids, examples.classes)]
-                                for examples in example_tuples if 
+                                for examples in example_tuples if
                                 any(x is not None for x in examples.classes)]))
     if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
         raise ValueError('At least two feature files have different labels ' +
@@ -309,7 +321,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
                              'file!')
 
         # If current ExamplesTuple has labels, check that they don't conflict
-        if any(x is not None for x in classes):            
+        if any(x is not None for x in classes):
             # Classes should be the same for each ExamplesTuple, so store once
             if merged_classes is None:
                 merged_classes = classes
@@ -421,6 +433,7 @@ def _classify_featureset(args):
                                     'learner_name': learner_name,
                                     'task': task,
                                     'timestamp': timestamp,
+                                    'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective}
@@ -518,6 +531,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
     num_folds = len(task_results)
     accuracy_sum = 0.0
+    pearson_sum = 0.0
     score_sum = None
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
@@ -525,8 +539,8 @@ def _create_learner_result_dicts(task_results, grid_scores,
     result_table = None
 
     for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
-            score), grid_score) \
-            in enumerate(zip(task_results, grid_scores), start=1):
+             score), grid_score) in enumerate(zip(task_results, grid_scores),
+                                              start=1):
 
         # create a new dict for this fold
         learner_result_dict = {}
@@ -536,6 +550,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
         # set of columns is fixed.
         learner_result_dict['result_table'] = ''
         learner_result_dict['accuracy'] = ''
+        learner_result_dict['pearson'] = ''
         learner_result_dict['score'] = ''
         learner_result_dict['fold'] = ''
 
@@ -581,6 +596,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
         # with a regression model
         else:
             learner_result_dict.update(result_dict)
+            pearson_sum += float(learner_result_dict['pearson'])
 
         if score is not None:
             if score_sum is None:
@@ -613,6 +629,8 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = accuracy_sum / num_folds
+        else:
+            learner_result_dict['pearson'] = pearson_sum / num_folds
 
         if score_sum is not None:
             learner_result_dict['score'] = score_sum / num_folds
@@ -695,6 +713,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Read configuration
     config = _parse_config_file(config_file)
 
+    logger = logging.getLogger(__name__)
     if not local and not _HAVE_GRIDMAP:
         local = True
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
@@ -721,13 +740,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
     learners = json.loads(_fix_json(learners_string))
-    learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else
-                       learner) for learner in learners]
+    learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else learner)
+                for learner in learners]
     featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
-    if not isinstance(featuresets, list) or \
-       not all([isinstance(fs, list) for fs in featuresets]):
+    if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
+                                                     in featuresets]):
         raise ValueError("The featuresets parameter should be a " +
                          "list of lists: {}".format(featuresets))
 
@@ -949,6 +968,7 @@ def _check_job_results(job_results):
     '''
     See if we have a complete results dictionary for every job.
     '''
+    logger = logging.getLogger(__name__)
     logger.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
@@ -1038,6 +1058,8 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     '''
     # Read configuration
     config = _parse_config_file(config_path)
+
+    logger = logging.getLogger(__name__)
 
     featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
     featureset_names = json.loads(_fix_json(config.get("Input",

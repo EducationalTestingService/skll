@@ -92,9 +92,6 @@ _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'RandomForestClassifier', 'RandomForestRegressor'])
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
-# Module logger
-logger = logging.getLogger(__name__)
-
 
 class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
     '''
@@ -109,6 +106,7 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         self._warned = False
 
     def __iter__(self):
+        logger = logging.getLogger(__name__)
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
             train_len = len(train_index)
@@ -823,14 +821,15 @@ class Learner(object):
             grid_score = _use_score_func(grid_objective, ytest, yhat)
 
         if self._model_type in _REGRESSION_MODELS:
-            result_dict = {'descriptive': defaultdict(dict), 'comparative': {}}
+            result_dict = {'descriptive': defaultdict(dict)}
             for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
                 result_dict['descriptive'][table_label]['min'] = min(y)
                 result_dict['descriptive'][table_label]['max'] = max(y)
                 result_dict['descriptive'][table_label]['avg'] = np.mean(y)
                 result_dict['descriptive'][table_label]['std'] = np.std(y)
-            result_dict['comparative']['pearson'] = SCORERS['pearson']._score_func(ytest, yhat)
-            res = (None, None, result_dict, self._model.get_params(), grid_score)
+            result_dict['pearson'] = SCORERS['pearson']._score_func(ytest, yhat)
+            res = (None, None, result_dict, self._model.get_params(),
+                   grid_score)
         else:
             # compute the confusion matrix
             num_labels = len(self.label_list)
