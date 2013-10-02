@@ -20,7 +20,8 @@ before_install:
   - export GRID_MAP_REDIS_PORT=12345
   - sudo mkdir /scratch/
   - sudo chmod 777 /scratch/
-  - sudo apt-get install libatlas-dev libatlas-base-dev
+  - sudo apt-get update -qq
+  - sudo apt-get install libatlas-dev libatlas-base-dev liblapack-dev gfortran
 install:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install --use-mirrors configparser; fi
   - pip install -r requirements.txt --use-mirrors
