@@ -1,7 +1,7 @@
 SciKit-Learn Laboratory
 -----------------------
 
-.. image:: https://api.travis-ci.org/EducationalTestingService/skll.png
+.. image:: https://travis-ci.org/EducationalTestingService/skll.png?branch=master
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
