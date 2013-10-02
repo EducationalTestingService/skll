@@ -531,6 +531,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
     num_folds = len(task_results)
     accuracy_sum = 0.0
+    pearson_sum = 0.0
     score_sum = None
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
@@ -595,6 +596,7 @@ def _create_learner_result_dicts(task_results, grid_scores,
         # with a regression model
         else:
             learner_result_dict.update(result_dict)
+            pearson_sum += float(learner_result_dict['pearson'])
 
         if score is not None:
             if score_sum is None:
@@ -627,6 +629,8 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = accuracy_sum / num_folds
+        else:
+            learner_result_dict['pearson'] = pearson_sum / num_folds
 
         if score_sum is not None:
             learner_result_dict['score'] = score_sum / num_folds
