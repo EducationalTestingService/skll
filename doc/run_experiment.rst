@@ -290,13 +290,13 @@ Tuning
                 point values are rounded to ints)
             *   *quadratic_weighted_kappa*: Quadratic weighted kappa (any
                 floating point values are rounded to ints)
-            *   *uwk_allow_off_by_one*: Same as ``unweighted_kappa``, but all
-                ranking differences are discounted by one. In other words, a
-                ranking of 1 and a ranking of 2 would be considered equal.
-            *   *lwk_allow_off_by_one*: Same as ``linear_weighted_kappa``, but
-                all ranking differences are discounted by one.
-            *   *qwk_allow_off_by_one*: Same as ``quadratic_weighted_kappa``,
-                but all ranking differences are discounted by one.
+            *   *uwk_off_by_one*: Same as ``unweighted_kappa``, but all ranking
+                differences are discounted by one. In other words, a ranking of
+                1 and a ranking of 2 would be considered equal.
+            *   *lwk_off_by_one*: Same as ``linear_weighted_kappa``, but all
+                ranking differences are discounted by one.
+            *   *qwk_off_by_one*: Same as ``quadratic_weighted_kappa``, but all
+                ranking differences are discounted by one.
 
         Regression or classification with binary classes:
 
