@@ -403,8 +403,7 @@ class Learner(object):
         if self._model_type == 'SVC':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
-        elif self._model_type in {'DecisionTreeClassifier',
-                                  'DecisionTreeRegressor'}:
+        elif self._model_type == {'DecisionTreeClassifier'}:
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type in {'RandomForestClassifier',
                                   'RandomForestRegressor',
