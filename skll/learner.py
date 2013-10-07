@@ -404,8 +404,7 @@ class Learner(object):
         if self._model_type == 'SVC':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
-        elif self._model_type in {'DecisionTreeClassifier',
-                                  'DecisionTreeRegressor'}:
+        elif self._model_type == {'DecisionTreeClassifier'}:
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type in {'RandomForestClassifier',
                                   'RandomForestRegressor',
@@ -414,7 +413,7 @@ class Learner(object):
             self._model_kwargs['n_estimators'] = 500
         elif self._model_type == 'SVR':
             self._model_kwargs['cache_size'] = 1000
-            self._model_kwargs['kernel'] = b'linear'
+            self._model_kwargs['kernel'] = 'linear'
 
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
@@ -549,6 +548,9 @@ class Learner(object):
         default_param_grid = None
         if self._model_type in _DEFAULT_PARAM_GRIDS:
             model_type = self._model_type
+            # Ensure kernel argument has right type for Python version
+            if model_type == 'SVR' and sys.version_info < (3, 0):
+                self.model_kwargs['kernel'] = self.model_kwargs['kernel'].decode()
             if self._rescale:
                 model_type = 'Rescaled' + model_type
             # This crazy looking line creates an estimator based on a string
