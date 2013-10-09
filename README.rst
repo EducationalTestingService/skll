@@ -63,6 +63,12 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.17.1
+
+   +  Fixed crash with SVR on Python 3 from kernel type being a byte string.
+   +  Fixed crash with DecisionTreeRegressor due to an invalid criterion being
+      set.
+
 -  v0.17.0
 
    +  Fixed setup.py issue where requirements weren't being installed via pip.
