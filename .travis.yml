@@ -35,7 +35,7 @@ install:
 
 # Run test
 script:
-  - nosetests --with-cov --cov skll --cov-config .coveragerc
+  - nosetests --with-cov --cov skll --cov-config .coveragerc --logging-level=INFO
 
 # Calculate coverage
 after_success:

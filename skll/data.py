@@ -183,9 +183,10 @@ class _MegaMDictIter(_DictIter):
 
     def __iter__(self):
         if not self.quiet:
-            print("Loading {}...".format(path_or_list), end="", file=sys.stderr)
+            print("Loading {}...".format(self.path_or_list), end="",
+                  file=sys.stderr)
             sys.stderr.flush()
-        with open(path_or_list, 'rb') as megam_file:
+        with open(self.path_or_list, 'rb') as megam_file:
             example_num = 0
             curr_id = 'EXAMPLE_0'
             for line in megam_file:
