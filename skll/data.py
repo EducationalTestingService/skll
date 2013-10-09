@@ -65,11 +65,13 @@ class _DictIter(object):
     :type ids_to_floats: bool
     """
 
-    def __init__(self, path_or_list, quiet=True, ids_to_floats=False, **kwargs):
+    def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
+                 tsv_label='y'):
         super(_DictIter, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
+        self.tsv_label = tsv_label
 
     def __iter__(self):
         raise NotImplementedError
@@ -229,7 +231,7 @@ class _MegaMDictIter(_DictIter):
                         if len(curr_info_dict) != len(field_pairs) / 2:
                             raise ValueError(('There are duplicate feature ' +
                                               'names in {} for example ' +
-                                              '{}.').format(path_or_list,
+                                              '{}.').format(self.path_or_list,
                                                             curr_id))
 
                     if self.ids_to_floats:
@@ -240,7 +242,7 @@ class _MegaMDictIter(_DictIter):
                                               ' but ID {} could not be ' +
                                               'converted to in ' +
                                               '{}').format(curr_id,
-                                                           path_or_list))
+                                                           self.path_or_list))
 
                     yield curr_id, class_name, curr_info_dict
 
@@ -272,10 +274,6 @@ class _TSVDictIter(_DictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
-    def __init__(self, **kwargs):
-        self.tsv_label = kwargs.pop('tsv_label', 'y')
-        super(_TSVDictIter, self).__init__(**kwargs)
-
     def __iter__(self):
         if not self.quiet:
             print("Loading {}...".format(self.path_or_list), end="",
@@ -284,10 +282,9 @@ class _TSVDictIter(_DictIter):
         with open(self.path_or_list) as f:
             reader = DictReader(f, dialect=excel_tab)
             for example_num, row in enumerate(reader):
-                if tsv_label is not None and tsv_label in row:
-                    class_name = _safe_float(row[tsv_label])
-                    del row[tsv_label]
-
+                if self.tsv_label is not None and self.tsv_label in row:
+                    class_name = _safe_float(row[self.tsv_label])
+                    del row[self.tsv_label]
                 else:
                     class_name = None
 
