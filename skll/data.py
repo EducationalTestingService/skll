@@ -30,11 +30,11 @@ import json
 import logging
 import os
 import sys
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from csv import DictReader, DictWriter, excel_tab
 from decimal import Decimal
 from itertools import islice
 from io import open
-from multiprocessing import Pool
 from operator import itemgetter
 
 import numpy as np
@@ -433,39 +433,33 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
 
     logger.debug('Example iterator type: {}'.format(example_iter_type))
 
+    # Generators can't be pickled, so unfortunately we have to turn them into
+    # lists. Would love a workaround for this.
+    if example_iter_type == _DummyDictIter:
+        path = list(path)
+
+    if MAX_CONCURRENT_PROCESSES == 1:
+        executor_type = ThreadPoolExecutor
+    else:
+        executor_type = ProcessPoolExecutor
+
     # Create generators that we can use to create numpy arrays without wasting
     # memory (even though this requires reading the file multiple times).
     # Do this using a process pool so that we can clear out the temporary
     # variables more easily and do these in parallel.
-    if example_iter_type == _DummyDictIter:
-        path = list(path)  # Currently am I unsure of how to handle a generator
-                           # here, since they can't be pickled
+    with executor_type(max_workers=3) as executor:
+        ids_future = executor.submit(_ids_for_iter_type, example_iter_type,
+                                     path, ids_to_floats)
+        classes_future = executor.submit(_classes_for_iter_type,
+                                         example_iter_type, path, tsv_label)
+        features_future = executor.submit(_features_for_iter_type,
+                                          example_iter_type, path, quiet,
+                                          sparse, tsv_label)
 
-    if MAX_CONCURRENT_PROCESSES == 1:
-        ids = _ids_for_iter_type(example_iter_type, path, ids_to_floats)
-        classes = _classes_for_iter_type(excample_iter_type, path, tsv_label)
-        features, feat_vectorizer = _features_for_iter_type(example_iter_type,
-                                                            path, quiet, sparse,
-                                                            tsv_label)
-    else:
-        pool = Pool(min(3, MAX_CONCURRENT_PROCESSES))
-
-        ids_result = pool.apply_async(_ids_for_iter_type,
-                                      args=(example_iter_type, path,
-                                            ids_to_floats))
-        classes_result = pool.apply_async(_classes_for_iter_type,
-                                          args=(example_iter_type, path,
-                                                tsv_label))
-        features_result = pool.apply_async(_features_for_iter_type,
-                                           args=(example_iter_type, path, quiet,
-                                                 sparse, tsv_label))
-
-        # Wait for processes to complete and store results
-        pool.close()
-        pool.join()
-        ids = ids_result.get()
-        classes = classes_result.get()
-        features, feat_vectorizer = features_result.get()
+        # Wait for processes/threads to complete and store results
+        ids = ids_future.result()
+        classes = classes_future.result()
+        features, feat_vectorizer = features_future.result()
 
     # Make sure we have the same number of ids, classes, and features
     assert ids.shape[0] == classes.shape[0] == features.shape[0]

@@ -5,7 +5,8 @@ python:
 env:
   - GRIDMAP=true
   - GRIDMAP=false
-
+  - SKLL_MAX_CONCURRENT_PROCESSES=1
+  - SKLL_MAX_CONCURRENT_PROCESSES=5
 notifications:
   email: false
 
