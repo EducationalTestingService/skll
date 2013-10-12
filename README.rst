@@ -63,6 +63,14 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.18.0
+
+   +  Fixed crash when ``modelpath`` is blank and ``task`` is not
+      ``cross_validate``.
+   +  Fixed crash with ``convert_examples`` when given a generator.
+   +  Refactored ``skll.data``'s private ``_*_dict_iter`` functions to be
+      classes to reduce code duplication.
+
 -  v0.17.1
 
    +  Fixed crash with SVR on Python 3 from kernel type being a byte string.
