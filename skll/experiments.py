@@ -476,7 +476,8 @@ def _classify_featureset(args):
                 grid_scores = [best_score]
 
                 # save model
-                learner.save(modelfile)
+                if modelpath:
+                    learner.save(modelfile)
 
                 if grid_search:
                     print('\tbest {} grid search score: {}'

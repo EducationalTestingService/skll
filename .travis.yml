@@ -5,7 +5,8 @@ python:
 env:
   - GRIDMAP=true
   - GRIDMAP=false
-
+  - GRIDMAP=true SKLL_MAX_CONCURRENT_PROCESSES=1
+  - GRIDMAP=false SKLL_MAX_CONCURRENT_PROCESSES=1
 notifications:
   email: false
 
@@ -35,7 +36,7 @@ install:
 
 # Run test
 script:
-  - nosetests --with-cov --cov skll --cov-config .coveragerc
+  - nosetests --with-cov --cov skll --cov-config .coveragerc --logging-level=INFO
 
 # Calculate coverage
 after_success:
