@@ -25,7 +25,7 @@ Loads a trained model and outputs predictions based on input feature files.
 :date: February 2013
 '''
 
-from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, print_function, unicode_literals
 
 import argparse
 
@@ -40,13 +40,12 @@ class Predictor(object):
     predictions for feature strings.
     """
 
-    def __init__(self, model_prefix, threshold=None, positive_class=1):
+    def __init__(self, model_path, threshold=None, positive_class=1):
         '''
         Initialize the predictor.
 
-        :param model_prefix: Prefix to use when loading trained model (and its
-                             vocab).
-        :type model_prefix: basestring
+        :param model_path: Path to use when loading trained model.
+        :type model_path: str
         :param threshold: If the model we're using is generating probabilities
                           of the positive class, return 1 if it meets/exceeds
                           the given threshold and 0 otherwise.
@@ -58,18 +57,14 @@ class Predictor(object):
                                for binary classification.
         :type positive_class: int
         '''
-        self._learner = Learner()
-        self._learner.load('{}.model'.format(model_prefix))
+        self._learner = Learner.from_file(model_path)
         self._pos_index = positive_class
         self.threshold = threshold
 
     def predict(self, data):
         '''
-        Return a list of predictions for a given numpy array of examples
-        (which are dicts)
+        Return a list of predictions for a given ExamplesTuple of examples.
         '''
-        # Must make a list around a dictionary to fit format that
-        # Learner.predict expects
         preds = self._learner.predict(data).tolist()
 
         if self._learner.probability:
@@ -92,18 +87,14 @@ def main():
                      on input feature files.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         conflict_handler='resolve')
-    parser.add_argument('model_prefix', help='Prefix to use when loading \
-                                              trained model (and its vocab).')
+    parser.add_argument('model_file',
+                        help='Model file to load and use for generating \
+                              predictions.')
     parser.add_argument('input_file',
                         help='A csv file, json file, or megam file \
                               (with or without the label column), \
                               with the appropriate suffix.',
                         nargs='+')
-    parser.add_argument('-l', '--has_labels',
-                        help="Indicates that the input file includes \
-                              labels and that the features start at the \
-                              2nd column for csv and megam files.",
-                        action='store_true')
     parser.add_argument('-p', '--positive_class',
                         help="If the model is only being used to predict the \
                               probability of a particular class, this \
@@ -112,23 +103,31 @@ def main():
                               for binary classification. Keep in mind that \
                               classes are sorted lexicographically.",
                         default=1, type=int)
+    parser.add_argument('-q', '--quiet',
+                        help='Suppress printing of "Loading..." messages.',
+                        action='store_true')
     parser.add_argument('-t', '--threshold',
                         help="If the model we're using is generating \
                               probabilities of the positive class, return 1 \
                               if it meets/exceeds the given threshold and 0 \
                               otherwise.",
                         type=float)
+    parser.add_argument('--tsv_label',
+                        help='Name of the column which contains \
+                              the class labels in TSV files.',
+                        default='y')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
     # Create the classifier and load the model
-    predictor = Predictor(args.model_prefix,
+    predictor = Predictor(args.model_file,
                           positive_class=args.positive_class,
                           threshold=args.threshold)
 
     for input_file in args.input_file:
-        data = load_examples(input_file, has_labels=args.has_labels)
+        data = load_examples(input_file, quiet=args.quiet,
+                             tsv_label=args.tsv_label)
         for pred in predictor.predict(data):
             print(pred)
 
