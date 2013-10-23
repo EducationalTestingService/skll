@@ -26,6 +26,7 @@ Handles loading data from various types of data files.
 
 from __future__ import print_function, unicode_literals
 
+import csv
 import json
 import logging
 import os
@@ -255,6 +256,84 @@ class _MegaMDictIter(_DictIter):
                         print(".", end="", file=sys.stderr)
             if not self.quiet:
                 print("done", file=sys.stderr)
+
+
+class _ARFFDictIter(_DictIter):
+    '''
+    Iterator that yields tuples of IDs, classes, and dictionaries mapping from
+    features to values for each line in a specified TSV file.
+
+    :param path_or_list: Path to .tsv file
+    :type path_or_list: str
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
+    :param tsv_label: Name of the column which contains the class labels.
+                      If no column with that name exists, or `None` is
+                      specified, the data is considered to be unlabelled.
+    :type tsv_label: str
+    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
+                          if we encounter an a non-numeric ID.
+    :type ids_to_floats: bool
+    '''
+    # Constants
+    NOMINAL = 2
+    NUMERIC = 1
+    STRING = 0
+
+    def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
+                 tsv_label='y', quote_char="'"):
+        super(_ARFFDictIter, self).__init__(path_or_list, quiet=quiet,
+                                            ids_to_floats=ids_to_floats,
+                                            tsv_label=tsv_label)
+        self.quote_char = quote_char
+
+    @staticmethod
+    def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
+        '''
+        A replacement for string.split that won't split delimiters enclosed in
+        quotes.
+        '''
+        return next(csv.reader([s], delimiter=delimiter, quotechar=quote_char,
+                               escapechar=escape_char))
+
+    def __iter__(self):
+        attr_list = []
+        relation = ''
+        with open(self.path_or_list) as f:
+            # Process ARFF header
+            for line in f:
+                # Process encoding
+                line = UnicodeDammit(line, ['utf-8',
+                                            'windows-1252']).unicode_markup
+                # Skip empty lines
+                if line.strip():
+                    # Split the line using CSV reader because it can handle
+                    # quoted delimiters.
+                    split_header = self.split_with_quotes(line,
+                                                          quote_char=self.quote_char)
+                    row_type = split_header[0].lower()
+                    if row_type == '@attribute':
+                        attr_name = split_header[1]
+                        # Nominal
+                        if split_header[2][0] == '{':
+                            attr_type = self.NOMINAL
+                            val_str = ' '.join(split_header[2:]).strip('{}')
+                            pos_vals = [x.strip() for x in
+                                        self.split_with_quotes(val_str,
+                                                               quote_char=self.quotechar,
+                                                               delimiter=',')]
+                        # Numeric or String
+                        else:
+                            attr_type = (self.NUMERIC if (split_header[2] ==
+                                                          'numeric')
+                                         else self.STRING)
+                        attr_list.append([attr_name, attr_type, pos_vals])
+                    elif row_type == '@data':
+                        break
+                    elif row_type == '@relation':
+                        relation = split_header[1]
+
+            # Process data
 
 
 class _TSVDictIter(_DictIter):
