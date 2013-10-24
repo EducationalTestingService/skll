@@ -71,12 +71,12 @@ class _DictIter(object):
     :type ids_to_floats: bool
     """
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 tsv_label='y'):
+                 label_col='y'):
         super(_DictIter, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
-        self.tsv_label = tsv_label
+        self.label_col = label_col
 
     def __iter__(self):
         # Setup logger
@@ -285,10 +285,10 @@ class _DelimitedDictIter(_DictIter):
     :type path_or_list: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
-    :param tsv_label: Name of the column which contains the class labels.
+    :param label_col: Name of the column which contains the class labels.
                       If no column with that name exists, or `None` is
                       specified, the data is considered to be unlabelled.
-    :type tsv_label: str
+    :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
@@ -296,18 +296,18 @@ class _DelimitedDictIter(_DictIter):
     :type dialect: str
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 tsv_label='y', dialect=None):
+                 label_col='y', dialect=None):
         super(_DelimitedDictIter, self).__init__(path_or_list, quiet=quiet,
                                                  ids_to_floats=ids_to_floats,
-                                                 tsv_label=tsv_label)
+                                                 label_col=label_col)
         self.dialect = dialect
 
     def _sub_iter(self, file_or_list):
         reader = DictReader(file_or_list, dialect=self.dialect)
         for example_num, row in enumerate(reader):
-            if self.tsv_label is not None and self.tsv_label in row:
-                class_name = _safe_float(row[self.tsv_label])
-                del row[self.tsv_label]
+            if self.label_col is not None and self.label_col in row:
+                class_name = _safe_float(row[self.label_col])
+                del row[self.label_col]
             else:
                 class_name = None
 
@@ -373,19 +373,19 @@ class _CSVDictIter(_DelimitedDictIter):
     :type path_or_list: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
-    :param tsv_label: Name of the column which contains the class labels.
+    :param label_col: Name of the column which contains the class labels.
                       If no column with that name exists, or `None` is
                       specified, the data is considered to be unlabelled.
-    :type tsv_label: str
+    :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 tsv_label='y'):
+                 label_col='y'):
         super(_CSVDictIter, self).__init__(path_or_list, quiet=quiet,
                                            ids_to_floats=ids_to_floats,
-                                           tsv_label=tsv_label,
+                                           label_col=label_col,
                                            dialect='excel')
 
 
@@ -398,10 +398,10 @@ class _ARFFDictIter(_CSVDictIter):
     :type path_or_list: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
-    :param tsv_label: Name of the column which contains the class labels.
+    :param label_col: Name of the column which contains the class labels.
                       If no column with that name exists, or `None` is
                       specified, the data is considered to be unlabelled.
-    :type tsv_label: str
+    :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
@@ -442,10 +442,10 @@ class _ARFFDictIter(_CSVDictIter):
             csv.writer(field_buffer, dialect='arff').writerow(field_names)
             field_str = field_buffer.getvalue()
 
-        # Set tsv_label to be the name of the last field, since that's standard
+        # Set label_col to be the name of the last field, since that's standard
         # for ARFF files
-        self.tsv_label = (field_names[-1] if '{None}' not in decoded_line
-                          else None)
+        if self.label_col != field_names[-1]:
+            self.label_col = None
 
         # Process data as CSV file
         return super(_ARFFDictIter, self)._sub_iter(chain([field_str],
@@ -461,19 +461,19 @@ class _TSVDictIter(_DelimitedDictIter):
     :type path_or_list: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
-    :param tsv_label: Name of the column which contains the class labels.
+    :param label_col: Name of the column which contains the class labels.
                       If no column with that name exists, or `None` is
                       specified, the data is considered to be unlabelled.
-    :type tsv_label: str
+    :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 tsv_label='y'):
+                 label_col='y'):
         super(_TSVDictIter, self).__init__(path_or_list, quiet=quiet,
                                            ids_to_floats=ids_to_floats,
-                                           tsv_label=tsv_label,
+                                           label_col=label_col,
                                            dialect='excel-tab')
 
 
@@ -486,22 +486,22 @@ def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
     return np.array([curr_id for curr_id, _, _ in example_iter])
 
 
-def _classes_for_iter_type(example_iter_type, path, tsv_label):
+def _classes_for_iter_type(example_iter_type, path, label_col):
     '''
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
-    example_iter = example_iter_type(path, tsv_label=tsv_label)
+    example_iter = example_iter_type(path, label_col=label_col)
     return np.array([class_name for _, class_name, _ in example_iter])
 
 
-def _features_for_iter_type(example_iter_type, path, quiet, sparse, tsv_label):
+def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
     have labels).
     '''
-    example_iter = example_iter_type(path, quiet=quiet, tsv_label=tsv_label)
+    example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
     feat_vectorizer = DictVectorizer(sparse=sparse)
     feat_dict_generator = map(itemgetter(2), example_iter)
     try:
@@ -511,7 +511,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, tsv_label):
     return features, feat_vectorizer
 
 
-def load_examples(path, quiet=False, sparse=True, tsv_label='y',
+def load_examples(path, quiet=False, sparse=True, label_col='y',
                   ids_to_floats=False):
     '''
     Loads examples in the ARFF, CSV/TSV, JSONLINES (a json dict per line), or
@@ -524,11 +524,9 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     * CSV/TSV/ARFF: An "id" column.
     * JSONLINES: An "id" key in each JSON dictionary.
 
-    Also, for CSV/TSV files, there must be a column with the name specified by
-    `tsv_label` if the data is labelled.
-
-    For ARFF files, it is assumed that the last attribute defined is the class
-    label (as it is in Weka).
+    Also, for ARFF, CSV, and TSV files, there must be a column with the name
+    specified by `label_col` if the data is labelled. For ARFF files, this
+    column must also be the final one (as it is in Weka).
 
     :param path: The path to the file to load the examples from, or a list of
                  example dictionaries (like you would pass to
@@ -538,10 +536,10 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     :type quiet: bool
     :param sparse: Whether or not to store the features in a numpy CSR matrix.
     :type sparse: bool
-    :param tsv_label: Name of the column which contains the class labels for
+    :param label_col: Name of the column which contains the class labels for
                       TSV files. If no column with that name exists, or `None`
                       is specified, the data is considered to be unlabelled.
-    :type tsv_label: str
+    :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
@@ -594,10 +592,10 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
         ids_future = executor.submit(_ids_for_iter_type, example_iter_type,
                                      path, ids_to_floats)
         classes_future = executor.submit(_classes_for_iter_type,
-                                         example_iter_type, path, tsv_label)
+                                         example_iter_type, path, label_col)
         features_future = executor.submit(_features_for_iter_type,
                                           example_iter_type, path, quiet,
-                                          sparse, tsv_label)
+                                          sparse, label_col)
 
         # Wait for processes/threads to complete and store results
         ids = ids_future.result()
@@ -742,12 +740,10 @@ def _write_arff_file(path, ids, classes, features, label_col,
             print("@attribute {} ".format(label_col) +
                   "{" + ','.join(sorted(set(classes))) + "}",
                   file=f)
-        else:
-            print("@attribute {} {{None}}".format(label_col), file=f)
+            sorted_fields.append(label_col)
 
         # Create CSV writer to handle missing values for lines in data section
-        writer = csv.DictWriter(f, sorted_fields + [label_col],
-                                restval=0, dialect='arff')
+        writer = csv.DictWriter(f, sorted_fields, restval=0, dialect='arff')
 
         # Output instances
         print("\n@data", file=f)
@@ -864,7 +860,7 @@ def _write_megam_file(path, ids, classes, features):
 
 
 def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
-                       id_prefix='EXAMPLE_', tsv_label='y'):
+                       id_prefix='EXAMPLE_', label_col='y'):
     '''
     Writes a feature file in either .jsonlines, .megam, or .tsv formats
     with the given a list of IDs, classes, and features.
@@ -891,11 +887,11 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     :param id_prefix: If we need to automatically generate IDs, put this prefix
                       infront of the numerical IDs.
     :type id_prefix: str
-    :param tsv_label: Name of the column which contains the class labels for
+    :param label_col: Name of the column which contains the class labels for
                       CSV/TSV files. If no column with that name exists, or
                       `None` is specified, the data is considered to be
                       unlabelled.
-    :type tsv_label: str
+    :type label_col: str
     '''
     # Setup logger
     logger = logging.getLogger(__name__)
@@ -927,11 +923,11 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
 
     # Create TSV file if asked
     if path.endswith(".tsv"):
-        _write_delimited_file(path, ids, classes, features, tsv_label,
+        _write_delimited_file(path, ids, classes, features, label_col,
                               'excel-tab')
     # Create CSV file if asked
     elif path.endswith(".csv"):
-        _write_delimited_file(path, ids, classes, features, tsv_label,
+        _write_delimited_file(path, ids, classes, features, label_col,
                               'excel')
     # Create .jsonlines file if asked
     elif path.endswith(".jsonlines"):
@@ -941,7 +937,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         _write_megam_file(path, ids, classes, features)
     # Create ARFF file if asked
     elif path.endswith(".arff"):
-        _write_arff_file(path, ids, classes, features, tsv_label)
+        _write_arff_file(path, ids, classes, features, label_col)
     # Invalid file suffix, raise error
     else:
         raise ValueError('Output file must be in either .tsv, .megam, or ' +

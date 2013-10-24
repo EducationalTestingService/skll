@@ -48,13 +48,15 @@ if __name__ == '__main__':
     parser.add_argument('outfile',
                         help='output feature file (ends in .jsonlines, .tsv, \
                               .csv, .arff, or .megam)')
+    parser.add_argument('-l', '--label_col',
+                        help='Name of the column which contains the class \
+                              labels in ARFF, CSV, or TSV files. For ARFF \
+                              files, this must be the final column to count as\
+                              the label.',
+                        default='y')
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
-    parser.add_argument('--tsv_label',
-                        help='Name of the column which contains \
-                              the class labels in TSV files.',
-                        default='y')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
@@ -73,7 +75,7 @@ if __name__ == '__main__':
     elif input_extension.endswith(".arff"):
         example_iter_type = _ARFFDictIter
     else:
-        print('Input file must be in either .tsv, .megam, or ' +
+        print('Input file must be in either .arff, .csv, .tsv, .megam, or ' +
               '.jsonlines format. You specified: {}'.format(input_extension),
               file=sys.stderr)
 
@@ -82,7 +84,7 @@ if __name__ == '__main__':
     classes = []
     feature_dicts = []
     example_iter = example_iter_type(args.infile, quiet=args.quiet,
-                                     tsv_label=args.tsv_label)
+                                     label_col=args.label_col)
     for example_id, class_name, feature_dict in example_iter:
         feature_dicts.append(feature_dict)
         classes.append(class_name)
