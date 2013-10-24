@@ -29,10 +29,9 @@ from __future__ import print_function, unicode_literals
 import argparse
 import os
 import sys
-from functools import partial
 
-from skll.data import (_TSVDictIter, _JSONDictIter, _MegaMDictIter,
-                       write_feature_file)
+from skll.data import (_CSVDictIter, _ARFFDictIter, _TSVDictIter, _JSONDictIter,
+                       _MegaMDictIter, write_feature_file)
 from skll.version import __version__
 
 if __name__ == '__main__':
@@ -44,11 +43,11 @@ if __name__ == '__main__':
                                                   file extensions.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .jsonlines, .tsv, or \
-                              .megam)')
+                        help='input feature file (ends in .jsonlines, .tsv, \
+                              .csv, .arff, or .megam)')
     parser.add_argument('outfile',
-                        help='output feature file (ends in .jsonlines, .tsv, or\
-                              .megam)')
+                        help='output feature file (ends in .jsonlines, .tsv, \
+                              .csv, .arff, or .megam)')
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
@@ -69,6 +68,10 @@ if __name__ == '__main__':
         example_iter_type = _JSONDictIter
     elif input_extension.endswith(".megam"):
         example_iter_type = _MegaMDictIter
+    elif input_extension.endswith(".csv"):
+        example_iter_type = _CSVDictIter
+    elif input_extension.endswith(".arff"):
+        example_iter_type = _ARFFDictIter
     else:
         print('Input file must be in either .tsv, .megam, or ' +
               '.jsonlines format. You specified: {}'.format(input_extension),
