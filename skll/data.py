@@ -35,7 +35,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from csv import DictReader, DictWriter
 from decimal import Decimal
 from itertools import chain, islice
-from io import open, StringIO
+from io import open, BytesIO, StringIO
 from operator import itemgetter
 
 import numpy as np
@@ -92,7 +92,11 @@ class _DictIter(object):
 
         # Check if we're given a path to a file, and if so, open it
         if isinstance(self.path_or_list, string_types):
-            f = open(self.path_or_list)
+            if sys.version_info >= (3, 0):
+                file_mode = 'r'
+            else:
+                file_mode = 'rb'
+            f = open(self.path_or_list, file_mode)
             if not self.quiet:
                 print("Loading {}...".format(self.path_or_list), end="",
                       file=sys.stderr)
@@ -430,7 +434,7 @@ class _ARFFDictIter(_CSVDictIter):
         for line in file_or_list:
             # Process encoding
             decoded_line = UnicodeDammit(line, ['utf-8',
-                                         'windows-1252']).unicode_markup
+                                                'windows-1252']).unicode_markup
             line = decoded_line.strip()
             # Skip empty lines
             if line:
@@ -447,7 +451,11 @@ class _ARFFDictIter(_CSVDictIter):
                 # Skip other types of rows (relations)
 
         # Create header for CSV
-        with StringIO() as field_buffer:
+        if sys.version_info < (3, 0):
+            io_type = BytesIO
+        else:
+            io_type = StringIO
+        with io_type() as field_buffer:
             csv.writer(field_buffer, dialect='arff').writerow(field_names)
             field_str = field_buffer.getvalue()
 
@@ -491,8 +499,15 @@ def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
     Little helper function to return an array of IDs for a given example
     generator (and whether or not the examples have labels).
     '''
-    example_iter = example_iter_type(path, ids_to_floats=ids_to_floats)
-    return np.array([curr_id for curr_id, _, _ in example_iter])
+    try:
+        example_iter = example_iter_type(path, ids_to_floats=ids_to_floats)
+        res_array = np.array([curr_id for curr_id, _, _ in example_iter])
+    except Exception as e:
+        # Setup logger
+        logger = logging.getLogger(__name__)
+        logger.exception('Failed to load IDs for {}.'.format(path))
+        raise e
+    return res_array
 
 
 def _classes_for_iter_type(example_iter_type, path, label_col):
@@ -500,8 +515,15 @@ def _classes_for_iter_type(example_iter_type, path, label_col):
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
-    example_iter = example_iter_type(path, label_col=label_col)
-    return np.array([class_name for _, class_name, _ in example_iter])
+    try:
+        example_iter = example_iter_type(path, label_col=label_col)
+        res_array = np.array([class_name for _, class_name, _ in example_iter])
+    except Exception as e:
+        # Setup logger
+        logger = logging.getLogger(__name__)
+        logger.exception('Failed to load classes for {}.'.format(path))
+        raise e
+    return res_array
 
 
 def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
@@ -510,9 +532,15 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
     vectorizer for a given example generator (and whether or not the examples
     have labels).
     '''
-    example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
-    feat_vectorizer = DictVectorizer(sparse=sparse)
-    feat_dict_generator = map(itemgetter(2), example_iter)
+    try:
+        example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
+        feat_vectorizer = DictVectorizer(sparse=sparse)
+        feat_dict_generator = map(itemgetter(2), example_iter)
+    except Exception as e:
+        # Setup logger
+        logger = logging.getLogger(__name__)
+        logger.exception('Failed to load features for {}.'.format(path))
+        raise e
     try:
         features = feat_vectorizer.fit_transform(feat_dict_generator)
     except ValueError:
