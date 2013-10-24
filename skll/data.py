@@ -415,8 +415,8 @@ class _ARFFDictIter(_CSVDictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
-    def split_with_quotes(self, s, delimiter=' ', quote_char="'",
-                          escape_char='\\'):
+    @staticmethod
+    def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
         '''
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
