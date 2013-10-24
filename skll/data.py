@@ -52,9 +52,14 @@ ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
                                              'feat_vectorizer'])
 
 # Register dialect for handling ARFF files
-csv.register_dialect('arff', delimiter=',', quotechar="'",
-                     escapechar='\\', doublequote=False,
-                     lineterminator='\n', skipinitialspace=True)
+if sys.version_info >= (3, 0):
+    csv.register_dialect('arff', delimiter=',', quotechar="'",
+                         escapechar='\\', doublequote=False,
+                         lineterminator='\n', skipinitialspace=True)
+else:
+    csv.register_dialect('arff', delimiter=b',', quotechar=b"'",
+                         escapechar=b'\\', doublequote=False,
+                         lineterminator=b'\n', skipinitialspace=True)
 
 
 class _DictIter(object):
