@@ -59,6 +59,7 @@ Requirements
    to run things in parallel on a DRMAA-compatible cluster)
 -  `configparser <http://pypi.python.org/pypi/configparser>`__ (only required for
    Python 2.7)
+-  `futures <http://pypi.python.org/pypi/futures>`__ (only required for Python 2.7)
 
 Changelog
 ~~~~~~~~~
