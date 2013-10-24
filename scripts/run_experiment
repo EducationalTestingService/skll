@@ -81,10 +81,6 @@ def main():
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
-    # initialize the logger
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
-                        level=logging.INFO)
-
     machines = None
     if args.machines:
         machines = args.machines.split(',')

@@ -27,12 +27,11 @@ Provides easy-to-use wrapper around scikit-learn.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import inspect
-import logging
 import os
 import sys
 from collections import defaultdict
 from functools import wraps
-from multiprocessing import cpu_count
+from multiprocessing import cpu_count, log_to_stderr
 
 import numpy as np
 import scipy.sparse as sp
@@ -107,7 +106,7 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         self._warned = False
 
     def __iter__(self):
-        logger = logging.getLogger(__name__)
+        logger = log_to_stderr()
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
             train_len = len(train_index)

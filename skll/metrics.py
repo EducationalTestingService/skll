@@ -27,7 +27,7 @@ evaluate the performance of learners.
 
 from __future__ import print_function, unicode_literals
 
-import logging
+from multiprocessing import log_to_stderr
 
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
@@ -75,7 +75,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                              for when building the weights matrix.
     :type allow_off_by_one: bool
     '''
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
 
     # Ensure that the lists are both the same length
     assert(len(y_true) == len(y_pred))

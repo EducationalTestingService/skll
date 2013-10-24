@@ -64,6 +64,13 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.18.1
+
+   +  Updated `generate_predictions` to use latest API.
+   +  Switched to using multiprocessing-compatible logging. This should fix some
+      intermittent deadlocks.
+   +  Switched to using miniconda for install Python on Travis-CI.
+
 -  v0.18.0
 
    +  Fixed crash when ``modelpath`` is blank and ``task`` is not
