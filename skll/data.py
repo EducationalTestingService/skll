@@ -27,7 +27,6 @@ Handles loading data from various types of data files.
 from __future__ import print_function, unicode_literals
 
 import json
-import logging
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -35,6 +34,7 @@ from csv import DictReader, DictWriter, excel_tab
 from decimal import Decimal
 from itertools import islice
 from io import open
+from multiprocessing import log_to_stderr
 from operator import itemgetter
 
 import numpy as np
@@ -413,7 +413,7 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
              the feature matrix.
     '''
     # Setup logger
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
 
     logger.debug('Path: {}'.format(path))
 
@@ -544,7 +544,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     :type tsv_label: str
     '''
     # Setup logger
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
 
     logger.debug('Feature vectorizer: {}'.format(feat_vectorizer))
     logger.debug('Features: {}'.format(features))
