@@ -417,6 +417,10 @@ class _ARFFDictIter(_CSVDictIter):
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
         '''
+        if sys.version_info < (3, 0):
+            delimiter = delimiter.encode()
+            quote_char = quote_char.encode()
+            escape_char = escape_char.encode()
         return next(csv.reader([s], delimiter=delimiter, quotechar=quote_char,
                                escapechar=escape_char))
 
