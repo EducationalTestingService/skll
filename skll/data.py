@@ -31,7 +31,7 @@ import json
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from csv import DictReader, DictWriter, excel_tab
+from csv import DictReader, DictWriter
 from decimal import Decimal
 from itertools import chain, islice
 from io import open, BytesIO, StringIO
