@@ -420,10 +420,11 @@ class _ARFFDictIter(_CSVDictIter):
         # Process ARFF header
         for line in file_or_list:
             # Process encoding
-            line = UnicodeDammit(line, ['utf-8',
-                                        'windows-1252']).unicode_markup
+            decoded_line = UnicodeDammit(line, ['utf-8',
+                                         'windows-1252']).unicode_markup
+            line = decoded_line.strip()
             # Skip empty lines
-            if line.strip():
+            if line:
                 # Split the line using CSV reader because it can handle
                 # quoted delimiters.
                 split_header = self.split_with_quotes(line)
@@ -438,12 +439,13 @@ class _ARFFDictIter(_CSVDictIter):
 
         # Create header for CSV
         with StringIO() as field_buffer:
-            csv.writer(field_buffer, dialect='arff').write(field_names)
+            csv.writer(field_buffer, dialect='arff').writerow(field_names)
             field_str = field_buffer.getvalue()
 
         # Set tsv_label to be the name of the last field, since that's standard
         # for ARFF files
-        self.tsv_label = field_names[-1]
+        self.tsv_label = (field_names[-1] if '{None}' not in decoded_line
+                          else None)
 
         # Process data as CSV file
         return super(_ARFFDictIter, self)._sub_iter(chain([field_str],
@@ -649,6 +651,8 @@ def _safe_float(text):
         return float(text)
     except ValueError:
         return text.decode('utf-8') if sys.version_info < (3, 0) else text
+    except TypeError:
+        return 0.0
 
 
 def _examples_to_dictwriter_inputs(ids, classes, features, label_col):
@@ -707,6 +711,8 @@ def _write_arff_file(path, ids, classes, features, label_col,
     # Convert IDs, classes, and features into format for DictWriter
     fields, instances = _examples_to_dictwriter_inputs(ids, classes, features,
                                                        label_col)
+    if label_col in fields:
+        fields.remove(label_col)
 
     # Write file
     if sys.version_info >= (3, 0):
@@ -724,15 +730,20 @@ def _write_arff_file(path, ids, classes, features, label_col,
             numeric = True
             for instance in instances:
                 if field in instance:
-                    numeric = isinstance(instance[field], float)
+                    numeric = not isinstance(instance[field], string_types)
                     break
             print("@attribute '{}'".format(field.replace('\\', '\\\\')
                                                 .replace("'", "\\'")),
                   end=" ", file=f)
             print("numeric" if numeric else "string", file=f)
-        print("@attribute {} ".format(label_col) +
-              "{" + ','.join(sorted(set(classes))) + "}",
-              file=f)
+
+        # Print class label header if necessary
+        if set(classes) != {None}:
+            print("@attribute {} ".format(label_col) +
+                  "{" + ','.join(sorted(set(classes))) + "}",
+                  file=f)
+        else:
+            print("@attribute {} {{None}}".format(label_col), file=f)
 
         # Create CSV writer to handle missing values for lines in data section
         writer = csv.DictWriter(f, sorted_fields + [label_col],
