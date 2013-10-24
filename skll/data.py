@@ -28,14 +28,14 @@ from __future__ import print_function, unicode_literals
 
 import csv
 import json
-import logging
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from csv import DictReader, DictWriter
+from csv import DictReader, DictWriter, excel_tab
 from decimal import Decimal
 from itertools import chain, islice
 from io import open, BytesIO, StringIO
+from multiprocessing import log_to_stderr
 from operator import itemgetter
 
 import numpy as np
@@ -85,7 +85,7 @@ class _DictIter(object):
 
     def __iter__(self):
         # Setup logger
-        logger = logging.getLogger(__name__)
+        logger = log_to_stderr()
 
         logger.debug('DictIter type: {}'.format(type(self)))
         logger.debug('path_or_list: {}'.format(self.path_or_list))
@@ -504,7 +504,7 @@ def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
         res_array = np.array([curr_id for curr_id, _, _ in example_iter])
     except Exception as e:
         # Setup logger
-        logger = logging.getLogger(__name__)
+        logger = log_to_stderr()
         logger.exception('Failed to load IDs for {}.'.format(path))
         raise e
     return res_array
@@ -520,7 +520,7 @@ def _classes_for_iter_type(example_iter_type, path, label_col):
         res_array = np.array([class_name for _, class_name, _ in example_iter])
     except Exception as e:
         # Setup logger
-        logger = logging.getLogger(__name__)
+        logger = log_to_stderr()
         logger.exception('Failed to load classes for {}.'.format(path))
         raise e
     return res_array
@@ -538,7 +538,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
         feat_dict_generator = map(itemgetter(2), example_iter)
     except Exception as e:
         # Setup logger
-        logger = logging.getLogger(__name__)
+        logger = log_to_stderr()
         logger.exception('Failed to load features for {}.'.format(path))
         raise e
     try:
@@ -587,7 +587,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
              the feature matrix.
     '''
     # Setup logger
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
 
     logger.debug('Path: {}'.format(path))
 
@@ -931,7 +931,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     :type label_col: str
     '''
     # Setup logger
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
 
     logger.debug('Feature vectorizer: {}'.format(feat_vectorizer))
     logger.debug('Features: {}'.format(features))

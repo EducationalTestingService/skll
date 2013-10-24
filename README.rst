@@ -59,9 +59,17 @@ Requirements
    to run things in parallel on a DRMAA-compatible cluster)
 -  `configparser <http://pypi.python.org/pypi/configparser>`__ (only required for
    Python 2.7)
+-  `futures <http://pypi.python.org/pypi/futures>`__ (only required for Python 2.7)
 
 Changelog
 ~~~~~~~~~
+
+-  v0.18.1
+
+   +  Updated `generate_predictions` to use latest API.
+   +  Switched to using multiprocessing-compatible logging. This should fix some
+      intermittent deadlocks.
+   +  Switched to using miniconda for install Python on Travis-CI.
 
 -  v0.18.0
 
