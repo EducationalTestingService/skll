@@ -29,7 +29,6 @@ import csv
 import datetime
 import errno
 import json
-import logging
 import math
 import os
 import sys
@@ -37,7 +36,7 @@ import tempfile
 from collections import defaultdict
 from io import open
 from itertools import chain
-from multiprocessing import Pool
+from multiprocessing import log_to_stderr, Pool
 
 import configparser  # Backported version from Python 3
 import numpy as np
@@ -114,7 +113,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     '''
     learner_result_dicts = []
     all_features = set()
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
             logger.error(('JSON results file {} not found. Skipping summary ' +
@@ -714,7 +713,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Read configuration
     config = _parse_config_file(config_file)
 
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
     if not local and not _HAVE_GRIDMAP:
         local = True
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
@@ -969,7 +968,7 @@ def _check_job_results(job_results):
     '''
     See if we have a complete results dictionary for every job.
     '''
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
     logger.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
@@ -1060,7 +1059,7 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     # Read configuration
     config = _parse_config_file(config_path)
 
-    logger = logging.getLogger(__name__)
+    logger = log_to_stderr()
 
     featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
     featureset_names = json.loads(_fix_json(config.get("Input",
@@ -1094,7 +1093,7 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
         try:
             result_json_paths.extend(chain(*pool.map(_run_experiment_without_feature,
                                                      list(arg_tuples))))
-        # If we run_ablation is run via a subprocess (like nose does),
+        # If run_experiment is run via a subprocess (like nose does),
         # this will fail, so just do things serially then.
         except AssertionError:
             del pool
