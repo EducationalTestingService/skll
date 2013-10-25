@@ -1095,7 +1095,7 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
                        local, queue, config_path, hosts, overwrite, quiet) for
                       excluded_feature in features]
     # Add None to arg_tuples so that we also run things with all features
-    arg_tuples.append((None, features, featureset_name, config, local, queue,
+    arg_tuples.append(([], features, featureset_name, config, local, queue,
                        config_path, hosts, overwrite, quiet))
 
     # for each set of features we're excluding, make a copy of the config file
@@ -1109,17 +1109,17 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     if not local:
         pool = Pool(processes=len(features) + 1)
         try:
-            result_json_paths.extend(chain(*pool.map(_run_experiment_without_feature,
+            result_json_paths.extend(chain(*pool.map(_run_experiment_without_features,
                                                      list(arg_tuples))))
         # If run_experiment is run via a subprocess (like nose does),
         # this will fail, so just do things serially then.
         except AssertionError:
             del pool
             for arg_tuple in arg_tuples:
-                result_json_paths.extend(_run_experiment_without_feature(arg_tuple))
+                result_json_paths.extend(_run_experiment_without_features(arg_tuple))
     else:
         for arg_tuple in arg_tuples:
-            result_json_paths.extend(_run_experiment_without_feature(arg_tuple))
+            result_json_paths.extend(_run_experiment_without_features(arg_tuple))
 
     task = config.get("General", "task")
     experiment_name = config.get("General", "experiment_name")
