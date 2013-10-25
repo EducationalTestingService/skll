@@ -131,7 +131,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     header = set(learner_result_dicts[0].keys()) - {'result_table',
                                                     'descriptive'}
     if ablation:
-        header.add('ablated_feature')
+        header.add('ablated_features')
     # Backward compatibility for older JSON results files.
     if 'comparative' in header:
         header.remove('comparative')
@@ -146,10 +146,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     # them to more readable string versions.
     for lrd in learner_result_dicts:
         if ablation:
-            ablated_feature = all_features.difference(json.loads(lrd['featureset']))
-            lrd['ablated_feature'] = ''
-            if ablated_feature:
-                lrd['ablated_feature'] = list(ablated_feature)[0]
+            ablated_features = all_features.difference(json.loads(lrd['featureset']))
+            lrd['ablated_features'] = ''
+            if ablated_features:
+                lrd['ablated_features'] = list(ablated_features)[0]
         # Backward compatibility for older JSON results files.
         if 'comparative' in lrd:
             lrd['pearson'] = lrd['comparative']['pearson']
