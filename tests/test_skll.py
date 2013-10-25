@@ -492,7 +492,7 @@ def test_ablation_cv():
     run_ablation(config_path, quiet=True)
 
     # read in the summary file and make sure it has
-    # 6 ablated featuresets * 11 folds * 2 learners = 132 lines
+    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132 lines
     with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
@@ -502,6 +502,8 @@ def test_ablation_cv():
     num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
     assert_equal(num_result_files, 12)
 
+    # Remove them so we can create new ones for the next test
+    glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results'))
 
 def test_ablation_cv_all_combos():
     '''
@@ -515,7 +517,7 @@ def test_ablation_cv_all_combos():
     run_ablation(config_path, quiet=True, all_combos=True)
 
     # read in the summary file and make sure it has
-    # 31 ablated featuresets * 11 folds * 2 learners = 682 lines
+    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682 lines
     with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
