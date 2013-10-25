@@ -232,8 +232,7 @@ def _parse_config_file(config_path):
                                         'grid_search_jobs': '0',
                                         'cv_folds_location': '',
                                         'suffix': '',
-                                        'classifiers': '',
-                                        'tsv_label': 'y',
+                                        'label_col': 'y',
                                         'ids_to_floats': 'False'})
 
     if not os.path.exists(config_path):
@@ -244,7 +243,7 @@ def _parse_config_file(config_path):
     return config
 
 
-def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
+def _load_featureset(dirpath, featureset, suffix, label_col='y',
                      ids_to_floats=False, quiet=False):
     '''
     loads a list of feature files and merges them.
@@ -253,7 +252,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
-    example_tuples = [load_examples(file_name, tsv_label=tsv_label,
+    example_tuples = [load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet)
                       for file_name in file_names]
 
@@ -369,7 +368,7 @@ def _classify_featureset(args):
     min_feature_count = args.pop("min_feature_count")
     grid_search_jobs = args.pop("grid_search_jobs")
     cv_folds = args.pop("cv_folds")
-    tsv_label = args.pop("tsv_label")
+    label_col = args.pop("label_col")
     ids_to_floats = args.pop("ids_to_floats")
     quiet = args.pop('quiet', False)
     if args:
@@ -402,12 +401,12 @@ def _classify_featureset(args):
 
         # load the training and test examples
         train_examples = _load_featureset(train_path, featureset, suffix,
-                                          tsv_label=tsv_label,
+                                          label_col=label_col,
                                           ids_to_floats=ids_to_floats,
                                           quiet=quiet)
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
-                                             tsv_label=tsv_label,
+                                             label_col=label_col,
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet)
 
@@ -777,7 +776,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     train_path = config.get("Input", "train_location").rstrip('/')
     test_path = config.get("Input", "test_location").rstrip('/')
     suffix = config.get("Input", "suffix")
-    tsv_label = config.get("Input", "tsv_label")
+    # Support tsv_label for old files
+    if config.has_option("Input", "tsv_label"):
+        label_col = config.get("Input", "tsv_label")
+    else:
+        label_col = config.get("Input", "label_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
     # get the cv folds file and make a dictionary from it
@@ -923,7 +926,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["min_feature_count"] = min_feature_count
             job_args["grid_search_jobs"] = grid_search_jobs
             job_args["cv_folds"] = cv_folds
-            job_args["tsv_label"] = tsv_label
+            job_args["label_col"] = label_col
             job_args["ids_to_floats"] = ids_to_floats
             job_args["quiet"] = quiet
 
