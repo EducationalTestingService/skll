@@ -417,10 +417,10 @@ class _ARFFDictIter(_DelimitedDictIter):
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
                  label_col='y'):
-        super(_DelimitedDictIter, self).__init__(path_or_list, quiet=quiet,
-                                                 ids_to_floats=ids_to_floats,
-                                                 label_col=label_col,
-                                                 dialect='arff')
+        super(_ARFFDictIter, self).__init__(path_or_list, quiet=quiet,
+                                            ids_to_floats=ids_to_floats,
+                                            label_col=label_col,
+                                            dialect='arff')
 
     @staticmethod
     def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
