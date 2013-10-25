@@ -503,6 +503,29 @@ def test_ablation_cv():
     assert_equal(num_result_files, 12)
 
 
+def test_ablation_cv_all_combos():
+    '''
+    Test to validate whether ablation works with cross-validate
+    '''
+    make_ablation_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_ablation(config_path, quiet=True, all_combos=True)
+
+    # read in the summary file and make sure it has
+    # 31 ablated featuresets * 11 folds * 2 learners = 682 lines
+    with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        all_rows = list(reader)
+        assert_equal(len(all_rows), 682)
+
+    # make sure there are 31 ablated featuresets * 2 learners = 62 results files
+    num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
+    assert_equal(num_result_files, 62)
+
+
 def make_scaling_data():
     num_train_examples = 1000
     num_test_examples = 100
