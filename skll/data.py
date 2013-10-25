@@ -398,7 +398,7 @@ class _CSVDictIter(_DelimitedDictIter):
                                            dialect='excel')
 
 
-class _ARFFDictIter(_CSVDictIter):
+class _ARFFDictIter(_DelimitedDictIter):
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each data line in a specified ARFF file.
@@ -415,6 +415,13 @@ class _ARFFDictIter(_CSVDictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
+    def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
+                 label_col='y'):
+        super(_DelimitedDictIter, self).__init__(path_or_list, quiet=quiet,
+                                                 ids_to_floats=ids_to_floats,
+                                                 label_col=label_col,
+                                                 dialect='arff')
+
     @staticmethod
     def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
         '''
