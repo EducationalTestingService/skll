@@ -524,7 +524,7 @@ def test_ablation_cv_all_combos():
         assert_equal(len(all_rows), 682)
 
     # make sure there are 31 ablated featuresets * 2 learners = 62 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
+    num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*results')))
     assert_equal(num_result_files, 62)
 
 
