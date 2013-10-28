@@ -149,7 +149,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
             ablated_features = all_features.difference(json.loads(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
-                lrd['ablated_features'] = sorted(ablated_features)
+                lrd['ablated_features'] = json.dumps(sorted(ablated_features))
         # Backward compatibility for older JSON results files.
         if 'comparative' in lrd:
             lrd['pearson'] = lrd['comparative']['pearson']
