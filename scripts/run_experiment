@@ -58,6 +58,11 @@ def main():
                               experiments are conducted where each feature\
                               set in the configuration file is held out.',
                         action='store_true')
+    parser.add_argument('-A', '--ablation_all',
+                        help='Runs an ablation study where repeated \
+                              experiments are conducted with all combinations \
+                              of feature sets in the configuration file.',
+                        action='store_true')
     parser.add_argument('-k', '--keep_models',
                         help='If trained models already exists, re-use them\
                               instead of overwriting them.',
@@ -88,8 +93,9 @@ def main():
     # Create partial function to map onto list of config files
     common_args = dict(local=args.local, overwrite=not args.keep_models,
                        queue=args.queue, hosts=machines)
-    if args.ablation:
-        partial_runner = partial(run_ablation, **common_args)
+    if args.ablation or args.ablation_all:
+        partial_runner = partial(run_ablation, all_combos=args.ablation_all,
+                                 **common_args)
     else:
         partial_runner = partial(run_configuration, **common_args)
 
