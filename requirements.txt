@@ -1,3 +1,4 @@
+joblib
 scikit-learn>=0.14
 six
 PrettyTable

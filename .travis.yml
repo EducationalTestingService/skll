@@ -20,13 +20,12 @@ before_install:
   - sudo mkdir /scratch/
   - sudo chmod 777 /scratch/
   - sudo apt-get update -qq
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "3" ]; then sudo apt-get install libatlas-dev libatlas-base-dev liblapack-dev gfortran; fi
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-2.0.0-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-2.0.0-Linux-x86_64.sh -O miniconda.sh; fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/anaconda/bin:$PATH
 install:
-  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION numpy scipy
+  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes scikit-learn; fi
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install --use-mirrors configparser; fi
   - pip install -r requirements.txt --use-mirrors

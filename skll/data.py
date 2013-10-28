@@ -40,6 +40,7 @@ from operator import itemgetter
 import numpy as np
 from bs4 import UnicodeDammit
 from collections import namedtuple
+from joblib import Parallel
 from six import iteritems, string_types
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer
