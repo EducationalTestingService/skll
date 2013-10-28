@@ -1111,6 +1111,7 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
         try:
             result_json_paths.extend(chain(*pool.map(_run_experiment_without_features,
                                                      list(arg_tuples))))
+            pool.close()
         # If run_experiment is run via a subprocess (like nose does),
         # this will fail, so just do things serially then.
         except AssertionError:
