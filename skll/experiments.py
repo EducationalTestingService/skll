@@ -128,6 +128,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
                     all_features.update(json.loads(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
 
+    # Build and write header
     header = set(learner_result_dicts[0].keys()) - {'result_table',
                                                     'descriptive'}
     if ablation:
@@ -141,9 +142,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
                             dialect=csv.excel_tab)
     writer.writeheader()
 
-    # note that at this point each learner dict contains json dumped objects
-    # which look really strange when written to a TSV. We want to convert
-    # them to more readable string versions.
+    # Build "ablated_features" list and fix some backward compatible things
     for lrd in learner_result_dicts:
         if ablation:
             ablated_feature = all_features.difference(json.loads(lrd['featureset']))
