@@ -26,14 +26,15 @@ Handles loading data from various types of data files.
 
 from __future__ import print_function, unicode_literals
 
+import csv
 import json
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from csv import DictReader, DictWriter, excel_tab
+from csv import DictReader, DictWriter
 from decimal import Decimal
-from itertools import islice
-from io import open
+from itertools import chain, islice
+from io import open, BytesIO, StringIO
 from multiprocessing import log_to_stderr
 from operator import itemgetter
 
@@ -50,6 +51,16 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
                                              'feat_vectorizer'])
 
+# Register dialect for handling ARFF files
+if sys.version_info >= (3, 0):
+    csv.register_dialect('arff', delimiter=',', quotechar="'",
+                         escapechar='\\', doublequote=False,
+                         lineterminator='\n', skipinitialspace=True)
+else:
+    csv.register_dialect('arff', delimiter=b',', quotechar=b"'",
+                         escapechar=b'\\', doublequote=False,
+                         lineterminator=b'\n', skipinitialspace=True)
+
 
 class _DictIter(object):
     """
@@ -64,16 +75,44 @@ class _DictIter(object):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     """
-
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 tsv_label='y'):
+                 label_col='y'):
         super(_DictIter, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
-        self.tsv_label = tsv_label
+        self.label_col = label_col
 
     def __iter__(self):
+        # Setup logger
+        logger = log_to_stderr()
+
+        logger.debug('DictIter type: {}'.format(type(self)))
+        logger.debug('path_or_list: {}'.format(self.path_or_list))
+
+        # Check if we're given a path to a file, and if so, open it
+        if isinstance(self.path_or_list, string_types):
+            if sys.version_info >= (3, 0):
+                file_mode = 'r'
+            else:
+                file_mode = 'rb'
+            f = open(self.path_or_list, file_mode)
+            if not self.quiet:
+                print("Loading {}...".format(self.path_or_list), end="",
+                      file=sys.stderr)
+                sys.stderr.flush()
+            return self._sub_iter(f)
+        else:
+            if not self.quiet:
+                print("Loading...".format(self.path_or_list), end="",
+                      file=sys.stderr)
+                sys.stderr.flush()
+            return self._sub_iter(self.path_or_list)
+
+    def _sub_iter(self, file_or_list):
+        '''
+        Iterates through a given file or list.
+        '''
         raise NotImplementedError
 
 
@@ -92,7 +131,6 @@ class _DummyDictIter(_DictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
-
     def __iter__(self):
         if not self.quiet:
             print("Converting examples...", end="", file=sys.stderr)
@@ -136,36 +174,31 @@ class _JSONDictIter(_DictIter):
     :type ids_to_floats: bool
     '''
 
-    def __iter__(self):
-        with open(self.path_or_list) as f:
-            if not self.quiet:
-                print("Loading {}...".format(self.path_or_list), end="",
-                      file=sys.stderr)
-                sys.stderr.flush()
-            for example_num, line in enumerate(f):
-                example = json.loads(line.strip())
-                # Convert all IDs to strings initially,
-                # for consistency with csv and megam formats.
-                curr_id = str(example.get("id",
-                                          "EXAMPLE_{}".format(example_num)))
-                class_name = (_safe_float(example["y"]) if 'y' in example
-                              else None)
-                example = example["x"]
+    def _sub_iter(self, file_or_list):
+        for example_num, line in enumerate(file_or_list):
+            example = json.loads(line.strip())
+            # Convert all IDs to strings initially,
+            # for consistency with csv and megam formats.
+            curr_id = str(example.get("id",
+                                      "EXAMPLE_{}".format(example_num)))
+            class_name = (_safe_float(example["y"]) if 'y' in example
+                          else None)
+            example = example["x"]
 
-                if self.ids_to_floats:
-                    try:
-                        curr_id = float(curr_id)
-                    except ValueError:
-                        raise ValueError(('You set ids_to_floats to true, but' +
-                                          ' ID {} could not be converted to ' +
-                                          'float').format(curr_id))
+            if self.ids_to_floats:
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true, but' +
+                                      ' ID {} could not be converted to ' +
+                                      'float').format(curr_id))
 
-                yield curr_id, class_name, example
+            yield curr_id, class_name, example
 
-                if not self.quiet and example_num % 100 == 0:
-                    print(".", end="", file=sys.stderr)
-            if not self.quiet:
-                print("done", file=sys.stderr)
+            if not self.quiet and example_num % 100 == 0:
+                print(".", end="", file=sys.stderr)
+        if not self.quiet:
+            print("done", file=sys.stderr)
 
 
 class _MegaMDictIter(_DictIter):
@@ -183,81 +216,267 @@ class _MegaMDictIter(_DictIter):
     :type ids_to_floats: bool
     '''
 
-    def __iter__(self):
+    def _sub_iter(self, file_or_list):
+        example_num = 0
+        curr_id = 'EXAMPLE_0'
+        for line in file_or_list:
+            # Process encoding
+            line = UnicodeDammit(line, ['utf-8',
+                                        'windows-1252']).unicode_markup
+            line = _sanitize_line(line.strip())
+            # Handle instance lines
+            if line.startswith('#'):
+                curr_id = line[1:].strip()
+            elif line and line not in ['TRAIN', 'TEST', 'DEV']:
+                split_line = line.split()
+                num_cols = len(split_line)
+                del line
+                # Line is just a class label
+                if num_cols == 1:
+                    class_name = _safe_float(split_line[0])
+                    field_pairs = []
+                # Line has a class label and feature-value pairs
+                elif num_cols % 2 == 1:
+                    class_name = _safe_float(split_line[0])
+                    field_pairs = split_line[1:]
+                # Line just has feature-value pairs
+                elif num_cols % 2 == 0:
+                    class_name = None
+                    field_pairs = split_line
+
+                curr_info_dict = {}
+                if len(field_pairs) > 0:
+                    # Get current instances feature-value pairs
+                    field_names = islice(field_pairs, 0, None, 2)
+                    # Convert values to floats, because otherwise
+                    # features'll be categorical
+                    field_values = (_safe_float(val) for val in
+                                    islice(field_pairs, 1, None, 2))
+
+                    # Add the feature-value pairs to dictionary
+                    curr_info_dict.update(zip(field_names, field_values))
+
+                    if len(curr_info_dict) != len(field_pairs) / 2:
+                        raise ValueError(('There are duplicate feature ' +
+                                          'names in {} for example ' +
+                                          '{}.').format(self.path_or_list,
+                                                        curr_id))
+
+                if self.ids_to_floats:
+                    try:
+                        curr_id = float(curr_id)
+                    except ValueError:
+                        raise ValueError(('You set ids_to_floats to true,' +
+                                          ' but ID {} could not be ' +
+                                          'converted to in ' +
+                                          '{}').format(curr_id,
+                                                       self.path_or_list))
+
+                yield curr_id, class_name, curr_info_dict
+
+                # Set default example ID for next instance, in case we see a
+                # line without an ID.
+                example_num += 1
+                curr_id = 'EXAMPLE_{}'.format(example_num)
+
+                if not self.quiet and example_num % 100 == 0:
+                    print(".", end="", file=sys.stderr)
         if not self.quiet:
-            print("Loading {}...".format(self.path_or_list), end="",
-                  file=sys.stderr)
-            sys.stderr.flush()
-        with open(self.path_or_list, 'rb') as megam_file:
-            example_num = 0
-            curr_id = 'EXAMPLE_0'
-            for line in megam_file:
-                # Process encoding
-                line = UnicodeDammit(line, ['utf-8',
-                                            'windows-1252']).unicode_markup
-                line = _sanitize_line(line.strip())
-                # Handle instance lines
-                if line.startswith('#'):
-                    curr_id = line[1:].strip()
-                elif line and line not in ['TRAIN', 'TEST', 'DEV']:
-                    split_line = line.split()
-                    num_cols = len(split_line)
-                    del line
-                    # Line is just a class label
-                    if num_cols == 1:
-                        class_name = _safe_float(split_line[0])
-                        field_pairs = []
-                    # Line has a class label and feature-value pairs
-                    elif num_cols % 2 == 1:
-                        class_name = _safe_float(split_line[0])
-                        field_pairs = split_line[1:]
-                    # Line just has feature-value pairs
-                    elif num_cols % 2 == 0:
-                        class_name = None
-                        field_pairs = split_line
-
-                    curr_info_dict = {}
-                    if len(field_pairs) > 0:
-                        # Get current instances feature-value pairs
-                        field_names = islice(field_pairs, 0, None, 2)
-                        # Convert values to floats, because otherwise
-                        # features'll be categorical
-                        field_values = (_safe_float(val) for val in
-                                        islice(field_pairs, 1, None, 2))
-
-                        # Add the feature-value pairs to dictionary
-                        curr_info_dict.update(zip(field_names, field_values))
-
-                        if len(curr_info_dict) != len(field_pairs) / 2:
-                            raise ValueError(('There are duplicate feature ' +
-                                              'names in {} for example ' +
-                                              '{}.').format(self.path_or_list,
-                                                            curr_id))
-
-                    if self.ids_to_floats:
-                        try:
-                            curr_id = float(curr_id)
-                        except ValueError:
-                            raise ValueError(('You set ids_to_floats to true,' +
-                                              ' but ID {} could not be ' +
-                                              'converted to in ' +
-                                              '{}').format(curr_id,
-                                                           self.path_or_list))
-
-                    yield curr_id, class_name, curr_info_dict
-
-                    # Set default example ID for next instance, in case we see a
-                    # line without an ID.
-                    example_num += 1
-                    curr_id = 'EXAMPLE_{}'.format(example_num)
-
-                    if not self.quiet and example_num % 100 == 0:
-                        print(".", end="", file=sys.stderr)
-            if not self.quiet:
-                print("done", file=sys.stderr)
+            print("done", file=sys.stderr)
 
 
-class _TSVDictIter(_DictIter):
+class _DelimitedDictIter(_DictIter):
+    '''
+    Iterator that yields tuples of IDs, classes, and dictionaries mapping from
+    features to values for each line in a specified delimited (CSV/TSV) file.
+
+    :param path_or_list: Path to .tsv file
+    :type path_or_list: str
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
+    :param label_col: Name of the column which contains the class labels.
+                      If no column with that name exists, or `None` is
+                      specified, the data is considered to be unlabelled.
+    :type label_col: str
+    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
+                          if we encounter an a non-numeric ID.
+    :type ids_to_floats: bool
+    :param dialect: The dialect of to pass on to the underlying CSV reader.
+    :type dialect: str
+    '''
+    def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
+                 label_col='y', dialect=None):
+        super(_DelimitedDictIter, self).__init__(path_or_list, quiet=quiet,
+                                                 ids_to_floats=ids_to_floats,
+                                                 label_col=label_col)
+        self.dialect = dialect
+
+    def _sub_iter(self, file_or_list):
+        reader = DictReader(file_or_list, dialect=self.dialect)
+        for example_num, row in enumerate(reader):
+            if self.label_col is not None and self.label_col in row:
+                class_name = _safe_float(row[self.label_col])
+                del row[self.label_col]
+            else:
+                class_name = None
+
+            if "id" not in row:
+                curr_id = "EXAMPLE_{}".format(example_num)
+            else:
+                curr_id = row["id"]
+                del row["id"]
+
+            # Convert features to floats and if a feature is 0
+            # then store the name of the feature so we can
+            # delete it later since we don't need to explicitly
+            # store zeros in the feature hash
+            columns_to_delete = []
+            if sys.version_info < (3, 0):
+                columns_to_convert_to_unicode = []
+            for fname, fval in iteritems(row):
+                fval_float = _safe_float(fval)
+                # we don't need to explicitly store zeros
+                if fval_float != 0.0:
+                    row[fname] = fval_float
+                    if sys.version_info < (3, 0):
+                        columns_to_convert_to_unicode.append(fname)
+                else:
+                    columns_to_delete.append(fname)
+
+            # remove the columns with zero values
+            for cname in columns_to_delete:
+                del row[cname]
+
+            # convert the names of all the other columns to
+            # unicode for python 2
+            if sys.version_info < (3, 0):
+                for cname in columns_to_convert_to_unicode:
+                    fval = row[cname]
+                    del row[cname]
+                    row[cname.decode('utf-8')] = fval
+
+            if self.ids_to_floats:
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true, but' +
+                                      ' ID {} could not be converted to ' +
+                                      'float').format(curr_id))
+            elif sys.version_info < (3, 0):
+                curr_id = curr_id.decode('utf-8')
+
+            yield curr_id, class_name, row
+
+            if not self.quiet and example_num % 100 == 0:
+                print(".", end="", file=sys.stderr)
+        if not self.quiet:
+            print("done", file=sys.stderr)
+
+
+class _CSVDictIter(_DelimitedDictIter):
+    '''
+    Iterator that yields tuples of IDs, classes, and dictionaries mapping from
+    features to values for each line in a specified CSV file.
+
+    :param path_or_list: Path to .tsv file
+    :type path_or_list: str
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
+    :param label_col: Name of the column which contains the class labels.
+                      If no column with that name exists, or `None` is
+                      specified, the data is considered to be unlabelled.
+    :type label_col: str
+    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
+                          if we encounter an a non-numeric ID.
+    :type ids_to_floats: bool
+    '''
+    def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
+                 label_col='y'):
+        super(_CSVDictIter, self).__init__(path_or_list, quiet=quiet,
+                                           ids_to_floats=ids_to_floats,
+                                           label_col=label_col,
+                                           dialect='excel')
+
+
+class _ARFFDictIter(_DelimitedDictIter):
+    '''
+    Iterator that yields tuples of IDs, classes, and dictionaries mapping from
+    features to values for each data line in a specified ARFF file.
+
+    :param path_or_list: Path to .tsv file
+    :type path_or_list: str
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
+    :param label_col: Name of the column which contains the class labels.
+                      If no column with that name exists, or `None` is
+                      specified, the data is considered to be unlabelled.
+    :type label_col: str
+    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
+                          if we encounter an a non-numeric ID.
+    :type ids_to_floats: bool
+    '''
+    def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
+                 label_col='y'):
+        super(_ARFFDictIter, self).__init__(path_or_list, quiet=quiet,
+                                            ids_to_floats=ids_to_floats,
+                                            label_col=label_col,
+                                            dialect='arff')
+
+    @staticmethod
+    def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
+        '''
+        A replacement for string.split that won't split delimiters enclosed in
+        quotes.
+        '''
+        if sys.version_info < (3, 0):
+            delimiter = delimiter.encode()
+            quote_char = quote_char.encode()
+            escape_char = escape_char.encode()
+        return next(csv.reader([s], delimiter=delimiter, quotechar=quote_char,
+                               escapechar=escape_char))
+
+    def _sub_iter(self, file_or_list):
+        field_names = []
+        # Process ARFF header
+        for line in file_or_list:
+            # Process encoding
+            decoded_line = UnicodeDammit(line, ['utf-8',
+                                                'windows-1252']).unicode_markup
+            line = decoded_line.strip()
+            # Skip empty lines
+            if line:
+                # Split the line using CSV reader because it can handle
+                # quoted delimiters.
+                split_header = self.split_with_quotes(line)
+                row_type = split_header[0].lower()
+                if row_type == '@attribute':
+                    # Add field name to list
+                    field_names.append(split_header[1])
+                # Stop at data
+                elif row_type == '@data':
+                    break
+                # Skip other types of rows (relations)
+
+        # Create header for CSV
+        if sys.version_info < (3, 0):
+            io_type = BytesIO
+        else:
+            io_type = StringIO
+        with io_type() as field_buffer:
+            csv.writer(field_buffer, dialect='arff').writerow(field_names)
+            field_str = field_buffer.getvalue()
+
+        # Set label_col to be the name of the last field, since that's standard
+        # for ARFF files
+        if self.label_col != field_names[-1]:
+            self.label_col = None
+
+        # Process data as CSV file
+        return super(_ARFFDictIter, self)._sub_iter(chain([field_str],
+                                                          file_or_list))
+
+
+class _TSVDictIter(_DelimitedDictIter):
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each line in a specified TSV file.
@@ -266,79 +485,20 @@ class _TSVDictIter(_DictIter):
     :type path_or_list: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
-    :param tsv_label: Name of the column which contains the class labels.
+    :param label_col: Name of the column which contains the class labels.
                       If no column with that name exists, or `None` is
                       specified, the data is considered to be unlabelled.
-    :type tsv_label: str
+    :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
-    def __iter__(self):
-        if not self.quiet:
-            print("Loading {}...".format(self.path_or_list), end="",
-                  file=sys.stderr)
-            sys.stderr.flush()
-        with open(self.path_or_list) as f:
-            reader = DictReader(f, dialect=excel_tab)
-            for example_num, row in enumerate(reader):
-                if self.tsv_label is not None and self.tsv_label in row:
-                    class_name = _safe_float(row[self.tsv_label])
-                    del row[self.tsv_label]
-                else:
-                    class_name = None
-
-                if "id" not in row:
-                    curr_id = "EXAMPLE_{}".format(example_num)
-                else:
-                    curr_id = row["id"]
-                    del row["id"]
-
-                # Convert features to floats and if a feature is 0
-                # then store the name of the feature so we can
-                # delete it later since we don't need to explicitly
-                # store zeros in the feature hash
-                columns_to_delete = []
-                if sys.version_info < (3, 0):
-                    columns_to_convert_to_unicode = []
-                for fname, fval in iteritems(row):
-                    fval_float = _safe_float(fval)
-                    # we don't need to explicitly store zeros
-                    if fval_float != 0.0:
-                        row[fname] = fval_float
-                        if sys.version_info < (3, 0):
-                            columns_to_convert_to_unicode.append(fname)
-                    else:
-                        columns_to_delete.append(fname)
-
-                # remove the columns with zero values
-                for cname in columns_to_delete:
-                    del row[cname]
-
-                # convert the names of all the other columns to
-                # unicode for python 2
-                if sys.version_info < (3, 0):
-                    for cname in columns_to_convert_to_unicode:
-                        fval = row[cname]
-                        del row[cname]
-                        row[cname.decode('utf-8')] = fval
-
-                if self.ids_to_floats:
-                    try:
-                        curr_id = float(curr_id)
-                    except ValueError:
-                        raise ValueError(('You set ids_to_floats to true, but' +
-                                          ' ID {} could not be converted to ' +
-                                          'float').format(curr_id))
-                elif sys.version_info < (3, 0):
-                    curr_id = curr_id.decode('utf-8')
-
-                yield curr_id, class_name, row
-
-                if not self.quiet and example_num % 100 == 0:
-                    print(".", end="", file=sys.stderr)
-            if not self.quiet:
-                print("done", file=sys.stderr)
+    def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
+                 label_col='y'):
+        super(_TSVDictIter, self).__init__(path_or_list, quiet=quiet,
+                                           ids_to_floats=ids_to_floats,
+                                           label_col=label_col,
+                                           dialect='excel-tab')
 
 
 def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
@@ -346,28 +506,48 @@ def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
     Little helper function to return an array of IDs for a given example
     generator (and whether or not the examples have labels).
     '''
-    example_iter = example_iter_type(path, ids_to_floats=ids_to_floats)
-    return np.array([curr_id for curr_id, _, _ in example_iter])
+    try:
+        example_iter = example_iter_type(path, ids_to_floats=ids_to_floats)
+        res_array = np.array([curr_id for curr_id, _, _ in example_iter])
+    except Exception as e:
+        # Setup logger
+        logger = log_to_stderr()
+        logger.exception('Failed to load IDs for {}.'.format(path))
+        raise e
+    return res_array
 
 
-def _classes_for_iter_type(example_iter_type, path, tsv_label):
+def _classes_for_iter_type(example_iter_type, path, label_col):
     '''
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
-    example_iter = example_iter_type(path, tsv_label=tsv_label)
-    return np.array([class_name for _, class_name, _ in example_iter])
+    try:
+        example_iter = example_iter_type(path, label_col=label_col)
+        res_array = np.array([class_name for _, class_name, _ in example_iter])
+    except Exception as e:
+        # Setup logger
+        logger = log_to_stderr()
+        logger.exception('Failed to load classes for {}.'.format(path))
+        raise e
+    return res_array
 
 
-def _features_for_iter_type(example_iter_type, path, quiet, sparse, tsv_label):
+def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
     have labels).
     '''
-    example_iter = example_iter_type(path, quiet=quiet, tsv_label=tsv_label)
-    feat_vectorizer = DictVectorizer(sparse=sparse)
-    feat_dict_generator = map(itemgetter(2), example_iter)
+    try:
+        example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
+        feat_vectorizer = DictVectorizer(sparse=sparse)
+        feat_dict_generator = map(itemgetter(2), example_iter)
+    except Exception as e:
+        # Setup logger
+        logger = log_to_stderr()
+        logger.exception('Failed to load features for {}.'.format(path))
+        raise e
     try:
         features = feat_vectorizer.fit_transform(feat_dict_generator)
     except ValueError:
@@ -375,21 +555,22 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, tsv_label):
     return features, feat_vectorizer
 
 
-def load_examples(path, quiet=False, sparse=True, tsv_label='y',
+def load_examples(path, quiet=False, sparse=True, label_col='y',
                   ids_to_floats=False):
     '''
-    Loads examples in the TSV, JSONLINES (a json dict per line), or MegaM
-    formats.
+    Loads examples in the ARFF, CSV/TSV, JSONLINES (a json dict per line), or
+    MegaM formats.
 
     If you would like to include example/instance IDs in your files, they must
     be specified in the following ways:
 
     * MegaM: As a comment line directly preceding the line with feature values.
-    * TSV: An "id" column.
+    * CSV/TSV/ARFF: An "id" column.
     * JSONLINES: An "id" key in each JSON dictionary.
 
-    Also, for TSV files, there must be a column with the name specified by
-    `tsv_label` if the data is labelled.
+    Also, for ARFF, CSV, and TSV files, there must be a column with the name
+    specified by `label_col` if the data is labelled. For ARFF files, this
+    column must also be the final one (as it is in Weka).
 
     :param path: The path to the file to load the examples from, or a list of
                  example dictionaries (like you would pass to
@@ -399,10 +580,10 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
     :type quiet: bool
     :param sparse: Whether or not to store the features in a numpy CSR matrix.
     :type sparse: bool
-    :param tsv_label: Name of the column which contains the class labels for
+    :param label_col: Name of the column which contains the class labels for
                       TSV files. If no column with that name exists, or `None`
                       is specified, the data is considered to be unlabelled.
-    :type tsv_label: str
+    :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
@@ -423,6 +604,10 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
         example_iter_type = _DummyDictIter
     elif path.endswith(".tsv"):
         example_iter_type = _TSVDictIter
+    elif path.endswith(".csv"):
+        example_iter_type = _CSVDictIter
+    elif path.endswith(".arff"):
+        example_iter_type = _ARFFDictIter
     elif path.endswith(".jsonlines"):
         example_iter_type = _JSONDictIter
     elif path.endswith(".megam"):
@@ -451,10 +636,10 @@ def load_examples(path, quiet=False, sparse=True, tsv_label='y',
         ids_future = executor.submit(_ids_for_iter_type, example_iter_type,
                                      path, ids_to_floats)
         classes_future = executor.submit(_classes_for_iter_type,
-                                         example_iter_type, path, tsv_label)
+                                         example_iter_type, path, label_col)
         features_future = executor.submit(_features_for_iter_type,
                                           example_iter_type, path, quiet,
-                                          sparse, tsv_label)
+                                          sparse, label_col)
 
         # Wait for processes/threads to complete and store results
         ids = ids_future.result()
@@ -508,12 +693,220 @@ def _safe_float(text):
         return float(text)
     except ValueError:
         return text.decode('utf-8') if sys.version_info < (3, 0) else text
+    except TypeError:
+        return 0.0
+
+
+def _examples_to_dictwriter_inputs(ids, classes, features, label_col):
+    '''
+    Takes lists of IDs, classes, and features and converts them to a set of
+    fields and a list of instance dictionaries to use as input for DictWriter.
+    '''
+    instances = []
+    fields = set()
+    # Iterate through examples
+    for ex_id, class_name, feature_dict in zip(ids, classes, features):
+        # Don't try to add class column if this is label-less data
+        if label_col not in feature_dict:
+            if class_name is not None:
+                feature_dict[label_col] = class_name
+        else:
+            raise ValueError(('Class column name "{0}" already used ' +
+                              'as feature name!').format(label_col))
+
+        if 'id' not in feature_dict:
+            if ex_id is not None:
+                feature_dict['id'] = ex_id
+        else:
+            raise ValueError('ID column name "id" already used as ' +
+                             'feature name!')
+        fields.update(feature_dict.keys())
+        instances.append(feature_dict)
+    return fields, instances
+
+
+def _write_arff_file(path, ids, classes, features, label_col,
+                     relation='skll_relation'):
+    '''
+    Writes a feature file in .csv or .tsv format with the given a list of IDs,
+    classes, and features.
+
+    :param path: A path to the feature file we would like to create.
+    :type path: str
+    :param ids: The IDs for each instance in the feature list/array. If None,
+                IDs will be automatically generated with the prefix specified by
+                `id_prefix` followed by the row number. If `id_prefix` is also
+                None, no IDs will be written to the file.
+    :type ids: list of str
+    :param classes: The class labels for each instance in the feature
+                    list/array. If None, no class labels will be added to output
+                    file.
+    :type classes: list of str
+    :param features: The features for each instance.
+    :type features: list of dict
+    :param label_col: The column which should contain the label.
+    :type label_col: str
+    :param relation: The name to give the relationship represented in this
+                     featureset.
+    :type relation: str
+    '''
+    # Convert IDs, classes, and features into format for DictWriter
+    fields, instances = _examples_to_dictwriter_inputs(ids, classes, features,
+                                                       label_col)
+    if label_col in fields:
+        fields.remove(label_col)
+
+    # Write file
+    if sys.version_info >= (3, 0):
+        file_mode = 'w'
+    else:
+        file_mode = 'wb'
+    with open(path, file_mode) as f:
+        # Add relation to header
+        print("@relation '{}'\n".format(relation), file=f)
+
+        # Loop through fields writing the header info for the ARFF file
+        sorted_fields = sorted(fields)
+        for field in sorted_fields:
+            # Check field type
+            numeric = True
+            for instance in instances:
+                if field in instance:
+                    numeric = not isinstance(instance[field], string_types)
+                    break
+            print("@attribute '{}'".format(field.replace('\\', '\\\\')
+                                                .replace("'", "\\'")),
+                  end=" ", file=f)
+            print("numeric" if numeric else "string", file=f)
+
+        # Print class label header if necessary
+        if set(classes) != {None}:
+            print("@attribute {} ".format(label_col) +
+                  "{" + ','.join(sorted(set(classes))) + "}",
+                  file=f)
+            sorted_fields.append(label_col)
+
+        # Create CSV writer to handle missing values for lines in data section
+        writer = csv.DictWriter(f, sorted_fields, restval=0, dialect='arff')
+
+        # Output instances
+        print("\n@data", file=f)
+        writer.writerows(instances)
+
+
+def _write_delimited_file(path, ids, classes, features, label_col, dialect):
+    '''
+    Writes a feature file in .csv or .tsv format with the given a list of IDs,
+    classes, and features.
+
+    :param path: A path to the feature file we would like to create.
+    :type path: str
+    :param ids: The IDs for each instance in the feature list/array. If None,
+                IDs will be automatically generated with the prefix specified by
+                `id_prefix` followed by the row number. If `id_prefix` is also
+                None, no IDs will be written to the file.
+    :type ids: list of str
+    :param classes: The class labels for each instance in the feature
+                    list/array. If None, no class labels will be added to output
+                    file.
+    :type classes: list of str
+    :param features: The features for each instance.
+    :type features: list of dict
+    :param label_col: The column which should contain the label.
+    :type label_col: str
+    :param dialect: The CSV dialect to write the output file in. Should be
+                    'excel-tab' for .tsv and 'excel' for .csv.
+    :type dialect: str
+    '''
+
+    # Convert IDs, classes, and features into format for DictWriter
+    fields, instances = _examples_to_dictwriter_inputs(ids, classes, features,
+                                                       label_col)
+
+    # Write file
+    if sys.version_info >= (3, 0):
+        file_mode = 'w'
+    else:
+        file_mode = 'wb'
+    with open(path, file_mode) as f:
+        # Create writer
+        writer = DictWriter(f, fieldnames=sorted(fields), restval=0,
+                            dialect=dialect)
+        # Output instance
+        writer.writeheader()
+        writer.writerows(instances)
+
+
+def _write_jsonlines_file(path, ids, classes, features):
+    '''
+    Writes a feature file in .jsonlines format with the given a list of IDs,
+    classes, and features.
+
+    :param path: A path to the feature file we would like to create.
+    :type path: str
+    :param ids: The IDs for each instance in the feature list/array. If None,
+                IDs will be automatically generated with the prefix specified by
+                `id_prefix` followed by the row number. If `id_prefix` is also
+                None, no IDs will be written to the file.
+    :type ids: list of str
+    :param classes: The class labels for each instance in the feature
+                    list/array. If None, no class labels will be added to output
+                    file.
+    :type classes: list of str
+    :param features: The features for each instance.
+    :type features: list of dict
+    '''
+    file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+    with open(path, file_mode) as f:
+        # Iterate through examples
+        for ex_id, class_name, feature_dict in zip(ids, classes, features):
+            # Don't try to add class column if this is label-less data
+            example_dict = {}
+            if class_name is not None:
+                example_dict['y'] = class_name
+            if ex_id is not None:
+                example_dict['id'] = ex_id
+            example_dict["x"] = feature_dict
+            print(json.dumps(example_dict, sort_keys=True), file=f)
+
+
+def _write_megam_file(path, ids, classes, features):
+    '''
+    Writes a feature file in .megam format with the given a list of IDs,
+    classes, and features.
+
+    :param path: A path to the feature file we would like to create.
+    :type path: str
+    :param ids: The IDs for each instance in the feature list/array. If None,
+                IDs will be automatically generated with the prefix specified by
+                `id_prefix` followed by the row number. If `id_prefix` is also
+                None, no IDs will be written to the file.
+    :type ids: list of str
+    :param classes: The class labels for each instance in the feature
+                    list/array. If None, no class labels will be added to output
+                    file.
+    :type classes: list of str
+    :param features: The features for each instance.
+    :type features: list of dict
+    '''
+    with open(path, 'w') as f:
+        # Iterate through examples
+        for ex_id, class_name, feature_dict in zip(ids, classes, features):
+            # Don't try to add class column if this is label-less data
+            if ex_id is not None:
+                print('# {}'.format(ex_id), file=f)
+            if class_name is not None:
+                print(class_name, end='\t', file=f)
+            print(' '.join(('{} {}'.format(field, value) for field, value in
+                            sorted(feature_dict.items()) if
+                            Decimal(value) != 0)),
+                  file=f)
 
 
 def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
-                       id_prefix='EXAMPLE_', tsv_label='y'):
+                       id_prefix='EXAMPLE_', label_col='y'):
     '''
-    Writes output a feature file in either .jsonlines, .megam, or .tsv formats
+    Writes a feature file in either .jsonlines, .megam, or .tsv formats
     with the given a list of IDs, classes, and features.
 
     :param path: A path to the feature file we would like to create. The suffix
@@ -538,10 +931,11 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     :param id_prefix: If we need to automatically generate IDs, put this prefix
                       infront of the numerical IDs.
     :type id_prefix: str
-    :param tsv_label: Name of the column which contains the class labels for
-                      TSV files. If no column with that name exists, or `None`
-                      is specified, the data is considered to be unlabelled.
-    :type tsv_label: str
+    :param label_col: Name of the column which contains the class labels for
+                      CSV/TSV files. If no column with that name exists, or
+                      `None` is specified, the data is considered to be
+                      unlabelled.
+    :type label_col: str
     '''
     # Setup logger
     logger = log_to_stderr()
@@ -573,71 +967,21 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
 
     # Create TSV file if asked
     if path.endswith(".tsv"):
-        if sys.version_info >= (3, 0):
-            file_mode = 'w'
-            delimiter = '\t'
-        else:
-            file_mode = 'wb'
-            delimiter = b'\t'
-        with open(path, file_mode) as f:
-            instances = []
-            fields = set()
-            # Iterate through examples
-            for ex_id, class_name, feature_dict in zip(ids, classes, features):
-                # Don't try to add class column if this is label-less data
-                if tsv_label not in feature_dict:
-                    if class_name is not None:
-                        feature_dict[tsv_label] = class_name
-                else:
-                    raise ValueError(('Class column name "{0}" already used ' +
-                                      'as feature name!').format(tsv_label))
-
-                if 'id' not in feature_dict:
-                    if ex_id is not None:
-                        feature_dict['id'] = ex_id
-                else:
-                    raise ValueError('ID column name "id" already used as ' +
-                                     'feature name!')
-                fields.update(feature_dict.keys())
-                instances.append(feature_dict)
-
-            # Create writer
-            writer = DictWriter(f, fieldnames=sorted(fields),
-                                delimiter=delimiter, restval=0)
-            # Output instance
-            writer.writeheader()
-            writer.writerows(instances)
-
+        _write_delimited_file(path, ids, classes, features, label_col,
+                              'excel-tab')
+    # Create CSV file if asked
+    elif path.endswith(".csv"):
+        _write_delimited_file(path, ids, classes, features, label_col,
+                              'excel')
     # Create .jsonlines file if asked
     elif path.endswith(".jsonlines"):
-        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(path, file_mode) as f:
-            # Iterate through examples
-            for ex_id, class_name, feature_dict in zip(ids, classes, features):
-                # Don't try to add class column if this is label-less data
-                example_dict = {}
-                if class_name is not None:
-                    example_dict['y'] = class_name
-                if ex_id is not None:
-                    example_dict['id'] = ex_id
-                example_dict["x"] = feature_dict
-                print(json.dumps(example_dict, sort_keys=True), file=f)
-
-    # Create .jsonlines file if asked
+        _write_jsonlines_file(path, ids, classes, features)
+    # Create .megam file if asked
     elif path.endswith(".megam"):
-        with open(path, 'w') as f:
-            # Iterate through examples
-            for ex_id, class_name, feature_dict in zip(ids, classes, features):
-                # Don't try to add class column if this is label-less data
-                if ex_id is not None:
-                    print('# {}'.format(ex_id), file=f)
-                if class_name is not None:
-                    print(class_name, end='\t', file=f)
-                print(' '.join(('{} {}'.format(field, value) for field, value in
-                                sorted(feature_dict.items()) if
-                                Decimal(value) != 0)),
-                      file=f)
-
+        _write_megam_file(path, ids, classes, features)
+    # Create ARFF file if asked
+    elif path.endswith(".arff"):
+        _write_arff_file(path, ids, classes, features, label_col)
     # Invalid file suffix, raise error
     else:
         raise ValueError('Output file must be in either .tsv, .megam, or ' +

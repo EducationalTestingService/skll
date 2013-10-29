@@ -759,10 +759,10 @@ def check_load_featureset(suffix, numeric_ids):
 
 def test_load_featureset():
     # Test merging with numeric IDs
-    for suffix in ['.jsonlines', '.megam', '.tsv']:
+    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, True
 
-    for suffix in ['.jsonlines', '.megam', '.tsv']:
+    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, False
 
 
@@ -896,5 +896,5 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.megam', '.tsv'], 2):
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.megam', '.tsv', '.csv', '.arff'], 2):
         yield check_convert_featureset, from_suffix, to_suffix
