@@ -994,7 +994,6 @@ def _run_experiment_without_features(arg_tuple):
                       - config: A parsed configuration file
                       - local: Are we running things locally or on the grid?
                       - queue: Grid Map queue to use for scheduling
-                      - cfg_path: Path to main configuration file
                       - machines: List of machines to use for scheduling jobs
                                   with Grid Map
                       - overwrite: Should we overwrite existing models?
@@ -1008,7 +1007,7 @@ def _run_experiment_without_features(arg_tuple):
 
     '''
     (excluded_features, features, featureset_name, config, local, queue,
-     cfg_path, machines, overwrite, quiet) = arg_tuple
+     machines, overwrite, quiet) = arg_tuple
 
     featureset = [[x for x in features if x not in excluded_features]]
 
