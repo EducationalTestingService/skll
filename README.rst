@@ -64,6 +64,25 @@ Requirements
 Changelog
 ~~~~~~~~~
 
+-  v0.19.0
+
+   +  Added support for running ablation experiments with *all* combinations of
+      features (instead of just holding out one feature at a time) via
+      ``run_experiment --ablation_all``. As a result, we've also changed the
+      names of the ``ablated_feature`` column in result summary files to
+      ``ablated_features``.
+   +  Added ARFF and CSV file support across the board. As a result, all
+      instances of the parameter ``tsv_label`` have now been replaced with
+      ``label_col``.
+   +  Fixed issue #71.
+   +  Fixed process leak that was causing sporadic issues.
+   +  Removed ``arff_to_megam``, ``csv_to_megam``, ``megan_to_arff``, and
+      ``megam_to_csv`` because they are all superseded by ARFF and CSV support
+      in ``skll_convert``.
+   +  Switched to using Anaconda for installing Atlas.
+   +  Switched back to `skll.readthedocs.org <http://skll.readthedocs.org>`__
+      URLs for documentation, now that rtfd/readthedocs.org#456 has been fixed.
+
 -  v0.18.1
 
    +  Updated `generate_predictions` to use latest API.
