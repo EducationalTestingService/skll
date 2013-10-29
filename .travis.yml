@@ -19,7 +19,6 @@ before_install:
   - export GRID_MAP_REDIS_PORT=12345
   - sudo mkdir /scratch/
   - sudo chmod 777 /scratch/
-  - sudo apt-get update -qq
   - travis/miniconda.sh -b
   - export PATH=/home/travis/anaconda/bin:$PATH
 install:
