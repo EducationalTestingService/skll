@@ -35,8 +35,9 @@ Prints out the weights of a given trained model.
 
 skll_convert
 ------------
-Convert between .jsonlines, .megam, and .tsv formats. In the future this will
-be expanded to replace other conversions scripts.
+Convert between .arff, .csv., .jsonlines, .megam, and .tsv formats. In the 
+future this will be expanded to add support for libsvm files as well to
+eliminate the need for a separate ``megam_to_libsvm`` script.
 
 summarize_results
 -----------------
