@@ -95,6 +95,12 @@ def main():
                               (with or without the label column), \
                               with the appropriate suffix.',
                         nargs='+')
+    parser.add_argument('-l', '--label_col',
+                        help='Name of the column which contains the class \
+                              labels in ARFF, CSV, or TSV files. For ARFF \
+                              files, this must be the final column to count as\
+                              the label.',
+                        default='y')
     parser.add_argument('-p', '--positive_class',
                         help="If the model is only being used to predict the \
                               probability of a particular class, this \
@@ -112,10 +118,6 @@ def main():
                               if it meets/exceeds the given threshold and 0 \
                               otherwise.",
                         type=float)
-    parser.add_argument('--tsv_label',
-                        help='Name of the column which contains \
-                              the class labels in TSV files.',
-                        default='y')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
@@ -127,7 +129,7 @@ def main():
 
     for input_file in args.input_file:
         data = load_examples(input_file, quiet=args.quiet,
-                             tsv_label=args.tsv_label)
+                             label_col=args.label_col)
         for pred in predictor.predict(data):
             print(pred)
 

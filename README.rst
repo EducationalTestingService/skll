@@ -29,7 +29,7 @@ Command-line Interface
 ``run_experiment`` is a command-line utility for running a series of learners on
 datasets specified in a configuration file. For more information about using
 run_experiment (including a quick example), go
-`here <https://skll2.readthedocs.org/en/latest/run_experiment.html>`__.
+`here <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
 
 Python API
 ~~~~~~~~~~
@@ -39,7 +39,7 @@ use our simple Python API. The main way you'll want to use the API is through
 the ``load_examples`` function and the ``Learner`` class. For more details on
 how to simply train, test, cross-validate, and run grid search on a variety of
 scikit-learn models see
-`the documentation <https://skll2.readthedocs.org/en/latest/index.html>`__.
+`the documentation <https://skll.readthedocs.org/en/latest/index.html>`__.
 
 A Note on Pronunciation
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,6 +63,25 @@ Requirements
 
 Changelog
 ~~~~~~~~~
+
+-  v0.19.0
+
+   +  Added support for running ablation experiments with *all* combinations of
+      features (instead of just holding out one feature at a time) via
+      ``run_experiment --ablation_all``. As a result, we've also changed the
+      names of the ``ablated_feature`` column in result summary files to
+      ``ablated_features``.
+   +  Added ARFF and CSV file support across the board. As a result, all
+      instances of the parameter ``tsv_label`` have now been replaced with
+      ``label_col``.
+   +  Fixed issue #71.
+   +  Fixed process leak that was causing sporadic issues.
+   +  Removed ``arff_to_megam``, ``csv_to_megam``, ``megan_to_arff``, and
+      ``megam_to_csv`` because they are all superseded by ARFF and CSV support
+      in ``skll_convert``.
+   +  Switched to using Anaconda for installing Atlas.
+   +  Switched back to `skll.readthedocs.org <http://skll.readthedocs.org>`__
+      URLs for documentation, now that rtfd/readthedocs.org#456 has been fixed.
 
 -  v0.18.1
 
