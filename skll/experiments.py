@@ -371,7 +371,8 @@ def _classify_featureset(args):
     ids_to_floats = args.pop("ids_to_floats")
     quiet = args.pop('quiet', False)
     if args:
-        raise ValueError("Extra arguments passed: {}".format(args.keys()))
+        raise ValueError(("Extra arguments passed to _classify_featureset: " +
+                          "{}").format(args.keys()))
 
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
@@ -949,9 +950,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                            temp_dir=logpath)
             else:
                 job_results = process_jobs(jobs, white_list=hosts)
-        except JobException as e:
-            logger.error('gridmap claims that one of your jobs failed, but ' +
-                         'this is not always true. \n{}'.format(e))
+        except JobException:
+            logger.exception('gridmap claims that one of your jobs failed, ' +
+                             'but this is not always true.')
         else:
             _check_job_results(job_results)
 
@@ -993,7 +994,6 @@ def _run_experiment_without_features(arg_tuple):
                       - config: A parsed configuration file
                       - local: Are we running things locally or on the grid?
                       - queue: Grid Map queue to use for scheduling
-                      - cfg_path: Path to main configuration file
                       - machines: List of machines to use for scheduling jobs
                                   with Grid Map
                       - overwrite: Should we overwrite existing models?
@@ -1007,7 +1007,7 @@ def _run_experiment_without_features(arg_tuple):
 
     '''
     (excluded_features, features, featureset_name, config, local, queue,
-     cfg_path, machines, overwrite, quiet) = arg_tuple
+     machines, overwrite, quiet) = arg_tuple
 
     featureset = [[x for x in features if x not in excluded_features]]
 
@@ -1089,16 +1089,16 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
             for excluded_features in combinations(features, i):
                 arg_tuples.append((excluded_features, features,
                                    featureset_name, config, local, queue,
-                                   config_path, hosts, overwrite, quiet))
+                                   hosts, overwrite, quiet))
     # Otherwise, just make a list of arguments where each individual feature
     # will be excluded.
     else:
         arg_tuples = [([excluded_feature], features, featureset_name, config,
-                       local, queue, config_path, hosts, overwrite, quiet) for
+                       local, queue, hosts, overwrite, quiet) for
                       excluded_feature in features]
     # Add None to arg_tuples so that we also run things with all features
     arg_tuples.append(([], features, featureset_name, config, local, queue,
-                       config_path, hosts, overwrite, quiet))
+                       hosts, overwrite, quiet))
 
     # for each set of features we're excluding, make a copy of the config file
     # with all but those features, and run the jobs.
