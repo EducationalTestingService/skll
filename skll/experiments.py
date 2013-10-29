@@ -35,7 +35,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from io import open
-from itertools import chain
+from itertools import chain, combinations
 from multiprocessing import log_to_stderr, Pool
 
 import configparser  # Backported version from Python 3
@@ -128,10 +128,11 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
                     all_features.update(json.loads(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
 
+    # Build and write header
     header = set(learner_result_dicts[0].keys()) - {'result_table',
                                                     'descriptive'}
     if ablation:
-        header.add('ablated_feature')
+        header.add('ablated_features')
     # Backward compatibility for older JSON results files.
     if 'comparative' in header:
         header.remove('comparative')
@@ -141,15 +142,13 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
                             dialect=csv.excel_tab)
     writer.writeheader()
 
-    # note that at this point each learner dict contains json dumped objects
-    # which look really strange when written to a TSV. We want to convert
-    # them to more readable string versions.
+    # Build "ablated_features" list and fix some backward compatible things
     for lrd in learner_result_dicts:
         if ablation:
-            ablated_feature = all_features.difference(json.loads(lrd['featureset']))
-            lrd['ablated_feature'] = ''
-            if ablated_feature:
-                lrd['ablated_feature'] = list(ablated_feature)[0]
+            ablated_features = all_features.difference(json.loads(lrd['featureset']))
+            lrd['ablated_features'] = ''
+            if ablated_features:
+                lrd['ablated_features'] = json.dumps(sorted(ablated_features))
         # Backward compatibility for older JSON results files.
         if 'comparative' in lrd:
             lrd['pearson'] = lrd['comparative']['pearson']
@@ -232,8 +231,7 @@ def _parse_config_file(config_path):
                                         'grid_search_jobs': '0',
                                         'cv_folds_location': '',
                                         'suffix': '',
-                                        'classifiers': '',
-                                        'tsv_label': 'y',
+                                        'label_col': 'y',
                                         'ids_to_floats': 'False'})
 
     if not os.path.exists(config_path):
@@ -244,7 +242,7 @@ def _parse_config_file(config_path):
     return config
 
 
-def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
+def _load_featureset(dirpath, featureset, suffix, label_col='y',
                      ids_to_floats=False, quiet=False):
     '''
     loads a list of feature files and merges them.
@@ -253,7 +251,7 @@ def _load_featureset(dirpath, featureset, suffix, tsv_label='y',
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
-    example_tuples = [load_examples(file_name, tsv_label=tsv_label,
+    example_tuples = [load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet)
                       for file_name in file_names]
 
@@ -369,11 +367,12 @@ def _classify_featureset(args):
     min_feature_count = args.pop("min_feature_count")
     grid_search_jobs = args.pop("grid_search_jobs")
     cv_folds = args.pop("cv_folds")
-    tsv_label = args.pop("tsv_label")
+    label_col = args.pop("label_col")
     ids_to_floats = args.pop("ids_to_floats")
     quiet = args.pop('quiet', False)
     if args:
-        raise ValueError("Extra arguments passed: {}".format(args.keys()))
+        raise ValueError(("Extra arguments passed to _classify_featureset: " +
+                          "{}").format(args.keys()))
 
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
@@ -402,12 +401,12 @@ def _classify_featureset(args):
 
         # load the training and test examples
         train_examples = _load_featureset(train_path, featureset, suffix,
-                                          tsv_label=tsv_label,
+                                          label_col=label_col,
                                           ids_to_floats=ids_to_floats,
                                           quiet=quiet)
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
-                                             tsv_label=tsv_label,
+                                             label_col=label_col,
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet)
 
@@ -777,7 +776,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     train_path = config.get("Input", "train_location").rstrip('/')
     test_path = config.get("Input", "test_location").rstrip('/')
     suffix = config.get("Input", "suffix")
-    tsv_label = config.get("Input", "tsv_label")
+    # Support tsv_label for old files
+    if config.has_option("Input", "tsv_label"):
+        label_col = config.get("Input", "tsv_label")
+    else:
+        label_col = config.get("Input", "label_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
     # get the cv folds file and make a dictionary from it
@@ -923,7 +926,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["min_feature_count"] = min_feature_count
             job_args["grid_search_jobs"] = grid_search_jobs
             job_args["cv_folds"] = cv_folds
-            job_args["tsv_label"] = tsv_label
+            job_args["label_col"] = label_col
             job_args["ids_to_floats"] = ids_to_floats
             job_args["quiet"] = quiet
 
@@ -947,9 +950,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                            temp_dir=logpath)
             else:
                 job_results = process_jobs(jobs, white_list=hosts)
-        except JobException as e:
-            logger.error('gridmap claims that one of your jobs failed, but ' +
-                         'this is not always true. \n{}'.format(e))
+        except JobException:
+            logger.exception('gridmap claims that one of your jobs failed, ' +
+                             'but this is not always true.')
         else:
             _check_job_results(job_results)
 
@@ -976,22 +979,21 @@ def _check_job_results(job_results):
                          '{}'.format(result_dicts))
 
 
-def _run_experiment_without_feature(arg_tuple):
+def _run_experiment_without_features(arg_tuple):
     '''
     Creates a new configuration file with a given feature
     removed and runs that experiment.
 
     :param arg_tuple: A tuple of the actual arguments for this function:
-                      feature_type, features, config, local, queue
+                      excluded_features, features, config, local, queue
                       cfg_path, and machines.
 
-                      - feature_type: The name of the feature set to exclude
+                      - excluded_features: The name of the feature set to exclude
                       - features: A list of all features in config
                       - featureset_name: The original featureset name
                       - config: A parsed configuration file
                       - local: Are we running things locally or on the grid?
                       - queue: Grid Map queue to use for scheduling
-                      - cfg_path: Path to main configuration file
                       - machines: List of machines to use for scheduling jobs
                                   with Grid Map
                       - overwrite: Should we overwrite existing models?
@@ -1004,14 +1006,14 @@ def _run_experiment_without_feature(arg_tuple):
     :rtype: list of str
 
     '''
-    (feature_type, features, featureset_name, config, local, queue,
-     cfg_path, machines, overwrite, quiet) = arg_tuple
+    (excluded_features, features, featureset_name, config, local, queue,
+     machines, overwrite, quiet) = arg_tuple
 
-    featureset = [[x for x in features if x != feature_type]]
+    featureset = [[x for x in features if x not in excluded_features]]
 
-    if feature_type:
+    if excluded_features:
         featureset_name = "{}_minus_{}".format(featureset_name,
-                                               feature_type)
+                                               '_'.join(excluded_features))
     else:
         featureset_name = "{}_all".format(featureset_name)
 
@@ -1036,7 +1038,7 @@ def _run_experiment_without_feature(arg_tuple):
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
-                 hosts=None, quiet=False):
+                 hosts=None, quiet=False, all_combos=False):
     '''
     Takes a configuration file and runs repeated experiments where each
     feature set has been removed from the configuration.
@@ -1055,6 +1057,10 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     :type hosts: list of str
     :param quiet: Suppress printing of "Loading..." messages.
     :type quiet: bool
+    :param all_combos: By default we only exclude one feature from set, but if
+                       `all_combos` is `True`, we do a true ablation study with
+                       all feature combinations.
+    :type all_combos: bool
     '''
     # Read configuration
     config = _parse_config_file(config_path)
@@ -1070,38 +1076,53 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
         raise ValueError("More than one feature set or list of names given.")
 
     # make a list of features rather than a list of lists
-    features = featuresets[0]
+    features = sorted(featuresets[0])
     featureset_name = 'ablation'
     if featureset_names:
         featureset_name = featureset_names[0]
 
-    # for each feature file, make a copy of the config file
-    # with all but that feature, and run the jobs.
-    arg_tuples = ((feature_type, features, featureset_name, config, local,
-                   queue, config_path, hosts, overwrite, quiet)
-                  for feature_type in features + [None])
+    # if we're doing all combinations of features, we need a list of arguments
+    # for run_without_features that includes all combinations to exclude.
+    if all_combos:
+        arg_tuples = []
+        for i in range(1, len(features)):
+            for excluded_features in combinations(features, i):
+                arg_tuples.append((excluded_features, features,
+                                   featureset_name, config, local, queue,
+                                   hosts, overwrite, quiet))
+    # Otherwise, just make a list of arguments where each individual feature
+    # will be excluded.
+    else:
+        arg_tuples = [([excluded_feature], features, featureset_name, config,
+                       local, queue, hosts, overwrite, quiet) for
+                      excluded_feature in features]
+    # Add None to arg_tuples so that we also run things with all features
+    arg_tuples.append(([], features, featureset_name, config, local, queue,
+                       hosts, overwrite, quiet))
 
+    # for each set of features we're excluding, make a copy of the config file
+    # with all but those features, and run the jobs.
     result_json_paths = []
     if not local and not _HAVE_GRIDMAP:
         local = True
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
                        'mode.  To run things on a DRMAA-compatible ' +
                        'cluster, install gridmap>=0.10.1 via pip.')
-
     if not local:
         pool = Pool(processes=len(features) + 1)
         try:
-            result_json_paths.extend(chain(*pool.map(_run_experiment_without_feature,
+            result_json_paths.extend(chain(*pool.map(_run_experiment_without_features,
                                                      list(arg_tuples))))
+            del pool
         # If run_experiment is run via a subprocess (like nose does),
         # this will fail, so just do things serially then.
         except AssertionError:
             del pool
             for arg_tuple in arg_tuples:
-                result_json_paths.extend(_run_experiment_without_feature(arg_tuple))
+                result_json_paths.extend(_run_experiment_without_features(arg_tuple))
     else:
         for arg_tuple in arg_tuples:
-            result_json_paths.extend(_run_experiment_without_feature(arg_tuple))
+            result_json_paths.extend(_run_experiment_without_features(arg_tuple))
 
     task = config.get("General", "task")
     experiment_name = config.get("General", "experiment_name")

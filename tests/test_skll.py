@@ -492,7 +492,7 @@ def test_ablation_cv():
     run_ablation(config_path, quiet=True)
 
     # read in the summary file and make sure it has
-    # 6 ablated featuresets * 11 folds * 2 learners = 132 lines
+    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132 lines
     with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
@@ -501,6 +501,31 @@ def test_ablation_cv():
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
     num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
     assert_equal(num_result_files, 12)
+
+    # Remove them so we can create new ones for the next test
+    glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results'))
+
+def test_ablation_cv_all_combos():
+    '''
+    Test to validate whether ablation works with cross-validate
+    '''
+    make_ablation_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_ablation(config_path, quiet=True, all_combos=True)
+
+    # read in the summary file and make sure it has
+    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682 lines
+    with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        all_rows = list(reader)
+        assert_equal(len(all_rows), 682)
+
+    # make sure there are 31 ablated featuresets * 2 learners = 62 results files
+    num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*results')))
+    assert_equal(num_result_files, 62)
 
 
 def make_scaling_data():
@@ -734,10 +759,10 @@ def check_load_featureset(suffix, numeric_ids):
 
 def test_load_featureset():
     # Test merging with numeric IDs
-    for suffix in ['.jsonlines', '.megam', '.tsv']:
+    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, True
 
-    for suffix in ['.jsonlines', '.megam', '.tsv']:
+    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, False
 
 
@@ -871,5 +896,5 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.megam', '.tsv'], 2):
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.megam', '.tsv', '.csv', '.arff'], 2):
         yield check_convert_featureset, from_suffix, to_suffix
