@@ -24,14 +24,41 @@ Feature file formats
 --------------------
 The following feature file formats are supported:
 
-    **jsonlines**
-        A twist on the `JSON <http://www.json.org/>`_ format where every line is a
-        JSON dictionary (the entire contents of a normal JSON file). Each dictionary
-        is expected to contain the following keys:
+    **arff**
+        The same file format used by `Weka <http://www.cs.waikato.ac.nz/ml/weka/>`_
+        with the following added restrictions:
+
+        *   Only simple numeric, string, and nomimal values are supported.
+        *   Nominal values are converted to strings.
+        *   If there is an attribute called "id" present, this will be treated
+            as the ID for each row.
+        *   If the data is labelled, there must be an attribute with the name
+            specified by `label_col` in the `Input` section of the configuartion
+            file you create for your experiment. This defaults to 'y'. This must
+            also be the final attribute listed (like in Weka).
+
+    **csv**/**tsv**
+        A simple comma or tab-delimited format with the following restrictions:
+
+        *   If the data is labelled, there must be a column with the name
+            specified by `label_col` in the `Input` section of the configuartion
+            file you create for your experiment. This defaults to 'y'.
+        *   If there is a column called "id" present, this will be treated as
+            the ID for each row.
+        *   All other columns contain feature values, and every feature value
+            must be specified (making this a poor choice for sparse data).
+
+    **jsonlines** *(Recommended)*
+        A twist on the `JSON <http://www.json.org/>`_ format where every line is
+        a JSON dictionary (the entire contents of a normal JSON file). Each
+        dictionary is expected to contain the following keys:
 
         *   *y*: The class label.
         *   *x*: A dictionary of feature values.
         *   *id*: An optional instance ID.
+
+        This is the preferred file format for SKLL, as it is sparse and can be
+        slightly faster to load than other formats.
 
     **megam**
         An expanded form of the input format for the
@@ -45,23 +72,14 @@ The following feature file formats are supported:
             # Instance2
             CLASS2    F1 7.524
 
-        where the comments before each instance are optional IDs for the following
-        line, class names are separated from feature-value pairs with a tab, and
-        feature-value pairs are separated by spaces. Any omitted features for a
-        given instance are assumed to be zero, so this format is handy when dealing
-        with sparse data. We also include several utility scripts for converting
-        to/from this MegaM format and for adding/removing features from the files.
+        where the comments before each instance are optional IDs for the
+        following line, class names are separated from feature-value pairs with
+        a tab, and feature-value pairs are separated by spaces. Any omitted
+        features for a given instance are assumed to be zero, so this format is
+        handy when dealing with sparse data. We also include several utility
+        scripts for converting to/from this MegaM format and for adding/removing
+        features from the files.
 
-    **tsv**
-        A simple tab-delimited format with the following restrictions:
-
-        *   If the data is labelled, there must be a column with the name
-            specified by `tsv_label` in the `Input` section of the configuartion
-            file you create for your experiment. This defaults to 'y'.
-        *   If there is a column called "id" present, this will be treated as the
-            ID for each row.
-        *   All other columns contain feature values, and every feature value must
-            be specified (making this a poor choice for sparse data).
 
 Creating configuration files
 ----------------------------
@@ -89,7 +107,8 @@ settings for each section is provided below, but to summarize:
 *   A list of classifiers/regressors to try on your feature files is
     required.
 
-An example configuration file is available `here <https://github.com/EducationalTestingService/skll/blob/master/examples/example.cfg>`_.
+An example configuration file is available
+`here <https://github.com/EducationalTestingService/skll/blob/master/examples/example.cfg>`_.
 
 General
 ^^^^^^^
@@ -115,10 +134,12 @@ Input
         Path to directory containing test data files. There must be a file
         for each featureset.
 
-    **tsv_label** *(Optional)*
-        If you're using TSV files, the class labels for each instance are
-        assumed to be in a column with this name. If no column with this name is
-        found, the data is assumed to be unlabelled. Defaults to 'y'.
+    **label_col** *(Optional)*
+        If you're using ARFF, CSV, or TSV files, the class labels for each
+        instance are assumed to be in a column with this name. If no column with
+        this name is found, the data is assumed to be unlabelled. Defaults to
+        'y'. For ARFF files only, this must also be the final column to count as
+        the label (for compatibility with Weka).
 
     **ids_to_floats** *(Optional)*
         If you have a dataset with lots of examples, and your input files have
