@@ -208,7 +208,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         print('', file=output_file)
 
 
-def _parse_config_file(config_path, local):
+def _parse_config_file(config_path):
     '''
     Parses a SKLL experiment configuration file with the given path.
     '''
@@ -237,13 +237,6 @@ def _parse_config_file(config_path, local):
         raise IOError(errno.ENOENT, "The config file doesn't exist.",
                       config_path)
     config.read(config_path)
-
-    if not local and not _HAVE_GRIDMAP:
-        local = True
-        logger = log_to_stderr
-        logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
-                       'mode.  To run things on a DRMAA-compatible ' +
-                       'cluster, install gridmap>=0.10.1 via pip.')
 
     ###########################
     # extract parameters from the config file
@@ -867,14 +860,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      results_path, pos_label_str, feature_scaling, min_feature_count,
      grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
      featureset_names, learners, prediction_dir, log_path, train_path,
-     test_path, ids_to_floats) = _parse_config_file(config_file, local)
+     test_path, ids_to_floats) = _parse_config_file(config_file)
 
-    # the list of jobs submitted (if running on grid)
-    if not local:
-        jobs = []
-
-    # the list to hold the paths to all the result json files
-    result_json_paths = []
+    # Check if we have gridmap
+    if not local and not _HAVE_GRIDMAP:
+        local = True
+        logger = log_to_stderr
+        logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
+                       'mode.  To run things on a DRMAA-compatible ' +
+                       'cluster, install gridmap>=0.10.1 via pip.')
 
     # if performing ablation, expand featuresets to include combinations of
     # features within those sets
@@ -911,7 +905,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         raise ValueError('Value for "ablation" argument must be either ' +
                          'positive integer or None.')
 
-    # For each feature set
+
+    # the list of jobs submitted (if running on grid)
+    if not local:
+        jobs = []
+
+    # the list to hold the paths to all the result json files
+    result_json_paths = []
+
+    # Run each featureset-learner combination
     for featureset, featureset_name in zip(featuresets,
                                            featureset_names):
         # Load the feature sets

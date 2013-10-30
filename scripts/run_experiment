@@ -32,7 +32,6 @@ from __future__ import print_function, unicode_literals
 import argparse
 import logging
 from functools import partial
-from multiprocessing import Process
 
 from skll.experiments import run_ablation, run_configuration
 from skll.version import __version__
@@ -99,20 +98,9 @@ def main():
     else:
         partial_runner = partial(run_configuration, **common_args)
 
-    # Are we submitting things to the grid? If so, do that in parallel.
-    if not args.local:
-        processes = []
-        for config_file in args.config_file:
-            p = Process(target=partial_runner, args=(config_file,))
-            p.daemon = False
-            p.start()
-            processes.append(p)
-        for p in processes:
-            p.join()
-    # Otherwise run configurations sequentially.
-    else:
-        for config_file in args.config_file:
-            partial_runner(config_file)
+    # Run each config file sequentially
+    for config_file in args.config_file:
+        partial_runner(config_file)
 
 
 if __name__ == '__main__':
