@@ -208,9 +208,10 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         print('', file=output_file)
 
 
-def _parse_config_file(config_path):
+def _setup_config_parser(config_path):
     '''
-    Parses a SKLL experiment configuration file with the given path.
+    Returns a config parser at a given path. Only implemented as a separate
+    function to simplify testing.
     '''
     # initialize config parser
     config = configparser.ConfigParser({'test_location': '',
@@ -237,6 +238,14 @@ def _parse_config_file(config_path):
         raise IOError(errno.ENOENT, "The config file doesn't exist.",
                       config_path)
     config.read(config_path)
+    return config
+
+
+def _parse_config_file(config_path):
+    '''
+    Parses a SKLL experiment configuration file with the given path.
+    '''
+    config = _setup_config_parser(config_path)
 
     ###########################
     # extract parameters from the config file
@@ -865,7 +874,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
         local = True
-        logger = log_to_stderr
+        logger = log_to_stderr()
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
                        'mode.  To run things on a DRMAA-compatible ' +
                        'cluster, install gridmap>=0.10.1 via pip.')
