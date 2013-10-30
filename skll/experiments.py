@@ -499,21 +499,23 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
 
 def _classify_featureset(args):
     ''' Classification job to be submitted to grid '''
-
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
     # required keyword arguments.)
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
-    jobname = args.pop("jobname")
+    job_name = args.pop("job_name")
     featureset = args.pop("featureset")
     learner_name = args.pop("learner_name")
+    train_path = args.pop("train_path")
+    test_path = args.pop("test_path")
     train_set_name = args.pop("train_set_name")
     test_set_name = args.pop("test_set_name")
     model_path = args.pop("model_path")
     prediction_prefix = args.pop("prediction_prefix")
     grid_search = args.pop("grid_search")
     grid_objective = args.pop("grid_objective")
+    suffix = args.pop("suffix")
     log_path = args.pop("log_path")
     probability = args.pop("probability")
     results_path = args.pop("results_path")
@@ -525,8 +527,9 @@ def _classify_featureset(args):
     min_feature_count = args.pop("min_feature_count")
     grid_search_jobs = args.pop("grid_search_jobs")
     cv_folds = args.pop("cv_folds")
-    train_examples = args.pop("train_examples")
-    test_examples = args.pop("test_examples")
+    label_col = args.pop("label_col")
+    ids_to_floats = args.pop("ids_to_floats")
+    quiet = args.pop('quiet', False)
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: " +
                           "{}").format(args.keys()))
@@ -556,6 +559,17 @@ def _classify_featureset(args):
                                                 featureset),
                   file=log_file)
 
+        # load the training and test examples
+        train_examples = _load_featureset(train_path, featureset, suffix,
+                                          label_col=label_col,
+                                          ids_to_floats=ids_to_floats,
+                                          quiet=quiet)
+        if task == 'evaluate' or task == 'predict':
+            test_examples = _load_featureset(test_path, featureset, suffix,
+                                             label_col=label_col,
+                                             ids_to_floats=ids_to_floats,
+                                             quiet=quiet)
+
         # initialize a classifer object
         learner = Learner(learner_name,
                           probability=probability,
@@ -567,7 +581,7 @@ def _classify_featureset(args):
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it (and the feature
         # vocabulary) and then use it on the test data
-        modelfile = os.path.join(model_path, '{}.model'.format(jobname))
+        modelfile = os.path.join(model_path, '{}.model'.format(job_name))
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
@@ -651,7 +665,7 @@ def _classify_featureset(args):
 
         if task == 'cross_validate' or task == 'evaluate':
             results_json_path = os.path.join(results_path,
-                                             '{}.results.json'.format(jobname))
+                                             '{}.results.json'.format(job_name))
 
             res = _create_learner_result_dicts(task_results, grid_scores,
                                                learner_result_dict_base)
@@ -661,7 +675,7 @@ def _classify_featureset(args):
             with open(results_json_path, file_mode) as json_file:
                 json.dump(res, json_file)
 
-            with open(os.path.join(results_path, '{}.results'.format(jobname)),
+            with open(os.path.join(results_path, '{}.results'.format(job_name)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
         else:
@@ -923,22 +937,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     result_json_paths = []
 
     # Run each featureset-learner combination
-    for featureset, featureset_name in zip(featuresets,
-                                           featureset_names):
-        # Load the feature sets
-        train_examples = _load_featureset(train_path, featureset, suffix,
-                                          label_col=label_col,
-                                          ids_to_floats=ids_to_floats,
-                                          quiet=quiet)
-        if task == 'evaluate' or task == 'predict':
-            test_examples = _load_featureset(test_path, featureset, suffix,
-                                             label_col=label_col,
-                                             ids_to_floats=ids_to_floats,
-                                             quiet=quiet)
-        else:
-            test_examples = None
-
-        # and for each learner
+    for featureset, featureset_name in zip(featuresets, featureset_names):
         for learner_num, learner_name in enumerate(learners):
 
             job_name_components = [experiment_name]
@@ -946,30 +945,31 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # for the individual job name, we need to add the feature set name
             # and the learner name
             job_name_components.extend([featureset_name, learner_name])
-            jobname = '_'.join(job_name_components)
+            job_name = '_'.join(job_name_components)
 
             # change the prediction prefix to include the feature set
-            prediction_prefix = os.path.join(prediction_dir, jobname)
+            prediction_prefix = os.path.join(prediction_dir, job_name)
 
             # the log file that stores the actual output of this script (e.g.,
             # the tuned parameters, what kind of experiment was run, etc.)
-            temp_logfile = os.path.join(log_path, '{}.log'.format(jobname))
+            temp_logfile = os.path.join(log_path, '{}.log'.format(job_name))
 
             # create job if we're doing things on the grid
             job_args = {}
             job_args["experiment_name"] = experiment_name
             job_args["task"] = task
-            job_args["train_examples"] = train_examples
-            job_args["test_examples"] = test_examples
-            job_args["jobname"] = jobname
+            job_args["job_name"] = job_name
             job_args["featureset"] = featureset
             job_args["learner_name"] = learner_name
+            job_args["train_path"] = train_path
+            job_args["test_path"] = test_path
             job_args["train_set_name"] = train_set_name
             job_args["test_set_name"] = test_set_name
             job_args["model_path"] = model_path
             job_args["prediction_prefix"] = prediction_prefix
             job_args["grid_search"] = do_grid_search
             job_args["grid_objective"] = grid_objective
+            job_args["suffix"] = suffix
             job_args["log_path"] = temp_logfile
             job_args["probability"] = probability
             job_args["results_path"] = results_path
@@ -984,18 +984,21 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["min_feature_count"] = min_feature_count
             job_args["grid_search_jobs"] = grid_search_jobs
             job_args["cv_folds"] = cv_folds
+            job_args["label_col"] = label_col
+            job_args["ids_to_floats"] = ids_to_floats
+            job_args["quiet"] = quiet
 
             if not local:
                 jobs.append(Job(_classify_featureset, [job_args],
                                 num_slots=(MAX_CONCURRENT_PROCESSES if
                                            do_grid_search else 1),
-                                name=jobname, queue=queue))
+                                name=job_name, queue=queue))
             else:
                 _classify_featureset(job_args)
 
             # save the path to the results json file that will be written
             result_json_paths.append(os.path.join(results_path,
-                                     '{}.results.json'.format(jobname)))
+                                     '{}.results.json'.format(job_name)))
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:
