@@ -21,6 +21,7 @@ the future.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Dan Blanchard (dblanchard@ets.org)
 '''
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -42,7 +43,7 @@ from nose.tools import *
 
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
-                              _load_cv_folds, _parse_config_file,
+                              _load_cv_folds, _setup_config_parser,
                               run_ablation)
 from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
@@ -141,7 +142,7 @@ def fill_in_config_paths(config_template_path):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    config = _parse_config_file(config_template_path)
+    config = _setup_config_parser(config_template_path)
 
     task = config.get("General", "task")
     #experiment_name = config.get("General", "experiment_name")

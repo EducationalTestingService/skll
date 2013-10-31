@@ -32,7 +32,6 @@ from __future__ import print_function, unicode_literals
 import argparse
 import logging
 from functools import partial
-from multiprocessing import Process
 
 from skll.experiments import run_ablation, run_configuration
 from skll.version import __version__
@@ -55,13 +54,16 @@ def main():
                         nargs='+')
     parser.add_argument('-a', '--ablation',
                         help='Runs an ablation study where repeated \
-                              experiments are conducted where each feature\
-                              set in the configuration file is held out.',
-                        action='store_true')
+                              experiments are conducted where the specified \
+                              number of features in each featureset in the \
+                              configuration file are held out.',
+                        type=int, default=0)
     parser.add_argument('-A', '--ablation_all',
                         help='Runs an ablation study where repeated \
                               experiments are conducted with all combinations \
-                              of feature sets in the configuration file.',
+                              of features in each featureset in the \
+                              configuration file. Overrides --ablation \
+                              setting.',
                         action='store_true')
     parser.add_argument('-k', '--keep_models',
                         help='If trained models already exists, re-use them\
@@ -91,28 +93,15 @@ def main():
         machines = args.machines.split(',')
 
     # Create partial function to map onto list of config files
-    common_args = dict(local=args.local, overwrite=not args.keep_models,
-                       queue=args.queue, hosts=machines)
-    if args.ablation or args.ablation_all:
-        partial_runner = partial(run_ablation, all_combos=args.ablation_all,
-                                 **common_args)
-    else:
-        partial_runner = partial(run_configuration, **common_args)
+    ablation = args.ablation
+    if args.ablation_all:
+        ablation = None
 
-    # Are we submitting things to the grid? If so, do that in parallel.
-    if not args.local:
-        processes = []
-        for config_file in args.config_file:
-            p = Process(target=partial_runner, args=(config_file,))
-            p.daemon = False
-            p.start()
-            processes.append(p)
-        for p in processes:
-            p.join()
-    # Otherwise run configurations sequentially.
-    else:
-        for config_file in args.config_file:
-            partial_runner(config_file)
+    # Run each config file sequentially
+    for config_file in args.config_file:
+        run_configuration(config_file, local=args.local, overwrite=not
+                          args.keep_models, queue=args.queue, hosts=machines,
+                          ablation=ablation)
 
 
 if __name__ == '__main__':
