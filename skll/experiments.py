@@ -97,7 +97,7 @@ def _get_stat_float(class_result_dict, stat):
         return float('nan')
 
 
-def _write_summary_file(result_json_paths, output_file, ablation=False):
+def _write_summary_file(result_json_paths, output_file, ablation=0):
     '''
     Function to take a list of paths to individual result
     json files and returns a single file that summarizes
@@ -130,7 +130,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     # Build and write header
     header = set(learner_result_dicts[0].keys()) - {'result_table',
                                                     'descriptive'}
-    if ablation:
+    if ablation != 0:
         header.add('ablated_features')
     # Backward compatibility for older JSON results files.
     if 'comparative' in header:
@@ -1021,7 +1021,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(results_path, summary_file_name),
                   file_mode) as output_file:
-            _write_summary_file(result_json_paths, output_file)
+            _write_summary_file(result_json_paths, output_file, 
+                                ablation=ablation)
 
     return result_json_paths
 
