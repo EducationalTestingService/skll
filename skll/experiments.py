@@ -32,11 +32,10 @@ import json
 import math
 import os
 import sys
-import tempfile
 from collections import defaultdict
 from io import open
 from itertools import chain, combinations
-from multiprocessing import log_to_stderr, Pool
+from multiprocessing import log_to_stderr
 
 import configparser  # Backported version from Python 3
 import numpy as np
@@ -98,7 +97,7 @@ def _get_stat_float(class_result_dict, stat):
         return float('nan')
 
 
-def _write_summary_file(result_json_paths, output_file, ablation=False):
+def _write_summary_file(result_json_paths, output_file, ablation=0):
     '''
     Function to take a list of paths to individual result
     json files and returns a single file that summarizes
@@ -131,7 +130,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=False):
     # Build and write header
     header = set(learner_result_dicts[0].keys()) - {'result_table',
                                                     'descriptive'}
-    if ablation:
+    if ablation != 0:
         header.add('ablated_features')
     # Backward compatibility for older JSON results files.
     if 'comparative' in header:
@@ -209,9 +208,10 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         print('', file=output_file)
 
 
-def _parse_config_file(config_path):
+def _setup_config_parser(config_path):
     '''
-    Parses a SKLL experiment configuration file with the given path.
+    Returns a config parser at a given path. Only implemented as a separate
+    function to simplify testing.
     '''
     # initialize config parser
     config = configparser.ConfigParser({'test_location': '',
@@ -233,13 +233,174 @@ def _parse_config_file(config_path):
                                         'suffix': '',
                                         'label_col': 'y',
                                         'ids_to_floats': 'False'})
-
+    # Read file if it exists
     if not os.path.exists(config_path):
         raise IOError(errno.ENOENT, "The config file doesn't exist.",
                       config_path)
-
     config.read(config_path)
     return config
+
+
+def _parse_config_file(config_path):
+    '''
+    Parses a SKLL experiment configuration file with the given path.
+    '''
+    config = _setup_config_parser(config_path)
+
+    ###########################
+    # extract parameters from the config file
+
+    # General
+    task = config.get("General", "task")
+    if task not in _VALID_TASKS:
+        raise ValueError('An invalid task was specified: {}. '.format(task) +
+                         'Valid tasks are: {}'.format(' '.join(_VALID_TASKS)))
+
+    experiment_name = config.get("General", "experiment_name")
+
+    # Input
+    if config.has_option("Input", "learners"):
+        learners_string = config.get("Input", "learners")
+    elif config.has_option("Input", "classifiers"):
+        learners_string = config.get("Input", "classifiers")  # For old files
+    else:
+        raise ValueError("Configuration file does not contain list of " +
+                         "learners in [Input] section.")
+    learners = json.loads(_fix_json(learners_string))
+    learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else learner)
+                for learner in learners]
+    featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
+
+    # ensure that featuresets is a list of lists
+    if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
+                                                     in featuresets]):
+        raise ValueError("The featuresets parameter should be a " +
+                         "list of lists: {}".format(featuresets))
+
+    featureset_names = json.loads(_fix_json(config.get("Input",
+                                                       "featureset_names")))
+
+    # ensure that featureset_names is a list of strings, if specified
+    if featureset_names:
+        if (not isinstance(featureset_names, list) or
+                not all([isinstance(fs, string_types) for fs in
+                         featureset_names])):
+            raise ValueError("The featureset_names parameter should be a " +
+                             "list of strings: {}".format(featureset_names))
+
+    fixed_parameter_list = json.loads(_fix_json(config.get("Input",
+                                                           "fixed_parameters")))
+    param_grid_list = json.loads(_fix_json(config.get("Tuning", "param_grids")))
+    pos_label_str = config.get("Tuning", "pos_label_str")
+
+    # ensure that feature_scaling is specified only as one of the
+    # four available choices
+    feature_scaling = config.get("Tuning", "feature_scaling")
+    if feature_scaling not in ['with_std', 'with_mean', 'both', 'none']:
+        raise ValueError("Invalid value for feature_scaling parameter: " +
+                         "{}".format(feature_scaling))
+
+    # get all the input paths and directories (without trailing slashes)
+    train_path = config.get("Input", "train_location").rstrip('/')
+    test_path = config.get("Input", "test_location").rstrip('/')
+    suffix = config.get("Input", "suffix")
+    # Support tsv_label for old files
+    if config.has_option("Input", "tsv_label"):
+        label_col = config.get("Input", "tsv_label")
+    else:
+        label_col = config.get("Input", "label_col")
+    ids_to_floats = config.getboolean("Input", "ids_to_floats")
+
+    # get the cv folds file and make a dictionary from it
+    cv_folds_location = config.get("Input", "cv_folds_location")
+    if cv_folds_location:
+        cv_folds = _load_cv_folds(cv_folds_location,
+                                  ids_to_floats=ids_to_floats)
+    else:
+        cv_folds = 10
+
+    # Output
+    # get all the output files and directories
+    results_path = config.get("Output", "results")
+    log_path = config.get("Output", "log")
+    model_path = config.get("Output", "models")
+    probability = config.getboolean("Output", "probability")
+
+    # do we want to keep the predictions?
+    prediction_dir = config.get("Output", "predictions")
+    if prediction_dir and not os.path.exists(prediction_dir):
+        os.makedirs(prediction_dir)
+
+    # make sure log path exists
+    if log_path and not os.path.exists(log_path):
+        os.makedirs(log_path)
+
+    # make sure results path exists
+    if results_path and not os.path.exists(results_path):
+        os.makedirs(results_path)
+
+    # make sure all the specified paths exist
+    if not os.path.exists(train_path):
+        raise IOError(errno.ENOENT, ("The training path specified in config " +
+                                     "file does not exist."), train_path)
+    if test_path and not os.path.exists(test_path):
+        raise IOError(errno.ENOENT, ("The test path specified in config " +
+                                     "file does not exist."), train_path)
+
+    # Tuning
+    # do we need to run a grid search for the hyperparameters or are we just
+    # using the defaults?
+    do_grid_search = config.getboolean("Tuning", "grid_search")
+
+    # the minimum number of examples a feature must be nonzero in to be included
+    min_feature_count = config.getint("Tuning", "min_feature_count")
+
+    # how many jobs should we run in parallel for grid search
+    grid_search_jobs = config.getint("Tuning", "grid_search_jobs")
+    if not grid_search_jobs:
+        grid_search_jobs = None
+
+    # what is the objective function for the grid search?
+    grid_objective = config.get("Tuning", "objective")
+    if grid_objective not in SCORERS:
+        raise ValueError(('Invalid grid objective function: ' +
+                          '{}').format(grid_objective))
+
+    # check whether the right things are set for the given task
+    if (task == 'evaluate' or task == 'predict') and not test_path:
+        raise ValueError('The test set and results locations must be set ' +
+                         'when task is evaluate or predict.')
+    if (task == 'cross_validate' or task == 'train_only') and test_path:
+        raise ValueError('The test set path should not be set ' +
+                         'when task is cross_validate or train_only.')
+    if (task == 'train_only' or task == 'predict') and results_path:
+        raise ValueError('The results path should not be set ' +
+                         'when task is predict or train_only.')
+    if task == 'train_only' and not model_path:
+        raise ValueError('The model path should be set ' +
+                         'when task is train_only.')
+    if task == 'train_only' and prediction_dir:
+        raise ValueError('The predictions path should not be set ' +
+                         'when task is train_only.')
+    if task == 'cross_validate' and model_path:
+        raise ValueError('The models path should not be set ' +
+                         'when task is cross_validate.')
+
+    # Create feature set names if unspecified
+    if not featureset_names:
+        featureset_names = [_munge_featureset_name(x) for x in featuresets]
+    assert len(featureset_names) == len(featuresets)
+
+    # store training/test set names for later use
+    train_set_name = os.path.basename(train_path)
+    test_set_name = os.path.basename(test_path) if test_path else "cv"
+
+    return (experiment_name, task, label_col, train_set_name, test_set_name,
+            suffix, featuresets, model_path, do_grid_search, grid_objective,
+            probability, results_path, pos_label_str, feature_scaling,
+            min_feature_count, grid_search_jobs, cv_folds, fixed_parameter_list,
+            param_grid_list, featureset_names, learners, prediction_dir,
+            log_path, train_path, test_path, ids_to_floats)
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
@@ -338,27 +499,26 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
 
 def _classify_featureset(args):
     ''' Classification job to be submitted to grid '''
-
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
     # required keyword arguments.)
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
-    jobname = args.pop("jobname")
+    job_name = args.pop("job_name")
     featureset = args.pop("featureset")
     learner_name = args.pop("learner_name")
     train_path = args.pop("train_path")
     test_path = args.pop("test_path")
     train_set_name = args.pop("train_set_name")
     test_set_name = args.pop("test_set_name")
-    modelpath = args.pop("modelpath")
+    model_path = args.pop("model_path")
     prediction_prefix = args.pop("prediction_prefix")
     grid_search = args.pop("grid_search")
     grid_objective = args.pop("grid_objective")
     suffix = args.pop("suffix")
     log_path = args.pop("log_path")
     probability = args.pop("probability")
-    resultspath = args.pop("resultspath")
+    results_path = args.pop("results_path")
     fixed_parameters = args.pop("fixed_parameters")
     param_grid = args.pop("param_grid")
     pos_label_str = args.pop("pos_label_str")
@@ -421,7 +581,7 @@ def _classify_featureset(args):
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it (and the feature
         # vocabulary) and then use it on the test data
-        modelfile = os.path.join(modelpath, '{}.model'.format(jobname))
+        modelfile = os.path.join(model_path, '{}.model'.format(job_name))
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
@@ -474,7 +634,7 @@ def _classify_featureset(args):
                 grid_scores = [best_score]
 
                 # save model
-                if modelpath:
+                if model_path:
                     learner.save(modelfile)
 
                 if grid_search:
@@ -504,8 +664,8 @@ def _classify_featureset(args):
             # do nothing here for train_only
 
         if task == 'cross_validate' or task == 'evaluate':
-            results_json_path = os.path.join(resultspath,
-                                             '{}.results.json'.format(jobname))
+            results_json_path = os.path.join(results_path,
+                                             '{}.results.json'.format(job_name))
 
             res = _create_learner_result_dicts(task_results, grid_scores,
                                                learner_result_dict_base)
@@ -515,7 +675,7 @@ def _classify_featureset(args):
             with open(results_json_path, file_mode) as json_file:
                 json.dump(res, json_file)
 
-            with open(os.path.join(resultspath, '{}.results'.format(jobname)),
+            with open(os.path.join(results_path, '{}.results'.format(job_name)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
         else:
@@ -683,7 +843,8 @@ def _load_cv_folds(cv_folds_location, ids_to_floats=False):
 
 
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
-                      hosts=None, write_summary=True, quiet=False):
+                      hosts=None, write_summary=True, quiet=False,
+                      ablation=0):
     '''
     Takes a configuration file and runs the specified jobs on the grid.
 
@@ -703,6 +864,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     :type write_summary: bool
     :param quiet: Suppress printing of "Loading..." messages.
     :type quiet: bool
+    :param ablation: Number of features to remove when doing an ablation
+                     experiment. If positive, we will perform repeated ablation
+                     runs for all combinations of features removing the
+                     specified number at a time. If ``None``, we will use all
+                     combinations of all lengths. If 0, the default, no ablation
+                     is performed. If negative, a ``ValueError`` is raised.
+    :type ablation: int or None
 
     :return: A list of paths to .json results files for each variation in the
              experiment.
@@ -710,176 +878,66 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     '''
     # Read configuration
-    config = _parse_config_file(config_file)
+    (experiment_name, task, label_col, train_set_name, test_set_name, suffix,
+     featuresets, model_path, do_grid_search, grid_objective, probability,
+     results_path, pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
+     featureset_names, learners, prediction_dir, log_path, train_path,
+     test_path, ids_to_floats) = _parse_config_file(config_file)
 
-    logger = log_to_stderr()
+    # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
         local = True
+        logger = log_to_stderr()
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
                        'mode.  To run things on a DRMAA-compatible ' +
                        'cluster, install gridmap>=0.10.1 via pip.')
 
-    ###########################
-    # extract parameters from the config file
+    # if performing ablation, expand featuresets to include combinations of
+    # features within those sets
+    if ablation is None or ablation > 0:
+        # Make new feature set lists so that we can iterate without issue
+        expanded_fs = []
+        expanded_fs_names = []
+        for features, featureset_name in zip(featuresets, featureset_names):
+            features = sorted(features)
+            featureset = set(features)
+            # Expand to all feature combinations if ablation is None
+            if ablation is None:
+                for i in range(1, len(features)):
+                    for excluded_features in combinations(features, i):
+                        expanded_fs.append(sorted(featureset -
+                                                   set(excluded_features)))
+                        expanded_fs_names.append(featureset_name + '_minus_' +
+                                                 '_'.join(excluded_features))
+            # Otherwise, just expand removing the specified number at a time
+            else:
+                for excluded_features in combinations(features, ablation):
+                    expanded_fs.append(sorted(featureset -
+                                                  set(excluded_features)))
+                    expanded_fs_names.append(featureset_name + '_minus_' +
+                                             '_'.join(excluded_features))
+            # Also add version with nothing removed as baseline
+            expanded_fs.append(features)
+            expanded_fs_names.append(featureset_name + '_all')
 
-    # General
-    task = config.get("General", "task")
-    if task not in _VALID_TASKS:
-        raise ValueError('An invalid task was specified: {}. '.format(task) +
-                         'Valid tasks are: {}'.format(' '.join(_VALID_TASKS)))
+        # Replace original feature set lists
+        featuresets = expanded_fs
+        featureset_names = expanded_fs_names
+    elif ablation < 0:
+        raise ValueError('Value for "ablation" argument must be either ' +
+                         'positive integer or None.')
 
-    experiment_name = config.get("General", "experiment_name")
-
-    # Input
-    if config.has_option("Input", "learners"):
-        learners_string = config.get("Input", "learners")
-    elif config.has_option("Input", "classifiers"):
-        learners_string = config.get("Input", "classifiers")  # For old files
-    else:
-        raise ValueError("Configuration file does not contain list of " +
-                         "learners in [Input] section.")
-    learners = json.loads(_fix_json(learners_string))
-    learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else learner)
-                for learner in learners]
-    featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
-
-    # ensure that featuresets is a list of lists
-    if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
-                                                     in featuresets]):
-        raise ValueError("The featuresets parameter should be a " +
-                         "list of lists: {}".format(featuresets))
-
-    featureset_names = json.loads(_fix_json(config.get("Input",
-                                                       "featureset_names")))
-
-    # ensure that featureset_names is a list of strings, if specified
-    if featureset_names:
-        if (not isinstance(featureset_names, list) or
-                not all([isinstance(fs, string_types) for fs in
-                         featureset_names])):
-            raise ValueError("The featureset_names parameter should be a " +
-                             "list of strings: {}".format(featureset_names))
-
-    fixed_parameter_list = json.loads(_fix_json(config.get("Input",
-                                                           "fixed_parameters")))
-    param_grid_list = json.loads(_fix_json(config.get("Tuning", "param_grids")))
-    pos_label_str = config.get("Tuning", "pos_label_str")
-
-    # ensure that feature_scaling is specified only as one of the
-    # four available choices
-    feature_scaling = config.get("Tuning", "feature_scaling")
-    if feature_scaling not in ['with_std', 'with_mean', 'both', 'none']:
-        raise ValueError("Invalid value for feature_scaling parameter: " +
-                         "{}".format(feature_scaling))
-
-    # get all the input paths and directories (without trailing slashes)
-    train_path = config.get("Input", "train_location").rstrip('/')
-    test_path = config.get("Input", "test_location").rstrip('/')
-    suffix = config.get("Input", "suffix")
-    # Support tsv_label for old files
-    if config.has_option("Input", "tsv_label"):
-        label_col = config.get("Input", "tsv_label")
-    else:
-        label_col = config.get("Input", "label_col")
-    ids_to_floats = config.getboolean("Input", "ids_to_floats")
-
-    # get the cv folds file and make a dictionary from it
-    cv_folds_location = config.get("Input", "cv_folds_location")
-    if cv_folds_location:
-        cv_folds = _load_cv_folds(cv_folds_location,
-                                  ids_to_floats=ids_to_floats)
-    else:
-        cv_folds = 10
-
-    # Output
-    # get all the output files and directories
-    resultspath = config.get("Output", "results")
-    logpath = config.get("Output", "log")
-    modelpath = config.get("Output", "models")
-    probability = config.getboolean("Output", "probability")
-
-    # do we want to keep the predictions?
-    prediction_dir = config.get("Output", "predictions")
-    if prediction_dir and not os.path.exists(prediction_dir):
-        os.makedirs(prediction_dir)
-
-    # make sure log path exists
-    if logpath and not os.path.exists(logpath):
-        os.makedirs(logpath)
-
-    # make sure results path exists
-    if resultspath and not os.path.exists(resultspath):
-        os.makedirs(resultspath)
-
-    # make sure all the specified paths exist
-    if not os.path.exists(train_path):
-        raise IOError(errno.ENOENT, ("The training path specified in config " +
-                                     "file does not exist."), train_path)
-    if test_path and not os.path.exists(test_path):
-        raise IOError(errno.ENOENT, ("The test path specified in config " +
-                                     "file does not exist."), train_path)
-
-    # Tuning
-    # do we need to run a grid search for the hyperparameters or are we just
-    # using the defaults?
-    do_grid_search = config.getboolean("Tuning", "grid_search")
-
-    # the minimum number of examples a feature must be nonzero in to be included
-    min_feature_count = config.getint("Tuning", "min_feature_count")
-
-    # how many jobs should we run in parallel for grid search
-    grid_search_jobs = config.getint("Tuning", "grid_search_jobs")
-    if not grid_search_jobs:
-        grid_search_jobs = None
-
-    # what is the objective function for the grid search?
-    grid_objective = config.get("Tuning", "objective")
-    if grid_objective not in SCORERS:
-        raise ValueError(('Invalid grid objective function: ' +
-                          '{}').format(grid_objective))
-
-    # check whether the right things are set for the given task
-    if (task == 'evaluate' or task == 'predict') and not test_path:
-        raise ValueError('The test set and results locations must be set ' +
-                         'when task is evaluate or predict.')
-    if (task == 'cross_validate' or task == 'train_only') and test_path:
-        raise ValueError('The test set path should not be set ' +
-                         'when task is cross_validate or train_only.')
-    if (task == 'train_only' or task == 'predict') and resultspath:
-        raise ValueError('The results path should not be set ' +
-                         'when task is predict or train_only.')
-    if task == 'train_only' and not modelpath:
-        raise ValueError('The model path should be set ' +
-                         'when task is train_only.')
-    if task == 'train_only' and prediction_dir:
-        raise ValueError('The predictions path should not be set ' +
-                         'when task is train_only.')
-    if task == 'cross_validate' and modelpath:
-        raise ValueError('The models path should not be set ' +
-                         'when task is cross_validate.')
-
-    ###########################
 
     # the list of jobs submitted (if running on grid)
     if not local:
         jobs = []
 
-    if not featureset_names:
-        featureset_names = [_munge_featureset_name(x) for x in featuresets]
-    assert len(featureset_names) == len(featuresets)
-
-    # store training/test set names for later use
-    train_set_name = os.path.basename(train_path)
-    test_set_name = os.path.basename(test_path) if test_path else "cv"
-
     # the list to hold the paths to all the result json files
     result_json_paths = []
 
-    # For each feature set
-    for featureset, featureset_name in zip(featuresets,
-                                           featureset_names):
-
-        # and for each learner
+    # Run each featureset-learner combination
+    for featureset, featureset_name in zip(featuresets, featureset_names):
         for learner_num, learner_name in enumerate(learners):
 
             job_name_components = [experiment_name]
@@ -887,34 +945,34 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # for the individual job name, we need to add the feature set name
             # and the learner name
             job_name_components.extend([featureset_name, learner_name])
-            jobname = '_'.join(job_name_components)
+            job_name = '_'.join(job_name_components)
 
             # change the prediction prefix to include the feature set
-            prediction_prefix = os.path.join(prediction_dir, jobname)
+            prediction_prefix = os.path.join(prediction_dir, job_name)
 
             # the log file that stores the actual output of this script (e.g.,
             # the tuned parameters, what kind of experiment was run, etc.)
-            temp_logfile = os.path.join(logpath, '{}.log'.format(jobname))
+            temp_logfile = os.path.join(log_path, '{}.log'.format(job_name))
 
             # create job if we're doing things on the grid
             job_args = {}
             job_args["experiment_name"] = experiment_name
             job_args["task"] = task
-            job_args["jobname"] = jobname
+            job_args["job_name"] = job_name
             job_args["featureset"] = featureset
             job_args["learner_name"] = learner_name
             job_args["train_path"] = train_path
             job_args["test_path"] = test_path
             job_args["train_set_name"] = train_set_name
             job_args["test_set_name"] = test_set_name
-            job_args["modelpath"] = modelpath
+            job_args["model_path"] = model_path
             job_args["prediction_prefix"] = prediction_prefix
             job_args["grid_search"] = do_grid_search
             job_args["grid_objective"] = grid_objective
             job_args["suffix"] = suffix
             job_args["log_path"] = temp_logfile
             job_args["probability"] = probability
-            job_args["resultspath"] = resultspath
+            job_args["results_path"] = results_path
             job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
                                             if fixed_parameter_list
                                             else dict())
@@ -934,23 +992,24 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 jobs.append(Job(_classify_featureset, [job_args],
                                 num_slots=(MAX_CONCURRENT_PROCESSES if
                                            do_grid_search else 1),
-                                name=jobname, queue=queue))
+                                name=job_name, queue=queue))
             else:
                 _classify_featureset(job_args)
 
             # save the path to the results json file that will be written
-            result_json_paths.append(os.path.join(resultspath,
-                                     '{}.results.json'.format(jobname)))
+            result_json_paths.append(os.path.join(results_path,
+                                     '{}.results.json'.format(job_name)))
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:
         try:
-            if logpath:
+            if log_path:
                 job_results = process_jobs(jobs, white_list=hosts,
-                                           temp_dir=logpath)
+                                           temp_dir=log_path)
             else:
                 job_results = process_jobs(jobs, white_list=hosts)
         except JobException:
+            logger = log_to_stderr()
             logger.exception('gridmap claims that one of your jobs failed, ' +
                              'but this is not always true.')
         else:
@@ -960,9 +1019,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if (task == 'cross_validate' or task == 'evaluate') and write_summary:
         summary_file_name = experiment_name + '_summary.tsv'
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(os.path.join(resultspath, summary_file_name),
+        with open(os.path.join(results_path, summary_file_name),
                   file_mode) as output_file:
-            _write_summary_file(result_json_paths, output_file)
+            _write_summary_file(result_json_paths, output_file, 
+                                ablation=ablation)
 
     return result_json_paths
 
@@ -977,64 +1037,6 @@ def _check_job_results(job_results):
         if not result_dicts or 'task' not in result_dicts[0]:
             logger.error('There was an error running the experiment:\n' +
                          '{}'.format(result_dicts))
-
-
-def _run_experiment_without_features(arg_tuple):
-    '''
-    Creates a new configuration file with a given feature
-    removed and runs that experiment.
-
-    :param arg_tuple: A tuple of the actual arguments for this function:
-                      excluded_features, features, config, local, queue
-                      cfg_path, and machines.
-
-                      - excluded_features: The name of the feature set to exclude
-                      - features: A list of all features in config
-                      - featureset_name: The original featureset name
-                      - config: A parsed configuration file
-                      - local: Are we running things locally or on the grid?
-                      - queue: Grid Map queue to use for scheduling
-                      - machines: List of machines to use for scheduling jobs
-                                  with Grid Map
-                      - overwrite: Should we overwrite existing models?
-                      - quiet: Should we suppress the printing of "Loading..."
-                               messages?
-
-    :type arg_tuple: tuple
-    :return: A list of paths to .json results files for each variation in the
-             experiment.
-    :rtype: list of str
-
-    '''
-    (excluded_features, features, featureset_name, config, local, queue,
-     machines, overwrite, quiet) = arg_tuple
-
-    featureset = [[x for x in features if x not in excluded_features]]
-
-    if excluded_features:
-        featureset_name = "{}_minus_{}".format(featureset_name,
-                                               '_'.join(excluded_features))
-    else:
-        featureset_name = "{}_all".format(featureset_name)
-
-    config.set("Input", "featuresets", json.dumps(featureset))
-    config.set("Input", "featureset_names", "['{}']".format(featureset_name))
-
-    file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-    with tempfile.NamedTemporaryFile(mode=file_mode,
-                                     suffix='.cfg',
-                                     delete=False) as new_config_file:
-        config.write(new_config_file)
-
-    result_jsons = run_configuration(new_config_file.name, local=local,
-                                     queue=queue, hosts=machines,
-                                     overwrite=overwrite, write_summary=False,
-                                     quiet=quiet)
-
-    # remove the temporary config file that we created
-    os.unlink(new_config_file.name)
-
-    return result_jsons
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
@@ -1061,76 +1063,16 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
                        `all_combos` is `True`, we do a true ablation study with
                        all feature combinations.
     :type all_combos: bool
+
+    .. deprecated:: 0.20.0
+       Use :func:`run_configuration` with the ablation argument instead.
+
     '''
-    # Read configuration
-    config = _parse_config_file(config_path)
-
-    logger = log_to_stderr()
-
-    featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
-    featureset_names = json.loads(_fix_json(config.get("Input",
-                                                       "featureset_names")))
-
-    # make sure there is only one list of features
-    if len(featuresets) > 1 or len(featureset_names) > 1:
-        raise ValueError("More than one feature set or list of names given.")
-
-    # make a list of features rather than a list of lists
-    features = sorted(featuresets[0])
-    featureset_name = 'ablation'
-    if featureset_names:
-        featureset_name = featureset_names[0]
-
-    # if we're doing all combinations of features, we need a list of arguments
-    # for run_without_features that includes all combinations to exclude.
     if all_combos:
-        arg_tuples = []
-        for i in range(1, len(features)):
-            for excluded_features in combinations(features, i):
-                arg_tuples.append((excluded_features, features,
-                                   featureset_name, config, local, queue,
-                                   hosts, overwrite, quiet))
-    # Otherwise, just make a list of arguments where each individual feature
-    # will be excluded.
+        run_configuration(config_path, local=local, overwrite=overwrite,
+                          queue=queue, hosts=hosts, write_summary=True,
+                          quiet=quiet, ablation=None)
     else:
-        arg_tuples = [([excluded_feature], features, featureset_name, config,
-                       local, queue, hosts, overwrite, quiet) for
-                      excluded_feature in features]
-    # Add None to arg_tuples so that we also run things with all features
-    arg_tuples.append(([], features, featureset_name, config, local, queue,
-                       hosts, overwrite, quiet))
-
-    # for each set of features we're excluding, make a copy of the config file
-    # with all but those features, and run the jobs.
-    result_json_paths = []
-    if not local and not _HAVE_GRIDMAP:
-        local = True
-        logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
-                       'mode.  To run things on a DRMAA-compatible ' +
-                       'cluster, install gridmap>=0.10.1 via pip.')
-    if not local:
-        pool = Pool(processes=len(features) + 1)
-        try:
-            result_json_paths.extend(chain(*pool.map(_run_experiment_without_features,
-                                                     list(arg_tuples))))
-            del pool
-        # If run_experiment is run via a subprocess (like nose does),
-        # this will fail, so just do things serially then.
-        except AssertionError:
-            del pool
-            for arg_tuple in arg_tuples:
-                result_json_paths.extend(_run_experiment_without_features(arg_tuple))
-    else:
-        for arg_tuple in arg_tuples:
-            result_json_paths.extend(_run_experiment_without_features(arg_tuple))
-
-    task = config.get("General", "task")
-    experiment_name = config.get("General", "experiment_name")
-    resultspath = config.get("Output", "results")
-
-    if task == 'cross_validate' or task == 'evaluate':
-        summary_file_name = experiment_name + '_summary.tsv'
-        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(os.path.join(resultspath, summary_file_name),
-                  file_mode) as output_file:
-            _write_summary_file(result_json_paths, output_file, ablation=True)
+        run_configuration(config_path, local=local, overwrite=overwrite,
+                          queue=queue, hosts=hosts, write_summary=True,
+                          quiet=quiet, ablation=1)

@@ -57,7 +57,8 @@ def main():
 
     file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
     with open(args.summary_file, file_mode) as output_file:
-        _write_summary_file(args.json_file, output_file, ablation=args.ablation)
+        _write_summary_file(args.json_file, output_file, 
+                            ablation=int(args.ablation))
 
 
 if __name__ == '__main__':
