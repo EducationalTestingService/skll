@@ -594,7 +594,8 @@ def _classify_featureset(args):
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
-                                    'grid_objective': grid_objective}
+                                    'grid_objective': grid_objective,
+                                    'min_feature_count': min_feature_count}
 
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
@@ -1021,7 +1022,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(results_path, summary_file_name),
                   file_mode) as output_file:
-            _write_summary_file(result_json_paths, output_file, 
+            _write_summary_file(result_json_paths, output_file,
                                 ablation=ablation)
 
     return result_json_paths
