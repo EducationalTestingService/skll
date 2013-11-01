@@ -405,11 +405,12 @@ class _CSVDictIter(_DelimitedDictIter):
     :type ids_to_floats: bool
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y'):
+                 label_col='y', class_map=None):
         super(_CSVDictIter, self).__init__(path_or_list, quiet=quiet,
                                            ids_to_floats=ids_to_floats,
                                            label_col=label_col,
-                                           dialect='excel')
+                                           dialect='excel',
+                                           class_map=class_map)
 
 
 class _ARFFDictIter(_DelimitedDictIter):
@@ -430,11 +431,12 @@ class _ARFFDictIter(_DelimitedDictIter):
     :type ids_to_floats: bool
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y'):
+                 label_col='y', class_map=None):
         super(_ARFFDictIter, self).__init__(path_or_list, quiet=quiet,
                                             ids_to_floats=ids_to_floats,
                                             label_col=label_col,
-                                            dialect='arff')
+                                            dialect='arff',
+                                            class_map=class_map)
 
     @staticmethod
     def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
@@ -508,11 +510,12 @@ class _TSVDictIter(_DelimitedDictIter):
     :type ids_to_floats: bool
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y'):
+                 label_col='y', class_map=None):
         super(_TSVDictIter, self).__init__(path_or_list, quiet=quiet,
                                            ids_to_floats=ids_to_floats,
                                            label_col=label_col,
-                                           dialect='excel-tab')
+                                           dialect='excel-tab',
+                                           class_map=class_map)
 
 
 def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
