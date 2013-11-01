@@ -86,7 +86,7 @@ class _DictIter(object):
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
         self.label_col = label_col
-        self.class_map = {} if class_map is None else class_map
+        self.class_map = class_map
 
     def __iter__(self):
         # Setup logger
