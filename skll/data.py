@@ -726,7 +726,7 @@ def _examples_to_dictwriter_inputs(ids, classes, features, label_col):
 
 
 def _write_arff_file(path, ids, classes, features, label_col,
-                     relation='skll_relation'):
+                     relation='skll_relation', arff_regression=False):
     '''
     Writes a feature file in .csv or .tsv format with the given a list of IDs,
     classes, and features.
@@ -749,12 +749,18 @@ def _write_arff_file(path, ids, classes, features, label_col,
     :param relation: The name to give the relationship represented in this
                      featureset.
     :type relation: str
+    :param arff_regression: Make the class variable numeric instead of nominal
+                            and remove all non-numeric attributes.
+    :type relation: bool
     '''
     # Convert IDs, classes, and features into format for DictWriter
     fields, instances = _examples_to_dictwriter_inputs(ids, classes, features,
                                                        label_col)
     if label_col in fields:
         fields.remove(label_col)
+
+    # a list to keep track of any non-numeric fields
+    non_numeric_fields = []
 
     # Write file
     if sys.version_info >= (3, 0):
@@ -774,20 +780,35 @@ def _write_arff_file(path, ids, classes, features, label_col,
                 if field in instance:
                     numeric = not isinstance(instance[field], string_types)
                     break
+
+            # ignore non-numeric fields if we are dealing with regression
+            # but keep track of them for later use
+            if arff_regression and not numeric:
+                non_numeric_fields.append(field)
+                continue
+
             print("@attribute '{}'".format(field.replace('\\', '\\\\')
                                                 .replace("'", "\\'")),
                   end=" ", file=f)
             print("numeric" if numeric else "string", file=f)
 
         # Print class label header if necessary
-        if set(classes) != {None}:
-            print("@attribute {} ".format(label_col) +
-                  "{" + ','.join(sorted(set(classes))) + "}",
-                  file=f)
-            sorted_fields.append(label_col)
+        if arff_regression:
+            print("@attribute {} numeric".format(label_col), file=f)
+        else:
+            if set(classes) != {None}:
+                print("@attribute {} ".format(label_col) +
+                      "{" + ','.join(map(str, sorted(set(classes)))) + "}",
+                      file=f)
+        sorted_fields.append(label_col)
 
-        # Create CSV writer to handle missing values for lines in data section
-        writer = csv.DictWriter(f, sorted_fields, restval=0, dialect='arff')
+        # throw out any non-numeric fields if we are writing for regression
+        if arff_regression:
+            sorted_fields = [fld for fld in sorted_fields if fld not in non_numeric_fields]
+
+        # Create CSV writer to handle missing values for lines in data section and to ignore
+        # the instance values for non-numeric attributes
+        writer = csv.DictWriter(f, sorted_fields, restval=0, extrasaction='ignore', dialect='arff')
 
         # Output instances
         print("\n@data", file=f)
@@ -904,7 +925,8 @@ def _write_megam_file(path, ids, classes, features):
 
 
 def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
-                       id_prefix='EXAMPLE_', label_col='y'):
+                       id_prefix='EXAMPLE_', label_col='y', arff_regression=False,
+                       arff_relation='skll_relation'):
     '''
     Writes a feature file in either .jsonlines, .megam, or .tsv formats
     with the given a list of IDs, classes, and features.
@@ -935,6 +957,14 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                       CSV/TSV files. If no column with that name exists, or
                       `None` is specified, the data is considered to be
                       unlabelled.
+    :type label_col: str
+    :param arff_regression: A boolean value indicating whether the ARFF files
+                            that are written should be written for arff_regression
+                            rather than classification, i.e., the class variable
+                            y is numerical rather than an enumeration of classes
+                            and all non-numeric attributes are removed.
+    :type label_col: bool
+    :param arff_relation: Relation name for ARFF file.
     :type label_col: str
     '''
     # Setup logger
@@ -981,7 +1011,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         _write_megam_file(path, ids, classes, features)
     # Create ARFF file if asked
     elif path.endswith(".arff"):
-        _write_arff_file(path, ids, classes, features, label_col)
+        _write_arff_file(path, ids, classes, features, label_col, arff_regression=arff_regression,
+                         relation=arff_relation)
     # Invalid file suffix, raise error
     else:
         raise ValueError('Output file must be in either .tsv, .megam, or ' +
