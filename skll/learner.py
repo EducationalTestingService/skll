@@ -584,10 +584,11 @@ class Learner(object):
                                 " strings.  Convert them to floats.")
 
         if max_feat_abs > 1000.0:
-            logging.warning(("You have a feature with a very large absolute " +
-                             "value ({}).  That may cause the learning " +
-                             "algorithm to crash or perform " +
-                             "poorly.").format(max_feat_abs))
+            logger = log_to_stderr()
+            logger.warning(("You have a feature with a very large absolute " +
+                            "value ({}).  That may cause the learning " +
+                            "algorithm to crash or perform " +
+                            "poorly.").format(max_feat_abs))
 
     def _train_setup(self, examples):
         '''
@@ -700,7 +701,18 @@ class Learner(object):
 
         # Convert to dense if necessary
         if self._use_dense_features:
-            xtrain = xtrain.todense()
+            try:
+                xtrain = xtrain.todense()
+            except MemoryError:
+                if self._model_type in _REQUIRES_DENSE:
+                    reason = ('{} does not support sparse ' +
+                              'matrices.').format(self._model_type)
+                else:
+                    reason = ('{} feature scaling requires a dense ' +
+                              'matrix.').format(self._feature_scaling)
+                raise MemoryError('Ran out of memory when converting training' +
+                                  ' data to dense. This was required because ' +
+                                  reason)
 
         # Scale features if necessary
         if self._model_type != 'MultinomialNB':
@@ -901,7 +913,18 @@ class Learner(object):
 
         # Convert to dense if necessary
         if self._use_dense_features:
-            xtest = xtest.todense()
+            try:
+                xtest = xtest.todense()
+            except MemoryError:
+                if self._model_type in _REQUIRES_DENSE:
+                    reason = ('{} does not support sparse ' +
+                              'matrices.').format(self._model_type)
+                else:
+                    reason = ('{} feature scaling requires a dense ' +
+                              'matrix.').format(self._feature_scaling)
+                raise MemoryError('Ran out of memory when converting test ' +
+                                  ' data to dense. This was required because ' +
+                                  reason)
 
         # Scale xtest if necessary
         if self._model_type != 'MultinomialNB':
@@ -914,9 +937,10 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logging.error(("Model type: {}\nModel: {}\nProbability: " +
-                           "{}\n").format(self._model_type, self._model,
-                                          self.probability))
+            logger = log_to_stderr()
+            logger.error(("Model type: {}\nModel: {}\nProbability: " +
+                          "{}\n").format(self._model_type, self._model,
+                                         self.probability))
             raise e
 
         # write out the predictions if we are asked to
