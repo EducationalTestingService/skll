@@ -624,9 +624,8 @@ class Learner(object):
             # Given a list of all labels in the dataset and a list of the
             # unique labels in the set, convert the first list to an array of
             # numbers.
-            self.label_dict = {}
-            for i, label in enumerate(self.label_list):
-                self.label_dict[label] = i
+            self.label_dict = {label: i for i, label in
+                               enumerate(self.label_list)}
 
         # Create feature name -> value mapping
         self.feat_vectorizer = examples.feat_vectorizer

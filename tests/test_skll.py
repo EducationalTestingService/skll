@@ -452,6 +452,54 @@ def test_sparse_predict():
     assert_almost_equal(logistic_result_score, 0.5)
 
 
+def make_class_map_data():
+    # Create training file
+    train_path = os.path.join(_my_dir, 'train', 'test_class_map.jsonlines')
+    ids = []
+    classes = []
+    features = []
+    class_names = ['beagle', 'cat', 'dachsund', 'cat']
+    for i in range(1, 101):
+        y = class_names[i % 4]
+        ex_id = "{}{}".format(y, i)
+        # note that f1 and f5 are missing in all instances but f4 is not
+        x = {"f2": i+1, "f3": i+2, "f4": i+5}
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+    write_feature_file(train_path, ids, classes, features)
+
+    # Create test file
+    test_path = os.path.join(_my_dir, 'test', 'test_class_map.jsonlines')
+    ids = []
+    classes = []
+    features = []
+    for i in range(1, 51):
+        y = class_names[i % 4]
+        ex_id = "{}{}".format(y, i)
+        # f1 and f5 are not missing in any instances here but f4 is
+        x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+    write_feature_file(test_path, ids, classes, features)
+
+
+def test_class_map():
+    make_class_map_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_class_map.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, quiet=True)
+
+    with open(os.path.join(_my_dir, 'output', 'test_class_map_test_class_map_LogisticRegression.results')) as f:
+        outstr = f.read()
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
+    assert_almost_equal(logistic_result_score, 0.5)
+
+
 def make_ablation_data():
     num_examples = 1000
 
