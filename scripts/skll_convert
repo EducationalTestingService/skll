@@ -57,6 +57,12 @@ if __name__ == '__main__':
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
+    parser.add_argument('--arff_regression',
+                        help='Create ARFF files for regression, not classification.',
+                        action='store_true')
+    parser.add_argument('--arff_relation',
+                        help='Relation name to use for ARFF file.',
+                        default='skll_relation')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
@@ -91,4 +97,6 @@ if __name__ == '__main__':
         ids.append(example_id)
 
     # write out the file in the requested output format
-    write_feature_file(args.outfile, ids, classes, feature_dicts)
+    write_feature_file(args.outfile, ids, classes, feature_dicts,
+                       arff_regression=args.arff_regression,
+                       arff_relation=args.arff_relation)
