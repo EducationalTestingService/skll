@@ -319,6 +319,19 @@ def _parse_config_file(config_path):
     else:
         cv_folds = 10
 
+    # Get class mapping dictionary if specified
+    if config.has_option("Input", "class_map"):
+        orig_class_map = json.loads(_fix_json(config.get("Input", "class_map")))
+        # Change class_map to map from originals to replacements instead of from
+        # replacement to list of originals
+        class_map = {}
+        for replacement, original_list in iteritems(orig_class_map):
+            for original in original_list:
+                class_map[original] = replacement
+        del orig_class_map
+    else:
+        class_map = None
+
     # Output
     # get all the output files and directories
     results_path = config.get("Output", "results")
@@ -400,20 +413,45 @@ def _parse_config_file(config_path):
             probability, results_path, pos_label_str, feature_scaling,
             min_feature_count, grid_search_jobs, cv_folds, fixed_parameter_list,
             param_grid_list, featureset_names, learners, prediction_dir,
-            log_path, train_path, test_path, ids_to_floats)
+            log_path, train_path, test_path, ids_to_floats, class_map)
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
-                     ids_to_floats=False, quiet=False):
+                     ids_to_floats=False, quiet=False, class_map=None):
     '''
-    loads a list of feature files and merges them.
+    Load a list of feature files and merge them.
+
+    :param dirpath: Path to the directory that contains the feature files.
+    :type dirpath: str
+    :param featureset: List of feature file prefixes
+    :type featureset: str
+    :param suffix: Suffix to add to feature file prefixes to get full filenames.
+    :type suffix: str
+    :param label_col: Name of the column which contains the class labels.
+                      If no column with that name exists, or `None` is
+                      specified, the data is considered to be unlabelled.
+    :type label_col: str
+    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
+                          if we encounter an a non-numeric ID.
+    :type ids_to_floats: bool
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
+
+    :returns: The classes, IDs, features, and feature vectorizer representing
+              the given featureset.
+    :rtype: ExamplesTuple
     '''
 
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
     example_tuples = [load_examples(file_name, label_col=label_col,
-                                    ids_to_floats=ids_to_floats, quiet=quiet)
+                                    ids_to_floats=ids_to_floats, quiet=quiet,
+                                    class_map=class_map)
                       for file_name in file_names]
 
     # Check that the IDs are unique within each file.
@@ -529,6 +567,7 @@ def _classify_featureset(args):
     cv_folds = args.pop("cv_folds")
     label_col = args.pop("label_col")
     ids_to_floats = args.pop("ids_to_floats")
+    class_map = args.pop("class_map")
     quiet = args.pop('quiet', False)
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: " +
@@ -563,12 +602,12 @@ def _classify_featureset(args):
         train_examples = _load_featureset(train_path, featureset, suffix,
                                           label_col=label_col,
                                           ids_to_floats=ids_to_floats,
-                                          quiet=quiet)
+                                          quiet=quiet, class_map=class_map)
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              label_col=label_col,
                                              ids_to_floats=ids_to_floats,
-                                             quiet=quiet)
+                                             quiet=quiet, class_map=class_map)
 
         # initialize a classifer object
         learner = Learner(learner_name,
@@ -884,7 +923,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      results_path, pos_label_str, feature_scaling, min_feature_count,
      grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
      featureset_names, learners, prediction_dir, log_path, train_path,
-     test_path, ids_to_floats) = _parse_config_file(config_file)
+     test_path, ids_to_floats, class_map) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -988,6 +1027,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["label_col"] = label_col
             job_args["ids_to_floats"] = ids_to_floats
             job_args["quiet"] = quiet
+            job_args["class_map"] = class_map
 
             if not local:
                 jobs.append(Job(_classify_featureset, [job_args],

@@ -74,14 +74,19 @@ class _DictIter(object):
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
     """
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y'):
+                 label_col='y', class_map=None):
         super(_DictIter, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
         self.label_col = label_col
+        self.class_map = {} if class_map is None else class_map
 
     def __iter__(self):
         # Setup logger
@@ -147,7 +152,8 @@ class _DummyDictIter(_DictIter):
                                       'converted to in ' +
                                       '{}').format(curr_id,
                                                    example))
-            class_name = _safe_float(example['y']) if 'y' in example else None
+            class_name = (_safe_float(example['y'], replace_dict=self.class_map)
+                          if 'y' in example else None)
             example = example['x']
             yield curr_id, class_name, example
 
@@ -181,8 +187,8 @@ class _JSONDictIter(_DictIter):
             # for consistency with csv and megam formats.
             curr_id = str(example.get("id",
                                       "EXAMPLE_{}".format(example_num)))
-            class_name = (_safe_float(example["y"]) if 'y' in example
-                          else None)
+            class_name = (_safe_float(example['y'], replace_dict=self.class_map)
+                          if 'y' in example else None)
             example = example["x"]
 
             if self.ids_to_floats:
@@ -233,11 +239,13 @@ class _MegaMDictIter(_DictIter):
                 del line
                 # Line is just a class label
                 if num_cols == 1:
-                    class_name = _safe_float(split_line[0])
+                    class_name = _safe_float(split_line[0],
+                                             replace_dict=self.class_map)
                     field_pairs = []
                 # Line has a class label and feature-value pairs
                 elif num_cols % 2 == 1:
-                    class_name = _safe_float(split_line[0])
+                    class_name = _safe_float(split_line[0],
+                                             replace_dict=self.class_map)
                     field_pairs = split_line[1:]
                 # Line just has feature-value pairs
                 elif num_cols % 2 == 0:
@@ -301,21 +309,27 @@ class _DelimitedDictIter(_DictIter):
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
     :param dialect: The dialect of to pass on to the underlying CSV reader.
     :type dialect: str
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y', dialect=None):
+                 label_col='y', class_map=None, dialect=None):
         super(_DelimitedDictIter, self).__init__(path_or_list, quiet=quiet,
                                                  ids_to_floats=ids_to_floats,
-                                                 label_col=label_col)
+                                                 label_col=label_col,
+                                                 class_map=class_map)
         self.dialect = dialect
 
     def _sub_iter(self, file_or_list):
         reader = DictReader(file_or_list, dialect=self.dialect)
         for example_num, row in enumerate(reader):
             if self.label_col is not None and self.label_col in row:
-                class_name = _safe_float(row[self.label_col])
+                class_name = _safe_float(row[self.label_col],
+                                         replace_dict=self.class_map)
                 del row[self.label_col]
             else:
                 class_name = None
@@ -517,13 +531,14 @@ def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
     return res_array
 
 
-def _classes_for_iter_type(example_iter_type, path, label_col):
+def _classes_for_iter_type(example_iter_type, path, label_col, class_map):
     '''
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
     try:
-        example_iter = example_iter_type(path, label_col=label_col)
+        example_iter = example_iter_type(path, label_col=label_col,
+                                         class_map=class_map)
         res_array = np.array([class_name for _, class_name, _ in example_iter])
     except Exception as e:
         # Setup logger
@@ -556,7 +571,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
 
 
 def load_examples(path, quiet=False, sparse=True, label_col='y',
-                  ids_to_floats=False):
+                  ids_to_floats=False, class_map=None):
     '''
     Loads examples in the ARFF, CSV/TSV, JSONLINES (a json dict per line), or
     MegaM formats.
@@ -587,6 +602,10 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
 
     :return: 4-tuple of an array example ids, an array of class labels, a
              scipy CSR matrix of features, and a DictVectorizer containing
@@ -636,7 +655,8 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
         ids_future = executor.submit(_ids_for_iter_type, example_iter_type,
                                      path, ids_to_floats)
         classes_future = executor.submit(_classes_for_iter_type,
-                                         example_iter_type, path, label_col)
+                                         example_iter_type, path, label_col,
+                                         class_map)
         features_future = executor.submit(_features_for_iter_type,
                                           example_iter_type, path, quiet,
                                           sparse, label_col)
@@ -684,11 +704,22 @@ def _sanitize_line(line):
     return ''.join(char_list)
 
 
-def _safe_float(text):
+def _safe_float(text, replace_dict=None):
     '''
     Attempts to convert a string to a float, but if that's not possible, just
     returns the original value.
+
+    :param text: The text to convert.
+    :type text: str
+    :param replace_dict: Mapping from text to replacement text values. This is
+                         mainly used for collapsing multiple classes into a
+                         single class. Replacing happens before conversion to
+                         floats. Anything not in the mapping will be kept the
+                         same.
+    :type replace_dict: dict from str to str
     '''
+    if replace_dict is not None and text in replace_dict:
+        text = replace_dict[text]
     try:
         return float(text)
     except ValueError:
