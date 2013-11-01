@@ -405,10 +405,10 @@ class Learner(object):
             self._model_kwargs['probability'] = self.probability
             if self.probability:
                 logger = log_to_stderr()
-                logger.warning('Because LibSVM does an internal to produce ' +
-                               'probabilities, results will not be exactly ' +
-                               'replicable when using SVC and probability ' +
-                               'mode.')
+                logger.warning('Because LibSVM does an internal ' +
+                               'cross-validation to produce probabilities, ' +
+                               'results will not be exactly replicable when ' +
+                               'using SVC and probability mode.')
         elif self._model_type == {'DecisionTreeClassifier'}:
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type in {'RandomForestClassifier',
