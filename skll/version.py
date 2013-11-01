@@ -23,5 +23,5 @@ in one place. Based on the suggestion `here. <http://bit.ly/16LbuJF>`_
 :organization: ETS
 '''
 
-__version__ = '0.19.0'
+__version__ = '0.20.0'
 VERSION = tuple(int(x) for x in __version__.split('.'))
