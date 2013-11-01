@@ -148,6 +148,20 @@ Input
         Note that this will cause IDs to be printed as floats in prediction
         files (e.g., "4.0" instead of "4" or "0004" or "4.000").
 
+    **class_map** *(Optional)*
+        If you would like to collapse several classes into one, or otherwise
+        modify your labels (without modifying your original feature files), you
+        can specify a dictionary mapping from new class labels to lists of
+        original class labels. For example, if you wanted to collapse the
+        classes "beagle" and "dachsund" into a "dog" class, you would specify
+        the following for `class_map`:
+
+        .. code-block:: python
+
+           {'dog': ['beagle', 'dachsund']}
+
+        Any classes not included in the dictionary will be left untouched.
+
     **cv_folds_location** *(Optional)*
         Path to a csv file (with a header that is ignored) specifyingfolds for
         cross-validation. The first column should consist of training set IDs
