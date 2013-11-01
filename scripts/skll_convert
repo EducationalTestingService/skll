@@ -26,6 +26,8 @@ Script that converts feature files from one format to another
 
 from __future__ import print_function, unicode_literals
 
+import logging
+
 import argparse
 import os
 import sys
@@ -66,6 +68,9 @@ if __name__ == '__main__':
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
+
+    # Make warnings from built-in warnings module get formatted more nicely
+    logging.captureWarnings(True)
 
     # make sure the input file extension is one we can process
     input_extension = os.path.splitext(args.infile)[1]

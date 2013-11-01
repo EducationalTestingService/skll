@@ -27,6 +27,7 @@ files.
 from __future__ import print_function, unicode_literals
 
 import argparse
+import logging
 import sys
 from io import open
 
@@ -55,9 +56,12 @@ def main():
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
+    # Make warnings from built-in warnings module get formatted more nicely
+    logging.captureWarnings(True)
+
     file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
     with open(args.summary_file, file_mode) as output_file:
-        _write_summary_file(args.json_file, output_file, 
+        _write_summary_file(args.json_file, output_file,
                             ablation=int(args.ablation))
 
 

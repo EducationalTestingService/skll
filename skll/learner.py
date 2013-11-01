@@ -27,11 +27,12 @@ Provides easy-to-use wrapper around scikit-learn.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import inspect
+import logging
 import os
 import sys
 from collections import defaultdict
 from functools import wraps
-from multiprocessing import cpu_count, log_to_stderr
+from multiprocessing import cpu_count
 
 import numpy as np
 import scipy.sparse as sp
@@ -106,7 +107,7 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         self._warned = False
 
     def __iter__(self):
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
             train_len = len(train_index)
@@ -404,7 +405,7 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
             if self.probability:
-                logger = log_to_stderr()
+                logger = logging.getLogger(__name__)
                 logger.warning('Because LibSVM does an internal ' +
                                'cross-validation to produce probabilities, ' +
                                'results will not be exactly replicable when ' +
@@ -590,7 +591,7 @@ class Learner(object):
                                 " strings.  Convert them to floats.")
 
         if max_feat_abs > 1000.0:
-            logger = log_to_stderr()
+            logger = logging.getLogger(__name__)
             logger.warning(("You have a feature with a very large absolute " +
                             "value ({}).  That may cause the learning " +
                             "algorithm to crash or perform " +
@@ -943,7 +944,7 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logger = log_to_stderr()
+            logger = logging.getLogger(__name__)
             logger.error(("Model type: {}\nModel: {}\nProbability: " +
                           "{}\n").format(self._model_type, self._model,
                                          self.probability))

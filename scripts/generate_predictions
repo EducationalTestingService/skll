@@ -28,6 +28,7 @@ Loads a trained model and outputs predictions based on input feature files.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import argparse
+import logging
 
 from skll import Learner, load_examples
 from skll.learner import _REGRESSION_MODELS
@@ -121,6 +122,9 @@ def main():
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
+
+    # Make warnings from built-in warnings module get formatted more nicely
+    logging.captureWarnings(True)
 
     # Create the classifier and load the model
     predictor = Predictor(args.model_file,

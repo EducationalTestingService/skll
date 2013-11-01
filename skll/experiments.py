@@ -29,13 +29,13 @@ import csv
 import datetime
 import errno
 import json
+import logging
 import math
 import os
 import sys
 from collections import defaultdict
 from io import open
 from itertools import chain, combinations
-from multiprocessing import log_to_stderr
 
 import configparser  # Backported version from Python 3
 import numpy as np
@@ -112,7 +112,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     '''
     learner_result_dicts = []
     all_features = set()
-    logger = log_to_stderr()
+    logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
             logger.error(('JSON results file {} not found. Skipping summary ' +
@@ -889,7 +889,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
         local = True
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
                        'mode.  To run things on a DRMAA-compatible ' +
                        'cluster, install gridmap>=0.10.1 via pip.')
@@ -1010,7 +1010,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             else:
                 job_results = process_jobs(jobs, white_list=hosts)
         except JobException:
-            logger = log_to_stderr()
+            logger = logging.getLogger(__name__)
             logger.exception('gridmap claims that one of your jobs failed, ' +
                              'but this is not always true.')
         else:
@@ -1032,7 +1032,7 @@ def _check_job_results(job_results):
     '''
     See if we have a complete results dictionary for every job.
     '''
-    logger = log_to_stderr()
+    logger = logging.getLogger(__name__)
     logger.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:

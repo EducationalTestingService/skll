@@ -88,6 +88,9 @@ def main():
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
 
+    # Make warnings from built-in warnings module get formatted more nicely
+    logging.captureWarnings(True)
+
     machines = None
     if args.machines:
         machines = args.machines.split(',')
