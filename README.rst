@@ -91,6 +91,8 @@ Changelog
    +  Made logging much less verbose by default and switched to using
       ``QueueHandler`` and ``QueueListener`` instances when dealing with
       multiple processes/threads to prevent deadlocks (#75).
+   +  Added simple no-crash unit test for all learners. We check results with
+      some, but not all. (#63)
 
 -  v0.19.0
 
