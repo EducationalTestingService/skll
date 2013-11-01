@@ -48,7 +48,7 @@ from sklearn.feature_extraction import DictVectorizer
 
 # Import QueueHandler and QueueListener for multiprocess-safe logging
 if sys.version_info < (3, 0):
-    from logutil import QueueHandler, QueueListener
+    from logutils import QueueHandler, QueueListener
 else:
     from logging.handlers import QueueHandler, QueueListener
 
