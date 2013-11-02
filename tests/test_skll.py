@@ -409,12 +409,12 @@ def test_backward_compatibility():
     predict_path = os.path.join(_my_dir, 'backward_compatibility',
                                 'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
     model_path = os.path.join(_my_dir, 'backward_compatibility',
-                              'v0.9.17_test_summary_test_summary_LogisticRegression.model')
+                              'v0.9.17_test_summary_test_summary_LogisticRegression.{}.model'.format(sys.version_info[0]))
     test_path = os.path.join(_my_dir, 'backward_compatibility', 'v0.9.17_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
     examples = load_examples(test_path, quiet=True)
-    new_predictions = learner.predict(examples)[:,1]
+    new_predictions = learner.predict(examples)[:, 1]
 
     with open(predict_path) as predict_file:
         for line, new_val in zip(predict_file, new_predictions):
