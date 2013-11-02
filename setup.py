@@ -31,7 +31,7 @@ def readme():
 
 def requirements():
     # Use backported requirements for 2.7
-    if sys.version < (3, 0):
+    if sys.version_info < (3, 0):
         req_path = 'requirements_rtd.txt'
     # Use 3.x requirements
     else:
