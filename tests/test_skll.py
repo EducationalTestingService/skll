@@ -402,6 +402,25 @@ def test_summary():
         yield check_summary_score, result_score, summary_score, learner_name
 
 
+def test_backward_compatibility():
+    '''
+    Verify that a model from v0.9.17 can still be loaded and generate the same predictions.
+    '''
+    predict_path = os.path.join(_my_dir, 'backward_compatibility',
+                                'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
+    model_path = os.path.join(_my_dir, 'backward_compatibility',
+                              'v0.9.17_test_summary_test_summary_LogisticRegression.model')
+    test_path = os.path.join(_my_dir, 'backward_compatibility', 'v0.9.17_test_summary.jsonlines')
+
+    learner = Learner.from_file(model_path)
+    examples = load_examples(test_path, quiet=True)
+    new_predictions = learner.predict(examples)[:,1]
+
+    with open(predict_path) as predict_file:
+        for line, new_val in zip(predict_file, new_predictions):
+            assert_almost_equal(float(line.strip()), new_val)
+
+
 def make_sparse_data():
     # Create training file
     train_path = os.path.join(_my_dir, 'train', 'test_sparse.jsonlines')
