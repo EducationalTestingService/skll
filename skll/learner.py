@@ -54,8 +54,8 @@ from sklearn.utils import shuffle as sk_shuffle
 from sklearn.ensemble import (GradientBoostingClassifier,
                               GradientBoostingRegressor, RandomForestClassifier,
                               RandomForestRegressor)
-from sklearn.linear_model import (Lasso, LinearRegression, LogisticRegression,
-                                  Ridge)
+from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
+                                  LogisticRegression, Ridge)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -85,9 +85,11 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                         'GradientBoostingRegressor': [{'max_depth': [1, 3, 5]}],
                         'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'Lasso': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
+                                                  100.0]}],
                         'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'LinearRegression': [{}]}
-_REGRESSION_MODELS = frozenset(['DecisionTreeRegressor',
+_REGRESSION_MODELS = frozenset(['DecisionTreeRegressor', 'ElasticNet',
                                 'GradientBoostingRegressor', 'Lasso',
                                 'LinearRegression', 'RandomForestRegressor',
                                 'Ridge', 'SVR'])
@@ -320,6 +322,11 @@ class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
 
 
 @rescaled
+class RescaledElasticNet(ElasticNet):
+    pass
+
+
+@rescaled
 class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
     pass
 
@@ -436,7 +443,8 @@ class Learner(object):
             self._model_kwargs['kernel'] = 'linear'
 
         # If we center data, fit_intercept should be false for linear models
-        if self._model_type in {'Lasso', 'LinearRegression', 'Ridge'}:
+        if self._model_type in {'ElasticNet', 'Lasso', 'LinearRegression',
+                                'Ridge'}:
             self._model_kwargs['fit_intercept'] = (self._feature_scaling not in
                                                    {'with_mean', 'both'})
 
