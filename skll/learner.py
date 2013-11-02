@@ -54,7 +54,8 @@ from sklearn.utils import shuffle as sk_shuffle
 from sklearn.ensemble import (GradientBoostingClassifier,
                               GradientBoostingRegressor, RandomForestClassifier,
                               RandomForestRegressor)
-from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.linear_model import (Lasso, LinearRegression, LogisticRegression,
+                                  Ridge)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -83,10 +84,13 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                                                        [1, 3, 5]}],
                         'GradientBoostingRegressor': [{'max_depth': [1, 3, 5]}],
                         'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
+                        'Lasso': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'LinearRegression': [{}]}
 _REGRESSION_MODELS = frozenset(['DecisionTreeRegressor',
-                                'GradientBoostingRegressor',
-                                'RandomForestRegressor', 'Ridge', 'SVR'])
+                                'GradientBoostingRegressor', 'Lasso',
+                                'LinearRegression', 'RandomForestRegressor',
+                                'Ridge', 'SVR'])
 _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
                              'GradientBoostingRegressor', 'MultinomialNB',
@@ -321,6 +325,16 @@ class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
 
 
 @rescaled
+class RescaledLasso(Lasso):
+    pass
+
+
+@rescaled
+class RescaledLinearRegression(LinearRegression):
+    pass
+
+
+@rescaled
 class RescaledRandomForestRegressor(RandomForestRegressor):
     pass
 
@@ -420,6 +434,11 @@ class Learner(object):
         elif self._model_type == 'SVR':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
+
+        # If we center data, fit_intercept should be false for linear models
+        if self._model_type in {'Lasso', 'LinearRegression', 'Ridge'}:
+            self._model_kwargs['fit_intercept'] = (self._feature_scaling not in
+                                                   {'with_mean', 'both'})
 
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
