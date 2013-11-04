@@ -103,7 +103,7 @@ settings for each section is provided below, but to summarize:
     a training location, a test location, and set ``task`` to ``predict``.
 
 *   If you want to just **train a model**, specify a training location, and set
-    ``task`` to ``train_only``.
+    ``task`` to ``train``.
 
 *   A list of classifiers/regressors to try on your feature files is
     required.
@@ -430,8 +430,7 @@ Output
 
     **results** *(Optional)*
         Directory to store result files in. If omitted, the current working
-        directory is used, **and we're assumed to just want to generate
-        predictions if the test_location is specified.**
+        directory is used.
 
     **log** *(Optional)*
         Directory to store result files in. If omitted, the current working
