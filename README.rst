@@ -60,9 +60,39 @@ Requirements
 -  `configparser <http://pypi.python.org/pypi/configparser>`__ (only required for
    Python 2.7)
 -  `futures <http://pypi.python.org/pypi/futures>`__ (only required for Python 2.7)
+-  `logutils <http://pypi.python.org/pypi/logutils>`__ (only required for Python 2.7)
 
 Changelog
 ~~~~~~~~~
+
+-  v0.20.0
+
+   +  Refactored ``experiments`` module to remove unnecessary child processes,
+      and greatly simplify ablation code. This should fix issues #73 and #49.
+   +  Deprecated ``run_ablation`` function, as its functionality has been folded
+      into ``run_configuration``.
+   +  Removed ability to run multiple configuration files in parallel, since
+      this lead to too many processes being created most of the time.
+   +  Added ability to run multiple ablation experiments from the same
+      configuration file by adding support for multiple featuresets.
+   +  Added ``min_feature_count`` value to results files, which fixes #62.
+   +  Added more informative error messages when we run out of memory while
+      converting things to dense. They now say why something was converted to
+      dense in the first place.
+   +  Added option to ``skll_convert`` for creating ARFF files that can be used
+      for regression in Weka. Previously, files would always contain non-numeric
+      labels, which would not work with Weka.
+   +  Added ability to name relation in output ARFF files with ``skll_convert``.
+   +  Added ``class_map`` setting for collapsing multiple classes into one
+      (or just renaming them). See the
+      `run_experiment documentation <http://skll.readthedocs.org/en/latest/run_experiment.html#input>`__
+      for details.
+   +  Added warning when using ``SVC`` with ``probability`` flag set (#2).
+   +  Made logging much less verbose by default and switched to using
+      ``QueueHandler`` and ``QueueListener`` instances when dealing with
+      multiple processes/threads to prevent deadlocks (#75).
+   +  Added simple no-crash unit test for all learners. We check results with
+      some, but not all. (#63)
 
 -  v0.19.0
 
