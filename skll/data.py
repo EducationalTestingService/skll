@@ -189,10 +189,15 @@ class _JSONDictIter(_DictIter):
 
     def _sub_iter(self, file_or_list):
         for example_num, line in enumerate(file_or_list):
-            # If this is a comment line, move on
-            if line.startswith('//'):
+            # Remove extraneous whitespace
+            line = line.strip()
+
+            # If this is a comment line or a blank line, move on
+            if line.startswith('//') or not line:
                 continue
-            example = json.loads(line.strip())
+
+            # Process good lines
+            example = json.loads(line)
             # Convert all IDs to strings initially,
             # for consistency with csv and megam formats.
             curr_id = str(example.get("id",
