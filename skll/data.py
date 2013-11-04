@@ -1012,7 +1012,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                       unlabelled.
     :type label_col: str
     :param arff_regression: A boolean value indicating whether the ARFF files
-                            that are written should be written for arff_regression
+                            that are written should be written for regression
                             rather than classification, i.e., the class variable
                             y is numerical rather than an enumeration of classes
                             and all non-numeric attributes are removed.
