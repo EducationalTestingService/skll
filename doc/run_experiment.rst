@@ -48,10 +48,11 @@ The following feature file formats are supported:
         *   All other columns contain feature values, and every feature value
             must be specified (making this a poor choice for sparse data).
 
-    **jsonlines** *(Recommended)*
+    **jsonlines**/**ndj** *(Recommended)*
         A twist on the `JSON <http://www.json.org/>`_ format where every line is
-        a JSON dictionary (the entire contents of a normal JSON file). Each
-        dictionary is expected to contain the following keys:
+        a either JSON dictionary (the entire contents of a normal JSON file), or
+        a comment line starting with ``//``. Each dictionary is expected to
+        contain the following keys:
 
         *   *y*: The class label.
         *   *x*: A dictionary of feature values.
@@ -176,9 +177,9 @@ Input
         ``ValueError`` will be raised if this is not the case.
 
     **suffix** *(Optional)*
-        The file format the training/test files are in. Valid option are ".tsv",
-        ".megam", and ".jsonlines" (one complete JSON dict per line in the
-        file).
+        The file format the training/test files are in. Valid option are
+        ``.arff``, ``.csv``, ``.jsonlines``, ``.megam,``, ``.ndj``, and
+        ``.tsv``".
 
         If you omit this field, it is assumed that the "prefixes" listed
         in ``featuresets`` are actually complete filenames. This can be useful
