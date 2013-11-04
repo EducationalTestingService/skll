@@ -58,8 +58,7 @@ else:
     _HAVE_GRIDMAP = True
 
 
-_VALID_TASKS = frozenset(['predict', 'train_only',
-                          'evaluate', 'cross_validate'])
+_VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -383,18 +382,18 @@ def _parse_config_file(config_path):
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set and results locations must be set ' +
                          'when task is evaluate or predict.')
-    if (task == 'cross_validate' or task == 'train_only') and test_path:
+    if (task == 'cross_validate' or task == 'train') and test_path:
         raise ValueError('The test set path should not be set ' +
-                         'when task is cross_validate or train_only.')
-    if (task == 'train_only' or task == 'predict') and results_path:
+                         'when task is cross_validate or train.')
+    if (task == 'train' or task == 'predict') and results_path:
         raise ValueError('The results path should not be set ' +
-                         'when task is predict or train_only.')
-    if task == 'train_only' and not model_path:
+                         'when task is predict or train.')
+    if task == 'train' and not model_path:
         raise ValueError('The model path should be set ' +
-                         'when task is train_only.')
-    if task == 'train_only' and prediction_dir:
+                         'when task is train.')
+    if task == 'train' and prediction_dir:
         raise ValueError('The predictions path should not be set ' +
-                         'when task is train_only.')
+                         'when task is train.')
     if task == 'cross_validate' and model_path:
         raise ValueError('The models path should not be set ' +
                          'when task is cross_validate.')
@@ -588,7 +587,7 @@ def _classify_featureset(args):
                    "feature set {} ...").format(train_set_name, test_set_name,
                                                 featureset),
                   file=log_file)
-        elif task == 'train_only':
+        elif task == 'train':
             print("Training on {}, feature set {} ...".format(train_set_name,
                                                               featureset),
                   file=log_file)
@@ -701,7 +700,7 @@ def _classify_featureset(args):
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
                                 prediction_prefix=prediction_prefix)
-            # do nothing here for train_only
+            # do nothing here for train
 
         if task == 'cross_validate' or task == 'evaluate':
             results_json_path = os.path.join(results_path,
