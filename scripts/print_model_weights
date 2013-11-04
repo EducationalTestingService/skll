@@ -27,6 +27,7 @@ Simple script for printing out model weights.
 from __future__ import print_function, unicode_literals
 
 import argparse
+import logging
 import sys
 
 from six import iteritems
@@ -47,6 +48,9 @@ if __name__ == '__main__':
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
+
+    # Make warnings from built-in warnings module get formatted more nicely
+    logging.captureWarnings(True)
 
     k = args.k if args.k > 0 else None
 

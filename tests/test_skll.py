@@ -21,6 +21,7 @@ the future.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Dan Blanchard (dblanchard@ets.org)
 '''
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -33,6 +34,7 @@ import os
 import re
 import shlex
 import subprocess
+import sys
 from collections import OrderedDict
 from io import open
 
@@ -42,7 +44,7 @@ from nose.tools import *
 
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
-                              _load_cv_folds, _parse_config_file,
+                              _load_cv_folds, _setup_config_parser,
                               run_ablation)
 from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
@@ -141,7 +143,7 @@ def fill_in_config_paths(config_template_path):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    config = _parse_config_file(config_template_path)
+    config = _setup_config_parser(config_template_path)
 
     task = config.get("General", "task")
     #experiment_name = config.get("General", "experiment_name")
@@ -382,10 +384,10 @@ def test_summary():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 17 rows,
+            # the learner results dictionaries should have 18 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 17)
+            eq_(len(row), 18)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -399,6 +401,25 @@ def test_summary():
 
     for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
         yield check_summary_score, result_score, summary_score, learner_name
+
+
+def test_backward_compatibility():
+    '''
+    Verify that a model from v0.9.17 can still be loaded and generate the same predictions.
+    '''
+    predict_path = os.path.join(_my_dir, 'backward_compatibility',
+                                'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
+    model_path = os.path.join(_my_dir, 'backward_compatibility',
+                              'v0.9.17_test_summary_test_summary_LogisticRegression.{}.model'.format(sys.version_info[0]))
+    test_path = os.path.join(_my_dir, 'backward_compatibility', 'v0.9.17_test_summary.jsonlines')
+
+    learner = Learner.from_file(model_path)
+    examples = load_examples(test_path, quiet=True)
+    new_predictions = learner.predict(examples)[:, 1]
+
+    with open(predict_path) as predict_file:
+        for line, new_val in zip(predict_file, new_predictions):
+            assert_almost_equal(float(line.strip()), new_val)
 
 
 def make_sparse_data():
@@ -445,6 +466,54 @@ def test_sparse_predict():
     run_configuration(config_path, quiet=True)
 
     with open(os.path.join(_my_dir, 'output', 'test_sparse_test_sparse_LogisticRegression.results')) as f:
+        outstr = f.read()
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
+    assert_almost_equal(logistic_result_score, 0.5)
+
+
+def make_class_map_data():
+    # Create training file
+    train_path = os.path.join(_my_dir, 'train', 'test_class_map.jsonlines')
+    ids = []
+    classes = []
+    features = []
+    class_names = ['beagle', 'cat', 'dachsund', 'cat']
+    for i in range(1, 101):
+        y = class_names[i % 4]
+        ex_id = "{}{}".format(y, i)
+        # note that f1 and f5 are missing in all instances but f4 is not
+        x = {"f2": i+1, "f3": i+2, "f4": i+5}
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+    write_feature_file(train_path, ids, classes, features)
+
+    # Create test file
+    test_path = os.path.join(_my_dir, 'test', 'test_class_map.jsonlines')
+    ids = []
+    classes = []
+    features = []
+    for i in range(1, 51):
+        y = class_names[i % 4]
+        ex_id = "{}{}".format(y, i)
+        # f1 and f5 are not missing in any instances here but f4 is
+        x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+    write_feature_file(test_path, ids, classes, features)
+
+
+def test_class_map():
+    make_class_map_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_class_map.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, quiet=True)
+
+    with open(os.path.join(_my_dir, 'output', 'test_class_map_test_class_map_LogisticRegression.results')) as f:
         outstr = f.read()
         logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 

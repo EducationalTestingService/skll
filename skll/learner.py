@@ -27,11 +27,12 @@ Provides easy-to-use wrapper around scikit-learn.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import inspect
+import logging
 import os
 import sys
 from collections import defaultdict
 from functools import wraps
-from multiprocessing import cpu_count, log_to_stderr
+from multiprocessing import cpu_count
 
 import numpy as np
 import scipy.sparse as sp
@@ -106,7 +107,7 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         self._warned = False
 
     def __iter__(self):
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
             train_len = len(train_index)
@@ -403,6 +404,12 @@ class Learner(object):
         if self._model_type == 'SVC':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
+            if self.probability:
+                logger = logging.getLogger(__name__)
+                logger.warning('Because LibSVM does an internal ' +
+                               'cross-validation to produce probabilities, ' +
+                               'results will not be exactly replicable when ' +
+                               'using SVC and probability mode.')
         elif self._model_type == {'DecisionTreeClassifier'}:
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type in {'RandomForestClassifier',
@@ -584,10 +591,11 @@ class Learner(object):
                                 " strings.  Convert them to floats.")
 
         if max_feat_abs > 1000.0:
-            logging.warning(("You have a feature with a very large absolute " +
-                             "value ({}).  That may cause the learning " +
-                             "algorithm to crash or perform " +
-                             "poorly.").format(max_feat_abs))
+            logger = logging.getLogger(__name__)
+            logger.warning(("You have a feature with a very large absolute " +
+                            "value ({}).  That may cause the learning " +
+                            "algorithm to crash or perform " +
+                            "poorly.").format(max_feat_abs))
 
     def _train_setup(self, examples):
         '''
@@ -616,9 +624,8 @@ class Learner(object):
             # Given a list of all labels in the dataset and a list of the
             # unique labels in the set, convert the first list to an array of
             # numbers.
-            self.label_dict = {}
-            for i, label in enumerate(self.label_list):
-                self.label_dict[label] = i
+            self.label_dict = {label: i for i, label in
+                               enumerate(self.label_list)}
 
         # Create feature name -> value mapping
         self.feat_vectorizer = examples.feat_vectorizer
@@ -700,7 +707,18 @@ class Learner(object):
 
         # Convert to dense if necessary
         if self._use_dense_features:
-            xtrain = xtrain.todense()
+            try:
+                xtrain = xtrain.todense()
+            except MemoryError:
+                if self._model_type in _REQUIRES_DENSE:
+                    reason = ('{} does not support sparse ' +
+                              'matrices.').format(self._model_type)
+                else:
+                    reason = ('{} feature scaling requires a dense ' +
+                              'matrix.').format(self._feature_scaling)
+                raise MemoryError('Ran out of memory when converting training' +
+                                  ' data to dense. This was required because ' +
+                                  reason)
 
         # Scale features if necessary
         if self._model_type != 'MultinomialNB':
@@ -901,7 +919,18 @@ class Learner(object):
 
         # Convert to dense if necessary
         if self._use_dense_features:
-            xtest = xtest.todense()
+            try:
+                xtest = xtest.todense()
+            except MemoryError:
+                if self._model_type in _REQUIRES_DENSE:
+                    reason = ('{} does not support sparse ' +
+                              'matrices.').format(self._model_type)
+                else:
+                    reason = ('{} feature scaling requires a dense ' +
+                              'matrix.').format(self._feature_scaling)
+                raise MemoryError('Ran out of memory when converting test ' +
+                                  ' data to dense. This was required because ' +
+                                  reason)
 
         # Scale xtest if necessary
         if self._model_type != 'MultinomialNB':
@@ -914,9 +943,10 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logging.error(("Model type: {}\nModel: {}\nProbability: " +
-                           "{}\n").format(self._model_type, self._model,
-                                          self.probability))
+            logger = logging.getLogger(__name__)
+            logger.error(("Model type: {}\nModel: {}\nProbability: " +
+                          "{}\n").format(self._model_type, self._model,
+                                         self.probability))
             raise e
 
         # write out the predictions if we are asked to

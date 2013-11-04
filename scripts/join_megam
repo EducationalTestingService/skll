@@ -27,6 +27,7 @@ Join MegaM files
 from __future__ import print_function, unicode_literals
 
 import argparse
+import logging
 import os
 import re
 import sys
@@ -84,12 +85,13 @@ def get_unique_name(feature_name, prev_feature_set, filename):
     # Add suffix multiple times if necessary
     while new_feature_name in prev_feature_set:
         new_feature_name += "_" + suffix
+
+    logger = logging.getLogger(__name__)
     if new_feature_name != feature_name and feature_name not in warned_about:
-        print(("Warning: Feature named {} already found in previous files. " +
-               "Renaming to {} to prevent " +
-               "duplicates.").format(feature_name,
-                                     new_feature_name).encode('utf-8'),
-              file=sys.stderr)
+        logger.warning(("Feature named {} already found in previous files. " +
+                        "Renaming to {} to prevent " +
+                        "duplicates.").format(feature_name,
+                                              new_feature_name).encode('utf-8'))
         warned_about.add(feature_name)
     return new_feature_name
 
@@ -123,6 +125,10 @@ if __name__ == '__main__':
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
+
+    # Make warnings from built-in warnings module get formatted more nicely
+    logging.captureWarnings(True)
+    logger = logging.getLogger(__name__)
 
     # Map from filenames to feature strings
     feature_dict = OrderedDict()
@@ -174,22 +180,19 @@ if __name__ == '__main__':
                             feature_dict[curr_filename] = new_feat_pair if curr_filename not in feature_dict else feature_dict[curr_filename] + new_feat_pair
                             curr_feature_set.add(feat_name)
                     except ValueError:
-                        print(("Error: Invalid feature value in feature " +
-                               "pair '{} {}' for file {}").format(feat_name,
-                                                                  feat_val,
-                                                                  curr_filename).encode('utf-8'),
-                              file=sys.stderr)
-                        sys.exit(1)
+                        raise ValueError(("Invalid feature value in feature " +
+                                          "pair '{} {}' for file {}").format(feat_name,
+                                                                             feat_val,
+                                                                             curr_filename).encode('utf-8'))
 
             # Otherwise warn about lack of features (although that really
             # just means all of them have zero values)
             else:
                 if curr_filename not in feature_dict:
                     feature_dict[curr_filename] = ""
-                print(("Warning: No features found for {} in {}. All are " +
-                       "assumed to be zero.").format(curr_filename,
-                                                     infile.name).encode('utf-8'),
-                      file=sys.stderr)
+                logger.warning(("No features found for {} in {}. All are " +
+                                "assumed to be zero.").format(curr_filename,
+                                                              infile.name).encode('utf-8'))
 
         # Add current file's features to set of seen features
         prev_feature_set.update(curr_feature_set)

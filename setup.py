@@ -30,12 +30,14 @@ def readme():
 
 
 def requirements():
-    with open('requirements.txt') as f:
-        reqs = f.read().splitlines()
-    # Add backported requirements for 2.7
+    # Use backported requirements for 2.7
     if sys.version_info < (3, 0):
-        reqs.append('configparser')
-        reqs.append('futures')
+        req_path = 'requirements_rtd.txt'
+    # Use 3.x requirements
+    else:
+        req_path = 'requirements.txt'
+    with open(req_path) as f:
+        reqs = f.read().splitlines()
     return reqs
 
 

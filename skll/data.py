@@ -28,6 +28,7 @@ from __future__ import print_function, unicode_literals
 
 import csv
 import json
+import logging
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -35,7 +36,7 @@ from csv import DictReader, DictWriter
 from decimal import Decimal
 from itertools import chain, islice
 from io import open, BytesIO, StringIO
-from multiprocessing import log_to_stderr
+from multiprocessing import Queue
 from operator import itemgetter
 
 import numpy as np
@@ -44,6 +45,12 @@ from collections import namedtuple
 from six import iteritems, string_types
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer
+
+# Import QueueHandler and QueueListener for multiprocess-safe logging
+if sys.version_info < (3, 0):
+    from logutils.queue import QueueHandler, QueueListener
+else:
+    from logging.handlers import QueueHandler, QueueListener
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
@@ -74,18 +81,23 @@ class _DictIter(object):
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
     """
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y'):
+                 label_col='y', class_map=None):
         super(_DictIter, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
         self.label_col = label_col
+        self.class_map = class_map
 
     def __iter__(self):
         # Setup logger
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
 
         logger.debug('DictIter type: {}'.format(type(self)))
         logger.debug('path_or_list: {}'.format(self.path_or_list))
@@ -147,7 +159,8 @@ class _DummyDictIter(_DictIter):
                                       'converted to in ' +
                                       '{}').format(curr_id,
                                                    example))
-            class_name = _safe_float(example['y']) if 'y' in example else None
+            class_name = (_safe_float(example['y'], replace_dict=self.class_map)
+                          if 'y' in example else None)
             example = example['x']
             yield curr_id, class_name, example
 
@@ -181,8 +194,8 @@ class _JSONDictIter(_DictIter):
             # for consistency with csv and megam formats.
             curr_id = str(example.get("id",
                                       "EXAMPLE_{}".format(example_num)))
-            class_name = (_safe_float(example["y"]) if 'y' in example
-                          else None)
+            class_name = (_safe_float(example['y'], replace_dict=self.class_map)
+                          if 'y' in example else None)
             example = example["x"]
 
             if self.ids_to_floats:
@@ -233,11 +246,13 @@ class _MegaMDictIter(_DictIter):
                 del line
                 # Line is just a class label
                 if num_cols == 1:
-                    class_name = _safe_float(split_line[0])
+                    class_name = _safe_float(split_line[0],
+                                             replace_dict=self.class_map)
                     field_pairs = []
                 # Line has a class label and feature-value pairs
                 elif num_cols % 2 == 1:
-                    class_name = _safe_float(split_line[0])
+                    class_name = _safe_float(split_line[0],
+                                             replace_dict=self.class_map)
                     field_pairs = split_line[1:]
                 # Line just has feature-value pairs
                 elif num_cols % 2 == 0:
@@ -301,21 +316,27 @@ class _DelimitedDictIter(_DictIter):
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
     :param dialect: The dialect of to pass on to the underlying CSV reader.
     :type dialect: str
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y', dialect=None):
+                 label_col='y', class_map=None, dialect=None):
         super(_DelimitedDictIter, self).__init__(path_or_list, quiet=quiet,
                                                  ids_to_floats=ids_to_floats,
-                                                 label_col=label_col)
+                                                 label_col=label_col,
+                                                 class_map=class_map)
         self.dialect = dialect
 
     def _sub_iter(self, file_or_list):
         reader = DictReader(file_or_list, dialect=self.dialect)
         for example_num, row in enumerate(reader):
             if self.label_col is not None and self.label_col in row:
-                class_name = _safe_float(row[self.label_col])
+                class_name = _safe_float(row[self.label_col],
+                                         replace_dict=self.class_map)
                 del row[self.label_col]
             else:
                 class_name = None
@@ -391,11 +412,12 @@ class _CSVDictIter(_DelimitedDictIter):
     :type ids_to_floats: bool
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y'):
+                 label_col='y', class_map=None):
         super(_CSVDictIter, self).__init__(path_or_list, quiet=quiet,
                                            ids_to_floats=ids_to_floats,
                                            label_col=label_col,
-                                           dialect='excel')
+                                           dialect='excel',
+                                           class_map=class_map)
 
 
 class _ARFFDictIter(_DelimitedDictIter):
@@ -416,11 +438,12 @@ class _ARFFDictIter(_DelimitedDictIter):
     :type ids_to_floats: bool
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y'):
+                 label_col='y', class_map=None):
         super(_ARFFDictIter, self).__init__(path_or_list, quiet=quiet,
                                             ids_to_floats=ids_to_floats,
                                             label_col=label_col,
-                                            dialect='arff')
+                                            dialect='arff',
+                                            class_map=class_map)
 
     @staticmethod
     def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
@@ -494,11 +517,12 @@ class _TSVDictIter(_DelimitedDictIter):
     :type ids_to_floats: bool
     '''
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y'):
+                 label_col='y', class_map=None):
         super(_TSVDictIter, self).__init__(path_or_list, quiet=quiet,
                                            ids_to_floats=ids_to_floats,
                                            label_col=label_col,
-                                           dialect='excel-tab')
+                                           dialect='excel-tab',
+                                           class_map=class_map)
 
 
 def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
@@ -511,23 +535,24 @@ def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
         res_array = np.array([curr_id for curr_id, _, _ in example_iter])
     except Exception as e:
         # Setup logger
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
         logger.exception('Failed to load IDs for {}.'.format(path))
         raise e
     return res_array
 
 
-def _classes_for_iter_type(example_iter_type, path, label_col):
+def _classes_for_iter_type(example_iter_type, path, label_col, class_map):
     '''
     Little helper function to return an array of classes for a given example
     generator (and whether or not the examples have labels).
     '''
     try:
-        example_iter = example_iter_type(path, label_col=label_col)
+        example_iter = example_iter_type(path, label_col=label_col,
+                                         class_map=class_map)
         res_array = np.array([class_name for _, class_name, _ in example_iter])
     except Exception as e:
         # Setup logger
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
         logger.exception('Failed to load classes for {}.'.format(path))
         raise e
     return res_array
@@ -545,7 +570,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
         feat_dict_generator = map(itemgetter(2), example_iter)
     except Exception as e:
         # Setup logger
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
         logger.exception('Failed to load features for {}.'.format(path))
         raise e
     try:
@@ -556,7 +581,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
 
 
 def load_examples(path, quiet=False, sparse=True, label_col='y',
-                  ids_to_floats=False):
+                  ids_to_floats=False, class_map=None):
     '''
     Loads examples in the ARFF, CSV/TSV, JSONLINES (a json dict per line), or
     MegaM formats.
@@ -587,6 +612,10 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
 
     :return: 4-tuple of an array example ids, an array of class labels, a
              scipy CSR matrix of features, and a DictVectorizer containing
@@ -594,7 +623,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
              the feature matrix.
     '''
     # Setup logger
-    logger = log_to_stderr()
+    logger = logging.getLogger(__name__)
 
     logger.debug('Path: {}'.format(path))
 
@@ -628,6 +657,14 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     else:
         executor_type = ProcessPoolExecutor
 
+    # Create thread/process-safe logger stuff
+    queue = Queue(-1)
+    q_handler = QueueHandler(queue)
+    logger = logging.getLogger(__name__)
+    logger.addHandler(q_handler)
+    q_listener = QueueListener(queue)
+    q_listener.start()
+
     # Create generators that we can use to create numpy arrays without wasting
     # memory (even though this requires reading the file multiple times).
     # Do this using a process pool so that we can clear out the temporary
@@ -636,7 +673,8 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
         ids_future = executor.submit(_ids_for_iter_type, example_iter_type,
                                      path, ids_to_floats)
         classes_future = executor.submit(_classes_for_iter_type,
-                                         example_iter_type, path, label_col)
+                                         example_iter_type, path, label_col,
+                                         class_map)
         features_future = executor.submit(_features_for_iter_type,
                                           example_iter_type, path, quiet,
                                           sparse, label_col)
@@ -645,6 +683,10 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
         ids = ids_future.result()
         classes = classes_future.result()
         features, feat_vectorizer = features_future.result()
+
+    # Tear-down thread/process-safe logging and switch back to regular
+    q_listener.stop()
+    logger.removeHandler(q_handler)
 
     # Make sure we have the same number of ids, classes, and features
     assert ids.shape[0] == classes.shape[0] == features.shape[0]
@@ -684,11 +726,22 @@ def _sanitize_line(line):
     return ''.join(char_list)
 
 
-def _safe_float(text):
+def _safe_float(text, replace_dict=None):
     '''
     Attempts to convert a string to a float, but if that's not possible, just
     returns the original value.
+
+    :param text: The text to convert.
+    :type text: str
+    :param replace_dict: Mapping from text to replacement text values. This is
+                         mainly used for collapsing multiple classes into a
+                         single class. Replacing happens before conversion to
+                         floats. Anything not in the mapping will be kept the
+                         same.
+    :type replace_dict: dict from str to str
     '''
+    if replace_dict is not None and text in replace_dict:
+        text = replace_dict[text]
     try:
         return float(text)
     except ValueError:
@@ -726,7 +779,7 @@ def _examples_to_dictwriter_inputs(ids, classes, features, label_col):
 
 
 def _write_arff_file(path, ids, classes, features, label_col,
-                     relation='skll_relation'):
+                     relation='skll_relation', arff_regression=False):
     '''
     Writes a feature file in .csv or .tsv format with the given a list of IDs,
     classes, and features.
@@ -749,12 +802,18 @@ def _write_arff_file(path, ids, classes, features, label_col,
     :param relation: The name to give the relationship represented in this
                      featureset.
     :type relation: str
+    :param arff_regression: Make the class variable numeric instead of nominal
+                            and remove all non-numeric attributes.
+    :type relation: bool
     '''
     # Convert IDs, classes, and features into format for DictWriter
     fields, instances = _examples_to_dictwriter_inputs(ids, classes, features,
                                                        label_col)
     if label_col in fields:
         fields.remove(label_col)
+
+    # a list to keep track of any non-numeric fields
+    non_numeric_fields = []
 
     # Write file
     if sys.version_info >= (3, 0):
@@ -774,20 +833,35 @@ def _write_arff_file(path, ids, classes, features, label_col,
                 if field in instance:
                     numeric = not isinstance(instance[field], string_types)
                     break
+
+            # ignore non-numeric fields if we are dealing with regression
+            # but keep track of them for later use
+            if arff_regression and not numeric:
+                non_numeric_fields.append(field)
+                continue
+
             print("@attribute '{}'".format(field.replace('\\', '\\\\')
                                                 .replace("'", "\\'")),
                   end=" ", file=f)
             print("numeric" if numeric else "string", file=f)
 
         # Print class label header if necessary
-        if set(classes) != {None}:
-            print("@attribute {} ".format(label_col) +
-                  "{" + ','.join(sorted(set(classes))) + "}",
-                  file=f)
-            sorted_fields.append(label_col)
+        if arff_regression:
+            print("@attribute {} numeric".format(label_col), file=f)
+        else:
+            if set(classes) != {None}:
+                print("@attribute {} ".format(label_col) +
+                      "{" + ','.join(map(str, sorted(set(classes)))) + "}",
+                      file=f)
+        sorted_fields.append(label_col)
 
-        # Create CSV writer to handle missing values for lines in data section
-        writer = csv.DictWriter(f, sorted_fields, restval=0, dialect='arff')
+        # throw out any non-numeric fields if we are writing for regression
+        if arff_regression:
+            sorted_fields = [fld for fld in sorted_fields if fld not in non_numeric_fields]
+
+        # Create CSV writer to handle missing values for lines in data section and to ignore
+        # the instance values for non-numeric attributes
+        writer = csv.DictWriter(f, sorted_fields, restval=0, extrasaction='ignore', dialect='arff')
 
         # Output instances
         print("\n@data", file=f)
@@ -904,7 +978,8 @@ def _write_megam_file(path, ids, classes, features):
 
 
 def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
-                       id_prefix='EXAMPLE_', label_col='y'):
+                       id_prefix='EXAMPLE_', label_col='y', arff_regression=False,
+                       arff_relation='skll_relation'):
     '''
     Writes a feature file in either .jsonlines, .megam, or .tsv formats
     with the given a list of IDs, classes, and features.
@@ -936,9 +1011,17 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                       `None` is specified, the data is considered to be
                       unlabelled.
     :type label_col: str
+    :param arff_regression: A boolean value indicating whether the ARFF files
+                            that are written should be written for arff_regression
+                            rather than classification, i.e., the class variable
+                            y is numerical rather than an enumeration of classes
+                            and all non-numeric attributes are removed.
+    :type label_col: bool
+    :param arff_relation: Relation name for ARFF file.
+    :type label_col: str
     '''
     # Setup logger
-    logger = log_to_stderr()
+    logger = logging.getLogger(__name__)
 
     logger.debug('Feature vectorizer: {}'.format(feat_vectorizer))
     logger.debug('Features: {}'.format(features))
@@ -981,7 +1064,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         _write_megam_file(path, ids, classes, features)
     # Create ARFF file if asked
     elif path.endswith(".arff"):
-        _write_arff_file(path, ids, classes, features, label_col)
+        _write_arff_file(path, ids, classes, features, label_col, arff_regression=arff_regression,
+                         relation=arff_relation)
     # Invalid file suffix, raise error
     else:
         raise ValueError('Output file must be in either .tsv, .megam, or ' +
