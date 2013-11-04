@@ -172,13 +172,13 @@ class _DummyDictIter(_DictIter):
 
 class _JSONDictIter(_DictIter):
     '''
-    Iterator to convert current line in .jsonlines file to a dictionary with the
-    following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
+    Iterator to convert current line in .jsonlines/.ndj file to a dictionary
+    with the following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
     (originally "y"), and all of the feature-values in the sub-dictionary "x".
     Basically, we're flattening the structure, but renaming "y" and "id" to
     prevent possible conflicts with feature names in "x".
 
-    :param path_or_list: Path to .jsonlines file
+    :param path_or_list: Path to .jsonlines/.ndj file
     :type path_or_list: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
@@ -189,6 +189,9 @@ class _JSONDictIter(_DictIter):
 
     def _sub_iter(self, file_or_list):
         for example_num, line in enumerate(file_or_list):
+            # If this is a comment line, move on
+            if line.startswith('//'):
+                continue
             example = json.loads(line.strip())
             # Convert all IDs to strings initially,
             # for consistency with csv and megam formats.
@@ -583,8 +586,8 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
 def load_examples(path, quiet=False, sparse=True, label_col='y',
                   ids_to_floats=False, class_map=None):
     '''
-    Loads examples in the ARFF, CSV/TSV, JSONLINES (a json dict per line), or
-    MegaM formats.
+    Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.megam``,
+    ``.ndj``, or ``.tsv`` formats.
 
     If you would like to include example/instance IDs in your files, they must
     be specified in the following ways:
@@ -627,23 +630,28 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
 
     logger.debug('Path: {}'.format(path))
 
+
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
     if not isinstance(path, string_types):
         example_iter_type = _DummyDictIter
-    elif path.endswith(".tsv"):
-        example_iter_type = _TSVDictIter
-    elif path.endswith(".csv"):
-        example_iter_type = _CSVDictIter
-    elif path.endswith(".arff"):
-        example_iter_type = _ARFFDictIter
-    elif path.endswith(".jsonlines"):
-        example_iter_type = _JSONDictIter
-    elif path.endswith(".megam"):
-        example_iter_type = _MegaMDictIter
+    # Lowercase path for file extension checking, if it's a string
     else:
-        raise ValueError('Example files must be in either .tsv, .megam, or ' +
-                         '.jsonlines format. You specified: {}'.format(path))
+        lc_path = path.lower()
+        if lc_path.endswith(".tsv"):
+            example_iter_type = _TSVDictIter
+        elif lc_path.endswith(".csv"):
+            example_iter_type = _CSVDictIter
+        elif lc_path.endswith(".arff"):
+            example_iter_type = _ARFFDictIter
+        elif lc_path.endswith(".jsonlines") or lc_path.endswith('.ndj'):
+            example_iter_type = _JSONDictIter
+        elif lc_path.endswith(".megam"):
+            example_iter_type = _MegaMDictIter
+        else:
+            raise ValueError(('Example files must be in either .arff, .csv, ' +
+                              '.jsonlines, .megam, .ndj, or .tsv format. You '+
+                              'specified: {}').format(path))
 
     logger.debug('Example iterator type: {}'.format(example_iter_type))
 
@@ -698,10 +706,10 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
     '''
     This function is to facilitate programmatic use of Learner.predict()
     and other functions that take ExamplesTuple objects as input.
-    It converts a .jsonlines-style list of dictionaries into
+    It converts a .jsonlines/.ndj-style list of dictionaries into
     an ExamplesTuple.
 
-    :param example_dicts: An list of dictionaries following the .jsonlines
+    :param example_dicts: An list of dictionaries following the .jsonlines/.ndj
                           format (i.e., features 'x', label 'y', and 'id').
     :type example_dicts: iterable of dicts
 
@@ -913,8 +921,8 @@ def _write_delimited_file(path, ids, classes, features, label_col, dialect):
 
 def _write_jsonlines_file(path, ids, classes, features):
     '''
-    Writes a feature file in .jsonlines format with the given a list of IDs,
-    classes, and features.
+    Writes a feature file in .jsonlines/.ndj format with the given a list of
+    IDs, classes, and features.
 
     :param path: A path to the feature file we would like to create.
     :type path: str
@@ -981,11 +989,13 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                        id_prefix='EXAMPLE_', label_col='y', arff_regression=False,
                        arff_relation='skll_relation'):
     '''
-    Writes a feature file in either .jsonlines, .megam, or .tsv formats
-    with the given a list of IDs, classes, and features.
+    Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
+    classes, and features.
 
     :param path: A path to the feature file we would like to create. The suffix
-                 to this filename must be .jsonlines, .megam, or .tsv.
+                 to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
+                 ``.megam``, ``.ndj``, or ``.tsv``
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
                 IDs will be automatically generated with the prefix specified by
@@ -1048,25 +1058,30 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     if classes is None:
         classes = (None for _ in range(len(features)))
 
+    # Lowercase path for file extension checking
+    lc_path = path.lower()
+
     # Create TSV file if asked
-    if path.endswith(".tsv"):
+    if lc_path.endswith(".tsv"):
         _write_delimited_file(path, ids, classes, features, label_col,
                               'excel-tab')
     # Create CSV file if asked
-    elif path.endswith(".csv"):
+    elif lc_path.endswith(".csv"):
         _write_delimited_file(path, ids, classes, features, label_col,
                               'excel')
     # Create .jsonlines file if asked
-    elif path.endswith(".jsonlines"):
+    elif lc_path.endswith(".jsonlines") or lc_path.endswith('.ndj'):
         _write_jsonlines_file(path, ids, classes, features)
     # Create .megam file if asked
-    elif path.endswith(".megam"):
+    elif lc_path.endswith(".megam"):
         _write_megam_file(path, ids, classes, features)
     # Create ARFF file if asked
-    elif path.endswith(".arff"):
-        _write_arff_file(path, ids, classes, features, label_col, arff_regression=arff_regression,
+    elif lc_path.endswith(".arff"):
+        _write_arff_file(path, ids, classes, features, label_col,
+                         arff_regression=arff_regression,
                          relation=arff_relation)
     # Invalid file suffix, raise error
     else:
-        raise ValueError('Output file must be in either .tsv, .megam, or ' +
-                         '.jsonlines format. You specified: {}'.format(path))
+        raise ValueError(('Output file must be in either .arff, .csv, ' +
+                          '.jsonlines, .megam, .ndj, or .tsv format. You ' +
+                          'specified: {}').format(path))
