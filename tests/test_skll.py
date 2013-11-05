@@ -772,6 +772,8 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
     if not os.path.exists(merge_dir):
         os.makedirs(merge_dir)
 
+    train_path = os.path.join(merge_dir, 'all{}'.format(suffix))
+
     # Create lists we will write files from
     ids = []
     features = []
@@ -787,17 +789,14 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
         features.append(x)
 
     # Unmerged
+    subset_dict = {}
     for i in range(num_feat_files):
-        train_path = os.path.join(merge_dir, '{}{}'.format(i, suffix))
-        sub_features = []
-        for example_num in range(num_examples):
-            feat_num = i * num_feats_per_file
-            x = {"f{:03d}".format(feat_num + j): features[example_num]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
-            sub_features.append(x)
-        write_feature_file(train_path, ids, classes if i == 0 else [None] * num_examples, sub_features)  # Make one of the files not have labels
+        feat_num = i * num_feats_per_file
+        subset_dict['{}'.format(i)] = ["f{:03d}".format(feat_num + j) for j in
+                                       range(num_feats_per_file)]
+    write_feature_file(train_path, ids, classes, features, subsets=subset_dict)
 
     # Merged
-    train_path = os.path.join(merge_dir, 'all{}'.format(suffix))
     write_feature_file(train_path, ids, classes, features)
 
 
@@ -809,12 +808,13 @@ def check_load_featureset(suffix, numeric_ids):
 
     # Load unmerged data and merge it
     dirpath = os.path.join(_my_dir, 'train', 'test_merging')
-    featureset = [str(i) for i in range(num_feat_files)]
+    featureset = ['all_{}'.format(i) for i in range(num_feat_files)]
     merged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
 
     # Load pre-merged data
     featureset = ['all']
-    premerged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    premerged_examples = _load_featureset(dirpath, featureset, suffix,
+                                          quiet=True)
 
     assert np.all(merged_examples.ids == premerged_examples.ids)
     assert np.all(merged_examples.classes == premerged_examples.classes)
@@ -828,10 +828,10 @@ def check_load_featureset(suffix, numeric_ids):
 
 def test_load_featureset():
     # Test merging with numeric IDs
-    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
+    for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, True
 
-    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
+    for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, False
 
 
@@ -965,5 +965,5 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.megam', '.tsv', '.csv', '.arff'], 2):
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff'], 2):
         yield check_convert_featureset, from_suffix, to_suffix

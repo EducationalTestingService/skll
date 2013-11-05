@@ -990,9 +990,90 @@ def _write_megam_file(path, ids, classes, features):
                   file=f)
 
 
+def _write_sub_feature_file(path, ids, classes, features, filter_features,
+                            label_col='y', arff_regression=False,
+                            arff_relation='skll_relation'):
+    '''
+    Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
+    classes, and features.
+
+    :param path: A path to the feature file we would like to create. The suffix
+                 to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
+                 ``.megam``, ``.ndj``, or ``.tsv``
+    :type path: str
+    :param ids: The IDs for each instance in the feature list/array. If None,
+                IDs will be automatically generated with the prefix specified by
+                `id_prefix` followed by the row number. If `id_prefix` is also
+                None, no IDs will be written to the file.
+    :type ids: list of str
+    :param classes: The class labels for each instance in the feature
+                    list/array. If None, no class labels will be added to output
+                    file.
+    :type classes: list of str
+    :param features: The features for each instance represented as either a list
+                     of dictionaries.
+    :type features: list of dict
+    :param filter_features: Set of features to include in current feature file.
+    :type filter_features: set of str
+    :param label_col: Name of the column which contains the class labels for
+                      CSV/TSV files. If no column with that name exists, or
+                      `None` is specified, the data is considered to be
+                      unlabelled.
+    :type label_col: str
+    :param arff_regression: A boolean value indicating whether the ARFF files
+                            that are written should be written for arff_regression
+                            rather than classification, i.e., the class variable
+                            y is numerical rather than an enumeration of classes
+                            and all non-numeric attributes are removed.
+    :type label_col: bool
+    :param arff_relation: Relation name for ARFF file.
+    :type label_col: str
+    :param subsets: A mapping from subset names to lists of feature names that
+                    are included in those sets. If given, a feature file will
+                    be written for every subset (with the name containing the
+                    subset name as suffix to ``path``).
+    :type subsets: dict (str to list of str)
+    '''
+    # Get lowercase extension for file extension checking
+    ext = os.path.splitext(path)[1].lower()
+
+    # Filter feature dictionaries if asked
+    if filter_features:
+        features = [{feat_name: feat_value for feat_name, feat_value in
+                     iteritems(feat_dict) if feat_name in filter_features} for
+                    feat_dict in features]
+
+    # Create TSV file if asked
+    if ext == ".tsv":
+        _write_delimited_file(path, ids, classes, features, label_col,
+                              'excel-tab')
+    # Create CSV file if asked
+    elif ext == ".csv":
+        _write_delimited_file(path, ids, classes, features, label_col,
+                              'excel')
+    # Create .jsonlines file if asked
+    elif ext == ".jsonlines" or ext == '.ndj':
+        _write_jsonlines_file(path, ids, classes, features)
+    # Create .megam file if asked
+    elif ext == ".megam":
+        _write_megam_file(path, ids, classes, features)
+    # Create ARFF file if asked
+    elif ext == ".arff":
+        _write_arff_file(path, ids, classes, features, label_col,
+                         arff_regression=arff_regression,
+                         relation=arff_relation)
+    # Invalid file suffix, raise error
+    else:
+        raise ValueError(('Output file must be in either .arff, .csv, ' +
+                          '.jsonlines, .megam, .ndj, or .tsv format. You ' +
+                          'specified: {}').format(path))
+
+
 def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
-                       id_prefix='EXAMPLE_', label_col='y', arff_regression=False,
-                       arff_relation='skll_relation'):
+                       id_prefix='EXAMPLE_', label_col='y',
+                       arff_regression=False, arff_relation='skll_relation',
+                       subsets=None):
     '''
     Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
     ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
@@ -1027,13 +1108,18 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                       unlabelled.
     :type label_col: str
     :param arff_regression: A boolean value indicating whether the ARFF files
-                            that are written should be written for arff_regression
+                            that are written should be written for regression
                             rather than classification, i.e., the class variable
                             y is numerical rather than an enumeration of classes
                             and all non-numeric attributes are removed.
-    :type label_col: bool
+    :type arff_regression: bool
     :param arff_relation: Relation name for ARFF file.
-    :type label_col: str
+    :type arff_relation: str
+    :param subsets: A mapping from subset names to lists of feature names that
+                    are included in those sets. If given, a feature file will
+                    be written for every subset (with the name containing the
+                    subset name as suffix to ``path``).
+    :type subsets: dict (str to list of str)
     '''
     # Setup logger
     logger = logging.getLogger(__name__)
@@ -1063,30 +1149,21 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     if classes is None:
         classes = (None for _ in range(len(features)))
 
-    # Lowercase path for file extension checking
-    lc_path = path.lower()
+    # Get prefix and extension for checking file types and writing subset files
+    root, ext = os.path.splitext(path)
 
-    # Create TSV file if asked
-    if lc_path.endswith(".tsv"):
-        _write_delimited_file(path, ids, classes, features, label_col,
-                              'excel-tab')
-    # Create CSV file if asked
-    elif lc_path.endswith(".csv"):
-        _write_delimited_file(path, ids, classes, features, label_col,
-                              'excel')
-    # Create .jsonlines file if asked
-    elif lc_path.endswith(".jsonlines") or lc_path.endswith('.ndj'):
-        _write_jsonlines_file(path, ids, classes, features)
-    # Create .megam file if asked
-    elif lc_path.endswith(".megam"):
-        _write_megam_file(path, ids, classes, features)
-    # Create ARFF file if asked
-    elif lc_path.endswith(".arff"):
-        _write_arff_file(path, ids, classes, features, label_col,
-                         arff_regression=arff_regression,
-                         relation=arff_relation)
-    # Invalid file suffix, raise error
+    # Write one feature file if we weren't given a dict of subsets
+    if subsets is None:
+        _write_sub_feature_file(path, ids, classes, features, [],
+                                label_col=label_col,
+                                arff_regression=arff_regression,
+                                arff_relation=arff_relation)
+    # Otherwise write one feature file per subset
     else:
-        raise ValueError(('Output file must be in either .arff, .csv, ' +
-                          '.jsonlines, .megam, .ndj, or .tsv format. You ' +
-                          'specified: {}').format(path))
+        print(subsets['0'])
+        for subset_name, filter_features in iteritems(subsets):
+            sub_path = '{}_{}{}'.format(root, subset_name, ext)
+            _write_sub_feature_file(sub_path, ids, classes, features,
+                                    set(filter_features), label_col=label_col,
+                                    arff_regression=arff_regression,
+                                    arff_relation=arff_relation)
