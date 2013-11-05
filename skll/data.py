@@ -614,8 +614,9 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     :param sparse: Whether or not to store the features in a numpy CSR matrix.
     :type sparse: bool
     :param label_col: Name of the column which contains the class labels for
-                      TSV files. If no column with that name exists, or `None`
-                      is specified, the data is considered to be unlabelled.
+                      ARFF/CSV/TSV files. If no column with that name exists, or
+                      `None` is specified, the data is considered to be
+                      unlabelled.
     :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
