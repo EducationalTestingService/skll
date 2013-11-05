@@ -1160,7 +1160,6 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                                 arff_relation=arff_relation)
     # Otherwise write one feature file per subset
     else:
-        print(subsets['0'])
         for subset_name, filter_features in iteritems(subsets):
             sub_path = '{}_{}{}'.format(root, subset_name, ext)
             _write_sub_feature_file(sub_path, ids, classes, features,
