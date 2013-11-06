@@ -44,7 +44,7 @@ def main():
     # Read and write training examples
     train_examples = load_examples('train.csv', label_col='Survived',
                                    quiet=False)
-    write_feature_file('titanic/train/feats.csv', None,
+    write_feature_file('titanic/train/.csv', None,
                        train_examples.classes, train_examples.features,
                        feat_vectorizer=train_examples.feat_vectorizer,
                        subsets=subset_dict, label_col='Survived',
@@ -53,7 +53,7 @@ def main():
     # Read and write test examples
     test_examples = load_examples('test.csv', label_col='Survived',
                                    quiet=False)
-    write_feature_file('titanic/test/feats.csv', None,
+    write_feature_file('titanic/test/.csv', None,
                        test_examples.classes, test_examples.features,
                        feat_vectorizer=test_examples.feat_vectorizer,
                        subsets=subset_dict, label_col='Survived',

@@ -30,6 +30,7 @@ import csv
 import json
 import logging
 import os
+import re
 import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from csv import DictReader, DictWriter
@@ -42,7 +43,7 @@ from operator import itemgetter
 import numpy as np
 from bs4 import UnicodeDammit
 from collections import namedtuple
-from six import iteritems, string_types
+from six import iteritems, string_types, text_type
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer
 
@@ -242,8 +243,9 @@ class _MegaMDictIter(_DictIter):
         curr_id = 'EXAMPLE_0'
         for line in file_or_list:
             # Process encoding
-            line = UnicodeDammit(line, ['utf-8',
-                                        'windows-1252']).unicode_markup
+            if not isinstance(line, text_type):
+                line = UnicodeDammit(line, ['utf-8',
+                                            'windows-1252']).unicode_markup
             line = _sanitize_line(line.strip())
             # Handle instance lines
             if line.startswith('#'):
@@ -471,8 +473,11 @@ class _ARFFDictIter(_DelimitedDictIter):
         # Process ARFF header
         for line in file_or_list:
             # Process encoding
-            decoded_line = UnicodeDammit(line, ['utf-8',
-                                                'windows-1252']).unicode_markup
+            if not isinstance(line, text_type):
+                decoded_line = UnicodeDammit(line, ['utf-8',
+                                             'windows-1252']).unicode_markup
+            else:
+                decoded_line = line
             line = decoded_line.strip()
             # Skip empty lines
             if line:
@@ -1155,7 +1160,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         classes = (None for _ in range(len(features)))
 
     # Get prefix and extension for checking file types and writing subset files
-    root, ext = os.path.splitext(path)
+    root, ext = re.search(r'^(.*)(\.[^.]*)$', path).groups()
 
     # Write one feature file if we weren't given a dict of subsets
     if subsets is None:
@@ -1165,8 +1170,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                                 arff_relation=arff_relation)
     # Otherwise write one feature file per subset
     else:
-        ids = np.array(ids)
-        classes = np.array(classes)
+        ids = list(ids)
+        classes = list(classes)
         for subset_name, filter_features in iteritems(subsets):
             sub_path = os.path.join(root, '{}{}'.format(subset_name, ext))
             _write_sub_feature_file(sub_path, ids, classes, features,
