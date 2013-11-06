@@ -1082,7 +1082,11 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
 
     :param path: A path to the feature file we would like to create. The suffix
                  to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
-                 ``.megam``, ``.ndj``, or ``.tsv``
+                 ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets`` is not
+                 ``None``, this is assumed to be a string containing the path to
+                 the directory to write the feature files with an additional
+                 file extension specifying the file type. For example
+                 ``/foo/.csv``.
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
                 IDs will be automatically generated with the prefix specified by
@@ -1161,8 +1165,10 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                                 arff_relation=arff_relation)
     # Otherwise write one feature file per subset
     else:
+        ids = np.array(ids)
+        classes = np.array(classes)
         for subset_name, filter_features in iteritems(subsets):
-            sub_path = '{}_{}{}'.format(root, subset_name, ext)
+            sub_path = os.path.join(root, '{}{}'.format(subset_name, ext))
             _write_sub_feature_file(sub_path, ids, classes, features,
                                     set(filter_features), label_col=label_col,
                                     arff_regression=arff_regression,

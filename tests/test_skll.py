@@ -772,8 +772,6 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
     if not os.path.exists(merge_dir):
         os.makedirs(merge_dir)
 
-    train_path = os.path.join(merge_dir, 'all{}'.format(suffix))
-
     # Create lists we will write files from
     ids = []
     features = []
@@ -794,9 +792,11 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
         feat_num = i * num_feats_per_file
         subset_dict['{}'.format(i)] = ["f{:03d}".format(feat_num + j) for j in
                                        range(num_feats_per_file)]
+    train_path = os.path.join(merge_dir, suffix)
     write_feature_file(train_path, ids, classes, features, subsets=subset_dict)
 
     # Merged
+    train_path = os.path.join(merge_dir, 'all{}'.format(suffix))
     write_feature_file(train_path, ids, classes, features)
 
 
@@ -808,7 +808,7 @@ def check_load_featureset(suffix, numeric_ids):
 
     # Load unmerged data and merge it
     dirpath = os.path.join(_my_dir, 'train', 'test_merging')
-    featureset = ['all_{}'.format(i) for i in range(num_feat_files)]
+    featureset = ['{}'.format(i) for i in range(num_feat_files)]
     merged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
 
     # Load pre-merged data
