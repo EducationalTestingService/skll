@@ -36,6 +36,7 @@ from skll.data import (_CSVDictIter, _ARFFDictIter, _TSVDictIter, _JSONDictIter,
                        _MegaMDictIter, write_feature_file)
 from skll.version import __version__
 
+
 if __name__ == '__main__':
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Takes an input feature file \
@@ -71,24 +72,27 @@ if __name__ == '__main__':
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
+    logger = logging.getLogger(__name__)
 
     # make sure the input file extension is one we can process
-    input_extension = os.path.splitext(args.infile)[1]
+    input_extension = os.path.splitext(args.infile)[1].lower()
 
-    if input_extension.endswith(".tsv"):
+    if input_extension == ".tsv":
         example_iter_type = _TSVDictIter
-    elif input_extension.endswith(".jsonlines"):
+    elif input_extension == ".jsonlines" or input_extension == '.ndj':
         example_iter_type = _JSONDictIter
-    elif input_extension.endswith(".megam"):
+    elif input_extension == ".megam":
         example_iter_type = _MegaMDictIter
-    elif input_extension.endswith(".csv"):
+    elif input_extension == ".csv":
         example_iter_type = _CSVDictIter
-    elif input_extension.endswith(".arff"):
+    elif input_extension == ".arff":
         example_iter_type = _ARFFDictIter
     else:
-        print('Input file must be in either .arff, .csv, .tsv, .megam, or ' +
-              '.jsonlines format. You specified: {}'.format(input_extension),
-              file=sys.stderr)
+        logger.error(('Input file must be in either .arff, .csv, .jsonlines, ' +
+                      '.megam, .ndj, or .tsv format. You specified: ' +
+                      '{}').format(input_extension))
+        sys.exit(1)
+
 
     # Iterate through input file and collect the information we need
     ids = []

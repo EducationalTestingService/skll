@@ -521,6 +521,11 @@ def test_class_map():
 
 
 def make_ablation_data():
+    # Remove old CV data
+    for old_file in glob.glob(os.path.join(_my_dir, 'output',
+                                           'ablation_cv_*.results')):
+        os.remove(old_file)
+
     num_examples = 1000
 
     np.random.seed(1234567890)
@@ -571,8 +576,6 @@ def test_ablation_cv():
     num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
     assert_equal(num_result_files, 12)
 
-    # Remove them so we can create new ones for the next test
-    glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results'))
 
 def test_ablation_cv_all_combos():
     '''
