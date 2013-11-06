@@ -416,7 +416,8 @@ def _parse_config_file(config_path):
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
-                     ids_to_floats=False, quiet=False, class_map=None):
+                     ids_to_floats=False, quiet=False, class_map=None,
+                     unlabelled=False):
     '''
     Load a list of feature files and merge them.
 
@@ -439,6 +440,9 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                       mainly used for collapsing multiple classes into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
+    :param unlabelled: Is this test we're loading? If so, don't raise an error
+                       if there are no labels.
+    :type unlabelled: bool
 
     :returns: The classes, IDs, features, and feature vectorizer representing
               the given featureset.
@@ -525,8 +529,8 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                 raise ValueError('Feature files have conflicting labels for ' +
                                  'examples with the same ID!')
 
-    # Ensure that at least one file had classes
-    if merged_classes is None:
+    # Ensure that at least one file had classes if we're expecting them
+    if merged_classes is None and not unlabelled:
         raise ValueError('No feature files in feature set contain class' +
                          'labels!')
 
@@ -606,7 +610,8 @@ def _classify_featureset(args):
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              label_col=label_col,
                                              ids_to_floats=ids_to_floats,
-                                             quiet=quiet, class_map=class_map)
+                                             quiet=quiet, class_map=class_map,
+                                             unlabelled=True)
 
         # initialize a classifer object
         learner = Learner(learner_name,
