@@ -8,7 +8,7 @@ titanic.cfg expects.
 :organization: ETS
 '''
 
-from __future__ import print_function, unicode_literals
+from __future__ import division, print_function, unicode_literals
 
 import logging
 import os
@@ -38,6 +38,9 @@ def main():
     if not os.path.exists('titanic/train'):
         logger.info('Creating titanic/train directory')
         os.makedirs('titanic/train')
+    if not os.path.exists('titanic/dev'):
+        logger.info('Creating titanic/dev directory')
+        os.makedirs('titanic/dev')
     if not os.path.exists('titanic/test'):
         logger.info('Creating titanic/test directory')
         os.makedirs('titanic/test')
@@ -45,11 +48,21 @@ def main():
     # Read and write training examples
     train_examples = load_examples('train.csv', label_col='Survived',
                                    quiet=False)
+    num_train = int((len(train_examples.classes) / 5) * 4)
     write_feature_file('titanic/train/.csv', None,
-                       train_examples.classes, train_examples.features,
+                       train_examples.classes[:num_train],
+                       train_examples.features[:num_train, :],
                        feat_vectorizer=train_examples.feat_vectorizer,
                        subsets=subset_dict, label_col='Survived',
                        id_prefix='train_example')
+
+    # Write dev examples
+    write_feature_file('titanic/dev/.csv', None,
+                       train_examples.classes[num_train:],
+                       train_examples.features[num_train:, :],
+                       feat_vectorizer=train_examples.feat_vectorizer,
+                       subsets=subset_dict, label_col='Survived',
+                       id_prefix='dev_example')
 
     # Read and write test examples
     test_examples = load_examples('test.csv', label_col='Survived',
