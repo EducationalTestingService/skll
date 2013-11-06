@@ -12,10 +12,10 @@ __pycache__
 
 examples/train.csv
 examples/test.csv
-examples/titanic/dev
-examples/titanic/test
-examples/titanic/train
-examples/titanic/output
+examples/*/dev
+examples/*/test
+examples/*/train
+examples/*/output
 
 tests/configs/test_cv_folds1.cfg
 tests/configs/test_cv_folds2.cfg
