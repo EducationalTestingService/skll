@@ -17,7 +17,8 @@ things work, do the following from the command prompt:
 
     $ cd examples
     $ python make_example_iris_data.py          # download a simple dataset
-    $ run_experiment --local example.cfg        # run an experiment
+    $ cd iris
+    $ run_experiment --local evaluate.cfg        # run an experiment
 
 
 Feature file formats
@@ -108,8 +109,8 @@ settings for each section is provided below, but to summarize:
 *   A list of classifiers/regressors to try on your feature files is
     required.
 
-An example configuration file is available
-`here <https://github.com/EducationalTestingService/skll/blob/master/examples/example.cfg>`_.
+Example configuration files are available
+`here <https://github.com/EducationalTestingService/skll/blob/master/examples/>`_.
 
 General
 ^^^^^^^
