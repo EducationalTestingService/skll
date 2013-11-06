@@ -620,9 +620,9 @@ class Learner(object):
         if max_feat_abs > 1000.0:
             logger = logging.getLogger(__name__)
             logger.warning(("You have a feature with a very large absolute " +
-                            "value ({}).  That may cause the learning " +
+                            "value (%s).  That may cause the learning " +
                             "algorithm to crash or perform " +
-                            "poorly.").format(max_feat_abs))
+                            "poorly."), max_feat_abs)
 
     def _train_setup(self, examples):
         '''
@@ -971,9 +971,8 @@ class Learner(object):
                     else self._model.predict(xtest))
         except NotImplementedError as e:
             logger = logging.getLogger(__name__)
-            logger.error(("Model type: {}\nModel: {}\nProbability: " +
-                          "{}\n").format(self._model_type, self._model,
-                                         self.probability))
+            logger.error("Model type: %s\nModel: %s\nProbability: %s\n",
+                         self._model_type, self._model, self.probability)
             raise e
 
         # write out the predictions if we are asked to

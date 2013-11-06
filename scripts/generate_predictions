@@ -125,6 +125,8 @@ def main():
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+                                '%(message)s'))
 
     # Create the classifier and load the model
     predictor = Predictor(args.model_file,

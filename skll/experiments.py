@@ -114,10 +114,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
-            logger.error(('JSON results file {} not found. Skipping summary ' +
+            logger.error(('JSON results file %s not found. Skipping summary ' +
                           'creation. You can manually create the summary file' +
                           ' after the fact by using the summarize_results ' +
-                          'script.').format(json_path))
+                          'script.'), json_path)
             return
         else:
             with open(json_path, 'r') as json_file:
@@ -581,7 +581,7 @@ def _classify_featureset(args):
     with open(log_path, 'w') as log_file:
 
         # logging
-        print("Task: {}".format(task), file=log_file)
+        print("Task:", task, file=log_file)
         if task == 'cross_validate':
             print(("Cross-validating on {}, feature " +
                    "set {} ...").format(train_set_name, featureset),
@@ -1080,8 +1080,8 @@ def _check_job_results(job_results):
     logger.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
-            logger.error('There was an error running the experiment:\n' +
-                         '{}'.format(result_dicts))
+            logger.error('There was an error running the experiment:\n%s',
+                         result_dicts)
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',

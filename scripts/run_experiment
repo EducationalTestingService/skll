@@ -90,6 +90,8 @@ def main():
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+                                '%(message)s'))
 
     machines = None
     if args.machines:

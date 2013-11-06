@@ -100,8 +100,8 @@ class _DictIter(object):
         # Setup logger
         logger = logging.getLogger(__name__)
 
-        logger.debug('DictIter type: {}'.format(type(self)))
-        logger.debug('path_or_list: {}'.format(self.path_or_list))
+        logger.debug('DictIter type: %s', type(self))
+        logger.debug('path_or_list: %s', self.path_or_list)
 
         # Check if we're given a path to a file, and if so, open it
         if isinstance(self.path_or_list, string_types):
@@ -549,7 +549,7 @@ def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
     except Exception as e:
         # Setup logger
         logger = logging.getLogger(__name__)
-        logger.exception('Failed to load IDs for {}.'.format(path))
+        logger.exception('Failed to load IDs for %s.', path)
         raise e
     return res_array
 
@@ -566,7 +566,7 @@ def _classes_for_iter_type(example_iter_type, path, label_col, class_map):
     except Exception as e:
         # Setup logger
         logger = logging.getLogger(__name__)
-        logger.exception('Failed to load classes for {}.'.format(path))
+        logger.exception('Failed to load classes for %s.', path)
         raise e
     return res_array
 
@@ -584,7 +584,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
     except Exception as e:
         # Setup logger
         logger = logging.getLogger(__name__)
-        logger.exception('Failed to load features for {}.'.format(path))
+        logger.exception('Failed to load features for %s.', path)
         raise e
     try:
         features = feat_vectorizer.fit_transform(feat_dict_generator)
@@ -639,7 +639,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     # Setup logger
     logger = logging.getLogger(__name__)
 
-    logger.debug('Path: {}'.format(path))
+    logger.debug('Path: %s', path)
 
 
     # Build an appropriate generator for examples so we process the input file
@@ -664,7 +664,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
                               '.jsonlines, .megam, .ndj, or .tsv format. You '+
                               'specified: {}').format(path))
 
-    logger.debug('Example iterator type: {}'.format(example_iter_type))
+    logger.debug('Example iterator type: %s', example_iter_type)
 
     # Generators can't be pickled, so unfortunately we have to turn them into
     # lists. Would love a workaround for this.
@@ -1134,8 +1134,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     # Setup logger
     logger = logging.getLogger(__name__)
 
-    logger.debug('Feature vectorizer: {}'.format(feat_vectorizer))
-    logger.debug('Features: {}'.format(features))
+    logger.debug('Feature vectorizer: %s', feat_vectorizer)
+    logger.debug('Features: %s', features)
 
     # Check for valid features
     if feat_vectorizer is None and features and not isinstance(features[0],
