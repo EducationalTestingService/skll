@@ -179,14 +179,16 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
-    print('Grid Objective: {}'.format(lrd['grid_objective']), file=output_file)
+    print('Grid Objective Function: {}'.format(lrd['grid_objective']),
+          file=output_file)
     print('\n', file=output_file)
 
     for lrd in learner_result_dicts:
         print('Fold: {}'.format(lrd['fold']), file=output_file)
         print('Model Parameters: {}'.format(lrd.get('model_params', '')),
               file=output_file)
-        print('Grid search score = {}'.format(lrd.get('grid_score', '')),
+        print('Grid Objective Score (Train) = {}'.format(lrd.get('grid_score',
+                                                                 '')),
               file=output_file)
         if 'result_table' in lrd:
             print(lrd['result_table'], file=output_file)
@@ -202,7 +204,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                       file=output_file)
             print('Pearson:{: f}'.format(lrd['pearson']),
                   file=output_file)
-        print('Objective function score = {}'.format(lrd['score']),
+        print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
         print('', file=output_file)
 
