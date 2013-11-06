@@ -10,6 +10,13 @@ __pycache__
 .DS_Store
 .coverage
 
+examples/train.csv
+examples/test.csv
+examples/titanic/dev
+examples/titanic/test
+examples/titanic/train
+examples/titanic/output
+
 tests/configs/test_cv_folds1.cfg
 tests/configs/test_cv_folds2.cfg
 tests/configs/test_predict.cfg
