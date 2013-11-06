@@ -354,10 +354,10 @@ def _parse_config_file(config_path):
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
         raise IOError(errno.ENOENT, ("The training path specified in config " +
-                                     "file does not exist."), train_path)
+                                     "file does not exist"), train_path)
     if test_path and not os.path.exists(test_path):
         raise IOError(errno.ENOENT, ("The test path specified in config " +
-                                     "file does not exist."), train_path)
+                                     "file does not exist"), test_path)
 
     # Tuning
     # do we need to run a grid search for the hyperparameters or are we just
