@@ -20,6 +20,8 @@ def main():
     '''
     Create directories and split CSV files into subsets.
     '''
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+                                '%(message)s'), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     if not (os.path.exists('train.csv') and os.path.exists('test.csv')):
         logger.error('This script requires the train.csv and test.csv files ' +
