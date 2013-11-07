@@ -367,7 +367,7 @@ class _DelimitedDictIter(_DictIter):
             for fname, fval in iteritems(row):
                 fval_float = _safe_float(fval)
                 # we don't need to explicitly store zeros
-                if fval_float != 0.0:
+                if fval_float:
                     row[fname] = fval_float
                     if sys.version_info < (3, 0):
                         columns_to_convert_to_unicode.append(fname)
@@ -1041,14 +1041,37 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
                     subset name as suffix to ``path``).
     :type subsets: dict (str to list of str)
     '''
+    # Setup logger
+    logger = logging.getLogger(__name__)
+
     # Get lowercase extension for file extension checking
     ext = os.path.splitext(path)[1].lower()
 
     # Filter feature dictionaries if asked
     if filter_features:
+        # Print pre-filtered list of feature names if debugging
+        if logger.getEffectiveLevel() == logging.DEBUG:
+            feat_names = set()
+            for feat_dict in features:
+                feat_names.update(feat_dict.keys())
+            feat_names = sorted(feat_names)
+            logger.debug('Original features: %s', feat_names)
+
+        # Apply filtering
         features = [{feat_name: feat_value for feat_name, feat_value in
-                     iteritems(feat_dict) if feat_name in filter_features} for
-                    feat_dict in features]
+                     iteritems(feat_dict) if (feat_name in filter_features or
+                                              feat_name.split('=', 1)[0] in
+                                              filter_features)} for feat_dict
+                    in features]
+
+        # Print list post-filtering
+        if logger.getEffectiveLevel() == logging.DEBUG:
+            feat_names = set()
+            for feat_dict in features:
+                feat_names.update(feat_dict.keys())
+            feat_names = sorted(feat_names)
+            logger.debug('Filtered features: %s', feat_names)
+
 
     # Create TSV file if asked
     if ext == ".tsv":
@@ -1128,7 +1151,13 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     :param subsets: A mapping from subset names to lists of feature names that
                     are included in those sets. If given, a feature file will
                     be written for every subset (with the name containing the
-                    subset name as suffix to ``path``).
+                    subset name as suffix to ``path``). Note, since
+                    string-valued features are automatically converted into
+                    boolean features with names of the form
+                    ``FEATURE_NAME=STRING_VALUE``, when doing the filtering, the
+                    portion before the ``=`` is all that's used for matching.
+                    Therefore, you do not need to enumerate all of these boolean
+                    feature names in your mapping.
     :type subsets: dict (str to list of str)
     '''
     # Setup logger
@@ -1173,6 +1202,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         ids = list(ids)
         classes = list(classes)
         for subset_name, filter_features in iteritems(subsets):
+            logger.debug('Subset (%s) features: %s', subset_name,
+                         filter_features)
             sub_path = os.path.join(root, '{}{}'.format(subset_name, ext))
             _write_sub_feature_file(sub_path, ids, classes, features,
                                     set(filter_features), label_col=label_col,
