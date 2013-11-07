@@ -50,8 +50,8 @@ from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
 
 
-SCORE_OUTPUT_RE = re.compile(r'Objective Function Score (Test) = ([\-\d\.]+)')
-GRID_RE = re.compile(r'Grid Objective Score (Train) = ([\-\d\.]+)')
+SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = ([\-\d\.]+)')
+GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = os.path.abspath(os.path.dirname(__file__))
 
 
