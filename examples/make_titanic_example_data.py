@@ -21,7 +21,7 @@ def main():
     Create directories and split CSV files into subsets.
     '''
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
-                                '%(message)s'), level=logging.DEBUG)
+                                '%(message)s'), level=logging.INFO)
     logger = logging.getLogger(__name__)
     if not (os.path.exists('train.csv') and os.path.exists('test.csv')):
         logger.error('This script requires the train.csv and test.csv files ' +
@@ -31,10 +31,10 @@ def main():
         sys.exit(1)
 
     # Create dictionary of subsets to use for creating split feature files
-    subset_dict = {'vitals': ['Name', 'Sex', 'Age'],
-                   'socioeconomic': ['Pclass', 'Fare', 'Cabin'],
+    subset_dict = {'vitals': ['Sex', 'Age'],
+                   'socioeconomic': ['Pclass', 'Fare'],
                    'family': ['SibSp', 'Parch'],
-                   'misc': ['Ticket', 'Embarked']}
+                   'misc': ['Embarked']}
 
     # Create directories to store files
     if not os.path.exists('titanic/train'):
@@ -43,6 +43,9 @@ def main():
     if not os.path.exists('titanic/dev'):
         logger.info('Creating titanic/dev directory')
         os.makedirs('titanic/dev')
+    if not os.path.exists('titanic/train+dev'):
+        logger.info('Creating titanic/train+dev directory')
+        os.makedirs('titanic/train+dev')
     if not os.path.exists('titanic/test'):
         logger.info('Creating titanic/test directory')
         os.makedirs('titanic/test')
@@ -54,6 +57,14 @@ def main():
     write_feature_file('titanic/train/.csv', None,
                        train_examples.classes[:num_train],
                        train_examples.features[:num_train, :],
+                       feat_vectorizer=train_examples.feat_vectorizer,
+                       subsets=subset_dict, label_col='Survived',
+                       id_prefix='train_example')
+
+    # Write train+dev set for training model to use to generate predictions on test
+    write_feature_file('titanic/train+dev/.csv', None,
+                       train_examples.classes,
+                       train_examples.features,
                        feat_vectorizer=train_examples.feat_vectorizer,
                        subsets=subset_dict, label_col='Survived',
                        id_prefix='train_example')
