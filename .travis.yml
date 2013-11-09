@@ -21,6 +21,7 @@ before_install:
   - sudo chmod 777 /scratch/
   - travis/miniconda.sh -b
   - export PATH=/home/travis/anaconda/bin:$PATH
+  - conda update conda
 install:
   - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy beautiful-soup six
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes scikit-learn; fi

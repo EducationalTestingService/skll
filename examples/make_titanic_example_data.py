@@ -52,9 +52,12 @@ def main():
 
     # Read and write training examples
     train_examples = load_examples('train.csv', label_col='Survived',
-                                   quiet=False)
-    num_train = int((len(train_examples.classes) / 5) * 4)
-    write_feature_file('titanic/train/.csv', None,
+                                   quiet=False, sparse=False)
+    num_train_dev = len(train_examples.classes)
+    num_train = int((num_train_dev / 5) * 4)
+    train_ids = list(range(1, num_train_dev + 1))
+    write_feature_file('titanic/train/.csv',
+                       train_ids[:num_train],
                        train_examples.classes[:num_train],
                        train_examples.features[:num_train, :],
                        feat_vectorizer=train_examples.feat_vectorizer,
@@ -62,7 +65,8 @@ def main():
                        id_prefix='train_example')
 
     # Write train+dev set for training model to use to generate predictions on test
-    write_feature_file('titanic/train+dev/.csv', None,
+    write_feature_file('titanic/train+dev/.csv',
+                       train_ids,
                        train_examples.classes,
                        train_examples.features,
                        feat_vectorizer=train_examples.feat_vectorizer,
@@ -70,7 +74,8 @@ def main():
                        id_prefix='train_example')
 
     # Write dev examples
-    write_feature_file('titanic/dev/.csv', None,
+    write_feature_file('titanic/dev/.csv',
+                       train_ids[num_train:],
                        train_examples.classes[num_train:],
                        train_examples.features[num_train:, :],
                        feat_vectorizer=train_examples.feat_vectorizer,
@@ -79,8 +84,10 @@ def main():
 
     # Read and write test examples
     test_examples = load_examples('test.csv', label_col='Survived',
-                                   quiet=False)
-    write_feature_file('titanic/test/.csv', None,
+                                   quiet=False, sparse=False)
+    num_test = len(test_examples.classes)
+    test_ids = list(range(num_train_dev + 1, num_test + num_train_dev + 1))
+    write_feature_file('titanic/test/.csv', test_ids,
                        test_examples.classes, test_examples.features,
                        feat_vectorizer=test_examples.feat_vectorizer,
                        subsets=subset_dict, label_col='Survived',
