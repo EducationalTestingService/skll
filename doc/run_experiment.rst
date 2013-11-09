@@ -17,7 +17,8 @@ things work, do the following from the command prompt:
 
     $ cd examples
     $ python make_example_iris_data.py          # download a simple dataset
-    $ run_experiment --local example.cfg        # run an experiment
+    $ cd iris
+    $ run_experiment --local evaluate.cfg        # run an experiment
 
 
 Feature file formats
@@ -48,10 +49,11 @@ The following feature file formats are supported:
         *   All other columns contain feature values, and every feature value
             must be specified (making this a poor choice for sparse data).
 
-    **jsonlines** *(Recommended)*
+    **jsonlines**/**ndj** *(Recommended)*
         A twist on the `JSON <http://www.json.org/>`_ format where every line is
-        a JSON dictionary (the entire contents of a normal JSON file). Each
-        dictionary is expected to contain the following keys:
+        a either JSON dictionary (the entire contents of a normal JSON file), or
+        a comment line starting with ``//``. Each dictionary is expected to
+        contain the following keys:
 
         *   *y*: The class label.
         *   *x*: A dictionary of feature values.
@@ -102,13 +104,13 @@ settings for each section is provided below, but to summarize:
     a training location, a test location, and set ``task`` to ``predict``.
 
 *   If you want to just **train a model**, specify a training location, and set
-    ``task`` to ``train_only``.
+    ``task`` to ``train``.
 
 *   A list of classifiers/regressors to try on your feature files is
     required.
 
-An example configuration file is available
-`here <https://github.com/EducationalTestingService/skll/blob/master/examples/example.cfg>`_.
+Example configuration files are available
+`here <https://github.com/EducationalTestingService/skll/blob/master/examples/>`_.
 
 General
 ^^^^^^^
@@ -176,9 +178,9 @@ Input
         ``ValueError`` will be raised if this is not the case.
 
     **suffix** *(Optional)*
-        The file format the training/test files are in. Valid option are ".tsv",
-        ".megam", and ".jsonlines" (one complete JSON dict per line in the
-        file).
+        The file format the training/test files are in. Valid option are
+        ``.arff``, ``.csv``, ``.jsonlines``, ``.megam,``, ``.ndj``, and
+        ``.tsv``".
 
         If you omit this field, it is assumed that the "prefixes" listed
         in ``featuresets`` are actually complete filenames. This can be useful
@@ -209,6 +211,9 @@ Input
 
             *   *DecisionTreeRegressor*: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`_
             *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
+            *   *ElasticNet*: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`_
+            *   *Lasso*: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`_
+            *   *LinearRegression*: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`_
             *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_
             *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`_
             *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
@@ -397,7 +402,7 @@ Tuning
 
            [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
 
-        *Ridge*
+        *ElasticNet*, *Lasso*, and *Ridge*
 
         .. code-block:: python
 
@@ -426,8 +431,7 @@ Output
 
     **results** *(Optional)*
         Directory to store result files in. If omitted, the current working
-        directory is used, **and we're assumed to just want to generate
-        predictions if the test_location is specified.**
+        directory is used.
 
     **log** *(Optional)*
         Directory to store result files in. If omitted, the current working

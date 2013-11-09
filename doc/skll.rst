@@ -15,7 +15,7 @@ Train a linear svm (assuming we have `train_examples`)::
 
     from skll import Learner
 
-    learner = Learner(model_type='LinearSVC')
+    learner = Learner('LinearSVC')
     learner.train(train_examples)
 
 
@@ -27,7 +27,7 @@ Evaluate a trained model::
 
 Perform ten-fold cross-validation with a radial SVM::
 
-    learner = Learner(model_type='SVC')
+    learner = Learner('SVC')
     fold_result_list, grid_search_scores = learner.cross-validate(train_examples)
 
 ``fold_result_list`` in this case is a list of the results returned by

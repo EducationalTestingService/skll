@@ -64,6 +64,8 @@ if __name__ == '__main__':
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+                                '%(message)s'))
 
     if args.infile.isatty():
         print("You are running this script interactively. Press CTRL-D at " +

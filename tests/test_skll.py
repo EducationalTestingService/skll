@@ -50,8 +50,8 @@ from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
 
 
-SCORE_OUTPUT_RE = re.compile(r'Objective function score = ([\-\d\.]+)')
-GRID_RE = re.compile(r'Grid search score = ([\-\d\.]+)')
+SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = ([\-\d\.]+)')
+GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -521,6 +521,11 @@ def test_class_map():
 
 
 def make_ablation_data():
+    # Remove old CV data
+    for old_file in glob.glob(os.path.join(_my_dir, 'output',
+                                           'ablation_cv_*.results')):
+        os.remove(old_file)
+
     num_examples = 1000
 
     np.random.seed(1234567890)
@@ -571,8 +576,6 @@ def test_ablation_cv():
     num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
     assert_equal(num_result_files, 12)
 
-    # Remove them so we can create new ones for the next test
-    glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results'))
 
 def test_ablation_cv_all_combos():
     '''
@@ -787,14 +790,13 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
         features.append(x)
 
     # Unmerged
+    subset_dict = {}
     for i in range(num_feat_files):
-        train_path = os.path.join(merge_dir, '{}{}'.format(i, suffix))
-        sub_features = []
-        for example_num in range(num_examples):
-            feat_num = i * num_feats_per_file
-            x = {"f{:03d}".format(feat_num + j): features[example_num]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
-            sub_features.append(x)
-        write_feature_file(train_path, ids, classes if i == 0 else [None] * num_examples, sub_features)  # Make one of the files not have labels
+        feat_num = i * num_feats_per_file
+        subset_dict['{}'.format(i)] = ["f{:03d}".format(feat_num + j) for j in
+                                       range(num_feats_per_file)]
+    train_path = os.path.join(merge_dir, suffix)
+    write_feature_file(train_path, ids, classes, features, subsets=subset_dict)
 
     # Merged
     train_path = os.path.join(merge_dir, 'all{}'.format(suffix))
@@ -809,12 +811,13 @@ def check_load_featureset(suffix, numeric_ids):
 
     # Load unmerged data and merge it
     dirpath = os.path.join(_my_dir, 'train', 'test_merging')
-    featureset = [str(i) for i in range(num_feat_files)]
+    featureset = ['{}'.format(i) for i in range(num_feat_files)]
     merged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
 
     # Load pre-merged data
     featureset = ['all']
-    premerged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    premerged_examples = _load_featureset(dirpath, featureset, suffix,
+                                          quiet=True)
 
     assert np.all(merged_examples.ids == premerged_examples.ids)
     assert np.all(merged_examples.classes == premerged_examples.classes)
@@ -828,10 +831,10 @@ def check_load_featureset(suffix, numeric_ids):
 
 def test_load_featureset():
     # Test merging with numeric IDs
-    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
+    for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, True
 
-    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
+    for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, False
 
 
@@ -965,5 +968,5 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.megam', '.tsv', '.csv', '.arff'], 2):
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff'], 2):
         yield check_convert_featureset, from_suffix, to_suffix
