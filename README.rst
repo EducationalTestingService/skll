@@ -62,6 +62,12 @@ Requirements
 -  `futures <http://pypi.python.org/pypi/futures>`__ (only required for Python 2.7)
 -  `logutils <http://pypi.python.org/pypi/logutils>`__ (only required for Python 2.7)
 
+Talks
+~~~~~
+
+You can view the slides for the talk Dan Blanchard gave at PyData NYC 2013
+`here <https://www.dropbox.com/s/21nast3gxcpgd52/PyData%20NYC%202013%20slides.pdf>`__.
+
 Changelog
 ~~~~~~~~~
 
