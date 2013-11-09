@@ -62,8 +62,33 @@ Requirements
 -  `futures <http://pypi.python.org/pypi/futures>`__ (only required for Python 2.7)
 -  `logutils <http://pypi.python.org/pypi/logutils>`__ (only required for Python 2.7)
 
+Talks
+~~~~~
+
+You can view the slides for the talk Dan Blanchard gave at PyData NYC 2013
+`here <https://www.dropbox.com/s/21nast3gxcpgd52/PyData%20NYC%202013%20slides.pdf>`__.
+
 Changelog
 ~~~~~~~~~
+
+-  v0.21.0
+
+   +  Added support for ``ElasticNet``, ``Lasso``, and ``LinearRegression``
+      learners.
+   +  Reorganized examples, and created new example based on the Kaggle
+      `Titanic <http://www.kaggle.com/c/titanic-gettingStarted>`__ data set.
+   +  Added ability to easily create multiple files at once when using
+      ``write_feature_file``.
+   +  Added support for the ``.ndj`` file extension for new-line delimited JSON
+      files. It's the same format as ``.jsonlines``, just with a different name.
+   +  Added support for comments and skipping blank lines in ``.jsonlines``
+      files.
+   +  Made some efficiency tweaks when creating logging messages.
+   +  Made labels in ``.results`` files a little clearer for objective function
+      scores.
+   +  Fixed some misleading error messages.
+   +  Fixed issue with backward-compatibility unit test in Python 2.7.
+   +  Fixed issue where predict mode required data to already be labelled.
 
 -  v0.20.0
 

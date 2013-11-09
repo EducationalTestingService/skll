@@ -51,6 +51,8 @@ if __name__ == '__main__':
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+                                '%(message)s'))
 
     k = args.k if args.k > 0 else None
 

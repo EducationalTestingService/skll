@@ -30,6 +30,7 @@ import csv
 import json
 import logging
 import os
+import re
 import sys
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from csv import DictReader, DictWriter
@@ -42,7 +43,7 @@ from operator import itemgetter
 import numpy as np
 from bs4 import UnicodeDammit
 from collections import namedtuple
-from six import iteritems, string_types
+from six import iteritems, string_types, text_type
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer
 
@@ -99,8 +100,8 @@ class _DictIter(object):
         # Setup logger
         logger = logging.getLogger(__name__)
 
-        logger.debug('DictIter type: {}'.format(type(self)))
-        logger.debug('path_or_list: {}'.format(self.path_or_list))
+        logger.debug('DictIter type: %s', type(self))
+        logger.debug('path_or_list: %s', self.path_or_list)
 
         # Check if we're given a path to a file, and if so, open it
         if isinstance(self.path_or_list, string_types):
@@ -172,13 +173,13 @@ class _DummyDictIter(_DictIter):
 
 class _JSONDictIter(_DictIter):
     '''
-    Iterator to convert current line in .jsonlines file to a dictionary with the
-    following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
+    Iterator to convert current line in .jsonlines/.ndj file to a dictionary
+    with the following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
     (originally "y"), and all of the feature-values in the sub-dictionary "x".
     Basically, we're flattening the structure, but renaming "y" and "id" to
     prevent possible conflicts with feature names in "x".
 
-    :param path_or_list: Path to .jsonlines file
+    :param path_or_list: Path to .jsonlines/.ndj file
     :type path_or_list: str
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
@@ -189,7 +190,15 @@ class _JSONDictIter(_DictIter):
 
     def _sub_iter(self, file_or_list):
         for example_num, line in enumerate(file_or_list):
-            example = json.loads(line.strip())
+            # Remove extraneous whitespace
+            line = line.strip()
+
+            # If this is a comment line or a blank line, move on
+            if line.startswith('//') or not line:
+                continue
+
+            # Process good lines
+            example = json.loads(line)
             # Convert all IDs to strings initially,
             # for consistency with csv and megam formats.
             curr_id = str(example.get("id",
@@ -234,8 +243,9 @@ class _MegaMDictIter(_DictIter):
         curr_id = 'EXAMPLE_0'
         for line in file_or_list:
             # Process encoding
-            line = UnicodeDammit(line, ['utf-8',
-                                        'windows-1252']).unicode_markup
+            if not isinstance(line, text_type):
+                line = UnicodeDammit(line, ['utf-8',
+                                            'windows-1252']).unicode_markup
             line = _sanitize_line(line.strip())
             # Handle instance lines
             if line.startswith('#'):
@@ -357,7 +367,7 @@ class _DelimitedDictIter(_DictIter):
             for fname, fval in iteritems(row):
                 fval_float = _safe_float(fval)
                 # we don't need to explicitly store zeros
-                if fval_float != 0.0:
+                if fval_float:
                     row[fname] = fval_float
                     if sys.version_info < (3, 0):
                         columns_to_convert_to_unicode.append(fname)
@@ -463,8 +473,11 @@ class _ARFFDictIter(_DelimitedDictIter):
         # Process ARFF header
         for line in file_or_list:
             # Process encoding
-            decoded_line = UnicodeDammit(line, ['utf-8',
-                                                'windows-1252']).unicode_markup
+            if not isinstance(line, text_type):
+                decoded_line = UnicodeDammit(line, ['utf-8',
+                                             'windows-1252']).unicode_markup
+            else:
+                decoded_line = line
             line = decoded_line.strip()
             # Skip empty lines
             if line:
@@ -536,7 +549,7 @@ def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
     except Exception as e:
         # Setup logger
         logger = logging.getLogger(__name__)
-        logger.exception('Failed to load IDs for {}.'.format(path))
+        logger.exception('Failed to load IDs for %s.', path)
         raise e
     return res_array
 
@@ -553,7 +566,7 @@ def _classes_for_iter_type(example_iter_type, path, label_col, class_map):
     except Exception as e:
         # Setup logger
         logger = logging.getLogger(__name__)
-        logger.exception('Failed to load classes for {}.'.format(path))
+        logger.exception('Failed to load classes for %s.', path)
         raise e
     return res_array
 
@@ -571,7 +584,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
     except Exception as e:
         # Setup logger
         logger = logging.getLogger(__name__)
-        logger.exception('Failed to load features for {}.'.format(path))
+        logger.exception('Failed to load features for %s.', path)
         raise e
     try:
         features = feat_vectorizer.fit_transform(feat_dict_generator)
@@ -583,8 +596,8 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
 def load_examples(path, quiet=False, sparse=True, label_col='y',
                   ids_to_floats=False, class_map=None):
     '''
-    Loads examples in the ARFF, CSV/TSV, JSONLINES (a json dict per line), or
-    MegaM formats.
+    Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.megam``,
+    ``.ndj``, or ``.tsv`` formats.
 
     If you would like to include example/instance IDs in your files, they must
     be specified in the following ways:
@@ -606,8 +619,9 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     :param sparse: Whether or not to store the features in a numpy CSR matrix.
     :type sparse: bool
     :param label_col: Name of the column which contains the class labels for
-                      TSV files. If no column with that name exists, or `None`
-                      is specified, the data is considered to be unlabelled.
+                      ARFF/CSV/TSV files. If no column with that name exists, or
+                      `None` is specified, the data is considered to be
+                      unlabelled.
     :type label_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
@@ -625,27 +639,32 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     # Setup logger
     logger = logging.getLogger(__name__)
 
-    logger.debug('Path: {}'.format(path))
+    logger.debug('Path: %s', path)
+
 
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
     if not isinstance(path, string_types):
         example_iter_type = _DummyDictIter
-    elif path.endswith(".tsv"):
-        example_iter_type = _TSVDictIter
-    elif path.endswith(".csv"):
-        example_iter_type = _CSVDictIter
-    elif path.endswith(".arff"):
-        example_iter_type = _ARFFDictIter
-    elif path.endswith(".jsonlines"):
-        example_iter_type = _JSONDictIter
-    elif path.endswith(".megam"):
-        example_iter_type = _MegaMDictIter
+    # Lowercase path for file extension checking, if it's a string
     else:
-        raise ValueError('Example files must be in either .tsv, .megam, or ' +
-                         '.jsonlines format. You specified: {}'.format(path))
+        lc_path = path.lower()
+        if lc_path.endswith(".tsv"):
+            example_iter_type = _TSVDictIter
+        elif lc_path.endswith(".csv"):
+            example_iter_type = _CSVDictIter
+        elif lc_path.endswith(".arff"):
+            example_iter_type = _ARFFDictIter
+        elif lc_path.endswith(".jsonlines") or lc_path.endswith('.ndj'):
+            example_iter_type = _JSONDictIter
+        elif lc_path.endswith(".megam"):
+            example_iter_type = _MegaMDictIter
+        else:
+            raise ValueError(('Example files must be in either .arff, .csv, ' +
+                              '.jsonlines, .megam, .ndj, or .tsv format. You '+
+                              'specified: {}').format(path))
 
-    logger.debug('Example iterator type: {}'.format(example_iter_type))
+    logger.debug('Example iterator type: %s', example_iter_type)
 
     # Generators can't be pickled, so unfortunately we have to turn them into
     # lists. Would love a workaround for this.
@@ -698,10 +717,10 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
     '''
     This function is to facilitate programmatic use of Learner.predict()
     and other functions that take ExamplesTuple objects as input.
-    It converts a .jsonlines-style list of dictionaries into
+    It converts a .jsonlines/.ndj-style list of dictionaries into
     an ExamplesTuple.
 
-    :param example_dicts: An list of dictionaries following the .jsonlines
+    :param example_dicts: An list of dictionaries following the .jsonlines/.ndj
                           format (i.e., features 'x', label 'y', and 'id').
     :type example_dicts: iterable of dicts
 
@@ -913,8 +932,8 @@ def _write_delimited_file(path, ids, classes, features, label_col, dialect):
 
 def _write_jsonlines_file(path, ids, classes, features):
     '''
-    Writes a feature file in .jsonlines format with the given a list of IDs,
-    classes, and features.
+    Writes a feature file in .jsonlines/.ndj format with the given a list of
+    IDs, classes, and features.
 
     :param path: A path to the feature file we would like to create.
     :type path: str
@@ -977,15 +996,125 @@ def _write_megam_file(path, ids, classes, features):
                   file=f)
 
 
-def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
-                       id_prefix='EXAMPLE_', label_col='y', arff_regression=False,
-                       arff_relation='skll_relation'):
+def _write_sub_feature_file(path, ids, classes, features, filter_features,
+                            label_col='y', arff_regression=False,
+                            arff_relation='skll_relation'):
     '''
-    Writes a feature file in either .jsonlines, .megam, or .tsv formats
-    with the given a list of IDs, classes, and features.
+    Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
+    classes, and features.
 
     :param path: A path to the feature file we would like to create. The suffix
-                 to this filename must be .jsonlines, .megam, or .tsv.
+                 to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
+                 ``.megam``, ``.ndj``, or ``.tsv``
+    :type path: str
+    :param ids: The IDs for each instance in the feature list/array. If None,
+                IDs will be automatically generated with the prefix specified by
+                `id_prefix` followed by the row number. If `id_prefix` is also
+                None, no IDs will be written to the file.
+    :type ids: list of str
+    :param classes: The class labels for each instance in the feature
+                    list/array. If None, no class labels will be added to output
+                    file.
+    :type classes: list of str
+    :param features: The features for each instance represented as either a list
+                     of dictionaries.
+    :type features: list of dict
+    :param filter_features: Set of features to include in current feature file.
+    :type filter_features: set of str
+    :param label_col: Name of the column which contains the class labels for
+                      CSV/TSV files. If no column with that name exists, or
+                      `None` is specified, the data is considered to be
+                      unlabelled.
+    :type label_col: str
+    :param arff_regression: A boolean value indicating whether the ARFF files
+                            that are written should be written for arff_regression
+                            rather than classification, i.e., the class variable
+                            y is numerical rather than an enumeration of classes
+                            and all non-numeric attributes are removed.
+    :type label_col: bool
+    :param arff_relation: Relation name for ARFF file.
+    :type label_col: str
+    :param subsets: A mapping from subset names to lists of feature names that
+                    are included in those sets. If given, a feature file will
+                    be written for every subset (with the name containing the
+                    subset name as suffix to ``path``).
+    :type subsets: dict (str to list of str)
+    '''
+    # Setup logger
+    logger = logging.getLogger(__name__)
+
+    # Get lowercase extension for file extension checking
+    ext = os.path.splitext(path)[1].lower()
+
+    # Filter feature dictionaries if asked
+    if filter_features:
+        # Print pre-filtered list of feature names if debugging
+        if logger.getEffectiveLevel() == logging.DEBUG:
+            feat_names = set()
+            for feat_dict in features:
+                feat_names.update(feat_dict.keys())
+            feat_names = sorted(feat_names)
+            logger.debug('Original features: %s', feat_names)
+
+        # Apply filtering
+        features = [{feat_name: feat_value for feat_name, feat_value in
+                     iteritems(feat_dict) if (feat_name in filter_features or
+                                              feat_name.split('=', 1)[0] in
+                                              filter_features)} for feat_dict
+                    in features]
+
+        # Print list post-filtering
+        if logger.getEffectiveLevel() == logging.DEBUG:
+            feat_names = set()
+            for feat_dict in features:
+                feat_names.update(feat_dict.keys())
+            feat_names = sorted(feat_names)
+            logger.debug('Filtered features: %s', feat_names)
+
+
+    # Create TSV file if asked
+    if ext == ".tsv":
+        _write_delimited_file(path, ids, classes, features, label_col,
+                              'excel-tab')
+    # Create CSV file if asked
+    elif ext == ".csv":
+        _write_delimited_file(path, ids, classes, features, label_col,
+                              'excel')
+    # Create .jsonlines file if asked
+    elif ext == ".jsonlines" or ext == '.ndj':
+        _write_jsonlines_file(path, ids, classes, features)
+    # Create .megam file if asked
+    elif ext == ".megam":
+        _write_megam_file(path, ids, classes, features)
+    # Create ARFF file if asked
+    elif ext == ".arff":
+        _write_arff_file(path, ids, classes, features, label_col,
+                         arff_regression=arff_regression,
+                         relation=arff_relation)
+    # Invalid file suffix, raise error
+    else:
+        raise ValueError(('Output file must be in either .arff, .csv, ' +
+                          '.jsonlines, .megam, .ndj, or .tsv format. You ' +
+                          'specified: {}').format(path))
+
+
+def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
+                       id_prefix='EXAMPLE_', label_col='y',
+                       arff_regression=False, arff_relation='skll_relation',
+                       subsets=None):
+    '''
+    Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
+    classes, and features.
+
+    :param path: A path to the feature file we would like to create. The suffix
+                 to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
+                 ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets`` is not
+                 ``None``, this is assumed to be a string containing the path to
+                 the directory to write the feature files with an additional
+                 file extension specifying the file type. For example
+                 ``/foo/.csv``.
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
                 IDs will be automatically generated with the prefix specified by
@@ -1012,19 +1141,30 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                       unlabelled.
     :type label_col: str
     :param arff_regression: A boolean value indicating whether the ARFF files
-                            that are written should be written for arff_regression
+                            that are written should be written for regression
                             rather than classification, i.e., the class variable
                             y is numerical rather than an enumeration of classes
                             and all non-numeric attributes are removed.
-    :type label_col: bool
+    :type arff_regression: bool
     :param arff_relation: Relation name for ARFF file.
-    :type label_col: str
+    :type arff_relation: str
+    :param subsets: A mapping from subset names to lists of feature names that
+                    are included in those sets. If given, a feature file will
+                    be written for every subset (with the name containing the
+                    subset name as suffix to ``path``). Note, since
+                    string-valued features are automatically converted into
+                    boolean features with names of the form
+                    ``FEATURE_NAME=STRING_VALUE``, when doing the filtering, the
+                    portion before the ``=`` is all that's used for matching.
+                    Therefore, you do not need to enumerate all of these boolean
+                    feature names in your mapping.
+    :type subsets: dict (str to list of str)
     '''
     # Setup logger
     logger = logging.getLogger(__name__)
 
-    logger.debug('Feature vectorizer: {}'.format(feat_vectorizer))
-    logger.debug('Features: {}'.format(features))
+    logger.debug('Feature vectorizer: %s', feat_vectorizer)
+    logger.debug('Features: %s', features)
 
     # Check for valid features
     if feat_vectorizer is None and features and not isinstance(features[0],
@@ -1048,25 +1188,24 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     if classes is None:
         classes = (None for _ in range(len(features)))
 
-    # Create TSV file if asked
-    if path.endswith(".tsv"):
-        _write_delimited_file(path, ids, classes, features, label_col,
-                              'excel-tab')
-    # Create CSV file if asked
-    elif path.endswith(".csv"):
-        _write_delimited_file(path, ids, classes, features, label_col,
-                              'excel')
-    # Create .jsonlines file if asked
-    elif path.endswith(".jsonlines"):
-        _write_jsonlines_file(path, ids, classes, features)
-    # Create .megam file if asked
-    elif path.endswith(".megam"):
-        _write_megam_file(path, ids, classes, features)
-    # Create ARFF file if asked
-    elif path.endswith(".arff"):
-        _write_arff_file(path, ids, classes, features, label_col, arff_regression=arff_regression,
-                         relation=arff_relation)
-    # Invalid file suffix, raise error
+    # Get prefix and extension for checking file types and writing subset files
+    root, ext = re.search(r'^(.*)(\.[^.]*)$', path).groups()
+
+    # Write one feature file if we weren't given a dict of subsets
+    if subsets is None:
+        _write_sub_feature_file(path, ids, classes, features, [],
+                                label_col=label_col,
+                                arff_regression=arff_regression,
+                                arff_relation=arff_relation)
+    # Otherwise write one feature file per subset
     else:
-        raise ValueError('Output file must be in either .tsv, .megam, or ' +
-                         '.jsonlines format. You specified: {}'.format(path))
+        ids = list(ids)
+        classes = list(classes)
+        for subset_name, filter_features in iteritems(subsets):
+            logger.debug('Subset (%s) features: %s', subset_name,
+                         filter_features)
+            sub_path = os.path.join(root, '{}{}'.format(subset_name, ext))
+            _write_sub_feature_file(sub_path, ids, classes, features,
+                                    set(filter_features), label_col=label_col,
+                                    arff_regression=arff_regression,
+                                    arff_relation=arff_relation)

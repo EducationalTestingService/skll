@@ -58,8 +58,7 @@ else:
     _HAVE_GRIDMAP = True
 
 
-_VALID_TASKS = frozenset(['predict', 'train_only',
-                          'evaluate', 'cross_validate'])
+_VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -115,10 +114,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
-            logger.error(('JSON results file {} not found. Skipping summary ' +
+            logger.error(('JSON results file %s not found. Skipping summary ' +
                           'creation. You can manually create the summary file' +
                           ' after the fact by using the summarize_results ' +
-                          'script.').format(json_path))
+                          'script.'), json_path)
             return
         else:
             with open(json_path, 'r') as json_file:
@@ -180,14 +179,16 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
-    print('Grid Objective: {}'.format(lrd['grid_objective']), file=output_file)
+    print('Grid Objective Function: {}'.format(lrd['grid_objective']),
+          file=output_file)
     print('\n', file=output_file)
 
     for lrd in learner_result_dicts:
         print('Fold: {}'.format(lrd['fold']), file=output_file)
         print('Model Parameters: {}'.format(lrd.get('model_params', '')),
               file=output_file)
-        print('Grid search score = {}'.format(lrd.get('grid_score', '')),
+        print('Grid Objective Score (Train) = {}'.format(lrd.get('grid_score',
+                                                                 '')),
               file=output_file)
         if 'result_table' in lrd:
             print(lrd['result_table'], file=output_file)
@@ -203,7 +204,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                       file=output_file)
             print('Pearson:{: f}'.format(lrd['pearson']),
                   file=output_file)
-        print('Objective function score = {}'.format(lrd['score']),
+        print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
         print('', file=output_file)
 
@@ -355,10 +356,10 @@ def _parse_config_file(config_path):
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
         raise IOError(errno.ENOENT, ("The training path specified in config " +
-                                     "file does not exist."), train_path)
+                                     "file does not exist"), train_path)
     if test_path and not os.path.exists(test_path):
         raise IOError(errno.ENOENT, ("The test path specified in config " +
-                                     "file does not exist."), train_path)
+                                     "file does not exist"), test_path)
 
     # Tuning
     # do we need to run a grid search for the hyperparameters or are we just
@@ -383,18 +384,18 @@ def _parse_config_file(config_path):
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set and results locations must be set ' +
                          'when task is evaluate or predict.')
-    if (task == 'cross_validate' or task == 'train_only') and test_path:
+    if (task == 'cross_validate' or task == 'train') and test_path:
         raise ValueError('The test set path should not be set ' +
-                         'when task is cross_validate or train_only.')
-    if (task == 'train_only' or task == 'predict') and results_path:
+                         'when task is cross_validate or train.')
+    if (task == 'train' or task == 'predict') and results_path:
         raise ValueError('The results path should not be set ' +
-                         'when task is predict or train_only.')
-    if task == 'train_only' and not model_path:
+                         'when task is predict or train.')
+    if task == 'train' and not model_path:
         raise ValueError('The model path should be set ' +
-                         'when task is train_only.')
-    if task == 'train_only' and prediction_dir:
+                         'when task is train.')
+    if task == 'train' and prediction_dir:
         raise ValueError('The predictions path should not be set ' +
-                         'when task is train_only.')
+                         'when task is train.')
     if task == 'cross_validate' and model_path:
         raise ValueError('The models path should not be set ' +
                          'when task is cross_validate.')
@@ -417,7 +418,8 @@ def _parse_config_file(config_path):
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
-                     ids_to_floats=False, quiet=False, class_map=None):
+                     ids_to_floats=False, quiet=False, class_map=None,
+                     unlabelled=False):
     '''
     Load a list of feature files and merge them.
 
@@ -440,6 +442,9 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                       mainly used for collapsing multiple classes into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
+    :param unlabelled: Is this test we're loading? If so, don't raise an error
+                       if there are no labels.
+    :type unlabelled: bool
 
     :returns: The classes, IDs, features, and feature vectorizer representing
               the given featureset.
@@ -526,8 +531,8 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                 raise ValueError('Feature files have conflicting labels for ' +
                                  'examples with the same ID!')
 
-    # Ensure that at least one file had classes
-    if merged_classes is None:
+    # Ensure that at least one file had classes if we're expecting them
+    if merged_classes is None and not unlabelled:
         raise ValueError('No feature files in feature set contain class' +
                          'labels!')
 
@@ -578,7 +583,7 @@ def _classify_featureset(args):
     with open(log_path, 'w') as log_file:
 
         # logging
-        print("Task: {}".format(task), file=log_file)
+        print("Task:", task, file=log_file)
         if task == 'cross_validate':
             print(("Cross-validating on {}, feature " +
                    "set {} ...").format(train_set_name, featureset),
@@ -588,7 +593,7 @@ def _classify_featureset(args):
                    "feature set {} ...").format(train_set_name, test_set_name,
                                                 featureset),
                   file=log_file)
-        elif task == 'train_only':
+        elif task == 'train':
             print("Training on {}, feature set {} ...".format(train_set_name,
                                                               featureset),
                   file=log_file)
@@ -607,7 +612,8 @@ def _classify_featureset(args):
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              label_col=label_col,
                                              ids_to_floats=ids_to_floats,
-                                             quiet=quiet, class_map=class_map)
+                                             quiet=quiet, class_map=class_map,
+                                             unlabelled=True)
 
         # initialize a classifer object
         learner = Learner(learner_name,
@@ -701,7 +707,7 @@ def _classify_featureset(args):
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
                                 prediction_prefix=prediction_prefix)
-            # do nothing here for train_only
+            # do nothing here for train
 
         if task == 'cross_validate' or task == 'evaluate':
             results_json_path = os.path.join(results_path,
@@ -1076,8 +1082,8 @@ def _check_job_results(job_results):
     logger.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
-            logger.error('There was an error running the experiment:\n' +
-                         '{}'.format(result_dicts))
+            logger.error('There was an error running the experiment:\n%s',
+                         result_dicts)
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',

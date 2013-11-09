@@ -58,6 +58,8 @@ def main():
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+                                '%(message)s'))
 
     file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
     with open(args.summary_file, file_mode) as output_file:
