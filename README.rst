@@ -66,7 +66,7 @@ Talks
 ~~~~~
 
 You can view the slides for the talk Dan Blanchard gave at PyData NYC 2013
-`here <https://www.dropbox.com/s/21nast3gxcpgd52/PyData%20NYC%202013%20slides.pdf>`__.
+`here <http://www.slideshare.net/DanielBlanchard2/simple-machine-learning-with-skll>`__.
 
 Changelog
 ~~~~~~~~~
