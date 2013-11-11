@@ -57,7 +57,8 @@ def main():
                               experiments are conducted where the specified \
                               number of features in each featureset in the \
                               configuration file are held out.',
-                        type=int, default=0)
+                        type=int, default=0,
+                        metavar='NUM_FEATURES')
     parser.add_argument('-A', '--ablation_all',
                         help='Runs an ablation study where repeated \
                               experiments are conducted with all combinations \
