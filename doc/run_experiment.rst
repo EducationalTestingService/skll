@@ -456,9 +456,16 @@ just get your experiment started by running ``run_experiment CONFIGFILE``. That
 said, there are a couple options that are specified via command-line arguments
 instead of in the configuration file: ``--ablation`` and ``--keep-models``.
 
-    ``--ablation``
-        Runs an ablation study where repeated experiments are conducted with
-        each feature set in the configuration file held out.
+    ``--ablation NUM_FEATURES``
+        Runs an ablation study where repeated experiments are conducted with the
+        specified number of feature files in each featureset in the
+        configuration file held out. For example, if you have three feature
+        files (``A``, ``B``, and ``C``) in your featureset and you specifiy
+        ``--ablation 1``, there will be three three experiments conducted with
+        the following featuresets: ``[[A, B], [B, C], [A, C]]``.
+
+        If you would like to try all possible combinations of feature files, you
+        can use the ``--ablation_all`` option instead.
 
     ``--keep-models``
         If trained models already exist for any of the learner/featureset
