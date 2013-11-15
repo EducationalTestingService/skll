@@ -1,20 +1,4 @@
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Laboratory.
-
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
-
-# SciKit-Learn Laboratory is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License along with
-# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 This module contains a bunch of evaluation metrics that can be used to
 evaluate the performance of learners.
@@ -27,7 +11,7 @@ evaluate the performance of learners.
 
 from __future__ import print_function, unicode_literals
 
-from multiprocessing import log_to_stderr
+import logging
 
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
@@ -75,7 +59,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                              for when building the weights matrix.
     :type allow_off_by_one: bool
     '''
-    logger = log_to_stderr()
+    logger = logging.getLogger(__name__)
 
     # Ensure that the lists are both the same length
     assert(len(y_true) == len(y_pred))

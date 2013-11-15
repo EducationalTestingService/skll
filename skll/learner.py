@@ -1,20 +1,4 @@
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Laboratory.
-
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
-
-# SciKit-Learn Laboratory is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License along with
-# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 Provides easy-to-use wrapper around scikit-learn.
 
@@ -27,11 +11,12 @@ Provides easy-to-use wrapper around scikit-learn.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import inspect
+import logging
 import os
 import sys
 from collections import defaultdict
 from functools import wraps
-from multiprocessing import cpu_count, log_to_stderr
+from multiprocessing import cpu_count
 
 import numpy as np
 import scipy.sparse as sp
@@ -53,7 +38,8 @@ from sklearn.utils import shuffle as sk_shuffle
 from sklearn.ensemble import (GradientBoostingClassifier,
                               GradientBoostingRegressor, RandomForestClassifier,
                               RandomForestRegressor)
-from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
+                                  LogisticRegression, Ridge)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -67,7 +53,8 @@ from skll.version import VERSION
 _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                                                       100.0]}],
                         'LinearSVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'SVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'SVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+                                 'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'MultinomialNB': [{'alpha': [0.1, 0.25, 0.5, 0.75,
                                                      1.0]}],
                         'DecisionTreeClassifier': [{'max_features': ["auto",
@@ -82,10 +69,15 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                                                        [1, 3, 5]}],
                         'GradientBoostingRegressor': [{'max_depth': [1, 3, 5]}],
                         'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
-_REGRESSION_MODELS = frozenset(['DecisionTreeRegressor',
-                                'GradientBoostingRegressor',
-                                'RandomForestRegressor', 'Ridge', 'SVR'])
+                        'Lasso': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
+                                                  100.0]}],
+                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'LinearRegression': [{}]}
+_REGRESSION_MODELS = frozenset(['DecisionTreeRegressor', 'ElasticNet',
+                                'GradientBoostingRegressor', 'Lasso',
+                                'LinearRegression', 'RandomForestRegressor',
+                                'Ridge', 'SVR'])
 _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
                              'GradientBoostingRegressor', 'MultinomialNB',
@@ -106,7 +98,7 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         self._warned = False
 
     def __iter__(self):
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
             train_len = len(train_index)
@@ -315,7 +307,22 @@ class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
 
 
 @rescaled
+class RescaledElasticNet(ElasticNet):
+    pass
+
+
+@rescaled
 class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
+    pass
+
+
+@rescaled
+class RescaledLasso(Lasso):
+    pass
+
+
+@rescaled
+class RescaledLinearRegression(LinearRegression):
     pass
 
 
@@ -403,6 +410,12 @@ class Learner(object):
         if self._model_type == 'SVC':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
+            if self.probability:
+                logger = logging.getLogger(__name__)
+                logger.warning('Because LibSVM does an internal ' +
+                               'cross-validation to produce probabilities, ' +
+                               'results will not be exactly replicable when ' +
+                               'using SVC and probability mode.')
         elif self._model_type == {'DecisionTreeClassifier'}:
             self._model_kwargs['criterion'] = 'entropy'
         elif self._model_type in {'RandomForestClassifier',
@@ -413,6 +426,12 @@ class Learner(object):
         elif self._model_type == 'SVR':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
+
+        # If we center data, fit_intercept should be false for linear models
+        if self._model_type in {'ElasticNet', 'Lasso', 'LinearRegression',
+                                'Ridge'}:
+            self._model_kwargs['fit_intercept'] = (self._feature_scaling not in
+                                                   {'with_mean', 'both'})
 
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
@@ -584,10 +603,11 @@ class Learner(object):
                                 " strings.  Convert them to floats.")
 
         if max_feat_abs > 1000.0:
-            logging.warning(("You have a feature with a very large absolute " +
-                             "value ({}).  That may cause the learning " +
-                             "algorithm to crash or perform " +
-                             "poorly.").format(max_feat_abs))
+            logger = logging.getLogger(__name__)
+            logger.warning(("You have a feature with a very large absolute " +
+                            "value (%s).  That may cause the learning " +
+                            "algorithm to crash or perform " +
+                            "poorly."), max_feat_abs)
 
     def _train_setup(self, examples):
         '''
@@ -616,9 +636,8 @@ class Learner(object):
             # Given a list of all labels in the dataset and a list of the
             # unique labels in the set, convert the first list to an array of
             # numbers.
-            self.label_dict = {}
-            for i, label in enumerate(self.label_list):
-                self.label_dict[label] = i
+            self.label_dict = {label: i for i, label in
+                               enumerate(self.label_list)}
 
         # Create feature name -> value mapping
         self.feat_vectorizer = examples.feat_vectorizer
@@ -700,7 +719,18 @@ class Learner(object):
 
         # Convert to dense if necessary
         if self._use_dense_features:
-            xtrain = xtrain.todense()
+            try:
+                xtrain = xtrain.todense()
+            except MemoryError:
+                if self._model_type in _REQUIRES_DENSE:
+                    reason = ('{} does not support sparse ' +
+                              'matrices.').format(self._model_type)
+                else:
+                    reason = ('{} feature scaling requires a dense ' +
+                              'matrix.').format(self._feature_scaling)
+                raise MemoryError('Ran out of memory when converting training' +
+                                  ' data to dense. This was required because ' +
+                                  reason)
 
         # Scale features if necessary
         if self._model_type != 'MultinomialNB':
@@ -901,7 +931,18 @@ class Learner(object):
 
         # Convert to dense if necessary
         if self._use_dense_features:
-            xtest = xtest.todense()
+            try:
+                xtest = xtest.todense()
+            except MemoryError:
+                if self._model_type in _REQUIRES_DENSE:
+                    reason = ('{} does not support sparse ' +
+                              'matrices.').format(self._model_type)
+                else:
+                    reason = ('{} feature scaling requires a dense ' +
+                              'matrix.').format(self._feature_scaling)
+                raise MemoryError('Ran out of memory when converting test ' +
+                                  ' data to dense. This was required because ' +
+                                  reason)
 
         # Scale xtest if necessary
         if self._model_type != 'MultinomialNB':
@@ -914,9 +955,9 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logging.error(("Model type: {}\nModel: {}\nProbability: " +
-                           "{}\n").format(self._model_type, self._model,
-                                          self.probability))
+            logger = logging.getLogger(__name__)
+            logger.error("Model type: %s\nModel: %s\nProbability: %s\n",
+                         self._model_type, self._model, self.probability)
             raise e
 
         # write out the predictions if we are asked to

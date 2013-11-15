@@ -17,7 +17,8 @@ things work, do the following from the command prompt:
 
     $ cd examples
     $ python make_example_iris_data.py          # download a simple dataset
-    $ run_experiment --local example.cfg        # run an experiment
+    $ cd iris
+    $ run_experiment --local evaluate.cfg        # run an experiment
 
 
 Feature file formats
@@ -48,10 +49,11 @@ The following feature file formats are supported:
         *   All other columns contain feature values, and every feature value
             must be specified (making this a poor choice for sparse data).
 
-    **jsonlines** *(Recommended)*
+    **jsonlines**/**ndj** *(Recommended)*
         A twist on the `JSON <http://www.json.org/>`_ format where every line is
-        a JSON dictionary (the entire contents of a normal JSON file). Each
-        dictionary is expected to contain the following keys:
+        a either JSON dictionary (the entire contents of a normal JSON file), or
+        a comment line starting with ``//``. Each dictionary is expected to
+        contain the following keys:
 
         *   *y*: The class label.
         *   *x*: A dictionary of feature values.
@@ -102,13 +104,13 @@ settings for each section is provided below, but to summarize:
     a training location, a test location, and set ``task`` to ``predict``.
 
 *   If you want to just **train a model**, specify a training location, and set
-    ``task`` to ``train_only``.
+    ``task`` to ``train``.
 
 *   A list of classifiers/regressors to try on your feature files is
     required.
 
-An example configuration file is available
-`here <https://github.com/EducationalTestingService/skll/blob/master/examples/example.cfg>`_.
+Example configuration files are available
+`here <https://github.com/EducationalTestingService/skll/blob/master/examples/>`_.
 
 General
 ^^^^^^^
@@ -148,6 +150,20 @@ Input
         Note that this will cause IDs to be printed as floats in prediction
         files (e.g., "4.0" instead of "4" or "0004" or "4.000").
 
+    **class_map** *(Optional)*
+        If you would like to collapse several classes into one, or otherwise
+        modify your labels (without modifying your original feature files), you
+        can specify a dictionary mapping from new class labels to lists of
+        original class labels. For example, if you wanted to collapse the
+        classes "beagle" and "dachsund" into a "dog" class, you would specify
+        the following for `class_map`:
+
+        .. code-block:: python
+
+           {'dog': ['beagle', 'dachsund']}
+
+        Any classes not included in the dictionary will be left untouched.
+
     **cv_folds_location** *(Optional)*
         Path to a csv file (with a header that is ignored) specifyingfolds for
         cross-validation. The first column should consist of training set IDs
@@ -162,9 +178,9 @@ Input
         ``ValueError`` will be raised if this is not the case.
 
     **suffix** *(Optional)*
-        The file format the training/test files are in. Valid option are ".tsv",
-        ".megam", and ".jsonlines" (one complete JSON dict per line in the
-        file).
+        The file format the training/test files are in. Valid option are
+        ``.arff``, ``.csv``, ``.jsonlines``, ``.megam,``, ``.ndj``, and
+        ``.tsv``".
 
         If you omit this field, it is assumed that the "prefixes" listed
         in ``featuresets`` are actually complete filenames. This can be useful
@@ -195,6 +211,9 @@ Input
 
             *   *DecisionTreeRegressor*: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`_
             *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
+            *   *ElasticNet*: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`_
+            *   *Lasso*: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`_
+            *   *LinearRegression*: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`_
             *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_
             *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`_
             *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
@@ -383,7 +402,7 @@ Tuning
 
            [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
 
-        *Ridge*
+        *ElasticNet*, *Lasso*, and *Ridge*
 
         .. code-block:: python
 
@@ -412,8 +431,7 @@ Output
 
     **results** *(Optional)*
         Directory to store result files in. If omitted, the current working
-        directory is used, **and we're assumed to just want to generate
-        predictions if the test_location is specified.**
+        directory is used.
 
     **log** *(Optional)*
         Directory to store result files in. If omitted, the current working
@@ -438,9 +456,16 @@ just get your experiment started by running ``run_experiment CONFIGFILE``. That
 said, there are a couple options that are specified via command-line arguments
 instead of in the configuration file: ``--ablation`` and ``--keep-models``.
 
-    ``--ablation``
-        Runs an ablation study where repeated experiments are conducted with
-        each feature set in the configuration file held out.
+    ``--ablation NUM_FEATURES``
+        Runs an ablation study where repeated experiments are conducted with the
+        specified number of feature files in each featureset in the
+        configuration file held out. For example, if you have three feature
+        files (``A``, ``B``, and ``C``) in your featureset and you specifiy
+        ``--ablation 1``, there will be three three experiments conducted with
+        the following featuresets: ``[[A, B], [B, C], [A, C]]``.
+
+        If you would like to try all possible combinations of feature files, you
+        can use the ``--ablation_all`` option instead.
 
     ``--keep-models``
         If trained models already exist for any of the learner/featureset

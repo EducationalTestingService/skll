@@ -1,20 +1,4 @@
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Laboratory.
-
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
-
-# SciKit-Learn Laboratory is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License along with
-# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 Functions related to running experiments and parsing configuration files.
 
@@ -29,13 +13,13 @@ import csv
 import datetime
 import errno
 import json
+import logging
 import math
 import os
 import sys
 from collections import defaultdict
 from io import open
 from itertools import chain, combinations
-from multiprocessing import log_to_stderr
 
 import configparser  # Backported version from Python 3
 import numpy as np
@@ -58,8 +42,7 @@ else:
     _HAVE_GRIDMAP = True
 
 
-_VALID_TASKS = frozenset(['predict', 'train_only',
-                          'evaluate', 'cross_validate'])
+_VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -112,13 +95,13 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     '''
     learner_result_dicts = []
     all_features = set()
-    logger = log_to_stderr()
+    logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
-            logger.error(('JSON results file {} not found. Skipping summary ' +
+            logger.error(('JSON results file %s not found. Skipping summary ' +
                           'creation. You can manually create the summary file' +
                           ' after the fact by using the summarize_results ' +
-                          'script.').format(json_path))
+                          'script.'), json_path)
             return
         else:
             with open(json_path, 'r') as json_file:
@@ -180,14 +163,16 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
-    print('Grid Objective: {}'.format(lrd['grid_objective']), file=output_file)
+    print('Grid Objective Function: {}'.format(lrd['grid_objective']),
+          file=output_file)
     print('\n', file=output_file)
 
     for lrd in learner_result_dicts:
         print('Fold: {}'.format(lrd['fold']), file=output_file)
         print('Model Parameters: {}'.format(lrd.get('model_params', '')),
               file=output_file)
-        print('Grid search score = {}'.format(lrd.get('grid_score', '')),
+        print('Grid Objective Score (Train) = {}'.format(lrd.get('grid_score',
+                                                                 '')),
               file=output_file)
         if 'result_table' in lrd:
             print(lrd['result_table'], file=output_file)
@@ -203,7 +188,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                       file=output_file)
             print('Pearson:{: f}'.format(lrd['pearson']),
                   file=output_file)
-        print('Objective function score = {}'.format(lrd['score']),
+        print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
         print('', file=output_file)
 
@@ -319,6 +304,19 @@ def _parse_config_file(config_path):
     else:
         cv_folds = 10
 
+    # Get class mapping dictionary if specified
+    if config.has_option("Input", "class_map"):
+        orig_class_map = json.loads(_fix_json(config.get("Input", "class_map")))
+        # Change class_map to map from originals to replacements instead of from
+        # replacement to list of originals
+        class_map = {}
+        for replacement, original_list in iteritems(orig_class_map):
+            for original in original_list:
+                class_map[original] = replacement
+        del orig_class_map
+    else:
+        class_map = None
+
     # Output
     # get all the output files and directories
     results_path = config.get("Output", "results")
@@ -342,10 +340,10 @@ def _parse_config_file(config_path):
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
         raise IOError(errno.ENOENT, ("The training path specified in config " +
-                                     "file does not exist."), train_path)
+                                     "file does not exist"), train_path)
     if test_path and not os.path.exists(test_path):
         raise IOError(errno.ENOENT, ("The test path specified in config " +
-                                     "file does not exist."), train_path)
+                                     "file does not exist"), test_path)
 
     # Tuning
     # do we need to run a grid search for the hyperparameters or are we just
@@ -370,18 +368,18 @@ def _parse_config_file(config_path):
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set and results locations must be set ' +
                          'when task is evaluate or predict.')
-    if (task == 'cross_validate' or task == 'train_only') and test_path:
+    if (task == 'cross_validate' or task == 'train') and test_path:
         raise ValueError('The test set path should not be set ' +
-                         'when task is cross_validate or train_only.')
-    if (task == 'train_only' or task == 'predict') and results_path:
+                         'when task is cross_validate or train.')
+    if (task == 'train' or task == 'predict') and results_path:
         raise ValueError('The results path should not be set ' +
-                         'when task is predict or train_only.')
-    if task == 'train_only' and not model_path:
+                         'when task is predict or train.')
+    if task == 'train' and not model_path:
         raise ValueError('The model path should be set ' +
-                         'when task is train_only.')
-    if task == 'train_only' and prediction_dir:
+                         'when task is train.')
+    if task == 'train' and prediction_dir:
         raise ValueError('The predictions path should not be set ' +
-                         'when task is train_only.')
+                         'when task is train.')
     if task == 'cross_validate' and model_path:
         raise ValueError('The models path should not be set ' +
                          'when task is cross_validate.')
@@ -400,20 +398,49 @@ def _parse_config_file(config_path):
             probability, results_path, pos_label_str, feature_scaling,
             min_feature_count, grid_search_jobs, cv_folds, fixed_parameter_list,
             param_grid_list, featureset_names, learners, prediction_dir,
-            log_path, train_path, test_path, ids_to_floats)
+            log_path, train_path, test_path, ids_to_floats, class_map)
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
-                     ids_to_floats=False, quiet=False):
+                     ids_to_floats=False, quiet=False, class_map=None,
+                     unlabelled=False):
     '''
-    loads a list of feature files and merges them.
+    Load a list of feature files and merge them.
+
+    :param dirpath: Path to the directory that contains the feature files.
+    :type dirpath: str
+    :param featureset: List of feature file prefixes
+    :type featureset: str
+    :param suffix: Suffix to add to feature file prefixes to get full filenames.
+    :type suffix: str
+    :param label_col: Name of the column which contains the class labels.
+                      If no column with that name exists, or `None` is
+                      specified, the data is considered to be unlabelled.
+    :type label_col: str
+    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
+                          if we encounter an a non-numeric ID.
+    :type ids_to_floats: bool
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
+    :param unlabelled: Is this test we're loading? If so, don't raise an error
+                       if there are no labels.
+    :type unlabelled: bool
+
+    :returns: The classes, IDs, features, and feature vectorizer representing
+              the given featureset.
+    :rtype: ExamplesTuple
     '''
 
     # Load a list of lists of examples, one list of examples per featureset.
     file_names = [os.path.join(dirpath, featfile + suffix) for featfile
                   in featureset]
     example_tuples = [load_examples(file_name, label_col=label_col,
-                                    ids_to_floats=ids_to_floats, quiet=quiet)
+                                    ids_to_floats=ids_to_floats, quiet=quiet,
+                                    class_map=class_map)
                       for file_name in file_names]
 
     # Check that the IDs are unique within each file.
@@ -488,8 +515,8 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                 raise ValueError('Feature files have conflicting labels for ' +
                                  'examples with the same ID!')
 
-    # Ensure that at least one file had classes
-    if merged_classes is None:
+    # Ensure that at least one file had classes if we're expecting them
+    if merged_classes is None and not unlabelled:
         raise ValueError('No feature files in feature set contain class' +
                          'labels!')
 
@@ -529,6 +556,7 @@ def _classify_featureset(args):
     cv_folds = args.pop("cv_folds")
     label_col = args.pop("label_col")
     ids_to_floats = args.pop("ids_to_floats")
+    class_map = args.pop("class_map")
     quiet = args.pop('quiet', False)
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: " +
@@ -539,7 +567,7 @@ def _classify_featureset(args):
     with open(log_path, 'w') as log_file:
 
         # logging
-        print("Task: {}".format(task), file=log_file)
+        print("Task:", task, file=log_file)
         if task == 'cross_validate':
             print(("Cross-validating on {}, feature " +
                    "set {} ...").format(train_set_name, featureset),
@@ -549,7 +577,7 @@ def _classify_featureset(args):
                    "feature set {} ...").format(train_set_name, test_set_name,
                                                 featureset),
                   file=log_file)
-        elif task == 'train_only':
+        elif task == 'train':
             print("Training on {}, feature set {} ...".format(train_set_name,
                                                               featureset),
                   file=log_file)
@@ -563,12 +591,13 @@ def _classify_featureset(args):
         train_examples = _load_featureset(train_path, featureset, suffix,
                                           label_col=label_col,
                                           ids_to_floats=ids_to_floats,
-                                          quiet=quiet)
+                                          quiet=quiet, class_map=class_map)
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              label_col=label_col,
                                              ids_to_floats=ids_to_floats,
-                                             quiet=quiet)
+                                             quiet=quiet, class_map=class_map,
+                                             unlabelled=True)
 
         # initialize a classifer object
         learner = Learner(learner_name,
@@ -594,7 +623,8 @@ def _classify_featureset(args):
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
-                                    'grid_objective': grid_objective}
+                                    'grid_objective': grid_objective,
+                                    'min_feature_count': min_feature_count}
 
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
@@ -661,7 +691,7 @@ def _classify_featureset(args):
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
                                 prediction_prefix=prediction_prefix)
-            # do nothing here for train_only
+            # do nothing here for train
 
         if task == 'cross_validate' or task == 'evaluate':
             results_json_path = os.path.join(results_path,
@@ -883,12 +913,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      results_path, pos_label_str, feature_scaling, min_feature_count,
      grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
      featureset_names, learners, prediction_dir, log_path, train_path,
-     test_path, ids_to_floats) = _parse_config_file(config_file)
+     test_path, ids_to_floats, class_map) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
         local = True
-        logger = log_to_stderr()
+        logger = logging.getLogger(__name__)
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
                        'mode.  To run things on a DRMAA-compatible ' +
                        'cluster, install gridmap>=0.10.1 via pip.')
@@ -987,6 +1017,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["label_col"] = label_col
             job_args["ids_to_floats"] = ids_to_floats
             job_args["quiet"] = quiet
+            job_args["class_map"] = class_map
 
             if not local:
                 jobs.append(Job(_classify_featureset, [job_args],
@@ -1009,7 +1040,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             else:
                 job_results = process_jobs(jobs, white_list=hosts)
         except JobException:
-            logger = log_to_stderr()
+            logger = logging.getLogger(__name__)
             logger.exception('gridmap claims that one of your jobs failed, ' +
                              'but this is not always true.')
         else:
@@ -1021,7 +1052,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(os.path.join(results_path, summary_file_name),
                   file_mode) as output_file:
-            _write_summary_file(result_json_paths, output_file, 
+            _write_summary_file(result_json_paths, output_file,
                                 ablation=ablation)
 
     return result_json_paths
@@ -1031,12 +1062,12 @@ def _check_job_results(job_results):
     '''
     See if we have a complete results dictionary for every job.
     '''
-    logger = log_to_stderr()
+    logger = logging.getLogger(__name__)
     logger.info('checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
-            logger.error('There was an error running the experiment:\n' +
-                         '{}'.format(result_dicts))
+            logger.error('There was an error running the experiment:\n%s',
+                         result_dicts)
 
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',

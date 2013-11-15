@@ -1,20 +1,4 @@
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Laboratory.
-
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
-
-# SciKit-Learn Laboratory is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License along with
-# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
@@ -34,6 +18,7 @@ import os
 import re
 import shlex
 import subprocess
+import sys
 from collections import OrderedDict
 from io import open
 
@@ -49,8 +34,8 @@ from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
 
 
-SCORE_OUTPUT_RE = re.compile(r'Objective function score = ([\-\d\.]+)')
-GRID_RE = re.compile(r'Grid search score = ([\-\d\.]+)')
+SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = ([\-\d\.]+)')
+GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -383,10 +368,10 @@ def test_summary():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 17 rows,
+            # the learner results dictionaries should have 18 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 17)
+            eq_(len(row), 18)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -400,6 +385,25 @@ def test_summary():
 
     for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
         yield check_summary_score, result_score, summary_score, learner_name
+
+
+def test_backward_compatibility():
+    '''
+    Verify that a model from v0.9.17 can still be loaded and generate the same predictions.
+    '''
+    predict_path = os.path.join(_my_dir, 'backward_compatibility',
+                                'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
+    model_path = os.path.join(_my_dir, 'backward_compatibility',
+                              'v0.9.17_test_summary_test_summary_LogisticRegression.{}.model'.format(sys.version_info[0]))
+    test_path = os.path.join(_my_dir, 'backward_compatibility', 'v0.9.17_test_summary.jsonlines')
+
+    learner = Learner.from_file(model_path)
+    examples = load_examples(test_path, quiet=True)
+    new_predictions = learner.predict(examples)[:, 1]
+
+    with open(predict_path) as predict_file:
+        for line, new_val in zip(predict_file, new_predictions):
+            assert_almost_equal(float(line.strip()), new_val)
 
 
 def make_sparse_data():
@@ -452,7 +456,60 @@ def test_sparse_predict():
     assert_almost_equal(logistic_result_score, 0.5)
 
 
+def make_class_map_data():
+    # Create training file
+    train_path = os.path.join(_my_dir, 'train', 'test_class_map.jsonlines')
+    ids = []
+    classes = []
+    features = []
+    class_names = ['beagle', 'cat', 'dachsund', 'cat']
+    for i in range(1, 101):
+        y = class_names[i % 4]
+        ex_id = "{}{}".format(y, i)
+        # note that f1 and f5 are missing in all instances but f4 is not
+        x = {"f2": i+1, "f3": i+2, "f4": i+5}
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+    write_feature_file(train_path, ids, classes, features)
+
+    # Create test file
+    test_path = os.path.join(_my_dir, 'test', 'test_class_map.jsonlines')
+    ids = []
+    classes = []
+    features = []
+    for i in range(1, 51):
+        y = class_names[i % 4]
+        ex_id = "{}{}".format(y, i)
+        # f1 and f5 are not missing in any instances here but f4 is
+        x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
+        ids.append(ex_id)
+        classes.append(y)
+        features.append(x)
+    write_feature_file(test_path, ids, classes, features)
+
+
+def test_class_map():
+    make_class_map_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_class_map.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, quiet=True)
+
+    with open(os.path.join(_my_dir, 'output', 'test_class_map_test_class_map_LogisticRegression.results')) as f:
+        outstr = f.read()
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
+    assert_almost_equal(logistic_result_score, 0.5)
+
+
 def make_ablation_data():
+    # Remove old CV data
+    for old_file in glob.glob(os.path.join(_my_dir, 'output',
+                                           'ablation_cv_*.results')):
+        os.remove(old_file)
+
     num_examples = 1000
 
     np.random.seed(1234567890)
@@ -503,8 +560,6 @@ def test_ablation_cv():
     num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
     assert_equal(num_result_files, 12)
 
-    # Remove them so we can create new ones for the next test
-    glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results'))
 
 def test_ablation_cv_all_combos():
     '''
@@ -719,14 +774,13 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
         features.append(x)
 
     # Unmerged
+    subset_dict = {}
     for i in range(num_feat_files):
-        train_path = os.path.join(merge_dir, '{}{}'.format(i, suffix))
-        sub_features = []
-        for example_num in range(num_examples):
-            feat_num = i * num_feats_per_file
-            x = {"f{:03d}".format(feat_num + j): features[example_num]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
-            sub_features.append(x)
-        write_feature_file(train_path, ids, classes if i == 0 else [None] * num_examples, sub_features)  # Make one of the files not have labels
+        feat_num = i * num_feats_per_file
+        subset_dict['{}'.format(i)] = ["f{:03d}".format(feat_num + j) for j in
+                                       range(num_feats_per_file)]
+    train_path = os.path.join(merge_dir, suffix)
+    write_feature_file(train_path, ids, classes, features, subsets=subset_dict)
 
     # Merged
     train_path = os.path.join(merge_dir, 'all{}'.format(suffix))
@@ -741,12 +795,13 @@ def check_load_featureset(suffix, numeric_ids):
 
     # Load unmerged data and merge it
     dirpath = os.path.join(_my_dir, 'train', 'test_merging')
-    featureset = [str(i) for i in range(num_feat_files)]
+    featureset = ['{}'.format(i) for i in range(num_feat_files)]
     merged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
 
     # Load pre-merged data
     featureset = ['all']
-    premerged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    premerged_examples = _load_featureset(dirpath, featureset, suffix,
+                                          quiet=True)
 
     assert np.all(merged_examples.ids == premerged_examples.ids)
     assert np.all(merged_examples.classes == premerged_examples.classes)
@@ -760,10 +815,10 @@ def check_load_featureset(suffix, numeric_ids):
 
 def test_load_featureset():
     # Test merging with numeric IDs
-    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
+    for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, True
 
-    for suffix in ['.jsonlines', '.megam', '.tsv', '.csv', '.arff']:
+    for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, False
 
 
@@ -897,5 +952,5 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.megam', '.tsv', '.csv', '.arff'], 2):
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff'], 2):
         yield check_convert_featureset, from_suffix, to_suffix
