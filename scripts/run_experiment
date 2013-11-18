@@ -33,7 +33,7 @@ import argparse
 import logging
 from functools import partial
 
-from skll.experiments import run_ablation, run_configuration
+from skll.experiments import run_configuration
 from skll.version import __version__
 
 
