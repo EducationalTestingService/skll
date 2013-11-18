@@ -86,8 +86,8 @@ def main():
                         help="Use this queue for gridmap.",
                         default='all.q')
     parser.add_argument('-v', '--verbose',
-                        help='Print more status information. For every ' + 
-                             'additional time this flag is specified, ' + 
+                        help='Print more status information. For every ' +
+                             'additional time this flag is specified, ' +
                              'output gets more verbose.',
                         default=0, action='count')
     parser.add_argument('--version', action='version',
@@ -95,7 +95,7 @@ def main():
     args = parser.parse_args()
 
     # Logging levels are really integer multiples of 10, so convert verbose flag
-    log_level = max(logging.WARNING - (args.verbose * 10), logging.INFO)
+    log_level = max(logging.WARNING - (args.verbose * 10), logging.DEBUG)
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
