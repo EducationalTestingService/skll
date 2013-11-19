@@ -1053,7 +1053,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         with open(os.path.join(results_path, summary_file_name),
                   file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file,
-                                x=ablation)
+                                ablation=ablation)
 
     return result_json_paths
 
