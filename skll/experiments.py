@@ -220,7 +220,7 @@ def _setup_config_parser(config_path):
                                         'ids_to_floats': 'False'})
     # Read file if it exists
     if not os.path.exists(config_path):
-        raise IOError(errno.ENOENT, "The config file doesn't exist.",
+        raise IOError(errno.ENOENT, "The config file doesn't exist",
                       config_path)
     config.read(config_path)
     return config
