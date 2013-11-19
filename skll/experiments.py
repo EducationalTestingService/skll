@@ -126,7 +126,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
 
     # Build "ablated_features" list and fix some backward compatible things
     for lrd in learner_result_dicts:
-        if ablation:
+        if ablation != 0:
             ablated_features = all_features.difference(json.loads(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
@@ -1053,7 +1053,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         with open(os.path.join(results_path, summary_file_name),
                   file_mode) as output_file:
             _write_summary_file(result_json_paths, output_file,
-                                ablation=ablation)
+                                x=ablation)
 
     return result_json_paths
 
