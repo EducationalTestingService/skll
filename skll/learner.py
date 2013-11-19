@@ -96,9 +96,9 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         self.keep = keep
         self.examples = examples
         self._warned = False
+        self.logger = logging.getLogger(__name__)
 
     def __iter__(self):
-        logger = logging.getLogger(__name__)
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
             train_len = len(train_index)
@@ -109,8 +109,8 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
                           self.keep]
             if not self._warned and (train_len != len(train_index) or
                                      test_len != len(test_index)):
-                logger.warning('Feature set contains IDs that are not in ' +
-                               'folds dictionary. Skipping those IDs.')
+                self.logger.warning('Feature set contains IDs that are not ' +
+                                    'in folds dictionary. Skipping those IDs.')
                 self._warned = True
 
             yield train_index, test_index
