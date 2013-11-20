@@ -427,12 +427,6 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
 
-        # If we center data, fit_intercept should be false for linear models
-        if self._model_type in {'ElasticNet', 'Lasso', 'LinearRegression',
-                                'Ridge'}:
-            self._model_kwargs['fit_intercept'] = (self._feature_scaling not in
-                                                   {'with_mean', 'both'})
-
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
