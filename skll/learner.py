@@ -568,7 +568,7 @@ class Learner(object):
             model_type = self._model_type
             # Ensure kernel argument has right type for Python version
             if model_type == 'SVR' and sys.version_info < (3, 0):
-                self.model_kwargs['kernel'] = self.model_kwargs['kernel'].decode()
+                self.model_kwargs['kernel'] = self.model_kwargs['kernel'].encode()
             if self._rescale:
                 model_type = 'Rescaled' + model_type
             # This crazy looking line creates an estimator based on a string
