@@ -24,7 +24,7 @@ before_install:
   - conda update --yes conda
 install:
   - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy beautiful-soup six scikit-learn
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --use-mirrors configparser; fi
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install --use-mirrors configparser; fi
   - pip install -r requirements.txt --use-mirrors
   - pip install python-coveralls --use-mirrors
   - pip install nose-cov --use-mirrors
