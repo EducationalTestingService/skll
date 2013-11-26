@@ -1,4 +1,4 @@
-include COPYING
+include LICENSE.txt
 include *.rst
 include requirements.txt
 include requirements_rtd.txt
