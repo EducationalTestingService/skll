@@ -366,8 +366,8 @@ def _parse_config_file(config_path):
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
-        raise ValueError('The test set and results locations must be set ' +
-                         'when task is evaluate or predict.')
+        raise ValueError('The test set path must be set when task is evaluate' +
+                         ' or predict.')
     if (task == 'cross_validate' or task == 'train') and test_path:
         raise ValueError('The test set path should not be set ' +
                          'when task is cross_validate or train.')
