@@ -1,20 +1,4 @@
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Laboratory.
-
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
-
-# SciKit-Learn Laboratory is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License along with
-# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 Provides easy-to-use wrapper around scikit-learn.
 
@@ -69,7 +53,8 @@ from skll.version import VERSION
 _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                                                       100.0]}],
                         'LinearSVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'SVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'SVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+                                 'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'MultinomialNB': [{'alpha': [0.1, 0.25, 0.5, 0.75,
                                                      1.0]}],
                         'DecisionTreeClassifier': [{'max_features': ["auto",
@@ -111,9 +96,9 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
         self.keep = keep
         self.examples = examples
         self._warned = False
+        self.logger = logging.getLogger(__name__)
 
     def __iter__(self):
-        logger = logging.getLogger(__name__)
         for train_index, test_index in super(FilteredLeaveOneLabelOut,
                                              self).__iter__():
             train_len = len(train_index)
@@ -124,8 +109,8 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
                           self.keep]
             if not self._warned and (train_len != len(train_index) or
                                      test_len != len(test_index)):
-                logger.warning('Feature set contains IDs that are not in ' +
-                               'folds dictionary. Skipping those IDs.')
+                self.logger.warning('Feature set contains IDs that are not ' +
+                                    'in folds dictionary. Skipping those IDs.')
                 self._warned = True
 
             yield train_index, test_index
@@ -442,12 +427,6 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
 
-        # If we center data, fit_intercept should be false for linear models
-        if self._model_type in {'ElasticNet', 'Lasso', 'LinearRegression',
-                                'Ridge'}:
-            self._model_kwargs['fit_intercept'] = (self._feature_scaling not in
-                                                   {'with_mean', 'both'})
-
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
@@ -583,7 +562,7 @@ class Learner(object):
             model_type = self._model_type
             # Ensure kernel argument has right type for Python version
             if model_type == 'SVR' and sys.version_info < (3, 0):
-                self.model_kwargs['kernel'] = self.model_kwargs['kernel'].decode()
+                self.model_kwargs['kernel'] = self.model_kwargs['kernel'].encode()
             if self._rescale:
                 model_type = 'Rescaled' + model_type
             # This crazy looking line creates an estimator based on a string

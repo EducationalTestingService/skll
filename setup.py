@@ -1,21 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Laboratory.
-
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
-
-# SciKit-Learn Laboratory is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License along with
-# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 import sys
 from setuptools import setup
 
@@ -50,7 +34,7 @@ setup(name='skll',
       url='http://github.com/EducationalTestingService/skll',
       author='Daniel Blanchard',
       author_email='dblanchard@ets.org',
-      license='GPL',
+      license='BSD 3 clause',
       packages=['skll'],
       scripts=['scripts/filter_megam', 'scripts/generate_predictions',
                'scripts/join_megam', 'scripts/megam_to_libsvm',
@@ -59,7 +43,7 @@ setup(name='skll',
       install_requires=requirements(),
       classifiers=['Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',
-                   'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+                   'License :: OSI Approved :: BSD License',
                    'Programming Language :: Python',
                    'Topic :: Software Development',
                    'Topic :: Scientific/Engineering',

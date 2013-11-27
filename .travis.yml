@@ -23,8 +23,7 @@ before_install:
   - export PATH=/home/travis/anaconda/bin:$PATH
   - conda update --yes conda
 install:
-  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy beautiful-soup six
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes scikit-learn; fi
+  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy beautiful-soup six scikit-learn
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install --use-mirrors configparser; fi
   - pip install -r requirements.txt --use-mirrors
   - pip install python-coveralls --use-mirrors

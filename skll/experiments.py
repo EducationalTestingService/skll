@@ -1,20 +1,4 @@
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Laboratory.
-
-# SciKit-Learn Laboratory is free software: you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or (at your
-# option) any later version.
-
-# SciKit-Learn Laboratory is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License along with
-# SciKit-Learn Laboratory.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 Functions related to running experiments and parsing configuration files.
 
@@ -142,7 +126,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
 
     # Build "ablated_features" list and fix some backward compatible things
     for lrd in learner_result_dicts:
-        if ablation:
+        if ablation != 0:
             ablated_features = all_features.difference(json.loads(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
@@ -236,7 +220,7 @@ def _setup_config_parser(config_path):
                                         'ids_to_floats': 'False'})
     # Read file if it exists
     if not os.path.exists(config_path):
-        raise IOError(errno.ENOENT, "The config file doesn't exist.",
+        raise IOError(errno.ENOENT, "The config file doesn't exist",
                       config_path)
     config.read(config_path)
     return config
@@ -382,8 +366,8 @@ def _parse_config_file(config_path):
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
-        raise ValueError('The test set and results locations must be set ' +
-                         'when task is evaluate or predict.')
+        raise ValueError('The test set path must be set when task is evaluate' +
+                         ' or predict.')
     if (task == 'cross_validate' or task == 'train') and test_path:
         raise ValueError('The test set path should not be set ' +
                          'when task is cross_validate or train.')

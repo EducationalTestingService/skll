@@ -10,4 +10,4 @@ It can also be downloaded directly from
 
 License
 =======
-SKLL is distributed under version 3 of the GNU Public License (GPLv3).
+SKLL is distributed under the 3-clause BSD License.
