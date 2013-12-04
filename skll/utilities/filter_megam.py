@@ -37,7 +37,10 @@ from skll.data import _megam_dict_iter
 from skll.version import __version__
 
 
-if __name__ == '__main__':
+def main():
+    '''
+    Handles command line arguments and gets things started.
+    '''
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Filter MegaM file to remove\
                                                   features with names in stop\
@@ -98,3 +101,7 @@ if __name__ == '__main__':
                     print(" ", end='')
                 print('{} {}'.format(feature, value), end="")
         print()
+
+
+if __name__ == '__main__':
+    main()
