@@ -36,7 +36,10 @@ from skll import Learner
 from skll.version import __version__
 
 
-if __name__ == '__main__':
+def main():
+    '''
+    Handles command line arguments and gets things started.
+    '''
     parser = argparse.ArgumentParser(description="Prints out the weights of a \
                                                   given model.",
                                      conflict_handler='resolve',
@@ -63,3 +66,7 @@ if __name__ == '__main__':
 
     for feat, val in sorted(iteritems(weights), key=lambda x: -abs(x[1]))[:k]:
         print("{:.12f}\t{}".format(val, feat))
+
+
+if __name__ == '__main__':
+    main()

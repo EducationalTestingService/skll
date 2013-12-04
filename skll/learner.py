@@ -18,6 +18,7 @@ from collections import defaultdict
 from functools import wraps
 from multiprocessing import cpu_count
 
+import joblib
 import numpy as np
 import scipy.sparse as sp
 from six import iteritems, itervalues
@@ -443,23 +444,22 @@ class Learner(object):
         '''
         :returns: New instance of Learner from the pickle at the specified path.
         '''
-        with open(learner_path, "rb") as f:
-            skll_version, learner = pickle.load(f)
-            # Check that we've actually loaded a Learner (or sub-class)
-            if not isinstance(learner, cls):
-                raise ValueError(('The pickle stored at {} does not contain ' +
-                                  'a {} object.').format(learner_path, cls))
-            # Check that versions are compatible. (Currently, this just checks
-            # that major versions match)
-            elif skll_version[0] == VERSION[0]:
-                return learner
-            else:
-                raise Exception(("{} stored in pickle file {} was " +
-                                 "created with version {} of SKLL, which is " +
-                                 "incompatible with the current version " +
-                                 "{}").format(cls, learner_path,
-                                              '.'.join(skll_version),
-                                              '.'.join(VERSION)))
+        skll_version, learner = joblib.load(learner_path)
+        # Check that we've actually loaded a Learner (or sub-class)
+        if not isinstance(learner, cls):
+            raise ValueError(('The pickle stored at {} does not contain ' +
+                              'a {} object.').format(learner_path, cls))
+        # Check that versions are compatible. (Currently, this just checks
+        # that major versions match)
+        elif skll_version[0] == VERSION[0]:
+            return learner
+        else:
+            raise ValueError(("{} stored in pickle file {} was " +
+                              "created with version {} of SKLL, which is " +
+                              "incompatible with the current version " +
+                              "{}").format(cls, learner_path,
+                                           '.'.join(skll_version),
+                                           '.'.join(VERSION)))
 
     @property
     def model_type(self):
@@ -548,8 +548,7 @@ class Learner(object):
         if not os.path.exists(learner_dir):
             os.makedirs(learner_dir)
         # write out the files
-        with open(learner_path, "wb") as f:
-            pickle.dump((VERSION, self), f, -1)
+        joblib.dump((VERSION, self), learner_path)
 
     def _create_estimator(self):
         '''

@@ -587,11 +587,32 @@ def _classify_featureset(args):
                                                 featureset),
                   file=log_file)
 
+        # check whether a trained model on the same data with the same
+        # featureset already exists if so, load it and then use it on test data
+        modelfile = os.path.join(model_path, '{}.model'.format(job_name))
+
         # load the training and test examples
-        train_examples = _load_featureset(train_path, featureset, suffix,
-                                          label_col=label_col,
-                                          ids_to_floats=ids_to_floats,
-                                          quiet=quiet, class_map=class_map)
+        if task == 'cross_validate' or (not os.path.exists(modelfile) or
+                                        overwrite):
+            train_examples = _load_featureset(train_path, featureset, suffix,
+                                              label_col=label_col,
+                                              ids_to_floats=ids_to_floats,
+                                              quiet=quiet, class_map=class_map)
+            # initialize a classifer object
+            learner = Learner(learner_name,
+                              probability=probability,
+                              feature_scaling=feature_scaling,
+                              model_kwargs=fixed_parameters,
+                              pos_label_str=pos_label_str,
+                              min_feature_count=min_feature_count)
+        # load the model if it already exists
+        else:
+            if os.path.exists(modelfile) and not overwrite:
+                print(('\tloading pre-existing {} ' +
+                       'model: {}').format(learner_name, modelfile))
+            learner = Learner.from_file(modelfile)
+
+        # Load test set if there is one
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              label_col=label_col,
@@ -599,18 +620,6 @@ def _classify_featureset(args):
                                              quiet=quiet, class_map=class_map,
                                              unlabelled=True)
 
-        # initialize a classifer object
-        learner = Learner(learner_name,
-                          probability=probability,
-                          feature_scaling=feature_scaling,
-                          model_kwargs=fixed_parameters,
-                          pos_label_str=pos_label_str,
-                          min_feature_count=min_feature_count)
-
-        # check whether a trained model on the same data with the same
-        # featureset already exists if so, load it (and the feature
-        # vocabulary) and then use it on the test data
-        modelfile = os.path.join(model_path, '{}.model'.format(job_name))
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
@@ -639,14 +648,8 @@ def _classify_featureset(args):
                                                                param_grid=param_grid,
                                                                grid_jobs=grid_search_jobs)
         else:
-            # load the model if it already exists
-            if os.path.exists(modelfile) and not overwrite:
-                print(('\tloading pre-existing {} ' +
-                       'model: {}').format(learner_name, modelfile))
-                learner.load(modelfile)
-
             # if we have do not have a saved model, we need to train one.
-            else:
+            if not os.path.exists(modelfile) or overwrite:
                 print(('\tfeaturizing and training new ' +
                        '{} model').format(learner_name),
                       file=log_file)
