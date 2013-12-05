@@ -96,7 +96,10 @@ def get_unique_name(feature_name, prev_feature_set, filename):
     return new_feature_name
 
 
-if __name__ == '__main__':
+def main():
+    '''
+    Handles command line arguments and gets things started.
+    '''
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Combine MegaM files that \
                                                   contain features for the same\
@@ -213,3 +216,7 @@ if __name__ == '__main__':
         print("# {}".format(curr_filename).encode('utf-8'))
         print("{}\t{}".format(class_dict[curr_filename],
                               feature_dict[curr_filename].strip()).encode('utf-8'))
+
+
+if __name__ == '__main__':
+    main()

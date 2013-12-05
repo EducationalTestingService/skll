@@ -37,7 +37,10 @@ from skll.data import (_CSVDictIter, _ARFFDictIter, _TSVDictIter, _JSONDictIter,
 from skll.version import __version__
 
 
-if __name__ == '__main__':
+def main():
+    '''
+    Handles command line arguments and gets things started.
+    '''
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Takes an input feature file \
                                                   and converts it to another \
@@ -111,3 +114,6 @@ if __name__ == '__main__':
     write_feature_file(args.outfile, ids, classes, feature_dicts,
                        arff_regression=args.arff_regression,
                        arff_relation=args.arff_relation)
+
+if __name__ == '__main__':
+    main()

@@ -20,15 +20,15 @@ before_install:
   - sudo mkdir /scratch/
   - sudo chmod 777 /scratch/
   - travis/miniconda.sh -b
+  - mv travis/.condarc $HOME
   - export PATH=/home/travis/anaconda/bin:$PATH
   - conda update --yes conda
 install:
-  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy beautiful-soup six scikit-learn
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then pip install --use-mirrors configparser; fi
-  - pip install -r requirements.txt --use-mirrors
-  - pip install python-coveralls --use-mirrors
-  - pip install nose-cov --use-mirrors
-  - if [ $GRIDMAP == "true" ]; then pip install --use-mirrors git+git://github.com/dan-blanchard/drmaa-python gridmap; fi
+  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy beautiful-soup six scikit-learn joblib prettytable python-coveralls
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser futures logutils; fi
+  - if [ $GRIDMAP == "true" ]; then conda install --yes drmaa gridmap; fi
+  # Have to use pip for nose-cov because its entry points are not supported by conda yet
+  - pip install --use-mirrors nose-cov
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
   - python setup.py install

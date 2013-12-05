@@ -912,9 +912,6 @@ def check_convert_featureset(from_suffix, to_suffix):
     # the path to the unmerged feature files
     dirpath = os.path.join(_my_dir, 'train', 'test_conversion')
 
-    # get the path to the conversion script
-    converter_path = os.path.abspath(os.path.join(_my_dir, '..', 'scripts', 'skll_convert'))
-
     # get the feature name prefix
     feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'), to_suffix.lstrip('.'))
 
@@ -925,9 +922,8 @@ def check_convert_featureset(from_suffix, to_suffix):
                                                                  feature, from_suffix))
         output_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
                                                                   feature, to_suffix))
-        convert_cmd = shlex.split('{} --quiet {} {}'.format(converter_path,
-                                                            input_file_path,
-                                                            output_file_path))
+        convert_cmd = shlex.split('skll_convert --quiet {} {}'.format(input_file_path,
+                                                                      output_file_path))
         subprocess.check_call(convert_cmd)
 
     # now load and merge all unmerged, converted features in the `to_suffix` format
