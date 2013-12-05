@@ -35,7 +35,7 @@ from collections import OrderedDict
 
 from six import iteritems
 
-from skll.data import _megam_dict_iter
+from skll.data import _MegaMDictIter
 from skll.version import __version__
 
 
@@ -153,7 +153,7 @@ def main():
         curr_filename_set = set()
 
         # Handle current MegaM file
-        for curr_filename, class_name, feature_dict in _megam_dict_iter(infile):
+        for curr_filename, class_name, feature_dict in _MegaMDictIter(infile):
             if curr_filename in class_dict:
                 if class_dict[curr_filename] != class_name:
                     raise ValueError(("Inconsisten class label for instance " +

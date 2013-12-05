@@ -33,7 +33,7 @@ import sys
 
 from six import iteritems
 
-from skll.data import _megam_dict_iter
+from skll.data import _MegaMDictIter
 from skll.version import __version__
 
 
@@ -83,7 +83,9 @@ def main():
         stopwords = {w.strip() for w in args.stopwordlist}
 
     # Iterate through MegaM file
-    for _, class_name, feature_dict in _megam_dict_iter(args.infile):
+    for example_id, class_name, feature_dict in _MegaMDictIter(args.infile):
+        if example_id is not None:
+            print("# {}".format(example_id))
         print(class_name, end="\t")
         first = True
         for feature, value in iteritems(feature_dict):
