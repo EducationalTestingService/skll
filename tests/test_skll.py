@@ -16,15 +16,13 @@ import json
 import glob
 import os
 import re
-import shlex
-import subprocess
 import sys
 from collections import OrderedDict
 from io import open
 
 import numpy as np
 import scipy.sparse as sp
-from nose.tools import *
+from nose.tools import eq_, raises
 
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
@@ -32,6 +30,7 @@ from skll.experiments import (_load_featureset, run_configuration,
                               run_ablation)
 from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
+from skll.utilities import skll_convert
 
 
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = ([\-\d\.]+)')
@@ -922,9 +921,8 @@ def check_convert_featureset(from_suffix, to_suffix):
                                                                  feature, from_suffix))
         output_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
                                                                   feature, to_suffix))
-        convert_cmd = shlex.split('skll_convert --quiet {} {}'.format(input_file_path,
-                                                                      output_file_path))
-        subprocess.check_call(convert_cmd)
+        sys.argv = ['--quiet', input_file_path, output_file_path]
+        skll_convert.main()
 
     # now load and merge all unmerged, converted features in the `to_suffix` format
     featureset = ['{}_{}'.format(feature_name_prefix, i) for i in range(num_feat_files)]
