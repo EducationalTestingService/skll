@@ -22,7 +22,8 @@ from io import open
 
 import numpy as np
 import scipy.sparse as sp
-from nose.tools import eq_, raises
+from nose.tools import (eq_, raises, assert_equal, assert_almost_equal,
+                        assert_not_equal)
 
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
