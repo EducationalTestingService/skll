@@ -96,11 +96,17 @@ def get_unique_name(feature_name, prev_feature_set, filename):
     return new_feature_name
 
 
-def main():
+def main(argv=None):
     '''
     Handles command line arguments and gets things started.
+
+    :param argv: List of arguments, as if specified on the command-line.
+                 If None, ``sys.argv`` is used instead.
+    :type argv: list of str
     '''
     # Get command line arguments
+    if argv is None:
+        argv = sys.argv
     parser = argparse.ArgumentParser(description="Combine MegaM files that \
                                                   contain features for the same\
                                                   files.",
@@ -127,7 +133,7 @@ def main():
                         action='store_true')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)

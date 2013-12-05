@@ -141,6 +141,10 @@ def make_cv_folds_data(numeric_ids):
 
 
 def fill_in_config_paths(config_template_path):
+    '''
+    Add paths to train, test, and output directories to a given config template
+    file.
+    '''
     train_dir = os.path.join(_my_dir, 'train')
     if not os.path.exists(train_dir):
         os.makedirs(train_dir)
@@ -233,16 +237,20 @@ def check_specified_cv_folds(numeric_ids):
             for match_str in grid_score_matches:
                 assert test_func(float(match_str))
 
-    # try the same tests for just training (and specifying the folds for the grid search)
+    # try the same tests for just training (and specifying the folds for the
+    # grid search)
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train', 'test_cv_folds.csv'))
-    grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective='accuracy', grid_jobs=1)
+    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train',
+                                           'test_cv_folds.csv'))
+    grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
+                                  grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
-    grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective='accuracy', grid_jobs=1)
+    grid_search_score = clf.train(examples, grid_search_folds=5,
+                                  grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score > 0.95
 
 
@@ -962,8 +970,7 @@ def check_convert_featureset(from_suffix, to_suffix):
                                                                  feature, from_suffix))
         output_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
                                                                   feature, to_suffix))
-        sys.argv = ['--quiet', input_file_path, output_file_path]
-        skll_convert.main()
+        skll_convert.main(['--quiet', input_file_path, output_file_path])
 
     # now load and merge all unmerged, converted features in the `to_suffix` format
     featureset = ['{}_{}'.format(feature_name_prefix, i) for i in range(num_feat_files)]

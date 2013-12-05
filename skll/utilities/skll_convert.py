@@ -37,11 +37,17 @@ from skll.data import (_CSVDictIter, _ARFFDictIter, _TSVDictIter, _JSONDictIter,
 from skll.version import __version__
 
 
-def main():
+def main(argv=None):
     '''
     Handles command line arguments and gets things started.
+
+    :param argv: List of arguments, as if specified on the command-line.
+                 If None, ``sys.argv`` is used instead.
+    :type argv: list of str
     '''
     # Get command line arguments
+    if argv is None:
+        argv = sys.argv
     parser = argparse.ArgumentParser(description="Takes an input feature file \
                                                   and converts it to another \
                                                   format. Formats are \
@@ -71,7 +77,7 @@ def main():
                         default='skll_relation')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
