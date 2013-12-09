@@ -26,9 +26,8 @@ Script that converts feature files from one format to another
 
 from __future__ import print_function, unicode_literals
 
-import logging
-
 import argparse
+import logging
 import os
 import sys
 

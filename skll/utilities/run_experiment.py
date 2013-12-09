@@ -31,6 +31,7 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 import logging
+import sys
 from functools import partial
 
 from skll.experiments import run_configuration
