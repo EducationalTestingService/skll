@@ -16,15 +16,13 @@ import json
 import glob
 import os
 import re
-import shlex
-import subprocess
 import sys
 from collections import OrderedDict
 from io import open
 
 import numpy as np
 import scipy.sparse as sp
-from nose.tools import *
+from nose.tools import eq_, raises, assert_almost_equal, assert_not_equal
 
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
@@ -32,6 +30,7 @@ from skll.experiments import (_load_featureset, run_configuration,
                               run_ablation)
 from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
+from skll.utilities import skll_convert
 
 
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = ([\-\d\.]+)')
@@ -39,7 +38,13 @@ GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = os.path.abspath(os.path.dirname(__file__))
 
 
+def assert_array_equal(a1, a2):
+    ''' Helper to assert that two numpy arrays are equal '''
+    assert np.array_equal(a1, a2)
+
+
 def test_SelectByMinCount():
+    ''' Test SelectByMinCount feature selector '''
     m2 = [[0.001,   0.0,    0.0,    0.0],
           [0.00001, -2.0,   0.0,    0.0],
           [0.001,   0.0,    0.0,    4.0],
@@ -51,8 +56,9 @@ def test_SelectByMinCount():
                          [0.00001, -2.0,   0.0],
                          [0.001,   0.0,    4.0],
                          [0.0101,  -200.0, 0.0]])
-    assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
+    assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
+    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
+                       expected)
 
     # keep features that happen 2+ times
     feat_selector = SelectByMinCount(min_count=2)
@@ -60,18 +66,24 @@ def test_SelectByMinCount():
                          [0.00001, -2.0],
                          [0.001,   0.0],
                          [0.0101,  -200.0]])
-    assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
+    assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
+    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
+                       expected)
 
     # keep features that happen 3+ times
     feat_selector = SelectByMinCount(min_count=3)
     expected = np.array([[0.001], [0.00001], [0.001], [0.0101]])
-    assert np.array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert np.array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(), expected)
+    assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
+    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
+                       expected)
 
 
 @raises(ValueError)
 def test_input_checking1():
+    '''
+    Ensure that we raise ValueError when trying to join featuresets with
+    different number of examples.
+    '''
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_2examples_1', 'test_input_3examples_1']
@@ -80,6 +92,10 @@ def test_input_checking1():
 
 @raises(ValueError)
 def test_input_checking2():
+    '''
+    Ensure that we raise ValueError when trying to join featuresets
+    that contain the same features for each instance.
+    '''
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_1']
@@ -87,6 +103,9 @@ def test_input_checking2():
 
 
 def test_input_checking3():
+    '''
+    Small test to ensure that we correctly merge featuresets.
+    '''
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_2']
@@ -95,6 +114,7 @@ def test_input_checking3():
 
 
 def make_cv_folds_data(numeric_ids):
+    ''' Create input files for pre-specified CV folds tests '''
     train_dir = os.path.join(_my_dir, 'train')
     if not os.path.exists(train_dir):
         os.makedirs(train_dir)
@@ -102,7 +122,10 @@ def make_cv_folds_data(numeric_ids):
     num_examples_per_fold = 100
     num_folds = 3
 
-    with open(os.path.join(train_dir, 'test_cv_folds.jsonlines'), 'w') as json_out, open(os.path.join(train_dir, 'test_cv_folds.csv'), 'w') as csv_out:
+    json_path = os.path.join(train_dir, 'test_cv_folds.jsonlines')
+    csv_path = os.path.join(train_dir, 'test_cv_folds.csv')
+
+    with open(json_path, 'w') as json_out, open(csv_path, 'w') as csv_out:
         csv_out.write('id,fold\n')
         for k in range(num_folds):
             for i in range(num_examples_per_fold):
@@ -111,12 +134,17 @@ def make_cv_folds_data(numeric_ids):
                     ex_id = num_examples_per_fold * k + i
                 else:
                     ex_id = "{}{}".format(y, num_examples_per_fold * k + i)
-                x = {"f1": 1.0, "f2": -1.0, "f3": 1.0, "is_{}{}".format(y, k): 1.0}
+                x = {"f1": 1.0, "f2": -1.0, "f3": 1.0,
+                     "is_{}{}".format(y, k): 1.0}
                 json_out.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
                 csv_out.write('{},{}\n'.format(ex_id, k))
 
 
 def fill_in_config_paths(config_template_path):
+    '''
+    Add paths to train, test, and output directories to a given config template
+    file.
+    '''
     train_dir = os.path.join(_my_dir, 'train')
     if not os.path.exists(train_dir):
         os.makedirs(train_dir)
@@ -148,12 +176,15 @@ def fill_in_config_paths(config_template_path):
     if task == 'cross_validate':
         cv_folds_location = config.get("Input", "cv_folds_location")
         if cv_folds_location:
-            config.set("Input", "cv_folds_location", os.path.join(train_dir, cv_folds_location))
+            config.set("Input", "cv_folds_location",
+                       os.path.join(train_dir, cv_folds_location))
 
     if task == 'predict' or task == 'evaluate':
         config.set("Input", "test_location", test_dir)
 
-    new_config_path = '{}.cfg'.format(re.search(r'^(.*)\.template\.cfg', config_template_path).groups()[0])
+    config_prefix = re.search(r'^(.*)\.template\.cfg',
+                              config_template_path).groups()[0]
+    new_config_path = '{}.cfg'.format(config_prefix)
 
     with open(new_config_path, 'w') as new_config_file:
         config.write(new_config_file)
@@ -164,25 +195,38 @@ def fill_in_config_paths(config_template_path):
 def check_specified_cv_folds(numeric_ids):
     make_cv_folds_data(numeric_ids)
 
-    # test_cv_folds1.cfg is with prespecified folds and should have about 50% performance
-    # test_cv_folds2.cfg is without prespecified folds and should have very high performance
-    for experiment_name, test_func, grid_size in [('test_cv_folds1', lambda x: x < 0.6, 3), ('test_cv_folds2', lambda x: x > 0.95, 10)]:
+    # test_cv_folds1.cfg has prespecified folds and should have ~50% accuracy
+    # test_cv_folds2.cfg doesn't have prespecified folds and >95% accuracy
+    for experiment_name, test_func, grid_size in [('test_cv_folds1',
+                                                   lambda x: x < 0.6,
+                                                   3),
+                                                  ('test_cv_folds2',
+                                                   lambda x: x > 0.95,
+                                                   10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_path = os.path.join(_my_dir, fill_in_config_paths(os.path.join(_my_dir, 'configs', config_template_file)))
+        config_template_path = os.path.join(_my_dir, 'configs',
+                                            config_template_file)
+        config_path = os.path.join(_my_dir,
+                                   fill_in_config_paths(config_template_path))
 
-        # Modify config file to change ids_to_floats depending on numeric_ids setting
+        # Modify config file to change ids_to_floats depending on numeric_ids
+        # setting
         with open(config_path, 'r+') as config_template_file:
             lines = config_template_file.readlines()
             config_template_file.seek(0)
             config_template_file.truncate()
             for line in lines:
                 if line.startswith('ids_to_floats='):
-                    line = 'ids_to_floats=true\n' if numeric_ids else 'ids_to_floats=false\n'
+                    if numeric_ids:
+                        line = 'ids_to_floats=true\n'
+                    else:
+                        line = 'ids_to_floats=false\n'
                 config_template_file.write(line)
 
         run_configuration(config_path, quiet=True)
-
-        with open(os.path.join(_my_dir, 'output', '{}_test_cv_folds_LogisticRegression.results').format(experiment_name)) as f:
+        result_filename = ('{}_test_cv_folds_LogisticRegression.' +
+                           'results').format(experiment_name)
+        with open(os.path.join(_my_dir, 'output', result_filename)) as f:
             # check held out scores
             outstr = f.read()
             score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
@@ -193,16 +237,20 @@ def check_specified_cv_folds(numeric_ids):
             for match_str in grid_score_matches:
                 assert test_func(float(match_str))
 
-    # try the same tests for just training (and specifying the folds for the grid search)
+    # try the same tests for just training (and specifying the folds for the
+    # grid search)
     dirpath = os.path.join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train', 'test_cv_folds.csv'))
-    grid_search_score = clf.train(examples, grid_search_folds=cv_folds, grid_objective='accuracy', grid_jobs=1)
+    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train',
+                                           'test_cv_folds.csv'))
+    grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
+                                  grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
-    grid_search_score = clf.train(examples, grid_search_folds=5, grid_objective='accuracy', grid_jobs=1)
+    grid_search_score = clf.train(examples, grid_search_folds=5,
+                                  grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score > 0.95
 
 
@@ -554,11 +602,11 @@ def test_ablation_cv():
     with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
-        assert_equal(len(all_rows), 132)
+        eq_(len(all_rows), 132)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
     num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
-    assert_equal(num_result_files, 12)
+    eq_(num_result_files, 12)
 
 
 def test_ablation_cv_all_combos():
@@ -577,11 +625,11 @@ def test_ablation_cv_all_combos():
     with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
-        assert_equal(len(all_rows), 682)
+        eq_(len(all_rows), 682)
 
     # make sure there are 31 ablated featuresets * 2 learners = 62 results files
     num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*results')))
-    assert_equal(num_result_files, 62)
+    eq_(num_result_files, 62)
 
 
 def make_scaling_data():
@@ -922,9 +970,7 @@ def check_convert_featureset(from_suffix, to_suffix):
                                                                  feature, from_suffix))
         output_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
                                                                   feature, to_suffix))
-        convert_cmd = shlex.split('skll_convert --quiet {} {}'.format(input_file_path,
-                                                                      output_file_path))
-        subprocess.check_call(convert_cmd)
+        skll_convert.main(['--quiet', input_file_path, output_file_path])
 
     # now load and merge all unmerged, converted features in the `to_suffix` format
     featureset = ['{}_{}'.format(feature_name_prefix, i) for i in range(num_feat_files)]

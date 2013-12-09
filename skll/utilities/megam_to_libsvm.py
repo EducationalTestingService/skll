@@ -149,11 +149,17 @@ def convert_to_libsvm_iter(lines, class_num_dict=None, field_num_dict=None):
             yield result_string, class_num_dict, field_num_dict
 
 
-def main():
+def main(argv=None):
     '''
-    Main function
+    Handles command line arguments and gets things started.
+
+    :param argv: List of arguments, as if specified on the command-line.
+                 If None, ``sys.argv`` is used instead.
+    :type argv: list of str
     '''
     # Get command line arguments
+    if argv is None:
+        argv = sys.argv
     parser = argparse.ArgumentParser(description="Takes a MegaM-compatible file\
                                                   to be run with the '-fvals'\
                                                   switch and outputs a \
@@ -169,7 +175,7 @@ def main():
                         type=argparse.FileType('wb'), default='map.idx')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)

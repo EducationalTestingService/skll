@@ -37,11 +37,17 @@ from skll.experiments import run_configuration
 from skll.version import __version__
 
 
-def main():
+def main(argv=None):
     '''
     Handles command line arguments and gets things started.
+
+    :param argv: List of arguments, as if specified on the command-line.
+                 If None, ``sys.argv`` is used instead.
+    :type argv: list of str
     '''
     # Get command line arguments
+    if argv is None:
+        argv = sys.argv
     parser = argparse.ArgumentParser(
         description="Runs the scikit-learn experiments in a given config file.\
                      If Grid Map is installed, jobs will automatically be \
@@ -92,7 +98,7 @@ def main():
                         default=0, action='count')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Logging levels are really integer multiples of 10, so convert verbose flag
     log_level = max(logging.WARNING - (args.verbose * 10), logging.DEBUG)
