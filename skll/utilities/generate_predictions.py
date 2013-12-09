@@ -29,6 +29,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import argparse
 import logging
+import sys
 
 from skll import Learner, load_examples
 from skll.learner import _REGRESSION_MODELS
@@ -80,9 +81,17 @@ class Predictor(object):
             return [self._learner.label_list[int(pred[0])] for pred in preds]
 
 
-def main():
-    ''' Main function that does all the work. '''
+def main(argv=None):
+    '''
+    Handles command line arguments and gets things started.
+
+    :param argv: List of arguments, as if specified on the command-line.
+                 If None, ``sys.argv`` is used instead.
+    :type argv: list of str
+    '''
     # Get command line arguments
+    if argv is None:
+        argv = sys.argv
     parser = argparse.ArgumentParser(
         description="Loads a trained model and outputs predictions based \
                      on input feature files.",
@@ -121,7 +130,7 @@ def main():
                         type=float)
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
