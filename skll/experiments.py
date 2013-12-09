@@ -106,7 +106,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
         else:
             with open(json_path, 'r') as json_file:
                 obj = json.load(json_file)
-                if ablation:
+                if ablation != 0:
                     all_features.update(json.loads(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
 
