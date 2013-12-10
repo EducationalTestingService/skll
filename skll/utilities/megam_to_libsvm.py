@@ -154,12 +154,10 @@ def main(argv=None):
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv`` is used instead.
+                 If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
     '''
     # Get command line arguments
-    if argv is None:
-        argv = sys.argv
     parser = argparse.ArgumentParser(description="Takes a MegaM-compatible file\
                                                   to be run with the '-fvals'\
                                                   switch and outputs a \

@@ -42,12 +42,10 @@ def main(argv=None):
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv`` is used instead.
+                 If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
     '''
     # Get command line arguments
-    if argv is None:
-        argv = sys.argv
     parser = argparse.ArgumentParser(description="Filter MegaM file to remove\
                                                   features with names in stop\
                                                   word list (or non alphabetic\
