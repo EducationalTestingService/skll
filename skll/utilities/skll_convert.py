@@ -41,12 +41,10 @@ def main(argv=None):
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv`` is used instead.
+                 If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
     '''
     # Get command line arguments
-    if argv is None:
-        argv = sys.argv
     parser = argparse.ArgumentParser(description="Takes an input feature file \
                                                   and converts it to another \
                                                   format. Formats are \
