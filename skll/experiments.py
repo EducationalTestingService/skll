@@ -30,7 +30,8 @@ from six.moves import zip
 from sklearn.metrics import SCORERS
 
 from skll.data import ExamplesTuple, load_examples
-from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
+from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
+                          _import_custom_model, _DEFAULT_PARAM_GRIDS)
 from skll.version import __version__
 
 # Check if gridmap is available
@@ -217,7 +218,8 @@ def _setup_config_parser(config_path):
                                         'cv_folds_location': '',
                                         'suffix': '',
                                         'label_col': 'y',
-                                        'ids_to_floats': 'False'})
+                                        'ids_to_floats': 'False',
+                                        'custom_model_path': ''})
     # Read file if it exists
     if not os.path.exists(config_path):
         raise IOError(errno.ENOENT, "The config file doesn't exist",
@@ -254,6 +256,8 @@ def _parse_config_file(config_path):
     learners = json.loads(_fix_json(learners_string))
     learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else learner)
                 for learner in learners]
+    custom_model_path = config.get("Input", "custom_model_path")
+
     featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
@@ -398,7 +402,7 @@ def _parse_config_file(config_path):
             probability, results_path, pos_label_str, feature_scaling,
             min_feature_count, grid_search_jobs, cv_folds, fixed_parameter_list,
             param_grid_list, featureset_names, learners, prediction_dir,
-            log_path, train_path, test_path, ids_to_floats, class_map)
+            log_path, train_path, test_path, ids_to_floats, class_map, custom_model_path)
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
@@ -557,7 +561,9 @@ def _classify_featureset(args):
     label_col = args.pop("label_col")
     ids_to_floats = args.pop("ids_to_floats")
     class_map = args.pop("class_map")
-    quiet = args.pop('quiet', False)
+    custom_model_path = args.pop("custom_model_path")
+    quiet = args.pop("quiet", False)
+
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: " +
                           "{}").format(args.keys()))
@@ -604,9 +610,13 @@ def _classify_featureset(args):
                               feature_scaling=feature_scaling,
                               model_kwargs=fixed_parameters,
                               pos_label_str=pos_label_str,
-                              min_feature_count=min_feature_count)
+                              min_feature_count=min_feature_count,
+                              custom_model_path=custom_model_path)
         # load the model if it already exists
         else:
+                # import the custom model path here in case we are reusing a saved model
+            if custom_model_path and learner_name not in _DEFAULT_PARAM_GRIDS:
+                _import_custom_model(custom_model_path, learner_name)
             if os.path.exists(modelfile) and not overwrite:
                 print(('\tloading pre-existing {} ' +
                        'model: {}').format(learner_name, modelfile))
@@ -619,7 +629,6 @@ def _classify_featureset(args):
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet, class_map=class_map,
                                              unlabelled=True)
-
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
@@ -916,7 +925,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      results_path, pos_label_str, feature_scaling, min_feature_count,
      grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
      featureset_names, learners, prediction_dir, log_path, train_path,
-     test_path, ids_to_floats, class_map) = _parse_config_file(config_file)
+     test_path, ids_to_floats, class_map,
+     custom_model_path) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -940,14 +950,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 for i in range(1, len(features)):
                     for excluded_features in combinations(features, i):
                         expanded_fs.append(sorted(featureset -
-                                                   set(excluded_features)))
+                                                  set(excluded_features)))
                         expanded_fs_names.append(featureset_name + '_minus_' +
                                                  '_'.join(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
-                                                  set(excluded_features)))
+                                              set(excluded_features)))
                     expanded_fs_names.append(featureset_name + '_minus_' +
                                              '_'.join(excluded_features))
             # Also add version with nothing removed as baseline
@@ -960,7 +970,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     elif ablation < 0:
         raise ValueError('Value for "ablation" argument must be either ' +
                          'positive integer or None.')
-
 
     # the list of jobs submitted (if running on grid)
     if not local:
@@ -1021,6 +1030,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["ids_to_floats"] = ids_to_floats
             job_args["quiet"] = quiet
             job_args["class_map"] = class_map
+            job_args["custom_model_path"] = custom_model_path
 
             if not local:
                 jobs.append(Job(_classify_featureset, [job_args],

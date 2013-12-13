@@ -10,6 +10,7 @@ Provides easy-to-use wrapper around scikit-learn.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+from importlib import import_module
 import inspect
 import logging
 import os
@@ -18,6 +19,7 @@ from collections import defaultdict
 from functools import wraps
 from multiprocessing import cpu_count
 
+import re
 import joblib
 import numpy as np
 import scipy.sparse as sp
@@ -115,6 +117,21 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
                 self._warned = True
 
             yield train_index, test_index
+
+
+def _import_custom_model(custom_model_path, custom_model_name):
+    if not custom_model_path:
+        raise ValueError('custom_model_path was not set\ and learner {}\
+                          was not found.'.format(custom_model_name))
+
+    if not re.search(r'\.py$', custom_model_path):
+        raise ValueError('custom_model_path must end in .py ({})'
+                         .format(custom_model_path))
+
+    custom_model_module_name = os.path.basename(custom_model_path)[:-3]
+    sys.path.append(os.path.dirname(os.path.abspath(custom_model_path)))
+    import_module(custom_model_module_name)
+    globals()[custom_model_name] = getattr(sys.modules[custom_model_module_name], custom_model_name)
 
 
 def _predict_binary(self, X):
@@ -301,6 +318,7 @@ def rescaled(cls):
     # Return modified class
     return cls
 
+
 # Rescaled regressors
 @rescaled
 class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
@@ -374,10 +392,14 @@ class Learner(object):
     :param min_feature_count: The minimum number of examples a feature
                               must have a nonzero value in to be included.
     :type min_feature_count: int
+    :param custom_model_path: Path to code where a custom classifier is
+                              defined.
+    :type custom_model_path: str
     """
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
-                 model_kwargs=None, pos_label_str=None, min_feature_count=1):
+                 model_kwargs=None, pos_label_str=None, min_feature_count=1,
+                 custom_model_path=None):
         '''
         Initializes a learner object with the specified settings.
         '''
@@ -393,6 +415,25 @@ class Learner(object):
         self.feat_selector = None
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
+
+        if model_type not in globals():
+            _import_custom_model(custom_model_path, model_type)
+
+            model_class = globals()[model_type]
+            default_param_grid = (model_class.default_param_grid()
+                                  if hasattr(model_class, 'default_param_grid')
+                                  else [{}])
+
+            global _REQUIRES_DENSE
+            global _REGRESSION_MODELS
+            _DEFAULT_PARAM_GRIDS.update({model_type: default_param_grid})
+            if hasattr(model_class, 'requires_dense') and model_class.requires_dense():
+                _REQUIRES_DENSE = frozenset(_REQUIRES_DENSE | {model_type})
+
+            if hasattr(model_class, 'is_regression_model') and model_class.is_regression_model():
+                _REGRESSION_MODELS = frozenset(_REGRESSION_MODELS |
+                                               {model_type})
+
         if model_type.startswith('Rescaled'):
             self._model_type = model_type.replace('Rescaled', '', 1)
             self._rescale = True

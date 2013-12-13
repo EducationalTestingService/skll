@@ -29,7 +29,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import argparse
 import logging
-import sys
 
 from skll import Learner, load_examples
 from skll.learner import _REGRESSION_MODELS

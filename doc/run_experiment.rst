@@ -194,8 +194,10 @@ Input
     **learners** [#]_
         List of scikit-learn models to try using. A separate job will be
         run for each combination of classifier and feature-set.
-        Acceptable values are described below. Names in parentheses are
-        aliases that can also be used in configuration files.
+        Acceptable values are described below.  Custom learners can also
+        be specified.  See the ``custom_model_path``.
+        Names in parentheses are aliases that can also be used in
+        configuration files.
 
         Classifiers:
 
@@ -224,6 +226,11 @@ Input
             beginning of the full name (e.g., ``RescaledSVR``) to get a version
             of the regressor where predictions are rescaled and constrained to
             better match the training set.
+
+    **custom_model_path** *(Optional)*
+        Path to a .py file that defines a custom model.  This file will be
+        imported dynamically.  This is only required if a custom learner in
+        specified in the list of learners.
 
     **fixed_parameters** *(Optional)*
         List of dicts containing parameters you want to have fixed for each
