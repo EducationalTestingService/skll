@@ -838,7 +838,7 @@ def _munge_featureset_name(featureset):
     if isinstance(featureset, string_types):
         return featureset
 
-    res = '+'.join(featureset)
+    res = '+'.join(sorted(featureset))
     return res
 
 
@@ -942,14 +942,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                         expanded_fs.append(sorted(featureset -
                                                    set(excluded_features)))
                         expanded_fs_names.append(featureset_name + '_minus_' +
-                                                 '_'.join(excluded_features))
+                                                 _munge_featureset_name(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
                                                   set(excluded_features)))
                     expanded_fs_names.append(featureset_name + '_minus_' +
-                                             '_'.join(excluded_features))
+                                             _munge_featureset_name(excluded_features))
             # Also add version with nothing removed as baseline
             expanded_fs.append(features)
             expanded_fs_names.append(featureset_name + '_all')
