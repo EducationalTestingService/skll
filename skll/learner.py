@@ -417,6 +417,8 @@ class Learner(object):
         self._model_kwargs = {}
 
         if model_type not in globals():
+            # here, we need to import the custom model and add it
+            # to the appropriate lists of models.
             _import_custom_model(custom_model_path, model_type)
 
             model_class = globals()[model_type]
@@ -424,15 +426,21 @@ class Learner(object):
                                   if hasattr(model_class, 'default_param_grid')
                                   else [{}])
 
+            # remove the Rescaled prefix if specified for a regressor
+            if model_type.startswith('Rescaled'):
+                base_model_type = model_type.replace('Rescaled', '', 1)
+
+            # ewww, globals :-(
             global _REQUIRES_DENSE
             global _REGRESSION_MODELS
-            _DEFAULT_PARAM_GRIDS.update({model_type: default_param_grid})
+
+            _DEFAULT_PARAM_GRIDS.update({base_model_type: default_param_grid})
             if hasattr(model_class, 'requires_dense') and model_class.requires_dense():
-                _REQUIRES_DENSE = frozenset(_REQUIRES_DENSE | {model_type})
+                _REQUIRES_DENSE = frozenset(_REQUIRES_DENSE | {base_model_type})
 
             if hasattr(model_class, 'is_regression_model') and model_class.is_regression_model():
                 _REGRESSION_MODELS = frozenset(_REGRESSION_MODELS |
-                                               {model_type})
+                                               {base_model_type})
 
         if model_type.startswith('Rescaled'):
             self._model_type = model_type.replace('Rescaled', '', 1)
@@ -443,6 +451,7 @@ class Learner(object):
         else:
             self._model_type = model_type
             self._rescale = False
+
         self.probability = probability
         self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
                                     self._feature_scaling in {'with_mean',
