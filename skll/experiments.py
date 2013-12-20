@@ -673,7 +673,9 @@ def _classify_featureset(args):
                 if grid_search:
                     print('\tbest {} grid search score: {}'
                           .format(grid_objective, round(best_score, 3)),
-                          file=log_file)
+                          file=log_file)\
+            else:
+                grid_scores = [None]
 
             # print out the tuned parameters and best CV score
             param_out = ('{}: {}'.format(param_name, param_value)
@@ -750,7 +752,8 @@ def _create_learner_result_dicts(task_results, grid_scores,
             learner_result_dict['fold'] = k
 
         learner_result_dict['model_params'] = json.dumps(model_params)
-        learner_result_dict['grid_score'] = grid_score
+        if grid_score is not None:
+            learner_result_dict['grid_score'] = grid_score
 
         if conf_matrix:
             classes = sorted(iterkeys(task_results[0][2]))
