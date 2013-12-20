@@ -354,7 +354,7 @@ Tuning
 
     **param_grids** *(Optional)*
         List of parameter grids to search for each classifier. Each parameter
-        grid should be a list of of dictionaries mapping from strings to lists
+        grid should be a list of dictionaries mapping from strings to lists
         of parameter values. When you specify an empty list for a classifier,
         the default parameter grid for that classifier will be searched.
 
