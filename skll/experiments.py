@@ -673,7 +673,7 @@ def _classify_featureset(args):
                 if grid_search:
                     print('\tbest {} grid search score: {}'
                           .format(grid_objective, round(best_score, 3)),
-                          file=log_file)\
+                          file=log_file)
             else:
                 grid_scores = [None]
 
