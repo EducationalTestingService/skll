@@ -674,6 +674,8 @@ def _classify_featureset(args):
                     print('\tbest {} grid search score: {}'
                           .format(grid_objective, round(best_score, 3)),
                           file=log_file)
+            else:
+                grid_scores = [None]
 
             # print out the tuned parameters and best CV score
             param_out = ('{}: {}'.format(param_name, param_value)
@@ -750,7 +752,8 @@ def _create_learner_result_dicts(task_results, grid_scores,
             learner_result_dict['fold'] = k
 
         learner_result_dict['model_params'] = json.dumps(model_params)
-        learner_result_dict['grid_score'] = grid_score
+        if grid_score is not None:
+            learner_result_dict['grid_score'] = grid_score
 
         if conf_matrix:
             classes = sorted(iterkeys(task_results[0][2]))
@@ -838,7 +841,7 @@ def _munge_featureset_name(featureset):
     if isinstance(featureset, string_types):
         return featureset
 
-    res = '+'.join(featureset)
+    res = '+'.join(sorted(featureset))
     return res
 
 
@@ -877,7 +880,7 @@ def _load_cv_folds(cv_folds_location, ids_to_floats=False):
 
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                       hosts=None, write_summary=True, quiet=False,
-                      ablation=0):
+                      ablation=0, resume=False):
     '''
     Takes a configuration file and runs the specified jobs on the grid.
 
@@ -904,12 +907,19 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                      combinations of all lengths. If 0, the default, no ablation
                      is performed. If negative, a ``ValueError`` is raised.
     :type ablation: int or None
+    :param resume: If result files already exist for an experiment, do not
+                   overwrite them. This is very useful when doing a large
+                   ablation experiment and part of it crashes.
+    :type resume: bool
 
     :return: A list of paths to .json results files for each variation in the
              experiment.
     :rtype: list of str
 
     '''
+    # Initialize logger
+    logger = logging.getLogger(__name__)
+
     # Read configuration
     (experiment_name, task, label_col, train_set_name, test_set_name, suffix,
      featuresets, model_path, do_grid_search, grid_objective, probability,
@@ -921,7 +931,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
         local = True
-        logger = logging.getLogger(__name__)
         logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
                        'mode.  To run things on a DRMAA-compatible ' +
                        'cluster, install gridmap>=0.10.1 via pip.')
@@ -942,14 +951,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                         expanded_fs.append(sorted(featureset -
                                                    set(excluded_features)))
                         expanded_fs_names.append(featureset_name + '_minus_' +
-                                                 '_'.join(excluded_features))
+                                                 _munge_featureset_name(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
                                                   set(excluded_features)))
                     expanded_fs_names.append(featureset_name + '_minus_' +
-                                             '_'.join(excluded_features))
+                                             _munge_featureset_name(excluded_features))
             # Also add version with nothing removed as baseline
             expanded_fs.append(features)
             expanded_fs_names.append(featureset_name + '_all')
@@ -986,6 +995,20 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # the log file that stores the actual output of this script (e.g.,
             # the tuned parameters, what kind of experiment was run, etc.)
             temp_logfile = os.path.join(log_path, '{}.log'.format(job_name))
+
+            # Figure out result json file path
+            result_json_path = os.path.join(results_path,
+                                            '{}.results.json'.format(job_name))
+
+            # save the path to the results json file that will be written
+            result_json_paths.append(result_json_path)
+
+            # If result file already exists and we're resuming, move on
+            if resume and (os.path.exists(result_json_path) and
+                           os.path.getsize(result_json_path)):
+                logger.info('Running in resume mode and %s exists, so ' +
+                            'skipping job.', result_json_path)
+                continue
 
             # create job if we're doing things on the grid
             job_args = {}
@@ -1030,24 +1053,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             else:
                 _classify_featureset(job_args)
 
-            # save the path to the results json file that will be written
-            result_json_paths.append(os.path.join(results_path,
-                                     '{}.results.json'.format(job_name)))
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:
-        try:
-            if log_path:
-                job_results = process_jobs(jobs, white_list=hosts,
-                                           temp_dir=log_path)
-            else:
-                job_results = process_jobs(jobs, white_list=hosts)
-        except JobException:
-            logger = logging.getLogger(__name__)
-            logger.exception('gridmap claims that one of your jobs failed, ' +
-                             'but this is not always true.')
+        if log_path:
+            job_results = process_jobs(jobs, white_list=hosts,
+                                       temp_dir=log_path)
         else:
-            _check_job_results(job_results)
+            job_results = process_jobs(jobs, white_list=hosts)
+        _check_job_results(job_results)
 
     # write out the summary results file
     if (task == 'cross_validate' or task == 'evaluate') and write_summary:
@@ -1066,7 +1080,7 @@ def _check_job_results(job_results):
     See if we have a complete results dictionary for every job.
     '''
     logger = logging.getLogger(__name__)
-    logger.info('checking job results')
+    logger.info('Checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
             logger.error('There was an error running the experiment:\n%s',
