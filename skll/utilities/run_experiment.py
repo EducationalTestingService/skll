@@ -90,6 +90,12 @@ def main(argv=None):
     parser.add_argument('-q', '--queue',
                         help="Use this queue for gridmap.",
                         default='all.q')
+    parser.add_argument('-r', '--resume',
+                        help='If result files already exist for an experiment, \
+                              do not overwrite them. This is very useful when \
+                              doing a large ablation experiment and part of it \
+                              crashes.',
+                        action='store_true')
     parser.add_argument('-v', '--verbose',
                         help='Print more status information. For every ' +
                              'additional time this flag is specified, ' +
@@ -119,7 +125,7 @@ def main(argv=None):
     for config_file in args.config_file:
         run_configuration(config_file, local=args.local, overwrite=not
                           args.keep_models, queue=args.queue, hosts=machines,
-                          ablation=ablation)
+                          ablation=ablation, resume=args.resume)
 
 
 if __name__ == '__main__':

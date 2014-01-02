@@ -354,7 +354,7 @@ Tuning
 
     **param_grids** *(Optional)*
         List of parameter grids to search for each classifier. Each parameter
-        grid should be a list of of dictionaries mapping from strings to lists
+        grid should be a list of dictionaries mapping from strings to lists
         of parameter values. When you specify an empty list for a classifier,
         the default parameter grid for that classifier will be searched.
 
@@ -453,8 +453,9 @@ Using run_experiment
 --------------------
 Once you have create the configuration file for your experiment, you can usually
 just get your experiment started by running ``run_experiment CONFIGFILE``. That
-said, there are a couple options that are specified via command-line arguments
-instead of in the configuration file: ``--ablation`` and ``--keep-models``.
+said, there are a few options that are specified via command-line arguments
+instead of in the configuration file: ``--ablation``, ``--keep-models``, and
+``--resume``.
 
     ``--ablation NUM_FEATURES``
         Runs an ablation study where repeated experiments are conducted with the
@@ -471,6 +472,11 @@ instead of in the configuration file: ``--ablation`` and ``--keep-models``.
         If trained models already exist for any of the learner/featureset
         combinations in your configuration file, just load those models and
         do not retrain/overwrite them.
+
+    ``--resume``
+        If result files already exist for an experiment, do not overwrite them.
+        This is very useful when doing a large ablation experiment and part of
+        it crashes.
 
 If you have `Grid Map <http://pypi.python.org/pypi/gridmap>`__ installed,
 run_experiment will automatically schedule jobs on your DRMAA-compatible
