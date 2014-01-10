@@ -436,8 +436,8 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
     '''
 
     # Load a list of lists of examples, one list of examples per featureset.
-    file_names = [os.path.join(dirpath, featfile + suffix) for featfile
-                  in featureset]
+    file_names = sorted(os.path.join(dirpath, featfile + suffix) for featfile
+                        in featureset)
     example_tuples = [load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
                                     class_map=class_map)
