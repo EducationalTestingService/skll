@@ -42,6 +42,7 @@ Generate predictions from a trained model::
 
 :mod:`skll` Package
 -------------------
+
 The most useful parts of our API are available at the package level in addition
 to the module level. They are documented in both places for convenience.
 
