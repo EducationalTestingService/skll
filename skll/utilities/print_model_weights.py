@@ -48,6 +48,11 @@ def main():
     parser.add_argument('--k',
                         help='number of top features to print (0 for all)',
                         type=int, default=50)
+    parser.add_argument('--sign',
+                        choices=['positive', 'negative', 'all'],
+                        default='all',
+                        help='show only positive, only negative, ' +
+                             'or all weights')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
@@ -64,7 +69,13 @@ def main():
 
     print("Number of nonzero features:", len(weights), file=sys.stderr)
 
-    for feat, val in sorted(iteritems(weights), key=lambda x: -abs(x[1]))[:k]:
+    weight_items = iteritems(weights)
+    if args.sign == 'positive':
+        weight_items = (x for x in weight_items if x[1] > 0)
+    elif args.sign == 'negative':
+        weight_items = (x for x in weight_items if x[1] < 0)
+
+    for feat, val in sorted(weight_items, key=lambda x: -abs(x[1]))[:k]:
         print("{:.12f}\t{}".format(val, feat))
 
 
