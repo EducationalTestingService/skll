@@ -326,6 +326,29 @@ def test_regression1():
         assert abs(np.std(pred) - np.std(y)) < 0.1
 
 
+def test_rare_class():
+    '''
+    This is to make sure cross-validation doesn't fail when some classes are
+    very rare, such that they only end up in test folds.
+    '''
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_rare_class.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    config_template_path = "test_rare_class.cfg"
+
+    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
+
+    with open(os.path.join(_my_dir, 'output', 'test_rare_class_test_rare_class_LogisticRegression.predictions'), 'r') as f:
+        reader = csv.reader(f, dialect='excel-tab')
+        next(reader)
+        pred = [row[1] for row in reader]
+
+        assert len(pred) == 11
+
+
+
+
 def test_predict():
     '''
     This tests whether predict task runs.
