@@ -495,8 +495,9 @@ class Learner(object):
         liblinear models.
         '''
         res = {}
-        if isinstance(self._model, Ridge) or \
-            (isinstance(self._model, SVR) and self._model.kernel == 'linear'):
+        if (isinstance(self._model, Ridge) or 
+                (isinstance(self._model, SVR) and 
+                 self._model.kernel == 'linear')):
             # also includes RescaledRidge, RescaledSVR
 
             coef = self.model.coef_
