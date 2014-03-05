@@ -495,12 +495,35 @@ class Learner(object):
         liblinear models.
         '''
         res = {}
-        if isinstance(self._model, Ridge):
-            # also includes RescaledRidge
-            coef = self.feat_selector.inverse_transform(self.model.coef_)[0]
+        if (isinstance(self._model, Ridge) or 
+                (isinstance(self._model, SVR) and 
+                 self._model.kernel == 'linear')):
+            # also includes RescaledRidge, RescaledSVR
+
+            coef = self.model.coef_
+
+            # convert SVR coefficient format (1 x matrix) to array
+            if isinstance(self._model, SVR):
+                coef = coef.toarray()[0]
+
+            # correct coefficients for SVR.
+            # scikit-learn currently has a bug as of March 4, 2014.
+            # See https://github.com/scikit-learn/scikit-learn/issues/2933.
+            # This should be removed when that bug is fixed.
+            correction = 1.0
+            if isinstance(self._model, SVR):
+                correction = -1.0
+                logger = logging.getLogger(__name__)
+                logger.warning('correcting SVR coefficients because of ' +
+                               'scikit-learn bug ' +
+                               '(https://github.com/scikit-learn/scikit-learn/issues/2933).')
+
+            # inverse transform to get indices for before feature selection
+            coef = self.feat_selector.inverse_transform(coef)[0]
             for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                 if coef[idx]:
-                    res[feat] = coef[idx]
+                    res[feat] = correction * coef[idx]
+                    #res[feat] = coef[idx]
         elif isinstance(self._model, BaseLibLinear):
             label_list = self.label_list
 
@@ -519,7 +542,8 @@ class Learner(object):
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
-                              " model_params.").format(self._model_type))
+                              " model_params with its current settings."
+                              ).format(self._model_type))
 
         return res
 
