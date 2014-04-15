@@ -35,36 +35,62 @@ def compute_score(y, y_pred, scorer_name):
     return scorer._score_func(y, y_pred, **scorer._kwargs)
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('examples_file', help='SKLL input file with labeled examples')
-    parser.add_argument('predictions_file', help='file with predictions from SKLL')
-    parser.add_argument('--metric_list', help='comma-separated list of metrics to compute',
-                        type=str, default='quadratic_weighted_kappa,unweighted_kappa')
-    args = parser.parse_args()
-    metric_names = args.metric_list.split(',')
+def compute_eval_from_predictions(examples_file, predictions_file,
+                                  metric_names):
+    '''
+    :param examples_file: a SKLL examples file (in .jsonlines or other format)
+    :param predictions_file: a SKLL predictions output TSV file with id
+                             and prediction column names
+    :param metric_names: a list of SKLL metric names
+                         (e.g., [pearson, unweighted_kappa])
+
+    :returns: a dictionary from metrics names to values
+    '''
 
     # read gold standard labels
-    data = load_examples(args.examples_file)
+    data = load_examples(examples_file)
     gold = dict(zip(data.ids, data.classes))
 
     # read predictions
     pred = {}
-    with open(args.predictions_file) as pred_file:
+    with open(predictions_file) as pred_file:
         reader = csv.reader(pred_file, dialect=csv.excel_tab)
         reader.next()  # skip header
         for row in reader:
             pred[row[0]] = float(row[1])
 
-    # make a sorted list of example ids in order to match up labels and predictions
+    # make a sorted list of example ids in order to match up
+    # labels and predictions
     if set(gold.keys()) != set(pred.keys()):
-        raise ValueError('The IDs in the examples and predictions do not match.')
+        raise ValueError('The example and prediction IDs do not match.')
     example_ids = sorted(gold.keys())
 
+    res = {}
     for metric_name in metric_names:
-        print("{}\t{}\t{}".format(compute_score([gold[ex_id] for ex_id in example_ids],
-                                                [pred[ex_id] for ex_id in example_ids],
-                                                metric_name),
+        score = compute_score([gold[ex_id] for ex_id in example_ids],
+                              [pred[ex_id] for ex_id in example_ids],
+                              metric_name)
+        res[metric_name] = score
+    return res
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('examples_file',
+                        help='SKLL input file with labeled examples')
+    parser.add_argument('predictions_file',
+                        help='file with predictions from SKLL')
+    parser.add_argument('metric_names',
+                        help='metrics to compute',
+                        nargs='+')
+    args = parser.parse_args()
+
+    scores = compute_eval_from_predictions(args.examples_file,
+                                           args.predictions_file,
+                                           args.metric_names)
+
+    for metric_name in args.metric_names:
+        print("{}\t{}\t{}".format(scores[metric_name],
                                   metric_name, args.predictions_file))
 
 
