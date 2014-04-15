@@ -55,7 +55,7 @@ def compute_eval_from_predictions(examples_file, predictions_file,
     pred = {}
     with open(predictions_file) as pred_file:
         reader = csv.reader(pred_file, dialect=csv.excel_tab)
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             pred[row[0]] = float(row[1])
 
