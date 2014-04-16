@@ -1005,7 +1005,7 @@ def test_compute_eval_from_predictions():
     scores = compute_eval_from_predictions(input_path, pred_path,
                                            ['pearson', 'unweighted_kappa'])
 
-    assert_almost_equal(scores['pearson'], 0.624818088401)
+    assert_almost_equal(scores['pearson'], 0.6197797868009122)
     assert_almost_equal(scores['unweighted_kappa'], 0.2)
 
 

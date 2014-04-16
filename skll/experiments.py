@@ -671,6 +671,9 @@ def _classify_featureset(args):
                     learner.save(modelfile)
 
                 if grid_search:
+                    # note: bankers' rounding is used in python 3,
+                    # so these scores may be different between runs in
+                    # python 2 and 3 at the final decimal place.
                     print('\tbest {} grid search score: {}'
                           .format(grid_objective, round(best_score, 3)),
                           file=log_file)
