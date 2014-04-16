@@ -71,9 +71,10 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     # If it is a str like "1", then it will be converted to a (rounded) int.
     # If it is a str that can't be typecast, then the user is
     # given a hopefully useful error message.
+    # Note: numpy and python 3.3 use bankers' rounding.
     try:
-        y_true = [int(round(float(y))) for y in y_true]
-        y_pred = [int(round(float(y))) for y in y_pred]
+        y_true = [int(np.round(float(y))) for y in y_true]
+        y_pred = [int(np.round(float(y))) for y in y_pred]
     except ValueError as e:
         logger.error("For kappa, the labels should be integers or strings " +
                      "that can be converted to ints (E.g., '4.0' or '3').")

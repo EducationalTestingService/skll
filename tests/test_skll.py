@@ -31,6 +31,7 @@ from skll.experiments import (_load_featureset, run_configuration,
 from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
 from skll.utilities import skll_convert
+from skll.utilities.compute_eval_from_predictions import compute_eval_from_predictions
 
 
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = ([\-\d\.]+)')
@@ -996,3 +997,15 @@ def test_convert_featureset():
     # Test the conversion from every format to every other format
     for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff'], 2):
         yield check_convert_featureset, from_suffix, to_suffix
+
+def test_compute_eval_from_predictions():
+    pred_path = os.path.join(_my_dir, 'other', 'test_compute_eval_from_predictions.predictions')
+    input_path = os.path.join(_my_dir, 'other', 'test_compute_eval_from_predictions.jsonlines')
+
+    scores = compute_eval_from_predictions(input_path, pred_path,
+                                           ['pearson', 'unweighted_kappa'])
+
+    assert_almost_equal(scores['pearson'], 0.6197797868009122)
+    assert_almost_equal(scores['unweighted_kappa'], 0.2)
+
+
