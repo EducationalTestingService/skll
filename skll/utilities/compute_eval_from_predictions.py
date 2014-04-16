@@ -23,11 +23,10 @@ script for computing additional evaluation metrics
 :author: Michael Heilman (mheilman@ets.org)
 '''
 
-from skll.data import load_examples
-import numpy as np
 import argparse
-from sklearn.metrics import SCORERS
 import csv
+from sklearn.metrics import SCORERS
+from skll.data import load_examples
 
 
 def compute_score(y, y_pred, scorer_name):
@@ -94,7 +93,5 @@ def main():
                                   metric_name, args.predictions_file))
 
 
-
 if __name__ == '__main__':
     main()
-
