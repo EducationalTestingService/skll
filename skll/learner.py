@@ -46,7 +46,7 @@ from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from skll.data import ExamplesTuple
-from skll.metrics import _CORRELATION_METRICS, _use_score_func
+from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
 
 
@@ -495,8 +495,8 @@ class Learner(object):
         liblinear models.
         '''
         res = {}
-        if (isinstance(self._model, Ridge) or 
-                (isinstance(self._model, SVR) and 
+        if (isinstance(self._model, Ridge) or
+                (isinstance(self._model, SVR) and
                  self._model.kernel == 'linear')):
             # also includes RescaledRidge, RescaledSVR
 
@@ -858,10 +858,10 @@ class Learner(object):
         # if run in probability mode, convert yhat to list of classes predicted
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
-            if (grid_objective and grid_objective in _CORRELATION_METRICS):
+            if grid_objective and grid_objective in _CORRELATION_METRICS:
                 try:
-                    grid_score = _use_score_func(grid_objective, ytest,
-                                                 yhat[:, 1])
+                    grid_score = use_score_func(grid_objective, ytest,
+                                                yhat[:, 1])
                 except ValueError:
                     grid_score = float('NaN')
 
@@ -873,7 +873,7 @@ class Learner(object):
         if (grid_objective and (grid_objective not in _CORRELATION_METRICS or
                                 not self.probability)):
             try:
-                grid_score = _use_score_func(grid_objective, ytest, yhat)
+                grid_score = use_score_func(grid_objective, ytest, yhat)
             except ValueError:
                 grid_score = float('NaN')
 

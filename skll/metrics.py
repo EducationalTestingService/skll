@@ -182,7 +182,7 @@ def f1_score_least_frequent(y_true, y_pred):
     return f1_score(y_true, y_pred, average=None)[least_frequent]
 
 
-def _use_score_func(func_name, y_true, y_pred):
+def use_score_func(func_name, y_true, y_pred):
     '''
     Call the scoring function in `sklearn.metrics.SCORERS` with the given name.
     This takes care of handling keyword arguments that were pre-specified when
