@@ -29,7 +29,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import argparse
 import logging
-import sys
 
 from skll import Learner, load_examples
 from skll.learner import _REGRESSION_MODELS
@@ -65,7 +64,13 @@ class Predictor(object):
 
     def predict(self, data):
         '''
-        Return a list of predictions for a given ExamplesTuple of examples.
+        Generate a list of predictions for the given examples.
+
+        :param data: Examples to get predictions for.
+        :type data: ExamplesTuple
+
+        :returns: A list of predictions the model generated for the given
+                  examples.
         '''
         preds = self._learner.predict(data).tolist()
 
