@@ -35,6 +35,7 @@ from sklearn.metrics import (accuracy_score, confusion_matrix,
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm.base import BaseLibLinear
 from sklearn.utils import shuffle as sk_shuffle
+
 # sklearn models: these are used indirectly, so ignore linting messages
 from sklearn.ensemble import (GradientBoostingClassifier,
                               GradientBoostingRegressor, RandomForestClassifier,
@@ -44,6 +45,9 @@ from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+
+from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import SGDRegressor
 
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, use_score_func
@@ -71,18 +75,22 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                         'GradientBoostingRegressor': [{'max_depth': [1, 3, 5]}],
                         'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'Lasso': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
-                                                  100.0]}],
+                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'LinearRegression': [{}]}
+                        'LinearRegression': [{}],
+                        'SGDClassifier':[{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01], 'penalty': ['l1', 'l2', 'elasticnet']}], # boundary default
+                        'SGDRegressor':[{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01], 'penalty': ['l1', 'l2', 'elasticnet']}]} # boundary default
+
 _REGRESSION_MODELS = frozenset(['DecisionTreeRegressor', 'ElasticNet',
                                 'GradientBoostingRegressor', 'Lasso',
                                 'LinearRegression', 'RandomForestRegressor',
-                                'Ridge', 'SVR'])
+                                'Ridge', 'SVR', 'SGDRegressor'])
+
 _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
                              'GradientBoostingRegressor', 'MultinomialNB',
                              'RandomForestClassifier', 'RandomForestRegressor'])
+
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
@@ -428,12 +436,13 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
 
+
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
                                 'GradientBoostingRegressor',
                                 'DecisionTreeRegressor',
-                                'RandomForestRegressor'}:
+                                'RandomForestRegressor', 'SGDClassifier', 'SGDRegressor'}:
             self._model_kwargs['random_state'] = 123456789
 
         if model_kwargs:
