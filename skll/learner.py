@@ -35,20 +35,16 @@ from sklearn.metrics import (accuracy_score, confusion_matrix,
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm.base import BaseLibLinear
 from sklearn.utils import shuffle as sk_shuffle
-
 # sklearn models: these are used indirectly, so ignore linting messages
 from sklearn.ensemble import (GradientBoostingClassifier,
                               GradientBoostingRegressor, RandomForestClassifier,
                               RandomForestRegressor)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
-                                  LogisticRegression, Ridge)
+                                  LogisticRegression, Ridge, SGDClassifier,
+                                  SGDRegressor)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-
-from sklearn.linear_model import SGDClassifier
-from sklearn.linear_model import SGDRegressor
-
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
@@ -75,11 +71,18 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                         'GradientBoostingRegressor': [{'max_depth': [1, 3, 5]}],
                         'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'Lasso': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
+                                                  100.0]}],
                         'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         'LinearRegression': [{}],
-                        'SGDClassifier':[{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01], 'penalty': ['l1', 'l2', 'elasticnet']}], # boundary default
-                        'SGDRegressor':[{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01], 'penalty': ['l1', 'l2', 'elasticnet']}]} # boundary default
+                        'SGDClassifier': [{'alpha': [0.000001, 0.00001, 0.0001,
+                                                     0.001, 0.01],
+                                           'penalty': ['l1', 'l2',
+                                                       'elasticnet']}],
+                        'SGDRegressor': [{'alpha': [0.000001, 0.00001, 0.0001,
+                                                    0.001, 0.01],
+                                          'penalty': ['l1', 'l2',
+                                                      'elasticnet']}]}
 
 _REGRESSION_MODELS = frozenset(['DecisionTreeRegressor', 'ElasticNet',
                                 'GradientBoostingRegressor', 'Lasso',
@@ -309,6 +312,7 @@ def rescaled(cls):
     # Return modified class
     return cls
 
+
 # Rescaled regressors
 @rescaled
 class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
@@ -347,6 +351,11 @@ class RescaledRidge(Ridge):
 
 @rescaled
 class RescaledSVR(SVR):
+    pass
+
+
+@rescaled
+class RescaledSGDRegressor(SGDRegressor):
     pass
 
 
@@ -435,14 +444,13 @@ class Learner(object):
         elif self._model_type == 'SVR':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
-
-
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
                                 'GradientBoostingRegressor',
                                 'DecisionTreeRegressor',
-                                'RandomForestRegressor', 'SGDClassifier', 'SGDRegressor'}:
+                                'RandomForestRegressor', 'SGDClassifier',
+                                'SGDRegressor'}:
             self._model_kwargs['random_state'] = 123456789
 
         if model_kwargs:
@@ -532,7 +540,7 @@ class Learner(object):
             for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                 if coef[idx]:
                     res[feat] = correction * coef[idx]
-                    #res[feat] = coef[idx]
+                    # res[feat] = coef[idx]
         elif isinstance(self._model, BaseLibLinear):
             label_list = self.label_list
 
@@ -685,7 +693,6 @@ class Learner(object):
                 self.scaler = StandardScaler(copy=False,
                                              with_mean=False,
                                              with_std=False)
-
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
               grid_search=True, grid_objective='f1_score_micro',
