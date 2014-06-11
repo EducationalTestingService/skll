@@ -444,6 +444,8 @@ class Learner(object):
         elif self._model_type == 'SVR':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
+        elif self._model_type == 'SGDClassifier':
+            self._model_kwargs['loss'] = 'log'
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
