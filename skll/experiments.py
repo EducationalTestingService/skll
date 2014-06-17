@@ -480,19 +480,19 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
     for ids, classes, features, feat_vectorizer in example_tuples:
         # Combine feature matrices and vectorizers
         if merged_features is not None:
-            # Check for duplicate feature names
-            if (set(merged_vectorizer.get_feature_names()) &
-                    set(feat_vectorizer.get_feature_names())):
-                raise ValueError('Two feature files have the same feature!')
+            # # Check for duplicate feature names
+            # if (set(merged_vectorizer.get_feature_names()) &
+            #         set(feat_vectorizer.get_feature_names())):
+            #     raise ValueError('Two feature files have the same feature!')
 
             num_merged = merged_features.shape[1]
             merged_features = sp.hstack([merged_features, features], 'csr')
 
-            # dictvectorizer sorts the vocabularies within each file
-            for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
-                                           key=lambda x: x[1]):
-                merged_vectorizer.vocabulary_[feat_name] = index + num_merged
-                merged_vectorizer.feature_names_.append(feat_name)
+            # # dictvectorizer sorts the vocabularies within each file
+            # for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
+            #                                key=lambda x: x[1]):
+            #     merged_vectorizer.vocabulary_[feat_name] = index + num_merged
+            #     merged_vectorizer.feature_names_.append(feat_name)
         else:
             merged_features = features
             merged_vectorizer = feat_vectorizer

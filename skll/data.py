@@ -29,7 +29,7 @@ from bs4 import UnicodeDammit
 from collections import namedtuple
 from six import iteritems, string_types, text_type
 from six.moves import map, zip
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 # Import QueueHandler and QueueListener for multiprocess-safe logging
 if sys.version_info < (3, 0):
@@ -563,7 +563,8 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
     '''
     try:
         example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
-        feat_vectorizer = DictVectorizer(sparse=sparse)
+        # feat_vectorizer = DictVectorizer(sparse=sparse)
+        feat_vectorizer = FeatureHasher(n_features=5)
         feat_dict_generator = map(itemgetter(2), example_iter)
     except Exception as e:
         # Setup logger

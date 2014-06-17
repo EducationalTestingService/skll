@@ -956,7 +956,11 @@ class Learner(object):
         # Need to do some transformations so the features are in the right
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
-        if self.feat_vectorizer == examples.feat_vectorizer:
+        # if self.feat_vectorizer == examples.feat_vectorizer:
+        if (self.feat_vectorizer.n_features == examples.feat_vectorizer.n_features)\
+            and (self.feat_vectorizer.input_type == examples.feat_vectorizer.input_type)\
+            and (self.feat_vectorizer.dtype == examples.feat_vectorizer.dtype)\
+            and (self.feat_vectorizer.non_negative == examples.feat_vectorizer.non_negative):
             xtest = examples.features
         else:
             xtest = self.feat_vectorizer.transform(examples.feat_vectorizer.inverse_transform(examples.features))
