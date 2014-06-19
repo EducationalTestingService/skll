@@ -522,6 +522,87 @@ class _TSVDictIter(_DelimitedDictIter):
                                            class_map=class_map)
 
 
+def get_unique_features_iter(iter_features):
+    seen = set()
+    for feat in iter_features:
+        seen = seen.union(set(feat))
+    return seen
+
+
+def get_unique_features(path, quiet=False, sparse=True, label_col='y',
+                            ids_to_floats=False, class_map=None):
+    '''
+    Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.megam``,
+    ``.ndj``, or ``.tsv`` formats.
+
+    If you would like to include example/instance IDs in your files, they must
+    be specified in the following ways:
+
+    * MegaM: As a comment line directly preceding the line with feature values.
+    * CSV/TSV/ARFF: An "id" column.
+    * JSONLINES: An "id" key in each JSON dictionary.
+
+    Also, for ARFF, CSV, and TSV files, there must be a column with the name
+    specified by `label_col` if the data is labelled. For ARFF files, this
+    column must also be the final one (as it is in Weka).
+
+    :param path: The path to the file to load the examples from, or a list of
+                 example dictionaries (like you would pass to
+                 `convert_examples`).
+    :type path: str or dict
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
+    :param sparse: Whether or not to store the features in a numpy CSR matrix.
+    :type sparse: bool
+    :param label_col: Name of the column which contains the class labels for
+                      ARFF/CSV/TSV files. If no column with that name exists, or
+                      `None` is specified, the data is considered to be
+                      unlabelled.
+    :type label_col: str
+    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
+                          if we encounter an a non-numeric ID.
+    :type ids_to_floats: bool
+    :param class_map: Mapping from original class labels to new ones. This is
+                      mainly used for collapsing multiple classes into a single
+                      class. Anything not in the mapping will be kept the same.
+    :type class_map: dict from str to str
+
+    :return: a set of unique feature labels
+    '''
+    # Setup logger
+    logger = logging.getLogger(__name__)
+
+    logger.debug('Path: %s', path)
+
+
+    # Build an appropriate generator for examples so we process the input file
+    # through the feature vectorizer without using tons of memory
+    if not isinstance(path, string_types):
+        example_iter_type = _DummyDictIter
+    # Lowercase path for file extension checking, if it's a string
+    else:
+        lc_path = path.lower()
+        if lc_path.endswith(".tsv"):
+            example_iter_type = _TSVDictIter
+        elif lc_path.endswith(".csv"):
+            example_iter_type = _CSVDictIter
+        elif lc_path.endswith(".arff"):
+            example_iter_type = _ARFFDictIter
+        elif lc_path.endswith(".jsonlines") or lc_path.endswith('.ndj'):
+            example_iter_type = _JSONDictIter
+        elif lc_path.endswith(".megam"):
+            example_iter_type = _MegaMDictIter
+        else:
+            raise ValueError(('Example files must be in either .arff, .csv, ' +
+                              '.jsonlines, .megam, .ndj, or .tsv format. You '+
+                              'specified: {}').format(path))
+
+    logger.debug('Example iterator type: %s', example_iter_type)
+    iter_features = _features_for_iter_type_partial(example_iter_type,
+                                                    path, quiet, sparse, label_col)
+    unique_features = get_unique_features_iter(iter_features)
+    return unique_features
+
 def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
     '''
     Little helper function to return an array of IDs for a given example
@@ -554,8 +635,7 @@ def _classes_for_iter_type(example_iter_type, path, label_col, class_map):
         raise e
     return res_array
 
-
-def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
+def _features_for_iter_type_partial(example_iter_type, path, quiet, sparse, label_col):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
@@ -563,8 +643,24 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
     '''
     try:
         example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
-        # feat_vectorizer = DictVectorizer(sparse=sparse)
-        feat_vectorizer = FeatureHasher(n_features=5)
+        feat_dict_generator = map(itemgetter(2), example_iter)
+        for feat in feat_dict_generator:
+            yield feat
+    except Exception as e:
+        # Setup logger
+        logger = logging.getLogger(__name__)
+        logger.exception('Failed to load features for %s.', path)
+        raise e
+
+def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col, nro_features):
+    '''
+    Little helper function to return a sparse matrix of features and feature
+    vectorizer for a given example generator (and whether or not the examples
+    have labels).
+    '''
+    try:
+        example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
+        feat_vectorizer = FeatureHasher(n_features=nro_features)
         feat_dict_generator = map(itemgetter(2), example_iter)
     except Exception as e:
         # Setup logger
@@ -572,14 +668,15 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
         logger.exception('Failed to load features for %s.', path)
         raise e
     try:
-        features = feat_vectorizer.fit_transform(feat_dict_generator)
+        # features = feat_vectorizer.fit_transform(feat_dict_generator)
+        features = feat_vectorizer.transform(feat_dict_generator)
     except ValueError:
         raise ValueError('The last feature file did not include any features.')
     return features, feat_vectorizer
 
 
 def load_examples(path, quiet=False, sparse=True, label_col='y',
-                  ids_to_floats=False, class_map=None):
+                  ids_to_floats=False, class_map=None, nro_features=None):
     '''
     Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.megam``,
     ``.ndj``, or ``.tsv`` formats.
@@ -681,8 +778,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
                                          class_map)
         features_future = executor.submit(_features_for_iter_type,
                                           example_iter_type, path, quiet,
-                                          sparse, label_col)
-
+                                          sparse, label_col, nro_features)
         # Wait for processes/threads to complete and store results
         ids = ids_future.result()
         classes = classes_future.result()

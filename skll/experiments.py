@@ -29,7 +29,7 @@ from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn.metrics import SCORERS
 
-from skll.data import ExamplesTuple, load_examples
+from skll.data import ExamplesTuple, load_examples, get_unique_features
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 from skll.version import __version__
 
@@ -403,7 +403,7 @@ def _parse_config_file(config_path):
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     unlabelled=False):
+                     unlabelled=False,nro_features=None):
     '''
     Load a list of feature files and merge them.
 
@@ -440,9 +440,8 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                         in featureset)
     example_tuples = [load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
-                                    class_map=class_map)
+                                    class_map=class_map,nro_features=nro_features)
                       for file_name in file_names]
-
     # Check that the IDs are unique within each file.
     for file_name, examples in zip(file_names, example_tuples):
         ex_ids = examples.ids
@@ -591,13 +590,23 @@ def _classify_featureset(args):
         # featureset already exists if so, load it and then use it on test data
         modelfile = os.path.join(model_path, '{}.model'.format(job_name))
 
+        file_names = sorted(os.path.join(train_path, featfile + suffix) for featfile
+                        in featureset)
+        # nro_features = sum([len(get_unique_features(file_name, label_col=label_col,
+        #                         ids_to_floats=ids_to_floats, quiet=quiet,
+        #                         class_map=class_map))
+        #                     for file_name in file_names])
+
+        nro_features =  20000000 + 5000;
+
         # load the training and test examples
         if task == 'cross_validate' or (not os.path.exists(modelfile) or
                                         overwrite):
             train_examples = _load_featureset(train_path, featureset, suffix,
                                               label_col=label_col,
                                               ids_to_floats=ids_to_floats,
-                                              quiet=quiet, class_map=class_map)
+                                              quiet=quiet, class_map=class_map,
+                                              nro_features=nro_features)
             # initialize a classifer object
             learner = Learner(learner_name,
                               probability=probability,
@@ -618,7 +627,8 @@ def _classify_featureset(args):
                                              label_col=label_col,
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet, class_map=class_map,
-                                             unlabelled=True)
+                                             unlabelled=True,
+                                             nro_features=nro_features)
 
 
         # create a list of dictionaries of the results information
