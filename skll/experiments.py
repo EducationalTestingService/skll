@@ -245,17 +245,14 @@ def _parse_config_file(config_path):
     experiment_name = config.get("General", "experiment_name")
 
     # Input
-    if config.has_option("Input", "feature_hasher"):
-        feature_hasher = config.get("Input", "feature_hasher")
-        if feature_hasher and config.has_option("Input", "nro_features_hasher"):
-            nro_features_hasher = config.get("Input", "nro_features_hasher")
+    nro_features_hasher = None
+    feature_hasher = config.getboolean("Input", "feature_hasher")
+    if feature_hasher:
+        if config.has_option("Input", "nro_features_hasher"):
+            nro_features_hasher = config.getint("Input", "nro_features_hasher")
         else:
             raise ValueError("Configuration file does not contain "+
-                             "option nro_features_hasher")
-    if config.has_option("Input", "nro_features_hasher") and \
-        (not config.has_option("Input", "feature_hasher")):
-        raise ValueError("Configuration file does not contain "+
-                             "option feautre_hasher")
+                         "option nro_features_hasher")
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -405,7 +402,7 @@ def _parse_config_file(config_path):
     train_set_name = os.path.basename(train_path)
     test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-    return (experiment_name, task, feture_hasher, nro_features_hasher, label_col,
+    return (experiment_name, task, feature_hasher, nro_features_hasher, label_col,
             train_set_name, test_set_name, suffix, featuresets, model_path,
             do_grid_search, grid_objective, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
@@ -416,7 +413,7 @@ def _parse_config_file(config_path):
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     unlabelled=False, feature_hasher = False, nro_features=None):
+                     unlabelled=False, feature_hasher=False, nro_features=None):
     '''
     Load a list of feature files and merge them.
 
@@ -453,7 +450,8 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                         in featureset)
     example_tuples = [load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
-                                    class_map=class_map,nro_features=nro_features)
+                                    class_map=class_map, feature_hasher=feature_hasher,
+                                    nro_features=nro_features)
                       for file_name in file_names]
     # Check that the IDs are unique within each file.
     for file_name, examples in zip(file_names, example_tuples):
@@ -492,19 +490,19 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
     for ids, classes, features, feat_vectorizer in example_tuples:
         # Combine feature matrices and vectorizers
         if merged_features is not None:
-            # # Check for duplicate feature names
-            # if (set(merged_vectorizer.get_feature_names()) &
-            #         set(feat_vectorizer.get_feature_names())):
-            #     raise ValueError('Two feature files have the same feature!')
-
+            if not feature_hasher:
+                # Check for duplicate feature names
+                if (set(merged_vectorizer.get_feature_names()) &
+                        set(feat_vectorizer.get_feature_names())):
+                    raise ValueError('Two feature files have the same feature!')
             num_merged = merged_features.shape[1]
             merged_features = sp.hstack([merged_features, features], 'csr')
-
-            # # dictvectorizer sorts the vocabularies within each file
-            # for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
-            #                                key=lambda x: x[1]):
-            #     merged_vectorizer.vocabulary_[feat_name] = index + num_merged
-            #     merged_vectorizer.feature_names_.append(feat_name)
+            if not feature_hasher:
+                # dictvectorizer sorts the vocabularies within each file
+                for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
+                                               key=lambda x: x[1]):
+                    merged_vectorizer.vocabulary_[feat_name] = index + num_merged
+                    merged_vectorizer.feature_names_.append(feat_name)
         else:
             merged_features = features
             merged_vectorizer = feat_vectorizer
@@ -575,7 +573,6 @@ def _classify_featureset(args):
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: " +
                           "{}").format(args.keys()))
-
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
     with open(log_path, 'w') as log_file:
@@ -621,6 +618,7 @@ def _classify_featureset(args):
                                               label_col=label_col,
                                               ids_to_floats=ids_to_floats,
                                               quiet=quiet, class_map=class_map,
+                                              feature_hasher=feature_hasher,
                                               nro_features=nro_features)
             # initialize a classifer object
             learner = Learner(learner_name,
@@ -643,6 +641,7 @@ def _classify_featureset(args):
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet, class_map=class_map,
                                              unlabelled=True,
+                                             feature_hasher=feature_hasher,
                                              nro_features=nro_features)
 
 
@@ -949,7 +948,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     logger = logging.getLogger(__name__)
 
     # Read configuration
-    (experiment_name, task, feaure_hasher, nro_features_hasher, label_col,
+    (experiment_name, task, feature_hasher, nro_features_hasher, label_col,
      train_set_name, test_set_name, suffix, featuresets, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,

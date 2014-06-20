@@ -664,7 +664,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col,
         if feature_hasher:
             feat_vectorizer = FeatureHasher(n_features=nro_features)
         else:
-            feat_vectorizer = FeatureHasher(n_features=nro_features)
+            feat_vectorizer = DictVectorizer(sparse=sparse)
         feat_dict_generator = map(itemgetter(2), example_iter)
     except Exception as e:
         # Setup logger
@@ -672,15 +672,18 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col,
         logger.exception('Failed to load features for %s.', path)
         raise e
     try:
-        # features = feat_vectorizer.fit_transform(feat_dict_generator)
-        features = feat_vectorizer.transform(feat_dict_generator)
+        if feature_hasher:
+            features = feat_vectorizer.transform(feat_dict_generator)
+        else:
+            features = feat_vectorizer.fit_transform(feat_dict_generator)
     except ValueError:
         raise ValueError('The last feature file did not include any features.')
     return features, feat_vectorizer
 
 
 def load_examples(path, quiet=False, sparse=True, label_col='y',
-                  ids_to_floats=False, class_map=None, nro_features=None):
+                  ids_to_floats=False, class_map=None, feature_hasher=False,
+                  nro_features=None):
     '''
     Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.megam``,
     ``.ndj``, or ``.tsv`` formats.
@@ -782,7 +785,8 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
                                          class_map)
         features_future = executor.submit(_features_for_iter_type,
                                           example_iter_type, path, quiet,
-                                          sparse, label_col, nro_features)
+                                          sparse, label_col, feature_hasher,
+                                          nro_features)
         # Wait for processes/threads to complete and store results
         ids = ids_future.result()
         classes = classes_future.result()
