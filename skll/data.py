@@ -652,7 +652,8 @@ def _features_for_iter_type_partial(example_iter_type, path, quiet, sparse, labe
         logger.exception('Failed to load features for %s.', path)
         raise e
 
-def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col, nro_features):
+def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col,
+                            feature_hasher, nro_features):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
@@ -660,7 +661,10 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col, n
     '''
     try:
         example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
-        feat_vectorizer = FeatureHasher(n_features=nro_features)
+        if feature_hasher:
+            feat_vectorizer = FeatureHasher(n_features=nro_features)
+        else:
+            feat_vectorizer = FeatureHasher(n_features=nro_features)
         feat_dict_generator = map(itemgetter(2), example_iter)
     except Exception as e:
         # Setup logger
