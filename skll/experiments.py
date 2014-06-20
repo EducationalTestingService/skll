@@ -204,6 +204,7 @@ def _setup_config_parser(config_path):
                                         'results': '',
                                         'predictions': '',
                                         'models': '',
+                                        'feature_hasher': 'False',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
                                         'probability': 'False',
@@ -244,6 +245,17 @@ def _parse_config_file(config_path):
     experiment_name = config.get("General", "experiment_name")
 
     # Input
+    if config.has_option("Input", "feature_hasher"):
+        feature_hasher = config.get("Input", "feature_hasher")
+        if feature_hasher and config.has_option("Input", "nro_features_hasher"):
+            nro_features_hasher = config.get("Input", "nro_features_hasher")
+        else:
+            raise ValueError("Configuration file does not contain "+
+                             "option nro_features_hasher")
+    if config.has_option("Input", "nro_features_hasher") and \
+        (not config.has_option("Input", "feature_hasher")):
+        raise ValueError("Configuration file does not contain "+
+                             "option feautre_hasher")
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -393,17 +405,18 @@ def _parse_config_file(config_path):
     train_set_name = os.path.basename(train_path)
     test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-    return (experiment_name, task, label_col, train_set_name, test_set_name,
-            suffix, featuresets, model_path, do_grid_search, grid_objective,
-            probability, results_path, pos_label_str, feature_scaling,
-            min_feature_count, grid_search_jobs, cv_folds, fixed_parameter_list,
-            param_grid_list, featureset_names, learners, prediction_dir,
-            log_path, train_path, test_path, ids_to_floats, class_map)
+    return (experiment_name, task, feture_hasher, nro_features_hasher, label_col,
+            train_set_name, test_set_name, suffix, featuresets, model_path,
+            do_grid_search, grid_objective, probability, results_path,
+            pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
+            cv_folds, fixed_parameter_list, param_grid_list, featureset_names,
+            learners, prediction_dir, log_path, train_path, test_path,
+            ids_to_floats, class_map)
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     unlabelled=False,nro_features=None):
+                     unlabelled=False, feature_hasher = False, nro_features=None):
     '''
     Load a list of feature files and merge them.
 
@@ -530,6 +543,8 @@ def _classify_featureset(args):
     # required keyword arguments.)
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
+    feature_hasher = args.pop("feature_hasher")
+    nro_features_hasher = args.pop("nro_features_hasher")
     job_name = args.pop("job_name")
     featureset = args.pop("featureset")
     learner_name = args.pop("learner_name")
@@ -588,10 +603,10 @@ def _classify_featureset(args):
 
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it and then use it on test data
-        modelfile = os.path.join(model_path, '{}.model'.format(job_name))
-
-        file_names = sorted(os.path.join(train_path, featfile + suffix) for featfile
-                        in featureset)
+        # modelfile = os.path.join(model_path, '{}.model'.format(job_name))
+        #
+        # file_names = sorted(os.path.join(train_path, featfile + suffix) for featfile
+        #                 in featureset)
         # nro_features = sum([len(get_unique_features(file_name, label_col=label_col,
         #                         ids_to_floats=ids_to_floats, quiet=quiet,
         #                         class_map=class_map))
@@ -934,12 +949,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     logger = logging.getLogger(__name__)
 
     # Read configuration
-    (experiment_name, task, label_col, train_set_name, test_set_name, suffix,
-     featuresets, model_path, do_grid_search, grid_objective, probability,
-     results_path, pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
-     featureset_names, learners, prediction_dir, log_path, train_path,
-     test_path, ids_to_floats, class_map) = _parse_config_file(config_file)
+    (experiment_name, task, feaure_hasher, nro_features_hasher, label_col,
+     train_set_name, test_set_name, suffix, featuresets, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
+     cv_folds, fixed_parameter_list, param_grid_list, featureset_names,
+     learners, prediction_dir, log_path, train_path, test_path,
+     ids_to_floats, class_map) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -1027,6 +1043,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args = {}
             job_args["experiment_name"] = experiment_name
             job_args["task"] = task
+            job_args["feature_hasher"] = feature_hasher
+            job_args["nro_features_hasher"] = nro_features_hasher
             job_args["job_name"] = job_name
             job_args["featureset"] = featureset
             job_args["learner_name"] = learner_name
