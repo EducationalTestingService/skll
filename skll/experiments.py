@@ -251,8 +251,8 @@ def _parse_config_file(config_path):
         if config.has_option("Input", "nro_features_hasher"):
             nro_features_hasher = config.getint("Input", "nro_features_hasher")
         else:
-            raise ValueError("Configuration file does not contain "+
-                         "option nro_features_hasher")
+            raise ValueError("Configuration file does not contain " +
+                             "option nro_features_hasher")
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -599,19 +599,8 @@ def _classify_featureset(args):
                   file=log_file)
 
         # check whether a trained model on the same data with the same
-        # featureset already exists if so, load it and then use it on test data
-        # modelfile = os.path.join(model_path, '{}.model'.format(job_name))
-        #
-        # file_names = sorted(os.path.join(train_path, featfile + suffix) for featfile
-        #                 in featureset)
-        # nro_features = sum([len(get_unique_features(file_name, label_col=label_col,
-        #                         ids_to_floats=ids_to_floats, quiet=quiet,
-        #                         class_map=class_map))
-        #                     for file_name in file_names])
-
-        nro_features =  20000000 + 5000;
-
-        # load the training and test examples
+        # featureset already exists if so, load it and then use it
+        # on test data load the training and test examples
         if task == 'cross_validate' or (not os.path.exists(modelfile) or
                                         overwrite):
             train_examples = _load_featureset(train_path, featureset, suffix,
@@ -619,7 +608,7 @@ def _classify_featureset(args):
                                               ids_to_floats=ids_to_floats,
                                               quiet=quiet, class_map=class_map,
                                               feature_hasher=feature_hasher,
-                                              nro_features=nro_features)
+                                              nro_features=nro_features_hasher)
             # initialize a classifer object
             learner = Learner(learner_name,
                               probability=probability,
@@ -642,8 +631,7 @@ def _classify_featureset(args):
                                              quiet=quiet, class_map=class_map,
                                              unlabelled=True,
                                              feature_hasher=feature_hasher,
-                                             nro_features=nro_features)
-
+                                             nro_features=nro_features_hasher)
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
@@ -977,14 +965,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 for i in range(1, len(features)):
                     for excluded_features in combinations(features, i):
                         expanded_fs.append(sorted(featureset -
-                                                   set(excluded_features)))
+                                                  set(excluded_features)))
                         expanded_fs_names.append(featureset_name + '_minus_' +
                                                  _munge_featureset_name(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
-                                                  set(excluded_features)))
+                                              set(excluded_features)))
                     expanded_fs_names.append(featureset_name + '_minus_' +
                                              _munge_featureset_name(excluded_features))
             # Also add version with nothing removed as baseline
@@ -997,7 +985,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     elif ablation < 0:
         raise ValueError('Value for "ablation" argument must be either ' +
                          'positive integer or None.')
-
 
     # the list of jobs submitted (if running on grid)
     if not local:
@@ -1082,7 +1069,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                 name=job_name, queue=queue))
             else:
                 _classify_featureset(job_args)
-
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:
