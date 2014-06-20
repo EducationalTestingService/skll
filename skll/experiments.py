@@ -29,7 +29,7 @@ from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn.metrics import SCORERS
 
-from skll.data import ExamplesTuple, load_examples, get_unique_features
+from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 from skll.version import __version__
 
@@ -245,14 +245,14 @@ def _parse_config_file(config_path):
     experiment_name = config.get("General", "experiment_name")
 
     # Input
-    nro_features_hasher = None
+    hasher_features = None
     feature_hasher = config.getboolean("Input", "feature_hasher")
     if feature_hasher:
-        if config.has_option("Input", "nro_features_hasher"):
-            nro_features_hasher = config.getint("Input", "nro_features_hasher")
+        if config.has_option("Input", "hasher_features"):
+            hasher_features = config.getint("Input", "hasher_features")
         else:
             raise ValueError("Configuration file does not contain " +
-                             "option nro_features_hasher")
+                             "option hasher_features")
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -402,7 +402,7 @@ def _parse_config_file(config_path):
     train_set_name = os.path.basename(train_path)
     test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-    return (experiment_name, task, feature_hasher, nro_features_hasher, label_col,
+    return (experiment_name, task, feature_hasher, hasher_features, label_col,
             train_set_name, test_set_name, suffix, featuresets, model_path,
             do_grid_search, grid_objective, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
@@ -542,7 +542,7 @@ def _classify_featureset(args):
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
     feature_hasher = args.pop("feature_hasher")
-    nro_features_hasher = args.pop("nro_features_hasher")
+    hasher_features = args.pop("hasher_features")
     job_name = args.pop("job_name")
     featureset = args.pop("featureset")
     learner_name = args.pop("learner_name")
@@ -608,7 +608,7 @@ def _classify_featureset(args):
                                               ids_to_floats=ids_to_floats,
                                               quiet=quiet, class_map=class_map,
                                               feature_hasher=feature_hasher,
-                                              nro_features=nro_features_hasher)
+                                              nro_features=hasher_features)
             # initialize a classifer object
             learner = Learner(learner_name,
                               probability=probability,
@@ -631,7 +631,7 @@ def _classify_featureset(args):
                                              quiet=quiet, class_map=class_map,
                                              unlabelled=True,
                                              feature_hasher=feature_hasher,
-                                             nro_features=nro_features_hasher)
+                                             nro_features=hasher_features)
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
@@ -936,7 +936,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     logger = logging.getLogger(__name__)
 
     # Read configuration
-    (experiment_name, task, feature_hasher, nro_features_hasher, label_col,
+    (experiment_name, task, feature_hasher, hasher_features, label_col,
      train_set_name, test_set_name, suffix, featuresets, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
@@ -1030,7 +1030,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["experiment_name"] = experiment_name
             job_args["task"] = task
             job_args["feature_hasher"] = feature_hasher
-            job_args["nro_features_hasher"] = nro_features_hasher
+            job_args["hasher_features"] = hasher_features
             job_args["job_name"] = job_name
             job_args["featureset"] = featureset
             job_args["learner_name"] = learner_name
