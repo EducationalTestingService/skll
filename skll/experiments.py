@@ -601,8 +601,8 @@ def _classify_featureset(args):
                   file=log_file)
 
         # check whether a trained model on the same data with the same
-        # featureset already exists if so, load it and then use it
-        # on test data load the training and test examples
+        # featureset already exists if so, load it and then use it on test data
+        modelfile = os.path.join(model_path, '{}.model'.format(job_name))
         if task == 'cross_validate' or (not os.path.exists(modelfile) or
                                         overwrite):
             train_examples = _load_featureset(train_path, featureset, suffix,
