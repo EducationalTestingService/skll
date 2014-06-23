@@ -586,7 +586,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col,
 
 def load_examples(path, quiet=False, sparse=True, label_col='y',
                   ids_to_floats=False, class_map=None, feature_hasher=False,
-                  nro_features=None):
+                  num_features=None):
     '''
     Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.megam``,
     ``.ndj``, or ``.tsv`` formats.
@@ -688,7 +688,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
         features_future = executor.submit(_features_for_iter_type,
                                           example_iter_type, path, quiet,
                                           sparse, label_col, feature_hasher,
-                                          nro_features)
+                                          num_features)
         # Wait for processes/threads to complete and store results
         ids = ids_future.result()
         classes = classes_future.result()

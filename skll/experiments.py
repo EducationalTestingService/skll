@@ -204,7 +204,6 @@ def _setup_config_parser(config_path):
                                         'results': '',
                                         'predictions': '',
                                         'models': '',
-                                        'sampler': 'None',
                                         'feature_hasher': 'False',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
@@ -252,8 +251,10 @@ def _parse_config_file(config_path):
         if config.has_option("Input", "hasher_features"):
             hasher_features = config.getint("Input", "hasher_features")
         else:
-            raise ValueError("Configuration file does not contain " +
-                             "option hasher_features")
+            raise ValueError("Configuration file does not contain" +
+                             " option hasher_features, which is " +
+                             "necessary when feature_hasher is True.")
+
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -414,7 +415,7 @@ def _parse_config_file(config_path):
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     unlabelled=False, feature_hasher=False, nro_features=None):
+                     unlabelled=False, feature_hasher=False, num_features=None):
     '''
     Load a list of feature files and merge them.
 
@@ -452,7 +453,7 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
     example_tuples = [load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
                                     class_map=class_map, feature_hasher=feature_hasher,
-                                    nro_features=nro_features)
+                                    num_features=num_features)
                       for file_name in file_names]
     # Check that the IDs are unique within each file.
     for file_name, examples in zip(file_names, example_tuples):
@@ -609,7 +610,7 @@ def _classify_featureset(args):
                                               ids_to_floats=ids_to_floats,
                                               quiet=quiet, class_map=class_map,
                                               feature_hasher=feature_hasher,
-                                              nro_features=hasher_features)
+                                              num_features=hasher_features)
             # initialize a classifer object
             learner = Learner(learner_name,
                               probability=probability,
@@ -632,7 +633,7 @@ def _classify_featureset(args):
                                              quiet=quiet, class_map=class_map,
                                              unlabelled=True,
                                              feature_hasher=feature_hasher,
-                                             nro_features=hasher_features)
+                                             num_features=hasher_features)
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
