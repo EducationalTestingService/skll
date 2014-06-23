@@ -555,27 +555,8 @@ def _classes_for_iter_type(example_iter_type, path, label_col, class_map):
     return res_array
 
 
-def _features_for_iter_type_partial(example_iter_type, path, quiet, sparse,
-                                    label_col):
-    '''
-    Little helper function to return a sparse matrix of features and feature
-    vectorizer for a given example generator (and whether or not the examples
-    have labels).
-    '''
-    try:
-        example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
-        feat_dict_generator = map(itemgetter(2), example_iter)
-        for feat in feat_dict_generator:
-            yield feat
-    except Exception as e:
-        # Setup logger
-        logger = logging.getLogger(__name__)
-        logger.exception('Failed to load features for %s.', path)
-        raise e
-
-
 def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col,
-                            feature_hasher, nro_features):
+                            feature_hasher, num_features):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
@@ -584,7 +565,7 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col,
     try:
         example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
         if feature_hasher:
-            feat_vectorizer = FeatureHasher(n_features=nro_features)
+            feat_vectorizer = FeatureHasher(n_features=num_features)
         else:
             feat_vectorizer = DictVectorizer(sparse=sparse)
         feat_dict_generator = map(itemgetter(2), example_iter)
