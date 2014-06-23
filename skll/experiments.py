@@ -204,6 +204,7 @@ def _setup_config_parser(config_path):
                                         'results': '',
                                         'predictions': '',
                                         'models': '',
+                                        'sampler': 'None',
                                         'feature_hasher': 'False',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
