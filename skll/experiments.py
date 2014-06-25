@@ -452,7 +452,8 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                         in featureset)
     example_tuples = [load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
-                                    class_map=class_map, feature_hasher=feature_hasher,
+                                    class_map=class_map,
+                                    feature_hasher=feature_hasher,
                                     num_features=num_features)
                       for file_name in file_names]
     # Check that the IDs are unique within each file.
@@ -578,7 +579,6 @@ def _classify_featureset(args):
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
     with open(log_path, 'w') as log_file:
-
         # logging
         print("Task:", task, file=log_file)
         if task == 'cross_validate':
@@ -660,7 +660,8 @@ def _classify_featureset(args):
                                                                cv_folds=cv_folds,
                                                                grid_objective=grid_objective,
                                                                param_grid=param_grid,
-                                                               grid_jobs=grid_search_jobs)
+                                                               grid_jobs=grid_search_jobs,
+                                                               feature_hasher=feature_hasher)
         else:
             # if we have do not have a saved model, we need to train one.
             if not os.path.exists(modelfile) or overwrite:
@@ -677,7 +678,8 @@ def _classify_featureset(args):
                                            grid_search_folds=grid_search_folds,
                                            grid_objective=grid_objective,
                                            param_grid=param_grid,
-                                           grid_jobs=grid_search_jobs)
+                                           grid_jobs=grid_search_jobs,
+                                           feature_hasher=feature_hasher)
                 grid_scores = [best_score]
 
                 # save model
@@ -708,11 +710,12 @@ def _classify_featureset(args):
                 print('\tevaluating predictions', file=log_file)
                 task_results = [learner.evaluate(
                     test_examples, prediction_prefix=prediction_prefix,
-                    grid_objective=grid_objective)]
+                    grid_objective=grid_objective, feature_hasher=feature_hasher)]
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
-                                prediction_prefix=prediction_prefix)
+                                prediction_prefix=prediction_prefix,
+                                feature_hasher=feature_hasher)
             # do nothing here for train
 
         if task == 'cross_validate' or task == 'evaluate':
