@@ -177,6 +177,19 @@ Input
         are required to be the same in all of the feature files, and a
         ``ValueError`` will be raised if this is not the case.
 
+    **feature_hasher** *(Optional)*
+        It activates  a high-speed, low-memory vectorizer that uses a technique
+        known as feature hashing, or the “hashing trick”. This feature is intended
+        for huge memory consuming data sets and the user should specify the
+        number of features in the ``hasher_features`` field. It has by default
+        ``non_negative = False``. Additional information:
+        `<http://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`_.
+
+    **hasher_features** *(Optional)*
+        It determine the number of features used in the ``feature_hasher``.
+        It is required if ``feature_hasher = True``. It is suggested
+        a number a little huge than the actual number of features in the data set.
+
     **suffix** *(Optional)*
         The file format the training/test files are in. Valid option are
         ``.arff``, ``.csv``, ``.jsonlines``, ``.megam,``, ``.ndj``, and
