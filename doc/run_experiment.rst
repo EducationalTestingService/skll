@@ -183,7 +183,7 @@ Input
         for huge memory consuming data sets and the user should specify the
         number of features in the ``hasher_features`` field. It has by default
         ``non_negative = False``. Additional information:
-        `<http://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`_.
+        `here <http://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`_.
 
     **hasher_features** *(Optional)*
         It determine the number of features used in the ``feature_hasher``.
