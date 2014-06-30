@@ -545,12 +545,6 @@ def test_summary_feature_hasher():
         logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     with open(os.path.join(_my_dir, 'output',
-                           'test_summary_feature_hasher_test_summary_MultinomialNB.results')) \
-            as f:
-        outstr = f.read()
-        naivebayes_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
-
-    with open(os.path.join(_my_dir, 'output',
                            'test_summary_feature_hasher_test_summary_SVC.results')) \
             as f:
         outstr = f.read()
@@ -572,13 +566,10 @@ def test_summary_feature_hasher():
 
             if row['learner_name'] == 'LogisticRegression':
                 logistic_summary_score = float(row['score'])
-            elif row['learner_name'] == 'MultinomialNB':
-                naivebayes_summary_score = float(row['score'])
             elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
 
     for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'),
-                                                      (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'),
                                                       (svm_result_score, svm_summary_score, 'SVC')]:
         yield check_summary_score, result_score, summary_score, learner_name
 
