@@ -187,10 +187,10 @@ Input
         `the scikit-learn documentation <http://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`_.
 
     **hasher_features** *(Optional)*
-                The number of features used by the ``FeatureHasher`` if the
-        ``feature_hasher`` flag is enabled.  It is suggested to use the power of
-        two larger than the number of features in the data set. For example, if
-        you had 17 features, you would want to set the flag to 32.
+        The number of features used by the ``FeatureHasher`` if the
+        ``feature_hasher`` flag is enabled.  It is suggested to use the power
+        of two larger than the number of features in the data set. For example,
+        if you had 17 features, you would want to set the flag to 32.
 
     **suffix** *(Optional)*
         The file format the training/test files are in. Valid option are
