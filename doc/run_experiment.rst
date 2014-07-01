@@ -177,6 +177,21 @@ Input
         are required to be the same in all of the feature files, and a
         ``ValueError`` will be raised if this is not the case.
 
+    **feature_hasher** *(Optional)*
+        If "true", this enables a high-speed, low-memory vectorizer that uses
+        feature hashing for converting feature dictionaries into NumPy arrays
+        instead of using a ``DictVectorizer``.  This flag will drastically
+        reduce memory consumption for data sets with a large number of features.
+        If enabled, the user should also specify the number of features in the
+        ``hasher_features`` field.  For addition information see
+        `the scikit-learn documentation <http://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`_.
+
+    **hasher_features** *(Optional)*
+        The number of features used by the ``FeatureHasher`` if the
+        ``feature_hasher`` flag is enabled.  It is suggested to use the power
+        of two larger than the number of features in the data set. For example,
+        if you had 17 features, you would want to set the flag to 32.
+
     **suffix** *(Optional)*
         The file format the training/test files are in. Valid option are
         ``.arff``, ``.csv``, ``.jsonlines``, ``.megam,``, ``.ndj``, and
@@ -206,6 +221,7 @@ Input
             *   *DecisionTreeClassifier (dtree)*: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`_
             *   *RandomForestClassifier (rforest)*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`_
             *   *GradientBoostingClassifier (gradient)*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`_
+            *   *SGDClassifier*: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`_
 
         Regressors:
 
@@ -215,6 +231,7 @@ Input
             *   *Lasso*: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`_
             *   *LinearRegression*: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`_
             *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_
+            *   *SGDRegressor*: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`_
             *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`_
             *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
                 with a linear kernel. Can use other kernels by specifying a

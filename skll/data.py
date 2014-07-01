@@ -29,7 +29,7 @@ from bs4 import UnicodeDammit
 from collections import namedtuple
 from six import iteritems, string_types, text_type
 from six.moves import map, zip
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 # Import QueueHandler and QueueListener for multiprocess-safe logging
 if sys.version_info < (3, 0):
@@ -555,7 +555,8 @@ def _classes_for_iter_type(example_iter_type, path, label_col, class_map):
     return res_array
 
 
-def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
+def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col,
+                            feature_hasher, num_features):
     '''
     Little helper function to return a sparse matrix of features and feature
     vectorizer for a given example generator (and whether or not the examples
@@ -563,7 +564,10 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
     '''
     try:
         example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
-        feat_vectorizer = DictVectorizer(sparse=sparse)
+        if feature_hasher:
+            feat_vectorizer = FeatureHasher(n_features=num_features)
+        else:
+            feat_vectorizer = DictVectorizer(sparse=sparse)
         feat_dict_generator = map(itemgetter(2), example_iter)
     except Exception as e:
         # Setup logger
@@ -571,14 +575,18 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col):
         logger.exception('Failed to load features for %s.', path)
         raise e
     try:
-        features = feat_vectorizer.fit_transform(feat_dict_generator)
+        if feature_hasher:
+            features = feat_vectorizer.transform(feat_dict_generator)
+        else:
+            features = feat_vectorizer.fit_transform(feat_dict_generator)
     except ValueError:
         raise ValueError('The last feature file did not include any features.')
     return features, feat_vectorizer
 
 
 def load_examples(path, quiet=False, sparse=True, label_col='y',
-                  ids_to_floats=False, class_map=None):
+                  ids_to_floats=False, class_map=None, feature_hasher=False,
+                  num_features=None):
     '''
     Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.megam``,
     ``.ndj``, or ``.tsv`` formats.
@@ -625,7 +633,6 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
 
     logger.debug('Path: %s', path)
 
-
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
     if not isinstance(path, string_types):
@@ -645,7 +652,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
             example_iter_type = _MegaMDictIter
         else:
             raise ValueError(('Example files must be in either .arff, .csv, ' +
-                              '.jsonlines, .megam, .ndj, or .tsv format. You '+
+                              '.jsonlines, .megam, .ndj, or .tsv format. You ' +
                               'specified: {}').format(path))
 
     logger.debug('Example iterator type: %s', example_iter_type)
@@ -680,8 +687,8 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
                                          class_map)
         features_future = executor.submit(_features_for_iter_type,
                                           example_iter_type, path, quiet,
-                                          sparse, label_col)
-
+                                          sparse, label_col, feature_hasher,
+                                          num_features)
         # Wait for processes/threads to complete and store results
         ids = ids_future.result()
         classes = classes_future.result()
@@ -860,11 +867,13 @@ def _write_arff_file(path, ids, classes, features, label_col,
 
         # throw out any non-numeric fields if we are writing for regression
         if arff_regression:
-            sorted_fields = [fld for fld in sorted_fields if fld not in non_numeric_fields]
+            sorted_fields = [fld for fld in sorted_fields if fld not in
+                             non_numeric_fields]
 
-        # Create CSV writer to handle missing values for lines in data section and to ignore
-        # the instance values for non-numeric attributes
-        writer = csv.DictWriter(f, sorted_fields, restval=0, extrasaction='ignore', dialect='arff')
+        # Create CSV writer to handle missing values for lines in data section
+        # and to ignore the instance values for non-numeric attributes
+        writer = csv.DictWriter(f, sorted_fields, restval=0,
+                                extrasaction='ignore', dialect='arff')
 
         # Output instances
         print("\n@data", file=f)
@@ -1055,7 +1064,6 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
                 feat_names.update(feat_dict.keys())
             feat_names = sorted(feat_names)
             logger.debug('Filtered features: %s', feat_names)
-
 
     # Create TSV file if asked
     if ext == ".tsv":
