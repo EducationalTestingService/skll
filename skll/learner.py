@@ -40,11 +40,11 @@ from sklearn.ensemble import (GradientBoostingClassifier,
                               GradientBoostingRegressor, RandomForestClassifier,
                               RandomForestRegressor)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
-                                  LogisticRegression, Ridge)
+                                  LogisticRegression, Ridge, SGDClassifier,
+                                  SGDRegressor)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
@@ -74,15 +74,26 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                         'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
                                                   100.0]}],
                         'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'LinearRegression': [{}]}
+                        'LinearRegression': [{}],
+                        'SGDClassifier': [{'alpha': [0.000001, 0.00001, 0.0001,
+                                                     0.001, 0.01],
+                                           'penalty': ['l1', 'l2',
+                                                       'elasticnet']}],
+                        'SGDRegressor': [{'alpha': [0.000001, 0.00001, 0.0001,
+                                                    0.001, 0.01],
+                                          'penalty': ['l1', 'l2',
+                                                      'elasticnet']}]}
+
 _REGRESSION_MODELS = frozenset(['DecisionTreeRegressor', 'ElasticNet',
                                 'GradientBoostingRegressor', 'Lasso',
                                 'LinearRegression', 'RandomForestRegressor',
-                                'Ridge', 'SVR'])
+                                'Ridge', 'SVR', 'SGDRegressor'])
+
 _REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
                              'GradientBoostingRegressor', 'MultinomialNB',
                              'RandomForestClassifier', 'RandomForestRegressor'])
+
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
@@ -301,6 +312,7 @@ def rescaled(cls):
     # Return modified class
     return cls
 
+
 # Rescaled regressors
 @rescaled
 class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
@@ -339,6 +351,11 @@ class RescaledRidge(Ridge):
 
 @rescaled
 class RescaledSVR(SVR):
+    pass
+
+
+@rescaled
+class RescaledSGDRegressor(SGDRegressor):
     pass
 
 
@@ -427,13 +444,15 @@ class Learner(object):
         elif self._model_type == 'SVR':
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
-
+        elif self._model_type == 'SGDClassifier':
+            self._model_kwargs['loss'] = 'log'
         if self._model_type in {'RandomForestClassifier', 'LinearSVC',
                                 'LogisticRegression', 'DecisionTreeClassifier',
                                 'GradientBoostingClassifier',
                                 'GradientBoostingRegressor',
                                 'DecisionTreeRegressor',
-                                'RandomForestRegressor'}:
+                                'RandomForestRegressor', 'SGDClassifier',
+                                'SGDRegressor'}:
             self._model_kwargs['random_state'] = 123456789
 
         if model_kwargs:
@@ -523,7 +542,7 @@ class Learner(object):
             for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                 if coef[idx]:
                     res[feat] = correction * coef[idx]
-                    #res[feat] = coef[idx]
+                    # res[feat] = coef[idx]
         elif isinstance(self._model, BaseLibLinear):
             label_list = self.label_list
 
@@ -677,10 +696,9 @@ class Learner(object):
                                              with_mean=False,
                                              with_std=False)
 
-
     def train(self, examples, param_grid=None, grid_search_folds=5,
               grid_search=True, grid_objective='f1_score_micro',
-              grid_jobs=None, shuffle=True):
+              grid_jobs=None, shuffle=True, feature_hasher=False):
         '''
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -749,6 +767,11 @@ class Learner(object):
                                   ' data to dense. This was required because ' +
                                   reason)
 
+        if feature_hasher and (self._model_type == 'MultinomialNB'):
+            raise ValueError('It is no possible to use feature_hasher with' +
+                             ' Naive Bayes, because it can generate some' +
+                             ' negative values and Naive Bayes can not' +
+                             ' manage them. ')
         # Scale features if necessary
         if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
@@ -818,7 +841,7 @@ class Learner(object):
         return grid_score
 
     def evaluate(self, examples, prediction_prefix=None, append=False,
-                 grid_objective=None):
+                 grid_objective=None, feature_hasher=False):
         '''
         Evaluates a given model on a given dev or test example set.
 
@@ -835,6 +858,8 @@ class Learner(object):
         :param grid_objective: The objective function that was used when doing
                                the grid search.
         :type grid_objective: function
+        :param feature_hasher: are we using a feature_hasher?
+        :type feature_hasher: bool
 
         :return: The confusion matrix, the overall accuracy, the per-class
                  PRFs, the model parameters, and the grid search objective
@@ -846,7 +871,7 @@ class Learner(object):
 
         # make the prediction on the test data
         yhat = self.predict(examples, prediction_prefix=prediction_prefix,
-                            append=append)
+                            append=append, feature_hasher=feature_hasher)
 
         # extract actual labels (transformed for classification tasks)
         if self._model_type not in _REGRESSION_MODELS:
@@ -912,7 +937,7 @@ class Learner(object):
         return res
 
     def predict(self, examples, prediction_prefix=None, append=False,
-                class_labels=False):
+                class_labels=False, feature_hasher=False):
         '''
         Uses a given model to generate predictions on a given data set
 
@@ -929,6 +954,8 @@ class Learner(object):
         :param class_labels: For classifier, should we convert class
                              indices to their (str) labels?
         :type class_labels: bool
+        :param feature_hasher: For classifier, are we using a feature_hasher?
+        :type feature_hasher: bool
 
         :return: The predictions returned by the learner.
         :rtype: array
@@ -938,10 +965,19 @@ class Learner(object):
         # Need to do some transformations so the features are in the right
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
-        if self.feat_vectorizer == examples.feat_vectorizer:
-            xtest = examples.features
+        if feature_hasher:
+            if self.feat_vectorizer.dtype == examples.feat_vectorizer.dtype \
+                    and self.feat_vectorizer.input_type == examples.feat_vectorizer.input_type \
+                    and self.feat_vectorizer.n_features == examples.feat_vectorizer.n_features \
+                    and self.feat_vectorizer.non_negative == examples.feat_vectorizer.non_negative:
+                xtest = examples.features
+            else:
+                xtest = self.feat_vectorizer.transform(examples.feat_vectorizer.inverse_transform(examples.features))
         else:
-            xtest = self.feat_vectorizer.transform(examples.feat_vectorizer.inverse_transform(examples.features))
+            if self.feat_vectorizer == examples.feat_vectorizer:
+                xtest = examples.features
+            else:
+                xtest = self.feat_vectorizer.transform(examples.feat_vectorizer.inverse_transform(examples.features))
 
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
@@ -1016,7 +1052,8 @@ class Learner(object):
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=5, grid_jobs=None,
                        grid_objective='f1_score_micro', prediction_prefix=None,
-                       param_grid=None, shuffle=True):
+                       param_grid=None, shuffle=True,
+                       feature_hasher=False):
         '''
         Cross-validates a given model on the training examples.
 
@@ -1053,6 +1090,8 @@ class Learner(object):
         :type prediction_prefix: str
         :param shuffle: Shuffle examples before splitting into folds for CV.
         :type shuffle: bool
+        :param feature_hasher: Are we using feature_hasher?
+        :type feature_hasher: bool
 
         :return: The confusion matrix, overall accuracy, per-class PRFs, and
                  model parameters for each fold.
@@ -1115,7 +1154,8 @@ class Learner(object):
                                                  grid_objective=grid_objective,
                                                  param_grid=param_grid,
                                                  grid_jobs=grid_jobs,
-                                                 shuffle=False))
+                                                 shuffle=False,
+                                                 feature_hasher=feature_hasher))
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
 
@@ -1127,8 +1167,8 @@ class Learner(object):
             results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
                                          append=append_predictions,
-                                         grid_objective=grid_objective))
-
+                                         grid_objective=grid_objective,
+                                         feature_hasher=feature_hasher))
             append_predictions = True
 
         # return list of results for all folds

@@ -204,6 +204,7 @@ def _setup_config_parser(config_path):
                                         'results': '',
                                         'predictions': '',
                                         'models': '',
+                                        'feature_hasher': 'False',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
                                         'probability': 'False',
@@ -244,6 +245,16 @@ def _parse_config_file(config_path):
     experiment_name = config.get("General", "experiment_name")
 
     # Input
+    hasher_features = None
+    feature_hasher = config.getboolean("Input", "feature_hasher")
+    if feature_hasher:
+        if config.has_option("Input", "hasher_features"):
+            hasher_features = config.getint("Input", "hasher_features")
+        else:
+            raise ValueError("Configuration file does not contain" +
+                             " option hasher_features, which is " +
+                             "necessary when feature_hasher is True.")
+
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -393,17 +404,18 @@ def _parse_config_file(config_path):
     train_set_name = os.path.basename(train_path)
     test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-    return (experiment_name, task, label_col, train_set_name, test_set_name,
-            suffix, featuresets, model_path, do_grid_search, grid_objective,
-            probability, results_path, pos_label_str, feature_scaling,
-            min_feature_count, grid_search_jobs, cv_folds, fixed_parameter_list,
-            param_grid_list, featureset_names, learners, prediction_dir,
-            log_path, train_path, test_path, ids_to_floats, class_map)
+    return (experiment_name, task, feature_hasher, hasher_features, label_col,
+            train_set_name, test_set_name, suffix, featuresets, model_path,
+            do_grid_search, grid_objective, probability, results_path,
+            pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
+            cv_folds, fixed_parameter_list, param_grid_list, featureset_names,
+            learners, prediction_dir, log_path, train_path, test_path,
+            ids_to_floats, class_map)
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     unlabelled=False):
+                     unlabelled=False, feature_hasher=False, num_features=None):
     '''
     Load a list of feature files and merge them.
 
@@ -440,9 +452,10 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                         in featureset)
     example_tuples = [load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
-                                    class_map=class_map)
+                                    class_map=class_map,
+                                    feature_hasher=feature_hasher,
+                                    num_features=num_features)
                       for file_name in file_names]
-
     # Check that the IDs are unique within each file.
     for file_name, examples in zip(file_names, example_tuples):
         ex_ids = examples.ids
@@ -480,19 +493,19 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
     for ids, classes, features, feat_vectorizer in example_tuples:
         # Combine feature matrices and vectorizers
         if merged_features is not None:
-            # Check for duplicate feature names
-            if (set(merged_vectorizer.get_feature_names()) &
-                    set(feat_vectorizer.get_feature_names())):
-                raise ValueError('Two feature files have the same feature!')
-
+            if not feature_hasher:
+                # Check for duplicate feature names
+                if (set(merged_vectorizer.get_feature_names()) &
+                        set(feat_vectorizer.get_feature_names())):
+                    raise ValueError('Two feature files have the same feature!')
             num_merged = merged_features.shape[1]
             merged_features = sp.hstack([merged_features, features], 'csr')
-
-            # dictvectorizer sorts the vocabularies within each file
-            for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
-                                           key=lambda x: x[1]):
-                merged_vectorizer.vocabulary_[feat_name] = index + num_merged
-                merged_vectorizer.feature_names_.append(feat_name)
+            if not feature_hasher:
+                # dictvectorizer sorts the vocabularies within each file
+                for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
+                                               key=lambda x: x[1]):
+                    merged_vectorizer.vocabulary_[feat_name] = index + num_merged
+                    merged_vectorizer.feature_names_.append(feat_name)
         else:
             merged_features = features
             merged_vectorizer = feat_vectorizer
@@ -531,6 +544,8 @@ def _classify_featureset(args):
     # required keyword arguments.)
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
+    feature_hasher = args.pop("feature_hasher")
+    hasher_features = args.pop("hasher_features")
     job_name = args.pop("job_name")
     featureset = args.pop("featureset")
     learner_name = args.pop("learner_name")
@@ -561,11 +576,9 @@ def _classify_featureset(args):
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: " +
                           "{}").format(args.keys()))
-
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
     with open(log_path, 'w') as log_file:
-
         # logging
         print("Task:", task, file=log_file)
         if task == 'cross_validate':
@@ -590,14 +603,14 @@ def _classify_featureset(args):
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it and then use it on test data
         modelfile = os.path.join(model_path, '{}.model'.format(job_name))
-
-        # load the training and test examples
         if task == 'cross_validate' or (not os.path.exists(modelfile) or
                                         overwrite):
             train_examples = _load_featureset(train_path, featureset, suffix,
                                               label_col=label_col,
                                               ids_to_floats=ids_to_floats,
-                                              quiet=quiet, class_map=class_map)
+                                              quiet=quiet, class_map=class_map,
+                                              feature_hasher=feature_hasher,
+                                              num_features=hasher_features)
             # initialize a classifer object
             learner = Learner(learner_name,
                               probability=probability,
@@ -618,8 +631,9 @@ def _classify_featureset(args):
                                              label_col=label_col,
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet, class_map=class_map,
-                                             unlabelled=True)
-
+                                             unlabelled=True,
+                                             feature_hasher=feature_hasher,
+                                             num_features=hasher_features)
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
@@ -646,7 +660,8 @@ def _classify_featureset(args):
                                                                cv_folds=cv_folds,
                                                                grid_objective=grid_objective,
                                                                param_grid=param_grid,
-                                                               grid_jobs=grid_search_jobs)
+                                                               grid_jobs=grid_search_jobs,
+                                                               feature_hasher=feature_hasher)
         else:
             # if we have do not have a saved model, we need to train one.
             if not os.path.exists(modelfile) or overwrite:
@@ -663,7 +678,8 @@ def _classify_featureset(args):
                                            grid_search_folds=grid_search_folds,
                                            grid_objective=grid_objective,
                                            param_grid=param_grid,
-                                           grid_jobs=grid_search_jobs)
+                                           grid_jobs=grid_search_jobs,
+                                           feature_hasher=feature_hasher)
                 grid_scores = [best_score]
 
                 # save model
@@ -694,11 +710,12 @@ def _classify_featureset(args):
                 print('\tevaluating predictions', file=log_file)
                 task_results = [learner.evaluate(
                     test_examples, prediction_prefix=prediction_prefix,
-                    grid_objective=grid_objective)]
+                    grid_objective=grid_objective, feature_hasher=feature_hasher)]
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
-                                prediction_prefix=prediction_prefix)
+                                prediction_prefix=prediction_prefix,
+                                feature_hasher=feature_hasher)
             # do nothing here for train
 
         if task == 'cross_validate' or task == 'evaluate':
@@ -924,12 +941,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     logger = logging.getLogger(__name__)
 
     # Read configuration
-    (experiment_name, task, label_col, train_set_name, test_set_name, suffix,
-     featuresets, model_path, do_grid_search, grid_objective, probability,
-     results_path, pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
-     featureset_names, learners, prediction_dir, log_path, train_path,
-     test_path, ids_to_floats, class_map) = _parse_config_file(config_file)
+    (experiment_name, task, feature_hasher, hasher_features, label_col,
+     train_set_name, test_set_name, suffix, featuresets, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
+     cv_folds, fixed_parameter_list, param_grid_list, featureset_names,
+     learners, prediction_dir, log_path, train_path, test_path,
+     ids_to_floats, class_map) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -952,14 +970,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 for i in range(1, len(features)):
                     for excluded_features in combinations(features, i):
                         expanded_fs.append(sorted(featureset -
-                                                   set(excluded_features)))
+                                                  set(excluded_features)))
                         expanded_fs_names.append(featureset_name + '_minus_' +
                                                  _munge_featureset_name(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
-                                                  set(excluded_features)))
+                                              set(excluded_features)))
                     expanded_fs_names.append(featureset_name + '_minus_' +
                                              _munge_featureset_name(excluded_features))
             # Also add version with nothing removed as baseline
@@ -972,7 +990,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     elif ablation < 0:
         raise ValueError('Value for "ablation" argument must be either ' +
                          'positive integer or None.')
-
 
     # the list of jobs submitted (if running on grid)
     if not local:
@@ -1017,6 +1034,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args = {}
             job_args["experiment_name"] = experiment_name
             job_args["task"] = task
+            job_args["feature_hasher"] = feature_hasher
+            job_args["hasher_features"] = hasher_features
             job_args["job_name"] = job_name
             job_args["featureset"] = featureset
             job_args["learner_name"] = learner_name
@@ -1055,7 +1074,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                 name=job_name, queue=queue))
             else:
                 _classify_featureset(job_args)
-
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:
