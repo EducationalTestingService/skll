@@ -746,6 +746,7 @@ class Learner(object):
         # replicable
         rand_seed = 123456789
         np.random.seed(rand_seed)
+        logger = logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
@@ -784,23 +785,19 @@ class Learner(object):
                              ' Naive Bayes, because it can generate some' +
                              ' negative values and Naive Bayes can not' +
                              ' manage them. ')
+
         # Scale features if necessary
         if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
 
         # Sampler
         if self.sampler:
-            logger = logging.getLogger(__name__)
             logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
                 logger.warning('SkewedChi2Sampler uses a dense matrix')
                 xtrain = self.sampler.fit_transform(xtrain.todense())
-                if not self._use_dense_features:
-                    xtrain = csr_matrix(xtrain)
             else:
                 xtrain = self.sampler.fit_transform(xtrain)
-                if not self._use_dense_features:
-                    xtrain = csr_matrix(xtrain)
 
         # Instantiate an estimator and get the default parameter grid to search
         estimator, default_param_grid = self._create_estimator()
@@ -986,6 +983,7 @@ class Learner(object):
         :return: The predictions returned by the learner.
         :rtype: array
         '''
+        logger = logging.getLogger(__name__)
         example_ids = examples.ids
 
         # Need to do some transformations so the features are in the right
@@ -1010,19 +1008,15 @@ class Learner(object):
 
         # Sampler
         if self.sampler:
-            logger = logging.getLogger(__name__)
             logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
-                logger = logging.getLogger(__name__)
                 logger.warning('SkewedChi2Sampler uses a dense matrix')
                 xtest = self.sampler.fit_transform(xtest.todense())
-                xtest = csr_matrix(xtest)
             else:
                 xtest = self.sampler.fit_transform(xtest)
-                xtest = csr_matrix(xtest)
 
         # Convert to dense if necessary
-        if self._use_dense_features:
+        if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
                 xtest = xtest.todense()
             except MemoryError:
@@ -1047,7 +1041,6 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logger = logging.getLogger(__name__)
             logger.error("Model type: %s\nModel: %s\nProbability: %s\n",
                          self._model_type, self._model, self.probability)
             raise e

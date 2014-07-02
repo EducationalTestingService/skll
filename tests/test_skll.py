@@ -299,9 +299,6 @@ def check_specified_cv_folds(numeric_ids):
             grid_score_matches = GRID_RE.findall(outstr)
             assert len(grid_score_matches) == grid_size
             for match_str in grid_score_matches:
-                logger = logging.getLogger(__name__)
-                logger.warn('cad: '+str(match_str))
-                logger.error('cad: '+str(match_str))
                 assert test_func(float(match_str))
 
     # try the same tests for just training (and specifying the folds for the
@@ -1594,8 +1591,6 @@ def check_specified_cv_folds_sampler(numeric_ids):
             grid_score_matches = GRID_RE.findall(outstr)
             assert len(grid_score_matches) == grid_size
             for match_str in grid_score_matches:
-                logger = logging.getLogger(__name__)
-                logger.info('cad: '+str(match_str))
                 assert test_func(float(match_str))
 
     # try the same tests for just training (and specifying the folds for the

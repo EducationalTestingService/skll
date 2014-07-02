@@ -43,6 +43,8 @@ else:
 
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
+_VALID_SAMPLERS = frozenset(['RBFSampler', 'SkewedChi2Sampler',
+                             'AdditiveChi2Sampler', 'None'])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -247,8 +249,7 @@ def _parse_config_file(config_path):
 
     # Input
     sampler = config.get("Input", "sampler")
-    if not (sampler in ["RBFSampler", "SkewedChi2Sampler",
-                        "AdditiveChi2Sampler", "None"]):
+    if sampler not in _VALID_SAMPLERS:
         raise ValueError('sampler should have one of the following values: ' +
                          'RBFSampler, SkewedChi2Sampler or AdditiveChi2Sampler.')
 
