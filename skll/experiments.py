@@ -204,6 +204,7 @@ def _setup_config_parser(config_path):
                                         'results': '',
                                         'predictions': '',
                                         'models': '',
+                                        'sampler': 'None',
                                         'feature_hasher': 'False',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
@@ -245,6 +246,12 @@ def _parse_config_file(config_path):
     experiment_name = config.get("General", "experiment_name")
 
     # Input
+    sampler = config.get("Input", "sampler")
+    if not (sampler in ["RBFSampler", "SkewedChi2Sampler",
+                        "AdditiveChi2Sampler", "None"]):
+        raise ValueError('sampler should have one of the following values: ' +
+                         'RBFSampler, SkewedChi2Sampler or AdditiveChi2Sampler.')
+
     hasher_features = None
     feature_hasher = config.getboolean("Input", "feature_hasher")
     if feature_hasher:
@@ -404,13 +411,13 @@ def _parse_config_file(config_path):
     train_set_name = os.path.basename(train_path)
     test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-    return (experiment_name, task, feature_hasher, hasher_features, label_col,
-            train_set_name, test_set_name, suffix, featuresets, model_path,
-            do_grid_search, grid_objective, probability, results_path,
-            pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
-            cv_folds, fixed_parameter_list, param_grid_list, featureset_names,
-            learners, prediction_dir, log_path, train_path, test_path,
-            ids_to_floats, class_map)
+    return (experiment_name, task, sampler, feature_hasher, hasher_features,
+            label_col, train_set_name, test_set_name, suffix, featuresets,
+            model_path, do_grid_search, grid_objective, probability,
+            results_path, pos_label_str, feature_scaling, min_feature_count,
+            grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
+            featureset_names, learners, prediction_dir, log_path, train_path,
+            test_path, ids_to_floats, class_map)
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
@@ -544,6 +551,7 @@ def _classify_featureset(args):
     # required keyword arguments.)
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
+    sampler = args.pop("sampler")
     feature_hasher = args.pop("feature_hasher")
     hasher_features = args.pop("hasher_features")
     job_name = args.pop("job_name")
@@ -617,7 +625,8 @@ def _classify_featureset(args):
                               feature_scaling=feature_scaling,
                               model_kwargs=fixed_parameters,
                               pos_label_str=pos_label_str,
-                              min_feature_count=min_feature_count)
+                              min_feature_count=min_feature_count,
+                              sampler=sampler)
         # load the model if it already exists
         else:
             if os.path.exists(modelfile) and not overwrite:
@@ -941,9 +950,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     logger = logging.getLogger(__name__)
 
     # Read configuration
-    (experiment_name, task, feature_hasher, hasher_features, label_col,
-     train_set_name, test_set_name, suffix, featuresets, model_path,
-     do_grid_search, grid_objective, probability, results_path,
+    (experiment_name, task, sampler, feature_hasher, hasher_features,
+     label_col, train_set_name, test_set_name, suffix, featuresets,
+     model_path, do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
      cv_folds, fixed_parameter_list, param_grid_list, featureset_names,
      learners, prediction_dir, log_path, train_path, test_path,
@@ -1034,6 +1043,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args = {}
             job_args["experiment_name"] = experiment_name
             job_args["task"] = task
+            job_args["sampler"] = sampler
             job_args["feature_hasher"] = feature_hasher
             job_args["hasher_features"] = hasher_features
             job_args["job_name"] = job_name

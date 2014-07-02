@@ -48,7 +48,10 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
+from sklearn.kernel_approximation import (RBFSampler, SkewedChi2Sampler,
+                                          AdditiveChi2Sampler)
 
+from scipy.sparse import csr_matrix
 
 # Constants #
 _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
@@ -394,7 +397,8 @@ class Learner(object):
     """
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
-                 model_kwargs=None, pos_label_str=None, min_feature_count=1):
+                 model_kwargs=None, pos_label_str=None, min_feature_count=1,
+                 sampler=None):
         '''
         Initializes a learner object with the specified settings.
         '''
@@ -454,6 +458,14 @@ class Learner(object):
                                 'RandomForestRegressor', 'SGDClassifier',
                                 'SGDRegressor'}:
             self._model_kwargs['random_state'] = 123456789
+
+        self.sampler = None
+        if sampler == 'RBFSampler':
+            self.sampler = RBFSampler(gamma=1, random_state=123456789)
+        elif sampler == 'SkewedChi2Sampler':
+            self.sampler = SkewedChi2Sampler(random_state=123456789)
+        elif sampler == 'AdditiveChi2Sampler':
+            self.sampler = AdditiveChi2Sampler()
 
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
@@ -776,6 +788,20 @@ class Learner(object):
         if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
 
+        # Sampler
+        if self.sampler:
+            logger = logging.getLogger(__name__)
+            logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                xtrain = self.sampler.fit_transform(xtrain.todense())
+                if not self._use_dense_features:
+                    xtrain = csr_matrix(xtrain)
+            else:
+                xtrain = self.sampler.fit_transform(xtrain)
+                if not self._use_dense_features:
+                    xtrain = csr_matrix(xtrain)
+
         # Instantiate an estimator and get the default parameter grid to search
         estimator, default_param_grid = self._create_estimator()
 
@@ -981,6 +1007,19 @@ class Learner(object):
 
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
+
+        # Sampler
+        if self.sampler:
+            logger = logging.getLogger(__name__)
+            logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                logger = logging.getLogger(__name__)
+                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                xtest = self.sampler.fit_transform(xtest.todense())
+                xtest = csr_matrix(xtest)
+            else:
+                xtest = self.sampler.fit_transform(xtest)
+                xtest = csr_matrix(xtest)
 
         # Convert to dense if necessary
         if self._use_dense_features:

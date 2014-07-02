@@ -19,6 +19,7 @@ import re
 import sys
 from collections import OrderedDict
 from io import open
+import logging
 
 import numpy as np
 import scipy.sparse as sp
@@ -298,6 +299,9 @@ def check_specified_cv_folds(numeric_ids):
             grid_score_matches = GRID_RE.findall(outstr)
             assert len(grid_score_matches) == grid_size
             for match_str in grid_score_matches:
+                logger = logging.getLogger(__name__)
+                logger.warn('cad: '+str(match_str))
+                logger.error('cad: '+str(match_str))
                 assert test_func(float(match_str))
 
     # try the same tests for just training (and specifying the folds for the
@@ -1333,3 +1337,289 @@ def test_compute_eval_from_predictions():
 
     assert_almost_equal(scores['pearson'], 0.6197797868009122)
     assert_almost_equal(scores['unweighted_kappa'], 0.2)
+
+
+def test_ablation_cv_sampler():
+    '''
+    Test to validate whether ablation works with cross-validate and samplers
+    '''
+    make_ablation_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation_sampler.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_ablation(config_path, quiet=True)
+
+    # read in the summary file and make sure it has
+    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132 lines
+    with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        all_rows = list(reader)
+        eq_(len(all_rows), 132)
+
+    # make sure there are 6 ablated featuresets * 2 learners = 12 results files
+    num_result_files = len(glob.glob(os.path.join(_my_dir, 'output',
+                                                  'ablation_cv_*.results')))
+    eq_(num_result_files, 12)
+
+
+def test_ablation_cv_all_combos_sampler():
+    '''
+    Test to validate whether ablation works with cross-validate
+    '''
+    make_ablation_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs',
+                                        'test_ablation_sampler.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_ablation(config_path, quiet=True, all_combos=True)
+
+    # read in the summary file and make sure it has
+    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682 lines
+    with open(os.path.join(_my_dir, 'output',
+                           'ablation_cv_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        all_rows = list(reader)
+        eq_(len(all_rows), 682)
+
+    # make sure there are 31 ablated featuresets * 2 learners = 62 results files
+    num_result_files = len(glob.glob(os.path.join(_my_dir,
+                                                  'output',
+                                                  'ablation_cv_*results')))
+    eq_(num_result_files, 62)
+
+
+def test_ablation_cv_feature_hasher_sampler():
+    '''
+    Test to validate whether ablation works with cross-validate
+    and feature_hasher
+    '''
+    make_ablation_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs',
+                                        'test_ablation_feature_hasher_sampler.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_ablation(config_path, quiet=True)
+
+    # read in the summary file and make sure it has
+    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132 lines
+    with open(os.path.join(_my_dir, 'output',
+                           'ablation_cv_feature_hasher_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        all_rows = list(reader)
+        eq_(len(all_rows), 132)
+
+    # make sure there are 6 ablated featuresets * 2 learners = 12 results files
+    num_result_files = len(glob.glob(os.path.join(_my_dir,
+                                                  'output',
+                                                  'ablation_cv_feature_hasher_*.results')))
+    eq_(num_result_files, 12)
+
+
+def test_ablation_cv_feature_hasher_all_combos_sampler():
+    '''
+    Test to validate whether ablation works with cross-validate
+    and feature_hasher
+    '''
+    make_ablation_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs',
+                                        'test_ablation_feature_hasher_sampler.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_ablation(config_path, quiet=True, all_combos=True)
+
+    # read in the summary file and make sure it has
+    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682 lines
+    with open(os.path.join(_my_dir, 'output',
+                           'ablation_cv_feature_hasher_summary.tsv')) as f:
+        reader = csv.DictReader(f, dialect=csv.excel_tab)
+        all_rows = list(reader)
+        eq_(len(all_rows), 682)
+
+    # make sure there are 31 ablated featuresets * 2 learners = 62 results files
+    num_result_files = len(glob.glob(os.path.join(_my_dir,
+                                                  'output',
+                                                  'ablation_cv_feature_hasher_*results')))
+    eq_(num_result_files, 62)
+
+
+def test_sparse_feature_hasher_predict_sampler():
+    '''
+    Test to validate whether predict works with sparse data
+    and feature_hasher
+    '''
+    make_sparse_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs',
+                                        'test_sparse_feature_hasher_sampler.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, quiet=True)
+
+    with open(os.path.join(_my_dir, 'output',
+                           'test_sparse_test_sparse_LogisticRegression.results')) \
+            as f:
+        outstr = f.read()
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
+    assert_almost_equal(logistic_result_score, 0.5)
+
+
+def test_sparse_predict_sampler():
+    '''
+    Test to validate whether predict works with sparse data
+    '''
+    make_sparse_data()
+
+    config_template_path = os.path.join(_my_dir, 'configs',
+                                        'test_sparse_sampler.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, quiet=True)
+
+    with open(os.path.join(_my_dir,
+                           'output', 'test_sparse_test_sparse_LogisticRegression.results')) \
+            as f:
+        outstr = f.read()
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+
+    assert_almost_equal(logistic_result_score, 0.5)
+
+
+def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):
+    make_cv_folds_data(numeric_ids)
+
+    # test_cv_folds1.cfg has prespecified folds and should have ~50% accuracy
+    # test_cv_folds2.cfg doesn't have prespecified folds and >95% accuracy
+    for experiment_name, test_func, grid_size in [('test_cv_folds1_feature_hasher_sampler',
+                                                   lambda x: x < 0.6,
+                                                   3),
+                                                  ('test_cv_folds2_feature_hasher_sampler',
+                                                   lambda x: x > 0.95,
+                                                   10)]:
+        config_template_file = '{}.template.cfg'.format(experiment_name)
+        config_template_path = os.path.join(_my_dir, 'configs',
+                                            config_template_file)
+        config_path = os.path.join(_my_dir,
+                                   fill_in_config_paths(config_template_path))
+
+        # Modify config file to change ids_to_floats depending on numeric_ids
+        # setting
+        with open(config_path, 'r+') as config_template_file:
+            lines = config_template_file.readlines()
+            config_template_file.seek(0)
+            config_template_file.truncate()
+            for line in lines:
+                if line.startswith('ids_to_floats='):
+                    if numeric_ids:
+                        line = 'ids_to_floats=true\n'
+                    else:
+                        line = 'ids_to_floats=false\n'
+                config_template_file.write(line)
+
+        run_configuration(config_path, quiet=True)
+        result_filename = ('{}_test_cv_folds_LogisticRegression.' +
+                           'results').format(experiment_name)
+        with open(os.path.join(_my_dir, 'output', result_filename)) as f:
+            # check held out scores
+            outstr = f.read()
+            score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
+            assert test_func(score)
+
+            grid_score_matches = GRID_RE.findall(outstr)
+            assert len(grid_score_matches) == grid_size
+            for match_str in grid_score_matches:
+                assert test_func(float(match_str))
+
+    # try the same tests for just training (and specifying the folds for the
+    # grid search)
+    dirpath = os.path.join(_my_dir, 'train')
+    suffix = '.jsonlines'
+    featureset = ['test_cv_folds']
+    examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    clf = Learner('LogisticRegression', probability=True)
+    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train',
+                                           'test_cv_folds.csv'))
+    grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
+                                  grid_objective='accuracy', grid_jobs=1)
+    assert grid_search_score < 0.6
+    grid_search_score = clf.train(examples, grid_search_folds=5,
+                                  grid_objective='accuracy', grid_jobs=1)
+    assert grid_search_score > 0.95
+
+
+def check_specified_cv_folds_sampler(numeric_ids):
+    make_cv_folds_data(numeric_ids)
+
+    # test_cv_folds1.cfg has prespecified folds and should have ~50% accuracy
+    # test_cv_folds2.cfg doesn't have prespecified folds and >95% accuracy
+    for experiment_name, test_func, grid_size in [('test_cv_folds1_sampler',
+                                                   lambda x: x < 0.8,
+                                                   3),
+                                                  ('test_cv_folds2_sampler',
+                                                   lambda x: x > 0.95,
+                                                   10)]:
+        config_template_file = '{}.template.cfg'.format(experiment_name)
+        config_template_path = os.path.join(_my_dir, 'configs',
+                                            config_template_file)
+        config_path = os.path.join(_my_dir,
+                                   fill_in_config_paths(config_template_path))
+
+        # Modify config file to change ids_to_floats depending on numeric_ids
+        # setting
+        with open(config_path, 'r+') as config_template_file:
+            lines = config_template_file.readlines()
+            config_template_file.seek(0)
+            config_template_file.truncate()
+            for line in lines:
+                if line.startswith('ids_to_floats='):
+                    if numeric_ids:
+                        line = 'ids_to_floats=true\n'
+                    else:
+                        line = 'ids_to_floats=false\n'
+                config_template_file.write(line)
+
+        run_configuration(config_path, quiet=True)
+        result_filename = ('{}_test_cv_folds_LogisticRegression.' +
+                           'results').format(experiment_name)
+        with open(os.path.join(_my_dir, 'output', result_filename)) as f:
+            # check held out scores
+            outstr = f.read()
+            score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
+            assert test_func(score)
+
+            grid_score_matches = GRID_RE.findall(outstr)
+            assert len(grid_score_matches) == grid_size
+            for match_str in grid_score_matches:
+                logger = logging.getLogger(__name__)
+                logger.info('cad: '+str(match_str))
+                assert test_func(float(match_str))
+
+    # try the same tests for just training (and specifying the folds for the
+    # grid search)
+    dirpath = os.path.join(_my_dir, 'train')
+    suffix = '.jsonlines'
+    featureset = ['test_cv_folds']
+    examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    clf = Learner('LogisticRegression', probability=True)
+    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train',
+                                           'test_cv_folds.csv'))
+    grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
+                                  grid_objective='accuracy', grid_jobs=1)
+    assert grid_search_score < 0.6
+    grid_search_score = clf.train(examples, grid_search_folds=5,
+                                  grid_objective='accuracy', grid_jobs=1)
+    assert grid_search_score > 0.95
+
+
+def test_specified_cv_folds_feature_hasher_sampler():
+    yield check_specified_cv_folds_feature_hasher_sampler, False
+    yield check_specified_cv_folds_feature_hasher_sampler, True
+
+
+def test_specified_cv_folds_sampler():
+    yield check_specified_cv_folds_sampler, False
+    yield check_specified_cv_folds_sampler, True
