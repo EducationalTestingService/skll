@@ -36,13 +36,15 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm.base import BaseLibLinear
 from sklearn.utils import shuffle as sk_shuffle
 # sklearn models: these are used indirectly, so ignore linting messages
-from sklearn.ensemble import (GradientBoostingClassifier,
-                              GradientBoostingRegressor, RandomForestClassifier,
-                              RandomForestRegressor)
+from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
+                              GradientBoostingClassifier,
+                              GradientBoostingRegressor,
+                              RandomForestClassifier, RandomForestRegressor)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor)
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from skll.data import ExamplesTuple
@@ -82,17 +84,33 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                         'SGDRegressor': [{'alpha': [0.000001, 0.00001, 0.0001,
                                                     0.001, 0.01],
                                           'penalty': ['l1', 'l2',
-                                                      'elasticnet']}]}
+                                                      'elasticnet']}],
+                        'AdaBoostClassifier': [{'learning_rate': [0.01, 0.1,
+                                                                  1.0, 10.0,
+                                                                  100.0]}],
+                        'AdaBoostRegressor': [{'learning_rate': [0.01, 0.1,
+                                                                 1.0, 10.0,
+                                                                 100.0]}],
+                        'KNeighborsClassifier': [{'n_neighbors': [5, 50, 500],
+                                                  'weights': ['uniform',
+                                                              'distance']}],
+                        'KNeighborsRegressor': [{'n_neighbors': [5, 50, 500],
+                                                 'weights': ['uniform',
+                                                             'distance']}]}
 
-_REGRESSION_MODELS = frozenset(['DecisionTreeRegressor', 'ElasticNet',
-                                'GradientBoostingRegressor', 'Lasso',
+_REGRESSION_MODELS = frozenset(['AdaBoostRegressor', 'DecisionTreeRegressor',
+                                'ElasticNet', 'GradientBoostingRegressor',
+                                'KNeighborsRegressor', 'Lasso',
                                 'LinearRegression', 'RandomForestRegressor',
                                 'Ridge', 'SVR', 'SGDRegressor'])
 
-_REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
+_REQUIRES_DENSE = frozenset(['AdaBoostClassifier', 'AdaBoostRegressor',
+                             'DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
-                             'GradientBoostingRegressor', 'MultinomialNB',
-                             'RandomForestClassifier', 'RandomForestRegressor'])
+                             'GradientBoostingRegressor',
+                             'KNeighborsClassifier', 'KNeighborsRegressor',
+                             'MultinomialNB', 'RandomForestClassifier',
+                             'RandomForestRegressor'])
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
@@ -315,6 +333,11 @@ def rescaled(cls):
 
 # Rescaled regressors
 @rescaled
+class RescaledAdaBoostRegressor(AdaBoostRegressor):
+    pass
+
+
+@rescaled
 class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
     pass
 
@@ -439,7 +462,8 @@ class Learner(object):
         elif self._model_type in {'RandomForestClassifier',
                                   'RandomForestRegressor',
                                   'GradientBoostingClassifier',
-                                  'GradientBoostingRegressor'}:
+                                  'GradientBoostingRegressor',
+                                  'AdaBoostClassifier', 'AdaBoostRegressor'}:
             self._model_kwargs['n_estimators'] = 500
         elif self._model_type == 'SVR':
             self._model_kwargs['cache_size'] = 1000
@@ -452,7 +476,8 @@ class Learner(object):
                                 'GradientBoostingRegressor',
                                 'DecisionTreeRegressor',
                                 'RandomForestRegressor', 'SGDClassifier',
-                                'SGDRegressor'}:
+                                'SGDRegressor', 'AdaBoostRegressor',
+                                'AdaBoostClassifier'}:
             self._model_kwargs['random_state'] = 123456789
 
         if model_kwargs:
