@@ -353,6 +353,11 @@ class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
 
 
 @rescaled
+class RescaledKNeighborsRegressor(KNeighborsRegressor):
+    pass
+
+
+@rescaled
 class RescaledLasso(Lasso):
     pass
 
