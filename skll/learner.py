@@ -41,9 +41,10 @@ from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
                               GradientBoostingClassifier,
                               GradientBoostingRegressor,
                               RandomForestClassifier, RandomForestRegressor)
-from sklearn.linear_model import (ElasticNet, Lasso, LinearModel,
-                                  LinearRegression, LogisticRegression, Ridge,
-                                  SGDClassifier, SGDRegressor)
+from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
+                                  LogisticRegression, Ridge, SGDClassifier,
+                                  SGDRegressor)
+from sklearn.linear_model.base import LinearModel
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import LinearSVC, SVC, SVR
