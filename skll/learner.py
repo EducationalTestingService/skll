@@ -52,7 +52,8 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
-
+from sklearn.kernel_approximation import (RBFSampler, SkewedChi2Sampler,
+                                          AdditiveChi2Sampler, Nystroem)
 
 # Constants #
 _DEFAULT_PARAM_GRIDS = {'AdaBoostClassifier': [{'learning_rate': [0.01, 0.1,
@@ -428,7 +429,8 @@ class Learner(object):
     """
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
-                 model_kwargs=None, pos_label_str=None, min_feature_count=1):
+                 model_kwargs=None, pos_label_str=None, min_feature_count=1,
+                 sampler=None, sampler_kwargs=None):
         '''
         Initializes a learner object with the specified settings.
         '''
@@ -444,6 +446,7 @@ class Learner(object):
         self.feat_selector = None
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
+        self._sampler_kwargs = {}
         if model_type.startswith('Rescaled'):
             self._model_type = model_type.replace('Rescaled', '', 1)
             self._rescale = True
@@ -491,6 +494,14 @@ class Learner(object):
                                 'AdaBoostClassifier'}:
             self._model_kwargs['random_state'] = 123456789
 
+        if sampler_kwargs:
+            self._sampler_kwargs.update(sampler_kwargs)
+        if sampler in {'Nystroem', 'RBFSampler', 'SkewedChi2Sampler'}:
+            self._sampler_kwargs['random_state'] = 123456789
+        self.sampler = None
+        if sampler:
+            self.sampler = globals()[sampler](**self._sampler_kwargs)
+
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
 
@@ -508,6 +519,8 @@ class Learner(object):
         # Check that versions are compatible. (Currently, this just checks
         # that major versions match)
         elif skll_version[0] == VERSION[0]:
+            if not hasattr(learner, 'sampler'):
+                learner.sampler = None
             return learner
         else:
             raise ValueError(("{} stored in pickle file {} was " +
@@ -772,6 +785,7 @@ class Learner(object):
         # replicable
         rand_seed = 123456789
         np.random.seed(rand_seed)
+        logger = logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
@@ -810,9 +824,19 @@ class Learner(object):
                              ' Naive Bayes, because it can generate some' +
                              ' negative values and Naive Bayes can not' +
                              ' manage them. ')
+
         # Scale features if necessary
         if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
+
+        # Sampler
+        if self.sampler:
+            logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                xtrain = self.sampler.fit_transform(xtrain.todense())
+            else:
+                xtrain = self.sampler.fit_transform(xtrain)
 
         # Instantiate an estimator and get the default parameter grid to search
         estimator, default_param_grid = self._create_estimator()
@@ -997,6 +1021,7 @@ class Learner(object):
         :return: The predictions returned by the learner.
         :rtype: array
         '''
+        logger = logging.getLogger(__name__)
         example_ids = examples.ids
 
         # Need to do some transformations so the features are in the right
@@ -1029,8 +1054,17 @@ class Learner(object):
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
 
+        # Sampler
+        if self.sampler:
+            logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                xtest = self.sampler.fit_transform(xtest.todense())
+            else:
+                xtest = self.sampler.fit_transform(xtest)
+
         # Convert to dense if necessary
-        if self._use_dense_features:
+        if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
                 xtest = xtest.todense()
             except MemoryError:
@@ -1055,7 +1089,6 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logger = logging.getLogger(__name__)
             logger.error("Model type: %s\nModel: %s\nProbability: %s\n",
                          self._model_type, self._model, self.probability)
             raise e
