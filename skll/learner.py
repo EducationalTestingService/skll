@@ -44,6 +44,7 @@ from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor)
+from sklearn.linear_model.base import LinearModel
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import LinearSVC, SVC, SVR
@@ -546,11 +547,11 @@ class Learner(object):
     @property
     def model_params(self):
         '''
-        Model parameters (i.e., weights) for Ridge regression and
-        liblinear models.
+        Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
+        regression and liblinear models.
         '''
         res = {}
-        if (isinstance(self._model, Ridge) or
+        if (isinstance(self._model, LinearModel) or
                 (isinstance(self._model, SVR) and
                  self._model.kernel == 'linear')):
             # also includes RescaledRidge, RescaledSVR
