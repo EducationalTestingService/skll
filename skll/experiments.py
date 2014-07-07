@@ -43,7 +43,7 @@ else:
 
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
-_VALID_SAMPLERS = frozenset(['RBFSampler', 'SkewedChi2Sampler',
+_VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', 'None'])
 
 # Map from learner short names to full names
@@ -212,6 +212,7 @@ def _setup_config_parser(config_path):
                                         'objective': "f1_score_micro",
                                         'probability': 'False',
                                         'fixed_parameters': '[]',
+                                        'sampler_parameters': '[]',
                                         'param_grids': '[]',
                                         'pos_label_str': '',
                                         'featureset_names': '[]',
@@ -250,9 +251,8 @@ def _parse_config_file(config_path):
     # Input
     sampler = config.get("Input", "sampler")
     if sampler not in _VALID_SAMPLERS:
-        raise ValueError('sampler should have one of the following values: ' +
-                         'RBFSampler, SkewedChi2Sampler or AdditiveChi2Sampler.')
-
+        raise ValueError('An invalid sample was specified: {}. '.format(sampler) +
+                         'Valid samplers are: {}'.format(', '.join(_VALID_SAMPLERS)))
     hasher_features = None
     feature_hasher = config.getboolean("Input", "feature_hasher")
     if feature_hasher:
@@ -294,6 +294,8 @@ def _parse_config_file(config_path):
 
     fixed_parameter_list = json.loads(_fix_json(config.get("Input",
                                                            "fixed_parameters")))
+    fixed_sampler_parameters = json.loads(_fix_json(config.get("Input",
+                                                               "sampler_parameters")))
     param_grid_list = json.loads(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
 
@@ -412,13 +414,14 @@ def _parse_config_file(config_path):
     train_set_name = os.path.basename(train_path)
     test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-    return (experiment_name, task, sampler, feature_hasher, hasher_features,
-            label_col, train_set_name, test_set_name, suffix, featuresets,
-            model_path, do_grid_search, grid_objective, probability,
-            results_path, pos_label_str, feature_scaling, min_feature_count,
-            grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
-            featureset_names, learners, prediction_dir, log_path, train_path,
-            test_path, ids_to_floats, class_map)
+    return (experiment_name, task, sampler, fixed_sampler_parameters,
+            feature_hasher, hasher_features, label_col, train_set_name,
+            test_set_name, suffix, featuresets, model_path, do_grid_search,
+            grid_objective, probability, results_path, pos_label_str,
+            feature_scaling, min_feature_count, grid_search_jobs, cv_folds,
+            fixed_parameter_list, param_grid_list, featureset_names,
+            learners, prediction_dir, log_path, train_path, test_path,
+            ids_to_floats, class_map)
 
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
@@ -571,6 +574,7 @@ def _classify_featureset(args):
     probability = args.pop("probability")
     results_path = args.pop("results_path")
     fixed_parameters = args.pop("fixed_parameters")
+    sampler_parameters = args.pop("sampler_parameters")
     param_grid = args.pop("param_grid")
     pos_label_str = args.pop("pos_label_str")
     overwrite = args.pop("overwrite")
@@ -627,7 +631,8 @@ def _classify_featureset(args):
                               model_kwargs=fixed_parameters,
                               pos_label_str=pos_label_str,
                               min_feature_count=min_feature_count,
-                              sampler=sampler)
+                              sampler=sampler,
+                              sampler_kwargs=sampler_parameters)
         # load the model if it already exists
         else:
             if os.path.exists(modelfile) and not overwrite:
@@ -951,12 +956,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     logger = logging.getLogger(__name__)
 
     # Read configuration
-    (experiment_name, task, sampler, feature_hasher, hasher_features,
-     label_col, train_set_name, test_set_name, suffix, featuresets,
-     model_path, do_grid_search, grid_objective, probability, results_path,
-     pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
-     cv_folds, fixed_parameter_list, param_grid_list, featureset_names,
-     learners, prediction_dir, log_path, train_path, test_path,
+    (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
+     hasher_features, label_col, train_set_name, test_set_name, suffix,
+     featuresets, model_path, do_grid_search, grid_objective, probability,
+     results_path, pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
+     featureset_names, learners, prediction_dir, log_path, train_path, test_path,
      ids_to_floats, class_map) = _parse_config_file(config_file)
 
     # Check if we have gridmap
@@ -1062,6 +1067,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["log_path"] = temp_logfile
             job_args["probability"] = probability
             job_args["results_path"] = results_path
+            job_args["sampler_parameters"] = (fixed_sampler_parameters
+                                              if fixed_sampler_parameters
+                                              else dict())
             job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
                                             if fixed_parameter_list
                                             else dict())

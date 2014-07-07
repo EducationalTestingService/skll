@@ -1483,7 +1483,7 @@ def test_sparse_predict_sampler():
         outstr = f.read()
         logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    assert_almost_equal(logistic_result_score, 0.5)
+    assert_almost_equal(logistic_result_score, 0.5, delta=0.025)
 
 
 def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):

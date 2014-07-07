@@ -49,9 +49,7 @@ from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
 from sklearn.kernel_approximation import (RBFSampler, SkewedChi2Sampler,
-                                          AdditiveChi2Sampler)
-
-from scipy.sparse import csr_matrix
+                                          AdditiveChi2Sampler, Nystroem)
 
 # Constants #
 _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
@@ -398,7 +396,7 @@ class Learner(object):
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
                  model_kwargs=None, pos_label_str=None, min_feature_count=1,
-                 sampler=None):
+                 sampler=None, sampler_kwargs=None):
         '''
         Initializes a learner object with the specified settings.
         '''
@@ -414,6 +412,7 @@ class Learner(object):
         self.feat_selector = None
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
+        self._sampler_kwargs = {}
         if model_type.startswith('Rescaled'):
             self._model_type = model_type.replace('Rescaled', '', 1)
             self._rescale = True
@@ -459,13 +458,13 @@ class Learner(object):
                                 'SGDRegressor'}:
             self._model_kwargs['random_state'] = 123456789
 
+        if sampler_kwargs:
+            self._sampler_kwargs.update(sampler_kwargs)
+        if sampler in {'Nystroem', 'RBFSampler', 'SkewedChi2Sampler'}:
+            self._sampler_kwargs['random_state'] = 123456789
         self.sampler = None
-        if sampler == 'RBFSampler':
-            self.sampler = RBFSampler(gamma=1, random_state=123456789)
-        elif sampler == 'SkewedChi2Sampler':
-            self.sampler = SkewedChi2Sampler(random_state=123456789)
-        elif sampler == 'AdditiveChi2Sampler':
-            self.sampler = AdditiveChi2Sampler()
+        if sampler:
+            self.sampler = globals()[sampler](**self._sampler_kwargs)
 
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
@@ -483,6 +482,8 @@ class Learner(object):
         # Check that versions are compatible. (Currently, this just checks
         # that major versions match)
         elif skll_version[0] == VERSION[0]:
+            if not hasattr(learner, 'sampler'):
+                learner.sampler = None
             return learner
         else:
             raise ValueError(("{} stored in pickle file {} was " +
