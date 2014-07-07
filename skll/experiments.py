@@ -44,7 +44,7 @@ else:
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
-                             'AdditiveChi2Sampler', 'None'])
+                             'AdditiveChi2Sampler', ''])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -206,7 +206,7 @@ def _setup_config_parser(config_path):
                                         'results': '',
                                         'predictions': '',
                                         'models': '',
-                                        'sampler': 'None',
+                                        'sampler': '',
                                         'feature_hasher': 'False',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
