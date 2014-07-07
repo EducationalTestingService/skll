@@ -177,6 +177,37 @@ Input
         are required to be the same in all of the feature files, and a
         ``ValueError`` will be raised if this is not the case.
 
+    **sampler** *(Optional)*
+        It performs a non-linear transformations of the input, which can serve
+        as a basis for linear classification or other algorithms. Valid options
+        are: ``Nystroem``, ``RBFSampler``, ``SkewedChi2Sampler`` and
+        ``AdditiveChi2Sampler``. For addition information see
+        `the scikit-learn documentation <http://scikit-learn.org/stable/modules/kernel_approximation.html>`_.
+
+    **sampler_parameters** *(Optional)*
+        dict containing parameters you want to have fixed for  the ``sampler``.
+        Any empty ones will be ignored (and the defaults will be used).
+
+        The default fixed parameters (beyond those that scikit-learn sets) are:
+
+        *Nystroem*
+
+        .. code-block:: python
+
+           {'random_state': 123456789}
+
+        *RBFSampler*
+
+        .. code-block:: python
+
+           {'random_state': 123456789}
+
+        *SkewedChi2Sampler*
+
+        .. code-block:: python
+
+           {'random_state': 123456789}
+
     **feature_hasher** *(Optional)*
         If "true", this enables a high-speed, low-memory vectorizer that uses
         feature hashing for converting feature dictionaries into NumPy arrays
