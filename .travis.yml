@@ -23,7 +23,7 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - mv travis/.condarc $HOME
-  - export PATH=/home/travis/anaconda/bin:$PATH
+  - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda update --yes conda
 install:
   - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy beautiful-soup six scikit-learn joblib prettytable python-coveralls
