@@ -22,8 +22,8 @@ before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - conda config --add channels https://conda.binstar.org/dan_blanchard
   - export PATH=/home/travis/miniconda3/bin:$PATH
+  - conda config --add channels https://conda.binstar.org/dan_blanchard
   - conda update --yes conda
 install:
   - conda install --yes pip python=$TRAVIS_PYTHON_VERSION numpy scipy beautiful-soup six scikit-learn joblib prettytable python-coveralls
