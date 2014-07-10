@@ -27,8 +27,9 @@ __all__ = ['Learner', 'load_examples', 'kappa', 'kendall_tau', 'spearman',
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll
-_scorers = {'f1_score_micro': make_scorer(f1_score, average='micro'),
-            'f1_score_macro': make_scorer(f1_score, average='macro'),
+_scorers = {'f1_score_micro': make_scorer(f1_score, average='micro', pos_label=None),
+            'f1_score_macro': make_scorer(f1_score, average='macro', pos_label=None),
+            'f1_score_weighted': make_scorer(f1_score, average='weighted', pos_label=None),
             'f1_score_least_frequent': make_scorer(f1_score_least_frequent),
             'pearson': make_scorer(pearson),
             'spearman': make_scorer(spearman),
