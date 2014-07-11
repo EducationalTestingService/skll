@@ -1,5 +1,0 @@
-# a condarc file should be placed in $HOME/.condarc
-
-channels:
-  - https://conda.binstar.org/dan_blanchard
-  - defaults
