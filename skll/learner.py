@@ -7,6 +7,7 @@ Provides easy-to-use wrapper around scikit-learn.
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
 '''
+# pylint: disable=F0401,W0622,E1002,E1101
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -23,7 +24,6 @@ import numpy as np
 import scipy.sparse as sp
 from six import iteritems, itervalues
 from six import string_types
-from six.moves import cPickle as pickle
 from six.moves import xrange as range
 from six.moves import zip
 from sklearn.cross_validation import KFold, StratifiedKFold
@@ -36,45 +36,64 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm.base import BaseLibLinear
 from sklearn.utils import shuffle as sk_shuffle
 # sklearn models: these are used indirectly, so ignore linting messages
-from sklearn.ensemble import (GradientBoostingClassifier,
-                              GradientBoostingRegressor, RandomForestClassifier,
-                              RandomForestRegressor)
+# pylint: disable=F0401,W0611
+from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
+                              GradientBoostingClassifier,
+                              GradientBoostingRegressor,
+                              RandomForestClassifier, RandomForestRegressor)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor)
+from sklearn.linear_model.base import LinearModel
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
-
+from sklearn.kernel_approximation import (RBFSampler, SkewedChi2Sampler,
+                                          AdditiveChi2Sampler, Nystroem)
 
 # Constants #
-_DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
-                                                      100.0]}],
-                        'LinearSVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'SVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                                 'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'MultinomialNB': [{'alpha': [0.1, 0.25, 0.5, 0.75,
-                                                     1.0]}],
+_DEFAULT_PARAM_GRIDS = {'AdaBoostClassifier': [{'learning_rate': [0.01, 0.1,
+                                                                  1.0, 10.0,
+                                                                  100.0]}],
+                        'AdaBoostRegressor': [{'learning_rate': [0.01, 0.1,
+                                                                 1.0, 10.0,
+                                                                 100.0]}],
                         'DecisionTreeClassifier': [{'max_features': ["auto",
                                                                      None]}],
                         'DecisionTreeRegressor': [{'max_features': ["auto",
                                                                     None]}],
+                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
+                                                  100.0]}],
+                        'GradientBoostingClassifier': [{'max_depth':
+                                                       [1, 3, 5]}],
+                        'GradientBoostingRegressor': [{'max_depth': [1, 3,
+                                                                     5]}],
+                        'KNeighborsClassifier': [{'n_neighbors': [1, 5, 10,
+                                                                  100],
+                                                  'weights': ['uniform',
+                                                              'distance']}],
+                        'KNeighborsRegressor': [{'n_neighbors': [1, 5, 10,
+                                                                 100],
+                                                 'weights': ['uniform',
+                                                             'distance']}],
+                        'Lasso': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'LinearRegression': [{}],
+                        'LinearSVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
+                                                      100.0]}],
+                        'SVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+                                 'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'MultinomialNB': [{'alpha': [0.1, 0.25, 0.5, 0.75,
+                                                     1.0]}],
                         'RandomForestClassifier': [{'max_depth': [1, 5, 10,
                                                                   None]}],
                         'RandomForestRegressor': [{'max_depth': [1, 5, 10,
                                                                  None]}],
-                        'GradientBoostingClassifier': [{'max_depth':
-                                                       [1, 3, 5]}],
-                        'GradientBoostingRegressor': [{'max_depth': [1, 3, 5]}],
                         'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'Lasso': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
-                                                  100.0]}],
-                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'LinearRegression': [{}],
                         'SGDClassifier': [{'alpha': [0.000001, 0.00001, 0.0001,
                                                      0.001, 0.01],
                                            'penalty': ['l1', 'l2',
@@ -82,21 +101,27 @@ _DEFAULT_PARAM_GRIDS = {'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
                         'SGDRegressor': [{'alpha': [0.000001, 0.00001, 0.0001,
                                                     0.001, 0.01],
                                           'penalty': ['l1', 'l2',
-                                                      'elasticnet']}]}
+                                                      'elasticnet']}],
+                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
 
-_REGRESSION_MODELS = frozenset(['DecisionTreeRegressor', 'ElasticNet',
-                                'GradientBoostingRegressor', 'Lasso',
+_REGRESSION_MODELS = frozenset(['AdaBoostRegressor', 'DecisionTreeRegressor',
+                                'ElasticNet', 'GradientBoostingRegressor',
+                                'KNeighborsRegressor', 'Lasso',
                                 'LinearRegression', 'RandomForestRegressor',
                                 'Ridge', 'SVR', 'SGDRegressor'])
 
-_REQUIRES_DENSE = frozenset(['DecisionTreeClassifier', 'DecisionTreeRegressor',
+_REQUIRES_DENSE = frozenset(['AdaBoostClassifier', 'AdaBoostRegressor',
+                             'DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
-                             'GradientBoostingRegressor', 'MultinomialNB',
-                             'RandomForestClassifier', 'RandomForestRegressor'])
+                             'GradientBoostingRegressor',
+                             'KNeighborsClassifier', 'KNeighborsRegressor',
+                             'MultinomialNB', 'RandomForestClassifier',
+                             'RandomForestRegressor'])
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
+# pylint: disable=W0223,R0903
 class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
     '''
     Version of LeaveOneLabelOut cross-validation iterator that only outputs
@@ -315,6 +340,11 @@ def rescaled(cls):
 
 # Rescaled regressors
 @rescaled
+class RescaledAdaBoostRegressor(AdaBoostRegressor):
+    pass
+
+
+@rescaled
 class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
     pass
 
@@ -326,6 +356,11 @@ class RescaledElasticNet(ElasticNet):
 
 @rescaled
 class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
+    pass
+
+
+@rescaled
+class RescaledKNeighborsRegressor(KNeighborsRegressor):
     pass
 
 
@@ -394,7 +429,8 @@ class Learner(object):
     """
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
-                 model_kwargs=None, pos_label_str=None, min_feature_count=1):
+                 model_kwargs=None, pos_label_str=None, min_feature_count=1,
+                 sampler=None, sampler_kwargs=None):
         '''
         Initializes a learner object with the specified settings.
         '''
@@ -410,6 +446,7 @@ class Learner(object):
         self.feat_selector = None
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
+        self._sampler_kwargs = {}
         if model_type.startswith('Rescaled'):
             self._model_type = model_type.replace('Rescaled', '', 1)
             self._rescale = True
@@ -439,7 +476,8 @@ class Learner(object):
         elif self._model_type in {'RandomForestClassifier',
                                   'RandomForestRegressor',
                                   'GradientBoostingClassifier',
-                                  'GradientBoostingRegressor'}:
+                                  'GradientBoostingRegressor',
+                                  'AdaBoostClassifier', 'AdaBoostRegressor'}:
             self._model_kwargs['n_estimators'] = 500
         elif self._model_type == 'SVR':
             self._model_kwargs['cache_size'] = 1000
@@ -452,8 +490,17 @@ class Learner(object):
                                 'GradientBoostingRegressor',
                                 'DecisionTreeRegressor',
                                 'RandomForestRegressor', 'SGDClassifier',
-                                'SGDRegressor'}:
+                                'SGDRegressor', 'AdaBoostRegressor',
+                                'AdaBoostClassifier'}:
             self._model_kwargs['random_state'] = 123456789
+
+        if sampler_kwargs:
+            self._sampler_kwargs.update(sampler_kwargs)
+        if sampler in {'Nystroem', 'RBFSampler', 'SkewedChi2Sampler'}:
+            self._sampler_kwargs['random_state'] = 123456789
+        self.sampler = None
+        if sampler:
+            self.sampler = globals()[sampler](**self._sampler_kwargs)
 
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
@@ -461,7 +508,8 @@ class Learner(object):
     @classmethod
     def from_file(cls, learner_path):
         '''
-        :returns: New instance of Learner from the pickle at the specified path.
+        :returns: New instance of Learner from the pickle at the specified
+                  path.
         '''
         skll_version, learner = joblib.load(learner_path)
         # Check that we've actually loaded a Learner (or sub-class)
@@ -471,6 +519,8 @@ class Learner(object):
         # Check that versions are compatible. (Currently, this just checks
         # that major versions match)
         elif skll_version[0] == VERSION[0]:
+            if not hasattr(learner, 'sampler'):
+                learner.sampler = None
             return learner
         else:
             raise ValueError(("{} stored in pickle file {} was " +
@@ -510,11 +560,11 @@ class Learner(object):
     @property
     def model_params(self):
         '''
-        Model parameters (i.e., weights) for Ridge regression and
-        liblinear models.
+        Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
+        regression and liblinear models.
         '''
         res = {}
-        if (isinstance(self._model, Ridge) or
+        if (isinstance(self._model, LinearModel) or
                 (isinstance(self._model, SVR) and
                  self._model.kernel == 'linear')):
             # also includes RescaledRidge, RescaledSVR
@@ -535,7 +585,8 @@ class Learner(object):
                 logger = logging.getLogger(__name__)
                 logger.warning('correcting SVR coefficients because of ' +
                                'scikit-learn bug ' +
-                               '(https://github.com/scikit-learn/scikit-learn/issues/2933).')
+                               '(https://github.com/scikit-learn/scikit-' +
+                               'learn/issues/2933).')
 
             # inverse transform to get indices for before feature selection
             coef = self.feat_selector.inverse_transform(coef)[0]
@@ -734,6 +785,7 @@ class Learner(object):
         # replicable
         rand_seed = 123456789
         np.random.seed(rand_seed)
+        logger = logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
@@ -763,18 +815,28 @@ class Learner(object):
                 else:
                     reason = ('{} feature scaling requires a dense ' +
                               'matrix.').format(self._feature_scaling)
-                raise MemoryError('Ran out of memory when converting training' +
-                                  ' data to dense. This was required because ' +
-                                  reason)
+                raise MemoryError('Ran out of memory when converting ' +
+                                  'training data to dense. This was required' +
+                                  ' because ' + reason)
 
         if feature_hasher and (self._model_type == 'MultinomialNB'):
             raise ValueError('It is no possible to use feature_hasher with' +
                              ' Naive Bayes, because it can generate some' +
                              ' negative values and Naive Bayes can not' +
                              ' manage them. ')
+
         # Scale features if necessary
         if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
+
+        # Sampler
+        if self.sampler:
+            logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                xtrain = self.sampler.fit_transform(xtrain.todense())
+            else:
+                xtrain = self.sampler.fit_transform(xtrain)
 
         # Instantiate an estimator and get the default parameter grid to search
         estimator, default_param_grid = self._create_estimator()
@@ -909,7 +971,8 @@ class Learner(object):
                 result_dict['descriptive'][table_label]['max'] = max(y)
                 result_dict['descriptive'][table_label]['avg'] = np.mean(y)
                 result_dict['descriptive'][table_label]['std'] = np.std(y)
-            result_dict['pearson'] = SCORERS['pearson']._score_func(ytest, yhat)
+            result_dict['pearson'] = SCORERS['pearson']._score_func(ytest,
+                                                                    yhat)
             res = (None, None, result_dict, self._model.get_params(),
                    grid_score)
         else:
@@ -919,18 +982,16 @@ class Learner(object):
                                         labels=list(range(num_labels)))
             # Calculate metrics
             overall_accuracy = accuracy_score(ytest, yhat)
-            result_matrix = precision_recall_fscore_support(ytest,
-                                                            yhat,
-                                                            labels=list(range(num_labels)),
-                                                            average=None)
+            result_matrix = precision_recall_fscore_support(
+                ytest, yhat, labels=list(range(num_labels)), average=None)
 
             # Store results
             result_dict = defaultdict(dict)
             for actual_class in sorted(self.label_list):
-                c_num = self.label_dict[actual_class]
-                result_dict[actual_class]["Precision"] = result_matrix[0][c_num]
-                result_dict[actual_class]["Recall"] = result_matrix[1][c_num]
-                result_dict[actual_class]["F-measure"] = result_matrix[2][c_num]
+                col = self.label_dict[actual_class]
+                result_dict[actual_class]["Precision"] = result_matrix[0][col]
+                result_dict[actual_class]["Recall"] = result_matrix[1][col]
+                result_dict[actual_class]["F-measure"] = result_matrix[2][col]
 
             res = (conf_mat.tolist(), overall_accuracy, result_dict,
                    self._model.get_params(), grid_score)
@@ -960,30 +1021,50 @@ class Learner(object):
         :return: The predictions returned by the learner.
         :rtype: array
         '''
+        logger = logging.getLogger(__name__)
         example_ids = examples.ids
 
         # Need to do some transformations so the features are in the right
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
         if feature_hasher:
-            if self.feat_vectorizer.dtype == examples.feat_vectorizer.dtype \
-                    and self.feat_vectorizer.input_type == examples.feat_vectorizer.input_type \
-                    and self.feat_vectorizer.n_features == examples.feat_vectorizer.n_features \
-                    and self.feat_vectorizer.non_negative == examples.feat_vectorizer.non_negative:
+            self_feat_vec_tuple = (self.feat_vectorizer.dtype,
+                                   self.feat_vectorizer.input_type,
+                                   self.feat_vectorizer.n_features,
+                                   self.feat_vectorizer.non_negative)
+            example_feat_vec_tuple = (examples.feat_vectorizer.dtype,
+                                      examples.feat_vectorizer.input_type,
+                                      examples.feat_vectorizer.n_features,
+                                      examples.feat_vectorizer.non_negative)
+
+            if self_feat_vec_tuple == example_feat_vec_tuple:
                 xtest = examples.features
             else:
-                xtest = self.feat_vectorizer.transform(examples.feat_vectorizer.inverse_transform(examples.features))
+                xtest = self.feat_vectorizer.transform(
+                    examples.feat_vectorizer.inverse_transform(
+                        examples.features))
         else:
             if self.feat_vectorizer == examples.feat_vectorizer:
                 xtest = examples.features
             else:
-                xtest = self.feat_vectorizer.transform(examples.feat_vectorizer.inverse_transform(examples.features))
+                xtest = self.feat_vectorizer.transform(
+                    examples.feat_vectorizer.inverse_transform(
+                        examples.features))
 
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
 
+        # Sampler
+        if self.sampler:
+            logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                xtest = self.sampler.fit_transform(xtest.todense())
+            else:
+                xtest = self.sampler.fit_transform(xtest)
+
         # Convert to dense if necessary
-        if self._use_dense_features:
+        if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
                 xtest = xtest.todense()
             except MemoryError:
@@ -994,7 +1075,7 @@ class Learner(object):
                     reason = ('{} feature scaling requires a dense ' +
                               'matrix.').format(self._feature_scaling)
                 raise MemoryError('Ran out of memory when converting test ' +
-                                  ' data to dense. This was required because ' +
+                                  'data to dense. This was required because ' +
                                   reason)
 
         # Scale xtest if necessary
@@ -1008,7 +1089,6 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logger = logging.getLogger(__name__)
             logger.error("Model type: %s\nModel: %s\nProbability: %s\n",
                          self._model_type, self._model, self.probability)
             raise e
@@ -1148,14 +1228,15 @@ class Learner(object):
                                         classes=examples.classes[train_index],
                                         features=examples.features[train_index],
                                         feat_vectorizer=examples.feat_vectorizer)
-            grid_search_scores.append(self.train(train_tuple,
-                                                 grid_search_folds=grid_search_folds,
-                                                 grid_search=grid_search,
-                                                 grid_objective=grid_objective,
-                                                 param_grid=param_grid,
-                                                 grid_jobs=grid_jobs,
-                                                 shuffle=False,
-                                                 feature_hasher=feature_hasher))
+            grid_search_score = self.train(train_tuple,
+                                           grid_search_folds=grid_search_folds,
+                                           grid_search=grid_search,
+                                           grid_objective=grid_objective,
+                                           param_grid=param_grid,
+                                           grid_jobs=grid_jobs,
+                                           shuffle=False,
+                                           feature_hasher=feature_hasher)
+            grid_search_scores.append(grid_search_score)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
 
