@@ -7,3 +7,4 @@ PrettyTable
 beautifulsoup4
 numpy
 scipy
+joblib

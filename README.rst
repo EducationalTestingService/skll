@@ -16,9 +16,9 @@ SciKit-Learn Laboratory
    :target: https://crate.io/packages/skll
    :alt: Latest version on PyPI
 
-.. image:: https://d2weczhvl823v0.cloudfront.net/EducationalTestingService/skll/trend.png
-   :alt: Bitdeli badge
-   :target: https://bitdeli.com/free
+.. image:: https://zenodo.org/badge/3709/EducationalTestingService/skll.png
+   :target: http://dx.doi.org/10.5281/zenodo.10729
+   :alt: DOI for citing SKLL
 
 This Python package provides utilities to make it easier to run
 machine learning experiments with scikit-learn.
