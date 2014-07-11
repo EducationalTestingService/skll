@@ -16,8 +16,8 @@ SciKit-Learn Laboratory
    :target: https://crate.io/packages/skll
    :alt: Latest version on PyPI
 
-.. image:: https://zenodo.org/badge/3709/EducationalTestingService/skll.png
-   :target: http://dx.doi.org/10.5281/zenodo.10729
+.. image:: https://zenodo.org/badge/doi/10.5281/zenodo.10849.png
+   :target: http://dx.doi.org/10.5281/zenodo.10849
    :alt: DOI for citing SKLL
 
 This Python package provides utilities to make it easier to run
