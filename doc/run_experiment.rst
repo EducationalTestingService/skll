@@ -364,8 +364,11 @@ Tuning
             *   *accuracy*: Overall `accuracy <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`_
             *   *precision*: `Precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`_
             *   *recall*: `Recall <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`_
+            *   *f1*: The default scikit-learn `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
+                (F1 of the positive class for binary classification, or the weighted average F1 for multiclass classification)
             *   *f1_score_micro*: Micro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
             *   *f1_score_macro*: Macro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
+            *   *f1_score_weighted*: Weighted average `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
             *   *f1_score_least_frequent*: F1 score of the least frequent class. The
                 least frequent class may vary from fold to fold for certain data
                 distributions.
