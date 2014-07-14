@@ -323,26 +323,27 @@ Input
 
            {'cache_size': 1000, 'kernel': b'linear'}
 
-        *Note*: This option helps us to manage the case of imbalance data sets
-        with the parameter ``class_weight`` for the classifiers: ``SVC``,
-        ``LogisticRegression``, ``LinearSVC`` and ``SGDClassifier``.
+        .. note::
+            This option helps us to manage the case of imbalance data sets
+            with the parameter ``class_weight`` for the classifiers: ``SVC``,
+            ``LogisticRegression``, ``LinearSVC`` and ``SGDClassifier``.
 
-        Two possible options are available. The first one with an 'auto' option that
-        uses the values of y (the classes) to automatically adjust weights inversely
-        proportional to class frequencies, as shown in the following code:
+            Two possible options are available. The first one with an 'auto' option that
+            uses the values of y (the classes) to automatically adjust weights inversely
+            proportional to class frequencies, as shown in the following code:
 
-        .. code-block:: python
+            .. code-block:: python
 
-           {'class_weight': 'auto'}
+               {'class_weight': 'auto'}
 
-        And the second option allows you to assign an specific weight per each class.
-        The default weight per class is 1. An example could be:
+            And the second option allows you to assign an specific weight per each class.
+            The default weight per class is 1. An example could be:
 
-        .. code-block:: python
+            .. code-block:: python
 
-           {'class_weight': {1: 10}}
+               {'class_weight': {1: 10}}
 
-        Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_classes.html>`_.
+            Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_classes.html>`_.
 
 Tuning
 ^^^^^^
