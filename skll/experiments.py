@@ -33,6 +33,8 @@ from skll.data import ExamplesTuple, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 from skll.version import __version__
 
+import yaml
+
 # Check if gridmap is available
 try:
     from gridmap import Job, JobException, process_jobs
@@ -109,7 +111,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
             with open(json_path, 'r') as json_file:
                 obj = json.load(json_file)
                 if ablation != 0:
-                    all_features.update(json.loads(obj[0]['featureset']))
+                    all_features.update(yaml.load(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
 
     # Build and write header
@@ -129,7 +131,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     # Build "ablated_features" list and fix some backward compatible things
     for lrd in learner_result_dicts:
         if ablation != 0:
-            ablated_features = all_features.difference(json.loads(lrd['featureset']))
+            ablated_features = all_features.difference(yaml.load(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
                 lrd['ablated_features'] = json.dumps(sorted(ablated_features))
@@ -270,10 +272,10 @@ def _parse_config_file(config_path):
     else:
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
-    learners = json.loads(_fix_json(learners_string))
+    learners = yaml.load(_fix_json(learners_string))
     learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else learner)
                 for learner in learners]
-    featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
+    featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
     if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
@@ -281,7 +283,7 @@ def _parse_config_file(config_path):
         raise ValueError("The featuresets parameter should be a " +
                          "list of lists: {}".format(featuresets))
 
-    featureset_names = json.loads(_fix_json(config.get("Input",
+    featureset_names = yaml.load(_fix_json(config.get("Input",
                                                        "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
@@ -292,11 +294,11 @@ def _parse_config_file(config_path):
             raise ValueError("The featureset_names parameter should be a " +
                              "list of strings: {}".format(featureset_names))
 
-    fixed_parameter_list = json.loads(_fix_json(config.get("Input",
+    fixed_parameter_list = yaml.load(_fix_json(config.get("Input",
                                                            "fixed_parameters")))
-    fixed_sampler_parameters = json.loads(_fix_json(config.get("Input",
+    fixed_sampler_parameters = yaml.load(_fix_json(config.get("Input",
                                                                "sampler_parameters")))
-    param_grid_list = json.loads(_fix_json(config.get("Tuning", "param_grids")))
+    param_grid_list = yaml.load(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
 
     # ensure that feature_scaling is specified only as one of the
@@ -327,7 +329,7 @@ def _parse_config_file(config_path):
 
     # Get class mapping dictionary if specified
     if config.has_option("Input", "class_map"):
-        orig_class_map = json.loads(_fix_json(config.get("Input", "class_map")))
+        orig_class_map = yaml.load(_fix_json(config.get("Input", "class_map")))
         # Change class_map to map from originals to replacements instead of from
         # replacement to list of originals
         class_map = {}
