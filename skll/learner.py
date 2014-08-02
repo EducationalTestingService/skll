@@ -494,11 +494,11 @@ class Learner(object):
                                 'AdaBoostClassifier'}:
             self._model_kwargs['random_state'] = 123456789
 
-        if sampler_kwargs:
-            self._sampler_kwargs.update(sampler_kwargs)
         if sampler in {'Nystroem', 'RBFSampler', 'SkewedChi2Sampler'}:
             self._sampler_kwargs['random_state'] = 123456789
         self.sampler = None
+        if sampler_kwargs:
+            self._sampler_kwargs.update(sampler_kwargs)
         if sampler:
             self.sampler = globals()[sampler](**self._sampler_kwargs)
 
