@@ -230,7 +230,7 @@ class _MegaMDictIter(_DictIter):
             if not isinstance(line, text_type):
                 line = UnicodeDammit(line, ['utf-8',
                                             'windows-1252']).unicode_markup
-            line = _sanitize_line(line.strip())
+            line = line.strip()
             # Handle instance lines
             if line.startswith('#'):
                 curr_id = line[1:].strip()
@@ -308,75 +308,73 @@ class _LibSVMDictIter(_DictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
+    line_regex = re.compile(r'^(?P<label_num>[^ ]+)\s+(?P<features>[^#]*)\s*'
+                            r'(?P<comments>#\s*(?P<example_id>[^|]+)\s*\|\s*'
+                            r'(?P<label_map>[^|]+)\s*\|\s*'
+                            r'(?P<feat_map>.*)\s*)?$')
+
+    @staticmethod
+    def _pair_to_tuple(pair, feat_map):
+        '''
+        Split a feature-value pair separated by a colon into a tuple.  Also
+        do _safe_float conversion on the value.
+        '''
+        name, value = pair.split(':')
+        if feat_map is not None:
+            name = feat_map[name]
+        value = _safe_float(value)
+        return (name, value)
 
     def _sub_iter(self, file_or_list):
-        example_num = 0
-        curr_id = 'EXAMPLE_0'
-        for line in file_or_list:
-            # Process encoding
+        for example_num, line in enumerate(file_or_list):
+            curr_id = ''
+            # Decode line if it's not already str
             if not isinstance(line, text_type):
                 line = UnicodeDammit(line, ['utf-8',
                                             'windows-1252']).unicode_markup
-            line = _sanitize_line(line.strip())
-            # Handle instance lines
-            if line.startswith('#'):
-                curr_id = line[1:].strip()
-            elif line and line not in ['TRAIN', 'TEST', 'DEV']:
-                split_line = line.split()
-                num_cols = len(split_line)
-                del line
-                # Line is just a class label
-                if num_cols == 1:
-                    class_name = _safe_float(split_line[0],
-                                             replace_dict=self.class_map)
-                    field_pairs = []
-                # Line has a class label and feature-value pairs
-                elif num_cols % 2 == 1:
-                    class_name = _safe_float(split_line[0],
-                                             replace_dict=self.class_map)
-                    field_pairs = split_line[1:]
-                # Line just has feature-value pairs
-                elif num_cols % 2 == 0:
-                    class_name = None
-                    field_pairs = split_line
+            match = self.line_regex.search(line.strip())
+            if not match:
+                raise ValueError('Line does not look like valid libsvm format'
+                                 '\n{}'.format(line))
+            # Metadata is stored in comments if this was produced by SKLL
+            if match.group('comments') is not None:
+                if match.group('feat_map'):
+                    feat_map = dict(pair.split('=') for pair in
+                                    match.group('feat_map').split())
+                else:
+                    feat_map = None
+                if match.group('label_map'):
+                    label_map = dict(pair.split('=') for pair in
+                                     match.group('label_map').strip().split())
+                else:
+                    label_map = None
+                curr_id = match.group('example_id').strip()
 
-                curr_info_dict = {}
-                if len(field_pairs) > 0:
-                    # Get current instances feature-value pairs
-                    field_names = islice(field_pairs, 0, None, 2)
-                    # Convert values to floats, because otherwise
-                    # features'll be categorical
-                    field_values = (_safe_float(val) for val in
-                                    islice(field_pairs, 1, None, 2))
-
-                    # Add the feature-value pairs to dictionary
-                    curr_info_dict.update(zip(field_names, field_values))
-
-                    if len(curr_info_dict) != len(field_pairs) / 2:
-                        raise ValueError(('There are duplicate feature ' +
-                                          'names in {} for example ' +
-                                          '{}.').format(self.path_or_list,
-                                                        curr_id))
-
-                if self.ids_to_floats:
-                    try:
-                        curr_id = float(curr_id)
-                    except ValueError:
-                        raise ValueError(('You set ids_to_floats to true,' +
-                                          ' but ID {} could not be ' +
-                                          'converted to in ' +
-                                          '{}').format(curr_id,
-                                                       self.path_or_list))
-
-                yield curr_id, class_name, curr_info_dict
-
-                # Set default example ID for next instance, in case we see a
-                # line without an ID.
-                example_num += 1
+            if not curr_id:
                 curr_id = 'EXAMPLE_{}'.format(example_num)
 
-                if not self.quiet and example_num % 100 == 0:
-                    print(".", end="", file=sys.stderr)
+            class_name = _safe_float(match.group('label_num'),
+                                     replace_dict=self.class_map)
+            if not isinstance(class_name, float):
+                class_name = label_map[class_name]
+
+            curr_info_dict = dict(self._pair_to_tuple(pair, feat_map) for pair
+                                  in match.group('features').strip().split())
+
+            if self.ids_to_floats:
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true,' +
+                                      ' but ID {} could not be ' +
+                                      'converted to in ' +
+                                      '{}').format(curr_id,
+                                                   self.path_or_list))
+
+            yield curr_id, class_name, curr_info_dict
+
+            if not self.quiet and example_num % 100 == 0:
+                print(".", end="", file=sys.stderr)
         if not self.quiet:
             print("done", file=sys.stderr)
 
@@ -810,7 +808,7 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
                          ids_to_floats=ids_to_floats)
 
 
-def _sanitize_line(line):
+def _replace_non_ascii(line):
     '''
     :param line: The line to clean up.
     :type line: str
@@ -1131,9 +1129,10 @@ def _write_megam_file(path, ids, classes, features):
                 print('# {}'.format(ex_id), file=f)
             if class_name is not None:
                 print(class_name, end='\t', file=f)
-            print(' '.join(('{} {}'.format(field, value) for field, value in
-                            sorted(feature_dict.items()) if
-                            Decimal(value) != 0)),
+            print(_replace_non_ascii(' '.join(('{} {}'.format(field, value) for
+                                               field, value in
+                                               sorted(feature_dict.items()) if
+                                               Decimal(value) != 0))),
                   file=f)
 
 
@@ -1336,6 +1335,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                                   isinstance(label, str)])
         # Add fake item to vectorizer for None
         label_vectorizer.vocabulary_[None] = '00000'
+    else:
+        label_vectorizer = None
 
     # Create ID generator if necessary
     if ids is None:
