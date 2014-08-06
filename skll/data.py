@@ -673,19 +673,27 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
                   ids_to_floats=False, class_map=None, feature_hasher=False,
                   num_features=None):
     '''
-    Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.megam``,
-    ``.ndj``, or ``.tsv`` formats.
+    Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
+    ``.megam``, ``.ndj``, or ``.tsv`` formats.
 
     If you would like to include example/instance IDs in your files, they must
     be specified in the following ways:
 
     * MegaM: As a comment line directly preceding the line with feature values.
+    * LibSVM: As the first item in the three-part comment described below.
     * CSV/TSV/ARFF: An "id" column.
     * JSONLINES: An "id" key in each JSON dictionary.
 
     Also, for ARFF, CSV, and TSV files, there must be a column with the name
     specified by `label_col` if the data is labelled. For ARFF files, this
     column must also be the final one (as it is in Weka).
+
+    For LibSVM files, we use a specially formatted comment for storing example
+    IDs, class names, and feature names, which are normally not supported by
+    the format.  The comment is not mandatory, but without it, your classes
+    and features will not have names.  The comment is structured as follows:
+
+        ExampleID | 1=FirstClass 2=SecondClass | 1=FirstFeature 2=SecondFeature
 
     :param path: The path to the file to load the examples from, or a list of
                  example dictionaries (like you would pass to
