@@ -210,6 +210,93 @@ class _JSONDictIter(_DictIter):
 class _MegaMDictIter(_DictIter):
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
+    features to values for each pair of lines in the MegaM -fvals file
+    specified by path.
+
+    :param path_or_list: Path to .megam file (-fvals format)
+    :type path_or_list: str
+    :param quiet: Do not print "Loading..." status message to stderr.
+    :type quiet: bool
+    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
+                          if we encounter an a non-numeric ID.
+    :type ids_to_floats: bool
+    '''
+
+    def _sub_iter(self, file_or_list):
+        example_num = 0
+        curr_id = 'EXAMPLE_0'
+        for line in file_or_list:
+            # Process encoding
+            if not isinstance(line, text_type):
+                line = UnicodeDammit(line, ['utf-8',
+                                            'windows-1252']).unicode_markup
+            line = _sanitize_line(line.strip())
+            # Handle instance lines
+            if line.startswith('#'):
+                curr_id = line[1:].strip()
+            elif line and line not in ['TRAIN', 'TEST', 'DEV']:
+                split_line = line.split()
+                num_cols = len(split_line)
+                del line
+                # Line is just a class label
+                if num_cols == 1:
+                    class_name = _safe_float(split_line[0],
+                                             replace_dict=self.class_map)
+                    field_pairs = []
+                # Line has a class label and feature-value pairs
+                elif num_cols % 2 == 1:
+                    class_name = _safe_float(split_line[0],
+                                             replace_dict=self.class_map)
+                    field_pairs = split_line[1:]
+                # Line just has feature-value pairs
+                elif num_cols % 2 == 0:
+                    class_name = None
+                    field_pairs = split_line
+
+                curr_info_dict = {}
+                if len(field_pairs) > 0:
+                    # Get current instances feature-value pairs
+                    field_names = islice(field_pairs, 0, None, 2)
+                    # Convert values to floats, because otherwise
+                    # features'll be categorical
+                    field_values = (_safe_float(val) for val in
+                                    islice(field_pairs, 1, None, 2))
+
+                    # Add the feature-value pairs to dictionary
+                    curr_info_dict.update(zip(field_names, field_values))
+
+                    if len(curr_info_dict) != len(field_pairs) / 2:
+                        raise ValueError(('There are duplicate feature ' +
+                                          'names in {} for example ' +
+                                          '{}.').format(self.path_or_list,
+                                                        curr_id))
+
+                if self.ids_to_floats:
+                    try:
+                        curr_id = float(curr_id)
+                    except ValueError:
+                        raise ValueError(('You set ids_to_floats to true,' +
+                                          ' but ID {} could not be ' +
+                                          'converted to in ' +
+                                          '{}').format(curr_id,
+                                                       self.path_or_list))
+
+                yield curr_id, class_name, curr_info_dict
+
+                # Set default example ID for next instance, in case we see a
+                # line without an ID.
+                example_num += 1
+                curr_id = 'EXAMPLE_{}'.format(example_num)
+
+                if not self.quiet and example_num % 100 == 0:
+                    print(".", end="", file=sys.stderr)
+        if not self.quiet:
+            print("done", file=sys.stderr)
+
+
+class _LibSVMDictIter(_DictIter):
+    '''
+    Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
     by path.
 
@@ -650,6 +737,8 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
             example_iter_type = _JSONDictIter
         elif lc_path.endswith(".megam"):
             example_iter_type = _MegaMDictIter
+        elif lc_path.endswith(".libsvm"):
+            example_iter_type = _LibSVMDictIter
         else:
             raise ValueError(('Example files must be in either .arff, .csv, ' +
                               '.jsonlines, .megam, .ndj, or .tsv format. You ' +
@@ -797,13 +886,13 @@ def _write_arff_file(path, ids, classes, features, label_col,
     :param path: A path to the feature file we would like to create.
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
-                IDs will be automatically generated with the prefix specified by
-                `id_prefix` followed by the row number. If `id_prefix` is also
-                None, no IDs will be written to the file.
+                IDs will be automatically generated with the prefix specified
+                by `id_prefix` followed by the row number. If `id_prefix` is
+                also None, no IDs will be written to the file.
     :type ids: list of str
     :param classes: The class labels for each instance in the feature
-                    list/array. If None, no class labels will be added to output
-                    file.
+                    list/array. If None, no class labels will be added to
+                    output file.
     :type classes: list of str
     :param features: The features for each instance.
     :type features: list of dict
@@ -888,13 +977,13 @@ def _write_delimited_file(path, ids, classes, features, label_col, dialect):
     :param path: A path to the feature file we would like to create.
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
-                IDs will be automatically generated with the prefix specified by
-                `id_prefix` followed by the row number. If `id_prefix` is also
-                None, no IDs will be written to the file.
+                IDs will be automatically generated with the prefix specified
+                by `id_prefix` followed by the row number. If `id_prefix` is
+                also None, no IDs will be written to the file.
     :type ids: list of str
     :param classes: The class labels for each instance in the feature
-                    list/array. If None, no class labels will be added to output
-                    file.
+                    list/array. If None, no class labels will be added to
+                    output file.
     :type classes: list of str
     :param features: The features for each instance.
     :type features: list of dict
@@ -931,13 +1020,13 @@ def _write_jsonlines_file(path, ids, classes, features):
     :param path: A path to the feature file we would like to create.
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
-                IDs will be automatically generated with the prefix specified by
-                `id_prefix` followed by the row number. If `id_prefix` is also
-                None, no IDs will be written to the file.
+                IDs will be automatically generated with the prefix specified
+                by `id_prefix` followed by the row number. If `id_prefix` is
+                also None, no IDs will be written to the file.
     :type ids: list of str
     :param classes: The class labels for each instance in the feature
-                    list/array. If None, no class labels will be added to output
-                    file.
+                    list/array. If None, no class labels will be added to
+                    output file.
     :type classes: list of str
     :param features: The features for each instance.
     :type features: list of dict
@@ -956,6 +1045,65 @@ def _write_jsonlines_file(path, ids, classes, features):
             print(json.dumps(example_dict, sort_keys=True), file=f)
 
 
+def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
+                       label_vectorizer):
+    '''
+    Writes a feature file in .libsvm format with the given a list of IDs,
+    classes, and features.
+
+    :param path: A path to the feature file we would like to create.
+    :type path: str
+    :param ids: The IDs for each instance in the feature list/array. If None,
+                IDs will be automatically generated with the prefix specified
+                by `id_prefix` followed by the row number. If `id_prefix` is
+                also None, no IDs will be written to the file.
+    :type ids: list of str
+    :param classes: The class labels for each instance in the feature
+                    list/array. If None, no class labels will be added to
+                    output file.
+    :type classes: list of str
+    :param features: The features for each instance.
+    :type features: list of dict
+    :param feat_vectorizer: A `DictVectorizer` to map to/from feature columns
+                            indices and names.
+    :type feat_vectorizer: DictVectorizer
+    :param label_vectorizer: A `DictVectorizer` to map to/from label indices
+                            and names.
+    :type label_vectorizer: DictVectorizer
+    '''
+    with open(path, 'w') as f:
+        # Iterate through examples
+        for ex_id, class_name, feature_dict in zip(ids, classes, features):
+            field_values = [(feat_vectorizer.vocabulary_[field] + 1, value) for
+                            field, value in iteritems(feature_dict)
+                            if Decimal(value) != 0]
+            field_values.sort()
+            # Print label
+            if class_name in label_vectorizer.vocabulary_:
+                print(label_vectorizer.vocabulary_[class_name], end=' ',
+                      file=f)
+            else:
+                print('{}'.format(class_name), end=' ', file=f)
+            # Print features
+            print(' '.join(('{}:{}'.format(field, value) for field, value in
+                            field_values)), end=' ', file=f)
+            # Print comment with id and mappings
+            print('#', end=' ', file=f)
+            if ex_id is not None:
+                print('{}'.format(ex_id), end='', file=f)
+            print(' |', end=' ', file=f)
+            if class_name in label_vectorizer.vocabulary_:
+                print('{}={}'.format(label_vectorizer.vocabulary_[class_name],
+                                          class_name),
+                      end=' | ', file=f)
+            else:
+                print(' |', end=' ', file=f)
+            print(' '.join(('{}={}'.format(feat_vectorizer.vocabulary_[field]
+                                           + 1, field) for field, value in
+                           feature_dict.items() if Decimal(value) != 0)),
+                  file=f)
+
+
 def _write_megam_file(path, ids, classes, features):
     '''
     Writes a feature file in .megam format with the given a list of IDs,
@@ -964,13 +1112,13 @@ def _write_megam_file(path, ids, classes, features):
     :param path: A path to the feature file we would like to create.
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
-                IDs will be automatically generated with the prefix specified by
-                `id_prefix` followed by the row number. If `id_prefix` is also
-                None, no IDs will be written to the file.
+                IDs will be automatically generated with the prefix specified
+                by `id_prefix` followed by the row number. If `id_prefix` is
+                also None, no IDs will be written to the file.
     :type ids: list of str
     :param classes: The class labels for each instance in the feature
-                    list/array. If None, no class labels will be added to output
-                    file.
+                    list/array. If None, no class labels will be added to
+                    output file.
     :type classes: list of str
     :param features: The features for each instance.
     :type features: list of dict
@@ -991,15 +1139,16 @@ def _write_megam_file(path, ids, classes, features):
 
 def _write_sub_feature_file(path, ids, classes, features, filter_features,
                             label_col='y', arff_regression=False,
-                            arff_relation='skll_relation'):
+                            arff_relation='skll_relation',
+                            feat_vectorizer=None, label_vectorizer=None):
     '''
     Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
-    classes, and features.
+    ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a
+    list of IDs, classes, and features.
 
     :param path: A path to the feature file we would like to create. The suffix
                  to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
-                 ``.megam``, ``.ndj``, or ``.tsv``
+                 ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
                 IDs will be automatically generated with the prefix specified by
@@ -1021,18 +1170,20 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
                       unlabelled.
     :type label_col: str
     :param arff_regression: A boolean value indicating whether the ARFF files
-                            that are written should be written for arff_regression
-                            rather than classification, i.e., the class variable
-                            y is numerical rather than an enumeration of classes
-                            and all non-numeric attributes are removed.
-    :type label_col: bool
+                            that are written should be written for regression
+                            rather than classification, i.e., the class
+                            variable y is numerical rather than an enumeration
+                            of classes and all non-numeric attributes are
+                            removed.
+    :type arff_regression: bool
     :param arff_relation: Relation name for ARFF file.
-    :type label_col: str
-    :param subsets: A mapping from subset names to lists of feature names that
-                    are included in those sets. If given, a feature file will
-                    be written for every subset (with the name containing the
-                    subset name as suffix to ``path``).
-    :type subsets: dict (str to list of str)
+    :type arff_relation: str
+    :param feat_vectorizer: A `DictVectorizer` to map to/from feature columns
+                            indices and names.
+    :type feat_vectorizer: DictVectorizer
+    :param label_vectorizer: A `DictVectorizer` to map to/from label indices
+                            and names.
+    :type label_vectorizer: DictVectorizer
     '''
     # Setup logger
     logger = logging.getLogger(__name__)
@@ -1076,6 +1227,10 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
     # Create .jsonlines file if asked
     elif ext == ".jsonlines" or ext == '.ndj':
         _write_jsonlines_file(path, ids, classes, features)
+    # Create .libsvm file if asked
+    elif ext == ".libsvm":
+        _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
+                           label_vectorizer)
     # Create .megam file if asked
     elif ext == ".megam":
         _write_megam_file(path, ids, classes, features)
@@ -1086,9 +1241,9 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
                          relation=arff_relation)
     # Invalid file suffix, raise error
     else:
-        raise ValueError(('Output file must be in either .arff, .csv, ' +
-                          '.jsonlines, .megam, .ndj, or .tsv format. You ' +
-                          'specified: {}').format(path))
+        raise ValueError(('Output file must be in either .arff, .csv, '
+                          '.jsonlines, .libsvm, .megam, .ndj, or .tsv format. '
+                          'You specified: {}').format(path))
 
 
 def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
@@ -1102,24 +1257,24 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
 
     :param path: A path to the feature file we would like to create. The suffix
                  to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
-                 ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets`` is not
-                 ``None``, this is assumed to be a string containing the path to
-                 the directory to write the feature files with an additional
-                 file extension specifying the file type. For example
-                 ``/foo/.csv``.
+                 ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets``
+                 is not ``None``, this is assumed to be a string containing the
+                 path to the directory to write the feature files with an
+                 additional file extension specifying the file type. For
+                 example ``/foo/.csv``.
     :type path: str
     :param ids: The IDs for each instance in the feature list/array. If None,
-                IDs will be automatically generated with the prefix specified by
-                `id_prefix` followed by the row number. If `id_prefix` is also
-                None, no IDs will be written to the file.
+                IDs will be automatically generated with the prefix specified
+                by `id_prefix` followed by the row number. If `id_prefix` is
+                also None, no IDs will be written to the file.
     :type ids: list of str
     :param classes: The class labels for each instance in the feature
-                    list/array. If None, no class labels will be added to output
-                    file.
+                    list/array. If None, no class labels will be added to
+                    output file.
     :type classes: list of str
-    :param features: The features for each instance represented as either a list
-                     of dictionaries or an array-like (if `feat_vectorizer`
-                     is also specified).
+    :param features: The features for each instance represented as either a
+                     list of dictionaries or an array-like (if
+                     `feat_vectorizer` is also specified).
     :type features: list of dict or array-like
     :param feat_vectorizer: A `DictVectorizer` to map to/from feature columns
                             indices and names.
@@ -1134,22 +1289,23 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     :type label_col: str
     :param arff_regression: A boolean value indicating whether the ARFF files
                             that are written should be written for regression
-                            rather than classification, i.e., the class variable
-                            y is numerical rather than an enumeration of classes
-                            and all non-numeric attributes are removed.
+                            rather than classification, i.e., the class
+                            variable y is numerical rather than an enumeration
+                            of classes and all non-numeric attributes are
+                            removed.
     :type arff_regression: bool
     :param arff_relation: Relation name for ARFF file.
     :type arff_relation: str
     :param subsets: A mapping from subset names to lists of feature names that
                     are included in those sets. If given, a feature file will
                     be written for every subset (with the name containing the
-                    subset name as suffix to ``path``). Note, since
-                    string-valued features are automatically converted into
-                    boolean features with names of the form
-                    ``FEATURE_NAME=STRING_VALUE``, when doing the filtering, the
-                    portion before the ``=`` is all that's used for matching.
-                    Therefore, you do not need to enumerate all of these boolean
-                    feature names in your mapping.
+                    subset name as suffix to ``path``). Note, since string-
+                    valued features are automatically converted into boolean
+                    features with names of the form
+                    ``FEATURE_NAME=STRING_VALUE``, when doing the filtering,
+                    the portion before the ``=`` is all that's used for
+                    matching. Therefore, you do not need to enumerate all of
+                    these boolean feature names in your mapping.
     :type subsets: dict (str to list of str)
     '''
     # Setup logger
@@ -1158,15 +1314,28 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     logger.debug('Feature vectorizer: %s', feat_vectorizer)
     logger.debug('Features: %s', features)
 
-    # Check for valid features
-    if feat_vectorizer is None and features and not isinstance(features[0],
-                                                               dict):
-        raise ValueError('If `feat_vectorizer` is unspecified, you must pass ' +
-                         'a list of dicts for `features`.')
+    is_libsvm = os.path.splitext(path)[1].lower() == '.libsvm'
 
-    # Convert features to list of dicts if given an array-like and a vectorizer
-    if feat_vectorizer is not None:
-        features = feat_vectorizer.inverse_transform(features)
+    # Check for valid features
+    if isinstance(features, np.ndarray):
+        if feat_vectorizer is None:
+            raise ValueError('If `feat_vectorizer` is unspecified, you must '
+                             'pass a list of dicts for `features`.')
+        # Convert features to list of dicts if given an array-like & vectorizer
+        else:
+            features = feat_vectorizer.inverse_transform(features)
+    # Create feature vectorizer if unspecified and writing libsvm
+    elif is_libsvm:
+        feat_vectorizer = DictVectorizer(sparse=True)
+        feat_vectorizer.fit(features)
+    # Create label vectorizer if writing libsvm
+    if is_libsvm:
+        label_vectorizer = DictVectorizer(sparse=True)
+        if classes is not None:
+            label_vectorizer.fit([{label: 1} for label in classes if
+                                  isinstance(label, str)])
+        # Add fake item to vectorizer for None
+        label_vectorizer.vocabulary_[None] = '00000'
 
     # Create ID generator if necessary
     if ids is None:
@@ -1188,7 +1357,9 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         _write_sub_feature_file(path, ids, classes, features, [],
                                 label_col=label_col,
                                 arff_regression=arff_regression,
-                                arff_relation=arff_relation)
+                                arff_relation=arff_relation,
+                                feat_vectorizer=feat_vectorizer,
+                                label_vectorizer=label_vectorizer)
     # Otherwise write one feature file per subset
     else:
         ids = list(ids)
@@ -1200,4 +1371,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
             _write_sub_feature_file(sub_path, ids, classes, features,
                                     set(filter_features), label_col=label_col,
                                     arff_regression=arff_regression,
-                                    arff_relation=arff_relation)
+                                    arff_relation=arff_relation,
+                                    feat_vectorizer=feat_vectorizer,
+                                    label_vectorizer=label_vectorizer)
+

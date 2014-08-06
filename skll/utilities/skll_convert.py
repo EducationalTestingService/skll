@@ -14,8 +14,9 @@ import logging
 import os
 import sys
 
-from skll.data import (_CSVDictIter, _ARFFDictIter, _TSVDictIter, _JSONDictIter,
-                       _MegaMDictIter, write_feature_file)
+from skll.data import (_CSVDictIter, _ARFFDictIter, _TSVDictIter,
+                       _JSONDictIter, _MegaMDictIter, _LibSVMDictIter,
+                       write_feature_file)
 from skll.version import __version__
 
 
@@ -61,7 +62,7 @@ def main(argv=None):
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
                                 '%(message)s'))
     logger = logging.getLogger(__name__)
 
@@ -72,6 +73,8 @@ def main(argv=None):
         example_iter_type = _TSVDictIter
     elif input_extension == ".jsonlines" or input_extension == '.ndj':
         example_iter_type = _JSONDictIter
+    elif input_extension == ".libsvm":
+        example_iter_type = _LibSVMDictIter
     elif input_extension == ".megam":
         example_iter_type = _MegaMDictIter
     elif input_extension == ".csv":
@@ -79,8 +82,8 @@ def main(argv=None):
     elif input_extension == ".arff":
         example_iter_type = _ARFFDictIter
     else:
-        logger.error(('Input file must be in either .arff, .csv, .jsonlines, ' +
-                      '.megam, .ndj, or .tsv format. You specified: ' +
+        logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
+                      '.libsvm, .megam, .ndj, or .tsv format. You specified: '
                       '{}').format(input_extension))
         sys.exit(1)
 
