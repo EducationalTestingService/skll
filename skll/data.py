@@ -353,10 +353,11 @@ class _LibSVMDictIter(_DictIter):
             if not curr_id:
                 curr_id = 'EXAMPLE_{}'.format(example_num)
 
-            class_name = _safe_float(match.group('label_num'),
+            class_num = match.group('label_num')
+            if label_map is not None:
+                class_name = label_map[class_num]
+            class_name = _safe_float(class_name,
                                      replace_dict=self.class_map)
-            if not isinstance(class_name, float):
-                class_name = label_map[class_name]
 
             curr_info_dict = dict(self._pair_to_tuple(pair, feat_map) for pair
                                   in match.group('features').strip().split())

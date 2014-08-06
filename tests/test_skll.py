@@ -24,6 +24,7 @@ from os.path import abspath, dirname, exists, join
 import numpy as np
 import scipy.sparse as sp
 from nose.tools import eq_, raises, assert_almost_equal, assert_not_equal
+from numpy.testing import assert_array_equal
 
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
@@ -39,11 +40,6 @@ SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
                              r'([\-\d\.]+)')
 GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
-
-
-def assert_array_equal(a1, a2):
-    ''' Helper to assert that two numpy arrays are equal '''
-    assert np.array_equal(a1, a2)
 
 
 def test_SelectByMinCount():
@@ -1391,10 +1387,10 @@ def check_convert_featureset(from_suffix, to_suffix):
 
     # make sure that the pre-generated merged data in the to_suffix format
     # is the same as the converted, merged data in the to_suffix format
-    assert np.all(merged_examples.ids == premerged_examples.ids)
-    assert np.all(merged_examples.classes == premerged_examples.classes)
-    assert np.all(merged_examples.features.todense() ==
-                  premerged_examples.features.todense())
+    assert_array_equal(merged_examples.ids, premerged_examples.ids)
+    assert_array_equal(merged_examples.classes, premerged_examples.classes)
+    assert_array_equal(merged_examples.features.todense(),
+                       premerged_examples.features.todense())
     eq_(merged_examples.feat_vectorizer.feature_names_,
         premerged_examples.feat_vectorizer.feature_names_)
     eq_(merged_examples.feat_vectorizer.vocabulary_,
