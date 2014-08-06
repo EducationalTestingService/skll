@@ -19,7 +19,7 @@ import re
 import sys
 from collections import OrderedDict
 from io import open
-import logging
+from os.path import abspath, dirname, exists, join
 
 import numpy as np
 import scipy.sparse as sp
@@ -35,9 +35,10 @@ from skll.utilities import skll_convert
 from skll.utilities.compute_eval_from_predictions import compute_eval_from_predictions
 
 
-SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = ([\-\d\.]+)')
+SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
+                             r'([\-\d\.]+)')
 GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
-_my_dir = os.path.abspath(os.path.dirname(__file__))
+_my_dir = abspath(dirname(__file__))
 
 
 def assert_array_equal(a1, a2):
@@ -47,37 +48,41 @@ def assert_array_equal(a1, a2):
 
 def test_SelectByMinCount():
     ''' Test SelectByMinCount feature selector '''
-    m2 = [[0.001,   0.0,    0.0,    0.0],
-          [0.00001, -2.0,   0.0,    0.0],
-          [0.001,   0.0,    0.0,    4.0],
-          [0.0101,  -200.0, 0.0,    0.0]]
+    m2 = [[0.001, 0.0, 0.0, 0.0],
+          [0.00001, -2.0, 0.0, 0.0],
+          [0.001, 0.0, 0.0, 4.0],
+          [0.0101, -200.0, 0.0, 0.0]]
 
-    # default should keep all nonzero features (i.e., ones that appear 1+ times)
+    # default should keep all nonzero features (i.e. ones that appear 1+ times)
     feat_selector = SelectByMinCount()
-    expected = np.array([[0.001,    0.0,   0.0],
-                         [0.00001, -2.0,   0.0],
-                         [0.001,   0.0,    4.0],
-                         [0.0101,  -200.0, 0.0]])
+    expected = np.array([[0.001, 0.0, 0.0],
+                         [0.00001, -2.0, 0.0],
+                         [0.001, 0.0, 4.0],
+                         [0.0101, -200.0, 0.0]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
-                       expected)
+    assert_array_equal(
+        feat_selector.fit_transform(
+            sp.csr_matrix(m2)).todense(),
+        expected)
 
     # keep features that happen 2+ times
     feat_selector = SelectByMinCount(min_count=2)
-    expected = np.array([[0.001,   0.0],
+    expected = np.array([[0.001, 0.0],
                          [0.00001, -2.0],
-                         [0.001,   0.0],
-                         [0.0101,  -200.0]])
+                         [0.001, 0.0],
+                         [0.0101, -200.0]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
-                       expected)
+    assert_array_equal(
+        feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
+        expected)
 
     # keep features that happen 3+ times
     feat_selector = SelectByMinCount(min_count=3)
     expected = np.array([[0.001], [0.00001], [0.001], [0.0101]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
-                       expected)
+    assert_array_equal(
+        feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
+        expected)
 
 
 @raises(ValueError)
@@ -86,7 +91,7 @@ def test_input_checking1():
     Ensure that we raise ValueError when trying to join featuresets with
     different number of examples.
     '''
-    dirpath = os.path.join(_my_dir, 'train')
+    dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_2examples_1', 'test_input_3examples_1']
     _load_featureset(dirpath, featureset, suffix, quiet=True)
@@ -98,7 +103,7 @@ def test_input_checking2():
     Ensure that we raise ValueError when trying to join featuresets
     that contain the same features for each instance.
     '''
-    dirpath = os.path.join(_my_dir, 'train')
+    dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_1']
     _load_featureset(dirpath, featureset, suffix, quiet=True)
@@ -108,7 +113,7 @@ def test_input_checking3():
     '''
     Small test to ensure that we correctly merge featuresets.
     '''
-    dirpath = os.path.join(_my_dir, 'train')
+    dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_2']
     examples_tuple = _load_featureset(dirpath, featureset, suffix, quiet=True)
@@ -117,15 +122,15 @@ def test_input_checking3():
 
 def make_cv_folds_data(numeric_ids):
     ''' Create input files for pre-specified CV folds tests '''
-    train_dir = os.path.join(_my_dir, 'train')
-    if not os.path.exists(train_dir):
+    train_dir = join(_my_dir, 'train')
+    if not exists(train_dir):
         os.makedirs(train_dir)
 
     num_examples_per_fold = 100
     num_folds = 3
 
-    json_path = os.path.join(train_dir, 'test_cv_folds.jsonlines')
-    csv_path = os.path.join(train_dir, 'test_cv_folds.csv')
+    json_path = join(train_dir, 'test_cv_folds.jsonlines')
+    csv_path = join(train_dir, 'test_cv_folds.csv')
 
     with open(json_path, 'w') as json_out, open(csv_path, 'w') as csv_out:
         csv_out.write('id,fold\n')
@@ -138,7 +143,8 @@ def make_cv_folds_data(numeric_ids):
                     ex_id = "{}{}".format(y, num_examples_per_fold * k + i)
                 x = {"f1": 1.0, "f2": -1.0, "f3": 1.0,
                      "is_{}{}".format(y, k): 1.0}
-                json_out.write(json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+                json_out.write(
+                    json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
                 csv_out.write('{},{}\n'.format(ex_id, k))
 
 
@@ -147,14 +153,14 @@ def fill_in_config_paths(config_template_path):
     Add paths to train, test, and output directories to a given config template
     file.
     '''
-    train_dir = os.path.join(_my_dir, 'train')
-    if not os.path.exists(train_dir):
+    train_dir = join(_my_dir, 'train')
+    if not exists(train_dir):
         os.makedirs(train_dir)
-    test_dir = os.path.join(_my_dir, 'test')
-    if not os.path.exists(test_dir):
+    test_dir = join(_my_dir, 'test')
+    if not exists(test_dir):
         os.makedirs(test_dir)
-    output_dir = os.path.join(_my_dir, 'output')
-    if not os.path.exists(output_dir):
+    output_dir = join(_my_dir, 'output')
+    if not exists(output_dir):
         os.makedirs(output_dir)
 
     config = _setup_config_parser(config_template_path)
@@ -173,13 +179,13 @@ def fill_in_config_paths(config_template_path):
         to_fill_in.append('results')
 
     for d in to_fill_in:
-        config.set("Output", d, os.path.join(output_dir))
+        config.set("Output", d, join(output_dir))
 
     if task == 'cross_validate':
         cv_folds_location = config.get("Input", "cv_folds_location")
         if cv_folds_location:
             config.set("Input", "cv_folds_location",
-                       os.path.join(train_dir, cv_folds_location))
+                       join(train_dir, cv_folds_location))
 
     if task == 'predict' or task == 'evaluate':
         config.set("Input", "test_location", test_dir)
@@ -206,10 +212,10 @@ def check_specified_cv_folds_feature_hasher(numeric_ids):
                                                    lambda x: x > 0.95,
                                                    10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = os.path.join(_my_dir, 'configs',
-                                            config_template_file)
-        config_path = os.path.join(_my_dir,
-                                   fill_in_config_paths(config_template_path))
+        config_template_path = join(_my_dir, 'configs',
+                                    config_template_file)
+        config_path = join(_my_dir,
+                           fill_in_config_paths(config_template_path))
 
         # Modify config file to change ids_to_floats depending on numeric_ids
         # setting
@@ -228,7 +234,7 @@ def check_specified_cv_folds_feature_hasher(numeric_ids):
         run_configuration(config_path, quiet=True)
         result_filename = ('{}_test_cv_folds_LogisticRegression.' +
                            'results').format(experiment_name)
-        with open(os.path.join(_my_dir, 'output', result_filename)) as f:
+        with open(join(_my_dir, 'output', result_filename)) as f:
             # check held out scores
             outstr = f.read()
             score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
@@ -241,13 +247,13 @@ def check_specified_cv_folds_feature_hasher(numeric_ids):
 
     # try the same tests for just training (and specifying the folds for the
     # grid search)
-    dirpath = os.path.join(_my_dir, 'train')
+    dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train',
-                                           'test_cv_folds.csv'))
+    cv_folds = _load_cv_folds(join(_my_dir, 'train',
+                                   'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
                                   grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
@@ -268,10 +274,10 @@ def check_specified_cv_folds(numeric_ids):
                                                    lambda x: x > 0.95,
                                                    10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = os.path.join(_my_dir, 'configs',
-                                            config_template_file)
-        config_path = os.path.join(_my_dir,
-                                   fill_in_config_paths(config_template_path))
+        config_template_path = join(_my_dir, 'configs',
+                                    config_template_file)
+        config_path = join(_my_dir,
+                           fill_in_config_paths(config_template_path))
 
         # Modify config file to change ids_to_floats depending on numeric_ids
         # setting
@@ -290,7 +296,7 @@ def check_specified_cv_folds(numeric_ids):
         run_configuration(config_path, quiet=True)
         result_filename = ('{}_test_cv_folds_LogisticRegression.' +
                            'results').format(experiment_name)
-        with open(os.path.join(_my_dir, 'output', result_filename)) as f:
+        with open(join(_my_dir, 'output', result_filename)) as f:
             # check held out scores
             outstr = f.read()
             score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
@@ -303,13 +309,13 @@ def check_specified_cv_folds(numeric_ids):
 
     # try the same tests for just training (and specifying the folds for the
     # grid search)
-    dirpath = os.path.join(_my_dir, 'train')
+    dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train',
-                                           'test_cv_folds.csv'))
+    cv_folds = _load_cv_folds(join(_my_dir, 'train',
+                                   'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
                                   grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
@@ -341,19 +347,19 @@ def make_regression_data():
     y = y.tolist()
 
     # Write training file
-    train_dir = os.path.join(_my_dir, 'train')
-    if not os.path.exists(train_dir):
+    train_dir = join(_my_dir, 'train')
+    if not exists(train_dir):
         os.makedirs(train_dir)
-    train_path = os.path.join(train_dir, 'test_regression1.jsonlines')
+    train_path = join(train_dir, 'test_regression1.jsonlines')
     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
                 range(num_train_examples)]
     write_feature_file(train_path, None, y[:num_train_examples], features)
 
     # Write test file
-    test_dir = os.path.join(_my_dir, 'test')
-    if not os.path.exists(test_dir):
+    test_dir = join(_my_dir, 'test')
+    if not exists(test_dir):
         os.makedirs(test_dir)
-    test_path = os.path.join(test_dir, 'test_regression1.jsonlines')
+    test_path = join(test_dir, 'test_regression1.jsonlines')
     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
                 range(num_train_examples, num_examples)]
     write_feature_file(test_path, None, y[num_train_examples: num_examples],
@@ -369,24 +375,24 @@ def test_regression1_feature_hasher():
 
     y = make_regression_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_regression1_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_regression1_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     config_template_path = "test_regression1_feature_hasher.cfg"
 
-    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
+    run_configuration(join(_my_dir, config_path), quiet=True)
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_regression1_feature_hasher_test_regression1_RescaledRidge.results')) \
+    with open(join(_my_dir, 'output',
+                   'test_regression1_feature_hasher_test_regression1_RescaledRidge.results')) \
             as f:
         # check held out scores
         outstr = f.read()
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
         assert score > 0.7
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_regression1_feature_hasher_test_regression1_RescaledRidge.predictions'),
+    with open(join(_my_dir, 'output',
+                   'test_regression1_feature_hasher_test_regression1_RescaledRidge.predictions'),
               'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
@@ -407,24 +413,24 @@ def test_regression1():
 
     y = make_regression_data()
 
-    config_template_path = os.path.join(_my_dir,
-                                        'configs', 'test_regression1.template.cfg')
+    config_template_path = join(_my_dir,
+                                'configs', 'test_regression1.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     config_template_path = "test_regression1.cfg"
 
-    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
+    run_configuration(join(_my_dir, config_path), quiet=True)
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_regression1_test_regression1_RescaledRidge.results')) \
+    with open(join(_my_dir, 'output',
+                   'test_regression1_test_regression1_RescaledRidge.results')) \
             as f:
         # check held out scores
         outstr = f.read()
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
         assert score > 0.7
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_regression1_test_regression1_RescaledRidge.predictions'),
+    with open(join(_my_dir, 'output',
+                   'test_regression1_test_regression1_RescaledRidge.predictions'),
               'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
@@ -444,18 +450,18 @@ def test_predict_feature_hasher():
 
     make_regression_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_predict_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_predict_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
+    run_configuration(join(_my_dir, config_path), quiet=True)
 
-    with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
+    with open(join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
         inputs = [x for x in test_file]
         assert len(inputs) == 1000
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_predict_feature_hasher_test_regression1_RescaledRidge.predictions')) \
+    with open(join(_my_dir, 'output',
+                   'test_predict_feature_hasher_test_regression1_RescaledRidge.predictions')) \
             as outfile:
         reader = csv.DictReader(outfile, dialect=csv.excel_tab)
         predictions = [x['prediction'] for x in reader]
@@ -469,17 +475,20 @@ def test_predict():
 
     make_regression_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs', 'test_predict.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_predict.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
+    run_configuration(join(_my_dir, config_path), quiet=True)
 
-    with open(os.path.join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
+    with open(join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
         inputs = [x for x in test_file]
         assert len(inputs) == 1000
 
-    with open(os.path.join(_my_dir,
-                           'output', 'test_predict_test_regression1_RescaledRidge.predictions')) \
+    with open(join(_my_dir,
+                   'output', 'test_predict_test_regression1_RescaledRidge.predictions')) \
             as outfile:
         reader = csv.DictReader(outfile, dialect=csv.excel_tab)
         predictions = [x['prediction'] for x in reader]
@@ -493,7 +502,7 @@ def make_summary_data():
     np.random.seed(1234567890)
 
     # Write training file
-    train_path = os.path.join(_my_dir, 'train', 'test_summary.jsonlines')
+    train_path = join(_my_dir, 'train', 'test_summary.jsonlines')
     classes = []
     ids = []
     features = []
@@ -508,7 +517,7 @@ def make_summary_data():
     write_feature_file(train_path, ids, classes, features)
 
     # Write test file
-    test_path = os.path.join(_my_dir, 'test', 'test_summary.jsonlines')
+    test_path = join(_my_dir, 'test', 'test_summary.jsonlines')
     classes = []
     ids = []
     features = []
@@ -524,7 +533,11 @@ def make_summary_data():
 
 
 def check_summary_score(result_score, summary_score, learner_name):
-    eq_(result_score, summary_score, msg='mismatched scores for {} (result:{}, summary:{})'.format(learner_name, result_score, summary_score))
+    eq_(result_score,
+        summary_score,
+        msg='mismatched scores for {} (result:{}, summary:{})'.format(learner_name,
+                                                                      result_score,
+                                                                      summary_score))
 
 
 def test_summary_feature_hasher():
@@ -533,26 +546,27 @@ def test_summary_feature_hasher():
     '''
     make_summary_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_summary_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_summary_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_summary_feature_hasher_test_summary_LogisticRegression.results')) \
+    with open(join(_my_dir, 'output',
+                   'test_summary_feature_hasher_test_summary_LogisticRegression.results')) \
             as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_summary_feature_hasher_test_summary_SVC.results')) \
+    with open(join(_my_dir, 'output',
+                   'test_summary_feature_hasher_test_summary_SVC.results')) \
             as f:
         outstr = f.read()
         svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_summary_feature_hasher_summary.tsv'),
+    with open(join(_my_dir, 'output',
+                   'test_summary_feature_hasher_summary.tsv'),
               'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
@@ -581,24 +595,29 @@ def test_summary():
     '''
     make_summary_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs', 'test_summary.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_summary.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_LogisticRegression.results')) as f:
+    with open(join(_my_dir, 'output', 'test_summary_test_summary_LogisticRegression.results')) as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_MultinomialNB.results')) as f:
+    with open(join(_my_dir, 'output', 'test_summary_test_summary_MultinomialNB.results')) as f:
         outstr = f.read()
-        naivebayes_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        naivebayes_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output', 'test_summary_test_summary_SVC.results')) as f:
+    with open(join(_my_dir, 'output', 'test_summary_test_summary_SVC.results')) as f:
         outstr = f.read()
         svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(os.path.join(_my_dir, 'output', 'test_summary_summary.tsv'), 'r') as f:
+    with open(join(_my_dir, 'output', 'test_summary_summary.tsv'), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
@@ -625,11 +644,19 @@ def test_backward_compatibility():
     '''
     Verify that a model from v0.9.17 can still be loaded and generate the same predictions.
     '''
-    predict_path = os.path.join(_my_dir, 'backward_compatibility',
-                                'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
-    model_path = os.path.join(_my_dir, 'backward_compatibility',
-                              'v0.9.17_test_summary_test_summary_LogisticRegression.{}.model'.format(sys.version_info[0]))
-    test_path = os.path.join(_my_dir, 'backward_compatibility', 'v0.9.17_test_summary.jsonlines')
+    predict_path = join(
+        _my_dir,
+        'backward_compatibility',
+        'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
+    model_path = join(
+        _my_dir,
+        'backward_compatibility',
+        'v0.9.17_test_summary_test_summary_LogisticRegression.{}.model'.format(
+            sys.version_info[0]))
+    test_path = join(
+        _my_dir,
+        'backward_compatibility',
+        'v0.9.17_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
     examples = load_examples(test_path, quiet=True)
@@ -642,7 +669,7 @@ def test_backward_compatibility():
 
 def make_sparse_data():
     # Create training file
-    train_path = os.path.join(_my_dir, 'train', 'test_sparse.jsonlines')
+    train_path = join(_my_dir, 'train', 'test_sparse.jsonlines')
     ids = []
     classes = []
     features = []
@@ -650,14 +677,14 @@ def make_sparse_data():
         y = "dog" if i % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, i)
         # note that f1 and f5 are missing in all instances but f4 is not
-        x = {"f2": i+1, "f3": i+2, "f4": i+5}
+        x = {"f2": i + 1, "f3": i + 2, "f4": i + 5}
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
     write_feature_file(train_path, ids, classes, features)
 
     # Create test file
-    test_path = os.path.join(_my_dir, 'test', 'test_sparse.jsonlines')
+    test_path = join(_my_dir, 'test', 'test_sparse.jsonlines')
     ids = []
     classes = []
     features = []
@@ -665,7 +692,7 @@ def make_sparse_data():
         y = "dog" if i % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, i)
         # f1 and f5 are not missing in any instances here but f4 is
-        x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
+        x = {"f1": i, "f2": i + 2, "f3": i % 10, "f5": i * 2}
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
@@ -679,17 +706,18 @@ def test_sparse_feature_hasher_predict():
     '''
     make_sparse_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_sparse_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_sparse_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_sparse_test_sparse_LogisticRegression.results')) \
+    with open(join(_my_dir, 'output',
+                   'test_sparse_test_sparse_LogisticRegression.results')) \
             as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     assert_almost_equal(logistic_result_score, 0.5)
 
@@ -700,21 +728,22 @@ def test_sparse_predict():
     '''
     make_sparse_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs', 'test_sparse.template.cfg')
+    config_template_path = join(_my_dir, 'configs', 'test_sparse.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(os.path.join(_my_dir, 'output', 'test_sparse_test_sparse_LogisticRegression.results')) as f:
+    with open(join(_my_dir, 'output', 'test_sparse_test_sparse_LogisticRegression.results')) as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     assert_almost_equal(logistic_result_score, 0.5)
 
 
 def make_class_map_data():
     # Create training file
-    train_path = os.path.join(_my_dir, 'train', 'test_class_map.jsonlines')
+    train_path = join(_my_dir, 'train', 'test_class_map.jsonlines')
     ids = []
     classes = []
     features = []
@@ -723,14 +752,14 @@ def make_class_map_data():
         y = class_names[i % 4]
         ex_id = "{}{}".format(y, i)
         # note that f1 and f5 are missing in all instances but f4 is not
-        x = {"f2": i+1, "f3": i+2, "f4": i+5}
+        x = {"f2": i + 1, "f3": i + 2, "f4": i + 5}
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
     write_feature_file(train_path, ids, classes, features)
 
     # Create test file
-    test_path = os.path.join(_my_dir, 'test', 'test_class_map.jsonlines')
+    test_path = join(_my_dir, 'test', 'test_class_map.jsonlines')
     ids = []
     classes = []
     features = []
@@ -738,7 +767,7 @@ def make_class_map_data():
         y = class_names[i % 4]
         ex_id = "{}{}".format(y, i)
         # f1 and f5 are not missing in any instances here but f4 is
-        x = {"f1": i, "f2": i+2, "f3": i % 10, "f5": i * 2}
+        x = {"f1": i, "f2": i + 2, "f3": i % 10, "f5": i * 2}
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
@@ -748,14 +777,18 @@ def make_class_map_data():
 def test_class_map():
     make_class_map_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs', 'test_class_map.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_class_map.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(os.path.join(_my_dir, 'output', 'test_class_map_test_class_map_LogisticRegression.results')) as f:
+    with open(join(_my_dir, 'output', 'test_class_map_test_class_map_LogisticRegression.results')) as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     assert_almost_equal(logistic_result_score, 0.5)
 
@@ -763,25 +796,26 @@ def test_class_map():
 def test_class_map_feature_hasher():
     make_class_map_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_class_map_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_class_map_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_class_map_test_class_map_LogisticRegression.results')) \
+    with open(join(_my_dir, 'output',
+                   'test_class_map_test_class_map_LogisticRegression.results')) \
             as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     assert_almost_equal(logistic_result_score, 0.5)
 
 
 def make_ablation_data():
     # Remove old CV data
-    for old_file in glob.glob(os.path.join(_my_dir, 'output',
-                                           'ablation_cv_*.results')):
+    for old_file in glob.glob(join(_my_dir, 'output',
+                                   'ablation_cv_*.results')):
         os.remove(old_file)
 
     num_examples = 1000
@@ -803,11 +837,13 @@ def make_ablation_data():
         features.append(x)
 
     for i in range(5):
-        train_path = os.path.join(_my_dir, 'train', 'f{}.jsonlines'.format(i))
+        train_path = join(_my_dir, 'train', 'f{}.jsonlines'.format(i))
         sub_features = []
         for example_num in range(num_examples):
             feat_num = i
-            x = {"f{}".format(feat_num): features[example_num]["f{}".format(feat_num)]}
+            x = {
+                "f{}".format(feat_num): features[example_num][
+                    "f{}".format(feat_num)]}
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
@@ -818,20 +854,29 @@ def test_ablation_cv():
     '''
     make_ablation_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_ablation.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True)
 
     # read in the summary file and make sure it has
-    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132 lines
-    with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
+    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132
+    # lines
+    with open(join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 132)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir, 'output', 'ablation_cv_*.results')))
+    num_result_files = len(
+        glob.glob(
+            join(
+                _my_dir,
+                'output',
+                'ablation_cv_*.results')))
     eq_(num_result_files, 12)
 
 
@@ -841,24 +886,26 @@ def test_ablation_cv_all_combos():
     '''
     make_ablation_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_ablation.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_ablation.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True, all_combos=True)
 
     # read in the summary file and make sure it has
-    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682 lines
-    with open(os.path.join(_my_dir, 'output',
-                           'ablation_cv_summary.tsv')) as f:
+    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682
+    # lines
+    with open(join(_my_dir, 'output',
+                   'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 682)
 
-    # make sure there are 31 ablated featuresets * 2 learners = 62 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir,
-                                                  'output',
-                                                  'ablation_cv_*results')))
+    # make sure there are 31 ablated featuresets * 2 learners = 62 results
+    # files
+    num_result_files = len(glob.glob(join(_my_dir,
+                                          'output',
+                                          'ablation_cv_*results')))
     eq_(num_result_files, 62)
 
 
@@ -869,24 +916,28 @@ def test_ablation_cv_feature_hasher():
     '''
     make_ablation_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_ablation_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_ablation_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True)
 
     # read in the summary file and make sure it has
-    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132 lines
-    with open(os.path.join(_my_dir, 'output',
-                           'ablation_cv_feature_hasher_summary.tsv')) as f:
+    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132
+    # lines
+    with open(join(_my_dir, 'output',
+                   'ablation_cv_feature_hasher_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 132)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir,
-                                                  'output',
-                                                  'ablation_cv_feature_hasher_*.results')))
+    num_result_files = len(
+        glob.glob(
+            join(
+                _my_dir,
+                'output',
+                'ablation_cv_feature_hasher_*.results')))
     eq_(num_result_files, 12)
 
 
@@ -897,24 +948,29 @@ def test_ablation_cv_feature_hasher_all_combos():
     '''
     make_ablation_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_ablation_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_ablation_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True, all_combos=True)
 
     # read in the summary file and make sure it has
-    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682 lines
-    with open(os.path.join(_my_dir, 'output',
-                           'ablation_cv_feature_hasher_summary.tsv')) as f:
+    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682
+    # lines
+    with open(join(_my_dir, 'output',
+                   'ablation_cv_feature_hasher_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 682)
 
-    # make sure there are 31 ablated featuresets * 2 learners = 62 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir,
-                                                  'output',
-                                                  'ablation_cv_feature_hasher_*results')))
+    # make sure there are 31 ablated featuresets * 2 learners = 62 results
+    # files
+    num_result_files = len(
+        glob.glob(
+            join(
+                _my_dir,
+                'output',
+                'ablation_cv_feature_hasher_*results')))
     eq_(num_result_files, 62)
 
 
@@ -939,11 +995,13 @@ def make_scaling_data():
         features.append(x)
 
     for i in range(5):
-        train_path = os.path.join(_my_dir, 'train', 'g{}.jsonlines'.format(i))
+        train_path = join(_my_dir, 'train', 'g{}.jsonlines'.format(i))
         sub_features = []
         for example_num in range(num_train_examples):
             feat_num = i
-            x = {"g{}".format(feat_num): features[example_num]["g{}".format(feat_num)]}
+            x = {
+                "g{}".format(feat_num): features[example_num][
+                    "g{}".format(feat_num)]}
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
@@ -959,11 +1017,13 @@ def make_scaling_data():
         features.append(x)
 
     for i in range(5):
-        train_path = os.path.join(_my_dir, 'test', 'g{}.jsonlines'.format(i))
+        train_path = join(_my_dir, 'test', 'g{}.jsonlines'.format(i))
         sub_features = []
         for example_num in range(num_test_examples):
             feat_num = i
-            x = {"g{}".format(feat_num): features[example_num]["g{}".format(feat_num)]}
+            x = {
+                "g{}".format(feat_num): features[example_num][
+                    "g{}".format(feat_num)]}
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
@@ -976,29 +1036,33 @@ def test_scaling_feature_hasher():
     make_scaling_data()
 
     # run the experiment without scaling
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_scaling_without_feature_hasher.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_scaling_without_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     # now run the version with scaling
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_scaling_with_feature_hasher.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_scaling_with_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     # make sure that the result with and without scaling aren't the same
-    with open(os.path.join(_my_dir, 'output',
-                           'without_scaling_feature_hasher_summary.tsv')) as f:
+    with open(join(_my_dir, 'output',
+                   'without_scaling_feature_hasher_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         row = list(reader)[0]
         without_scaling_score = row['score']
         without_scaling_scaling_value = row['feature_scaling']
 
-    with open(os.path.join(_my_dir, 'output',
-                           'with_scaling_feature_hasher_summary.tsv')) as f:
+    with open(join(_my_dir, 'output',
+                   'with_scaling_feature_hasher_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         row = list(reader)[0]
         with_scaling_score = row['score']
@@ -1016,25 +1080,32 @@ def test_scaling():
     make_scaling_data()
 
     # run the experiment without scaling
-    config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_without.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_scaling_without.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     # now run the version with scaling
-    config_template_path = os.path.join(_my_dir, 'configs', 'test_scaling_with.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_scaling_with.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     # make sure that the result with and without scaling aren't the same
-    with open(os.path.join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
+    with open(join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         row = list(reader)[0]
         without_scaling_score = row['score']
         without_scaling_scaling_value = row['feature_scaling']
 
-    with open(os.path.join(_my_dir, 'output', 'with_scaling_summary.tsv')) as f:
+    with open(join(_my_dir, 'output',
+                   'with_scaling_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         row = list(reader)[0]
         with_scaling_score = row['score']
@@ -1130,8 +1201,8 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
 
     np.random.seed(1234567890)
 
-    merge_dir = os.path.join(_my_dir, 'train', 'test_merging')
-    if not os.path.exists(merge_dir):
+    merge_dir = join(_my_dir, 'train', 'test_merging')
+    if not exists(merge_dir):
         os.makedirs(merge_dir)
 
     # Create lists we will write files from
@@ -1141,8 +1212,8 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
     for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, j) if not numeric_ids else j
-        x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num in
-             range(num_feat_files * num_feats_per_file)}
+        x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num
+             in range(num_feat_files * num_feats_per_file)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
         ids.append(ex_id)
         classes.append(y)
@@ -1154,11 +1225,11 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
         feat_num = i * num_feats_per_file
         subset_dict['{}'.format(i)] = ["f{:03d}".format(feat_num + j) for j in
                                        range(num_feats_per_file)]
-    train_path = os.path.join(merge_dir, suffix)
+    train_path = join(merge_dir, suffix)
     write_feature_file(train_path, ids, classes, features, subsets=subset_dict)
 
     # Merged
-    train_path = os.path.join(merge_dir, 'all{}'.format(suffix))
+    train_path = join(merge_dir, 'all{}'.format(suffix))
     write_feature_file(train_path, ids, classes, features)
 
 
@@ -1169,7 +1240,7 @@ def check_load_featureset(suffix, numeric_ids):
     make_merging_data(num_feat_files, suffix, numeric_ids)
 
     # Load unmerged data and merge it
-    dirpath = os.path.join(_my_dir, 'train', 'test_merging')
+    dirpath = join(_my_dir, 'train', 'test_merging')
     featureset = ['{}'.format(i) for i in range(num_feat_files)]
     merged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
 
@@ -1198,7 +1269,7 @@ def test_load_featureset():
 
 
 def test_ids_to_floats():
-    path = os.path.join(_my_dir, 'train', 'test_input_2examples_1.jsonlines')
+    path = join(_my_dir, 'train', 'test_input_2examples_1.jsonlines')
 
     examples = load_examples(path, ids_to_floats=True, quiet=True)
     assert isinstance(examples.ids[0], float)
@@ -1239,8 +1310,8 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
 
     np.random.seed(1234567890)
 
-    convert_dir = os.path.join(_my_dir, 'train', 'test_conversion')
-    if not os.path.exists(convert_dir):
+    convert_dir = join(_my_dir, 'train', 'test_conversion')
+    if not exists(convert_dir):
         os.makedirs(convert_dir)
 
     # Create lists we will write files from
@@ -1250,31 +1321,35 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
     for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, j)
-        x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num in
-             range(num_feat_files * num_feats_per_file)}
+        x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num
+             in range(num_feat_files * num_feats_per_file)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
 
     # get the feature name prefix
-    feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'), to_suffix.lstrip('.'))
+    feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'),
+                                            to_suffix.lstrip('.'))
 
     # Write out unmerged features in the `from_suffix` file format
     for i in range(num_feat_files):
-        train_path = os.path.join(convert_dir,
-                                  '{}_{}{}'.format(feature_name_prefix,
-                                                   i, from_suffix))
+        train_path = join(convert_dir,
+                          '{}_{}{}'.format(feature_name_prefix,
+                                           i, from_suffix))
         sub_features = []
         for example_num in range(num_examples):
             feat_num = i * num_feats_per_file
-            x = {"f{:03d}".format(feat_num + j): features[example_num]["f{:03d}".format(feat_num + j)] for j in range(num_feats_per_file)}
+            x = {"f{:03d}".format(feat_num + j):
+                 features[example_num]["f{:03d}".format(feat_num + j)] for j in
+                 range(num_feats_per_file)}
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
     # Write out the merged features in the `to_suffix` file format
-    train_path = os.path.join(convert_dir, '{}_all{}'.format(feature_name_prefix,
-                                                             to_suffix))
+    train_path = join(convert_dir,
+                      '{}_all{}'.format(feature_name_prefix,
+                                        to_suffix))
     write_feature_file(train_path, ids, classes, features)
 
 
@@ -1285,27 +1360,34 @@ def check_convert_featureset(from_suffix, to_suffix):
     make_conversion_data(num_feat_files, from_suffix, to_suffix)
 
     # the path to the unmerged feature files
-    dirpath = os.path.join(_my_dir, 'train', 'test_conversion')
+    dirpath = join(_my_dir, 'train', 'test_conversion')
 
     # get the feature name prefix
-    feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'), to_suffix.lstrip('.'))
+    feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'),
+                                            to_suffix.lstrip('.'))
 
-    # Load each unmerged feature file in the `from_suffix` format
-    # and convert it to the `to_suffix` format
+    # Load each unmerged feature file in the `from_suffix` format and convert
+    # it to the `to_suffix` format
     for feature in range(num_feat_files):
-        input_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
-                                                                 feature, from_suffix))
-        output_file_path = os.path.join(dirpath, '{}_{}{}'.format(feature_name_prefix,
-                                                                  feature, to_suffix))
+        input_file_path = join(dirpath,
+                               '{}_{}{}'.format(feature_name_prefix,
+                                                feature, from_suffix))
+        output_file_path = join(dirpath,
+                                '{}_{}{}'.format(feature_name_prefix,
+                                                 feature, to_suffix))
         skll_convert.main(['--quiet', input_file_path, output_file_path])
 
-    # now load and merge all unmerged, converted features in the `to_suffix` format
-    featureset = ['{}_{}'.format(feature_name_prefix, i) for i in range(num_feat_files)]
-    merged_examples = _load_featureset(dirpath, featureset, to_suffix, quiet=True)
+    # now load and merge all unmerged, converted features in the `to_suffix`
+    # format
+    featureset = ['{}_{}'.format(feature_name_prefix, i) for i in
+                  range(num_feat_files)]
+    merged_examples = _load_featureset(dirpath, featureset, to_suffix,
+                                       quiet=True)
 
     # Load pre-merged data in the `to_suffix` format
     featureset = ['{}_all'.format(feature_name_prefix)]
-    premerged_examples = _load_featureset(dirpath, featureset, to_suffix, quiet=True)
+    premerged_examples = _load_featureset(dirpath, featureset, to_suffix,
+                                          quiet=True)
 
     # make sure that the pre-generated merged data in the to_suffix format
     # is the same as the converted, merged data in the to_suffix format
@@ -1321,13 +1403,22 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff'], 2):
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
+                                                          '.megam', '.tsv',
+                                                          '.csv', '.arff',
+                                                          '.libsvm'], 2):
         yield check_convert_featureset, from_suffix, to_suffix
 
 
 def test_compute_eval_from_predictions():
-    pred_path = os.path.join(_my_dir, 'other', 'test_compute_eval_from_predictions.predictions')
-    input_path = os.path.join(_my_dir, 'other', 'test_compute_eval_from_predictions.jsonlines')
+    pred_path = join(
+        _my_dir,
+        'other',
+        'test_compute_eval_from_predictions.predictions')
+    input_path = join(
+        _my_dir,
+        'other',
+        'test_compute_eval_from_predictions.jsonlines')
 
     scores = compute_eval_from_predictions(input_path, pred_path,
                                            ['pearson', 'unweighted_kappa'])
@@ -1342,21 +1433,25 @@ def test_ablation_cv_sampler():
     '''
     make_ablation_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs', 'test_ablation_sampler.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_ablation_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True)
 
     # read in the summary file and make sure it has
-    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132 lines
-    with open(os.path.join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
+    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132
+    # lines
+    with open(join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 132)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir, 'output',
-                                                  'ablation_cv_*.results')))
+    num_result_files = len(glob.glob(join(_my_dir, 'output',
+                                          'ablation_cv_*.results')))
     eq_(num_result_files, 12)
 
 
@@ -1366,24 +1461,26 @@ def test_ablation_cv_all_combos_sampler():
     '''
     make_ablation_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_ablation_sampler.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_ablation_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True, all_combos=True)
 
     # read in the summary file and make sure it has
-    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682 lines
-    with open(os.path.join(_my_dir, 'output',
-                           'ablation_cv_summary.tsv')) as f:
+    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682
+    # lines
+    with open(join(_my_dir, 'output',
+                   'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 682)
 
-    # make sure there are 31 ablated featuresets * 2 learners = 62 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir,
-                                                  'output',
-                                                  'ablation_cv_*results')))
+    # make sure there are 31 ablated featuresets * 2 learners = 62 results
+    # files
+    num_result_files = len(glob.glob(join(_my_dir,
+                                          'output',
+                                          'ablation_cv_*results')))
     eq_(num_result_files, 62)
 
 
@@ -1394,24 +1491,30 @@ def test_ablation_cv_feature_hasher_sampler():
     '''
     make_ablation_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_ablation_feature_hasher_sampler.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_ablation_feature_hasher_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True)
 
     # read in the summary file and make sure it has
-    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132 lines
-    with open(os.path.join(_my_dir, 'output',
-                           'ablation_cv_feature_hasher_summary.tsv')) as f:
+    # 6 ablated featuresets * (10 folds + 1 average line) * 2 learners = 132
+    # lines
+    with open(join(_my_dir, 'output',
+                   'ablation_cv_feature_hasher_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 132)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir,
-                                                  'output',
-                                                  'ablation_cv_feature_hasher_*.results')))
+    num_result_files = len(
+        glob.glob(
+            join(
+                _my_dir,
+                'output',
+                'ablation_cv_feature_hasher_*.results')))
     eq_(num_result_files, 12)
 
 
@@ -1422,24 +1525,31 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
     '''
     make_ablation_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_ablation_feature_hasher_sampler.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_ablation_feature_hasher_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True, all_combos=True)
 
     # read in the summary file and make sure it has
-    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682 lines
-    with open(os.path.join(_my_dir, 'output',
-                           'ablation_cv_feature_hasher_summary.tsv')) as f:
+    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682
+    # lines
+    with open(join(_my_dir, 'output',
+                   'ablation_cv_feature_hasher_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 682)
 
-    # make sure there are 31 ablated featuresets * 2 learners = 62 results files
-    num_result_files = len(glob.glob(os.path.join(_my_dir,
-                                                  'output',
-                                                  'ablation_cv_feature_hasher_*results')))
+    # make sure there are 31 ablated featuresets * 2 learners = 62 results
+    # files
+    num_result_files = len(
+        glob.glob(
+            join(
+                _my_dir,
+                'output',
+                'ablation_cv_feature_hasher_*results')))
     eq_(num_result_files, 62)
 
 
@@ -1450,17 +1560,20 @@ def test_sparse_feature_hasher_predict_sampler():
     '''
     make_sparse_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_sparse_feature_hasher_sampler.template.cfg')
+    config_template_path = join(
+        _my_dir,
+        'configs',
+        'test_sparse_feature_hasher_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(os.path.join(_my_dir, 'output',
-                           'test_sparse_test_sparse_LogisticRegression.results')) \
+    with open(join(_my_dir, 'output',
+                   'test_sparse_test_sparse_LogisticRegression.results')) \
             as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     assert_almost_equal(logistic_result_score, 0.5)
 
@@ -1471,17 +1584,18 @@ def test_sparse_predict_sampler():
     '''
     make_sparse_data()
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_sparse_sampler.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_sparse_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(os.path.join(_my_dir,
-                           'output', 'test_sparse_test_sparse_LogisticRegression.results')) \
+    with open(join(_my_dir,
+                   'output', 'test_sparse_test_sparse_LogisticRegression.results')) \
             as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(
+            SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     assert_almost_equal(logistic_result_score, 0.5, delta=0.025)
 
@@ -1498,10 +1612,10 @@ def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):
                                                    lambda x: x > 0.95,
                                                    10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = os.path.join(_my_dir, 'configs',
-                                            config_template_file)
-        config_path = os.path.join(_my_dir,
-                                   fill_in_config_paths(config_template_path))
+        config_template_path = join(_my_dir, 'configs',
+                                    config_template_file)
+        config_path = join(_my_dir,
+                           fill_in_config_paths(config_template_path))
 
         # Modify config file to change ids_to_floats depending on numeric_ids
         # setting
@@ -1520,7 +1634,7 @@ def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):
         run_configuration(config_path, quiet=True)
         result_filename = ('{}_test_cv_folds_LogisticRegression.' +
                            'results').format(experiment_name)
-        with open(os.path.join(_my_dir, 'output', result_filename)) as f:
+        with open(join(_my_dir, 'output', result_filename)) as f:
             # check held out scores
             outstr = f.read()
             score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
@@ -1533,13 +1647,13 @@ def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):
 
     # try the same tests for just training (and specifying the folds for the
     # grid search)
-    dirpath = os.path.join(_my_dir, 'train')
+    dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train',
-                                           'test_cv_folds.csv'))
+    cv_folds = _load_cv_folds(join(_my_dir, 'train',
+                                   'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
                                   grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
@@ -1560,10 +1674,10 @@ def check_specified_cv_folds_sampler(numeric_ids):
                                                    lambda x: x > 0.95,
                                                    10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = os.path.join(_my_dir, 'configs',
-                                            config_template_file)
-        config_path = os.path.join(_my_dir,
-                                   fill_in_config_paths(config_template_path))
+        config_template_path = join(_my_dir, 'configs',
+                                    config_template_file)
+        config_path = join(_my_dir,
+                           fill_in_config_paths(config_template_path))
 
         # Modify config file to change ids_to_floats depending on numeric_ids
         # setting
@@ -1582,7 +1696,7 @@ def check_specified_cv_folds_sampler(numeric_ids):
         run_configuration(config_path, quiet=True)
         result_filename = ('{}_test_cv_folds_LogisticRegression.' +
                            'results').format(experiment_name)
-        with open(os.path.join(_my_dir, 'output', result_filename)) as f:
+        with open(join(_my_dir, 'output', result_filename)) as f:
             # check held out scores
             outstr = f.read()
             score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
@@ -1595,13 +1709,13 @@ def check_specified_cv_folds_sampler(numeric_ids):
 
     # try the same tests for just training (and specifying the folds for the
     # grid search)
-    dirpath = os.path.join(_my_dir, 'train')
+    dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(os.path.join(_my_dir, 'train',
-                                           'test_cv_folds.csv'))
+    cv_folds = _load_cv_folds(join(_my_dir, 'train',
+                                   'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
                                   grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
