@@ -27,12 +27,12 @@ from operator import itemgetter
 import numpy as np
 from bs4 import UnicodeDammit
 from collections import namedtuple
-from six import iteritems, string_types, text_type
+from six import iteritems, PY2, string_types, text_type
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 # Import QueueHandler and QueueListener for multiprocess-safe logging
-if sys.version_info < (3, 0):
+if PY2:
     from logutils.queue import QueueHandler, QueueListener
 else:
     from logging.handlers import QueueHandler, QueueListener
@@ -329,7 +329,7 @@ class _LibSVMDictIter(_DictIter):
         for example_num, line in enumerate(file_or_list):
             curr_id = ''
             # Decode line if it's not already str
-            if not isinstance(line, text_type):
+            if isinstance(line, bytes):
                 line = UnicodeDammit(line, ['utf-8',
                                             'windows-1252']).unicode_markup
             match = self.line_regex.search(line.strip())
@@ -432,14 +432,14 @@ class _DelimitedDictIter(_DictIter):
             # delete it later since we don't need to explicitly
             # store zeros in the feature hash
             columns_to_delete = []
-            if sys.version_info < (3, 0):
+            if PY2:
                 columns_to_convert_to_unicode = []
             for fname, fval in iteritems(row):
                 fval_float = _safe_float(fval)
                 # we don't need to explicitly store zeros
                 if fval_float:
                     row[fname] = fval_float
-                    if sys.version_info < (3, 0):
+                    if PY2:
                         columns_to_convert_to_unicode.append(fname)
                 else:
                     columns_to_delete.append(fname)
@@ -450,7 +450,7 @@ class _DelimitedDictIter(_DictIter):
 
             # convert the names of all the other columns to
             # unicode for python 2
-            if sys.version_info < (3, 0):
+            if PY2:
                 for cname in columns_to_convert_to_unicode:
                     fval = row[cname]
                     del row[cname]
@@ -463,7 +463,7 @@ class _DelimitedDictIter(_DictIter):
                     raise ValueError(('You set ids_to_floats to true, but' +
                                       ' ID {} could not be converted to ' +
                                       'float').format(curr_id))
-            elif sys.version_info < (3, 0):
+            elif PY2:
                 curr_id = curr_id.decode('utf-8')
 
             yield curr_id, class_name, row
@@ -531,7 +531,7 @@ class _ARFFDictIter(_DelimitedDictIter):
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
         '''
-        if sys.version_info < (3, 0):
+        if PY2:
             delimiter = delimiter.encode()
             quote_char = quote_char.encode()
             escape_char = escape_char.encode()
@@ -564,7 +564,7 @@ class _ARFFDictIter(_DelimitedDictIter):
                 # Skip other types of rows (relations)
 
         # Create header for CSV
-        if sys.version_info < (3, 0):
+        if PY2:
             io_type = BytesIO
         else:
             io_type = StringIO
@@ -851,7 +851,7 @@ def _safe_float(text, replace_dict=None):
     try:
         return float(text)
     except ValueError:
-        return text.decode('utf-8') if sys.version_info < (3, 0) else text
+        return text.decode('utf-8') if PY2 else text
     except TypeError:
         return 0.0
 
@@ -1053,7 +1053,7 @@ def _write_jsonlines_file(path, ids, classes, features):
 
 
 def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
-                       label_vectorizer):
+                       label_map):
     '''
     Writes a feature file in .libsvm format with the given a list of IDs,
     classes, and features.
@@ -1074,9 +1074,9 @@ def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
     :param feat_vectorizer: A `DictVectorizer` to map to/from feature columns
                             indices and names.
     :type feat_vectorizer: DictVectorizer
-    :param label_vectorizer: A `DictVectorizer` to map to/from label indices
-                            and names.
-    :type label_vectorizer: DictVectorizer
+    :param label_map: Mapping from class name to numbers to use for writing
+                      LibSVM files.
+    :type label_map: dict (str -> int)
     '''
     with open(path, 'w') as f:
         # Iterate through examples
@@ -1086,8 +1086,8 @@ def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
                             if Decimal(value) != 0]
             field_values.sort()
             # Print label
-            if class_name in label_vectorizer.vocabulary_:
-                print(label_vectorizer.vocabulary_[class_name], end=' ',
+            if class_name in label_map:
+                print('{}'.format(label_map[class_name]), end=' ',
                       file=f)
             else:
                 print('{}'.format(class_name), end=' ', file=f)
@@ -1099,8 +1099,11 @@ def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
             if ex_id is not None:
                 print('{}'.format(ex_id), end='', file=f)
             print(' |', end=' ', file=f)
-            if class_name in label_vectorizer.vocabulary_:
-                print('{}={}'.format(label_vectorizer.vocabulary_[class_name],
+            if PY2 and class_name is not None and isinstance(class_name,
+                                                             text_type):
+                class_name = class_name.encode('utf-8')
+            if class_name in label_map:
+                print('{}={}'.format(label_map[class_name],
                                           class_name),
                       end=' | ', file=f)
             else:
@@ -1148,7 +1151,7 @@ def _write_megam_file(path, ids, classes, features):
 def _write_sub_feature_file(path, ids, classes, features, filter_features,
                             label_col='y', arff_regression=False,
                             arff_relation='skll_relation',
-                            feat_vectorizer=None, label_vectorizer=None):
+                            feat_vectorizer=None, label_map=None):
     '''
     Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
     ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a
@@ -1189,9 +1192,9 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
     :param feat_vectorizer: A `DictVectorizer` to map to/from feature columns
                             indices and names.
     :type feat_vectorizer: DictVectorizer
-    :param label_vectorizer: A `DictVectorizer` to map to/from label indices
-                            and names.
-    :type label_vectorizer: DictVectorizer
+    :param label_map: Mapping from class name to numbers to use for writing
+                      LibSVM files.
+    :type label_map: dict (str -> int)
     '''
     # Setup logger
     logger = logging.getLogger(__name__)
@@ -1238,7 +1241,7 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
     # Create .libsvm file if asked
     elif ext == ".libsvm":
         _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
-                           label_vectorizer)
+                           label_map)
     # Create .megam file if asked
     elif ext == ".megam":
         _write_megam_file(path, ids, classes, features)
@@ -1257,7 +1260,7 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
 def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                        id_prefix='EXAMPLE_', label_col='y',
                        arff_regression=False, arff_relation='skll_relation',
-                       subsets=None):
+                       subsets=None, label_map=None):
     '''
     Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
     ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
@@ -1315,6 +1318,9 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                     matching. Therefore, you do not need to enumerate all of
                     these boolean feature names in your mapping.
     :type subsets: dict (str to list of str)
+    :param label_map: Mapping from class name to numbers to use for writing
+                      LibSVM files.
+    :type label_map: dict (str -> int)
     '''
     # Setup logger
     logger = logging.getLogger(__name__)
@@ -1337,15 +1343,17 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         feat_vectorizer = DictVectorizer(sparse=True)
         feat_vectorizer.fit(features)
     # Create label vectorizer if writing libsvm
-    if is_libsvm:
-        label_vectorizer = DictVectorizer(sparse=True)
+    if is_libsvm and label_map is None:
+        label_map = {}
         if classes is not None:
-            label_vectorizer.fit([{label: 1} for label in classes if
-                                  isinstance(label, str)])
+            label_map = {label: num for num, label in
+                         enumerate(sorted({label for label in classes if
+                                           not isinstance(label, (int,
+                                                                  float))}))}
         # Add fake item to vectorizer for None
-        label_vectorizer.vocabulary_[None] = '00000'
+        label_map[None] = '00000'
     else:
-        label_vectorizer = None
+        label_map = None
 
     # Create ID generator if necessary
     if ids is None:
@@ -1369,7 +1377,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                                 arff_regression=arff_regression,
                                 arff_relation=arff_relation,
                                 feat_vectorizer=feat_vectorizer,
-                                label_vectorizer=label_vectorizer)
+                                label_map=label_map)
     # Otherwise write one feature file per subset
     else:
         ids = list(ids)
@@ -1383,5 +1391,5 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                                     arff_regression=arff_regression,
                                     arff_relation=arff_relation,
                                     feat_vectorizer=feat_vectorizer,
-                                    label_vectorizer=label_vectorizer)
+                                    label_map=label_map)
 
