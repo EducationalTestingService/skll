@@ -1328,8 +1328,6 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     logger.debug('Feature vectorizer: %s', feat_vectorizer)
     logger.debug('Features: %s', features)
 
-    is_libsvm = os.path.splitext(path)[1].lower() == '.libsvm'
-
     # Check for valid features
     if isinstance(features, np.ndarray):
         if feat_vectorizer is None:
@@ -1338,20 +1336,22 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         # Convert features to list of dicts if given an array-like & vectorizer
         else:
             features = feat_vectorizer.inverse_transform(features)
-    # Create feature vectorizer if unspecified and writing libsvm
-    elif is_libsvm:
-        feat_vectorizer = DictVectorizer(sparse=True)
-        feat_vectorizer.fit(features)
-    # Create label vectorizer if writing libsvm
-    if is_libsvm and label_map is None:
-        label_map = {}
-        if classes is not None:
-            label_map = {label: num for num, label in
-                         enumerate(sorted({label for label in classes if
-                                           not isinstance(label, (int,
-                                                                  float))}))}
-        # Add fake item to vectorizer for None
-        label_map[None] = '00000'
+
+    # Create missing vectorizers if writing libsvm
+    if os.path.splitext(path)[1].lower() == '.libsvm':
+        if label_map is None:
+            label_map = {}
+            if classes is not None:
+                label_map = {label: num for num, label in
+                             enumerate(sorted({label for label in classes if
+                                               not isinstance(label,
+                                                              (int, float))}))}
+            # Add fake item to vectorizer for None
+            label_map[None] = '00000'
+        # Create feature vectorizer if unspecified and writing libsvm
+        if feat_vectorizer is None or not feat_vectorizer.vocabulary_:
+            feat_vectorizer = DictVectorizer(sparse=True)
+            feat_vectorizer.fit(features)
     else:
         label_map = None
 
