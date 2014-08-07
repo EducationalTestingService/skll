@@ -25,6 +25,7 @@ import numpy as np
 import scipy.sparse as sp
 from nose.tools import eq_, raises, assert_almost_equal, assert_not_equal
 from numpy.testing import assert_array_equal
+from sklearn.feature_extraction import DictVectorizer
 
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.experiments import (_load_featureset, run_configuration,
@@ -1323,6 +1324,14 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
+    # Create vectorizers/maps for libsvm subset writing
+    feat_vectorizer = DictVectorizer()
+    feat_vectorizer.fit(features)
+    label_map = {label: num for num, label in
+                 enumerate(sorted({label for label in classes if
+                 not isinstance(label, (int, float))}))}
+    # Add fake item to vectorizer for None
+    label_map[None] = '00000'
 
     # get the feature name prefix
     feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'),
@@ -1340,13 +1349,16 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
                  features[example_num]["f{:03d}".format(feat_num + j)] for j in
                  range(num_feats_per_file)}
             sub_features.append(x)
-        write_feature_file(train_path, ids, classes, sub_features)
+        write_feature_file(train_path, ids, classes, sub_features,
+                           feat_vectorizer=feat_vectorizer,
+                           label_map=label_map)
 
     # Write out the merged features in the `to_suffix` file format
     train_path = join(convert_dir,
                       '{}_all{}'.format(feature_name_prefix,
                                         to_suffix))
-    write_feature_file(train_path, ids, classes, features)
+    write_feature_file(train_path, ids, classes, features,
+                       feat_vectorizer=feat_vectorizer, label_map=label_map)
 
 
 def check_convert_featureset(from_suffix, to_suffix):
