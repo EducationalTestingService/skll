@@ -80,6 +80,10 @@ The following feature file formats are supported:
             2 1:2.0 3:8.1 # Example1 | 2=ClassY | 1=FeatureA 3=FeatureC
             1 5:7.0 6:19.1 # Example2 | 1=ClassX | 5=FeatureE 6=FeatureF
 
+        .. note::
+            IDs, classes, and feature names cannot contain the following
+            characters:  ``|`` ``#`` ``=``
+
     **megam**
         An expanded form of the input format for the
         `MegaM classification package <http://www.umiacs.umd.edu/~hal/megam/>`_
