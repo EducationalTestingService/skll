@@ -141,10 +141,10 @@ class _DummyDictIter(_DictIter):
                 except ValueError:
                     raise ValueError(('You set ids_to_floats to true,' +
                                       ' but ID {} could not be ' +
-                                      'converted to in ' +
-                                      '{}').format(curr_id,
-                                                   example))
-            class_name = (_safe_float(example['y'], replace_dict=self.class_map)
+                                      'converted to float in ' +
+                                      '{}').format(curr_id, example))
+            class_name = (_safe_float(example['y'],
+                                      replace_dict=self.class_map)
                           if 'y' in example else None)
             example = example['x']
             yield curr_id, class_name, example
@@ -277,7 +277,7 @@ class _MegaMDictIter(_DictIter):
                     except ValueError:
                         raise ValueError(('You set ids_to_floats to true,' +
                                           ' but ID {} could not be ' +
-                                          'converted to in ' +
+                                          'converted to float in ' +
                                           '{}').format(curr_id,
                                                        self.path_or_list))
 
@@ -338,11 +338,13 @@ class _LibSVMDictIter(_DictIter):
                                  '\n{}'.format(line))
             # Metadata is stored in comments if this was produced by SKLL
             if match.group('comments') is not None:
+                # Store mapping from feature numbers to names
                 if match.group('feat_map'):
                     feat_map = dict(pair.split('=') for pair in
                                     match.group('feat_map').split())
                 else:
                     feat_map = None
+                # Store mapping from label/class numbers to names
                 if match.group('label_map'):
                     label_map = dict(pair.split('=') for pair in
                                      match.group('label_map').strip().split())
@@ -368,7 +370,7 @@ class _LibSVMDictIter(_DictIter):
                 except ValueError:
                     raise ValueError(('You set ids_to_floats to true,' +
                                       ' but ID {} could not be ' +
-                                      'converted to in ' +
+                                      'converted to float in ' +
                                       '{}').format(curr_id,
                                                    self.path_or_list))
 
@@ -694,7 +696,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     the format.  The comment is not mandatory, but without it, your classes
     and features will not have names.  The comment is structured as follows:
 
-        ExampleID | 1=FirstClass 2=SecondClass | 1=FirstFeature 2=SecondFeature
+        ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
 
     :param path: The path to the file to load the examples from, or a list of
                  example dictionaries (like you would pass to
@@ -1328,7 +1330,8 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     logger.debug('Feature vectorizer: %s', feat_vectorizer)
     logger.debug('Features: %s', features)
 
-    # Check for valid features
+    # Convert feature array to list of dicts if given a feat vectorizer,
+    # otherwise fail.  Only necessary if we were given an array.
     if isinstance(features, np.ndarray):
         if feat_vectorizer is None:
             raise ValueError('If `feat_vectorizer` is unspecified, you must '
