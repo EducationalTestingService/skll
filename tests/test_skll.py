@@ -57,9 +57,8 @@ def test_SelectByMinCount():
                          [0.001, 0.0, 4.0],
                          [0.0101, -200.0, 0.0]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert_array_equal(
-        feat_selector.fit_transform(
-            sp.csr_matrix(m2)).todense(),
+    assert_array_equal(feat_selector.fit_transform(
+        sp.csr_matrix(m2)).todense(),
         expected)
 
     # keep features that happen 2+ times
@@ -140,8 +139,8 @@ def make_cv_folds_data(numeric_ids):
                     ex_id = "{}{}".format(y, num_examples_per_fold * k + i)
                 x = {"f1": 1.0, "f2": -1.0, "f3": 1.0,
                      "is_{}{}".format(y, k): 1.0}
-                json_out.write(
-                    json.dumps({"y": y, "id": ex_id, "x": x}) + '\n')
+                json_out.write(json.dumps({"y": y, "id": ex_id, "x": x}) +
+                               '\n')
                 csv_out.write('{},{}\n'.format(ex_id, k))
 
 
@@ -209,10 +208,8 @@ def check_specified_cv_folds_feature_hasher(numeric_ids):
                                                    lambda x: x > 0.95,
                                                    10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = join(_my_dir, 'configs',
-                                    config_template_file)
-        config_path = join(_my_dir,
-                           fill_in_config_paths(config_template_path))
+        config_template_path = join(_my_dir, 'configs', config_template_file)
+        config_path = join(_my_dir, fill_in_config_paths(config_template_path))
 
         # Modify config file to change ids_to_floats depending on numeric_ids
         # setting
@@ -249,8 +246,7 @@ def check_specified_cv_folds_feature_hasher(numeric_ids):
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(join(_my_dir, 'train',
-                                   'test_cv_folds.csv'))
+    cv_folds = _load_cv_folds(join(_my_dir, 'train', 'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
                                   grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
@@ -271,10 +267,8 @@ def check_specified_cv_folds(numeric_ids):
                                                    lambda x: x > 0.95,
                                                    10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = join(_my_dir, 'configs',
-                                    config_template_file)
-        config_path = join(_my_dir,
-                           fill_in_config_paths(config_template_path))
+        config_template_path = join(_my_dir, 'configs', config_template_file)
+        config_path = join(_my_dir, fill_in_config_paths(config_template_path))
 
         # Modify config file to change ids_to_floats depending on numeric_ids
         # setting
@@ -311,8 +305,7 @@ def check_specified_cv_folds(numeric_ids):
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(join(_my_dir, 'train',
-                                   'test_cv_folds.csv'))
+    cv_folds = _load_cv_folds(join(_my_dir, 'train', 'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
                                   grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
@@ -381,16 +374,16 @@ def test_regression1_feature_hasher():
     run_configuration(join(_my_dir, config_path), quiet=True)
 
     with open(join(_my_dir, 'output',
-                   'test_regression1_feature_hasher_test_regression1_RescaledRidge.results')) \
-            as f:
+                   ('test_regression1_feature_hasher_test_regression1_'
+                    'RescaledRidge.results'))) as f:
         # check held out scores
         outstr = f.read()
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
         assert score > 0.7
 
-    with open(join(_my_dir, 'output',
-                   'test_regression1_feature_hasher_test_regression1_RescaledRidge.predictions'),
-              'r') as f:
+    with open(join(_my_dir, 'output', ('test_regression1_feature_hasher_'
+                                       'test_regression1_RescaledRidge'
+                                       '.predictions')), 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [float(row[1]) for row in reader]
@@ -410,24 +403,23 @@ def test_regression1():
 
     y = make_regression_data()
 
-    config_template_path = join(_my_dir,
-                                'configs', 'test_regression1.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_regression1.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     config_template_path = "test_regression1.cfg"
 
     run_configuration(join(_my_dir, config_path), quiet=True)
 
-    with open(join(_my_dir, 'output',
-                   'test_regression1_test_regression1_RescaledRidge.results')) \
-            as f:
+    with open(join(_my_dir, 'output', ('test_regression1_test_regression1'
+                                       '_RescaledRidge.results'))) as f:
         # check held out scores
         outstr = f.read()
         score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
         assert score > 0.7
 
-    with open(join(_my_dir, 'output',
-                   'test_regression1_test_regression1_RescaledRidge.predictions'),
+    with open(join(_my_dir, 'output', ('test_regression1_test_regression1_'
+                                       'RescaledRidge.predictions')),
               'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
@@ -457,9 +449,9 @@ def test_predict_feature_hasher():
         inputs = [x for x in test_file]
         assert len(inputs) == 1000
 
-    with open(join(_my_dir, 'output',
-                   'test_predict_feature_hasher_test_regression1_RescaledRidge.predictions')) \
-            as outfile:
+    with open(join(_my_dir, 'output', ('test_predict_feature_hasher_test'
+                                       '_regression1_RescaledRidge'
+                                       '.predictions'))) as outfile:
         reader = csv.DictReader(outfile, dialect=csv.excel_tab)
         predictions = [x['prediction'] for x in reader]
         assert len(predictions) == len(inputs)
@@ -472,21 +464,20 @@ def test_predict():
 
     make_regression_data()
 
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_predict.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_predict.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(join(_my_dir, config_path), quiet=True)
 
-    with open(join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
+    with open(join(_my_dir, 'test',
+                   'test_regression1.jsonlines')) as test_file:
         inputs = [x for x in test_file]
         assert len(inputs) == 1000
 
-    with open(join(_my_dir,
-                   'output', 'test_predict_test_regression1_RescaledRidge.predictions')) \
-            as outfile:
+    with open(join(_my_dir, 'output', ('test_predict_test_regression1_'
+                                       'RescaledRidge'
+                                       '.predictions'))) as outfile:
         reader = csv.DictReader(outfile, dialect=csv.excel_tab)
         predictions = [x['prediction'] for x in reader]
         assert len(predictions) == len(inputs)
@@ -530,11 +521,11 @@ def make_summary_data():
 
 
 def check_summary_score(result_score, summary_score, learner_name):
-    eq_(result_score,
-        summary_score,
-        msg='mismatched scores for {} (result:{}, summary:{})'.format(learner_name,
-                                                                      result_score,
-                                                                      summary_score))
+    eq_(result_score, summary_score, msg=('mismatched scores for {} '
+                                          '(result:{}, summary:'
+                                          '{})').format(learner_name,
+                                                        result_score,
+                                                        summary_score))
 
 
 def test_summary_feature_hasher():
@@ -549,22 +540,20 @@ def test_summary_feature_hasher():
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output',
-                   'test_summary_feature_hasher_test_summary_LogisticRegression.results')) \
-            as f:
+    with open(join(_my_dir, 'output', ('test_summary_feature_hasher_test_'
+                                       'summary_LogisticRegression'
+                                       '.results'))) as f:
         outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
+        logistic_result_score = float(logistic_result_score_str)
 
-    with open(join(_my_dir, 'output',
-                   'test_summary_feature_hasher_test_summary_SVC.results')) \
-            as f:
+    with open(join(_my_dir, 'output', ('test_summary_feature_hasher_test_'
+                                       'summary_SVC.results'))) as f:
         outstr = f.read()
         svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     with open(join(_my_dir, 'output',
-                   'test_summary_feature_hasher_summary.tsv'),
-              'r') as f:
+                   'test_summary_feature_hasher_summary.tsv'), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
@@ -581,8 +570,12 @@ def test_summary_feature_hasher():
             elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
 
-    for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'),
-                                                      (svm_result_score, svm_summary_score, 'SVC')]:
+    for result_score, summary_score, learner_name in [(logistic_result_score,
+                                                       logistic_summary_score,
+                                                       'LogisticRegression'),
+                                                      (svm_result_score,
+                                                       svm_summary_score,
+                                                       'SVC')]:
         yield check_summary_score, result_score, summary_score, learner_name
 
 
@@ -592,25 +585,26 @@ def test_summary():
     '''
     make_summary_data()
 
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_summary.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_summary.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output', 'test_summary_test_summary_LogisticRegression.results')) as f:
+    with open(join(_my_dir, 'output', ('test_summary_test_summary_'
+                                       'LogisticRegression.results'))) as f:
         outstr = f.read()
         logistic_result_score = float(
             SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(join(_my_dir, 'output', 'test_summary_test_summary_MultinomialNB.results')) as f:
+    with open(join(_my_dir, 'output', ('test_summary_test_summary_'
+                                       'MultinomialNB.results'))) as f:
         outstr = f.read()
-        naivebayes_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        naivebayes_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
+        naivebayes_result_score = float(naivebayes_score_str)
 
-    with open(join(_my_dir, 'output', 'test_summary_test_summary_SVC.results')) as f:
+    with open(join(_my_dir, 'output',
+                   'test_summary_test_summary_SVC.results')) as f:
         outstr = f.read()
         svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
@@ -633,7 +627,15 @@ def test_summary():
             elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
 
-    for result_score, summary_score, learner_name in [(logistic_result_score, logistic_summary_score, 'LogisticRegression'), (naivebayes_result_score, naivebayes_summary_score, 'MultinomialNB'), (svm_result_score, svm_summary_score, 'SVC')]:
+    for result_score, summary_score, learner_name in [(logistic_result_score,
+                                                       logistic_summary_score,
+                                                       'LogisticRegression'),
+                                                      (naivebayes_result_score,
+                                                       naivebayes_summary_score,
+                                                       'MultinomialNB'),
+                                                      (svm_result_score,
+                                                       svm_summary_score,
+                                                       'SVC')]:
         yield check_summary_score, result_score, summary_score, learner_name
 
 
@@ -641,19 +643,14 @@ def test_backward_compatibility():
     '''
     Verify that a model from v0.9.17 can still be loaded and generate the same predictions.
     '''
-    predict_path = join(
-        _my_dir,
-        'backward_compatibility',
-        'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
-    model_path = join(
-        _my_dir,
-        'backward_compatibility',
-        'v0.9.17_test_summary_test_summary_LogisticRegression.{}.model'.format(
-            sys.version_info[0]))
-    test_path = join(
-        _my_dir,
-        'backward_compatibility',
-        'v0.9.17_test_summary.jsonlines')
+    predict_path = join(_my_dir, 'backward_compatibility',
+                        ('v0.9.17_test_summary_test_summary_'
+                         'LogisticRegression.predictions'))
+    model_path = join(_my_dir, 'backward_compatibility',
+                      ('v0.9.17_test_summary_test_summary_LogisticRegression.'
+                       '{}.model').format(sys.version_info[0]))
+    test_path = join(_my_dir, 'backward_compatibility',
+                     'v0.9.17_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
     examples = load_examples(test_path, quiet=True)
@@ -709,9 +706,8 @@ def test_sparse_feature_hasher_predict():
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output',
-                   'test_sparse_test_sparse_LogisticRegression.results')) \
-            as f:
+    with open(join(_my_dir, 'output', ('test_sparse_test_sparse_Logistic'
+                                       'Regression.results'))) as f:
         outstr = f.read()
         logistic_result_score = float(
             SCORE_OUTPUT_RE.search(outstr).groups()[0])
@@ -730,7 +726,8 @@ def test_sparse_predict():
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output', 'test_sparse_test_sparse_LogisticRegression.results')) as f:
+    with open(join(_my_dir, 'output', ('test_sparse_test_sparse_Logistic'
+                                       'Regression.results'))) as f:
         outstr = f.read()
         logistic_result_score = float(
             SCORE_OUTPUT_RE.search(outstr).groups()[0])
@@ -782,7 +779,8 @@ def test_class_map():
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output', 'test_class_map_test_class_map_LogisticRegression.results')) as f:
+    with open(join(_my_dir, 'output', ('test_class_map_test_class_map_Logistic'
+                                       'Regression.results'))) as f:
         outstr = f.read()
         logistic_result_score = float(
             SCORE_OUTPUT_RE.search(outstr).groups()[0])
@@ -799,9 +797,8 @@ def test_class_map_feature_hasher():
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output',
-                   'test_class_map_test_class_map_LogisticRegression.results')) \
-            as f:
+    with open(join(_my_dir, 'output', ('test_class_map_test_class_map_'
+                                       'LogisticRegression.results'))) as f:
         outstr = f.read()
         logistic_result_score = float(
             SCORE_OUTPUT_RE.search(outstr).groups()[0])
@@ -838,9 +835,8 @@ def make_ablation_data():
         sub_features = []
         for example_num in range(num_examples):
             feat_num = i
-            x = {
-                "f{}".format(feat_num): features[example_num][
-                    "f{}".format(feat_num)]}
+            x = {"f{}".format(feat_num):
+                 features[example_num]["f{}".format(feat_num)]}
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
@@ -851,10 +847,8 @@ def test_ablation_cv():
     '''
     make_ablation_data()
 
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_ablation.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_ablation.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True)
@@ -868,12 +862,8 @@ def test_ablation_cv():
         eq_(len(all_rows), 132)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(
-        glob.glob(
-            join(
-                _my_dir,
-                'output',
-                'ablation_cv_*.results')))
+    num_result_files = len(glob.glob(join(_my_dir, 'output',
+                                          'ablation_cv_*.results')))
     eq_(num_result_files, 12)
 
 
@@ -900,8 +890,7 @@ def test_ablation_cv_all_combos():
 
     # make sure there are 31 ablated featuresets * 2 learners = 62 results
     # files
-    num_result_files = len(glob.glob(join(_my_dir,
-                                          'output',
+    num_result_files = len(glob.glob(join(_my_dir, 'output',
                                           'ablation_cv_*results')))
     eq_(num_result_files, 62)
 
@@ -929,12 +918,9 @@ def test_ablation_cv_feature_hasher():
         eq_(len(all_rows), 132)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(
-        glob.glob(
-            join(
-                _my_dir,
-                'output',
-                'ablation_cv_feature_hasher_*.results')))
+    num_result_files = len(glob.glob(join(_my_dir, 'output',
+                                          ('ablation_cv_feature_hasher_'
+                                           '*.results'))))
     eq_(num_result_files, 12)
 
 
@@ -962,12 +948,9 @@ def test_ablation_cv_feature_hasher_all_combos():
 
     # make sure there are 31 ablated featuresets * 2 learners = 62 results
     # files
-    num_result_files = len(
-        glob.glob(
-            join(
-                _my_dir,
-                'output',
-                'ablation_cv_feature_hasher_*results')))
+    num_result_files = len(glob.glob(join(_my_dir, 'output',
+                                          ('ablation_cv_feature_hasher_'
+                                           '*results'))))
     eq_(num_result_files, 62)
 
 
@@ -996,9 +979,8 @@ def make_scaling_data():
         sub_features = []
         for example_num in range(num_train_examples):
             feat_num = i
-            x = {
-                "g{}".format(feat_num): features[example_num][
-                    "g{}".format(feat_num)]}
+            x = {"g{}".format(feat_num):
+                 features[example_num]["g{}".format(feat_num)]}
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
@@ -1018,9 +1000,8 @@ def make_scaling_data():
         sub_features = []
         for example_num in range(num_test_examples):
             feat_num = i
-            x = {
-                "g{}".format(feat_num): features[example_num][
-                    "g{}".format(feat_num)]}
+            x = {"g{}".format(feat_num):
+                 features[example_num]["g{}".format(feat_num)]}
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
@@ -1033,19 +1014,17 @@ def test_scaling_feature_hasher():
     make_scaling_data()
 
     # run the experiment without scaling
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_scaling_without_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs', ('test_scaling_without_'
+                                                     'feature_hasher.template'
+                                                     '.cfg'))
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     # now run the version with scaling
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_scaling_with_feature_hasher.template.cfg')
+    config_template_path = join(_my_dir, 'configs', ('test_scaling_with_'
+                                                     'feature_hasher.template'
+                                                     '.cfg'))
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
@@ -1077,19 +1056,15 @@ def test_scaling():
     make_scaling_data()
 
     # run the experiment without scaling
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_scaling_without.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_scaling_without.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     # now run the version with scaling
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_scaling_with.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_scaling_with.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
@@ -1101,8 +1076,7 @@ def test_scaling():
         without_scaling_score = row['score']
         without_scaling_scaling_value = row['feature_scaling']
 
-    with open(join(_my_dir, 'output',
-                   'with_scaling_summary.tsv')) as f:
+    with open(join(_my_dir, 'output', 'with_scaling_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         row = list(reader)[0]
         with_scaling_score = row['score']
@@ -1339,9 +1313,8 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
 
     # Write out unmerged features in the `from_suffix` file format
     for i in range(num_feat_files):
-        train_path = join(convert_dir,
-                          '{}_{}{}'.format(feature_name_prefix,
-                                           i, from_suffix))
+        train_path = join(convert_dir, '{}_{}{}'.format(feature_name_prefix,
+                                                        i, from_suffix))
         sub_features = []
         for example_num in range(num_examples):
             feat_num = i * num_feats_per_file
@@ -1354,9 +1327,8 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
                            label_map=label_map)
 
     # Write out the merged features in the `to_suffix` file format
-    train_path = join(convert_dir,
-                      '{}_all{}'.format(feature_name_prefix,
-                                        to_suffix))
+    train_path = join(convert_dir, '{}_all{}'.format(feature_name_prefix,
+                                                     to_suffix))
     write_feature_file(train_path, ids, classes, features,
                        feat_vectorizer=feat_vectorizer, label_map=label_map)
 
@@ -1377,12 +1349,11 @@ def check_convert_featureset(from_suffix, to_suffix):
     # Load each unmerged feature file in the `from_suffix` format and convert
     # it to the `to_suffix` format
     for feature in range(num_feat_files):
-        input_file_path = join(dirpath,
-                               '{}_{}{}'.format(feature_name_prefix,
-                                                feature, from_suffix))
-        output_file_path = join(dirpath,
-                                '{}_{}{}'.format(feature_name_prefix,
-                                                 feature, to_suffix))
+        input_file_path = join(dirpath, '{}_{}{}'.format(feature_name_prefix,
+                                                         feature,
+                                                         from_suffix))
+        output_file_path = join(dirpath, '{}_{}{}'.format(feature_name_prefix,
+                                                          feature, to_suffix))
         skll_convert.main(['--quiet', input_file_path, output_file_path])
 
     # now load and merge all unmerged, converted features in the `to_suffix`
@@ -1410,7 +1381,7 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 
 def test_convert_featureset():
-    # Test the conversion from every format to every other format
+    ''' Test the conversion from every format to every other format '''
     for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
                                                           '.megam', '.tsv',
                                                           '.csv', '.arff',
@@ -1419,14 +1390,10 @@ def test_convert_featureset():
 
 
 def test_compute_eval_from_predictions():
-    pred_path = join(
-        _my_dir,
-        'other',
-        'test_compute_eval_from_predictions.predictions')
-    input_path = join(
-        _my_dir,
-        'other',
-        'test_compute_eval_from_predictions.jsonlines')
+    pred_path = join(_my_dir, 'other',
+                     'test_compute_eval_from_predictions.predictions')
+    input_path = join(_my_dir, 'other',
+                      'test_compute_eval_from_predictions.jsonlines')
 
     scores = compute_eval_from_predictions(input_path, pred_path,
                                            ['pearson', 'unweighted_kappa'])
@@ -1441,10 +1408,8 @@ def test_ablation_cv_sampler():
     '''
     make_ablation_data()
 
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_ablation_sampler.template.cfg')
+    config_template_path = join(_my_dir, 'configs',
+                                'test_ablation_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True)
@@ -1486,8 +1451,7 @@ def test_ablation_cv_all_combos_sampler():
 
     # make sure there are 31 ablated featuresets * 2 learners = 62 results
     # files
-    num_result_files = len(glob.glob(join(_my_dir,
-                                          'output',
+    num_result_files = len(glob.glob(join(_my_dir, 'output',
                                           'ablation_cv_*results')))
     eq_(num_result_files, 62)
 
@@ -1499,10 +1463,9 @@ def test_ablation_cv_feature_hasher_sampler():
     '''
     make_ablation_data()
 
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_ablation_feature_hasher_sampler.template.cfg')
+    config_template_path = join(_my_dir, 'configs', ('test_ablation_feature_'
+                                                     'hasher_sampler.template'
+                                                     '.cfg'))
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True)
@@ -1517,12 +1480,9 @@ def test_ablation_cv_feature_hasher_sampler():
         eq_(len(all_rows), 132)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(
-        glob.glob(
-            join(
-                _my_dir,
-                'output',
-                'ablation_cv_feature_hasher_*.results')))
+    num_result_files = len(glob.glob(join(_my_dir, 'output',
+                                          ('ablation_cv_feature_hasher_'
+                                           '*.results'))))
     eq_(num_result_files, 12)
 
 
@@ -1533,10 +1493,9 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
     '''
     make_ablation_data()
 
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_ablation_feature_hasher_sampler.template.cfg')
+    config_template_path = join(_my_dir, 'configs', ('test_ablation_feature_'
+                                                     'hasher_sampler.template'
+                                                     '.cfg'))
     config_path = fill_in_config_paths(config_template_path)
 
     run_ablation(config_path, quiet=True, all_combos=True)
@@ -1552,12 +1511,9 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
 
     # make sure there are 31 ablated featuresets * 2 learners = 62 results
     # files
-    num_result_files = len(
-        glob.glob(
-            join(
-                _my_dir,
-                'output',
-                'ablation_cv_feature_hasher_*results')))
+    num_result_files = len(glob.glob(join(_my_dir, 'output',
+                                          ('ablation_cv_feature_hasher_'
+                                           '*results'))))
     eq_(num_result_files, 62)
 
 
@@ -1568,17 +1524,15 @@ def test_sparse_feature_hasher_predict_sampler():
     '''
     make_sparse_data()
 
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_sparse_feature_hasher_sampler.template.cfg')
+    config_template_path = join(_my_dir, 'configs', ('test_sparse_feature_'
+                                                     'hasher_sampler.template'
+                                                     '.cfg'))
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     with open(join(_my_dir, 'output',
-                   'test_sparse_test_sparse_LogisticRegression.results')) \
-            as f:
+                   'test_sparse_test_sparse_LogisticRegression.results')) as f:
         outstr = f.read()
         logistic_result_score = float(
             SCORE_OUTPUT_RE.search(outstr).groups()[0])
@@ -1598,9 +1552,8 @@ def test_sparse_predict_sampler():
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir,
-                   'output', 'test_sparse_test_sparse_LogisticRegression.results')) \
-            as f:
+    with open(join(_my_dir, 'output',
+                   'test_sparse_test_sparse_LogisticRegression.results')) as f:
         outstr = f.read()
         logistic_result_score = float(
             SCORE_OUTPUT_RE.search(outstr).groups()[0])
@@ -1613,17 +1566,17 @@ def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):
 
     # test_cv_folds1.cfg has prespecified folds and should have ~50% accuracy
     # test_cv_folds2.cfg doesn't have prespecified folds and >95% accuracy
-    for experiment_name, test_func, grid_size in [('test_cv_folds1_feature_hasher_sampler',
+    for experiment_name, test_func, grid_size in [(('test_cv_folds1_feature_'
+                                                    'hasher_sampler'),
                                                    lambda x: x < 0.6,
                                                    3),
-                                                  ('test_cv_folds2_feature_hasher_sampler',
+                                                  (('test_cv_folds2_feature_'
+                                                    'hasher_sampler'),
                                                    lambda x: x > 0.95,
                                                    10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = join(_my_dir, 'configs',
-                                    config_template_file)
-        config_path = join(_my_dir,
-                           fill_in_config_paths(config_template_path))
+        config_template_path = join(_my_dir, 'configs', config_template_file)
+        config_path = join(_my_dir, fill_in_config_paths(config_template_path))
 
         # Modify config file to change ids_to_floats depending on numeric_ids
         # setting
@@ -1640,7 +1593,7 @@ def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):
                 config_template_file.write(line)
 
         run_configuration(config_path, quiet=True)
-        result_filename = ('{}_test_cv_folds_LogisticRegression.' +
+        result_filename = ('{}_test_cv_folds_LogisticRegression.'
                            'results').format(experiment_name)
         with open(join(_my_dir, 'output', result_filename)) as f:
             # check held out scores
@@ -1660,8 +1613,7 @@ def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(join(_my_dir, 'train',
-                                   'test_cv_folds.csv'))
+    cv_folds = _load_cv_folds(join(_my_dir, 'train', 'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
                                   grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
@@ -1682,10 +1634,8 @@ def check_specified_cv_folds_sampler(numeric_ids):
                                                    lambda x: x > 0.95,
                                                    10)]:
         config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = join(_my_dir, 'configs',
-                                    config_template_file)
-        config_path = join(_my_dir,
-                           fill_in_config_paths(config_template_path))
+        config_template_path = join(_my_dir, 'configs', config_template_file)
+        config_path = join(_my_dir, fill_in_config_paths(config_template_path))
 
         # Modify config file to change ids_to_floats depending on numeric_ids
         # setting
@@ -1702,7 +1652,7 @@ def check_specified_cv_folds_sampler(numeric_ids):
                 config_template_file.write(line)
 
         run_configuration(config_path, quiet=True)
-        result_filename = ('{}_test_cv_folds_LogisticRegression.' +
+        result_filename = ('{}_test_cv_folds_LogisticRegression.'
                            'results').format(experiment_name)
         with open(join(_my_dir, 'output', result_filename)) as f:
             # check held out scores
@@ -1722,8 +1672,7 @@ def check_specified_cv_folds_sampler(numeric_ids):
     featureset = ['test_cv_folds']
     examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
     clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(join(_my_dir, 'train',
-                                   'test_cv_folds.csv'))
+    cv_folds = _load_cv_folds(join(_my_dir, 'train', 'test_cv_folds.csv'))
     grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
                                   grid_objective='accuracy', grid_jobs=1)
     assert grid_search_score < 0.6
