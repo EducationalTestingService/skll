@@ -356,6 +356,7 @@ class _LibSVMDictIter(_DictIter):
                 curr_id = 'EXAMPLE_{}'.format(example_num)
 
             class_num = match.group('label_num')
+            # If we have a mapping from class numbers to labels, get label
             if label_map is not None:
                 class_name = label_map[class_num]
             class_name = _safe_float(class_name,
