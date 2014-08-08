@@ -882,8 +882,7 @@ def test_ablation_cv_all_combos():
     # read in the summary file and make sure it has
     # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682
     # lines
-    with open(join(_my_dir, 'output',
-                   'ablation_cv_summary.tsv')) as f:
+    with open(join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         all_rows = list(reader)
         eq_(len(all_rows), 682)
