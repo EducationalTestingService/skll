@@ -720,10 +720,10 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
 
-    :return: 4-tuple of an array example ids, an array of class labels, a
-             scipy CSR matrix of features, and a DictVectorizer containing
-             the mapping between feature names and the column indices in
-             the feature matrix.
+    :returns: 4-tuple of an array example ids, an array of class labels, a
+              scipy CSR matrix of features, and a DictVectorizer containing
+              the mapping between feature names and the column indices in
+              the feature matrix.
     '''
     # Setup logger
     logger = logging.getLogger(__name__)
@@ -814,7 +814,7 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
                           format (i.e., features 'x', label 'y', and 'id').
     :type example_dicts: iterable of dicts
 
-    :return an ExamplesTuple representing the examples in example_dicts.
+    :returns: an ExamplesTuple representing the examples in example_dicts.
     '''
     return load_examples(example_dicts, sparse=sparse, quiet=True,
                          ids_to_floats=ids_to_floats)
