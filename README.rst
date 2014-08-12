@@ -57,10 +57,12 @@ Requirements
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
+-  `joblib <http://pypi.python.org/pypi/joblib>`__
+-  `PyYAML <http://pypi.python.org/pypi/PyYAML>`__
 -  `configparser <http://pypi.python.org/pypi/configparser>`__ (only required for
    Python 2.7)
--  `futures <http://pypi.python.org/pypi/futures>`__ (only required for Python 2.7)
 -  `logutils <http://pypi.python.org/pypi/logutils>`__ (only required for Python 2.7)
+
 
 Talks
 ~~~~~
