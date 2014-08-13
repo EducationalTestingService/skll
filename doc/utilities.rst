@@ -29,20 +29,13 @@ join_megam
 ----------
 Combine MegaM files that contain features for the same examples.
 
-megam_to_libsvm
----------------
-Takes a MegaM-compatible file to be run with the ``-fvals`` switch and outputs a
-LibSVM/LibLinear-compatible file to STDOUT.
-
 print_model_weights
 -------------------
 Prints out the weights of a given trained model.
 
 skll_convert
 ------------
-Convert between .arff, .csv., .jsonlines, .megam, and .tsv formats. In the
-future this will be expanded to add support for libsvm files as well to
-eliminate the need for a separate ``megam_to_libsvm`` script.
+Convert between .arff, .csv., .jsonlines, .libsvm, .megam, and .tsv formats.
 
 summarize_results
 -----------------

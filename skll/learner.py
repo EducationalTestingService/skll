@@ -41,6 +41,8 @@ from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
                               GradientBoostingClassifier,
                               GradientBoostingRegressor,
                               RandomForestClassifier, RandomForestRegressor)
+from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
+                                          RBFSampler, SkewedChi2Sampler)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor)
@@ -49,11 +51,11 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+
 from skll.data import ExamplesTuple
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
-from sklearn.kernel_approximation import (RBFSampler, SkewedChi2Sampler,
-                                          AdditiveChi2Sampler, Nystroem)
+
 
 # Constants #
 _DEFAULT_PARAM_GRIDS = {'AdaBoostClassifier': [{'learning_rate': [0.01, 0.1,
@@ -494,11 +496,11 @@ class Learner(object):
                                 'AdaBoostClassifier'}:
             self._model_kwargs['random_state'] = 123456789
 
-        if sampler_kwargs:
-            self._sampler_kwargs.update(sampler_kwargs)
         if sampler in {'Nystroem', 'RBFSampler', 'SkewedChi2Sampler'}:
             self._sampler_kwargs['random_state'] = 123456789
         self.sampler = None
+        if sampler_kwargs:
+            self._sampler_kwargs.update(sampler_kwargs)
         if sampler:
             self.sampler = globals()[sampler](**self._sampler_kwargs)
 
