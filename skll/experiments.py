@@ -102,9 +102,9 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
-            logger.error(('JSON results file %s not found. Skipping summary ' +
-                          'creation. You can manually create the summary file' +
-                          ' after the fact by using the summarize_results ' +
+            logger.error(('JSON results file %s not found. Skipping summary '
+                          'creation. You can manually create the summary file'
+                          ' after the fact by using the summarize_results '
                           'script.'), json_path)
             return
         else:
@@ -131,7 +131,8 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     # Build "ablated_features" list and fix some backward compatible things
     for lrd in learner_result_dicts:
         if ablation != 0:
-            ablated_features = all_features.difference(yaml.load(lrd['featureset']))
+            ablated_features = all_features.difference(
+                yaml.load(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
                 lrd['ablated_features'] = json.dumps(sorted(ablated_features))
@@ -168,6 +169,8 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
     print('Grid Objective Function: {}'.format(lrd['grid_objective']),
+          file=output_file)
+    print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
           file=output_file)
     print('\n', file=output_file)
 
@@ -374,10 +377,10 @@ def _parse_config_file(config_path):
 
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
-        raise IOError(errno.ENOENT, ("The training path specified in config " +
+        raise IOError(errno.ENOENT, ("The training path specified in config "
                                      "file does not exist"), train_path)
     if test_path and not os.path.exists(test_path):
-        raise IOError(errno.ENOENT, ("The test path specified in config " +
+        raise IOError(errno.ENOENT, ("The test path specified in config "
                                      "file does not exist"), test_path)
 
     # Tuning
@@ -385,7 +388,7 @@ def _parse_config_file(config_path):
     # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
-    # the minimum number of examples a feature must be nonzero in to be included
+    # minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")
 
     # how many jobs should we run in parallel for grid search
@@ -401,7 +404,7 @@ def _parse_config_file(config_path):
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
-        raise ValueError('The test set path must be set when task is evaluate' +
+        raise ValueError('The test set path must be set when task is evaluate'
                          ' or predict.')
     if (task == 'cross_validate' or task == 'train') and test_path:
         raise ValueError('The test set path should not be set ' +
@@ -440,7 +443,8 @@ def _parse_config_file(config_path):
 
 def _load_featureset(dirpath, featureset, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     unlabelled=False, feature_hasher=False, num_features=None):
+                     unlabelled=False, feature_hasher=False,
+                     num_features=None):
     '''
     Load a list of feature files and merge them.
 
@@ -448,7 +452,8 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
     :type dirpath: str
     :param featureset: List of feature file prefixes
     :type featureset: str
-    :param suffix: Suffix to add to feature file prefixes to get full filenames.
+    :param suffix: Suffix to add to feature file prefixes to get full
+                   filenames.
     :type suffix: str
     :param label_col: Name of the column which contains the class labels.
                       If no column with that name exists, or `None` is
@@ -522,14 +527,16 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                 # Check for duplicate feature names
                 if (set(merged_vectorizer.get_feature_names()) &
                         set(feat_vectorizer.get_feature_names())):
-                    raise ValueError('Two feature files have the same feature!')
+                    raise ValueError('Two feature files have the same '
+                                     'feature!')
             num_merged = merged_features.shape[1]
             merged_features = sp.hstack([merged_features, features], 'csr')
             if not feature_hasher:
                 # dictvectorizer sorts the vocabularies within each file
                 for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
                                                key=lambda x: x[1]):
-                    merged_vectorizer.vocabulary_[feat_name] = index + num_merged
+                    merged_vectorizer.vocabulary_[feat_name] = (index +
+                                                                num_merged)
                     merged_vectorizer.feature_names_.append(feat_name)
         else:
             merged_features = features
@@ -540,7 +547,7 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
             merged_ids = ids
         # Check that IDs are in the same order
         elif not np.all(merged_ids == ids):
-            raise ValueError('IDs are not in the same order in each feature ' +
+            raise ValueError('IDs are not in the same order in each feature '
                              'file!')
 
         # If current ExamplesTuple has labels, check that they don't conflict
@@ -550,12 +557,12 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                 merged_classes = classes
             # Check that classes don't conflict, when specified
             elif not np.all(merged_classes == classes):
-                raise ValueError('Feature files have conflicting labels for ' +
+                raise ValueError('Feature files have conflicting labels for '
                                  'examples with the same ID!')
 
     # Ensure that at least one file had classes if we're expecting them
     if merged_classes is None and not unlabelled:
-        raise ValueError('No feature files in feature set contain class' +
+        raise ValueError('No feature files in feature set contain class'
                          'labels!')
 
     return ExamplesTuple(merged_ids, merged_classes, merged_features,
@@ -601,7 +608,7 @@ def _classify_featureset(args):
     class_map = args.pop("class_map")
     quiet = args.pop('quiet', False)
     if args:
-        raise ValueError(("Extra arguments passed to _classify_featureset: " +
+        raise ValueError(("Extra arguments passed to _classify_featureset: "
                           "{}").format(args.keys()))
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
@@ -676,21 +683,19 @@ def _classify_featureset(args):
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective,
-                                    'min_feature_count': min_feature_count}
+                                    'min_feature_count': min_feature_count,
+                                    'cv_folds': cv_folds}
 
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
         task_results = None
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
-            task_results, grid_scores = learner.cross_validate(train_examples,
-                                                               prediction_prefix=prediction_prefix,
-                                                               grid_search=grid_search,
-                                                               cv_folds=cv_folds,
-                                                               grid_objective=grid_objective,
-                                                               param_grid=param_grid,
-                                                               grid_jobs=grid_search_jobs,
-                                                               feature_hasher=feature_hasher)
+            task_results, grid_scores = learner.cross_validate(
+                train_examples, prediction_prefix=prediction_prefix,
+                grid_search=grid_search, cv_folds=cv_folds,
+                grid_objective=grid_objective, param_grid=param_grid,
+                grid_jobs=grid_search_jobs, feature_hasher=feature_hasher)
         else:
             # if we have do not have a saved model, we need to train one.
             if not os.path.exists(modelfile) or overwrite:
@@ -739,7 +744,8 @@ def _classify_featureset(args):
                 print('\tevaluating predictions', file=log_file)
                 task_results = [learner.evaluate(
                     test_examples, prediction_prefix=prediction_prefix,
-                    grid_objective=grid_objective, feature_hasher=feature_hasher)]
+                    grid_objective=grid_objective,
+                    feature_hasher=feature_hasher)]
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
@@ -748,8 +754,8 @@ def _classify_featureset(args):
             # do nothing here for train
 
         if task == 'cross_validate' or task == 'evaluate':
-            results_json_path = os.path.join(results_path,
-                                             '{}.results.json'.format(job_name))
+            results_json_path = os.path.join(results_path, '{}.results.json'
+                                                           .format(job_name))
 
             res = _create_learner_result_dicts(task_results, grid_scores,
                                                learner_result_dict_base)
@@ -759,7 +765,8 @@ def _classify_featureset(args):
             with open(results_json_path, file_mode) as json_file:
                 json.dump(res, json_file)
 
-            with open(os.path.join(results_path, '{}.results'.format(job_name)),
+            with open(os.path.join(results_path,
+                                   '{}.results'.format(job_name)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
         else:
@@ -770,6 +777,10 @@ def _classify_featureset(args):
 
 def _create_learner_result_dicts(task_results, grid_scores,
                                  learner_result_dict_base):
+    '''
+    Create the learner result dictionaries that are used to create JSON and
+    plain-text results files.
+    '''
     res = []
 
     num_folds = len(task_results)
@@ -953,8 +964,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                      experiment. If positive, we will perform repeated ablation
                      runs for all combinations of features removing the
                      specified number at a time. If ``None``, we will use all
-                     combinations of all lengths. If 0, the default, no ablation
-                     is performed. If negative, a ``ValueError`` is raised.
+                     combinations of all lengths. If 0, the default, no
+                     ablation is performed. If negative, a ``ValueError`` is
+                     raised.
     :type ablation: int or None
     :param resume: If result files already exist for an experiment, do not
                    overwrite them. This is very useful when doing a large
@@ -975,14 +987,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      featuresets, model_path, do_grid_search, grid_objective, probability,
      results_path, pos_label_str, feature_scaling, min_feature_count,
      grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
-     featureset_names, learners, prediction_dir, log_path, train_path, test_path,
-     ids_to_floats, class_map) = _parse_config_file(config_file)
+     featureset_names, learners, prediction_dir, log_path, train_path,
+     test_path, ids_to_floats, class_map) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
         local = True
-        logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
-                       'mode.  To run things on a DRMAA-compatible ' +
+        logger.warning('gridmap 0.10.1+ not available. Forcing local '
+                       'mode.  To run things on a DRMAA-compatible '
                        'cluster, install gridmap>=0.10.1 via pip.')
 
     # if performing ablation, expand featuresets to include combinations of
@@ -1017,7 +1029,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         featuresets = expanded_fs
         featureset_names = expanded_fs_names
     elif ablation < 0:
-        raise ValueError('Value for "ablation" argument must be either ' +
+        raise ValueError('Value for "ablation" argument must be either '
                          'positive integer or None.')
 
     # the list of jobs submitted (if running on grid)
@@ -1055,7 +1067,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # If result file already exists and we're resuming, move on
             if resume and (os.path.exists(result_json_path) and
                            os.path.getsize(result_json_path)):
-                logger.info('Running in resume mode and %s exists, so ' +
+                logger.info('Running in resume mode and %s exists, so '
                             'skipping job.', result_json_path)
                 continue
 
