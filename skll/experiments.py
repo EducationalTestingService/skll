@@ -275,6 +275,11 @@ def _parse_config_file(config_path):
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
     learners = yaml.load(_fix_json(learners_string))
+    if len(set(learners)) < len(learners):
+        raise ValueError('Configuration file containes the same learner '
+                         'multiple times, which is not currently supported.  '
+                         'Please use param_grids with tuning to find the '
+                         'optimal settings for the learner.')
     for i, learner in enumerate(learners):
         if learner in _SHORT_NAMES:
             logger.warning(('Using short names like {} for learners is '
