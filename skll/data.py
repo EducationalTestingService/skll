@@ -802,6 +802,8 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
         ids = ids_result.get()
         classes = classes_result.get()
         features, feat_vectorizer = features_result.get()
+        # Need to call terminate to clear up temporary directory
+        pool.terminate()
 
     # Tear-down thread/process-safe logging and switch back to regular
     q_listener.stop()
