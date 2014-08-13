@@ -761,11 +761,6 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     if example_iter_type == _DummyDictIter:
         path = list(path)
 
-    if MAX_CONCURRENT_PROCESSES == 1:
-        executor_type = ThreadPoolExecutor
-    else:
-        executor_type = ProcessPoolExecutor
-
     # Create thread/process-safe logger stuff
     queue = Queue(-1)
     q_handler = QueueHandler(queue)
