@@ -97,9 +97,9 @@ class _DictIter(object):
                 print("Loading {}...".format(self.path_or_list), end="",
                       file=sys.stderr)
                 sys.stderr.flush()
-                with open(self.path_or_list, file_mode) as f:
-                    for ret_tuple in self._sub_iter(f):
-                        yield ret_tuple
+            with open(self.path_or_list, file_mode) as f:
+                for ret_tuple in self._sub_iter(f):
+                    yield ret_tuple
         else:
             if not self.quiet:
                 print("Loading...".format(self.path_or_list), end="",
@@ -655,24 +655,27 @@ def _features_for_iter_type(example_iter_type, path, quiet, sparse, label_col,
     have labels).
     '''
     try:
-        example_iter = example_iter_type(path, quiet=quiet, label_col=label_col)
+        example_iter = example_iter_type(path, quiet=quiet,
+                                         label_col=label_col)
         if feature_hasher:
             feat_vectorizer = FeatureHasher(n_features=num_features)
         else:
             feat_vectorizer = DictVectorizer(sparse=sparse)
         feat_dict_generator = map(itemgetter(2), example_iter)
-    except Exception as e:
+    except Exception:
         # Setup logger
         logger = logging.getLogger(__name__)
         logger.exception('Failed to load features for %s.', path)
-        raise e
+        raise
     try:
         if feature_hasher:
             features = feat_vectorizer.transform(feat_dict_generator)
         else:
             features = feat_vectorizer.fit_transform(feat_dict_generator)
     except ValueError:
-        raise ValueError('The last feature file did not include any features.')
+        logger = logging.getLogger(__name__)
+        logger.error('The last feature file did not include any features.')
+        raise
     return features, feat_vectorizer
 
 
