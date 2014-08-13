@@ -16,7 +16,6 @@ import logging
 import os
 import re
 import sys
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from csv import DictReader, DictWriter
 from decimal import Decimal
 from itertools import chain, islice
@@ -27,6 +26,7 @@ from operator import itemgetter
 import numpy as np
 from bs4 import UnicodeDammit
 from collections import namedtuple
+from joblib.pool import MemmapingPool
 from six import iteritems, PY2, string_types, text_type
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
@@ -761,11 +761,6 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     if example_iter_type == _DummyDictIter:
         path = list(path)
 
-    if MAX_CONCURRENT_PROCESSES == 1:
-        executor_type = ThreadPoolExecutor
-    else:
-        executor_type = ProcessPoolExecutor
-
     # Create thread/process-safe logger stuff
     queue = Queue(-1)
     q_handler = QueueHandler(queue)
@@ -778,20 +773,37 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     # memory (even though this requires reading the file multiple times).
     # Do this using a process pool so that we can clear out the temporary
     # variables more easily and do these in parallel.
-    with executor_type(max_workers=3) as executor:
-        ids_future = executor.submit(_ids_for_iter_type, example_iter_type,
-                                     path, ids_to_floats)
-        classes_future = executor.submit(_classes_for_iter_type,
-                                         example_iter_type, path, label_col,
+    if MAX_CONCURRENT_PROCESSES == 1:
+        ids = _ids_for_iter_type(example_iter_type, path, ids_to_floats)
+        classes = _classes_for_iter_type(example_iter_type, path, label_col,
                                          class_map)
-        features_future = executor.submit(_features_for_iter_type,
-                                          example_iter_type, path, quiet,
-                                          sparse, label_col, feature_hasher,
-                                          num_features)
-        # Wait for processes/threads to complete and store results
-        ids = ids_future.result()
-        classes = classes_future.result()
-        features, feat_vectorizer = features_future.result()
+        features, feat_vectorizer = _features_for_iter_type(example_iter_type,
+                                                            path, quiet,
+                                                            sparse, label_col,
+                                                            feature_hasher,
+                                                            num_features)
+    else:
+        pool = MemmapingPool(min(3, MAX_CONCURRENT_PROCESSES))
+
+        ids_result = pool.apply_async(_ids_for_iter_type,
+                                      args=(example_iter_type, path,
+                                            ids_to_floats))
+        classes_result = pool.apply_async(_classes_for_iter_type,
+                                          args=(example_iter_type, path,
+                                                label_col, class_map))
+        features_result = pool.apply_async(_features_for_iter_type,
+                                           args=(example_iter_type, path,
+                                                 quiet, sparse, label_col,
+                                                 feature_hasher, num_features))
+
+        # Wait for processes to complete and store results
+        pool.close()
+        pool.join()
+        ids = ids_result.get()
+        classes = classes_result.get()
+        features, feat_vectorizer = features_result.get()
+        # Need to call terminate to clear up temporary directory
+        pool.terminate()
 
     # Tear-down thread/process-safe logging and switch back to regular
     q_listener.stop()
