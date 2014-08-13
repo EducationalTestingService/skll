@@ -187,7 +187,8 @@ class _JSONDictIter(_DictIter):
             # for consistency with csv and megam formats.
             curr_id = str(example.get("id",
                                       "EXAMPLE_{}".format(example_num)))
-            class_name = (_safe_float(example['y'], replace_dict=self.class_map)
+            class_name = (_safe_float(example['y'],
+                                      replace_dict=self.class_map)
                           if 'y' in example else None)
             example = example["x"]
 
@@ -861,8 +862,14 @@ def _safe_float(text, replace_dict=None):
                          same.
     :type replace_dict: dict from str to str
     '''
-    if replace_dict is not None and text in replace_dict:
-        text = replace_dict[text]
+    if replace_dict is not None:
+        if text in replace_dict:
+            text = replace_dict[text]
+        else:
+            logging.getLogger(__name__).warning('Encountered value that was '
+                                                'not in replacement '
+                                                'dictionary (e.g., class_map):'
+                                                ' {}'.format(text))
     try:
         return float(text)
     except ValueError:
