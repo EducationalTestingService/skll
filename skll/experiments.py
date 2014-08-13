@@ -238,6 +238,7 @@ def _parse_config_file(config_path):
     '''
     Parses a SKLL experiment configuration file with the given path.
     '''
+    logger = logging.getLogger(__name__)
     config = _setup_config_parser(config_path)
 
     ###########################
@@ -274,8 +275,13 @@ def _parse_config_file(config_path):
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
     learners = yaml.load(_fix_json(learners_string))
-    learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else learner)
-                for learner in learners]
+    for i, learner in enumerate(learners):
+        if learner in _SHORT_NAMES:
+            logger.warning(('Using short names like {} for learners is '
+                            'deprecated and they will be removed in SKLL '
+                            '1.0.  Please use the full name, {}, '
+                            'instead.').format(learner, _SHORT_NAMES[learner]))
+            learners[i] = _SHORT_NAMES[learner]
     featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
