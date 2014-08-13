@@ -185,12 +185,13 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         if 'descriptive' in lrd:
             print('Descriptive statistics:', file=output_file)
             for desc_stat in ['min', 'max', 'avg', 'std']:
-                print((' {}: {: .4f} (actual), {: .4f} ' +
-                       '(predicted)').format(desc_stat.title(),
-                                             lrd['descriptive']['actual'][desc_stat],
-                                             lrd['descriptive']['predicted'][desc_stat]),
+                actual = lrd['descriptive']['actual'][desc_stat]
+                predicted = lrd['descriptive']['predicted'][desc_stat]
+                print((' {} = {: .4f} (actual), {: .4f} '
+                       '(predicted)').format(desc_stat.title(), actual,
+                                             predicted),
                       file=output_file)
-            print('Pearson:{: f}'.format(lrd['pearson']),
+            print('Pearson = {: f}'.format(lrd['pearson']),
                   file=output_file)
         print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
