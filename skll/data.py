@@ -93,12 +93,13 @@ class _DictIter(object):
                 file_mode = 'r'
             else:
                 file_mode = 'rb'
-            f = open(self.path_or_list, file_mode)
             if not self.quiet:
                 print("Loading {}...".format(self.path_or_list), end="",
                       file=sys.stderr)
                 sys.stderr.flush()
-            return self._sub_iter(f)
+                with open(self.path_or_list, file_mode) as f:
+                    for curr_id, class_name, example in self._sub_iter(f):
+                        yield curr_id, class_name, example
         else:
             if not self.quiet:
                 print("Loading...".format(self.path_or_list), end="",
