@@ -557,10 +557,10 @@ def test_summary_feature_hasher():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 18 rows,
+            # the learner results dictionaries should have 19 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 18)
+            eq_(len(row), 19)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -612,10 +612,10 @@ def test_summary():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 18 rows,
+            # the learner results dictionaries should have 19 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 18)
+            eq_(len(row), 19)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
