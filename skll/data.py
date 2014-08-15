@@ -37,11 +37,10 @@ if PY2:
 else:
     from logging.handlers import QueueHandler, QueueListener
 
+
+# Constants
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
-
-ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
-                                             'feat_vectorizer'])
 
 # Register dialect for handling ARFF files
 if sys.version_info >= (3, 0):
@@ -52,6 +51,10 @@ else:
     csv.register_dialect('arff', delimiter=b',', quotechar=b"'",
                          escapechar=b'\\', doublequote=False,
                          lineterminator=b'\n', skipinitialspace=True)
+
+
+ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
+                                             'feat_vectorizer'])
 
 
 class _DictIter(object):
@@ -79,6 +82,7 @@ class _DictIter(object):
         self.ids_to_floats = ids_to_floats
         self.label_col = label_col
         self.class_map = class_map
+        self._progress_msg = ''
 
     def __iter__(self):
         # Setup logger
@@ -87,24 +91,21 @@ class _DictIter(object):
         logger.debug('DictIter type: %s', type(self))
         logger.debug('path_or_list: %s', self.path_or_list)
 
+        if not self.quiet:
+            self._progress_msg = "Loading {}...".format(self.path_or_list)
+            print(self._progress_msg, end="\r", file=sys.stderr)
+            sys.stderr.flush()
+
         # Check if we're given a path to a file, and if so, open it
         if isinstance(self.path_or_list, string_types):
             if sys.version_info >= (3, 0):
                 file_mode = 'r'
             else:
                 file_mode = 'rb'
-            if not self.quiet:
-                print("Loading {}...".format(self.path_or_list), end="",
-                      file=sys.stderr)
-                sys.stderr.flush()
             with open(self.path_or_list, file_mode) as f:
                 for ret_tuple in self._sub_iter(f):
                     yield ret_tuple
         else:
-            if not self.quiet:
-                print("Loading...".format(self.path_or_list), end="",
-                      file=sys.stderr)
-                sys.stderr.flush()
             for ret_tuple in self._sub_iter(self.path_or_list):
                 yield ret_tuple
 
@@ -132,7 +133,8 @@ class _DummyDictIter(_DictIter):
     '''
     def __iter__(self):
         if not self.quiet:
-            print("Converting examples...", end="", file=sys.stderr)
+            self._progress_msg = "Converting examples..."
+            print(self._progress_msg, end="\r", file=sys.stderr)
             sys.stderr.flush()
         for example_num, example in enumerate(self.path_or_list):
             curr_id = str(example.get("id",
@@ -152,9 +154,13 @@ class _DummyDictIter(_DictIter):
             yield curr_id, class_name, example
 
             if not self.quiet and example_num % 100 == 0:
-                print(".", end="", file=sys.stderr)
+                print("{}{:>15}".format(self._progress_msg, example_num),
+                      end="\r", file=sys.stderr)
+                sys.stderr.flush()
         if not self.quiet:
-            print("done", file=sys.stderr)
+            print("{}{:<15}".format(self._progress_msg, "done"),
+                  file=sys.stderr)
+            sys.stderr.flush()
 
 
 class _JSONDictIter(_DictIter):
@@ -205,9 +211,13 @@ class _JSONDictIter(_DictIter):
             yield curr_id, class_name, example
 
             if not self.quiet and example_num % 100 == 0:
-                print(".", end="", file=sys.stderr)
+                print("{}{:>15}".format(self._progress_msg, example_num),
+                      end="\r", file=sys.stderr)
+                sys.stderr.flush()
         if not self.quiet:
-            print("done", file=sys.stderr)
+            print("{}{:<15}".format(self._progress_msg, "done"),
+                  file=sys.stderr)
+            sys.stderr.flush()
 
 
 class _MegaMDictIter(_DictIter):
@@ -292,9 +302,13 @@ class _MegaMDictIter(_DictIter):
                 curr_id = 'EXAMPLE_{}'.format(example_num)
 
                 if not self.quiet and example_num % 100 == 0:
-                    print(".", end="", file=sys.stderr)
-        if not self.quiet:
-            print("done", file=sys.stderr)
+                    print("{}{:>15}".format(self._progress_msg, example_num),
+                          end="\r", file=sys.stderr)
+                    sys.stderr.flush()
+            if not self.quiet:
+                print("{}{:<15}".format(self._progress_msg, "done"),
+                      file=sys.stderr)
+                sys.stderr.flush()
 
 
 class _LibSVMDictIter(_DictIter):
@@ -381,9 +395,13 @@ class _LibSVMDictIter(_DictIter):
             yield curr_id, class_name, curr_info_dict
 
             if not self.quiet and example_num % 100 == 0:
-                print(".", end="", file=sys.stderr)
+                print("{}{:>15}".format(self._progress_msg, example_num),
+                      end="\r", file=sys.stderr)
+                sys.stderr.flush()
         if not self.quiet:
-            print("done", file=sys.stderr)
+            print("{}{:<15}".format(self._progress_msg, "done"),
+                  file=sys.stderr)
+            sys.stderr.flush()
 
 
 class _DelimitedDictIter(_DictIter):
@@ -475,9 +493,13 @@ class _DelimitedDictIter(_DictIter):
             yield curr_id, class_name, row
 
             if not self.quiet and example_num % 100 == 0:
-                print(".", end="", file=sys.stderr)
+                print("{}{:>15}".format(self._progress_msg, example_num),
+                      end="\r", file=sys.stderr)
+                sys.stderr.flush()
         if not self.quiet:
-            print("done", file=sys.stderr)
+            print("{}{:<15}".format(self._progress_msg, "done"),
+                  file=sys.stderr)
+            sys.stderr.flush()
 
 
 class _CSVDictIter(_DelimitedDictIter):
