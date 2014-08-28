@@ -377,8 +377,10 @@ class _LibSVMDictIter(_DictIter):
 
             class_num = match.group('label_num')
             # If we have a mapping from class numbers to labels, get label
-            if label_map is not None:
+            if label_map:
                 class_name = label_map[class_num]
+            else:
+                class_name = class_num
             class_name = _safe_float(class_name,
                                      replace_dict=self.class_map)
 
