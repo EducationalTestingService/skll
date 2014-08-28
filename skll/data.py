@@ -18,7 +18,7 @@ import re
 import sys
 from csv import DictReader, DictWriter
 from decimal import Decimal
-from itertools import chain, islice
+from itertools import chain, count, islice
 from io import open, BytesIO, StringIO
 from multiprocessing import Queue
 from operator import itemgetter
@@ -40,7 +40,10 @@ else:
 
 # Constants
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
-
+LIBSVM_REPLACE_DICT = {':': '\u2236',
+                       '#': '\uFF03',
+                       ' ': '\u2002',
+                       '=': '\ua78a'}
 
 # Register dialect for handling ARFF files
 if sys.version_info >= (3, 0):
@@ -328,7 +331,7 @@ class _LibSVMDictIter(_DictIter):
     line_regex = re.compile(r'^(?P<label_num>[^ ]+)\s+(?P<features>[^#]*)\s*'
                             r'(?P<comments>#\s*(?P<example_id>[^|]+)\s*\|\s*'
                             r'(?P<label_map>[^|]+)\s*\|\s*'
-                            r'(?P<feat_map>.*)\s*)?$')
+                            r'(?P<feat_map>.*)\s*)?$', flags=re.UNICODE)
 
     @staticmethod
     def _pair_to_tuple(pair, feat_map):
@@ -1101,6 +1104,17 @@ def _write_jsonlines_file(path, ids, classes, features):
             print(json.dumps(example_dict, sort_keys=True), file=f)
 
 
+def _sanitize_libsvm_name(name):
+    '''
+    Replace illegal characters in class names with close unicode equivalents
+    to make things loadable in by LibSVM or LibLinear.
+    '''
+    if isinstance(name, string_types):
+        for orig, replace in LIBSVM_REPLACE_DICT.items():
+            name = name.replace(orig, replace)
+    return name
+
+
 def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
                        label_map):
     '''
@@ -1146,21 +1160,23 @@ def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
             # Print comment with id and mappings
             print('#', end=' ', file=f)
             if ex_id is not None:
-                print('{}'.format(ex_id), end='', file=f)
+                print(_sanitize_libsvm_name('{}'.format(ex_id)), end='',
+                      file=f)
             print(' |', end=' ', file=f)
             if PY2 and class_name is not None and isinstance(class_name,
                                                              text_type):
                 class_name = class_name.encode('utf-8')
             if class_name in label_map:
-                print('{}={}'.format(label_map[class_name],
-                                          class_name),
+                print('%s=%s' % (_sanitize_libsvm_name(label_map[class_name]),
+                                 _sanitize_libsvm_name(class_name)),
                       end=' | ', file=f)
             else:
                 print(' |', end=' ', file=f)
-            print(' '.join(('{}={}'.format(feat_vectorizer.vocabulary_[field]
-                                           + 1, field) for field, value in
-                           feature_dict.items() if Decimal(value) != 0)),
-                  file=f)
+            line = ' '.join(('%s=%s' % (feat_vectorizer.vocabulary_[field] + 1,
+                                        _sanitize_libsvm_name(field)) for
+                             field, value in feature_dict.items() if
+                             Decimal(value) != 0))
+            print(line, file=f)
 
 
 def _write_megam_file(path, ids, classes, features):
