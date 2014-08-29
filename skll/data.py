@@ -18,7 +18,7 @@ import re
 import sys
 from csv import DictReader, DictWriter
 from decimal import Decimal
-from itertools import chain, count, islice
+from itertools import chain, islice
 from io import open, BytesIO, StringIO
 from multiprocessing import Queue
 from operator import itemgetter
@@ -43,7 +43,8 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 LIBSVM_REPLACE_DICT = {':': '\u2236',
                        '#': '\uFF03',
                        ' ': '\u2002',
-                       '=': '\ua78a'}
+                       '=': '\ua78a',
+                       '|': '\u2223'}
 
 # Register dialect for handling ARFF files
 if sys.version_info >= (3, 0):
