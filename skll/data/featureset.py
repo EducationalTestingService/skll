@@ -8,18 +8,11 @@ Classes related to storing/merging feature sets.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from collections import namedtuple
 from copy import deepcopy
-from itertools import repeat
-try:
-    from collections import Set
-except ImportError:
-    from collections.abc import Set
 
 import numpy as np
 import scipy.sparse as sp
-from six import iteritems, PY2, PY3, string_types, text_type
-from six.moves import map, zip
+from six.moves import zip
 from sklearn.feature_extraction import FeatureHasher
 
 
