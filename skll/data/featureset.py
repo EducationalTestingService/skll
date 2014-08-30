@@ -75,14 +75,14 @@ class FeatureSet(object):
         Iterate through (ID, class, features) tuples in feature set.
         '''
         if self.features is not None:
-            return zip(id_iter, class_iter, self.features)
+            return zip(self.ids, self.classes, self.features)
         else:
             return iter([])
 
     def __len__(self):
         return self.features.shape[1]
 
-    def __and__(self, other):
+    def __add__(self, other):
         '''
         Combine two feature sets to create a new one.  This is done assuming
         they both have the same instances with the same IDs in the same order.
@@ -132,6 +132,31 @@ class FeatureSet(object):
             elif not np.all(self.classes == other.classes):
                 raise ValueError('Feature files have conflicting labels for '
                                  'examples with the same ID!')
+        return new_set
+
+    def filter(self, ids=None, classes=None, features=None, inverse=False):
+        '''
+        Removes features and/or examples from the Featureset depending on the
+        passed in parameters.
+
+        :param ids: Examples to keep in the FeatureSet
+        :type ids: list of str/float
+        :param classes: Classes that we want to retain examples for.
+        :type classes: list of str/float
+        :param features: Features to keep in the FeatureSet
+        :type features: list of str
+        :param inverse: Instead of keeping features and ids in lists, remove
+                        them.
+        :type inverse: bool
+        '''
+        pass
+
+    def __sub__(self, other):
+        '''
+        Return a copy of ``self`` with all features in ``other`` removed.
+        '''
+        new_set = deepcopy(self)
+        new_set.filter(features=other.features, inverse=True)
         return new_set
 
 
