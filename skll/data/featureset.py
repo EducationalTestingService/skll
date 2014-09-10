@@ -132,17 +132,86 @@ class FeatureSet(object):
         Removes features and/or examples from the Featureset depending on the
         passed in parameters.
 
-        :param ids: Examples to keep in the FeatureSet
+        :param ids: Examples to keep in the FeatureSet. If `None`, no ID
+                    filtering takes place.
         :type ids: list of str/float
-        :param classes: Classes that we want to retain examples for.
+        :param classes: Classes that we want to retain examples for. If `None`,
+                        no class filtering takes place.
         :type classes: list of str/float
-        :param features: Features to keep in the FeatureSet
+        :param features: Features to keep in the FeatureSet. If `None`, no
+                         feature filtering takes place.
         :type features: list of str
-        :param inverse: Instead of keeping features and ids in lists, remove
-                        them.
+        :param inverse: Instead of keeping features and/or examples in lists,
+                        remove them.
         :type inverse: bool
         '''
-        pass
+        # Construct mask that indicates which examples to keep
+        mask = np.ones(len(self), dtype=bool)
+        if ids is not None:
+            mask = np.logical_and(mask, np.logical_not(np.in1d(self.ids, ids)))
+        if classes is not None:
+            mask = np.logical_and(mask, np.logical_not(np.in1d(self.classes,
+                                                               classes)))
+        if inverse:
+            mask = np.logical_not(mask)
+
+        # Remove examples not in mask
+        self.ids = self.ids[mask]
+        self.classes = self.classes[mask]
+        self.features = self.features[mask, :]
+
+        # Filter features
+        if features is not None:
+            columns = np.array(sorted(self.feat_vectorizer[name] for
+                                      name in features if name in
+                                      self.feat_vectorizer))
+            if inverse:
+                self.features = self.features[:, ~columns]
+            else:
+                self.features = self.features[:, columns]
+
+    def filtered_iter(self, ids=None, classes=None, features=None,
+                      inverse=False):
+        '''
+        A version of ``__iter__`` that retains only the specified features
+        and/or examples from the output.
+
+        :param ids: Examples in the FeatureSet to keep. If `None`, no ID
+                    filtering takes place.
+        :type ids: list of str/float
+        :param classes: Classes that we want to retain examples for. If `None`,
+                        no class filtering takes place.
+        :type classes: list of str/float
+        :param features: Features in the FeatureSet to keep. If `None`, no
+                         feature filtering takes place.
+        :type features: list of str
+        :param inverse: Instead of keeping features and/or examples in lists,
+                        remove them.
+        :type inverse: bool
+        '''
+        if features is not None:
+            columns = np.array(sorted(self.feat_vectorizer[name] for
+                                      name in features if name in
+                                      self.feat_vectorizer))
+
+        for ex_id, ex_class, ex_feats in zip(self.ids, self.classes,
+                                             self.features):
+            # Skip instances with IDs not in filter
+            if ids is not None and (ex_id in ids) == inverse:
+                continue
+            # Skip instances with classes not in filter
+            if classes is not None and (ex_class in classes) == inverse:
+                continue
+            if features is not None:
+                if inverse:
+                    yield ex_id, ex_class, ex_feats[columns]
+                else:
+                    yield ex_id, ex_class, ex_feats[~columns]
+            else:
+                if inverse:
+                    yield ex_id, ex_class, ex_feats
+                else:
+                    yield ex_id, ex_class, np.array([])
 
     def __sub__(self, other):
         '''
