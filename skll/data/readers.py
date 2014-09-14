@@ -30,17 +30,15 @@ from six import iteritems, PY2, PY3, string_types, text_type
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
+from skll.data import FeatureSet
+
 
 # Constants
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
-ExamplesTuple = namedtuple('ExamplesTuple', ['ids', 'classes', 'features',
-                                             'feat_vectorizer'])
+class Reader(object):
 
-
-
-class _DictIter(object):
     """
     A little helper class to make picklable iterators out of example
     dictionary generators
@@ -57,9 +55,10 @@ class _DictIter(object):
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
     """
+
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
                  label_col='y', class_map=None):
-        super(_DictIter, self).__init__()
+        super(Reader, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
@@ -71,7 +70,7 @@ class _DictIter(object):
         # Setup logger
         logger = logging.getLogger(__name__)
 
-        logger.debug('DictIter type: %s', type(self))
+        logger.debug('Reader type: %s', type(self))
         logger.debug('path_or_list: %s', self.path_or_list)
 
         if not self.quiet:
@@ -99,11 +98,12 @@ class _DictIter(object):
         raise NotImplementedError
 
 
-class _DummyDictIter(_DictIter):
+class DummyReader(Reader):
+
     '''
     This class is to facilitate programmatic use of ``Learner.predict()``
-    and other functions that take ``ExamplesTuple`` objects as input.
-    It iterates over examples in the same way as other ``_DictIter``s, but uses
+    and other functions that take ``FeatureSet`` objects as input.
+    It iterates over examples in the same way as other ``Reader``s, but uses
     a list of example dictionaries instead of a path to a file.
 
     :param path_or_list: List of example dictionaries.
@@ -114,6 +114,7 @@ class _DummyDictIter(_DictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
+
     def __iter__(self):
         if not self.quiet:
             self._progress_msg = "Converting examples..."
@@ -146,7 +147,8 @@ class _DummyDictIter(_DictIter):
             sys.stderr.flush()
 
 
-class _JSONDictIter(_DictIter):
+class NDJReader(Reader):
+
     '''
     Iterator to convert current line in .jsonlines/.ndj file to a dictionary
     with the following fields: "SKLL_ID" (originally "id"), "SKLL_CLASS_LABEL"
@@ -203,7 +205,8 @@ class _JSONDictIter(_DictIter):
             sys.stderr.flush()
 
 
-class _MegaMDictIter(_DictIter):
+class MegaMReader(Reader):
+
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file
@@ -294,7 +297,8 @@ class _MegaMDictIter(_DictIter):
                 sys.stderr.flush()
 
 
-class _LibSVMDictIter(_DictIter):
+class LibSVMReader(Reader):
+
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each pair of lines in the MegaM -fvals file specified
@@ -389,7 +393,8 @@ class _LibSVMDictIter(_DictIter):
             sys.stderr.flush()
 
 
-class _DelimitedDictIter(_DictIter):
+class DelimitedReader(Reader):
+
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each line in a specified delimited (CSV/TSV) file.
@@ -412,12 +417,13 @@ class _DelimitedDictIter(_DictIter):
     :param dialect: The dialect of to pass on to the underlying CSV reader.
     :type dialect: str
     '''
+
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
                  label_col='y', class_map=None, dialect=None):
-        super(_DelimitedDictIter, self).__init__(path_or_list, quiet=quiet,
-                                                 ids_to_floats=ids_to_floats,
-                                                 label_col=label_col,
-                                                 class_map=class_map)
+        super(DelimitedReader, self).__init__(path_or_list, quiet=quiet,
+                                              ids_to_floats=ids_to_floats,
+                                              label_col=label_col,
+                                              class_map=class_map)
         self.dialect = dialect
 
     def _sub_iter(self, file_or_list):
@@ -487,7 +493,8 @@ class _DelimitedDictIter(_DictIter):
             sys.stderr.flush()
 
 
-class _CSVDictIter(_DelimitedDictIter):
+class CSVReader(DelimitedReader):
+
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each line in a specified CSV file.
@@ -504,16 +511,18 @@ class _CSVDictIter(_DelimitedDictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
+
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
                  label_col='y', class_map=None):
-        super(_CSVDictIter, self).__init__(path_or_list, quiet=quiet,
-                                           ids_to_floats=ids_to_floats,
-                                           label_col=label_col,
-                                           dialect='excel',
-                                           class_map=class_map)
+        super(CSVReader, self).__init__(path_or_list, quiet=quiet,
+                                        ids_to_floats=ids_to_floats,
+                                        label_col=label_col,
+                                        dialect='excel',
+                                        class_map=class_map)
 
 
-class _ARFFDictIter(_DelimitedDictIter):
+class ARFFReader(DelimitedReader):
+
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each data line in a specified ARFF file.
@@ -530,13 +539,14 @@ class _ARFFDictIter(_DelimitedDictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
+
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
                  label_col='y', class_map=None):
-        super(_ARFFDictIter, self).__init__(path_or_list, quiet=quiet,
-                                            ids_to_floats=ids_to_floats,
-                                            label_col=label_col,
-                                            dialect='arff',
-                                            class_map=class_map)
+        super(ARFFReader, self).__init__(path_or_list, quiet=quiet,
+                                         ids_to_floats=ids_to_floats,
+                                         label_col=label_col,
+                                         dialect='arff',
+                                         class_map=class_map)
 
     @staticmethod
     def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
@@ -557,8 +567,9 @@ class _ARFFDictIter(_DelimitedDictIter):
         for line in file_or_list:
             # Process encoding
             if not isinstance(line, text_type):
-                decoded_line = UnicodeDammit(line, ['utf-8',
-                                             'windows-1252']).unicode_markup
+                decoded_line = UnicodeDammit(
+                    line, [
+                        'utf-8', 'windows-1252']).unicode_markup
             else:
                 decoded_line = line
             line = decoded_line.strip()
@@ -591,11 +602,12 @@ class _ARFFDictIter(_DelimitedDictIter):
             self.label_col = None
 
         # Process data as CSV file
-        return super(_ARFFDictIter, self)._sub_iter(chain([field_str],
-                                                          file_or_list))
+        return super(ARFFReader, self)._sub_iter(chain([field_str],
+                                                       file_or_list))
 
 
-class _TSVDictIter(_DelimitedDictIter):
+class TSVReader(DelimitedReader):
+
     '''
     Iterator that yields tuples of IDs, classes, and dictionaries mapping from
     features to values for each line in a specified TSV file.
@@ -612,13 +624,14 @@ class _TSVDictIter(_DelimitedDictIter):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     '''
+
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
                  label_col='y', class_map=None):
-        super(_TSVDictIter, self).__init__(path_or_list, quiet=quiet,
-                                           ids_to_floats=ids_to_floats,
-                                           label_col=label_col,
-                                           dialect='excel-tab',
-                                           class_map=class_map)
+        super(TSVReader, self).__init__(path_or_list, quiet=quiet,
+                                        ids_to_floats=ids_to_floats,
+                                        label_col=label_col,
+                                        dialect='excel-tab',
+                                        class_map=class_map)
 
 
 def _ids_for_iter_type(example_iter_type, path, ids_to_floats):
@@ -746,32 +759,32 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     # Build an appropriate generator for examples so we process the input file
     # through the feature vectorizer without using tons of memory
     if not isinstance(path, string_types):
-        example_iter_type = _DummyDictIter
+        example_iter_type = DummyReader
     # Lowercase path for file extension checking, if it's a string
     else:
         lc_path = path.lower()
         if lc_path.endswith(".tsv"):
-            example_iter_type = _TSVDictIter
+            example_iter_type = TSVReader
         elif lc_path.endswith(".csv"):
-            example_iter_type = _CSVDictIter
+            example_iter_type = CSVReader
         elif lc_path.endswith(".arff"):
-            example_iter_type = _ARFFDictIter
+            example_iter_type = ARFFReader
         elif lc_path.endswith(".jsonlines") or lc_path.endswith('.ndj'):
-            example_iter_type = _JSONDictIter
+            example_iter_type = NDJReader
         elif lc_path.endswith(".megam"):
-            example_iter_type = _MegaMDictIter
+            example_iter_type = MegaMReader
         elif lc_path.endswith(".libsvm"):
-            example_iter_type = _LibSVMDictIter
+            example_iter_type = LibSVMReader
         else:
-            raise ValueError(('Example files must be in either .arff, .csv, ' +
-                              '.jsonlines, .megam, .ndj, or .tsv format. You ' +
+            raise ValueError(('Example files must be in either .arff, .csv, '
+                              '.jsonlines, .megam, .ndj, or .tsv format. You '
                               'specified: {}').format(path))
 
     logger.debug('Example iterator type: %s', example_iter_type)
 
     # Generators can't be pickled, so unfortunately we have to turn them into
     # lists. Would love a workaround for this.
-    if example_iter_type == _DummyDictIter:
+    if example_iter_type == DummyReader:
         path = list(path)
 
     # Create thread/process-safe logger stuff
@@ -825,27 +838,31 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
     # Make sure we have the same number of ids, classes, and features
     assert ids.shape[0] == classes.shape[0] == features.shape[0]
 
-    return ExamplesTuple(ids, classes, features, feat_vectorizer)
+    if ids.shape[0] != len(set(ids)):
+        raise ValueError('The example IDs are not unique in %s.' % path)
+
+    return FeatureSet(path, ids=ids, classes=classes, features=features,
+                      feat_vectorizer=feat_vectorizer)
 
 
 def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
     '''
     This function is to facilitate programmatic use of Learner.predict()
-    and other functions that take ExamplesTuple objects as input.
+    and other functions that take FeatureSet objects as input.
     It converts a .jsonlines/.ndj-style list of dictionaries into
-    an ExamplesTuple.
+    an FeatureSet.
 
     :param example_dicts: An list of dictionaries following the .jsonlines/.ndj
                           format (i.e., features 'x', label 'y', and 'id').
     :type example_dicts: iterable of dicts
 
-    :returns: an ExamplesTuple representing the examples in example_dicts.
+    :returns: an FeatureSet representing the examples in example_dicts.
     '''
     return load_examples(example_dicts, sparse=sparse, quiet=True,
                          ids_to_floats=ids_to_floats)
 
 
-def _safe_float(text, replace_dict=None):
+def safe_float(text, replace_dict=None):
     '''
     Attempts to convert a string to a float, but if that's not possible, just
     returns the original value.
