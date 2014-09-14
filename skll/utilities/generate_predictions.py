@@ -67,7 +67,8 @@ class Predictor(object):
         elif self._learner.model_type in _REGRESSION_MODELS:
             return preds
         else:
-            return [self._learner.label_list[int(pred[0])] for pred in preds]
+            return [self._learner.label_list[pred if isinstance(pred, int) else
+                                             int(pred[0])] for pred in preds]
 
 
 def main(argv=None):
