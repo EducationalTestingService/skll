@@ -24,11 +24,16 @@ from operator import itemgetter
 
 import numpy as np
 from bs4 import UnicodeDammit
-from collections import namedtuple
 from joblib.pool import MemmapingPool
 from six import iteritems, PY2, PY3, string_types, text_type
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
+
+# Import QueueHandler and QueueListener for multiprocess-safe logging
+if PY2:
+    from logutils.queue import QueueHandler, QueueListener
+else:
+    from logging.handlers import QueueHandler, QueueListener
 
 from skll.data import FeatureSet
 
@@ -131,8 +136,8 @@ class DummyReader(Reader):
                                       ' but ID {} could not be ' +
                                       'converted to float in ' +
                                       '{}').format(curr_id, example))
-            class_name = (_safe_float(example['y'],
-                                      replace_dict=self.class_map)
+            class_name = (safe_float(example['y'],
+                                     replace_dict=self.class_map)
                           if 'y' in example else None)
             example = example['x']
             yield curr_id, class_name, example
@@ -180,8 +185,8 @@ class NDJReader(Reader):
             # for consistency with csv and megam formats.
             curr_id = str(example.get("id",
                                       "EXAMPLE_{}".format(example_num)))
-            class_name = (_safe_float(example['y'],
-                                      replace_dict=self.class_map)
+            class_name = (safe_float(example['y'],
+                                     replace_dict=self.class_map)
                           if 'y' in example else None)
             example = example["x"]
 
@@ -239,13 +244,13 @@ class MegaMReader(Reader):
                 del line
                 # Line is just a class label
                 if num_cols == 1:
-                    class_name = _safe_float(split_line[0],
-                                             replace_dict=self.class_map)
+                    class_name = safe_float(split_line[0],
+                                            replace_dict=self.class_map)
                     field_pairs = []
                 # Line has a class label and feature-value pairs
                 elif num_cols % 2 == 1:
-                    class_name = _safe_float(split_line[0],
-                                             replace_dict=self.class_map)
+                    class_name = safe_float(split_line[0],
+                                            replace_dict=self.class_map)
                     field_pairs = split_line[1:]
                 # Line just has feature-value pairs
                 elif num_cols % 2 == 0:
@@ -258,7 +263,7 @@ class MegaMReader(Reader):
                     field_names = islice(field_pairs, 0, None, 2)
                     # Convert values to floats, because otherwise
                     # features'll be categorical
-                    field_values = (_safe_float(val) for val in
+                    field_values = (safe_float(val) for val in
                                     islice(field_pairs, 1, None, 2))
 
                     # Add the feature-value pairs to dictionary
@@ -321,12 +326,12 @@ class LibSVMReader(Reader):
     def _pair_to_tuple(pair, feat_map):
         '''
         Split a feature-value pair separated by a colon into a tuple.  Also
-        do _safe_float conversion on the value.
+        do safe_float conversion on the value.
         '''
         name, value = pair.split(':')
         if feat_map is not None:
             name = feat_map[name]
-        value = _safe_float(value)
+        value = safe_float(value)
         return (name, value)
 
     def _sub_iter(self, file_or_list):
@@ -365,8 +370,8 @@ class LibSVMReader(Reader):
                 class_name = label_map[class_num]
             else:
                 class_name = class_num
-            class_name = _safe_float(class_name,
-                                     replace_dict=self.class_map)
+            class_name = safe_float(class_name,
+                                    replace_dict=self.class_map)
 
             curr_info_dict = dict(self._pair_to_tuple(pair, feat_map) for pair
                                   in match.group('features').strip().split())
@@ -430,8 +435,8 @@ class DelimitedReader(Reader):
         reader = DictReader(file_or_list, dialect=self.dialect)
         for example_num, row in enumerate(reader):
             if self.label_col is not None and self.label_col in row:
-                class_name = _safe_float(row[self.label_col],
-                                         replace_dict=self.class_map)
+                class_name = safe_float(row[self.label_col],
+                                        replace_dict=self.class_map)
                 del row[self.label_col]
             else:
                 class_name = None
@@ -450,7 +455,7 @@ class DelimitedReader(Reader):
             if PY2:
                 columns_to_convert_to_unicode = []
             for fname, fval in iteritems(row):
-                fval_float = _safe_float(fval)
+                fval_float = safe_float(fval)
                 # we don't need to explicitly store zeros
                 if fval_float:
                     row[fname] = fval_float
@@ -842,7 +847,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
         raise ValueError('The example IDs are not unique in %s.' % path)
 
     return FeatureSet(path, ids=ids, classes=classes, features=features,
-                      feat_vectorizer=feat_vectorizer)
+                      vectorizer=feat_vectorizer)
 
 
 def convert_examples(example_dicts, sparse=True, ids_to_floats=False):

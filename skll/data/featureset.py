@@ -9,6 +9,7 @@ Classes related to storing/merging feature sets.
 from __future__ import absolute_import, print_function, unicode_literals
 
 from copy import deepcopy
+from warnings import warn
 
 import numpy as np
 import scipy.sparse as sp
@@ -47,7 +48,11 @@ class FeatureSet(object):
                  vectorizer=None):
         super(FeatureSet, self).__init__()
         self.name = name
+        if isinstance(ids, list):
+            ids = np.array(ids)
         self.ids = ids
+        if isinstance(classes, list):
+            classes = np.array(classes)
         self.classes = classes
         self.features = features
         self.vectorizer = vectorizer
@@ -57,22 +62,23 @@ class FeatureSet(object):
                 self.vectorizer = DictVectorizer(sparse=True)
             self.features = self.vectorizer.fit_transform(self.features)
         if self.features is not None:
-            num_feats = self.features.shape[1]
+            num_feats = self.features.shape[0]
             if self.ids is None:
                 self.ids = np.empty(num_feats)
                 self.ids.fill(None)
+            num_ids = self.ids.shape[0]
+            if num_feats != num_ids:
+                raise ValueError(('Number of IDs (%s) does not equal '
+                                  'number of feature rows (%s)') % (num_ids,
+                                                                    num_feats))
             if self.classes is None:
                 self.classes = np.empty(num_feats)
                 self.classes.fill(None)
-            num_ids = self.ids.shape[1]
-            num_classes = self.classes.shape[1]
-            if num_feats != num_ids:
-                raise ValueError(('Number of IDs (%s) does not equal number of'
-                                  ' features (%s)') % (num_ids, num_feats))
+            num_classes = self.classes.shape[0]
             if num_feats != num_classes:
                 raise ValueError(('Number of classes ({}) does not equal '
-                                  'number of features ({})') % (num_classes,
-                                                                num_feats))
+                                  'number of feature rows({})') % (num_classes,
+                                                                   num_feats))
 
     def __contains__(self, value):
         pass
@@ -89,7 +95,7 @@ class FeatureSet(object):
             for id_, class_, feats in zip(self.ids, self.classes,
                                           self.features):
                 yield (id_, class_,
-                       self.vectorizer.inverse_transform(feats))
+                       self.vectorizer.inverse_transform(feats)[0])
         else:
             return
 
@@ -139,9 +145,14 @@ class FeatureSet(object):
             new_set.vectorizer = deepcopy(other.vectorizer)
 
         # Check that IDs are in the same order
-        if self.has_ids and other.has_ids and not np.all(self.ids == other.ids):
-            raise ValueError('IDs are not in the same order in each feature '
-                             'set')
+        if self.has_ids:
+            if other.has_ids and not np.all(self.ids == other.ids):
+                raise ValueError('IDs are not in the same order in each '
+                                 'feature set')
+            else:
+                new_set.ids = deepcopy(self.ids)
+        else:
+            new_set.ids = deepcopy(other.ids)
 
         # If either set has labels, check that they don't conflict
         if self.has_classes:
@@ -201,7 +212,7 @@ class FeatureSet(object):
                 raise ValueError('FeatureSets with FeatureHasher vectorizers'
                                  ' cannot be filtered by feature.')
             columns = np.array(sorted({feat_num for feat_name, feat_num in
-                                       iteritems(self.vectorizer.vocab_)
+                                       iteritems(self.vectorizer.vocabulary_)
                                        if (feat_name in features or
                                            feat_name.split('=', 1)[0] in
                                            features)}))
@@ -247,7 +258,7 @@ class FeatureSet(object):
                 raise ValueError('FeatureSets with FeatureHasher vectorizers'
                                  ' cannot be filtered by feature.')
             columns = np.array(sorted({feat_num for feat_name, feat_num in
-                                       iteritems(self.vectorizer.vocab_)
+                                       iteritems(self.vectorizer.vocabulary_)
                                        if (feat_name in features or
                                            feat_name.split('=', 1)[0] in
                                            features)}))
@@ -262,14 +273,16 @@ class FeatureSet(object):
                 continue
             if features is not None:
                 if inverse:
-                    yield id_, class_, feats[columns]
+                    ret_feats = feats[~columns]
                 else:
-                    yield id_, class_, feats[~columns]
+                    ret_feats = feats[columns]
             else:
                 if inverse:
-                    yield id_, class_, feats
+                    ret_feats = feats
                 else:
-                    yield id_, class_, np.array([])
+                    ret_feats = np.array([])
+            yield id_, class_, self.vectorizer.inverse_transform(ret_feats)[0]
+
 
     def __sub__(self, other):
         '''
@@ -284,14 +297,30 @@ class FeatureSet(object):
         '''
         Whether or not this FeatureSet has any finite classes.
         '''
-        return self.classes is not None and np.any(np.isfinite(self.classes))
+        if self.classes is not None:
+            return not (np.issubdtype(self.classes.dtype, float) and
+                        np.isnan(np.min(self.classes)))
+        else:
+            return False
 
     @property
     def has_ids(self):
         '''
         Whether or not this FeatureSet has any finite IDs.
         '''
-        return self.ids is not None and np.any(np.isfinite(self.ids))
+        if self.ids is not None:
+            return not (np.issubdtype(self.ids.dtype, float) and
+                        np.isnan(np.min(self.ids)))
+        else:
+            return False
+
+    def __str__(self):
+        ''' Return a string representation of FeatureSet '''
+        return str(self.__dict__)
+
+    def __repr__(self):
+        ''' Return a string representation of FeatureSet '''
+        return repr(self.__dict__)
 
 
 class ExamplesTuple(FeatureSet):
@@ -313,7 +342,11 @@ class ExamplesTuple(FeatureSet):
 
     def __init__(self, ids=None, classes=None, features=None,
                  feat_vectorizer=None):
-        super(ExamplesTuples, self).__init__('', ids=ids, classes=classes,
-                                             features=features,
-                                             vectorizer=feat_vectorizer)
-        raise DeprecationWarning('ExamplesTuple will be removed in SKLL 1.0.0')
+        super(ExamplesTuple, self).__init__('', ids=ids, classes=classes,
+                                            features=features,
+                                            vectorizer=feat_vectorizer)
+        warn('ExamplesTuple will be removed in SKLL 1.0.0', DeprecationWarning)
+
+    @property
+    def feat_vectorizer(self):
+        return self.vectorizer

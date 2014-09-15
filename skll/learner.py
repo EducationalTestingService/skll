@@ -52,7 +52,7 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.svm import LinearSVC, SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
-from skll.data import ExamplesTuple
+from skll.data import FeatureSet
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
 
@@ -704,7 +704,7 @@ class Learner(object):
         return the features and the labels.
 
         :param examples: The examples to use for training.
-        :type examples: ExamplesTuple
+        :type examples: FeatureSet
         '''
         # Check feature values and labels
         self._check_input(examples)
@@ -729,7 +729,7 @@ class Learner(object):
                                enumerate(self.label_list)}
 
         # Create feature name -> value mapping
-        self.feat_vectorizer = examples.feat_vectorizer
+        self.feat_vectorizer = examples.vectorizer
 
         # initialize feature selector
         self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
@@ -757,7 +757,7 @@ class Learner(object):
         vectorizer, scaler, label dictionary, and inverse label dictionary.
 
         :param examples: The examples to train the model on.
-        :type examples: ExamplesTuple
+        :type examples: FeatureSet
         :param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter grid
                            will be used.
@@ -796,8 +796,9 @@ class Learner(object):
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
-            examples = ExamplesTuple(ids, classes, features,
-                                     examples.feat_vectorizer)
+            examples = FeatureSet(examples.name, ids=ids, classes=classes,
+                                  features=features,
+                                  vectorizer=examples.vectorizer)
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
@@ -911,7 +912,7 @@ class Learner(object):
 
         :param examples: The examples to evaluate the performance of the model
                          on.
-        :type examples: ExamplesTuple
+        :type examples: FeatureSet
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
                                   It will be followed by ".predictions"
@@ -1005,7 +1006,7 @@ class Learner(object):
         Uses a given model to generate predictions on a given data set
 
         :param examples: The examples to predict the classes for.
-        :type examples: ExamplesTuple
+        :type examples: FeatureSet
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the
                                   filename. It will be followed by
@@ -1034,23 +1035,23 @@ class Learner(object):
                                    self.feat_vectorizer.input_type,
                                    self.feat_vectorizer.n_features,
                                    self.feat_vectorizer.non_negative)
-            example_feat_vec_tuple = (examples.feat_vectorizer.dtype,
-                                      examples.feat_vectorizer.input_type,
-                                      examples.feat_vectorizer.n_features,
-                                      examples.feat_vectorizer.non_negative)
+            example_feat_vec_tuple = (examples.vectorizer.dtype,
+                                      examples.vectorizer.input_type,
+                                      examples.vectorizer.n_features,
+                                      examples.vectorizer.non_negative)
 
             if self_feat_vec_tuple == example_feat_vec_tuple:
                 xtest = examples.features
             else:
                 xtest = self.feat_vectorizer.transform(
-                    examples.feat_vectorizer.inverse_transform(
+                    examples.vectorizer.inverse_transform(
                         examples.features))
         else:
-            if self.feat_vectorizer == examples.feat_vectorizer:
+            if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
                 xtest = self.feat_vectorizer.transform(
-                    examples.feat_vectorizer.inverse_transform(
+                    examples.vectorizer.inverse_transform(
                         examples.features))
 
         # filter features based on those selected from training set
@@ -1140,7 +1141,7 @@ class Learner(object):
         Cross-validates a given model on the training examples.
 
         :param examples: The data to cross-validate learner performance on.
-        :type examples: ExamplesTuple
+        :type examples: FeatureSet
         :param stratified: Should we stratify the folds to ensure an even
                            distribution of classes for each fold?
         :type stratified: bool
@@ -1191,8 +1192,9 @@ class Learner(object):
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
-            examples = ExamplesTuple(ids, classes, features,
-                                     examples.feat_vectorizer)
+            examples = FeatureSet(examples.name, ids=ids, classes=classes,
+                                  features=features,
+                                  vectorizer=examples.vectorizer)
 
         # call train setup
         self._train_setup(examples)
@@ -1226,11 +1228,12 @@ class Learner(object):
         for train_index, test_index in kfold:
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
-            train_tuple = ExamplesTuple(ids=examples.ids[train_index],
-                                        classes=examples.classes[train_index],
-                                        features=examples.features[train_index],
-                                        feat_vectorizer=examples.feat_vectorizer)
-            grid_search_score = self.train(train_tuple,
+            train_set = FeatureSet(examples.name,
+                                   ids=examples.ids[train_index],
+                                   classes=examples.classes[train_index],
+                                   features=examples.features[train_index],
+                                   vectorizer=examples.vectorizer)
+            grid_search_score = self.train(train_set,
                                            grid_search_folds=grid_search_folds,
                                            grid_search=grid_search,
                                            grid_objective=grid_objective,
@@ -1243,10 +1246,11 @@ class Learner(object):
             # regardless of what the shuffle keyword argument is set to.
 
             # Evaluate model
-            test_tuple = ExamplesTuple(ids=examples.ids[test_index],
-                                       classes=examples.classes[test_index],
-                                       features=examples.features[test_index],
-                                       feat_vectorizer=examples.feat_vectorizer)
+            test_tuple = FeatureSet(examples.name,
+                                    ids=examples.ids[test_index],
+                                    classes=examples.classes[test_index],
+                                    features=examples.features[test_index],
+                                    vectorizer=examples.vectorizer)
             results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
                                          append=append_predictions,

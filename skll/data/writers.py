@@ -18,6 +18,7 @@ import sys
 from csv import DictWriter
 from decimal import Decimal
 from io import open
+from warnings import warn
 
 import numpy as np
 from six import iteritems, PY2, PY3, string_types, text_type
@@ -28,6 +29,7 @@ from skll.data import FeatureSet
 
 
 class FeatureSetWriter(object):
+
     """
     Helper class for writing out FeatureSets to files.
 
@@ -47,6 +49,7 @@ class FeatureSetWriter(object):
     :param quiet: Do not print "Writing..." status message to stderr.
     :type quiet: bool
     """
+
     def __init__(self, path, feature_set, **kwargs):
         super(FeatureSetWriter, self).__init__()
         self.requires_binary = kwargs.pop('requires_binary', False)
@@ -88,7 +91,7 @@ class FeatureSetWriter(object):
 
         # Write one feature file if we weren't given a dict of subsets
         if subsets is None:
-            self._write_subset(self.path, [])
+            self._write_subset(self.path, None)
         # Otherwise write one feature file per subset
         else:
             for subset_name, filter_features in iteritems(subsets):
@@ -119,7 +122,8 @@ class FeatureSetWriter(object):
             sys.stderr.flush()
 
         # Apply filtering
-        filtered_set = self.feat_set.filtered_iter(features=filter_features)
+        filtered_set = (self.feat_set.filtered_iter(features=filter_features)
+                        if filter_features is not None else self.feat_set)
 
         # Open file for writing and write each line
         file_mode = 'wb' if (self.requires_binary and PY2) else 'w'
@@ -153,6 +157,7 @@ class FeatureSetWriter(object):
 
 
 class DelimitedFileWriter(FeatureSetWriter):
+
     """
     FeatureSetWriter for writing out FeatureSets as TSV/CSV files.
 
@@ -177,6 +182,7 @@ class DelimitedFileWriter(FeatureSetWriter):
                     Default: 'excel-tab'
     :type dialect: str
     """
+
     def __init__(self, path, feature_set, **kwargs):
         kwargs['requires_binary'] = True
         self.dialect = kwargs.pop('dialect', 'excel-tab')
@@ -215,14 +221,14 @@ class DelimitedFileWriter(FeatureSetWriter):
         '''
         # Add class column to feat_dict (unless this is unlabelled data)
         if self.label_col not in feat_dict:
-            if class_ is not None and np.isfinite(class_):
+            if self.feat_set.has_classes:
                 feat_dict[self.label_col] = class_
         else:
             raise ValueError(('Class column name "{}" already used as feature '
                               'name.').format(self.label_col))
         # Add id column to feat_dict if id is provided
         if 'id' not in feat_dict:
-            if id_ is not None and np.isfinite(id_):
+            if self.feat_set.has_ids:
                 feat_dict['id'] = id_
         else:
             raise ValueError('ID column name "id" already used as feature '
@@ -232,6 +238,7 @@ class DelimitedFileWriter(FeatureSetWriter):
 
 
 class ARFFWriter(DelimitedFileWriter):
+
     """
     FeatureSetWriter for writing out FeatureSets as ARFF files.
 
@@ -257,6 +264,7 @@ class ARFFWriter(DelimitedFileWriter):
                        Default: ``False``
     :type regression: bool
     """
+
     def __init__(self, path, feature_set, **kwargs):
         self.relation = kwargs.pop('relation', 'skll_relation')
         self.regression = kwargs.pop('regression', False)
@@ -304,6 +312,7 @@ class ARFFWriter(DelimitedFileWriter):
 
 
 class MegaMWriter(FeatureSetWriter):
+
     """ FeatureSetWriter for writing out FeatureSets as MegaM files. """
     def _replace_non_ascii(line):
         '''
@@ -316,7 +325,8 @@ class MegaMWriter(FeatureSetWriter):
         char_list = []
         for char in line:
             char_num = ord(char)
-            char_list.append('<U{}>'.format(char_num) if char_num > 127 else char)
+            char_list.append(
+                '<U{}>'.format(char_num) if char_num > 127 else char)
         return ''.join(char_list)
 
     def _write_line(self, id_, class_, feat_dict, output_file):
@@ -324,9 +334,9 @@ class MegaMWriter(FeatureSetWriter):
         Write the current line in the file in MegaM format.
         '''
         # Don't try to add class column if this is label-less data
-        if id_ is not None and np.isfinite(id_):
+        if self.feat_set.has_ids:
             print('# {}'.format(id_), file=output_file)
-        if class_ is not None and np.isfinite(class_):
+        if self.feat_set.has_classes:
             print(class_, end='\t', file=output_file)
         print(self._replace_non_ascii(' '.join(('{} {}'.format(field,
                                                                value) for
@@ -337,9 +347,11 @@ class MegaMWriter(FeatureSetWriter):
 
 
 class NDJWriter(FeatureSetWriter):
+
     """
     FeatureSetWriter for writing out FeatureSets as .jsonlines/.ndj files.
     """
+
     def __init__(self, path, feature_set, **kwargs):
         kwargs['requires_binary'] = True
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
@@ -350,15 +362,16 @@ class NDJWriter(FeatureSetWriter):
         '''
         example_dict = {}
         # Don't try to add class column if this is label-less data
-        if class_ is not None:
+        if self.feat_set.has_classes:
             example_dict['y'] = class_
-        if id_ is not None:
+        if self.feat_set.has_ids:
             example_dict['id'] = id_
         example_dict["x"] = feat_dict
         print(json.dumps(example_dict, sort_keys=True), file=output_file)
 
 
 class LibSVMWriter(FeatureSetWriter):
+
     """
     FeatureSetWriter for writing out FeatureSets as LibSVM/SVMLight files.
     """
@@ -400,10 +413,9 @@ class LibSVMWriter(FeatureSetWriter):
         '''
         Write the current line in the file in MegaM format.
         '''
-        field_values = [(self.feat_set.vectorizer.vocabulary_[field] + 1,
-                         value) for field, value in iteritems(feat_dict)
-                        if Decimal(value) != 0]
-        field_values.sort()
+        field_values = sorted([(self.feat_set.vectorizer.vocabulary_[field] +
+                                1, value) for field, value in
+                               iteritems(feat_dict) if Decimal(value) != 0])
         # Print label
         if class_ in self.label_map:
             print('{}'.format(self.label_map[class_]), end=' ',
@@ -415,12 +427,12 @@ class LibSVMWriter(FeatureSetWriter):
                         field_values)), end=' ', file=output_file)
         # Print comment with id and mappings
         print('#', end=' ', file=output_file)
-        if id_ is not None and np.isfinite(id_):
+        if self.feat_set.has_ids:
             print(self._sanitize('{}'.format(id_)), end='',
                   file=output_file)
         print(' |', end=' ', file=output_file)
-        if (PY2 and class_ is not None and np.isfinite(class_) and
-                isinstance(class_, text_type)):
+        if (PY2 and self.feat_set.has_classes and isinstance(class_,
+                                                             text_type)):
             class_ = class_.encode('utf-8')
         if class_ in self.label_map:
             print('%s=%s' % (self._sanitize(self.label_map[class_]),
@@ -503,14 +515,14 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     logger.debug('Feature vectorizer: %s', feat_vectorizer)
     logger.debug('Features: %s', features)
 
-    raise DeprecationWarning('The write_feature_file function will be removed '
-                             'in SKLL 1.0.0.  Please switch to using a Writer,'
-                             ' (e.g., NDJWriter) directly.')
+    warn('The write_feature_file function will be removed in SKLL 1.0.0. '
+         'Please switch to using a Writer (e.g., NDJWriter) directly.',
+         DeprecationWarning)
 
-    feature_set = FeatureSet(ids=ids, classes=classes, features=features,
+    feature_set = FeatureSet(path, ids=ids, classes=classes, features=features,
                              vectorizer=feat_vectorizer)
 
-    writer_args = {'subsets': subsets}
+    writer_args = {}
 
     # Get lowercase extension for file extension checking
     ext = os.path.splitext(path)[1].lower()
