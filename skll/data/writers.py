@@ -190,18 +190,17 @@ class DelimitedFileWriter(FeatureSetWriter):
         super(DelimitedFileWriter, self).__init__(path, feature_set, **kwargs)
         self._dict_writer = None
 
-    def _get_fieldnames(self, feature_set):
+    def _get_fieldnames(self):
         '''
         Build list of fieldnames for DictWriter from self.feat_set.
         '''
         # Build list of fieldnames (features + 'id' + label_col)
-        fieldnames = set(self.feat_set.vectorizer.vocabulary_.keys())
-        fieldnames.add(self.label_col)
+        fieldnames = set(self.feat_set.vectorizer.get_feature_names())
         if self.feat_set.has_ids:
             fieldnames.add('id')
         if self.feat_set.has_classes:
             fieldnames.add(self.label_col)
-        fieldnames = sorted(fieldnames)
+        return sorted(fieldnames)
 
     def _write_header(self, feature_set, output_file):
         '''
@@ -210,7 +209,7 @@ class DelimitedFileWriter(FeatureSetWriter):
         '''
         # Initialize DictWriter that will be used to write header and rows
         self._dict_writer = DictWriter(output_file,
-                                       self._get_fieldnames(feature_set),
+                                       self._get_fieldnames(),
                                        restval=0, dialect=self.dialect)
         # Actually output the header to the file
         self._dict_writer.writeheader()
@@ -277,7 +276,7 @@ class ARFFWriter(DelimitedFileWriter):
         Called before lines are written to file, so that headers can be written
         for files that need them.
         '''
-        fieldnames = self._get_fieldnames(feature_set)
+        fieldnames = self._get_fieldnames()
         if self.label_col in fieldnames:
             fieldnames.remove(self.label_col)
 
