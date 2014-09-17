@@ -18,28 +18,10 @@ from bs4 import UnicodeDammit
 from sklearn.feature_extraction import DictVectorizer
 from six import PY2
 
-from skll.data.readers import (ARFFReader, CSVReader, LibSVMReader,
-                               MegaMReader, NDJReader, TSVReader)
-
+from skll.data.readers import EXT_TO_READER
 from skll.data.writers import (ARFFWriter, DelimitedFileWriter, LibSVMWriter,
-                               MegaMWriter, NDJWriter)
+                               EXT_TO_WRITER)
 from skll.version import __version__
-
-
-EXT_TO_READER = {".arff": ARFFReader,
-                 ".csv": CSVReader,
-                 ".jsonlines": NDJReader,
-                 ".libsvm": LibSVMReader,
-                 ".megam": MegaMReader,
-                 '.ndj': NDJReader,
-                 ".tsv": TSVReader}
-EXT_TO_WRITER = {".arff": ARFFWriter,
-                 ".csv": DelimitedFileWriter,
-                 ".jsonlines": NDJWriter,
-                 ".libsvm": LibSVMWriter,
-                 ".megam": MegaMWriter,
-                 '.ndj': NDJWriter,
-                 ".tsv": DelimitedFileWriter}
 
 
 def _pair_to_dict_tuple(pair):
@@ -144,8 +126,9 @@ def main(argv=None):
         label_map = None
 
     # Iterate through input file and collect the information we need
-    feature_set = EXT_TO_READER[input_extension](args.infile, quiet=args.quiet,
-                                                 label_col=args.label_col)
+    reader = EXT_TO_READER[input_extension](args.infile, quiet=args.quiet,
+                                            label_col=args.label_col)
+    feature_set = reader.read()
     # write out the file in the requested output format
     writer_type = EXT_TO_WRITER[output_extension]
     writer_args = {'quiet': args.quiet}

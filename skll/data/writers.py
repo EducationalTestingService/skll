@@ -21,9 +21,9 @@ from io import open
 from warnings import warn
 
 import numpy as np
-from six import iteritems, PY2, PY3, string_types, text_type
+from six import iteritems, PY2, string_types, text_type
 from six.moves import map, zip
-from sklearn.feature_extraction import DictVectorizer, FeatureHasher
+from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
 
@@ -314,6 +314,7 @@ class ARFFWriter(DelimitedFileWriter):
 class MegaMWriter(FeatureSetWriter):
 
     """ FeatureSetWriter for writing out FeatureSets as MegaM files. """
+    @staticmethod
     def _replace_non_ascii(line):
         '''
         :param line: The line to clean up.
@@ -561,3 +562,13 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
 
     writer = writer_type(path, feature_set, **writer_args)
     writer.write(subsets=subsets)
+
+
+# Constants
+EXT_TO_WRITER = {".arff": ARFFWriter,
+                 ".csv": DelimitedFileWriter,
+                 ".jsonlines": NDJWriter,
+                 ".libsvm": LibSVMWriter,
+                 ".megam": MegaMWriter,
+                 '.ndj': NDJWriter,
+                 ".tsv": DelimitedFileWriter}

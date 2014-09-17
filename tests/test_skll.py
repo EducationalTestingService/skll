@@ -1223,10 +1223,10 @@ def check_load_featureset(suffix, numeric_ids):
     assert np.all(merged_examples.classes == premerged_examples.classes)
     assert np.all(merged_examples.features.todense() ==
                   premerged_examples.features.todense())
-    eq_(merged_examples.feat_vectorizer.feature_names_,
-        premerged_examples.feat_vectorizer.feature_names_)
-    eq_(merged_examples.feat_vectorizer.vocabulary_,
-        premerged_examples.feat_vectorizer.vocabulary_)
+    eq_(merged_examples.vectorizer.feature_names_,
+        premerged_examples.vectorizer.feature_names_)
+    eq_(merged_examples.vectorizer.vocabulary_,
+        premerged_examples.vectorizer.vocabulary_)
 
 
 def test_load_featureset():
@@ -1270,7 +1270,7 @@ def test_convert_examples():
     eq_(converted.features[2, 2], 3.0)
     eq_(converted.features[2, 0], 0.0)
 
-    eq_(converted.feat_vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
+    eq_(converted.vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
 
 
 # Tests related to converting featuresets
@@ -1373,10 +1373,10 @@ def check_convert_featureset(from_suffix, to_suffix):
     assert_array_equal(merged_examples.classes, premerged_examples.classes)
     assert_array_equal(merged_examples.features.todense(),
                        premerged_examples.features.todense())
-    eq_(merged_examples.feat_vectorizer.feature_names_,
-        premerged_examples.feat_vectorizer.feature_names_)
-    eq_(merged_examples.feat_vectorizer.vocabulary_,
-        premerged_examples.feat_vectorizer.vocabulary_)
+    eq_(merged_examples.vectorizer.feature_names_,
+        premerged_examples.vectorizer.feature_names_)
+    eq_(merged_examples.vectorizer.vocabulary_,
+        premerged_examples.vectorizer.vocabulary_)
 
 
 def test_convert_featureset():
