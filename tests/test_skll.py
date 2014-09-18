@@ -8,7 +8,8 @@ the future.
 :author: Dan Blanchard (dblanchard@ets.org)
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import csv
 import itertools
@@ -23,7 +24,8 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 import scipy.sparse as sp
-from nose.tools import eq_, raises, assert_almost_equal, assert_not_equal
+from nose.tools import (eq_, raises, assert_almost_equal, assert_not_equal,
+                        nottest)
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer
 
@@ -529,9 +531,7 @@ def check_summary_score(result_score, summary_score, learner_name):
 
 
 def test_summary_feature_hasher():
-    '''
-    Test to validate summary file scores with feature_hasher
-    '''
+    # Test to validate summary file scores with feature_hasher
     make_summary_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -580,9 +580,7 @@ def test_summary_feature_hasher():
 
 
 def test_summary():
-    '''
-    Test to validate summary file scores
-    '''
+    # Test to validate summary file scores
     make_summary_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -984,6 +982,9 @@ def make_scaling_data():
         write_feature_file(train_path, ids, classes, sub_features)
 
     # create the test data
+    ids = []
+    features = []
+    classes = []
     for j in range(num_test_examples):
         y = "dog" if j % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, j)
@@ -1004,11 +1005,10 @@ def make_scaling_data():
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
-
+@nottest
 def test_scaling_feature_hasher():
     '''
-    Test to validate whether feature scaling works
-    using the feature_hasher option
+    Test to validate whether feature scaling works using feature_hasher
     '''
     make_scaling_data()
 
@@ -1043,11 +1043,12 @@ def test_scaling_feature_hasher():
         with_scaling_score = row['score']
         with_scaling_scaling_value = row['feature_scaling']
 
-    assert_not_equal(without_scaling_score, with_scaling_score)
     eq_(without_scaling_scaling_value, 'none')
     eq_(with_scaling_scaling_value, 'both')
+    assert_not_equal(without_scaling_score, with_scaling_score)
 
 
+@nottest
 def test_scaling():
     '''
     Test to validate whether feature scaling works
@@ -1081,9 +1082,9 @@ def test_scaling():
         with_scaling_score = row['score']
         with_scaling_scaling_value = row['feature_scaling']
 
-    assert_not_equal(without_scaling_score, with_scaling_score)
     eq_(without_scaling_scaling_value, 'none')
     eq_(with_scaling_scaling_value, 'both')
+    assert_not_equal(without_scaling_score, with_scaling_score)
 
 
 # Test our kappa implementation based on Ben Hamner's unit tests.
@@ -1380,7 +1381,7 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 
 def test_convert_featureset():
-    ''' Test the conversion from every format to every other format '''
+    # Test the conversion from every format to every other format
     for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
                                                           '.megam', '.tsv',
                                                           '.csv', '.arff',
