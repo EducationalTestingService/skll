@@ -161,13 +161,11 @@ class DelimitedFileWriter(FeatureSetWriter):
     """
     FeatureSetWriter for writing out FeatureSets as TSV/CSV files.
 
-    :param path: A path to the feature file we would like to create. The suffix
-                 to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
-                 ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets``
-                 is not ``None``, this is assumed to be a string containing the
-                 path to the directory to write the feature files with an
-                 additional file extension specifying the file type. For
-                 example ``/foo/.csv``.
+    :param path: A path to the feature file we would like to create.
+                 If ``subsets`` is not ``None``, this is assumed to be a string
+                 containing the path to the directory to write the feature
+                 files with an additional file extension specifying the file
+                 type. For example ``/foo/.csv``.
     :type path: str
     :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
@@ -236,18 +234,63 @@ class DelimitedFileWriter(FeatureSetWriter):
         self._dict_writer.writerow(feat_dict)
 
 
+class CSVWriter(DelimitedFileWriter):
+
+    """
+    FeatureSetWriter for writing out FeatureSets as TSV files.
+
+    :param path: A path to the feature file we would like to create.
+                 If ``subsets`` is not ``None``, this is assumed to be a string
+                 containing the path to the directory to write the feature
+                 files with an additional file extension specifying the file
+                 type. For example ``/foo/.csv``.
+    :type path: str
+    :param feature_set: The FeatureSet to dump a file.
+    :type feature_set: FeatureSet
+    :param quiet: Do not print "Writing..." status message to stderr.
+    :type quiet: bool
+    """
+
+    def __init__(self, path, feature_set, **kwargs):
+        kwargs['dialect'] = 'excel'
+        super(CSVWriter, self).__init__(path, feature_set, **kwargs)
+        self._dict_writer = None
+
+
+
+class TSVWriter(DelimitedFileWriter):
+
+    """
+    FeatureSetWriter for writing out FeatureSets as TSV files.
+
+    :param path: A path to the feature file we would like to create.
+                 If ``subsets`` is not ``None``, this is assumed to be a string
+                 containing the path to the directory to write the feature
+                 files with an additional file extension specifying the file
+                 type. For example ``/foo/.csv``.
+    :type path: str
+    :param feature_set: The FeatureSet to dump a file.
+    :type feature_set: FeatureSet
+    :param quiet: Do not print "Writing..." status message to stderr.
+    :type quiet: bool
+    """
+
+    def __init__(self, path, feature_set, **kwargs):
+        kwargs['dialect'] = 'excel-tab'
+        super(TSVWriter, self).__init__(path, feature_set, **kwargs)
+        self._dict_writer = None
+
+
 class ARFFWriter(DelimitedFileWriter):
 
     """
     FeatureSetWriter for writing out FeatureSets as ARFF files.
 
-    :param path: A path to the feature file we would like to create. The suffix
-                 to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
-                 ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets``
-                 is not ``None``, this is assumed to be a string containing the
-                 path to the directory to write the feature files with an
-                 additional file extension specifying the file type. For
-                 example ``/foo/.csv``.
+    :param path: A path to the feature file we would like to create. If
+                 ``subsets`` is not ``None``, this is assumed to be a string
+                 containing the path to the directory to write the feature
+                 files with an additional file extension specifying the file
+                 type. For example ``/foo/.csv``.
     :type path: str
     :param feature_set: The FeatureSet to dump a file.
     :type feature_set: FeatureSet
@@ -513,7 +556,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     logger = logging.getLogger(__name__)
 
     logger.debug('Feature vectorizer: %s', feat_vectorizer)
-    logger.debug('Features: %s', features)
+    # logger.debug('Features: %s', features)
 
     warn('The write_feature_file function will be removed in SKLL 1.0.0. '
          'Please switch to using a Writer (e.g., NDJWriter) directly.',
@@ -527,37 +570,21 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     # Get lowercase extension for file extension checking
     ext = os.path.splitext(path)[1].lower()
 
-    # Create TSV file if asked
-    if ext == ".tsv":
-        writer_args['dialect'] = 'excel-tab'
-        writer_args['label_col'] = label_col
-        writer_type = DelimitedFileWriter
-    # Create CSV file if asked
-    elif ext == ".csv":
-        writer_args['dialect'] = 'excel'
-        writer_args['label_col'] = label_col
-        writer_type = DelimitedFileWriter
-    # Create .jsonlines file if asked
-    elif ext == ".jsonlines" or ext == '.ndj':
-        writer_type = NDJWriter
-    # Create .libsvm file if asked
-    elif ext == ".libsvm":
-        writer_type = LibSVMWriter
-        writer_args['label_map'] = label_map
-    # Create .megam file if asked
-    elif ext == ".megam":
-        writer_type = MegaMWriter
-    # Create ARFF file if asked
-    elif ext == ".arff":
-        writer_type = ARFFWriter
-        writer_args['label_col'] = label_col
-        writer_args['relation'] = arff_relation
-        writer_args['regression'] = arff_regression
-    # Invalid file suffix, raise error
-    else:
+    if ext not in EXT_TO_WRITER:
         raise ValueError(('Output file must be in either .arff, .csv, '
                           '.jsonlines, .libsvm, .megam, .ndj, or .tsv format. '
                           'You specified: {}').format(path))
+    else:
+        writer_type = EXT_TO_WRITER[ext]
+
+    # Setup writer-type-specific arguments
+    if issubclass(writer_type, DelimitedFileWriter):
+        writer_args['label_col'] = label_col
+        if writer_type is ARFFWriter:
+            writer_args['relation'] = arff_relation
+            writer_args['regression'] = arff_regression
+    elif issubclass(writer_type, LibSVMWriter):
+        writer_args['label_map'] = label_map
 
     writer = writer_type(path, feature_set, **writer_args)
     writer.write(subsets=subsets)
@@ -565,9 +592,9 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
 
 # Constants
 EXT_TO_WRITER = {".arff": ARFFWriter,
-                 ".csv": DelimitedFileWriter,
+                 ".csv": CSVWriter,
                  ".jsonlines": NDJWriter,
                  ".libsvm": LibSVMWriter,
                  ".megam": MegaMWriter,
                  '.ndj': NDJWriter,
-                 ".tsv": DelimitedFileWriter}
+                 ".tsv": TSVWriter}
