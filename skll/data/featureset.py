@@ -134,7 +134,7 @@ class FeatureSet(object):
             new_set.vectorizer = deepcopy(self.vectorizer)
             if not feature_hasher:
                 # dictvectorizer sorts the vocabularies within each file
-                vocab = sorted(new_set.vectorizer.vocabulary_.items(),
+                vocab = sorted(other.vectorizer.vocabulary_.items(),
                                key=lambda x: x[1])
                 for feat_name, index in vocab:
                     new_set.vectorizer.vocabulary_[feat_name] = (index +
