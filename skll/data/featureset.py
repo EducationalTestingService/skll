@@ -301,6 +301,14 @@ class FeatureSet(object):
         else:
             return False
 
+    @property
+    def feat_vectorizer(self):
+        ''' Backward compatible name for vectorizer '''
+        warn('FeatureSet.feat_vectorizer will be removed in SKLL 1.0.0. '
+             'Please switch to using FeatureSet.vectorizer to access the '
+             'feature vectorizer.', DeprecationWarning)
+        return self.vectorizer
+
     def __str__(self):
         ''' Return a string representation of FeatureSet '''
         return str(self.__dict__)
@@ -333,7 +341,3 @@ class ExamplesTuple(FeatureSet):
                                             features=features,
                                             vectorizer=feat_vectorizer)
         warn('ExamplesTuple will be removed in SKLL 1.0.0', DeprecationWarning)
-
-    @property
-    def feat_vectorizer(self):
-        return self.vectorizer
