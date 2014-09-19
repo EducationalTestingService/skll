@@ -1005,6 +1005,7 @@ def make_scaling_data():
             sub_features.append(x)
         write_feature_file(train_path, ids, classes, sub_features)
 
+
 @nottest
 def test_scaling_feature_hasher():
     '''
