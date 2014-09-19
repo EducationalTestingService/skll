@@ -406,9 +406,9 @@ class NDJWriter(FeatureSetWriter):
         example_dict = {}
         # Don't try to add class column if this is label-less data
         if self.feat_set.has_classes:
-            example_dict['y'] = class_
+            example_dict['y'] = np.asscalar(class_)
         if self.feat_set.has_ids:
-            example_dict['id'] = id_
+            example_dict['id'] = np.asscalar(id_)
         example_dict["x"] = feat_dict
         print(json.dumps(example_dict, sort_keys=True), file=output_file)
 
@@ -568,7 +568,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     writer_args = {}
 
     # Get lowercase extension for file extension checking
-    ext = os.path.splitext(path)[1].lower()
+    ext = '.' + path.rsplit('.', 1)[-1].lower()
 
     if ext not in EXT_TO_WRITER:
         raise ValueError(('Output file must be in either .arff, .csv, '

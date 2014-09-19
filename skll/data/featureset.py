@@ -247,41 +247,28 @@ class FeatureSet(object):
                         remove them.
         :type inverse: bool
         '''
-        if self.features is not None:
-            if not isinstance(self.vectorizer, DictVectorizer):
-                raise ValueError('FeatureSets can only be iterated through if '
-                                 'they use a DictVectorizer for their feature '
-                                 'vectorizer.')
+        if self.features is not None and not isinstance(self.vectorizer,
+                                                        DictVectorizer):
+            raise ValueError('FeatureSets can only be iterated through if they'
+                             ' use a DictVectorizer for their feature '
+                             'vectorizer.')
 
-        if features is not None:
-            if isinstance(self.vectorizer, FeatureHasher):
-                raise ValueError('FeatureSets with FeatureHasher vectorizers'
-                                 ' cannot be filtered by feature.')
-            columns = np.array(sorted({feat_num for feat_name, feat_num in
-                                       iteritems(self.vectorizer.vocabulary_)
-                                       if (feat_name in features or
-                                           feat_name.split('=', 1)[0] in
-                                           features)}))
-
-        for id_, class_, feats in zip(self.ids, self.classes,
-                                      self.features):
+        for id_, class_, feats in zip(self.ids, self.classes, self.features):
             # Skip instances with IDs not in filter
             if ids is not None and (id_ in ids) == inverse:
                 continue
             # Skip instances with classes not in filter
             if classes is not None and (class_ in classes) == inverse:
                 continue
+            feat_dict = self.vectorizer.inverse_transform(feats)[0]
             if features is not None:
-                if inverse:
-                    ret_feats = feats[~columns]
-                else:
-                    ret_feats = feats[columns]
-            else:
-                if inverse:
-                    ret_feats = feats
-                else:
-                    ret_feats = np.array([])
-            yield id_, class_, self.vectorizer.inverse_transform(ret_feats)[0]
+                feat_dict = {name: value for name, value in
+                             iteritems(feat_dict) if
+                             (inverse != (name in features) or
+                              (name.split('=', 1)[0] in features))}
+            elif not inverse:
+                feat_dict = {}
+            yield id_, class_, feat_dict
 
 
     def __sub__(self, other):
