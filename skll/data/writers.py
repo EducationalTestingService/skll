@@ -257,7 +257,6 @@ class CSVWriter(DelimitedFileWriter):
         self._dict_writer = None
 
 
-
 class TSVWriter(DelimitedFileWriter):
 
     """
