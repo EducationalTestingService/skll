@@ -124,8 +124,8 @@ class FeatureSet(object):
                                      'n_features setting.')
             else:
                 # Check for duplicate feature names
-                if (set(self.vectorizer.get_feature_names()) &
-                        set(other.vectorizer.get_feature_names())):
+                if (set(self.vectorizer.feature_names_) &
+                        set(other.vectorizer.feature_names_)):
                     raise ValueError('Cannot combine FeatureSets because they '
                                      'have duplicate feature names.')
             num_feats = self.features.shape[1]
@@ -133,13 +133,11 @@ class FeatureSet(object):
                                          'csr')
             new_set.vectorizer = deepcopy(self.vectorizer)
             if not feature_hasher:
-                # dictvectorizer sorts the vocabularies within each file
-                vocab = sorted(other.vectorizer.vocabulary_.items(),
-                               key=lambda x: x[1])
-                for feat_name, index in vocab:
+                for feat_name, index in other.vectorizer.vocabulary_.items():
                     new_set.vectorizer.vocabulary_[feat_name] = (index +
                                                                  num_feats)
-                    new_set.vectorizer.feature_names_.append(feat_name)
+                other_names = other.vectorizer.feature_names_
+                new_set.vectorizer.feature_names_.extend(other_names)
         else:
             new_set.features = deepcopy(other.features)
             new_set.vectorizer = deepcopy(other.vectorizer)

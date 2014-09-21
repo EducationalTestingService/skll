@@ -8,82 +8,151 @@ Handles loading data from various types of data files.
 :organization: ETS
 '''
 
-from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import csv
 import json
 import logging
 import re
 import sys
+from array import array
+from collections import Mapping
 from csv import DictReader
 from itertools import chain, islice
 from io import open, BytesIO, StringIO
-from multiprocessing import Queue
-from operator import itemgetter
 from os.path import splitext
 from warnings import warn
 
 import numpy as np
+import scipy.sparse as sp
+import six
 from bs4 import UnicodeDammit
-from joblib.pool import MemmapingPool
 from six import iteritems, PY2, PY3, string_types, text_type
 from six.moves import map, zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
-# Import QueueHandler and QueueListener for multiprocess-safe logging
-if PY2:
-    from logutils.queue import QueueHandler, QueueListener
-else:
-    from logging.handlers import QueueHandler, QueueListener
-
 from skll.data import FeatureSet
 
 
-def _read_in_subprocess(reader):
+class UnsortedDictVectorizer(DictVectorizer):
     '''
-    Do actual file reading in subprocess so all memory will be freed
-    when done.
+    A DictVectorizer that does not require that feature_names_ is
+    is sorted.  This allows it to support calling fit_transform with
+    a generator, potentially freeing up lots of memory.
     '''
-    # Load file in a sub process
-    ids = []
-    classes = []
-    feat_dicts = []
-    if PY3:
-        file_mode = 'r'
-    else:
-        file_mode = 'rb'
-    with open(reader.path_or_list, file_mode) as f:
-        for example_num, (id_, class_,
-                          feat_dict) in enumerate(reader._sub_read(f)):
-            # Update lists of IDs, clases, and features
-            if reader.ids_to_floats:
-                try:
-                    id_ = float(id_)
-                except ValueError:
-                    raise ValueError(('You set ids_to_floats to true,'
-                                      ' but ID {} could not be '
-                                      'converted to float in '
-                                      '{}').format(id_,
-                                                   reader.path_or_list))
-            ids.append(id_)
-            classes.append(class_)
-            feat_dicts.append(feat_dict)
-            # Print out status
-            if not reader.quiet and example_num % 100 == 0:
-                print("{}{:>15}".format(reader._progress_msg,
-                                        example_num),
-                      end="\r", file=sys.stderr)
-                sys.stderr.flush()
-    # Convert everything to numpy arrays before sending back to parent
-    ids = np.array(ids)
-    classes = np.array(classes)
-    features = reader.vectorizer.fit_transform(feat_dicts)
-    # Report that loading is complete
-    if not reader.quiet:
-        print("{}{:<15}".format(reader._progress_msg, "done"),
-              file=sys.stderr)
-        sys.stderr.flush()
-    return ids, classes, features, reader.vectorizer
+
+    def fit(self, X, y=None):
+        """Learn a list of feature name -> indices mappings.
+
+        Parameters
+        ----------
+        X : Mapping or iterable over Mappings
+            Dict(s) or Mapping(s) from feature names (arbitrary Python
+            objects) to feature values (strings or convertible to dtype).
+        y : (ignored)
+
+        Returns
+        -------
+        self
+
+        Notes
+        -----
+        Unlike the base DictVectorizer, this does not sort the list of
+        feature names, thereby eliminating the need to temporarily store
+        them all twice.
+        """
+        # collect all the possible feature names
+        self.feature_names_ = []
+        self.vocabulary_ = {}
+
+        vocab = self.vocabulary_
+
+        for x in X:
+            for f, v in six.iteritems(x):
+                if isinstance(v, six.string_types):
+                    f = "%s%s%s" % (f, self.separator, v)
+                if f not in vocab:
+                    self.feature_names_.append(f)
+                    vocab[f] = len(vocab)
+        return self
+
+    def fit_transform(self, X, y=None):
+        """Learn a list of feature name -> indices mappings and transform X.
+
+        Like fit(X) followed by transform(X).
+
+        Parameters
+        ----------
+        X : Mapping or iterable over Mappings
+            Dict(s) or Mapping(s) from feature names (arbitrary Python
+            objects) to feature values (strings or convertible to dtype).
+        y : (ignored)
+
+        Returns
+        -------
+        Xa : {array, sparse matrix}
+            Feature vectors; always 2-d.
+
+        Notes
+        -----
+        Unlike the base DictVectorizer, this method does not requires
+        two passes over X, so it does not materialize X in memory.
+        """
+        # Sanity check: Python's array has no way of explicitly requesting the
+        # signed 32-bit integers that scipy.sparse needs, so we use the next
+        # best thing: typecode "i" (int). However, if that gives larger or
+        # smaller integers than 32-bit ones, np.frombuffer screws up.
+        assert array("i").itemsize == 4, (
+            "sizeof(int) != 4 on your platform; please report this at"
+            " https://github.com/scikit-learn/scikit-learn/issues and"
+            " include the output from platform.platform() in your bug report")
+
+        self.vocabulary_ = {}
+        self.feature_names_ = []
+
+        dtype = self.dtype
+        vocab = self.vocabulary_
+
+        # Process everything as sparse regardless of setting
+        X = [X] if isinstance(X, Mapping) else X
+
+        indices = array("i")
+        indptr = array("i", [0])
+        # XXX we could change values to an array.array as well, but it
+        # would require (heuristic) conversion of dtype to typecode...
+        values = []
+
+        # collect all the possible feature names and build sparse matrix at
+        # same time
+        for x in X:
+            for f, v in six.iteritems(x):
+                if isinstance(v, six.string_types):
+                    f = "%s%s%s" % (f, self.separator, v)
+                    v = 1
+                if f not in vocab:
+                    vocab[f] = len(vocab)
+                    self.feature_names_.append(f)
+                indices.append(vocab[f])
+                values.append(dtype(v))
+
+            indptr.append(len(indices))
+
+        if len(indptr) == 1:
+            raise ValueError("Sample sequence X is empty.")
+
+        if len(indices) > 0:
+            # workaround for bug in older NumPy:
+            # http://projects.scipy.org/numpy/ticket/1943
+            indices = np.frombuffer(indices, dtype=np.intc)
+        indptr = np.frombuffer(indptr, dtype=np.intc)
+        shape = (len(indptr) - 1, len(vocab))
+
+        sparse_matrix = sp.csr_matrix((values, indices, indptr),
+                                      shape=shape, dtype=dtype)
+
+        # Convert to dense if asked
+        return sparse_matrix if self.sparse else sparse_matrix.todense()
 
 
 class Reader(object):
@@ -135,7 +204,7 @@ class Reader(object):
         if feature_hasher:
             self.vectorizer = FeatureHasher(n_features=num_features)
         else:
-            self.vectorizer = DictVectorizer(sparse=sparse)
+            self.vectorizer = UnsortedDictVectorizer(sparse=sparse)
 
     def _sub_read(self, f):
         '''
@@ -145,6 +214,18 @@ class Reader(object):
         :type f: file
         '''
         raise NotImplementedError
+
+    def _print_progress(self, progress_num, end="\r"):
+        '''
+        Little helper to print out progress numbers in proper format.
+
+        Nothing gets printed if ``self.quiet`` is ``True``.
+        '''
+        # Print out status
+        if not self.quiet:
+            print("{}{:>15}".format(self._progress_msg, progress_num),
+                  end=end, file=sys.stderr)
+            sys.stderr.flush()
 
     def read(self):
         '''
@@ -163,29 +244,50 @@ class Reader(object):
             print(self._progress_msg, end="\r", file=sys.stderr)
             sys.stderr.flush()
 
-        # Create a simple process pool with one subprocess
-        pool = MemmapingPool(1)
+        # Get classes and IDs
+        ids = []
+        classes = []
+        with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
+            for ex_num, (id_, class_, _) in enumerate(self._sub_read(f)):
+                # Update lists of IDs, clases, and features
+                if self.ids_to_floats:
+                    try:
+                        id_ = float(id_)
+                    except ValueError:
+                        raise ValueError(('You set ids_to_floats to true,'
+                                          ' but ID {} could not be '
+                                          'converted to float in '
+                                          '{}').format(id_,
+                                                       self.path_or_list))
+                ids.append(id_)
+                classes.append(class_)
+                if ex_num % 100 == 0:
+                    self._print_progress(ex_num)
+            self._print_progress(ex_num)
 
-        # Create thread/process-safe logger stuff
-        queue = Queue(-1)
-        q_handler = QueueHandler(queue)
-        logger = logging.getLogger(__name__)
-        logger.addHandler(q_handler)
-        q_listener = QueueListener(queue)
-        q_listener.start()
+        # Remember total number of examples for percentage progress meter
+        total = ex_num
 
-        # Wait for processes to complete and store results
-        ids, classes, features, vectorizer = pool.apply(_read_in_subprocess,
-                                                        (self, ))
-        self.vectorizer = vectorizer
-        pool.close()
-        pool.join()
-        # Need to call terminate to clear up temporary directory
-        pool.terminate()
+        # Convert everything to numpy arrays
+        ids = np.array(ids)
+        classes = np.array(classes)
 
-        # Tear-down thread/process-safe logging and switch back to regular
-        q_listener.stop()
-        logger.removeHandler(q_handler)
+        def feat_dict_generator():
+            with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
+                for ex_num, (_, _,
+                                  feat_dict) in enumerate(self._sub_read(f)):
+                    yield feat_dict
+                    if ex_num % 100 == 0:
+                        self._print_progress('{:.8}%'.format(100 * ((ex_num +
+                                                                     1) /
+                                                                    total)))
+                self._print_progress("100%")
+
+        # Convert everything to numpy arrays before sending back to parent
+        features = self.vectorizer.fit_transform(feat_dict_generator())
+
+        # Report that loading is complete
+        self._print_progress("done", end="\n")
 
         # Make sure we have the same number of ids, classes, and features
         assert ids.shape[0] == classes.shape[0] == features.shape[0]
@@ -207,7 +309,7 @@ class DictListReader(Reader):
     a list of example dictionaries instead of a path to a file.
 
     :param path_or_list: List of example dictionaries.
-    :type path_or_list: list of dict
+    :type path_or_list: Iterable of dict
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
@@ -245,11 +347,8 @@ class DictListReader(Reader):
             classes.append(class_name)
             feat_dicts.append(example)
             # Print out status
-            if not self.quiet and example_num % 100 == 0:
-                print("{}{:>15}".format(self._progress_msg,
-                                        example_num),
-                      end="\r", file=sys.stderr)
-                sys.stderr.flush()
+            if example_num % 100 == 0:
+                self._print_progress(example_num)
         # Convert lists to numpy arrays
         ids = np.array(ids)
         classes = np.array(classes)

@@ -45,12 +45,11 @@ def main(argv=None):
     :type argv: list of str
     '''
     # Get command line arguments
-    parser = argparse.ArgumentParser(description="Takes an input feature file \
-                                                  and converts it to another \
-                                                  format. Formats are \
-                                                  determined automatically from\
-                                                  file extensions.",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Takes an input feature file and converts it to another \
+                     format. Formats are determined automatically from file \
+                     extensions.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
                         help='input feature file (ends in .jsonlines, .tsv, \
                               .csv, .arff, or .megam)')
@@ -67,7 +66,8 @@ def main(argv=None):
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
     parser.add_argument('--arff_regression',
-                        help='Create ARFF files for regression, not classification.',
+                        help='Create ARFF files for regression, not \
+                              classification.',
                         action='store_true')
     parser.add_argument('--arff_relation',
                         help='Relation name to use for ARFF file.',
