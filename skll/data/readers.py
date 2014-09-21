@@ -103,7 +103,10 @@ class UnsortedDictVectorizer(DictVectorizer):
         # signed 32-bit integers that scipy.sparse needs, so we use the next
         # best thing: typecode "i" (int). However, if that gives larger or
         # smaller integers than 32-bit ones, np.frombuffer screws up.
-        assert array("i").itemsize == 4, (
+
+        array_type = "i" if PY3 else b"i"
+
+        assert array(array_type).itemsize == 4, (
             "sizeof(int) != 4 on your platform; please report this at"
             " https://github.com/scikit-learn/scikit-learn/issues and"
             " include the output from platform.platform() in your bug report")
@@ -117,8 +120,8 @@ class UnsortedDictVectorizer(DictVectorizer):
         # Process everything as sparse regardless of setting
         X = [X] if isinstance(X, Mapping) else X
 
-        indices = array("i")
-        indptr = array("i", [0])
+        indices = array(array_type)
+        indptr = array(array_type, [0])
         # XXX we could change values to an array.array as well, but it
         # would require (heuristic) conversion of dtype to typecode...
         values = []
