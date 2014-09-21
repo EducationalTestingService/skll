@@ -1365,12 +1365,11 @@ def check_convert_featureset(from_suffix, to_suffix):
     # is the same as the converted, merged data in the to_suffix format
     assert_array_equal(merged_examples.ids, premerged_examples.ids)
     assert_array_equal(merged_examples.classes, premerged_examples.classes)
-    assert_array_equal(merged_examples.features.todense(),
-                       premerged_examples.features.todense())
-    eq_(merged_examples.vectorizer.feature_names_,
-        premerged_examples.vectorizer.feature_names_)
-    eq_(merged_examples.vectorizer.vocabulary_,
-        premerged_examples.vectorizer.vocabulary_)
+    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_examples,
+                                                             premerged_examples):
+        eq_(merged_feats, premerged_feats)
+    eq_(sorted(merged_examples.vectorizer.feature_names_),
+        sorted(premerged_examples.vectorizer.feature_names_))
 
 
 def test_convert_featureset():
