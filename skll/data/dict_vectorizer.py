@@ -41,7 +41,7 @@ class UnsortedDictVectorizer(DictVectorizer):
         True by default.
     sort: boolean, optional.
         Whether feature_names_ and vocabulary_ should be sorted when fitting.
-        True by default.
+        False by default.
 
     Attributes
     ----------
@@ -79,6 +79,8 @@ class UnsortedDictVectorizer(DictVectorizer):
         self.separator = separator
         self.sparse = sparse
         self.sort = sort
+        self.feature_names_ = []
+        self.vocabulary_ = {}
 
     def fit(self, X, y=None):
         """Learn a list of feature name -> indices mappings.
@@ -106,8 +108,7 @@ class UnsortedDictVectorizer(DictVectorizer):
                     f = "%s%s%s" % (f, self.separator, v)
                 if f not in vocab:
                     self.feature_names_.append(f)
-                    if not self.sort:
-                        vocab[f] = len(vocab)
+                    vocab[f] = len(vocab)
 
         if self.sort:
             self.feature_names_.sort()
@@ -166,8 +167,8 @@ class UnsortedDictVectorizer(DictVectorizer):
                     f = "%s%s%s" % (f, self.separator, v)
                     v = 1
                 if f not in vocab:
-                    vocab[f] = len(vocab)
                     self.feature_names_.append(f)
+                    vocab[f] = len(vocab)
                 indices.append(vocab[f])
                 values.append(dtype(v))
 
