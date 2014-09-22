@@ -198,6 +198,6 @@ class UnsortedDictVectorizer(DictVectorizer):
 
         # Convert to dense if asked
         if not self.sparse:
-            result_matrix = result_matrix.todense()
+            result_matrix = result_matrix.toarray()
 
         return result_matrix
