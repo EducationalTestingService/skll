@@ -1,3 +1,9 @@
+'''
+This module is just here until a version of scikit-learn is released with the
+changes present here.  It has already been merged in scikit-learn master via
+https://github.com/scikit-learn/scikit-learn/pull/3683.
+'''
+
 # Authors: Lars Buitinck <L.J.Buitinck@uva.nl>
 #          Dan Blanchard <dblanchard@ets.org>
 # License: BSD 3 clause
@@ -9,10 +15,10 @@ import numpy as np
 import scipy.sparse as sp
 import six
 
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 
 
-class UnsortedDictVectorizer(DictVectorizer):
+class DictVectorizer(OldDictVectorizer):
     """Transforms lists of feature-value mappings to vectors.
 
     This transformer turns lists of mappings (dict-like objects) of feature
@@ -41,7 +47,7 @@ class UnsortedDictVectorizer(DictVectorizer):
         True by default.
     sort: boolean, optional.
         Whether feature_names_ and vocabulary_ should be sorted when fitting.
-        False by default.
+        True by default.
 
     Attributes
     ----------
@@ -74,7 +80,7 @@ class UnsortedDictVectorizer(DictVectorizer):
       encoded as columns of integers.
     """
     def __init__(self, dtype=np.float64, separator="=", sparse=True,
-                 sort=False):
+                 sort=True):
         self.dtype = dtype
         self.separator = separator
         self.sparse = sparse

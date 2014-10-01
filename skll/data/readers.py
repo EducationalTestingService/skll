@@ -29,7 +29,8 @@ from six.moves import map, zip
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
-from skll.data.dict_vectorizer import UnsortedDictVectorizer
+from skll.data.dict_vectorizer import DictVectorizer
+
 
 class Reader(object):
 
@@ -80,7 +81,7 @@ class Reader(object):
         if feature_hasher:
             self.vectorizer = FeatureHasher(n_features=num_features)
         else:
-            self.vectorizer = UnsortedDictVectorizer(sparse=sparse)
+            self.vectorizer = DictVectorizer(sparse=sparse)
 
     def _sub_read(self, f):
         '''
@@ -159,7 +160,7 @@ class Reader(object):
                                                                     total)))
                 self._print_progress("100%")
 
-        # Convert everything to numpy arrays before sending back to parent
+        # Convert everything to numpy arrays
         features = self.vectorizer.fit_transform(feat_dict_generator())
 
         # Report that loading is complete

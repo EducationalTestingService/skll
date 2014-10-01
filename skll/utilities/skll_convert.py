@@ -15,9 +15,9 @@ import os
 import sys
 
 from bs4 import UnicodeDammit
-from sklearn.feature_extraction import DictVectorizer
 from six import PY2
 
+from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import (ARFFWriter, DelimitedFileWriter, LibSVMWriter,
                                EXT_TO_WRITER)

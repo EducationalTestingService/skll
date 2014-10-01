@@ -17,6 +17,7 @@ from six import iteritems
 from six.moves import zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
+from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
 
 class FeatureSet(object):
 
@@ -59,7 +60,7 @@ class FeatureSet(object):
         # Convert list of dicts to numpy array
         if isinstance(self.features, list):
             if self.vectorizer is None:
-                self.vectorizer = DictVectorizer(sparse=True)
+                self.vectorizer = NewDictVectorizer(sparse=True)
             self.features = self.vectorizer.fit_transform(self.features)
         if self.features is not None:
             num_feats = self.features.shape[0]
@@ -94,6 +95,9 @@ class FeatureSet(object):
                                  'vectorizer.')
             for id_, class_, feats in zip(self.ids, self.classes,
                                           self.features):
+                # When calling inverse_transform we have to add [0] to get the
+                # results for the current instance because it always returns a
+                # 2D array
                 yield (id_, class_,
                        self.vectorizer.inverse_transform(feats)[0])
         else:
@@ -166,8 +170,8 @@ class FeatureSet(object):
 
     def filter(self, ids=None, classes=None, features=None, inverse=False):
         '''
-        Removes features and/or examples from the Featureset depending on the
-        passed in parameters.
+        Removes or keeps features and/or examples from the Featureset depending
+        on the passed in parameters.
 
         :param ids: Examples to keep in the FeatureSet. If `None`, no ID
                     filtering takes place.
