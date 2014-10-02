@@ -360,10 +360,8 @@ def make_regression_data():
 
 
 def test_regression1_feature_hasher():
-    '''
-    This is a bit of a contrived test, but it should fail
-    if anything drastic happens to the regression code.
-    '''
+    # This is a bit of a contrived test, but it should fail if anything
+    # drastic happens to the regression code.
 
     y = make_regression_data()
 
@@ -398,10 +396,8 @@ def test_regression1_feature_hasher():
 
 
 def test_regression1():
-    '''
-    This is a bit of a contrived test, but it should fail
-    if anything drastic happens to the regression code.
-    '''
+    # This is a bit of a contrived test, but it should fail if anything drastic
+    # happens to the regression code.
 
     y = make_regression_data()
 
@@ -639,7 +635,7 @@ def test_summary():
 
 def test_backward_compatibility():
     '''
-    Verify that a model from v0.9.17 can still be loaded and generate the same predictions.
+    Verify v0.9.17 model can still be loaded and generate the same predictions.
     '''
     predict_path = join(_my_dir, 'backward_compatibility',
                         ('v0.9.17_test_summary_test_summary_'
@@ -693,8 +689,7 @@ def make_sparse_data():
 
 def test_sparse_feature_hasher_predict():
     '''
-    Test to validate whether predict works with sparse data
-    and feature_hasher
+    Test to validate whether predict works with sparse data and feature_hasher
     '''
     make_sparse_data()
 
@@ -841,7 +836,7 @@ def make_ablation_data():
 
 def test_ablation_cv():
     '''
-    Test to validate whether ablation works with cross-validate
+    Test if ablation works with cross-validate
     '''
     make_ablation_data()
 
@@ -894,8 +889,7 @@ def test_ablation_cv_all_combos():
 
 def test_ablation_cv_feature_hasher():
     '''
-    Test to validate whether ablation works with cross-validate
-    and feature_hasher
+    Test if ablation works with cross-validate and feature_hasher
     '''
     make_ablation_data()
 
@@ -923,8 +917,7 @@ def test_ablation_cv_feature_hasher():
 
 def test_ablation_cv_feature_hasher_all_combos():
     '''
-    Test to validate whether ablation works with cross-validate
-    and feature_hasher
+    Test if ablation all-combos works with cross-validate and feature_hasher
     '''
     make_ablation_data()
 
@@ -1221,14 +1214,13 @@ def check_load_featureset(suffix, numeric_ids):
     premerged_examples = _load_featureset(dirpath, featureset, suffix,
                                           quiet=True)
 
-    assert np.all(merged_examples.ids == premerged_examples.ids)
-    assert np.all(merged_examples.classes == premerged_examples.classes)
-    assert np.all(merged_examples.features.todense() ==
-                  premerged_examples.features.todense())
-    eq_(merged_examples.feat_vectorizer.feature_names_,
-        premerged_examples.feat_vectorizer.feature_names_)
-    eq_(merged_examples.feat_vectorizer.vocabulary_,
-        premerged_examples.feat_vectorizer.vocabulary_)
+    assert_array_equal(merged_examples.ids, premerged_examples.ids)
+    assert_array_equal(merged_examples.classes, premerged_examples.classes)
+    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_examples,
+                                                             premerged_examples):
+        eq_(merged_feats, premerged_feats)
+    eq_(sorted(merged_examples.vectorizer.feature_names_),
+        sorted(premerged_examples.vectorizer.feature_names_))
 
 
 def test_load_featureset():
@@ -1272,7 +1264,7 @@ def test_convert_examples():
     eq_(converted.features[2, 2], 3.0)
     eq_(converted.features[2, 0], 0.0)
 
-    eq_(converted.feat_vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
+    eq_(converted.vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
 
 
 # Tests related to converting featuresets
@@ -1373,12 +1365,11 @@ def check_convert_featureset(from_suffix, to_suffix):
     # is the same as the converted, merged data in the to_suffix format
     assert_array_equal(merged_examples.ids, premerged_examples.ids)
     assert_array_equal(merged_examples.classes, premerged_examples.classes)
-    assert_array_equal(merged_examples.features.todense(),
-                       premerged_examples.features.todense())
-    eq_(merged_examples.feat_vectorizer.feature_names_,
-        premerged_examples.feat_vectorizer.feature_names_)
-    eq_(merged_examples.feat_vectorizer.vocabulary_,
-        premerged_examples.feat_vectorizer.vocabulary_)
+    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_examples,
+                                                             premerged_examples):
+        eq_(merged_feats, premerged_feats)
+    eq_(sorted(merged_examples.vectorizer.feature_names_),
+        sorted(premerged_examples.vectorizer.feature_names_))
 
 
 def test_convert_featureset():

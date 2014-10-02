@@ -29,7 +29,7 @@ from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn.metrics import SCORERS
 
-from skll.data import ExamplesTuple, load_examples
+from skll.data import FeatureSet, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 from skll.version import __version__
 
@@ -425,7 +425,10 @@ def _parse_config_file(config_path):
     # Create feature set names if unspecified
     if not featureset_names:
         featureset_names = [_munge_featureset_name(x) for x in featuresets]
-    assert len(featureset_names) == len(featuresets)
+    if len(featureset_names) != len(featuresets):
+        raise ValueError(('Number of feature set names (%s) does not match '
+                          'number of feature sets (%s).') %
+                         (len(featureset_names), len(featuresets)))
 
     # store training/test set names for later use
     train_set_name = os.path.basename(train_path)
@@ -441,17 +444,16 @@ def _parse_config_file(config_path):
             ids_to_floats, class_map)
 
 
-def _load_featureset(dirpath, featureset, suffix, label_col='y',
+def _load_featureset(dir_path, feat_files, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     unlabelled=False, feature_hasher=False,
-                     num_features=None):
+                     feature_hasher=False, num_features=None):
     '''
     Load a list of feature files and merge them.
 
-    :param dirpath: Path to the directory that contains the feature files.
-    :type dirpath: str
-    :param featureset: List of feature file prefixes
-    :type featureset: str
+    :param dir_path: Path to the directory that contains the feature files.
+    :type dir_path: str
+    :param feat_files: List of feature file prefixes
+    :type feat_files: str
     :param suffix: Suffix to add to feature file prefixes to get full
                    filenames.
     :type suffix: str
@@ -468,105 +470,20 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                       mainly used for collapsing multiple classes into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
-    :param unlabelled: Is this test we're loading? If so, don't raise an error
-                       if there are no labels.
-    :type unlabelled: bool
 
     :returns: The classes, IDs, features, and feature vectorizer representing
               the given featureset.
-    :rtype: ExamplesTuple
+    :rtype: FeatureSet
     '''
-
-    # Load a list of lists of examples, one list of examples per featureset.
-    file_names = sorted(os.path.join(dirpath, featfile + suffix) for featfile
-                        in featureset)
-    example_tuples = [load_examples(file_name, label_col=label_col,
+    merged_set = FeatureSet('')
+    for file_name in sorted(os.path.join(dir_path, featfile + suffix) for
+                            featfile in feat_files):
+        merged_set += load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
                                     class_map=class_map,
                                     feature_hasher=feature_hasher,
                                     num_features=num_features)
-                      for file_name in file_names]
-    # Check that the IDs are unique within each file.
-    for file_name, examples in zip(file_names, example_tuples):
-        ex_ids = examples.ids
-        if len(ex_ids) != len(set(ex_ids)):
-            raise ValueError(('The example IDs are not unique in ' +
-                              '{}.').format(file_name))
-
-    # Check that the different feature files have the same IDs.
-    # To do this, make a sorted tuple of unique IDs for each feature file,
-    # and then make sure they are all the same by making sure the set has one
-    # item in it.
-    mismatch_num = len({tuple(sorted(examples.ids)) for examples in
-                        example_tuples})
-    if mismatch_num != 1:
-        raise ValueError(('The sets of example IDs in {} feature files do ' +
-                          'not match').format(mismatch_num))
-
-    # Make sure there is a unique label for every example (or no label, for
-    # "unseen" examples).
-    # To do this, find the unique (id, y) tuples, and then make sure that all
-    # those ids are unique.
-    unique_tuples = set(chain(*[[(curr_id, curr_label) for curr_id, curr_label
-                                 in zip(examples.ids, examples.classes)]
-                                for examples in example_tuples if
-                                any(x is not None for x in examples.classes)]))
-    if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
-        raise ValueError('At least two feature files have different labels ' +
-                         '(i.e., y values) for the same ID.')
-
-    # Now, create the final ExamplesTuple of examples with merged features
-    merged_vectorizer = None
-    merged_features = None
-    merged_ids = None
-    merged_classes = None
-    for ids, classes, features, feat_vectorizer in example_tuples:
-        # Combine feature matrices and vectorizers
-        if merged_features is not None:
-            if not feature_hasher:
-                # Check for duplicate feature names
-                if (set(merged_vectorizer.get_feature_names()) &
-                        set(feat_vectorizer.get_feature_names())):
-                    raise ValueError('Two feature files have the same '
-                                     'feature!')
-            num_merged = merged_features.shape[1]
-            merged_features = sp.hstack([merged_features, features], 'csr')
-            if not feature_hasher:
-                # dictvectorizer sorts the vocabularies within each file
-                for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
-                                               key=lambda x: x[1]):
-                    merged_vectorizer.vocabulary_[feat_name] = (index +
-                                                                num_merged)
-                    merged_vectorizer.feature_names_.append(feat_name)
-        else:
-            merged_features = features
-            merged_vectorizer = feat_vectorizer
-
-        # IDs should be the same for each ExamplesTuple, so only store once
-        if merged_ids is None:
-            merged_ids = ids
-        # Check that IDs are in the same order
-        elif not np.all(merged_ids == ids):
-            raise ValueError('IDs are not in the same order in each feature '
-                             'file!')
-
-        # If current ExamplesTuple has labels, check that they don't conflict
-        if any(x is not None for x in classes):
-            # Classes should be the same for each ExamplesTuple, so store once
-            if merged_classes is None:
-                merged_classes = classes
-            # Check that classes don't conflict, when specified
-            elif not np.all(merged_classes == classes):
-                raise ValueError('Feature files have conflicting labels for '
-                                 'examples with the same ID!')
-
-    # Ensure that at least one file had classes if we're expecting them
-    if merged_classes is None and not unlabelled:
-        raise ValueError('No feature files in feature set contain class'
-                         'labels!')
-
-    return ExamplesTuple(merged_ids, merged_classes, merged_features,
-                         merged_vectorizer)
+    return merged_set
 
 
 def _classify_featureset(args):
@@ -645,6 +562,8 @@ def _classify_featureset(args):
                                               quiet=quiet, class_map=class_map,
                                               feature_hasher=feature_hasher,
                                               num_features=hasher_features)
+            if not train_examples.has_classes:
+                raise ValueError('Training examples do not have labels')
             # initialize a classifer object
             learner = Learner(learner_name,
                               probability=probability,
@@ -657,8 +576,8 @@ def _classify_featureset(args):
         # load the model if it already exists
         else:
             if os.path.exists(modelfile) and not overwrite:
-                print(('\tloading pre-existing {} ' +
-                       'model: {}').format(learner_name, modelfile))
+                print(('\tloading pre-existing %s model: %s') % (learner_name,
+                                                                 modelfile))
             learner = Learner.from_file(modelfile)
 
         # Load test set if there is one
@@ -667,7 +586,6 @@ def _classify_featureset(args):
                                              label_col=label_col,
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet, class_map=class_map,
-                                             unlabelled=True,
                                              feature_hasher=feature_hasher,
                                              num_features=hasher_features)
 
