@@ -360,8 +360,10 @@ class _LibSVMDictIter(_DictIter):
 
             class_num = match.group('label_num')
             # If we have a mapping from class numbers to labels, get label
-            if label_map is not None:
+            if label_map is not None and class_num in label_map:
                 class_name = label_map[class_num]
+            else:
+                class_name = class_num
             class_name = _safe_float(class_name,
                                      replace_dict=self.class_map)
 
@@ -911,8 +913,7 @@ def _examples_to_dictwriter_inputs(ids, classes, features, label_col):
     return fields, instances
 
 
-def _write_arff_file(path, ids, classes, features, label_col,
-                     relation='skll_relation', arff_regression=False):
+def _write_arff_file(path, ids, classes, features, label_col, relation='skll_relation', arff_regression=False):
     '''
     Writes a feature file in .csv or .tsv format with the given a list of IDs,
     classes, and features.
@@ -940,8 +941,7 @@ def _write_arff_file(path, ids, classes, features, label_col,
     :type relation: bool
     '''
     # Convert IDs, classes, and features into format for DictWriter
-    fields, instances = _examples_to_dictwriter_inputs(ids, classes, features,
-                                                       label_col)
+    fields, instances = _examples_to_dictwriter_inputs(ids, classes, features, label_col)
     if label_col in fields:
         fields.remove(label_col)
 
@@ -968,10 +968,10 @@ def _write_arff_file(path, ids, classes, features, label_col,
                     break
 
             # ignore non-numeric fields if we are dealing with regression
-            # but keep track of them for later use
-            if arff_regression and not numeric:
-                non_numeric_fields.append(field)
-                continue
+            # but keep track of them for later use =>  WHY INGORING IT?? Regression can take advantage of non-numerics
+            # if arff_regression and not numeric:
+            #     non_numeric_fields.append(field)
+            #     continue
 
             print("@attribute '{}'".format(field.replace('\\', '\\\\')
                                                 .replace("'", "\\'")),
@@ -1029,8 +1029,7 @@ def _write_delimited_file(path, ids, classes, features, label_col, dialect):
     '''
 
     # Convert IDs, classes, and features into format for DictWriter
-    fields, instances = _examples_to_dictwriter_inputs(ids, classes, features,
-                                                       label_col)
+    fields, instances = _examples_to_dictwriter_inputs(ids, classes, features, label_col)
 
     # Write file
     if sys.version_info >= (3, 0):
@@ -1079,8 +1078,7 @@ def _write_jsonlines_file(path, ids, classes, features):
             print(json.dumps(example_dict, sort_keys=True), file=f)
 
 
-def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
-                       label_map):
+def _write_libsvm_file(path, ids, classes, features, feat_vectorizer, label_map):
     '''
     Writes a feature file in .libsvm format with the given a list of IDs,
     classes, and features.
@@ -1105,6 +1103,21 @@ def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
                       LibSVM files.
     :type label_map: dict (str -> int)
     '''
+    if label_map is None:
+        label_map = {}
+        if classes is not None:
+            label_map = {label: num for num, label in
+                         enumerate(sorted({label for label in classes if
+                                           not isinstance(label,
+                                                          (int, float))}))}
+
+        # Add fake item to vectorizer for None
+        label_map[None] = '00000'
+    # Create feature vectorizer if unspecified and writing libsvm
+    if feat_vectorizer is None or not feat_vectorizer.vocabulary_:
+        feat_vectorizer = DictVectorizer(sparse=True)
+        feat_vectorizer.fit(features)
+
     with open(path, 'w') as f:
         # Iterate through examples
         for ex_id, class_name, feature_dict in zip(ids, classes, features):
@@ -1113,9 +1126,10 @@ def _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
                             if Decimal(value) != 0]
             field_values.sort()
             # Print label
+            a1 = type(class_name)
+            a2 = (class_name in label_map)
             if class_name in label_map:
-                print('{}'.format(label_map[class_name]), end=' ',
-                      file=f)
+                print('{}'.format(label_map[class_name]), end=' ', file=f)
             else:
                 print('{}'.format(class_name), end=' ', file=f)
             # Print features
@@ -1167,7 +1181,7 @@ def _write_megam_file(path, ids, classes, features):
             if ex_id is not None:
                 print('# {}'.format(ex_id), file=f)
             if class_name is not None:
-                print(class_name, end='\t', file=f)
+                print('{}'.format(class_name), end='\t', file=f)
             print(_replace_non_ascii(' '.join(('{} {}'.format(field, value) for
                                                field, value in
                                                sorted(feature_dict.items()) if
@@ -1256,19 +1270,16 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
 
     # Create TSV file if asked
     if ext == ".tsv":
-        _write_delimited_file(path, ids, classes, features, label_col,
-                              'excel-tab')
+        _write_delimited_file(path, ids, classes, features, label_col, 'excel-tab')
     # Create CSV file if asked
     elif ext == ".csv":
-        _write_delimited_file(path, ids, classes, features, label_col,
-                              'excel')
+        _write_delimited_file(path, ids, classes, features, label_col, 'excel')
     # Create .jsonlines file if asked
     elif ext == ".jsonlines" or ext == '.ndj':
         _write_jsonlines_file(path, ids, classes, features)
     # Create .libsvm file if asked
     elif ext == ".libsvm":
-        _write_libsvm_file(path, ids, classes, features, feat_vectorizer,
-                           label_map)
+        _write_libsvm_file(path, ids, classes, features, feat_vectorizer, label_map)
     # Create .megam file if asked
     elif ext == ".megam":
         _write_megam_file(path, ids, classes, features)
@@ -1287,7 +1298,7 @@ def _write_sub_feature_file(path, ids, classes, features, filter_features,
 def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                        id_prefix='EXAMPLE_', label_col='y',
                        arff_regression=False, arff_relation='skll_relation',
-                       subsets=None, label_map=None):
+                       subsets=None, label_map=None, skip_ids=False):
     '''
     Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
     ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
@@ -1357,7 +1368,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
 
     # Convert feature array to list of dicts if given a feat vectorizer,
     # otherwise fail.  Only necessary if we were given an array.
-    if isinstance(features, np.ndarray):
+    if isinstance(features, np.ndarray) or feat_vectorizer:
         if feat_vectorizer is None:
             raise ValueError('If `feat_vectorizer` is unspecified, you must '
                              'pass a list of dicts for `features`.')
@@ -1365,31 +1376,14 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
         else:
             features = feat_vectorizer.inverse_transform(features)
 
-    # Create missing vectorizers if writing libsvm
-    if os.path.splitext(path)[1].lower() == '.libsvm':
-        if label_map is None:
-            label_map = {}
-            if classes is not None:
-                label_map = {label: num for num, label in
-                             enumerate(sorted({label for label in classes if
-                                               not isinstance(label,
-                                                              (int, float))}))}
-            # Add fake item to vectorizer for None
-            label_map[None] = '00000'
-        # Create feature vectorizer if unspecified and writing libsvm
-        if feat_vectorizer is None or not feat_vectorizer.vocabulary_:
-            feat_vectorizer = DictVectorizer(sparse=True)
-            feat_vectorizer.fit(features)
-    else:
-        label_map = None
-
     # Create ID generator if necessary
-    if ids is None:
-        if id_prefix is not None:
+    if ids is None or skip_ids is True:
+        if id_prefix is not None and skip_ids is False:
             ids = ('{}{}'.format(id_prefix, num) for num in
                    range(len(features)))
         else:
-            ids = (None for _ in range(len(features)))
+            a= features.__class__.__name__
+            ids = (None for _ in range(features.shape[0] if features.__class__.__name__ == 'csr_matrix' else len(features)))
 
     # Create class generator if necessary
     if classes is None:
@@ -1404,7 +1398,6 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                                 label_col=label_col,
                                 arff_regression=arff_regression,
                                 arff_relation=arff_relation,
-                                feat_vectorizer=feat_vectorizer,
                                 label_map=label_map)
     # Otherwise write one feature file per subset
     else:
@@ -1418,6 +1411,5 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                                     set(filter_features), label_col=label_col,
                                     arff_regression=arff_regression,
                                     arff_relation=arff_relation,
-                                    feat_vectorizer=feat_vectorizer,
                                     label_map=label_map)
 
