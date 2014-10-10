@@ -15,12 +15,12 @@ import os
 import sys
 
 from bs4 import UnicodeDammit
-from sklearn.feature_extraction import DictVectorizer
 from six import PY2
 
-from skll.data import (_CSVDictIter, _ARFFDictIter, _TSVDictIter,
-                       _JSONDictIter, _MegaMDictIter, _LibSVMDictIter,
-                       write_feature_file)
+from skll.data.dict_vectorizer import DictVectorizer
+from skll.data.readers import EXT_TO_READER
+from skll.data.writers import (ARFFWriter, DelimitedFileWriter, LibSVMWriter,
+                               EXT_TO_WRITER)
 from skll.version import __version__
 
 
@@ -45,12 +45,11 @@ def main(argv=None):
     :type argv: list of str
     '''
     # Get command line arguments
-    parser = argparse.ArgumentParser(description="Takes an input feature file \
-                                                  and converts it to another \
-                                                  format. Formats are \
-                                                  determined automatically from\
-                                                  file extensions.",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Takes an input feature file and converts it to another \
+                     format. Formats are determined automatically from file \
+                     extensions.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
                         help='input feature file (ends in .jsonlines, .tsv, \
                               .csv, .arff, or .megam)')
@@ -67,7 +66,8 @@ def main(argv=None):
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
     parser.add_argument('--arff_regression',
-                        help='Create ARFF files for regression, not classification.',
+                        help='Create ARFF files for regression, not \
+                              classification.',
                         action='store_true')
     parser.add_argument('--arff_relation',
                         help='Relation name to use for ARFF file.',
@@ -93,19 +93,7 @@ def main(argv=None):
     input_extension = os.path.splitext(args.infile)[1].lower()
     output_extension = os.path.splitext(args.outfile)[1].lower()
 
-    if input_extension == ".tsv":
-        example_iter_type = _TSVDictIter
-    elif input_extension == ".jsonlines" or input_extension == '.ndj':
-        example_iter_type = _JSONDictIter
-    elif input_extension == ".libsvm":
-        example_iter_type = _LibSVMDictIter
-    elif input_extension == ".megam":
-        example_iter_type = _MegaMDictIter
-    elif input_extension == ".csv":
-        example_iter_type = _CSVDictIter
-    elif input_extension == ".arff":
-        example_iter_type = _ARFFDictIter
-    else:
+    if input_extension not in EXT_TO_READER:
         logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
                       '.libsvm, .megam, .ndj, or .tsv format. You specified: '
                       '{}').format(input_extension))
@@ -138,23 +126,22 @@ def main(argv=None):
         label_map = None
 
     # Iterate through input file and collect the information we need
-    ids = []
-    classes = []
-    feature_dicts = []
-    example_iter = example_iter_type(args.infile, quiet=args.quiet,
-                                     label_col=args.label_col)
-    for example_id, class_name, feature_dict in example_iter:
-        feature_dicts.append(feature_dict)
-        classes.append(class_name)
-        ids.append(example_id)
-
+    reader = EXT_TO_READER[input_extension](args.infile, quiet=args.quiet,
+                                            label_col=args.label_col)
+    feature_set = reader.read()
     # write out the file in the requested output format
-    write_feature_file(args.outfile, ids, classes, feature_dicts,
-                       arff_regression=args.arff_regression,
-                       arff_relation=args.arff_relation,
-                       feat_vectorizer=feat_vectorizer,
-                       label_map=label_map)
-
+    writer_type = EXT_TO_WRITER[output_extension]
+    writer_args = {'quiet': args.quiet}
+    if writer_type is DelimitedFileWriter:
+        writer_args['label_col'] = args.label_col
+    elif writer_type is ARFFWriter:
+        writer_args['label_col'] = args.label_col
+        writer_args['regression'] = args.arff_regression
+        writer_args['relation'] = args.arff_relation
+    elif writer_type is LibSVMWriter:
+        writer_args['label_map'] = label_map
+    writer = writer_type(args.outfile, feature_set, **writer_args)
+    writer.write()
 
 if __name__ == '__main__':
     main()

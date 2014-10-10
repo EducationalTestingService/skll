@@ -11,7 +11,7 @@ import argparse
 import csv
 import logging
 
-from skll.data import load_examples, _safe_float
+from skll.data import load_examples, safe_float
 from skll.metrics import use_score_func
 from skll.version import __version__
 
@@ -41,7 +41,7 @@ def compute_eval_from_predictions(examples_file, predictions_file,
         reader = csv.reader(pred_file, dialect=csv.excel_tab)
         next(reader)  # skip header
         for row in reader:
-            pred[row[0]] = _safe_float(row[1])
+            pred[row[0]] = safe_float(row[1])
 
     # make a sorted list of example ids in order to match up
     # labels and predictions

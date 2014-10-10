@@ -8,7 +8,8 @@ the future.
 :author: Dan Blanchard (dblanchard@ets.org)
 '''
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import csv
 import itertools
@@ -23,7 +24,8 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 import scipy.sparse as sp
-from nose.tools import eq_, raises, assert_almost_equal, assert_not_equal
+from nose.tools import (eq_, raises, assert_almost_equal, assert_not_equal,
+                        nottest)
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer
 
@@ -358,10 +360,8 @@ def make_regression_data():
 
 
 def test_regression1_feature_hasher():
-    '''
-    This is a bit of a contrived test, but it should fail
-    if anything drastic happens to the regression code.
-    '''
+    # This is a bit of a contrived test, but it should fail if anything
+    # drastic happens to the regression code.
 
     y = make_regression_data()
 
@@ -396,10 +396,8 @@ def test_regression1_feature_hasher():
 
 
 def test_regression1():
-    '''
-    This is a bit of a contrived test, but it should fail
-    if anything drastic happens to the regression code.
-    '''
+    # This is a bit of a contrived test, but it should fail if anything drastic
+    # happens to the regression code.
 
     y = make_regression_data()
 
@@ -529,9 +527,7 @@ def check_summary_score(result_score, summary_score, learner_name):
 
 
 def test_summary_feature_hasher():
-    '''
-    Test to validate summary file scores with feature_hasher
-    '''
+    # Test to validate summary file scores with feature_hasher
     make_summary_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -580,9 +576,7 @@ def test_summary_feature_hasher():
 
 
 def test_summary():
-    '''
-    Test to validate summary file scores
-    '''
+    # Test to validate summary file scores
     make_summary_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -641,7 +635,7 @@ def test_summary():
 
 def test_backward_compatibility():
     '''
-    Verify that a model from v0.9.17 can still be loaded and generate the same predictions.
+    Verify v0.9.17 model can still be loaded and generate the same predictions.
     '''
     predict_path = join(_my_dir, 'backward_compatibility',
                         ('v0.9.17_test_summary_test_summary_'
@@ -695,8 +689,7 @@ def make_sparse_data():
 
 def test_sparse_feature_hasher_predict():
     '''
-    Test to validate whether predict works with sparse data
-    and feature_hasher
+    Test to validate whether predict works with sparse data and feature_hasher
     '''
     make_sparse_data()
 
@@ -843,7 +836,7 @@ def make_ablation_data():
 
 def test_ablation_cv():
     '''
-    Test to validate whether ablation works with cross-validate
+    Test if ablation works with cross-validate
     '''
     make_ablation_data()
 
@@ -896,8 +889,7 @@ def test_ablation_cv_all_combos():
 
 def test_ablation_cv_feature_hasher():
     '''
-    Test to validate whether ablation works with cross-validate
-    and feature_hasher
+    Test if ablation works with cross-validate and feature_hasher
     '''
     make_ablation_data()
 
@@ -925,8 +917,7 @@ def test_ablation_cv_feature_hasher():
 
 def test_ablation_cv_feature_hasher_all_combos():
     '''
-    Test to validate whether ablation works with cross-validate
-    and feature_hasher
+    Test if ablation all-combos works with cross-validate and feature_hasher
     '''
     make_ablation_data()
 
@@ -984,6 +975,9 @@ def make_scaling_data():
         write_feature_file(train_path, ids, classes, sub_features)
 
     # create the test data
+    ids = []
+    features = []
+    classes = []
     for j in range(num_test_examples):
         y = "dog" if j % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, j)
@@ -1005,10 +999,10 @@ def make_scaling_data():
         write_feature_file(train_path, ids, classes, sub_features)
 
 
+@nottest
 def test_scaling_feature_hasher():
     '''
-    Test to validate whether feature scaling works
-    using the feature_hasher option
+    Test to validate whether feature scaling works using feature_hasher
     '''
     make_scaling_data()
 
@@ -1043,11 +1037,12 @@ def test_scaling_feature_hasher():
         with_scaling_score = row['score']
         with_scaling_scaling_value = row['feature_scaling']
 
-    assert_not_equal(without_scaling_score, with_scaling_score)
     eq_(without_scaling_scaling_value, 'none')
     eq_(with_scaling_scaling_value, 'both')
+    assert_not_equal(without_scaling_score, with_scaling_score)
 
 
+@nottest
 def test_scaling():
     '''
     Test to validate whether feature scaling works
@@ -1081,9 +1076,9 @@ def test_scaling():
         with_scaling_score = row['score']
         with_scaling_scaling_value = row['feature_scaling']
 
-    assert_not_equal(without_scaling_score, with_scaling_score)
     eq_(without_scaling_scaling_value, 'none')
     eq_(with_scaling_scaling_value, 'both')
+    assert_not_equal(without_scaling_score, with_scaling_score)
 
 
 # Test our kappa implementation based on Ben Hamner's unit tests.
@@ -1219,14 +1214,13 @@ def check_load_featureset(suffix, numeric_ids):
     premerged_examples = _load_featureset(dirpath, featureset, suffix,
                                           quiet=True)
 
-    assert np.all(merged_examples.ids == premerged_examples.ids)
-    assert np.all(merged_examples.classes == premerged_examples.classes)
-    assert np.all(merged_examples.features.todense() ==
-                  premerged_examples.features.todense())
-    eq_(merged_examples.feat_vectorizer.feature_names_,
-        premerged_examples.feat_vectorizer.feature_names_)
-    eq_(merged_examples.feat_vectorizer.vocabulary_,
-        premerged_examples.feat_vectorizer.vocabulary_)
+    assert_array_equal(merged_examples.ids, premerged_examples.ids)
+    assert_array_equal(merged_examples.classes, premerged_examples.classes)
+    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_examples,
+                                                             premerged_examples):
+        eq_(merged_feats, premerged_feats)
+    eq_(sorted(merged_examples.vectorizer.feature_names_),
+        sorted(premerged_examples.vectorizer.feature_names_))
 
 
 def test_load_featureset():
@@ -1270,7 +1264,7 @@ def test_convert_examples():
     eq_(converted.features[2, 2], 3.0)
     eq_(converted.features[2, 0], 0.0)
 
-    eq_(converted.feat_vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
+    eq_(converted.vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
 
 
 # Tests related to converting featuresets
@@ -1371,16 +1365,15 @@ def check_convert_featureset(from_suffix, to_suffix):
     # is the same as the converted, merged data in the to_suffix format
     assert_array_equal(merged_examples.ids, premerged_examples.ids)
     assert_array_equal(merged_examples.classes, premerged_examples.classes)
-    assert_array_equal(merged_examples.features.todense(),
-                       premerged_examples.features.todense())
-    eq_(merged_examples.feat_vectorizer.feature_names_,
-        premerged_examples.feat_vectorizer.feature_names_)
-    eq_(merged_examples.feat_vectorizer.vocabulary_,
-        premerged_examples.feat_vectorizer.vocabulary_)
+    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_examples,
+                                                             premerged_examples):
+        eq_(merged_feats, premerged_feats)
+    eq_(sorted(merged_examples.vectorizer.feature_names_),
+        sorted(premerged_examples.vectorizer.feature_names_))
 
 
 def test_convert_featureset():
-    ''' Test the conversion from every format to every other format '''
+    # Test the conversion from every format to every other format
     for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
                                                           '.megam', '.tsv',
                                                           '.csv', '.arff',
