@@ -61,7 +61,6 @@ From :py:mod:`~skll.learner` Module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: skll.Learner
     :members:
-    :undoc-members:
     :show-inheritance:
 
 From :py:mod:`~skll.metrics` Module
@@ -73,20 +72,37 @@ From :py:mod:`~skll.metrics` Module
 .. autofunction:: skll.pearson
 
 
-:mod:`data` Module
-------------------
+:mod:`data` Package
+-------------------
 
-.. automodule:: skll.data
+
+:mod:`data.featureset` Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: skll.data.featureset
     :members:
-    :undoc-members:
     :show-inheritance:
+
+:mod:`data.readers` Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: skll.data.readers
+    :members:
+    :show-inheritance:
+
+:mod:`data.writers` Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: skll.data.writers
+    :members:
+    :show-inheritance:
+
 
 :mod:`experiments` Module
 -------------------------
 
 .. automodule:: skll.experiments
     :members:
-    :undoc-members:
     :show-inheritance:
 
 :mod:`learner` Module
@@ -101,7 +117,6 @@ From :py:mod:`~skll.metrics` Module
 
 .. automodule:: skll.metrics
     :members:
-    :undoc-members:
     :show-inheritance:
 
 
