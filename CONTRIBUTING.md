@@ -48,7 +48,7 @@ Finally, go to the web page of the your fork of the SKLL repo,
 and click 'Pull request' to send your changes to the maintainers for
 review. **Please make sure that the "base" branch for your pull request is
 set to ``develop`` and that the "base fork" is set to
-``EducationalTestingService/skll``.
+``EducationalTestingService/skll``.**
 
 (If any of the above seems like magic to you, then look up the
 [Git documentation](http://git-scm.com/documentation) on the web.)
