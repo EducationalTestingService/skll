@@ -93,11 +93,21 @@ Easy Issues
 -----------
 
 A great way to start contributing to SKLL is to pick an item
-from the list of issues labelled with the [help wanted](https://github.com/EducationalTestingService/skll/labels/help%20wanted)
+from the list of issues labelled with the [easy](https://github.com/EducationalTestingService/skll/labels/easy)
 tag. Resolving these issues allow you to start contributing to the project
 without much prior knowledge. Your assistance in this area will be greatly
 appreciated by the more experienced developers as it helps free up their time
 to concentrate on other issues.
+
+Large Issues
+------------
+
+If you are willing, there are often issues that are not incredibly
+complex, but still take more time than the main developers have had
+time to address them.  Any help with these issues would be *greatly*
+appreciated.  They are labelled with the [help wanted](https://github.com/EducationalTestingService/skll/labels/help%20wanted)
+tag on the issue list.
+
 
 Documentation
 -------------
