@@ -752,7 +752,8 @@ class Learner(object):
         # Create scaler if we weren't passed one and it's necessary
         if self._model_type != 'MultinomialNB':
             if self._feature_scaling != 'none':
-                scale_with_mean = self._feature_scaling in {'with_mean','both'}
+                scale_with_mean = self._feature_scaling in {
+                    'with_mean', 'both'}
                 scale_with_std = self._feature_scaling in {'with_std', 'both'}
                 self.scaler = StandardScaler(copy=True,
                                              with_mean=scale_with_mean,
