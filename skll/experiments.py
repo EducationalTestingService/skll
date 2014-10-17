@@ -1030,7 +1030,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["feature_scaling"] = feature_scaling
             job_args["min_feature_count"] = min_feature_count
             job_args["grid_search_jobs"] = grid_search_jobs
-            jobs_args["grid_search_folds"] = grid_search_folds
+            job_args["grid_search_folds"] = grid_search_folds
             job_args["cv_folds"] = cv_folds
             job_args["label_col"] = label_col
             job_args["ids_to_floats"] = ids_to_floats
