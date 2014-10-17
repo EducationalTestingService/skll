@@ -115,7 +115,7 @@ There are four expected sections in a configuration file: ``General``,
 settings for each section is provided below, but to summarize:
 
 *   If you want to do **cross-validation**, specify a path to training feature
-    files, and set ``task`` to ``cross_validate`` You also can optionally use
+    files, and set ``task`` to ``cross_validate``. Please note that the cross-validation currently uses **StratifiedKFold**. You also can optionally use
     predetermined folds with the ``cv_folds_location`` setting.
 
 *   If you want to **train a model and evaluate it** on some data, specify
