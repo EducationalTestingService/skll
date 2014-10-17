@@ -353,12 +353,15 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
 
     # split everything into training and testing portions
     num_train_examples = round(train_test_ratio * num_examples)
-    train_features, test_features = features[:num_train_examples], features[num_train_examples:]
+    train_features, test_features = (features[:num_train_examples],
+                                     features[num_train_examples:])
     train_y, test_y = y[:num_train_examples], y[num_train_examples:]
     train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
 
-    train_fs = FeatureSet('regression_train', ids=train_ids, classes=train_y, features=train_features)
-    test_fs = FeatureSet('regression_test', ids=test_ids, classes=test_y, features=test_features)
+    train_fs = FeatureSet('regression_train', ids=train_ids,
+                          classes=train_y, features=train_features)
+    test_fs = FeatureSet('regression_test', ids=test_ids,
+                         classes=test_y, features=test_features)
 
     return (train_fs, test_fs, weightdict)
 
@@ -436,7 +439,8 @@ def test_regression1():
     # happens to the regression code.
 
     # create a FeatureSet object with the data we want to use
-    train_fs, test_fs, weightdict = make_regression_data(num_examples=2000, num_features=3)
+    train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
+                                                         num_features=3)
 
     # create a LinearRegression learner
     learner = Learner('LinearRegression')
@@ -454,7 +458,9 @@ def test_regression1():
     # the ceilings should be enough to make sure nothing
     # catastrophic happened
     for feature_name in learned_weights:
-        assert math.ceil(learned_weights[feature_name]) == math.ceil(weightdict[feature_name])
+        learned_w = math.ceil(learned_weights[feature_name])
+        given_w = math.ceil(weightdict[feature_name])
+        assert learned_w == given_w
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
