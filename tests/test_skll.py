@@ -1158,6 +1158,22 @@ def test_invalid_weighted_kappa():
 def test_invalid_lists_kappa():
     kappa(['a', 'b', 'c'], ['a', 'b', 'c'])
 
+@raises(ValueError)
+def check_invalid_grid_obj_func(learner_name, grid_objective_function):
+    '''
+    Checks whether the grid objective function is 
+    valid for this learner
+    '''
+    (train_fs, _, _) = make_regression_data()
+    clf = Learner(learner_name)
+    grid_search_score = clf.train(train_fs, grid_objective=grid_objective_function)
+
+
+def test_invalid_grid_obj_func():
+    yield check_invalid_grid_obj_func, 'LinearRegression', 'r2'
+    yield check_invalid_grid_obj_func, 'SVR', 'accuracy'
+    yield check_invalid_grid_obj_func, 'RandomForestRegressor', 'f1_score_micro'
+
 
 # Tests related to loading featuresets and merging them
 def make_merging_data(num_feat_files, suffix, numeric_ids):
