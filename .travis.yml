@@ -5,8 +5,6 @@ python:
 env:
   - GRIDMAP=true
   - GRIDMAP=false
-  - GRIDMAP=true SKLL_MAX_CONCURRENT_PROCESSES=1
-  - GRIDMAP=false SKLL_MAX_CONCURRENT_PROCESSES=1
 notifications:
   email: false
 
@@ -19,10 +17,10 @@ before_install:
   - export GRID_MAP_REDIS_PORT=12345
   - sudo mkdir /scratch/
   - sudo chmod 777 /scratch/
-  - wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda3/bin:$PATH
+  - export PATH=/home/travis/miniconda/bin:$PATH
   - conda config --add channels https://conda.binstar.org/dan_blanchard
   - conda update --yes conda
 install:

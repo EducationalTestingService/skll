@@ -11,6 +11,7 @@ Provides easy-to-use wrapper around scikit-learn.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+from collections import Counter
 import inspect
 import logging
 import os
@@ -592,14 +593,21 @@ class Learner(object):
         '''
         Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
         regression and liblinear models.
+
+        :returns: Labeled weights and (labeled if more than one) intercept 
+                  value(s)
+        :rtype: tuple of (``weights``, ``intercepts``), where ``weights`` is a 
+                dict and ``intercepts`` is a list of tuples
         '''
         res = {}
+        intercept = None
         if (isinstance(self._model, LinearModel) or
                 (isinstance(self._model, SVR) and
                  self._model.kernel == 'linear')):
             # also includes RescaledRidge, RescaledSVR
 
             coef = self.model.coef_
+            intercept = [(None, self.model.intercept_)]
 
             # convert SVR coefficient format (1 x matrix) to array
             if isinstance(self._model, SVR):
@@ -624,6 +632,7 @@ class Learner(object):
                 if coef[idx]:
                     res[feat] = correction * coef[idx]
                     # res[feat] = coef[idx]
+
         elif isinstance(self._model, BaseLibLinear):
             label_list = self.label_list
 
@@ -639,13 +648,15 @@ class Learner(object):
                 for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
+
+            intercept = list(zip(label_list, self.model.intercept_))
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
                               " model_params with its current settings."
                               ).format(self._model_type))
 
-        return res
+        return (res, intercept)
 
     @property
     def probability(self):
@@ -726,6 +737,34 @@ class Learner(object):
                             "algorithm to crash or perform " +
                             "poorly."), max_feat_abs)
 
+    def _create_label_dict(self, examples):
+        '''
+        Creates a dictionary of labels for classification problems.
+
+        :param examples: The examples to use for training.
+        :type examples: FeatureSet
+        '''
+
+        # We don't need to do this for regression models, so return.
+        if self._model_type in _REGRESSION_MODELS:
+            return
+
+        # extract list of unique labels if we are doing classification
+        self.label_list = np.unique(examples.classes).tolist()
+
+        # if one label is specified as the positive class, make sure it's
+        # last
+        if self.pos_label_str:
+            self.label_list = sorted(self.label_list,
+                                     key=lambda x: (x == self.pos_label_str,
+                                                    x))
+
+        # Given a list of all labels in the dataset and a list of the
+        # unique labels in the set, convert the first list to an array of
+        # numbers.
+        self.label_dict = {label: i for i, label in
+                           enumerate(self.label_list)}
+
     def _train_setup(self, examples):
         '''
         Set up the feature vectorizer, the scaler and the label dict and
@@ -779,7 +818,8 @@ class Learner(object):
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
               grid_search=True, grid_objective='f1_score_micro',
-              grid_jobs=None, shuffle=True, feature_hasher=False):
+              grid_jobs=None, shuffle=True, feature_hasher=False,
+              run_create_label_dict=True):
         '''
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -839,6 +879,8 @@ class Learner(object):
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
+        if run_create_label_dict:
+            self._create_label_dict(examples)
         self._train_setup(examples)
 
         # select features
@@ -893,6 +935,10 @@ class Learner(object):
         if grid_search:
             # set up grid search folds
             if isinstance(grid_search_folds, int):
+                grid_search_folds = \
+                    self._compute_num_folds_from_example_counts(
+                        grid_search_folds, classes)
+
                 if not grid_jobs:
                     grid_jobs = grid_search_folds
                 else:
@@ -1068,6 +1114,9 @@ class Learner(object):
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
         if feature_hasher:
+            if self.feat_vectorizer.n_features != examples.vectorizer.n_features:
+                logger.warning("Warning: there is mismatch between the training model features and the data passed to predict.")
+            
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
                                    self.feat_vectorizer.n_features,
@@ -1084,9 +1133,12 @@ class Learner(object):
                     examples.vectorizer.inverse_transform(
                         examples.features))
         else:
+            if(set(self.feat_vectorizer.feature_names_) != set(examples.vectorizer.feature_names_)):
+                logger.warning("Warning: there is mismatch between the training model features and the data passed to predict.")
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
+
                 xtest = self.feat_vectorizer.transform(
                     examples.vectorizer.inverse_transform(
                         examples.features))
@@ -1169,6 +1221,26 @@ class Learner(object):
 
         return yhat
 
+    def _compute_num_folds_from_example_counts(self, cv_folds, classes):
+        assert isinstance(cv_folds, int)
+
+        # For regression models, we can just return the current cv_folds
+        if self._model_type in _REGRESSION_MODELS:
+            return cv_folds
+
+        min_examples_per_class = min(Counter(classes).values())
+        if min_examples_per_class <= 1:
+            raise ValueError(('The training set has only {} example for a' +
+                              ' class.').format(min_examples_per_class))
+        if min_examples_per_class < cv_folds:
+            logger = logging.getLogger(__name__)
+            logger.warning(('The minimum number of examples per ' +
+                            'class was {}. Setting the number of ' +
+                            'cross-validation folds to that ' +
+                            'value.').format(min_examples_per_class))
+            cv_folds = min_examples_per_class
+        return cv_folds
+
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=5, grid_jobs=None,
                        grid_objective='f1_score_micro', prediction_prefix=None,
@@ -1234,10 +1306,14 @@ class Learner(object):
                                   vectorizer=examples.vectorizer)
 
         # call train setup
+        self._create_label_dict(examples)
         self._train_setup(examples)
 
         # setup the cross-validation iterator
         if isinstance(cv_folds, int):
+            cv_folds = self._compute_num_folds_from_example_counts(
+                cv_folds, examples.classes)
+
             stratified = (stratified and
                           not self._model_type in _REGRESSION_MODELS)
             kfold = (StratifiedKFold(examples.classes, n_folds=cv_folds) if
@@ -1270,6 +1346,8 @@ class Learner(object):
                                    classes=examples.classes[train_index],
                                    features=examples.features[train_index],
                                    vectorizer=examples.vectorizer)
+            # Set run_create_label_dict to False since we already created the
+            # label dictionary for the whole dataset above.
             grid_search_score = self.train(train_set,
                                            grid_search_folds=grid_search_folds,
                                            grid_search=grid_search,
@@ -1277,7 +1355,8 @@ class Learner(object):
                                            param_grid=param_grid,
                                            grid_jobs=grid_jobs,
                                            shuffle=False,
-                                           feature_hasher=feature_hasher)
+                                           feature_hasher=feature_hasher,
+                                           run_create_label_dict=False)
             grid_search_scores.append(grid_search_score)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
