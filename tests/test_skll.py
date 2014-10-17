@@ -463,15 +463,8 @@ def test_regression1():
     # the actual test FeatureSet labels that we generated
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
-    assert pearsonr(predictions, test_fs.classes) > 0.95
-
-    # also make sure that the distribution looks okay
-    assert np.min(predictions) >= np.min(test_fs.classes)
-    assert np.max(predictions) <= np.max(test_fs.classes)
-
-    assert abs(np.mean(predictions) - np.mean(test_fs.classes)) < 0.1
-    assert abs(np.std(predictions) - np.std(test_fs.classes)) < 0.1
-
+    cor, _ = pearsonr(predictions, test_fs.classes)
+    assert cor > 0.95
 
 def test_predict_feature_hasher():
     '''
