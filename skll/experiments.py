@@ -304,7 +304,7 @@ def _parse_config_file(config_path):
                          "list of lists: {}".format(featuresets))
 
     featureset_names = yaml.load(_fix_json(config.get("Input",
-                                                       "featureset_names")))
+                                                      "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
     if featureset_names:
@@ -315,9 +315,9 @@ def _parse_config_file(config_path):
                              "list of strings: {}".format(featureset_names))
 
     fixed_parameter_list = yaml.load(_fix_json(config.get("Input",
-                                                           "fixed_parameters")))
+                                                          "fixed_parameters")))
     fixed_sampler_parameters = yaml.load(_fix_json(config.get("Input",
-                                                               "sampler_parameters")))
+                                                              "sampler_parameters")))
     param_grid_list = yaml.load(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
 
@@ -976,6 +976,16 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # the list to hold the paths to all the result json files
     result_json_paths = []
+
+    # check if the length of the featureset_name exceeds the maximum length
+    # allowed
+    for featureset_name in featureset_names:
+        if(len(featureset_name) > 210):
+            raise OSError('System generated file length "{}" exceeds the maximum length supported. '
+                'Please specify names of your datasets with "featureset_names". If '
+                'you are running ablation experiment, please reduce the length of the features '
+                'in "featuresets" because the auto-generated name would be longer than '
+                'the file system can handle'.format(featureset_name))
 
     # Run each featureset-learner combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
