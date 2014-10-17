@@ -36,7 +36,7 @@ import yaml
 
 # Check if gridmap is available
 try:
-    from gridmap import Job, JobException, process_jobs
+    from gridmap import Job, process_jobs
 except ImportError:
     _HAVE_GRIDMAP = False
 else:

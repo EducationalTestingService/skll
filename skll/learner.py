@@ -11,6 +11,7 @@ Provides easy-to-use wrapper around scikit-learn.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+from collections import Counter
 import inspect
 import logging
 import os
@@ -111,6 +112,34 @@ _REGRESSION_MODELS = frozenset(['AdaBoostRegressor', 'DecisionTreeRegressor',
                                 'KNeighborsRegressor', 'Lasso',
                                 'LinearRegression', 'RandomForestRegressor',
                                 'Ridge', 'SVR', 'SGDRegressor'])
+
+# list of valid grid objective functions for regression and classification models
+# some of these are only valid in certain cases (e.g. binary/integer classes)
+_REGRESSION_OBJ_FUNCS = frozenset(['unweighted_kappa',
+                                   'linear_weighted_kappa',
+                                   'quadratic_weighted_kappa',
+                                   'uwk_off_by_one',
+                                   'lwk_off_by_one',
+                                   'qwk_off_by_one',
+                                   'kendall_tau',
+                                   'pearson',
+                                   'spearman',
+                                   'r2',
+                                   'mean_squared_error'])
+
+_CLASSIFICATION_OBJ_FUNCS = frozenset(['accuracy',
+                                       'precision',
+                                       'recall',
+                                       'f1',
+                                       'f1_score_micro',
+                                       'f1_score_macro',
+                                       'f1_score_weighted',
+                                       'f1_score_least_frequent',
+                                       'average_precision',
+                                       'roc_auc',
+                                       'kendall_tau',
+                                       'pearson',
+                                       'spearman'])
 
 _REQUIRES_DENSE = frozenset(['AdaBoostClassifier', 'AdaBoostRegressor',
                              'DecisionTreeClassifier', 'DecisionTreeRegressor',
@@ -708,6 +737,34 @@ class Learner(object):
                             "algorithm to crash or perform " +
                             "poorly."), max_feat_abs)
 
+    def _create_label_dict(self, examples):
+        '''
+        Creates a dictionary of labels for classification problems.
+
+        :param examples: The examples to use for training.
+        :type examples: FeatureSet
+        '''
+
+        # We don't need to do this for regression models, so return.
+        if self._model_type in _REGRESSION_MODELS:
+            return
+
+        # extract list of unique labels if we are doing classification
+        self.label_list = np.unique(examples.classes).tolist()
+
+        # if one label is specified as the positive class, make sure it's
+        # last
+        if self.pos_label_str:
+            self.label_list = sorted(self.label_list,
+                                     key=lambda x: (x == self.pos_label_str,
+                                                    x))
+
+        # Given a list of all labels in the dataset and a list of the
+        # unique labels in the set, convert the first list to an array of
+        # numbers.
+        self.label_dict = {label: i for i, label in
+                           enumerate(self.label_list)}
+
     def _train_setup(self, examples):
         '''
         Set up the feature vectorizer, the scaler and the label dict and
@@ -761,7 +818,8 @@ class Learner(object):
 
     def train(self, examples, param_grid=None, grid_search_folds=5,
               grid_search=True, grid_objective='f1_score_micro',
-              grid_jobs=None, shuffle=True, feature_hasher=False):
+              grid_jobs=None, shuffle=True, feature_hasher=False,
+              run_create_label_dict=True):
         '''
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -799,6 +857,15 @@ class Learner(object):
         np.random.seed(rand_seed)
         logger = logging.getLogger(__name__)
 
+        #check that the grid objective function is valid for the selected learner
+        if (self._model_type in _REGRESSION_MODELS and
+                grid_objective not in _REGRESSION_OBJ_FUNCS) or \
+                (self._model_type not in _REGRESSION_MODELS and grid_objective not in
+                    _CLASSIFICATION_OBJ_FUNCS):
+            raise ValueError(("{} is not a valid grid objective function for the {}"
+                              " learner").format(grid_objective, self._model_type))
+
+
         # Shuffle so that the folds are random for the inner grid search CV.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
         # we make a copy of everything (and then get rid of the old version)
@@ -812,6 +879,8 @@ class Learner(object):
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
+        if run_create_label_dict:
+            self._create_label_dict(examples)
         self._train_setup(examples)
 
         # select features
@@ -866,6 +935,10 @@ class Learner(object):
         if grid_search:
             # set up grid search folds
             if isinstance(grid_search_folds, int):
+                grid_search_folds = \
+                    self._compute_num_folds_from_example_counts(
+                        grid_search_folds, classes)
+
                 if not grid_jobs:
                     grid_jobs = grid_search_folds
                 else:
@@ -1148,6 +1221,26 @@ class Learner(object):
 
         return yhat
 
+    def _compute_num_folds_from_example_counts(self, cv_folds, classes):
+        assert isinstance(cv_folds, int)
+
+        # For regression models, we can just return the current cv_folds
+        if self._model_type in _REGRESSION_MODELS:
+            return cv_folds
+
+        min_examples_per_class = min(Counter(classes).values())
+        if min_examples_per_class <= 1:
+            raise ValueError(('The training set has only {} example for a' +
+                              ' class.').format(min_examples_per_class))
+        if min_examples_per_class < cv_folds:
+            logger = logging.getLogger(__name__)
+            logger.warning(('The minimum number of examples per ' +
+                            'class was {}. Setting the number of ' +
+                            'cross-validation folds to that ' +
+                            'value.').format(min_examples_per_class))
+            cv_folds = min_examples_per_class
+        return cv_folds
+
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=5, grid_jobs=None,
                        grid_objective='f1_score_micro', prediction_prefix=None,
@@ -1213,10 +1306,14 @@ class Learner(object):
                                   vectorizer=examples.vectorizer)
 
         # call train setup
+        self._create_label_dict(examples)
         self._train_setup(examples)
 
         # setup the cross-validation iterator
         if isinstance(cv_folds, int):
+            cv_folds = self._compute_num_folds_from_example_counts(
+                cv_folds, examples.classes)
+
             stratified = (stratified and
                           not self._model_type in _REGRESSION_MODELS)
             kfold = (StratifiedKFold(examples.classes, n_folds=cv_folds) if
@@ -1249,6 +1346,8 @@ class Learner(object):
                                    classes=examples.classes[train_index],
                                    features=examples.features[train_index],
                                    vectorizer=examples.vectorizer)
+            # Set run_create_label_dict to False since we already created the
+            # label dictionary for the whole dataset above.
             grid_search_score = self.train(train_set,
                                            grid_search_folds=grid_search_folds,
                                            grid_search=grid_search,
@@ -1256,7 +1355,8 @@ class Learner(object):
                                            param_grid=param_grid,
                                            grid_jobs=grid_jobs,
                                            shuffle=False,
-                                           feature_hasher=feature_hasher)
+                                           feature_hasher=feature_hasher,
+                                           run_create_label_dict=False)
             grid_search_scores.append(grid_search_score)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
