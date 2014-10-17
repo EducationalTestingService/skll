@@ -30,7 +30,7 @@ from six.moves import zip
 from sklearn.metrics import SCORERS
 
 from skll.data import FeatureSet, load_examples
-from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
+from skll.learner import Learner, MAX_CONCURRENT_PROCESSES, _REGRESSION_MODELS
 from skll.version import __version__
 
 import yaml
@@ -62,6 +62,10 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
                 'rescaled_svr_linear': 'RescaledSVR',
                 'gb_regressor': 'GradientBoostingRegressor'}
 
+# list of valid grid objective functions for regression models
+# some of these are only valid in certain cases (e.g. binary/integer classes)
+_REGRESSION_OBJECTIVE_FUNCTIONS = frozenset(['unweighted_kappa','linear_weighted_kappa','quadratic_weighted_kappa','uwk_off_by_one','lwk_off_by_one','qwk_off_by_one','kendall_tau','pearson','spearman','r2','mean_squared_error'])
+_CLASSIFICATION_OBJECTIVE_FUNCTIONS = frozenset(['accuracy','precision','recall','f1','f1_score_micro','f1_score_macro','f1_score_weighted','f1_score_least_frequent','average_precision','roc_auc','kendall_tau','pearson','spearman'])
 
 def _get_stat_float(class_result_dict, stat):
     '''
@@ -528,6 +532,10 @@ def _classify_featureset(args):
         raise ValueError(("Extra arguments passed to _classify_featureset: "
                           "{}").format(args.keys()))
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
+
+    #check that the grid objective function is valid for the selected learner
+    if (learner_name in _REGRESSION_MODELS and grid_objective not in _REGRESSION_OBJECTIVE_FUNCTIONS) or (learner_name not in _REGRESSION_MODELS and grid_objective not in _CLASSIFICATION_OBJECTIVE_FUNCTIONS):
+        raise ValueError(("{} is not a valid grid objective function for the {} learner").format(grid_objective,learner_name))
 
     with open(log_path, 'w') as log_file:
         # logging
