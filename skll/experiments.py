@@ -19,11 +19,9 @@ import os
 import sys
 from collections import defaultdict
 from io import open
-from itertools import chain, combinations
+from itertools import combinations
 
 import configparser  # Backported version from Python 3
-import numpy as np
-import scipy.sparse as sp
 from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
