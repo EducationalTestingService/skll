@@ -34,26 +34,27 @@ The following feature file formats are supported:
         *   If there is an attribute called "id" present, this will be treated
             as the ID for each row.
         *   If the data is labelled, there must be an attribute with the name
-            specified by `label_col` in the `Input` section of the configuartion
-            file you create for your experiment. This defaults to 'y'. This must
-            also be the final attribute listed (like in Weka).
+            specified by `label_col` in the `Input` section of the
+            configuartion file you create for your experiment. This defaults to
+            'y'. This must also be the final attribute listed (like in Weka).
 
     **csv**/**tsv**
         A simple comma or tab-delimited format with the following restrictions:
 
         *   If the data is labelled, there must be a column with the name
-            specified by `label_col` in the `Input` section of the configuartion
-            file you create for your experiment. This defaults to 'y'.
+            specified by `label_col` in the `Input` section of the
+            configuartion file you create for your experiment. This defaults to
+            'y'.
         *   If there is a column called "id" present, this will be treated as
             the ID for each row.
         *   All other columns contain feature values, and every feature value
             must be specified (making this a poor choice for sparse data).
 
     **jsonlines**/**ndj** *(Recommended)*
-        A twist on the `JSON <http://www.json.org/>`_ format where every line is
-        a either JSON dictionary (the entire contents of a normal JSON file), or
-        a comment line starting with ``//``. Each dictionary is expected to
-        contain the following keys:
+        A twist on the `JSON <http://www.json.org/>`_ format where every line
+        is a either JSON dictionary (the entire contents of a normal JSON
+        file), or a comment line starting with ``//``. Each dictionary is
+        expected to contain the following keys:
 
         *   *y*: The class label.
         *   *x*: A dictionary of feature values.
@@ -61,6 +62,27 @@ The following feature file formats are supported:
 
         This is the preferred file format for SKLL, as it is sparse and can be
         slightly faster to load than other formats.
+
+    **libsvm**
+        While we can process the standard input file format supported by
+        `LibSVM <http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`__,
+        `LibLinear <http://www.csie.ntu.edu.tw/~cjlin/liblinear/>`__,
+        and `SVMLight <http://svmlight.joachims.org>`__, we also support
+        specifying extra metadata usually missing from the format in comments
+        at the of each line. The comments are not mandatory, but without them,
+        your classes and features will not have names.  The comment is
+        structured as follows::
+
+            ID | 1=ClassX | 1=FeatureA 2=FeatureB
+
+        The entire format would like this::
+
+            2 1:2.0 3:8.1 # Example1 | 2=ClassY | 1=FeatureA 3=FeatureC
+            1 5:7.0 6:19.1 # Example2 | 1=ClassX | 5=FeatureE 6=FeatureF
+
+        .. note::
+            IDs, classes, and feature names cannot contain the following
+            characters:  ``|`` ``#`` ``=``
 
     **megam**
         An expanded form of the input format for the
@@ -74,13 +96,13 @@ The following feature file formats are supported:
             # Instance2
             CLASS2    F1 7.524
 
-        where the comments before each instance are optional IDs for the
-        following line, class names are separated from feature-value pairs with
-        a tab, and feature-value pairs are separated by spaces. Any omitted
-        features for a given instance are assumed to be zero, so this format is
-        handy when dealing with sparse data. We also include several utility
-        scripts for converting to/from this MegaM format and for adding/removing
-        features from the files.
+        where the **optional** comments before each instance specify the ID for
+        the following line, class names are separated from feature-value pairs
+        with a tab, and feature-value pairs are separated by spaces. Any
+        omitted features for a given instance are assumed to be zero, so this
+        format is handy when dealing with sparse data. We also include several
+        utility scripts for converting to/from this MegaM format and for
+        adding/removing features from the files.
 
 
 Creating configuration files
@@ -177,10 +199,56 @@ Input
         are required to be the same in all of the feature files, and a
         ``ValueError`` will be raised if this is not the case.
 
+    **sampler** *(Optional)*
+        It performs a non-linear transformations of the input, which can serve
+        as a basis for linear classification or other algorithms. Valid options
+        are: ``Nystroem``, ``RBFSampler``, ``SkewedChi2Sampler`` and
+        ``AdditiveChi2Sampler``. For addition information see
+        `the scikit-learn documentation <http://scikit-learn.org/stable/modules/kernel_approximation.html>`_.
+
+    **sampler_parameters** *(Optional)*
+        dict containing parameters you want to have fixed for  the ``sampler``.
+        Any empty ones will be ignored (and the defaults will be used).
+
+        The default fixed parameters (beyond those that scikit-learn sets) are:
+
+        *Nystroem*
+
+        .. code-block:: python
+
+           {'random_state': 123456789}
+
+        *RBFSampler*
+
+        .. code-block:: python
+
+           {'random_state': 123456789}
+
+        *SkewedChi2Sampler*
+
+        .. code-block:: python
+
+           {'random_state': 123456789}
+
+    **feature_hasher** *(Optional)*
+        If "true", this enables a high-speed, low-memory vectorizer that uses
+        feature hashing for converting feature dictionaries into NumPy arrays
+        instead of using a ``DictVectorizer``.  This flag will drastically
+        reduce memory consumption for data sets with a large number of
+        features. If enabled, the user should also specify the number of
+        features in the ``hasher_features`` field.  For addition information
+        see `the scikit-learn documentation <http://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`_.
+
+    **hasher_features** *(Optional)*
+        The number of features used by the ``FeatureHasher`` if the
+        ``feature_hasher`` flag is enabled.  It is suggested to use the power
+        of two larger than the number of features in the data set. For example,
+        if you had 17 features, you would want to set the flag to 32.
+
     **suffix** *(Optional)*
         The file format the training/test files are in. Valid option are
-        ``.arff``, ``.csv``, ``.jsonlines``, ``.megam,``, ``.ndj``, and
-        ``.tsv``".
+        ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``, ``.megam,``,
+        ``.ndj``, and ``.tsv``".
 
         If you omit this field, it is assumed that the "prefixes" listed
         in ``featuresets`` are actually complete filenames. This can be useful
@@ -199,23 +267,29 @@ Input
 
         Classifiers:
 
-            *   *LogisticRegression (logistic)*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`_
-            *   *LinearSVC (svm_linear)*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`_
-            *   *SVC (svm_radial)*: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`_
-            *   *MultinomialNB (naivebayes)*: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`_
+            *   *AdaBoostClassifier*: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`_
             *   *DecisionTreeClassifier (dtree)*: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`_
-            *   *RandomForestClassifier (rforest)*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`_
             *   *GradientBoostingClassifier (gradient)*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`_
+            *   *KNeighborsClassifier*: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`_
+            *   *LinearSVC (svm_linear)*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`_
+            *   *LogisticRegression (logistic)*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`_
+            *   *MultinomialNB (naivebayes)*: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`_
+            *   *RandomForestClassifier (rforest)*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`_
+            *   *SGDClassifier*: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`_
+            *   *SVC (svm_radial)*: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`_
 
         Regressors:
 
+            *   *AdaBoostRegressor*: `AdaBoost Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`_
             *   *DecisionTreeRegressor*: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`_
-            *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
             *   *ElasticNet*: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`_
+            *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
+            *   *KNeighborsRegressor*: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`_
             *   *Lasso*: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`_
             *   *LinearRegression*: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`_
             *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_
             *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`_
+            *   *SGDRegressor*: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`_
             *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
                 with a linear kernel. Can use other kernels by specifying a
                 'kernel' fixed parameter in the ``fixed_parameters`` list.
@@ -275,6 +349,27 @@ Input
 
            {'cache_size': 1000, 'kernel': b'linear'}
 
+        .. note::
+            This option helps us to manage the case of imbalance data sets
+            with the parameter ``class_weight`` for the classifiers: ``SVC``,
+            ``LogisticRegression``, ``LinearSVC`` and ``SGDClassifier``.
+
+            Two possible options are available. The first one with an 'auto' option that
+            uses the values of y (the classes) to automatically adjust weights inversely
+            proportional to class frequencies, as shown in the following code:
+
+            .. code-block:: python
+
+               {'class_weight': 'auto'}
+
+            And the second option allows you to assign an specific weight per each class.
+            The default weight per class is 1. An example could be:
+
+            .. code-block:: python
+
+               {'class_weight': {1: 10}}
+
+            Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_classes.html>`_.
 
 Tuning
 ^^^^^^
@@ -312,8 +407,11 @@ Tuning
             *   *accuracy*: Overall `accuracy <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`_
             *   *precision*: `Precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`_
             *   *recall*: `Recall <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`_
+            *   *f1*: The default scikit-learn `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
+                (F1 of the positive class for binary classification, or the weighted average F1 for multiclass classification)
             *   *f1_score_micro*: Micro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
             *   *f1_score_macro*: Macro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
+            *   *f1_score_weighted*: Weighted average `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_
             *   *f1_score_least_frequent*: F1 score of the least frequent class. The
                 least frequent class may vary from fold to fold for certain data
                 distributions.

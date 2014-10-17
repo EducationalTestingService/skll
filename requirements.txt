@@ -4,4 +4,5 @@ PrettyTable
 beautifulsoup4
 numpy
 scipy
-joblib
+joblib>=0.8
+PyYAML

@@ -1,7 +1,7 @@
 language: python
 python:
   - 2.7
-  - 3.3
+  - 3.4
 env:
   - GRIDMAP=true
   - GRIDMAP=false
@@ -19,25 +19,25 @@ before_install:
   - export GRID_MAP_REDIS_PORT=12345
   - sudo mkdir /scratch/
   - sudo chmod 777 /scratch/
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-2.2.2-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-2.2.2-Linux-x86_64.sh -O miniconda.sh; fi
+  - wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - mv travis/.condarc $HOME
-  - export PATH=/home/travis/anaconda/bin:$PATH
+  - export PATH=/home/travis/miniconda3/bin:$PATH
+  - conda config --add channels https://conda.binstar.org/dan_blanchard
   - conda update --yes conda
 install:
-  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION atlas numpy scipy beautiful-soup six scikit-learn joblib prettytable python-coveralls
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser futures logutils; fi
+  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION numpy scipy beautiful-soup six scikit-learn joblib prettytable python-coveralls pyyaml
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser logutils; fi
   - if [ $GRIDMAP == "true" ]; then conda install --yes drmaa gridmap; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
-  - pip install --use-mirrors nose-cov
+  - pip install nose-cov
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
   - python setup.py install
 
 # Run test
 script:
-  - nosetests --with-cov --cov skll --cov-config .coveragerc --logging-level=ERROR
+  - nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG
 
 # Calculate coverage
 after_success:

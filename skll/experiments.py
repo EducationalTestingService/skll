@@ -19,23 +19,23 @@ import os
 import sys
 from collections import defaultdict
 from io import open
-from itertools import chain, combinations
+from itertools import combinations
 
 import configparser  # Backported version from Python 3
-import numpy as np
-import scipy.sparse as sp
 from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn.metrics import SCORERS
 
-from skll.data import ExamplesTuple, load_examples
+from skll.data import FeatureSet, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
 from skll.version import __version__
 
+import yaml
+
 # Check if gridmap is available
 try:
-    from gridmap import Job, JobException, process_jobs
+    from gridmap import Job, process_jobs
 except ImportError:
     _HAVE_GRIDMAP = False
 else:
@@ -43,6 +43,8 @@ else:
 
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
+_VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
+                             'AdditiveChi2Sampler', ''])
 
 # Map from learner short names to full names
 _SHORT_NAMES = {'logistic': 'LogisticRegression',
@@ -98,16 +100,16 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
-            logger.error(('JSON results file %s not found. Skipping summary ' +
-                          'creation. You can manually create the summary file' +
-                          ' after the fact by using the summarize_results ' +
+            logger.error(('JSON results file %s not found. Skipping summary '
+                          'creation. You can manually create the summary file'
+                          ' after the fact by using the summarize_results '
                           'script.'), json_path)
             return
         else:
             with open(json_path, 'r') as json_file:
                 obj = json.load(json_file)
                 if ablation != 0:
-                    all_features.update(json.loads(obj[0]['featureset']))
+                    all_features.update(yaml.load(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
 
     # Build and write header
@@ -127,7 +129,8 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     # Build "ablated_features" list and fix some backward compatible things
     for lrd in learner_result_dicts:
         if ablation != 0:
-            ablated_features = all_features.difference(json.loads(lrd['featureset']))
+            ablated_features = all_features.difference(
+                yaml.load(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
                 lrd['ablated_features'] = json.dumps(sorted(ablated_features))
@@ -165,6 +168,8 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
     print('Grid Objective Function: {}'.format(lrd['grid_objective']),
           file=output_file)
+    print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
+          file=output_file)
     print('\n', file=output_file)
 
     for lrd in learner_result_dicts:
@@ -181,12 +186,13 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         if 'descriptive' in lrd:
             print('Descriptive statistics:', file=output_file)
             for desc_stat in ['min', 'max', 'avg', 'std']:
-                print((' {}: {: .4f} (actual), {: .4f} ' +
-                       '(predicted)').format(desc_stat.title(),
-                                             lrd['descriptive']['actual'][desc_stat],
-                                             lrd['descriptive']['predicted'][desc_stat]),
+                actual = lrd['descriptive']['actual'][desc_stat]
+                predicted = lrd['descriptive']['predicted'][desc_stat]
+                print((' {} = {: .4f} (actual), {: .4f} '
+                       '(predicted)').format(desc_stat.title(), actual,
+                                             predicted),
                       file=output_file)
-            print('Pearson:{: f}'.format(lrd['pearson']),
+            print('Pearson = {: f}'.format(lrd['pearson']),
                   file=output_file)
         print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
@@ -204,10 +210,13 @@ def _setup_config_parser(config_path):
                                         'results': '',
                                         'predictions': '',
                                         'models': '',
+                                        'sampler': '',
+                                        'feature_hasher': 'False',
                                         'grid_search': 'False',
                                         'objective': "f1_score_micro",
                                         'probability': 'False',
                                         'fixed_parameters': '[]',
+                                        'sampler_parameters': '[]',
                                         'param_grids': '[]',
                                         'pos_label_str': '',
                                         'featureset_names': '[]',
@@ -230,6 +239,7 @@ def _parse_config_file(config_path):
     '''
     Parses a SKLL experiment configuration file with the given path.
     '''
+    logger = logging.getLogger(__name__)
     config = _setup_config_parser(config_path)
 
     ###########################
@@ -244,6 +254,20 @@ def _parse_config_file(config_path):
     experiment_name = config.get("General", "experiment_name")
 
     # Input
+    sampler = config.get("Input", "sampler")
+    if sampler not in _VALID_SAMPLERS:
+        raise ValueError('An invalid sample was specified: {}. '.format(sampler) +
+                         'Valid samplers are: {}'.format(', '.join(_VALID_SAMPLERS)))
+    hasher_features = None
+    feature_hasher = config.getboolean("Input", "feature_hasher")
+    if feature_hasher:
+        if config.has_option("Input", "hasher_features"):
+            hasher_features = config.getint("Input", "hasher_features")
+        else:
+            raise ValueError("Configuration file does not contain" +
+                             " option hasher_features, which is " +
+                             "necessary when feature_hasher is True.")
+
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     elif config.has_option("Input", "classifiers"):
@@ -251,10 +275,20 @@ def _parse_config_file(config_path):
     else:
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
-    learners = json.loads(_fix_json(learners_string))
-    learners = [(_SHORT_NAMES[learner] if learner in _SHORT_NAMES else learner)
-                for learner in learners]
-    featuresets = json.loads(_fix_json(config.get("Input", "featuresets")))
+    learners = yaml.load(_fix_json(learners_string))
+    if len(set(learners)) < len(learners):
+        raise ValueError('Configuration file containes the same learner '
+                         'multiple times, which is not currently supported.  '
+                         'Please use param_grids with tuning to find the '
+                         'optimal settings for the learner.')
+    for i, learner in enumerate(learners):
+        if learner in _SHORT_NAMES:
+            logger.warning(('Using short names like {} for learners is '
+                            'deprecated and they will be removed in SKLL '
+                            '1.0.  Please use the full name, {}, '
+                            'instead.').format(learner, _SHORT_NAMES[learner]))
+            learners[i] = _SHORT_NAMES[learner]
+    featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
     if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
@@ -262,7 +296,7 @@ def _parse_config_file(config_path):
         raise ValueError("The featuresets parameter should be a " +
                          "list of lists: {}".format(featuresets))
 
-    featureset_names = json.loads(_fix_json(config.get("Input",
+    featureset_names = yaml.load(_fix_json(config.get("Input",
                                                        "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
@@ -273,9 +307,11 @@ def _parse_config_file(config_path):
             raise ValueError("The featureset_names parameter should be a " +
                              "list of strings: {}".format(featureset_names))
 
-    fixed_parameter_list = json.loads(_fix_json(config.get("Input",
+    fixed_parameter_list = yaml.load(_fix_json(config.get("Input",
                                                            "fixed_parameters")))
-    param_grid_list = json.loads(_fix_json(config.get("Tuning", "param_grids")))
+    fixed_sampler_parameters = yaml.load(_fix_json(config.get("Input",
+                                                               "sampler_parameters")))
+    param_grid_list = yaml.load(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
 
     # ensure that feature_scaling is specified only as one of the
@@ -306,7 +342,7 @@ def _parse_config_file(config_path):
 
     # Get class mapping dictionary if specified
     if config.has_option("Input", "class_map"):
-        orig_class_map = json.loads(_fix_json(config.get("Input", "class_map")))
+        orig_class_map = yaml.load(_fix_json(config.get("Input", "class_map")))
         # Change class_map to map from originals to replacements instead of from
         # replacement to list of originals
         class_map = {}
@@ -339,10 +375,10 @@ def _parse_config_file(config_path):
 
     # make sure all the specified paths exist
     if not os.path.exists(train_path):
-        raise IOError(errno.ENOENT, ("The training path specified in config " +
+        raise IOError(errno.ENOENT, ("The training path specified in config "
                                      "file does not exist"), train_path)
     if test_path and not os.path.exists(test_path):
-        raise IOError(errno.ENOENT, ("The test path specified in config " +
+        raise IOError(errno.ENOENT, ("The test path specified in config "
                                      "file does not exist"), test_path)
 
     # Tuning
@@ -350,7 +386,7 @@ def _parse_config_file(config_path):
     # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
-    # the minimum number of examples a feature must be nonzero in to be included
+    # minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")
 
     # how many jobs should we run in parallel for grid search
@@ -366,7 +402,7 @@ def _parse_config_file(config_path):
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
-        raise ValueError('The test set path must be set when task is evaluate' +
+        raise ValueError('The test set path must be set when task is evaluate'
                          ' or predict.')
     if (task == 'cross_validate' or task == 'train') and test_path:
         raise ValueError('The test set path should not be set ' +
@@ -387,31 +423,37 @@ def _parse_config_file(config_path):
     # Create feature set names if unspecified
     if not featureset_names:
         featureset_names = [_munge_featureset_name(x) for x in featuresets]
-    assert len(featureset_names) == len(featuresets)
+    if len(featureset_names) != len(featuresets):
+        raise ValueError(('Number of feature set names (%s) does not match '
+                          'number of feature sets (%s).') %
+                         (len(featureset_names), len(featuresets)))
 
     # store training/test set names for later use
     train_set_name = os.path.basename(train_path)
     test_set_name = os.path.basename(test_path) if test_path else "cv"
 
-    return (experiment_name, task, label_col, train_set_name, test_set_name,
-            suffix, featuresets, model_path, do_grid_search, grid_objective,
-            probability, results_path, pos_label_str, feature_scaling,
-            min_feature_count, grid_search_jobs, cv_folds, fixed_parameter_list,
-            param_grid_list, featureset_names, learners, prediction_dir,
-            log_path, train_path, test_path, ids_to_floats, class_map)
+    return (experiment_name, task, sampler, fixed_sampler_parameters,
+            feature_hasher, hasher_features, label_col, train_set_name,
+            test_set_name, suffix, featuresets, model_path, do_grid_search,
+            grid_objective, probability, results_path, pos_label_str,
+            feature_scaling, min_feature_count, grid_search_jobs, cv_folds,
+            fixed_parameter_list, param_grid_list, featureset_names,
+            learners, prediction_dir, log_path, train_path, test_path,
+            ids_to_floats, class_map)
 
 
-def _load_featureset(dirpath, featureset, suffix, label_col='y',
+def _load_featureset(dir_path, feat_files, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     unlabelled=False):
+                     feature_hasher=False, num_features=None):
     '''
     Load a list of feature files and merge them.
 
-    :param dirpath: Path to the directory that contains the feature files.
-    :type dirpath: str
-    :param featureset: List of feature file prefixes
-    :type featureset: str
-    :param suffix: Suffix to add to feature file prefixes to get full filenames.
+    :param dir_path: Path to the directory that contains the feature files.
+    :type dir_path: str
+    :param feat_files: List of feature file prefixes
+    :type feat_files: str
+    :param suffix: Suffix to add to feature file prefixes to get full
+                   filenames.
     :type suffix: str
     :param label_col: Name of the column which contains the class labels.
                       If no column with that name exists, or `None` is
@@ -426,102 +468,20 @@ def _load_featureset(dirpath, featureset, suffix, label_col='y',
                       mainly used for collapsing multiple classes into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
-    :param unlabelled: Is this test we're loading? If so, don't raise an error
-                       if there are no labels.
-    :type unlabelled: bool
 
     :returns: The classes, IDs, features, and feature vectorizer representing
               the given featureset.
-    :rtype: ExamplesTuple
+    :rtype: FeatureSet
     '''
-
-    # Load a list of lists of examples, one list of examples per featureset.
-    file_names = sorted(os.path.join(dirpath, featfile + suffix) for featfile
-                        in featureset)
-    example_tuples = [load_examples(file_name, label_col=label_col,
+    merged_set = FeatureSet('')
+    for file_name in sorted(os.path.join(dir_path, featfile + suffix) for
+                            featfile in feat_files):
+        merged_set += load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
-                                    class_map=class_map)
-                      for file_name in file_names]
-
-    # Check that the IDs are unique within each file.
-    for file_name, examples in zip(file_names, example_tuples):
-        ex_ids = examples.ids
-        if len(ex_ids) != len(set(ex_ids)):
-            raise ValueError(('The example IDs are not unique in ' +
-                              '{}.').format(file_name))
-
-    # Check that the different feature files have the same IDs.
-    # To do this, make a sorted tuple of unique IDs for each feature file,
-    # and then make sure they are all the same by making sure the set has one
-    # item in it.
-    mismatch_num = len({tuple(sorted(examples.ids)) for examples in
-                        example_tuples})
-    if mismatch_num != 1:
-        raise ValueError(('The sets of example IDs in {} feature files do ' +
-                          'not match').format(mismatch_num))
-
-    # Make sure there is a unique label for every example (or no label, for
-    # "unseen" examples).
-    # To do this, find the unique (id, y) tuples, and then make sure that all
-    # those ids are unique.
-    unique_tuples = set(chain(*[[(curr_id, curr_label) for curr_id, curr_label
-                                 in zip(examples.ids, examples.classes)]
-                                for examples in example_tuples if
-                                any(x is not None for x in examples.classes)]))
-    if len({tup[0] for tup in unique_tuples}) != len(unique_tuples):
-        raise ValueError('At least two feature files have different labels ' +
-                         '(i.e., y values) for the same ID.')
-
-    # Now, create the final ExamplesTuple of examples with merged features
-    merged_vectorizer = None
-    merged_features = None
-    merged_ids = None
-    merged_classes = None
-    for ids, classes, features, feat_vectorizer in example_tuples:
-        # Combine feature matrices and vectorizers
-        if merged_features is not None:
-            # Check for duplicate feature names
-            if (set(merged_vectorizer.get_feature_names()) &
-                    set(feat_vectorizer.get_feature_names())):
-                raise ValueError('Two feature files have the same feature!')
-
-            num_merged = merged_features.shape[1]
-            merged_features = sp.hstack([merged_features, features], 'csr')
-
-            # dictvectorizer sorts the vocabularies within each file
-            for feat_name, index in sorted(feat_vectorizer.vocabulary_.items(),
-                                           key=lambda x: x[1]):
-                merged_vectorizer.vocabulary_[feat_name] = index + num_merged
-                merged_vectorizer.feature_names_.append(feat_name)
-        else:
-            merged_features = features
-            merged_vectorizer = feat_vectorizer
-
-        # IDs should be the same for each ExamplesTuple, so only store once
-        if merged_ids is None:
-            merged_ids = ids
-        # Check that IDs are in the same order
-        elif not np.all(merged_ids == ids):
-            raise ValueError('IDs are not in the same order in each feature ' +
-                             'file!')
-
-        # If current ExamplesTuple has labels, check that they don't conflict
-        if any(x is not None for x in classes):
-            # Classes should be the same for each ExamplesTuple, so store once
-            if merged_classes is None:
-                merged_classes = classes
-            # Check that classes don't conflict, when specified
-            elif not np.all(merged_classes == classes):
-                raise ValueError('Feature files have conflicting labels for ' +
-                                 'examples with the same ID!')
-
-    # Ensure that at least one file had classes if we're expecting them
-    if merged_classes is None and not unlabelled:
-        raise ValueError('No feature files in feature set contain class' +
-                         'labels!')
-
-    return ExamplesTuple(merged_ids, merged_classes, merged_features,
-                         merged_vectorizer)
+                                    class_map=class_map,
+                                    feature_hasher=feature_hasher,
+                                    num_features=num_features)
+    return merged_set
 
 
 def _classify_featureset(args):
@@ -531,6 +491,9 @@ def _classify_featureset(args):
     # required keyword arguments.)
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
+    sampler = args.pop("sampler")
+    feature_hasher = args.pop("feature_hasher")
+    hasher_features = args.pop("hasher_features")
     job_name = args.pop("job_name")
     featureset = args.pop("featureset")
     learner_name = args.pop("learner_name")
@@ -547,6 +510,7 @@ def _classify_featureset(args):
     probability = args.pop("probability")
     results_path = args.pop("results_path")
     fixed_parameters = args.pop("fixed_parameters")
+    sampler_parameters = args.pop("sampler_parameters")
     param_grid = args.pop("param_grid")
     pos_label_str = args.pop("pos_label_str")
     overwrite = args.pop("overwrite")
@@ -559,13 +523,11 @@ def _classify_featureset(args):
     class_map = args.pop("class_map")
     quiet = args.pop('quiet', False)
     if args:
-        raise ValueError(("Extra arguments passed to _classify_featureset: " +
+        raise ValueError(("Extra arguments passed to _classify_featureset: "
                           "{}").format(args.keys()))
-
     timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
 
     with open(log_path, 'w') as log_file:
-
         # logging
         print("Task:", task, file=log_file)
         if task == 'cross_validate':
@@ -590,26 +552,30 @@ def _classify_featureset(args):
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it and then use it on test data
         modelfile = os.path.join(model_path, '{}.model'.format(job_name))
-
-        # load the training and test examples
         if task == 'cross_validate' or (not os.path.exists(modelfile) or
                                         overwrite):
             train_examples = _load_featureset(train_path, featureset, suffix,
                                               label_col=label_col,
                                               ids_to_floats=ids_to_floats,
-                                              quiet=quiet, class_map=class_map)
+                                              quiet=quiet, class_map=class_map,
+                                              feature_hasher=feature_hasher,
+                                              num_features=hasher_features)
+            if not train_examples.has_classes:
+                raise ValueError('Training examples do not have labels')
             # initialize a classifer object
             learner = Learner(learner_name,
                               probability=probability,
                               feature_scaling=feature_scaling,
                               model_kwargs=fixed_parameters,
                               pos_label_str=pos_label_str,
-                              min_feature_count=min_feature_count)
+                              min_feature_count=min_feature_count,
+                              sampler=sampler,
+                              sampler_kwargs=sampler_parameters)
         # load the model if it already exists
         else:
             if os.path.exists(modelfile) and not overwrite:
-                print(('\tloading pre-existing {} ' +
-                       'model: {}').format(learner_name, modelfile))
+                print(('\tloading pre-existing %s model: %s') % (learner_name,
+                                                                 modelfile))
             learner = Learner.from_file(modelfile)
 
         # Load test set if there is one
@@ -618,8 +584,8 @@ def _classify_featureset(args):
                                              label_col=label_col,
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet, class_map=class_map,
-                                             unlabelled=True)
-
+                                             feature_hasher=feature_hasher,
+                                             num_features=hasher_features)
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
@@ -633,20 +599,19 @@ def _classify_featureset(args):
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective,
-                                    'min_feature_count': min_feature_count}
+                                    'min_feature_count': min_feature_count,
+                                    'cv_folds': cv_folds}
 
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
         task_results = None
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
-            task_results, grid_scores = learner.cross_validate(train_examples,
-                                                               prediction_prefix=prediction_prefix,
-                                                               grid_search=grid_search,
-                                                               cv_folds=cv_folds,
-                                                               grid_objective=grid_objective,
-                                                               param_grid=param_grid,
-                                                               grid_jobs=grid_search_jobs)
+            task_results, grid_scores = learner.cross_validate(
+                train_examples, prediction_prefix=prediction_prefix,
+                grid_search=grid_search, cv_folds=cv_folds,
+                grid_objective=grid_objective, param_grid=param_grid,
+                grid_jobs=grid_search_jobs, feature_hasher=feature_hasher)
         else:
             # if we have do not have a saved model, we need to train one.
             if not os.path.exists(modelfile) or overwrite:
@@ -663,7 +628,8 @@ def _classify_featureset(args):
                                            grid_search_folds=grid_search_folds,
                                            grid_objective=grid_objective,
                                            param_grid=param_grid,
-                                           grid_jobs=grid_search_jobs)
+                                           grid_jobs=grid_search_jobs,
+                                           feature_hasher=feature_hasher)
                 grid_scores = [best_score]
 
                 # save model
@@ -671,6 +637,9 @@ def _classify_featureset(args):
                     learner.save(modelfile)
 
                 if grid_search:
+                    # note: bankers' rounding is used in python 3,
+                    # so these scores may be different between runs in
+                    # python 2 and 3 at the final decimal place.
                     print('\tbest {} grid search score: {}'
                           .format(grid_objective, round(best_score, 3)),
                           file=log_file)
@@ -691,16 +660,18 @@ def _classify_featureset(args):
                 print('\tevaluating predictions', file=log_file)
                 task_results = [learner.evaluate(
                     test_examples, prediction_prefix=prediction_prefix,
-                    grid_objective=grid_objective)]
+                    grid_objective=grid_objective,
+                    feature_hasher=feature_hasher)]
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
-                                prediction_prefix=prediction_prefix)
+                                prediction_prefix=prediction_prefix,
+                                feature_hasher=feature_hasher)
             # do nothing here for train
 
         if task == 'cross_validate' or task == 'evaluate':
-            results_json_path = os.path.join(results_path,
-                                             '{}.results.json'.format(job_name))
+            results_json_path = os.path.join(results_path, '{}.results.json'
+                                                           .format(job_name))
 
             res = _create_learner_result_dicts(task_results, grid_scores,
                                                learner_result_dict_base)
@@ -710,7 +681,8 @@ def _classify_featureset(args):
             with open(results_json_path, file_mode) as json_file:
                 json.dump(res, json_file)
 
-            with open(os.path.join(results_path, '{}.results'.format(job_name)),
+            with open(os.path.join(results_path,
+                                   '{}.results'.format(job_name)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
         else:
@@ -721,6 +693,10 @@ def _classify_featureset(args):
 
 def _create_learner_result_dicts(task_results, grid_scores,
                                  learner_result_dict_base):
+    '''
+    Create the learner result dictionaries that are used to create JSON and
+    plain-text results files.
+    '''
     res = []
 
     num_folds = len(task_results)
@@ -904,8 +880,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                      experiment. If positive, we will perform repeated ablation
                      runs for all combinations of features removing the
                      specified number at a time. If ``None``, we will use all
-                     combinations of all lengths. If 0, the default, no ablation
-                     is performed. If negative, a ``ValueError`` is raised.
+                     combinations of all lengths. If 0, the default, no
+                     ablation is performed. If negative, a ``ValueError`` is
+                     raised.
     :type ablation: int or None
     :param resume: If result files already exist for an experiment, do not
                    overwrite them. This is very useful when doing a large
@@ -921,7 +898,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     logger = logging.getLogger(__name__)
 
     # Read configuration
-    (experiment_name, task, label_col, train_set_name, test_set_name, suffix,
+    (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
+     hasher_features, label_col, train_set_name, test_set_name, suffix,
      featuresets, model_path, do_grid_search, grid_objective, probability,
      results_path, pos_label_str, feature_scaling, min_feature_count,
      grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
@@ -931,8 +909,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
         local = True
-        logger.warning('gridmap 0.10.1+ not available. Forcing local ' +
-                       'mode.  To run things on a DRMAA-compatible ' +
+        logger.warning('gridmap 0.10.1+ not available. Forcing local '
+                       'mode.  To run things on a DRMAA-compatible '
                        'cluster, install gridmap>=0.10.1 via pip.')
 
     # if performing ablation, expand featuresets to include combinations of
@@ -949,14 +927,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 for i in range(1, len(features)):
                     for excluded_features in combinations(features, i):
                         expanded_fs.append(sorted(featureset -
-                                                   set(excluded_features)))
+                                                  set(excluded_features)))
                         expanded_fs_names.append(featureset_name + '_minus_' +
                                                  _munge_featureset_name(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
-                                                  set(excluded_features)))
+                                              set(excluded_features)))
                     expanded_fs_names.append(featureset_name + '_minus_' +
                                              _munge_featureset_name(excluded_features))
             # Also add version with nothing removed as baseline
@@ -967,9 +945,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         featuresets = expanded_fs
         featureset_names = expanded_fs_names
     elif ablation < 0:
-        raise ValueError('Value for "ablation" argument must be either ' +
+        raise ValueError('Value for "ablation" argument must be either '
                          'positive integer or None.')
-
 
     # the list of jobs submitted (if running on grid)
     if not local:
@@ -1006,7 +983,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # If result file already exists and we're resuming, move on
             if resume and (os.path.exists(result_json_path) and
                            os.path.getsize(result_json_path)):
-                logger.info('Running in resume mode and %s exists, so ' +
+                logger.info('Running in resume mode and %s exists, so '
                             'skipping job.', result_json_path)
                 continue
 
@@ -1014,6 +991,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args = {}
             job_args["experiment_name"] = experiment_name
             job_args["task"] = task
+            job_args["sampler"] = sampler
+            job_args["feature_hasher"] = feature_hasher
+            job_args["hasher_features"] = hasher_features
             job_args["job_name"] = job_name
             job_args["featureset"] = featureset
             job_args["learner_name"] = learner_name
@@ -1029,6 +1009,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["log_path"] = temp_logfile
             job_args["probability"] = probability
             job_args["results_path"] = results_path
+            job_args["sampler_parameters"] = (fixed_sampler_parameters
+                                              if fixed_sampler_parameters
+                                              else dict())
             job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
                                             if fixed_parameter_list
                                             else dict())
@@ -1052,7 +1035,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                 name=job_name, queue=queue))
             else:
                 _classify_featureset(job_args)
-
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:

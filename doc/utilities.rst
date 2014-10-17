@@ -8,6 +8,11 @@ feature files and perform other routine tasks. Each is described briefly below.
 For full details of how to use each of these scripts, just run them with the
 ``--help`` option.
 
+compute_eval_from_predictions
+-----------------------------
+Compute evaluation metrics from prediction files after you have run an
+experiment.
+
 filter_megam
 ------------
 Filter MegaM file to remove features with names in stop word list (or non
@@ -24,20 +29,13 @@ join_megam
 ----------
 Combine MegaM files that contain features for the same examples.
 
-megam_to_libsvm
----------------
-Takes a MegaM-compatible file to be run with the ``-fvals`` switch and outputs a
-LibSVM/LibLinear-compatible file to STDOUT.
-
 print_model_weights
 -------------------
 Prints out the weights of a given trained model.
 
 skll_convert
 ------------
-Convert between .arff, .csv., .jsonlines, .megam, and .tsv formats. In the 
-future this will be expanded to add support for libsvm files as well to
-eliminate the need for a separate ``megam_to_libsvm`` script.
+Convert between .arff, .csv., .jsonlines, .libsvm, .megam, and .tsv formats.
 
 summarize_results
 -----------------

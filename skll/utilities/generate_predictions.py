@@ -1,21 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Lab.
-
-# SciKit-Learn Lab is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# SciKit-Learn Lab is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 Loads a trained model and outputs predictions based on input feature files.
 
@@ -29,7 +13,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import argparse
 import logging
-import sys
 
 from skll import Learner, load_examples
 from skll.learner import _REGRESSION_MODELS
@@ -65,7 +48,13 @@ class Predictor(object):
 
     def predict(self, data):
         '''
-        Return a list of predictions for a given ExamplesTuple of examples.
+        Generate a list of predictions for the given examples.
+
+        :param data: Examples to get predictions for.
+        :type data: ExamplesTuple
+
+        :returns: A list of predictions the model generated for the given
+                  examples.
         '''
         preds = self._learner.predict(data).tolist()
 
@@ -78,7 +67,8 @@ class Predictor(object):
         elif self._learner.model_type in _REGRESSION_MODELS:
             return preds
         else:
-            return [self._learner.label_list[int(pred[0])] for pred in preds]
+            return [self._learner.label_list[pred if isinstance(pred, int) else
+                                             int(pred[0])] for pred in preds]
 
 
 def main(argv=None):

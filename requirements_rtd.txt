@@ -1,5 +1,4 @@
 configparser
-futures
 logutils
 scikit-learn>=0.14
 six
@@ -7,3 +6,5 @@ PrettyTable
 beautifulsoup4
 numpy
 scipy
+joblib>=0.8
+PyYAML
