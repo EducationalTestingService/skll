@@ -28,7 +28,7 @@ import scipy.sparse as sp
 from nose.tools import (eq_, raises, assert_almost_equal, assert_not_equal,
                         nottest)
 from numpy.testing import assert_array_equal
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification, make_regression
 
 from skll.data import write_feature_file, load_examples, convert_examples
@@ -363,7 +363,9 @@ def test_feature_merging_order_invariance():
 
 
 def make_regression_data(num_examples=100, train_test_ratio=-0.5,
-                         num_features=2, sd_noise=1.0, start_feature_num=1,
+                         num_features=2, sd_noise=1.0,
+                         use_feature_hashing=False,
+                         start_feature_num=1,
                          random_state=1234567890):
 
     # use sklearn's make_regression to generate the data for us
@@ -387,54 +389,38 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
 
     # split everything into training and testing portions
     num_train_examples = round(train_test_ratio * num_examples)
-    train_features, test_features = features[:num_train_examples], features[num_train_examples:]
+    train_features, test_features = (features[:num_train_examples],
+                                     features[num_train_examples:])
     train_y, test_y = y[:num_train_examples], y[num_train_examples:]
     train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
 
-    train_fs = FeatureSet('regression_train', train_ids, classes=train_y, features=train_features)
-    test_fs = FeatureSet('regression_test', test_ids, classes=test_y, features=test_features)
+    # create a FeatureHasher if we are asked to use feature hashing
+    # and use 2.5 times the number of features to be on the safe side
+    vectorizer = FeatureHasher(n_features=round(2.5 * num_features)) \
+        if use_feature_hashing else None
+    train_fs = FeatureSet('regression_train', train_ids,
+                          classes=train_y, features=train_features,
+                          vectorizer=vectorizer)
+    test_fs = FeatureSet('regression_test', test_ids,
+                         classes=test_y, features=test_features,
+                         vectorizer=vectorizer)
 
     return (train_fs, test_fs, weightdict)
 
-# def make_regression_data():
-#     num_examples = 2000
-#     num_train_examples = int(num_examples / 2)
-
-#     np.random.seed(1234567890)
-#     f1 = np.random.rand(num_examples)
-#     f2 = np.random.rand(num_examples)
-#     f3 = np.random.rand(num_examples)
-#     err = np.random.randn(num_examples) / 2.0
-#     y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
-#     y = y.tolist()
-
-#     # Write training file
-#     train_dir = join(_my_dir, 'train')
-#     if not exists(train_dir):
-#         os.makedirs(train_dir)
-#     train_path = join(train_dir, 'test_regression1.jsonlines')
-#     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
-#                 range(num_train_examples)]
-#     write_feature_file(train_path, None, y[:num_train_examples], features)
-
-#     # Write test file
-#     test_dir = join(_my_dir, 'test')
-#     if not exists(test_dir):
-#         os.makedirs(test_dir)
-#     test_path = join(test_dir, 'test_regression1.jsonlines')
-#     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
-#                 range(num_train_examples, num_examples)]
-#     write_feature_file(test_path, None, y[num_train_examples: num_examples],
-#                        features)
-#     return y
-
-
-def test_regression1():
+# the utility function to run the basic regression tests
+# with or without feature hashing
+def check_regression(use_feature_hashing=False):
     # This is a bit of a contrived test, but it should fail if anything drastic
     # happens to the regression code.
 
     # create a FeatureSet object with the data we want to use
-    train_fs, test_fs, weightdict = make_regression_data(num_examples=2000, num_features=3)
+    if use_feature_hashing:
+        train_fs, test_fs, weightdict = make_regression_data(num_examples=5000,
+                                                             num_features=10,
+                                                             use_feature_hashing=True)
+    else:
+        train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
+                                                             num_features=3)
 
     # create a LinearRegression learner
     learner = Learner('LinearRegression')
@@ -443,16 +429,22 @@ def test_regression1():
     # make sure to set the grid objective to pearson
     learner.train(train_fs, grid_objective='pearson')
 
-    # now get the weights of this trained model
-    learned_weights = learner.model_params[0]
-
     # make sure that the weights are close to the weights
     # that we got from make_regression_data. Take the
     # ceiling before  comparing since just comparing
     # the ceilings should be enough to make sure nothing
-    # catastrophic happened
-    for feature_name in learned_weights:
-        assert math.ceil(learned_weights[feature_name]) == math.ceil(weightdict[feature_name])
+    # catastrophic happened. Note though that we cannot
+    # test feature weights if we are using feature hashing
+    # since model_params is not defined with a featurehasher.
+    if not use_feature_hashing:
+
+        # get the weights of this trained model
+        learned_weights = learner.model_params[0]
+
+        for feature_name in learned_weights:
+            learned_w = math.ceil(learned_weights[feature_name])
+            given_w = math.ceil(weightdict[feature_name])
+            assert learned_w == given_w
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
@@ -461,14 +453,17 @@ def test_regression1():
     # the actual test FeatureSet labels that we generated
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
-    assert pearsonr(predictions, test_fs.classes) > 0.95
+    cor, _ = pearsonr(predictions, test_fs.classes)
+    assert cor > 0.95
 
-    # also make sure that the distribution looks okay
-    assert np.min(predictions) >= np.min(test_fs.classes)
-    assert np.max(predictions) <= np.max(test_fs.classes)
+# run the two tests for regression
+def test_regression():
 
-    assert abs(np.mean(predictions) - np.mean(test_fs.classes)) < 0.1
-    assert abs(np.std(predictions) - np.std(test_fs.classes)) < 0.1
+    # without feature hashing
+    yield check_regression
+
+    # with feature hashing
+    yield check_regression, True
 
 
 def test_predict():

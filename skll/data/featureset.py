@@ -48,8 +48,6 @@ class FeatureSet(object):
     def __init__(self, name, ids, classes=None, features=None,
                  vectorizer=None):
         super(FeatureSet, self).__init__()
-
-        assert features is not None
         self.name = name
         if isinstance(ids, list):
             ids = np.array(ids)
