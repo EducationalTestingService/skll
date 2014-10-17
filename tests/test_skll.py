@@ -500,11 +500,12 @@ def check_predict(model='LogisticRegression', use_feature_hashing=False):
     # create the learner with the specified model
     learner = Learner(model)
 
-    # now train the learner on the training data
-    learner.train(train_fs, grid_search=False)
+    # now train the learner on the training data and use feature hashing when specified
+    # and when we are not using a Naive Bayes model
+    learner.train(train_fs, grid_search=False, feature_hasher=use_feature_hashing and model != 'MultinomialNB')
 
     # now make predictions on the test set
-    predictions = learner.predict(test_fs)
+    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing and model != 'MultinomialNB')
 
     # make sure we have the same number of outputs as the
     # number of test set samples
