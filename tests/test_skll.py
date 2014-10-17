@@ -451,7 +451,7 @@ def test_rare_class():
         next(reader)
         pred = [row[1] for row in reader]
 
-        assert len(pred) == 11
+        assert len(pred) == 15
 
 
 def test_predict_feature_hasher():
