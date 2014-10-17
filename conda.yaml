@@ -1,0 +1,57 @@
+package:
+  name: skll
+  version: {{ environ.get['GIT_DESCRIBE_TAG'] }}
+
+build:
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  string: {{ environ.get('GIT_BUILD_STR', '') }}
+  script:
+    - cd $RECIPE_DIR
+    - $PYTHON setup.py install
+
+requirements:
+  build:
+    - python
+    - joblib
+    - setuptools
+    - scikit-learn
+    - six
+    - prettytable
+    - beautiful-soup
+    - numpy
+    - scipy
+    - configparser [py2k]
+    - futures [py2k]
+    - logutils [py2k]
+
+  run:
+    - python
+    - joblib
+    - scikit-learn
+    - six
+    - prettytable
+    - beautiful-soup
+    - numpy
+    - scipy
+    - configparser [py2k]
+    - futures [py2k]
+    - logutils [py2k]
+
+test:
+  # Python imports
+  imports:
+    - skll
+
+  commands:
+    - filter_megam --help
+    - generate_predictions --help
+    - join_megam --help
+    - megam_to_libsvm --help
+    - print_model_weights --help
+    - run_experiment --help
+    - skll_convert --help
+    - summarize_results --help
+
+about:
+  home: http://github.com/EducationalTestingService/skll
+  license: BSD 3-clause
