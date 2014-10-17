@@ -571,10 +571,9 @@ class Learner(object):
                 (isinstance(self._model, SVR) and
                  self._model.kernel == 'linear')):
             # also includes RescaledRidge, RescaledSVR
-            print("a " + str(self.model))
 
             coef = self.model.coef_
-            intercept = self.model.intercept_
+            intercept = [(None, self.model.intercept_)]
 
             # convert SVR coefficient format (1 x matrix) to array
             if isinstance(self._model, SVR):
@@ -600,10 +599,7 @@ class Learner(object):
                     res[feat] = correction * coef[idx]
                     # res[feat] = coef[idx]
 
-            res["intercept"] = self.model.intercept_
         elif isinstance(self._model, BaseLibLinear):
-            print("b " + str(self.model))
-
             label_list = self.label_list
 
             # if there are only two classes, scikit-learn will only have one
