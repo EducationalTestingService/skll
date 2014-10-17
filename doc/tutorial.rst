@@ -8,4 +8,4 @@ For this tutorial, we're going to make use of the examples provided in the ``exa
 
 SKLL can work with several common data formats, each of which are described `here <https://skll.readthedocs.org/en/develop/run_experiment.html#feature-file-formats>`_.
 
-The :ref:`skll_convert`_ script does useful stuff.
+The :ref:`skll_convert` script does useful stuff.
