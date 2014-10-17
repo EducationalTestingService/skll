@@ -564,6 +564,11 @@ class Learner(object):
         '''
         Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
         regression and liblinear models.
+
+        :returns: Labeled weights and (labeled if more than one) intercept 
+                  value(s)
+        :rtype: tuple of (``weights``, ``intercepts``), where ``weights`` is a 
+                dict and ``intercepts`` is a list of tuples
         '''
         res = {}
         intercept = None
