@@ -112,6 +112,34 @@ _REGRESSION_MODELS = frozenset(['AdaBoostRegressor', 'DecisionTreeRegressor',
                                 'LinearRegression', 'RandomForestRegressor',
                                 'Ridge', 'SVR', 'SGDRegressor'])
 
+# list of valid grid objective functions for regression and classification models
+# some of these are only valid in certain cases (e.g. binary/integer classes)
+_REGRESSION_OBJ_FUNCS = frozenset(['unweighted_kappa',
+                                   'linear_weighted_kappa',
+                                   'quadratic_weighted_kappa',
+                                   'uwk_off_by_one',
+                                   'lwk_off_by_one',
+                                   'qwk_off_by_one',
+                                   'kendall_tau',
+                                   'pearson',
+                                   'spearman',
+                                   'r2',
+                                   'mean_squared_error'])
+
+_CLASSIFICATION_OBJ_FUNCS = frozenset(['accuracy',
+                                       'precision',
+                                       'recall',
+                                       'f1',
+                                       'f1_score_micro',
+                                       'f1_score_macro',
+                                       'f1_score_weighted',
+                                       'f1_score_least_frequent',
+                                       'average_precision',
+                                       'roc_auc',
+                                       'kendall_tau',
+                                       'pearson',
+                                       'spearman'])
+
 _REQUIRES_DENSE = frozenset(['AdaBoostClassifier', 'AdaBoostRegressor',
                              'DecisionTreeClassifier', 'DecisionTreeRegressor',
                              'GradientBoostingClassifier',
@@ -788,6 +816,15 @@ class Learner(object):
         rand_seed = 123456789
         np.random.seed(rand_seed)
         logger = logging.getLogger(__name__)
+
+        #check that the grid objective function is valid for the selected learner
+        if (self._model_type in _REGRESSION_MODELS and
+                grid_objective not in _REGRESSION_OBJ_FUNCS) or \
+                (self._model_type not in _REGRESSION_MODELS and grid_objective not in
+                    _CLASSIFICATION_OBJ_FUNCS):
+            raise ValueError(("{} is not a valid grid objective function for the {}"
+                              " learner").format(grid_objective, self._model_type))
+
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
