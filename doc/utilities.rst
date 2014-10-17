@@ -1,7 +1,7 @@
 .. sectionauthor:: Dan Blanchard <dblanchard@ets.org>
 
-Utilitiy Scripts
-================
+Utility Scripts
+===============
 In addition to the main script, :doc:`run_experiment <run_experiment>`, SKLL
 comes with a number of helpful utility scripts that can be used to prepare
 feature files and perform other routine tasks. Each is described briefly below.
@@ -32,6 +32,8 @@ Combine MegaM files that contain features for the same examples.
 print_model_weights
 -------------------
 Prints out the weights of a given trained model.
+
+.. _skll_convert:
 
 skll_convert
 ------------
