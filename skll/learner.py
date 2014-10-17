@@ -565,10 +565,10 @@ class Learner(object):
         Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
         regression and liblinear models.
 
-        :returns: Labeled weights and (labeled if more than one) intercept 
+        :returns: Labeled weights and (labeled if more than one) intercept
                   value(s)
-        :rtype: tuple of (``weights``, ``intercepts``), where ``weights`` is a 
-                dict and ``intercepts`` is a list of tuples
+        :rtype: tuple of (``weights``, ``intercepts``), where ``weights`` is a
+                dict and ``intercepts`` is a dictionary
         '''
         res = {}
         intercept = None
@@ -578,7 +578,7 @@ class Learner(object):
             # also includes RescaledRidge, RescaledSVR
 
             coef = self.model.coef_
-            intercept = [(None, self.model.intercept_)]
+            intercept = {'_intercept_', self.model.intercept_}
 
             # convert SVR coefficient format (1 x matrix) to array
             if isinstance(self._model, SVR):
@@ -620,7 +620,7 @@ class Learner(object):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
 
-            intercept = list(zip(label_list, self.model.intercept_))
+            intercept = dict(zip(label_list, self.model.intercept_))
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
@@ -1043,7 +1043,7 @@ class Learner(object):
         if feature_hasher:
             if self.feat_vectorizer.n_features != examples.vectorizer.n_features:
                 logger.warning("Warning: there is mismatch between the training model features and the data passed to predict.")
-            
+
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
                                    self.feat_vectorizer.n_features,

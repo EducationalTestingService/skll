@@ -393,8 +393,7 @@ def check_regression(use_feature_hashing=False):
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson')
-
+    learner.train(train_fs, grid_objective='pearson', feature_hasher=use_feature_hashing)
 
     # make sure that the weights are close to the weights
     # that we got from make_regression_data. Take the
@@ -405,8 +404,8 @@ def check_regression(use_feature_hashing=False):
     # since model_params is not defined with a featurehasher.
     if not use_feature_hashing:
 
-        # get the weights of this trained model
-        learned_weights = learner.model_params
+        # get the weights for this trained model
+        learned_weights = learner.model_params[0]
 
         for feature_name in learned_weights:
             learned_w = math.ceil(learned_weights[feature_name])
@@ -414,7 +413,7 @@ def check_regression(use_feature_hashing=False):
             assert learned_w == given_w
 
     # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs)
+    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
 
     # now make sure that the predictions are close to
     # the actual test FeatureSet labels that we generated
