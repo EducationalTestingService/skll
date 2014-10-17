@@ -160,7 +160,8 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
           file=output_file)
     print('SKLL Version: {}'.format(lrd['version']), file=output_file)
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
-    print('Training Set Size: {}'.format(lrd['train_set_size']), file=output_file)
+    print('Training Set Size: {}'.format(
+        lrd['train_set_size']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
     print('Test Set Size: {}'.format(lrd['test_set_size']), file=output_file)
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
@@ -169,14 +170,16 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
-    print('Grid Search Folds: {}'.format(lrd['grid_search_folds']), file=output_file)
+    print('Grid Search Folds: {}'.format(lrd['grid_search_folds']),
+          file=output_file)
     print('Grid Objective Function: {}'.format(lrd['grid_objective']),
           file=output_file)
     print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
           file=output_file)
     print('Scikit-learn Verion: {}'.format(lrd['scikit_learn_version']),
           file=output_file)
-    print('Start Timestamp: {}'.format(lrd['start_timestamp']), file=output_file)
+    print('Start Timestamp: {}'.format(
+        lrd['start_timestamp']), file=output_file)
     print('End Timestamp: {}'.format(lrd['end_timestamp']), file=output_file)
     print('Total Time: {}'.format(lrd['total_time']), file=output_file)
     print('\n', file=output_file)
@@ -634,7 +637,7 @@ def _classify_featureset(args):
             print('\tcross-validating', file=log_file)
             task_results, grid_scores = learner.cross_validate(
                 train_examples, prediction_prefix=prediction_prefix,
-                grid_search=grid_search, grid_search_folds=grid_search_folds,cv_folds=cv_folds,
+                grid_search=grid_search, grid_search_folds=grid_search_folds, cv_folds=cv_folds,
                 grid_objective=grid_objective, param_grid=param_grid,
                 grid_jobs=grid_search_jobs, feature_hasher=feature_hasher)
         else:
@@ -695,7 +698,8 @@ def _classify_featureset(args):
             # do nothing here for train
 
         end_timestamp = datetime.datetime.now()
-        learner_result_dict_base['end_timestamp'] = end_timestamp.strftime('%d %b %Y %H:%M:%S.%f')
+        learner_result_dict_base['end_timestamp'] = end_timestamp.strftime(
+            '%d %b %Y %H:%M:%S.%f')
         total_time = end_timestamp - start_timestamp
         learner_result_dict_base['total_time'] = str(total_time)
 
@@ -990,10 +994,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     for featureset_name in featureset_names:
         if(len(featureset_name) > 210):
             raise OSError('System generated file length "{}" exceeds the maximum length supported. '
-                'Please specify names of your datasets with "featureset_names". If '
-                'you are running ablation experiment, please reduce the length of the features '
-                'in "featuresets" because the auto-generated name would be longer than '
-                'the file system can handle'.format(featureset_name))
+                          'Please specify names of your datasets with "featureset_names". If '
+                          'you are running ablation experiment, please reduce the length of the features '
+                          'in "featuresets" because the auto-generated name would be longer than '
+                          'the file system can handle'.format(featureset_name))
 
     # Run each featureset-learner combination
     for featureset, featureset_name in zip(featuresets, featureset_names):

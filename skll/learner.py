@@ -71,7 +71,7 @@ _DEFAULT_PARAM_GRIDS = {'AdaBoostClassifier': [{'learning_rate': [0.01, 0.1,
                         'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
                                                   100.0]}],
                         'GradientBoostingClassifier': [{'max_depth':
-                                                       [1, 3, 5]}],
+                                                        [1, 3, 5]}],
                         'GradientBoostingRegressor': [{'max_depth': [1, 3,
                                                                      5]}],
                         'KNeighborsClassifier': [{'n_neighbors': [1, 5, 10,
@@ -125,6 +125,7 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 # pylint: disable=W0223,R0903
 class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
+
     '''
     Version of LeaveOneLabelOut cross-validation iterator that only outputs
     indices of instances with IDs in a prespecified set.
@@ -184,6 +185,7 @@ class SelectByMinCount(SelectKBest):
     Select features ocurring in more (and/or fewer than) than a specified
     number of examples in the training data (or a CV training fold).
     """
+
     def __init__(self, min_count=1):
         self.min_count = min_count
         self.scores_ = None
@@ -397,6 +399,7 @@ class RescaledSGDRegressor(SGDRegressor):
 
 
 class Learner(object):
+
     """
     A simpler learner interface around many scikit-learn classification
     and regression functions.
@@ -667,7 +670,8 @@ class Learner(object):
             model_type = self._model_type
             # Ensure kernel argument has right type for Python version
             if model_type == 'SVR' and sys.version_info < (3, 0):
-                self.model_kwargs['kernel'] = self.model_kwargs['kernel'].encode()
+                self.model_kwargs['kernel'] = self.model_kwargs[
+                    'kernel'].encode()
             if self._rescale:
                 model_type = 'Rescaled' + model_type
             # This crazy looking line creates an estimator based on a string
@@ -742,12 +746,14 @@ class Learner(object):
         self.feat_vectorizer = examples.vectorizer
 
         # initialize feature selector
-        self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
+        self.feat_selector = SelectByMinCount(
+            min_count=self._min_feature_count)
 
         # Create scaler if we weren't passed one and it's necessary
         if self._model_type != 'MultinomialNB':
             if self._feature_scaling != 'none':
-                scale_with_mean = self._feature_scaling in ['with_mean', 'both']
+                scale_with_mean = self._feature_scaling in [
+                    'with_mean', 'both']
                 scale_with_std = self._feature_scaling in ['with_std', 'both']
                 self.scaler = StandardScaler(copy=True,
                                              with_mean=scale_with_mean,
@@ -1042,8 +1048,9 @@ class Learner(object):
         # in sparse matrices saves memory over our old list of dicts approach.
         if feature_hasher:
             if self.feat_vectorizer.n_features != examples.vectorizer.n_features:
-                logger.warning("Warning: there is mismatch between the training model features and the data passed to predict.")
-            
+                logger.warning(
+                    "Warning: there is mismatch between the training model features and the data passed to predict.")
+
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
                                    self.feat_vectorizer.n_features,
@@ -1061,7 +1068,8 @@ class Learner(object):
                         examples.features))
         else:
             if(set(self.feat_vectorizer.feature_names_) != set(examples.vectorizer.feature_names_)):
-                logger.warning("Warning: there is mismatch between the training model features and the data passed to predict.")
+                logger.warning(
+                    "Warning: there is mismatch between the training model features and the data passed to predict.")
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
