@@ -863,11 +863,12 @@ class Learner(object):
         np.random.seed(rand_seed)
         logger = logging.getLogger(__name__)
 
-        #check that the grid objective function is valid for the selected learner
+        # if we are asked to do grid search, check that the grid objective
+        # function is valid for the selected learner
         if (self._model_type in _REGRESSION_MODELS and
-                grid_objective not in _REGRESSION_OBJ_FUNCS) or \
-                (self._model_type not in _REGRESSION_MODELS and grid_objective not in
-                    _CLASSIFICATION_OBJ_FUNCS):
+                (grid_search and grid_objective not in _REGRESSION_OBJ_FUNCS)) or \
+           (self._model_type not in _REGRESSION_MODELS and
+                (grid_search and grid_objective not in _CLASSIFICATION_OBJ_FUNCS)):
             raise ValueError(("{} is not a valid grid objective function for the {}"
                               " learner").format(grid_objective, self._model_type))
 
