@@ -48,9 +48,7 @@ def main():
     k = args.k if args.k > 0 else None
 
     learner = Learner.from_file(args.model_file)
-    weights = learner.model_params
-
-    print("Number of nonzero features:", len(weights), file=sys.stderr)
+    (weights, intercept) = learner.model_params
 
     weight_items = iteritems(weights)
     if args.sign == 'positive':
@@ -58,6 +56,17 @@ def main():
     elif args.sign == 'negative':
         weight_items = (x for x in weight_items if x[1] < 0)
 
+    if intercept is not None:
+        # subclass of LinearModel
+        if len(intercept) == 1:
+            print("intercept = {:.12f}".format(intercept[0][1]))
+        else:
+            print("== intercept values ==")
+            for (label, val) in intercept:
+                print("{:.12f}\t{}".format(val, label))
+        print()
+
+    print("Number of nonzero features:", len(weights), file=sys.stderr)
     for feat, val in sorted(weight_items, key=lambda x: -abs(x[1]))[:k]:
         print("{:.12f}\t{}".format(val, feat))
 
