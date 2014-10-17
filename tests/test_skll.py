@@ -365,39 +365,6 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
 
     return (train_fs, test_fs, weightdict)
 
-# def make_regression_data():
-#     num_examples = 2000
-#     num_train_examples = int(num_examples / 2)
-
-#     np.random.seed(1234567890)
-#     f1 = np.random.rand(num_examples)
-#     f2 = np.random.rand(num_examples)
-#     f3 = np.random.rand(num_examples)
-#     err = np.random.randn(num_examples) / 2.0
-#     y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
-#     y = y.tolist()
-
-#     # Write training file
-#     train_dir = join(_my_dir, 'train')
-#     if not exists(train_dir):
-#         os.makedirs(train_dir)
-#     train_path = join(train_dir, 'test_regression1.jsonlines')
-#     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
-#                 range(num_train_examples)]
-#     write_feature_file(train_path, None, y[:num_train_examples], features)
-
-#     # Write test file
-#     test_dir = join(_my_dir, 'test')
-#     if not exists(test_dir):
-#         os.makedirs(test_dir)
-#     test_path = join(test_dir, 'test_regression1.jsonlines')
-#     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
-#                 range(num_train_examples, num_examples)]
-#     write_feature_file(test_path, None, y[num_train_examples: num_examples],
-#                        features)
-#     return y
-
-
 def test_regression1_feature_hasher():
     # This is a bit of a contrived test, but it should fail if anything
     # drastic happens to the regression code.
