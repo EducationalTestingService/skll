@@ -28,7 +28,7 @@ import scipy.sparse as sp
 from nose.tools import (eq_, raises, assert_almost_equal, assert_not_equal,
                         nottest)
 from numpy.testing import assert_array_equal
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification, make_regression
 
 from skll.data import write_feature_file, load_examples, convert_examples
@@ -332,6 +332,7 @@ def test_specified_cv_folds():
 
 def make_regression_data(num_examples=100, train_test_ratio=-0.5,
                          num_features=2, sd_noise=1.0,
+                         use_feature_hashing=False,
                          random_state=1234567890):
 
     # use sklearn's make_regression to generate the data for us
@@ -358,56 +359,32 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
     train_y, test_y = y[:num_train_examples], y[num_train_examples:]
     train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
 
+    # create a FeatureHasher if we are asked to use feature hashing
+    # and use 2.5 times the number of features to be on the safe side
+    vectorizer = FeatureHasher(n_features = round(2.5 * num_features)) if use_feature_hashing else None
     train_fs = FeatureSet('regression_train', ids=train_ids,
-                          classes=train_y, features=train_features)
+                          classes=train_y, features=train_features,
+                          vectorizer=vectorizer)
     test_fs = FeatureSet('regression_test', ids=test_ids,
-                         classes=test_y, features=test_features)
+                         classes=test_y, features=test_features,
+                         vectorizer=vectorizer)
 
     return (train_fs, test_fs, weightdict)
 
-def test_regression1_feature_hasher():
-    # This is a bit of a contrived test, but it should fail if anything
-    # drastic happens to the regression code.
-
-    y = make_regression_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_regression1_feature_hasher.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    config_template_path = "test_regression1_feature_hasher.cfg"
-
-    run_configuration(join(_my_dir, config_path), quiet=True)
-
-    with open(join(_my_dir, 'output',
-                   ('test_regression1_feature_hasher_test_regression1_'
-                    'RescaledRidge.results'))) as f:
-        # check held out scores
-        outstr = f.read()
-        score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
-        assert score > 0.7
-
-    with open(join(_my_dir, 'output', ('test_regression1_feature_hasher_'
-                                       'test_regression1_RescaledRidge'
-                                       '.predictions')), 'r') as f:
-        reader = csv.reader(f, dialect='excel-tab')
-        next(reader)
-        pred = [float(row[1]) for row in reader]
-
-        assert np.min(pred) >= np.min(y)
-        assert np.max(pred) <= np.max(y)
-
-        assert abs(np.mean(pred) - np.mean(y)) < 0.1
-        assert abs(np.std(pred) - np.std(y)) < 0.1
-
-
-def test_regression1():
+# the utility function to run the basic regression tests
+# with or without feature hashing
+def check_regression(use_feature_hashing=False):
     # This is a bit of a contrived test, but it should fail if anything drastic
     # happens to the regression code.
 
     # create a FeatureSet object with the data we want to use
-    train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
-                                                         num_features=3)
+    if use_feature_hashing:
+        train_fs, test_fs, weightdict = make_regression_data(num_examples=5000,
+                                                             num_features=10,
+                                                             use_feature_hashing=True)
+    else:
+        train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
+                                                             num_features=3)
 
     # create a LinearRegression learner
     learner = Learner('LinearRegression')
@@ -416,18 +393,23 @@ def test_regression1():
     # make sure to set the grid objective to pearson
     learner.train(train_fs, grid_objective='pearson')
 
-    # now get the weights of this trained model
-    learned_weights = learner.model_params
 
     # make sure that the weights are close to the weights
     # that we got from make_regression_data. Take the
     # ceiling before  comparing since just comparing
     # the ceilings should be enough to make sure nothing
-    # catastrophic happened
-    for feature_name in learned_weights:
-        learned_w = math.ceil(learned_weights[feature_name])
-        given_w = math.ceil(weightdict[feature_name])
-        assert learned_w == given_w
+    # catastrophic happened. Note though that we cannot
+    # test feature weights if we are using feature hashing
+    # since model_params is not defined with a featurehasher.
+    if not use_feature_hashing:
+
+        # get the weights of this trained model
+        learned_weights = learner.model_params
+
+        for feature_name in learned_weights:
+            learned_w = math.ceil(learned_weights[feature_name])
+            given_w = math.ceil(weightdict[feature_name])
+            assert learned_w == given_w
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
@@ -438,6 +420,16 @@ def test_regression1():
     # make sure that they are correlated with pearson > 0.95
     cor, _ = pearsonr(predictions, test_fs.classes)
     assert cor > 0.95
+
+# run the two tests for regression
+def test_regression():
+
+    # without feature hashing
+    yield check_regression
+
+    # with feature hashing
+    yield check_regression, True
+
 
 def test_predict_feature_hasher():
     '''
