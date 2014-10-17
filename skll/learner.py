@@ -566,12 +566,15 @@ class Learner(object):
         regression and liblinear models.
         '''
         res = {}
+        intercept = None
         if (isinstance(self._model, LinearModel) or
                 (isinstance(self._model, SVR) and
                  self._model.kernel == 'linear')):
             # also includes RescaledRidge, RescaledSVR
+            print("a " + str(self.model))
 
             coef = self.model.coef_
+            intercept = self.model.intercept_
 
             # convert SVR coefficient format (1 x matrix) to array
             if isinstance(self._model, SVR):
@@ -596,7 +599,11 @@ class Learner(object):
                 if coef[idx]:
                     res[feat] = correction * coef[idx]
                     # res[feat] = coef[idx]
+
+            res["intercept"] = self.model.intercept_
         elif isinstance(self._model, BaseLibLinear):
+            print("b " + str(self.model))
+
             label_list = self.label_list
 
             # if there are only two classes, scikit-learn will only have one
@@ -611,13 +618,15 @@ class Learner(object):
                 for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
+
+            intercept = list(zip(label_list, self.model.intercept_))
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
                               " model_params with its current settings."
                               ).format(self._model_type))
 
-        return res
+        return (res, intercept)
 
     @property
     def probability(self):
