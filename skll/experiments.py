@@ -19,11 +19,9 @@ import os
 import sys
 from collections import defaultdict
 from io import open
-from itertools import chain, combinations
+from itertools import combinations
 
 import configparser  # Backported version from Python 3
-import numpy as np
-import scipy.sparse as sp
 from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
@@ -159,10 +157,11 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     lrd = learner_result_dicts[0]
     print('Experiment Name: {}'.format(lrd['experiment_name']),
           file=output_file)
-    print('Timestamp: {}'.format(lrd['timestamp']), file=output_file)
     print('SKLL Version: {}'.format(lrd['version']), file=output_file)
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
+    print('Training Set Size: {}'.format(lrd['train_set_size']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
+    print('Test Set Size: {}'.format(lrd['test_set_size']), file=output_file)
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
     print('Learner: {}'.format(lrd['learner_name']), file=output_file)
     print('Task: {}'.format(lrd['task']), file=output_file)
@@ -175,6 +174,9 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
           file=output_file)
     print('Scikit-learn Verion: {}'.format(lrd['scikit_learn_version']),
           file=output_file)
+    print('Start Timestamp: {}'.format(lrd['start_timestamp']), file=output_file)
+    print('End Timestamp: {}'.format(lrd['end_timestamp']), file=output_file)
+    print('Total Time: {}'.format(lrd['total_time']), file=output_file)
     print('\n', file=output_file)
 
     for lrd in learner_result_dicts:
@@ -527,10 +529,11 @@ def _classify_featureset(args):
     ids_to_floats = args.pop("ids_to_floats")
     class_map = args.pop("class_map")
     quiet = args.pop('quiet', False)
+
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: "
                           "{}").format(args.keys()))
-    timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
+    start_timestamp = datetime.datetime.now()
 
     with open(log_path, 'w') as log_file:
         # logging
@@ -565,6 +568,8 @@ def _classify_featureset(args):
                                               quiet=quiet, class_map=class_map,
                                               feature_hasher=feature_hasher,
                                               num_features=hasher_features)
+
+            train_set_size = len(train_examples.ids)
             if not train_examples.has_classes:
                 raise ValueError('Training examples do not have labels')
             # initialize a classifer object
@@ -578,6 +583,7 @@ def _classify_featureset(args):
                               sampler_kwargs=sampler_parameters)
         # load the model if it already exists
         else:
+            train_set_size = 'unknown'
             if os.path.exists(modelfile) and not overwrite:
                 print(('\tloading pre-existing %s model: %s') % (learner_name,
                                                                  modelfile))
@@ -591,15 +597,20 @@ def _classify_featureset(args):
                                              quiet=quiet, class_map=class_map,
                                              feature_hasher=feature_hasher,
                                              num_features=hasher_features)
+            test_set_size = len(test_examples.ids)
+        else:
+            test_set_size = 'n/a'
 
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
                                     'train_set_name': train_set_name,
+                                    'train_set_size': train_set_size,
                                     'test_set_name': test_set_name,
+                                    'test_set_size': test_set_size,
                                     'featureset': json.dumps(featureset),
                                     'learner_name': learner_name,
                                     'task': task,
-                                    'timestamp': timestamp,
+                                    'start_timestamp': start_timestamp.strftime('%d %b %Y %H:%M:%S.%f'),
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
@@ -674,6 +685,11 @@ def _classify_featureset(args):
                                 prediction_prefix=prediction_prefix,
                                 feature_hasher=feature_hasher)
             # do nothing here for train
+
+        end_timestamp = datetime.datetime.now()
+        learner_result_dict_base['end_timestamp'] = end_timestamp.strftime('%d %b %Y %H:%M:%S.%f')
+        total_time = end_timestamp - start_timestamp
+        learner_result_dict_base['total_time'] = str(total_time)
 
         if task == 'cross_validate' or task == 'evaluate':
             results_json_path = os.path.join(results_path, '{}.results.json'

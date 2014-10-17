@@ -564,14 +564,21 @@ class Learner(object):
         '''
         Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
         regression and liblinear models.
+
+        :returns: Labeled weights and (labeled if more than one) intercept 
+                  value(s)
+        :rtype: tuple of (``weights``, ``intercepts``), where ``weights`` is a 
+                dict and ``intercepts`` is a list of tuples
         '''
         res = {}
+        intercept = None
         if (isinstance(self._model, LinearModel) or
                 (isinstance(self._model, SVR) and
                  self._model.kernel == 'linear')):
             # also includes RescaledRidge, RescaledSVR
 
             coef = self.model.coef_
+            intercept = [(None, self.model.intercept_)]
 
             # convert SVR coefficient format (1 x matrix) to array
             if isinstance(self._model, SVR):
@@ -596,6 +603,7 @@ class Learner(object):
                 if coef[idx]:
                     res[feat] = correction * coef[idx]
                     # res[feat] = coef[idx]
+
         elif isinstance(self._model, BaseLibLinear):
             label_list = self.label_list
 
@@ -611,13 +619,15 @@ class Learner(object):
                 for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
+
+            intercept = list(zip(label_list, self.model.intercept_))
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
                               " model_params with its current settings."
                               ).format(self._model_type))
 
-        return res
+        return (res, intercept)
 
     @property
     def probability(self):
