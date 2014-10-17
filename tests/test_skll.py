@@ -32,17 +32,19 @@ from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification, make_regression
 
 from skll.data import write_feature_file, load_examples, convert_examples
-from skll.data.featureset import FeatureSet
+from skll.data import FeatureSet
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _setup_config_parser,
                               run_ablation)
 from skll.learner import Learner, SelectByMinCount
+from skll.learner import _REGRESSION_MODELS, _DEFAULT_PARAM_GRIDS
 from skll.metrics import kappa
 from skll.utilities import skll_convert
 from skll.utilities.compute_eval_from_predictions import compute_eval_from_predictions
 from scipy.stats import pearsonr
 
 
+_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
                              r'([\-\d\.]+)')
 GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
@@ -427,7 +429,7 @@ def check_regression(use_feature_hashing=False):
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson')
+    learner.train(train_fs, grid_objective='pearson', feature_hasher=use_feature_hashing)
 
     # make sure that the weights are close to the weights
     # that we got from make_regression_data. Take the
@@ -438,7 +440,7 @@ def check_regression(use_feature_hashing=False):
     # since model_params is not defined with a featurehasher.
     if not use_feature_hashing:
 
-        # get the weights of this trained model
+        # get the weights for this trained model
         learned_weights = learner.model_params[0]
 
         for feature_name in learned_weights:
@@ -447,7 +449,7 @@ def check_regression(use_feature_hashing=False):
             assert learned_w == given_w
 
     # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs)
+    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
 
     # now make sure that the predictions are close to
     # the actual test FeatureSet labels that we generated
@@ -456,7 +458,7 @@ def check_regression(use_feature_hashing=False):
     cor, _ = pearsonr(predictions, test_fs.classes)
     assert cor > 0.95
 
-# run the two tests for regression
+# the runner function for the regression tests
 def test_regression():
 
     # without feature hashing
@@ -466,31 +468,89 @@ def test_regression():
     yield check_regression, True
 
 
+def make_classification_data(num_examples=100, train_test_ratio=-0.5,
+                             num_features=10, use_feature_hashing=False,
+                             num_redundant=0, num_classes=2,
+                             class_weights=None, non_negative=False,
+                             random_state=1234567890):
+
+    # use sklearn's make_classification to generate the data for us
+    num_informative = num_features - num_redundant
+    X, y = make_classification(n_samples=num_examples, n_features=num_features,
+                               n_informative=num_informative, n_redundant=num_redundant,
+                               n_classes=num_classes, weights=class_weights,
+                               random_state=random_state)
+
+    # if we were told to only generate non-negative features, then
+    # we can simply take the absolute values of the generated features
+    if non_negative:
+        X = abs(X)
+
+    # since we want to use SKLL's FeatureSet class, we need to
+    # create a list of IDs
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+
+    # create a list of dictionaries as the features
+    feature_names = ['f{}'.format(n) for n in range(1, num_features + 1)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # split everything into training and testing portions
+    num_train_examples = round(train_test_ratio * num_examples)
+    train_features, test_features = (features[:num_train_examples],
+                                     features[num_train_examples:])
+    train_y, test_y = y[:num_train_examples], y[num_train_examples:]
+    train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
+
+    # create a FeatureHasher if we are asked to use feature hashing
+    # and use 2.5 times the number of features to be on the safe side
+    vectorizer = FeatureHasher(n_features = round(2.5 * num_features)) if use_feature_hashing else None
+    train_fs = FeatureSet('classification_train', ids=train_ids,
+                          classes=train_y, features=train_features,
+                          vectorizer=vectorizer)
+    test_fs = FeatureSet('classification_test', ids=test_ids,
+                         classes=test_y, features=test_features,
+                         vectorizer=vectorizer)
+
+    return (train_fs, test_fs)
+
+
+def check_predict(model='LogisticRegression', use_feature_hashing=False):
+    '''
+    This tests whether predict task runs and generates the same
+    number of predictions as samples in the test set. The specified
+    model indicates whether to generate random regression
+    or classification data.
+    '''
+
+    # create the random data for the given model
+    if model in _REGRESSION_MODELS:
+        train_fs, test_fs, _ = make_regression_data(use_feature_hashing=use_feature_hashing)
+    # feature hashing will not work for Naive Bayes since it requires non-negative feature values
+    elif model == 'MultinomialNB':
+        train_fs, test_fs = make_classification_data(use_feature_hashing=False, non_negative=True)
+    else:
+        train_fs, test_fs = make_classification_data(use_feature_hashing=use_feature_hashing)
+
+    # create the learner with the specified model
+    learner = Learner(model)
+
+    # now train the learner on the training data
+    learner.train(train_fs, grid_search=False)
+
+    # now make predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # make sure we have the same number of outputs as the
+    # number of test set samples
+    assert len(predictions) == test_fs.features.shape[0]
+
+
+# the runner function for the prediction tests
 def test_predict():
-    '''
-    This tests whether predict task runs.
-    '''
-
-    make_regression_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_predict.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(join(_my_dir, config_path), quiet=True)
-
-    with open(join(_my_dir, 'test',
-                   'test_regression1.jsonlines')) as test_file:
-        inputs = [x for x in test_file]
-        assert len(inputs) == 1000
-
-    with open(join(_my_dir, 'output', ('test_predict_test_regression1_'
-                                       'RescaledRidge'
-                                       '.predictions'))) as outfile:
-        reader = csv.DictReader(outfile, dialect=csv.excel_tab)
-        predictions = [x['prediction'] for x in reader]
-        assert len(predictions) == len(inputs)
-
+    for model, use_feature_hashing in itertools.product(_ALL_MODELS, [True, False]):
+        yield check_predict, model, use_feature_hashing
 
 def make_summary_data():
     num_train_examples = 500
@@ -564,10 +624,10 @@ def test_summary_feature_hasher():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 21 rows,
+            # the learner results dictionaries should have 24 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 21)
+            eq_(len(row), 24)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -617,10 +677,10 @@ def test_summary():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 21 rows,
+            # the learner results dictionaries should have 24 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 21)
+            eq_(len(row), 24)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
