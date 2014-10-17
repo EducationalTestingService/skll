@@ -158,7 +158,6 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     lrd = learner_result_dicts[0]
     print('Experiment Name: {}'.format(lrd['experiment_name']),
           file=output_file)
-    print('Timestamp: {}'.format(lrd['timestamp']), file=output_file)
     print('SKLL Version: {}'.format(lrd['version']), file=output_file)
     print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
@@ -172,6 +171,9 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
           file=output_file)
     print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
           file=output_file)
+    print('Start Timestamp: {}'.format(lrd['start_timestamp']), file=output_file)
+    print('End Timestamp: {}'.format(lrd['end_timestamp']), file=output_file)
+    print('Total Time: {}'.format(lrd['total_time']), file=output_file)
     print('\n', file=output_file)
 
     for lrd in learner_result_dicts:
@@ -527,7 +529,7 @@ def _classify_featureset(args):
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: "
                           "{}").format(args.keys()))
-    timestamp = datetime.datetime.now().strftime('%d %b %Y %H:%M:%S')
+    start_timestamp = datetime.datetime.now()
 
     with open(log_path, 'w') as log_file:
         # logging
@@ -596,7 +598,7 @@ def _classify_featureset(args):
                                     'featureset': json.dumps(featureset),
                                     'learner_name': learner_name,
                                     'task': task,
-                                    'timestamp': timestamp,
+                                    'start_timestamp': start_timestamp.strftime('%d %b %Y %H:%M:%S.%f'),
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
@@ -670,6 +672,11 @@ def _classify_featureset(args):
                                 prediction_prefix=prediction_prefix,
                                 feature_hasher=feature_hasher)
             # do nothing here for train
+
+        end_timestamp = datetime.datetime.now()
+        learner_result_dict_base['end_timestamp'] = end_timestamp.strftime('%d %b %Y %H:%M:%S.%f')
+        total_time = end_timestamp - start_timestamp
+        learner_result_dict_base['total_time'] = str(total_time)
 
         if task == 'cross_validate' or task == 'evaluate':
             results_json_path = os.path.join(results_path, '{}.results.json'
