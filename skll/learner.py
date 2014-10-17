@@ -749,7 +749,7 @@ class Learner(object):
                                              with_mean=False,
                                              with_std=False)
 
-    def train(self, examples, param_grid=None, grid_search_folds=5,
+    def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective='f1_score_micro',
               grid_jobs=None, shuffle=True, feature_hasher=False):
         '''
@@ -1133,7 +1133,7 @@ class Learner(object):
         return yhat
 
     def cross_validate(self, examples, stratified=True, cv_folds=10,
-                       grid_search=False, grid_search_folds=5, grid_jobs=None,
+                       grid_search=False, grid_search_folds=3, grid_jobs=None,
                        grid_objective='f1_score_micro', prediction_prefix=None,
                        param_grid=None, shuffle=True,
                        feature_hasher=False):

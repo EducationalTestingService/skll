@@ -5,6 +5,7 @@ Functions related to running experiments and parsing configuration files.
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Chee Wee Leong (cleong@ets.org)
 '''
 
 from __future__ import absolute_import, print_function, unicode_literals
@@ -166,6 +167,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
+    print('Grid Search Folds: {}'.format(lrd['grid_search_folds']), file=output_file)
     print('Grid Objective Function: {}'.format(lrd['grid_objective']),
           file=output_file)
     print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
@@ -223,6 +225,7 @@ def _setup_config_parser(config_path):
                                         'feature_scaling': 'none',
                                         'min_feature_count': '1',
                                         'grid_search_jobs': '0',
+                                        'grid_search_folds': '3',
                                         'cv_folds_location': '',
                                         'suffix': '',
                                         'label_col': 'y',
@@ -394,6 +397,9 @@ def _parse_config_file(config_path):
     if not grid_search_jobs:
         grid_search_jobs = None
 
+    # how many folds should we run in parallel for grid search
+    grid_search_folds = config.getint("Tuning", "grid_search_folds")
+
     # what is the objective function for the grid search?
     grid_objective = config.get("Tuning", "objective")
     if grid_objective not in SCORERS:
@@ -436,7 +442,7 @@ def _parse_config_file(config_path):
             feature_hasher, hasher_features, label_col, train_set_name,
             test_set_name, suffix, featuresets, model_path, do_grid_search,
             grid_objective, probability, results_path, pos_label_str,
-            feature_scaling, min_feature_count, grid_search_jobs, cv_folds,
+            feature_scaling, min_feature_count, grid_search_jobs, grid_search_folds, cv_folds,
             fixed_parameter_list, param_grid_list, featureset_names,
             learners, prediction_dir, log_path, train_path, test_path,
             ids_to_floats, class_map)
@@ -517,6 +523,7 @@ def _classify_featureset(args):
     feature_scaling = args.pop("feature_scaling")
     min_feature_count = args.pop("min_feature_count")
     grid_search_jobs = args.pop("grid_search_jobs")
+    grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
     label_col = args.pop("label_col")
     ids_to_floats = args.pop("ids_to_floats")
@@ -599,6 +606,7 @@ def _classify_featureset(args):
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective,
+                                    'grid_search_folds': grid_search_folds,
                                     'min_feature_count': min_feature_count,
                                     'cv_folds': cv_folds}
 
@@ -609,7 +617,7 @@ def _classify_featureset(args):
             print('\tcross-validating', file=log_file)
             task_results, grid_scores = learner.cross_validate(
                 train_examples, prediction_prefix=prediction_prefix,
-                grid_search=grid_search, cv_folds=cv_folds,
+                grid_search=grid_search, grid_search_folds=grid_search_folds,cv_folds=cv_folds,
                 grid_objective=grid_objective, param_grid=param_grid,
                 grid_jobs=grid_search_jobs, feature_hasher=feature_hasher)
         else:
@@ -619,7 +627,7 @@ def _classify_featureset(args):
                        '{} model').format(learner_name),
                       file=log_file)
 
-                grid_search_folds = 5
+                grid_search_folds = 3
                 if not isinstance(cv_folds, int):
                     grid_search_folds = cv_folds
 
@@ -902,7 +910,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      hasher_features, label_col, train_set_name, test_set_name, suffix,
      featuresets, model_path, do_grid_search, grid_objective, probability,
      results_path, pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, cv_folds, fixed_parameter_list, param_grid_list,
+     grid_search_jobs, grid_search_folds, cv_folds, fixed_parameter_list, param_grid_list,
      featureset_names, learners, prediction_dir, log_path, train_path,
      test_path, ids_to_floats, class_map) = _parse_config_file(config_file)
 
@@ -1022,6 +1030,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["feature_scaling"] = feature_scaling
             job_args["min_feature_count"] = min_feature_count
             job_args["grid_search_jobs"] = grid_search_jobs
+            jobs_args["grid_search_folds"] = grid_search_folds
             job_args["cv_folds"] = cv_folds
             job_args["label_col"] = label_col
             job_args["ids_to_floats"] = ids_to_floats
