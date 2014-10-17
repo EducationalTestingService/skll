@@ -552,6 +552,31 @@ def test_predict():
     for model, use_feature_hashing in itertools.product(_ALL_MODELS, [True, False]):
         yield check_predict, model, use_feature_hashing
 
+
+def test_rare_class():
+    '''
+    This is to make sure cross-validation doesn't fail when some classes are
+    very rare, such that they only end up in test folds.
+    '''
+
+    config_template_path = os.path.join(_my_dir, 'configs',
+                                        'test_rare_class.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    config_template_path = "test_rare_class.cfg"
+
+    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
+
+    with open(os.path.join(_my_dir, 'output',
+                           'test_rare_class_test_rare_class_LogisticRegression.predictions'),
+              'r') as f:
+        reader = csv.reader(f, dialect='excel-tab')
+        next(reader)
+        pred = [row[1] for row in reader]
+
+        assert len(pred) == 15
+
+
 def make_summary_data():
     num_train_examples = 500
     num_test_examples = 100
@@ -680,7 +705,7 @@ def test_summary():
             # the learner results dictionaries should have 24 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 24)
+            eq_(len(row), 25)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -1228,6 +1253,22 @@ def test_invalid_weighted_kappa():
 @raises(ValueError)
 def test_invalid_lists_kappa():
     kappa(['a', 'b', 'c'], ['a', 'b', 'c'])
+
+@raises(ValueError)
+def check_invalid_grid_obj_func(learner_name, grid_objective_function):
+    '''
+    Checks whether the grid objective function is
+    valid for this learner
+    '''
+    (train_fs, _, _) = make_regression_data()
+    clf = Learner(learner_name)
+    grid_search_score = clf.train(train_fs, grid_objective=grid_objective_function)
+
+
+def test_invalid_grid_obj_func():
+    yield check_invalid_grid_obj_func, 'LinearRegression', 'r2'
+    yield check_invalid_grid_obj_func, 'SVR', 'accuracy'
+    yield check_invalid_grid_obj_func, 'RandomForestRegressor', 'f1_score_micro'
 
 
 # Tests related to loading featuresets and merging them

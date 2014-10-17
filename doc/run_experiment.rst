@@ -403,6 +403,8 @@ Tuning
         The minimum number of examples for a which each feature must be nonzero
         to be included in the model. Defaults to 1.
 
+    .. _objective_functions:
+
     **objective** *(Optional)*
         The objective function to use for tuning. Valid options are:
 

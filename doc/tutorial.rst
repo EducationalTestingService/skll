@@ -36,5 +36,8 @@ Let's take a look at the options specified in ``iris/evaluate.cfg``.  Here, we a
 
 In the ``Input`` section, you may want to adjust ``train_location`` and ``test_location`` to point to the directories containing the Iris training and testing data (most likely ``skll/examples/iris/train`` and ``skll/examples/iris/test`` respectively, relative to your installation of SKLL).  ``featuresets`` indicates the name of both the training and testing files.  ``suffix`` is the suffix, indicating the type of file that both the training and testing sets are in.
 
-In the ``Output`` section, the arguments to each of these are directories you'd like all of the output of your experiment to go.  This experiment is not configured to serialize the constructed models.
+The ``Tuning`` section defines how we want our model to be tuned.  Setting ``grid_search`` to "True" here employs scikit-learn's `GridSearchCV <http://scikit-learn.org/stable/modules/generated/sklearn.grid_search.GridSearchCV.html#sklearn.grid_search.GridSearchCV>`_ class, which is an implementation of the `standard, brute-force approach to hyperparameter optimization <http://en.wikipedia.org/wiki/Hyperparameter_optimization#Grid_search>`_.  ``objective`` refers to the evaluation metric you'd like to optimize your model for.  Here, "f1_score_micro" will optimize for micro-averaged F1.  **The full list of available objective functions can be found** :ref:`here <objective_functions>`.
 
+In the ``Output`` section, the arguments to each of these are directories you'd like all of the output of your experiment to go.  ``results`` refers to the results of the experiment, and ``log`` refers to log files containing any status, warning, or error messages generated during model training and evaluation.
+
+This experiment is not configured to serialize the constructed models.
