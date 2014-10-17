@@ -44,3 +44,10 @@ In the ``Output`` section, the arguments to each of these are directories you'd 
 
 This experiment is not configured to serialize the constructed models.
 
+Configuration File for the Iris Cross-Validation Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The file ``iris/cross_val.cfg`` almost identical to ``iris/evaluate.cfg``, except that it is configured to do three-fold cross-validation on the training set.  This is indicated by setting ``task`` to "cross_validate" in the ``General`` section.
+
+Configuration File for the Titanic Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
