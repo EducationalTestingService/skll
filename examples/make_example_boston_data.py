@@ -26,6 +26,7 @@ def main():
     '''
     print('Retrieving boston data from servers...', end='')
     boston_data = sklearn.datasets.load_boston()
+    sys.stdout.flush()
     print('done')
     sys.stdout.flush()
 
