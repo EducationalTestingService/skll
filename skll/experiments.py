@@ -475,14 +475,21 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
               the given featureset.
     :rtype: FeatureSet
     '''
-    merged_set = FeatureSet('')
+    merged_set = None
     for file_name in sorted(os.path.join(dir_path, featfile + suffix) for
                             featfile in feat_files):
-        merged_set += load_examples(file_name, label_col=label_col,
-                                    ids_to_floats=ids_to_floats, quiet=quiet,
-                                    class_map=class_map,
-                                    feature_hasher=feature_hasher,
-                                    num_features=num_features)
+
+        fs = load_examples(file_name, label_col=label_col,
+                           ids_to_floats=ids_to_floats, quiet=quiet,
+                           class_map=class_map,
+                           feature_hasher=feature_hasher,
+                           num_features=num_features)
+
+        if merged_set is None:
+            merged_set = fs
+        else:
+            merged_set += fs
+
     return merged_set
 
 

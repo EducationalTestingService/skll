@@ -330,8 +330,40 @@ def test_specified_cv_folds():
     yield check_specified_cv_folds, True
 
 
+def test_feature_merging_order_invariance():
+    '''
+    This tests whether featuresets with different orders of IDs can be merged.
+    '''
+
+    train_fs1, _, _ = make_regression_data()
+    train_fs2, _, _ = make_regression_data(start_feature_num=3)
+
+    # make a reversed copy of feature set 2
+    train_fs2_ids_rev = np.array(list(reversed(train_fs2.ids)))
+    train_fs2_classes_rev = np.array(list(reversed(train_fs2.classes)))
+    train_fs2_features_rev = train_fs2.features.copy()[::-1]
+    train_fs2_rev = FeatureSet("f2_rev",
+                               train_fs2_ids_rev,
+                               classes=train_fs2_classes_rev,
+                               features=train_fs2_features_rev,
+                               vectorizer=train_fs2.vectorizer)
+
+    # merge feature set 1 with feature set 2 and its reversed version
+    merged_fs = train_fs1 + train_fs2
+    merged_fs_rev = train_fs1 + train_fs2_rev
+
+    # check that the two merged versions are the same
+    feature_names = ['f1', 'f2', 'f3', 'f4']
+    assert merged_fs.vectorizer.get_feature_names() == feature_names
+    assert merged_fs_rev.vectorizer.get_feature_names() == feature_names
+    assert np.all(merged_fs.features.todense()
+                  == merged_fs_rev.features.todense())
+    assert np.all(merged_fs.classes == merged_fs_rev.classes)
+    assert np.all(merged_fs.ids == merged_fs_rev.ids)
+
+
 def make_regression_data(num_examples=100, train_test_ratio=-0.5,
-                         num_features=2, sd_noise=1.0,
+                         num_features=2, sd_noise=1.0, start_feature_num=1,
                          random_state=1234567890):
 
     # use sklearn's make_regression to generate the data for us
@@ -343,7 +375,9 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
-    feature_names = ['f{}'.format(n) for n in range(1, num_features + 1)]
+    feature_names = ['f{}'.format(n) for n
+                     in range(start_feature_num,
+                              start_feature_num + num_features)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -357,8 +391,8 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
     train_y, test_y = y[:num_train_examples], y[num_train_examples:]
     train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
 
-    train_fs = FeatureSet('regression_train', ids=train_ids, classes=train_y, features=train_features)
-    test_fs = FeatureSet('regression_test', ids=test_ids, classes=test_y, features=test_features)
+    train_fs = FeatureSet('regression_train', train_ids, classes=train_y, features=train_features)
+    test_fs = FeatureSet('regression_test', test_ids, classes=test_y, features=test_features)
 
     return (train_fs, test_fs, weightdict)
 
@@ -395,42 +429,6 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
 #     return y
 
 
-def test_regression1_feature_hasher():
-    # This is a bit of a contrived test, but it should fail if anything
-    # drastic happens to the regression code.
-
-    y = make_regression_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_regression1_feature_hasher.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    config_template_path = "test_regression1_feature_hasher.cfg"
-
-    run_configuration(join(_my_dir, config_path), quiet=True)
-
-    with open(join(_my_dir, 'output',
-                   ('test_regression1_feature_hasher_test_regression1_'
-                    'RescaledRidge.results'))) as f:
-        # check held out scores
-        outstr = f.read()
-        score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
-        assert score > 0.7
-
-    with open(join(_my_dir, 'output', ('test_regression1_feature_hasher_'
-                                       'test_regression1_RescaledRidge'
-                                       '.predictions')), 'r') as f:
-        reader = csv.reader(f, dialect='excel-tab')
-        next(reader)
-        pred = [float(row[1]) for row in reader]
-
-        assert np.min(pred) >= np.min(y)
-        assert np.max(pred) <= np.max(y)
-
-        assert abs(np.mean(pred) - np.mean(y)) < 0.1
-        assert abs(np.std(pred) - np.std(y)) < 0.1
-
-
 def test_regression1():
     # This is a bit of a contrived test, but it should fail if anything drastic
     # happens to the regression code.
@@ -446,7 +444,7 @@ def test_regression1():
     learner.train(train_fs, grid_objective='pearson')
 
     # now get the weights of this trained model
-    learned_weights = learner.model_params
+    learned_weights = learner.model_params[0]
 
     # make sure that the weights are close to the weights
     # that we got from make_regression_data. Take the
@@ -471,31 +469,6 @@ def test_regression1():
 
     assert abs(np.mean(predictions) - np.mean(test_fs.classes)) < 0.1
     assert abs(np.std(predictions) - np.std(test_fs.classes)) < 0.1
-
-
-def test_predict_feature_hasher():
-    '''
-    This tests whether predict task runs for feature_hasher.
-    '''
-
-    make_regression_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_predict_feature_hasher.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(join(_my_dir, config_path), quiet=True)
-
-    with open(join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
-        inputs = [x for x in test_file]
-        assert len(inputs) == 1000
-
-    with open(join(_my_dir, 'output', ('test_predict_feature_hasher_test'
-                                       '_regression1_RescaledRidge'
-                                       '.predictions'))) as outfile:
-        reader = csv.DictReader(outfile, dialect=csv.excel_tab)
-        predictions = [x['prediction'] for x in reader]
-        assert len(predictions) == len(inputs)
 
 
 def test_predict():
