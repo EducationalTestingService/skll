@@ -6,6 +6,6 @@ For this tutorial, we're going to make use of the examples provided in the ``exa
 1. Get your data into the correct format
 ----------------------------------------
 
-SKLL can work with several common data formats, each of which are described `here <https://skll.readthedocs.org/en/develop/run_experiment.html#feature-file-formats>`_.
+SKLL can work with several common data formats, each of which are described :ref:`here <file_formats>`.
 
 The :ref:`skll_convert` script does useful stuff.

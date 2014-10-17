@@ -21,6 +21,8 @@ things work, do the following from the command prompt:
     $ run_experiment --local evaluate.cfg        # run an experiment
 
 
+.. _file_formats:
+
 Feature file formats
 --------------------
 The following feature file formats are supported:
