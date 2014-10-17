@@ -91,12 +91,14 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     :param result_json_paths: A list of paths to the
                               individual result json files.
     :type result_json_paths: list
-    :return output_file: The output file to contain a summary
-                        of the individual result files.
-    :type output_file: file
+
+    :returns: The output file to contain a summary of the individual result
+              files.
+    :rtype: file
     '''
     learner_result_dicts = []
-    all_features = set()
+    # Map from feature set names to all features in them
+    all_features = defaultdict(set)
     logger = logging.getLogger(__name__)
     for json_path in result_json_paths:
         if not os.path.exists(json_path):
@@ -108,8 +110,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
         else:
             with open(json_path, 'r') as json_file:
                 obj = json.load(json_file)
-                if ablation != 0:
-                    all_features.update(yaml.load(obj[0]['featureset']))
+                if ablation != 0 and '_minus_' in json_path:
+                    parent_set = json_path.split('_minus_', 1)[0]
+                    all_features[parent_set].update(
+                        yaml.load(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
 
     # Build and write header
