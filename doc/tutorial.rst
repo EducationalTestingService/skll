@@ -21,7 +21,7 @@ For this tutorial, we will refer to an "experiment" as having a single data set 
 
 You can consult :ref:`the full list of learners currently available in SKLL <learners>` to get an idea for the things you can do.  As part of this tutorial, we will use the following learners:
 
-* Random Forest (``RandomForestClassifier``), C-Support Vector Classification (``SVC``), Linear Support Vector Classification (``LinearSVC``), Logistic Regression, Multinomial Naïve Bays (``MultinomialNB``) with the **Iris** data set;
+* Random Forest (``RandomForestClassifier``), C-Support Vector Classification (``SVC``), Linear Support Vector Classification (``LinearSVC``), Logistic Regression, Multinomial Naïve Bays (``MultinomialNB``) with the **Iris** example;
 * Random Forest, Decision Tree, C-SVC, and Multinomial Naïve Bayes with the **Titanic** example;
-* RandomForest Regression (``RandomForestRegressor``), Support Vector Regression (``SVR``), and Linear Regression with the **Boston** example.
+* Random Forest Regression (``RandomForestRegressor``), Support Vector Regression (``SVR``), and Linear Regression with the **Boston** example.
 

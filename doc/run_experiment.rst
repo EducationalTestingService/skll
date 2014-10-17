@@ -261,6 +261,8 @@ Input
         Optional list of names for the feature sets.  If omitted, then the
         prefixes will be munged together to make names.
 
+    .. _learners:
+
     **learners** [#]_
         List of scikit-learn models to try using. A separate job will be
         run for each combination of classifier and feature-set.
