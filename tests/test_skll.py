@@ -337,31 +337,53 @@ def test_feature_merging_order_invariance():
     This tests whether featuresets with different orders of IDs can be merged.
     '''
 
+    # First, randomly generate two feature sets and then make sure they have
+    # the same labels.
     train_fs1, _, _ = make_regression_data()
-    train_fs2, _, _ = make_regression_data(start_feature_num=3)
+    train_fs2, _, _ = make_regression_data(start_feature_num=3,
+                                           random_state=87654321)
+    train_fs2.classes = train_fs1.classes.copy()
 
     # make a reversed copy of feature set 2
-    train_fs2_ids_rev = np.array(list(reversed(train_fs2.ids)))
-    train_fs2_classes_rev = np.array(list(reversed(train_fs2.classes)))
-    train_fs2_features_rev = train_fs2.features.copy()[::-1]
-    train_fs2_rev = FeatureSet("f2_rev",
-                               train_fs2_ids_rev,
-                               classes=train_fs2_classes_rev,
-                               features=train_fs2_features_rev,
-                               vectorizer=train_fs2.vectorizer)
+    shuffled_indices = list(range(len(train_fs2.ids)))
+    np.random.seed(123456789)
+    np.random.shuffle(shuffled_indices)
+    train_fs2_ids_shuf = train_fs2.ids[shuffled_indices]
+    train_fs2_classes_shuf = train_fs2.classes[shuffled_indices]
+    train_fs2_features_shuf = train_fs2.features[shuffled_indices]
+    train_fs2_shuf = FeatureSet("f2_shuf",
+                                train_fs2_ids_shuf,
+                                classes=train_fs2_classes_shuf,
+                                features=train_fs2_features_shuf,
+                                vectorizer=train_fs2.vectorizer)
 
     # merge feature set 1 with feature set 2 and its reversed version
     merged_fs = train_fs1 + train_fs2
-    merged_fs_rev = train_fs1 + train_fs2_rev
+    merged_fs_shuf = train_fs1 + train_fs2_shuf
 
     # check that the two merged versions are the same
-    feature_names = ['f1', 'f2', 'f3', 'f4']
+    feature_names = (train_fs1.vectorizer.get_feature_names()
+                     + train_fs2.vectorizer.get_feature_names())
     assert merged_fs.vectorizer.get_feature_names() == feature_names
-    assert merged_fs_rev.vectorizer.get_feature_names() == feature_names
+    assert merged_fs_shuf.vectorizer.get_feature_names() == feature_names
+
+    assert np.all(merged_fs.classes == train_fs1.classes)
+    assert np.all(merged_fs.classes == train_fs2.classes)
+    assert np.all(merged_fs.classes == merged_fs_shuf.classes)
+
+    assert np.all(merged_fs.ids == train_fs1.ids)
+    assert np.all(merged_fs.ids == train_fs2.ids)
+    assert np.all(merged_fs.ids == merged_fs_shuf.ids)
+
+    assert np.all(merged_fs.features[:, 0:2].todense()
+                  == train_fs1.features.todense())
+    assert np.all(merged_fs.features[:, 2:4].todense()
+                  == train_fs2.features.todense())
     assert np.all(merged_fs.features.todense()
-                  == merged_fs_rev.features.todense())
-    assert np.all(merged_fs.classes == merged_fs_rev.classes)
-    assert np.all(merged_fs.ids == merged_fs_rev.ids)
+                  == merged_fs_shuf.features.todense())
+
+    assert not np.all(merged_fs.features[:, 0:2].todense()
+                      == merged_fs.features[:, 2:4].todense())
 
 
 def make_regression_data(num_examples=100, train_test_ratio=-0.5,

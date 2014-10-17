@@ -118,8 +118,8 @@ class FeatureSet(object):
                              'feature set')
         # Compute the relative ordering of IDs for merging the features
         # and labels.
-        ids_indices = dict((y, x) for x, y in enumerate(self.ids))
-        relative_order = [ids_indices[other_id] for other_id in other.ids]
+        ids_indices = dict((y, x) for x, y in enumerate(other.ids))
+        relative_order = [ids_indices[self_id] for self_id in self.ids]
 
         # Initialize the new feature set with a name and the IDs.
         new_set = FeatureSet('+'.join(sorted([self.name, other.name])),
