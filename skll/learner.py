@@ -1031,6 +1031,9 @@ class Learner(object):
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
         if feature_hasher:
+            if self.feat_vectorizer.n_features != examples.vectorizer.n_features:
+                logger.warning("Warning: there is mismatch between the training model features and the data passed to predict.")
+            
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
                                    self.feat_vectorizer.n_features,
@@ -1047,9 +1050,12 @@ class Learner(object):
                     examples.vectorizer.inverse_transform(
                         examples.features))
         else:
+            if(set(self.feat_vectorizer.feature_names_) != set(examples.vectorizer.feature_names_)):
+                logger.warning("Warning: there is mismatch between the training model features and the data passed to predict.")
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
+
                 xtest = self.feat_vectorizer.transform(
                     examples.vectorizer.inverse_transform(
                         examples.features))
