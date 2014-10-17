@@ -26,6 +26,7 @@ from prettytable import PrettyTable, ALL
 from six import string_types, iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn.metrics import SCORERS
+from sklearn import __version__ as SCIKIT_VERSION
 
 from skll.data import FeatureSet, load_examples
 from skll.learner import Learner, MAX_CONCURRENT_PROCESSES
@@ -170,6 +171,8 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Grid Objective Function: {}'.format(lrd['grid_objective']),
           file=output_file)
     print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
+          file=output_file)
+    print('Scikit-learn Verion: {}'.format(lrd['scikit_learn_version']),
           file=output_file)
     print('Start Timestamp: {}'.format(lrd['start_timestamp']), file=output_file)
     print('End Timestamp: {}'.format(lrd['end_timestamp']), file=output_file)
@@ -613,7 +616,8 @@ def _classify_featureset(args):
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective,
                                     'min_feature_count': min_feature_count,
-                                    'cv_folds': cv_folds}
+                                    'cv_folds': cv_folds,
+                                    'scikit_learn_version': SCIKIT_VERSION}
 
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
