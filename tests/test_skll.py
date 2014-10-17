@@ -15,6 +15,7 @@ import csv
 import itertools
 import json
 import glob
+import math
 import os
 import re
 import sys
@@ -28,8 +29,10 @@ from nose.tools import (eq_, raises, assert_almost_equal, assert_not_equal,
                         nottest)
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.datasets.samples_generator import make_classification, make_regression
 
 from skll.data import write_feature_file, load_examples, convert_examples
+from skll.data.featureset import FeatureSet
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _setup_config_parser,
                               run_ablation)
@@ -37,6 +40,7 @@ from skll.learner import Learner, SelectByMinCount
 from skll.metrics import kappa
 from skll.utilities import skll_convert
 from skll.utilities.compute_eval_from_predictions import compute_eval_from_predictions
+from scipy.stats import pearsonr
 
 
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
@@ -326,37 +330,69 @@ def test_specified_cv_folds():
     yield check_specified_cv_folds, True
 
 
-def make_regression_data():
-    num_examples = 2000
-    num_train_examples = int(num_examples / 2)
+def make_regression_data(num_examples=100, train_test_ratio=-0.5,
+                         num_features=2, sd_noise=1.0,
+                         random_state=1234567890):
 
-    np.random.seed(1234567890)
-    f1 = np.random.rand(num_examples)
-    f2 = np.random.rand(num_examples)
-    f3 = np.random.rand(num_examples)
-    err = np.random.randn(num_examples) / 2.0
-    y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
-    y = y.tolist()
+    # use sklearn's make_regression to generate the data for us
+    X, y, weights = make_regression(n_samples=num_examples, n_features=num_features,
+                                    noise=sd_noise, random_state=random_state, coef=True)
 
-    # Write training file
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    train_path = join(train_dir, 'test_regression1.jsonlines')
-    features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
-                range(num_train_examples)]
-    write_feature_file(train_path, None, y[:num_train_examples], features)
+    # since we want to use SKLL's FeatureSet class, we need to
+    # create a list of IDs
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
-    # Write test file
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    test_path = join(test_dir, 'test_regression1.jsonlines')
-    features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
-                range(num_train_examples, num_examples)]
-    write_feature_file(test_path, None, y[num_train_examples: num_examples],
-                       features)
-    return y
+    # create a list of dictionaries as the features
+    feature_names = ['f{}'.format(n) for n in range(1, num_features + 1)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # convert the weights array into a dictionary for convenience
+    weightdict = dict(zip(feature_names, weights))
+
+    # split everything into training and testing portions
+    num_train_examples = round(train_test_ratio * num_examples)
+    train_features, test_features = features[:num_train_examples], features[num_train_examples:]
+    train_y, test_y = y[:num_train_examples], y[num_train_examples:]
+    train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
+
+    train_fs = FeatureSet('regression_train', ids=train_ids, classes=train_y, features=train_features)
+    test_fs = FeatureSet('regression_test', ids=test_ids, classes=test_y, features=test_features)
+
+    return (train_fs, test_fs, weightdict)
+
+# def make_regression_data():
+#     num_examples = 2000
+#     num_train_examples = int(num_examples / 2)
+
+#     np.random.seed(1234567890)
+#     f1 = np.random.rand(num_examples)
+#     f2 = np.random.rand(num_examples)
+#     f3 = np.random.rand(num_examples)
+#     err = np.random.randn(num_examples) / 2.0
+#     y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
+#     y = y.tolist()
+
+#     # Write training file
+#     train_dir = join(_my_dir, 'train')
+#     if not exists(train_dir):
+#         os.makedirs(train_dir)
+#     train_path = join(train_dir, 'test_regression1.jsonlines')
+#     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
+#                 range(num_train_examples)]
+#     write_feature_file(train_path, None, y[:num_train_examples], features)
+
+#     # Write test file
+#     test_dir = join(_my_dir, 'test')
+#     if not exists(test_dir):
+#         os.makedirs(test_dir)
+#     test_path = join(test_dir, 'test_regression1.jsonlines')
+#     features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
+#                 range(num_train_examples, num_examples)]
+#     write_feature_file(test_path, None, y[num_train_examples: num_examples],
+#                        features)
+#     return y
 
 
 def test_regression1_feature_hasher():
@@ -399,35 +435,42 @@ def test_regression1():
     # This is a bit of a contrived test, but it should fail if anything drastic
     # happens to the regression code.
 
-    y = make_regression_data()
+    # create a FeatureSet object with the data we want to use
+    train_fs, test_fs, weightdict = make_regression_data(num_examples=2000, num_features=3)
 
-    config_template_path = join(_my_dir, 'configs',
-                                'test_regression1.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
+    # create a LinearRegression learner
+    learner = Learner('LinearRegression')
 
-    config_template_path = "test_regression1.cfg"
+    # train it with the training feature set we created
+    # make sure to set the grid objective to pearson
+    learner.train(train_fs, grid_objective='pearson')
 
-    run_configuration(join(_my_dir, config_path), quiet=True)
+    # now get the weights of this trained model
+    learned_weights = learner.model_params
 
-    with open(join(_my_dir, 'output', ('test_regression1_test_regression1'
-                                       '_RescaledRidge.results'))) as f:
-        # check held out scores
-        outstr = f.read()
-        score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
-        assert score > 0.7
+    # make sure that the weights are close to the weights
+    # that we got from make_regression_data. Take the
+    # ceiling before  comparing since just comparing
+    # the ceilings should be enough to make sure nothing
+    # catastrophic happened
+    for feature_name in learned_weights:
+        assert math.ceil(learned_weights[feature_name]) == math.ceil(weightdict[feature_name])
 
-    with open(join(_my_dir, 'output', ('test_regression1_test_regression1_'
-                                       'RescaledRidge.predictions')),
-              'r') as f:
-        reader = csv.reader(f, dialect='excel-tab')
-        next(reader)
-        pred = [float(row[1]) for row in reader]
+    # now generate the predictions on the test FeatureSet
+    predictions = learner.predict(test_fs)
 
-        assert np.min(pred) >= np.min(y)
-        assert np.max(pred) <= np.max(y)
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated with pearson > 0.95
+    assert pearsonr(predictions, test_fs.classes) > 0.95
 
-        assert abs(np.mean(pred) - np.mean(y)) < 0.1
-        assert abs(np.std(pred) - np.std(y)) < 0.1
+    # also make sure that the distribution looks okay
+    assert np.min(predictions) >= np.min(test_fs.classes)
+    assert np.max(predictions) <= np.max(test_fs.classes)
+
+    assert abs(np.mean(predictions) - np.mean(test_fs.classes)) < 0.1
+    assert abs(np.std(predictions) - np.std(test_fs.classes)) < 0.1
 
 
 def test_predict_feature_hasher():
