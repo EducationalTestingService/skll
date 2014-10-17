@@ -14,6 +14,10 @@ Should you need your data to be in any number of these formats, or should you li
 
 ``skll_convert`` can also create sparse data files, very useful for speeding up large experiments with lots of zero-valued features.
 
+At minimum you will probably want to work with a training set and a testing set.  You will probably want to place these in **clearly-labeled** directories, since both files **need** to have the same name, and be in the same format, unless they are listed explicitly in your config file.  This will be discussed in the next section.
+
+At this time, utilities necessary to split data into training and testing are not part of SKLL.
+
 2. Create a configuration file for the experiment you'd like to run
 -------------------------------------------------------------------
 
@@ -24,4 +28,13 @@ You can consult :ref:`the full list of learners currently available in SKLL <lea
 * Random Forest (``RandomForestClassifier``), C-Support Vector Classification (``SVC``), Linear Support Vector Classification (``LinearSVC``), Logistic Regression, Multinomial Naïve Bays (``MultinomialNB``) with the **Iris** example;
 * Random Forest, Decision Tree, C-SVC, and Multinomial Naïve Bayes with the **Titanic** example;
 * Random Forest Regression (``RandomForestRegressor``), Support Vector Regression (``SVR``), and Linear Regression with the **Boston** example.
+
+Configuration File for the Iris Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Let's take a look at the options specified in ``iris/evaluate.cfg``.  Here, we are only going to train a model and evaluate its performance, because in the ``General`` section, ``task`` is set to "evaluate".  We will explore the other options for ``task`` later.
+
+In the ``Input`` section, you may want to adjust ``train_location`` and ``test_location`` to point to the directories containing the Iris training and testing data (most likely ``skll/examples/iris/train`` and ``skll/examples/iris/test`` respectively, relative to your installation of SKLL).  ``featuresets`` indicates the name of both the training and testing files.  ``suffix`` is the suffix, indicating the type of file that both the training and testing sets are in.
+
+In the ``Output`` section, the arguments to each of these are directories you'd like all of the output of your experiment to go.  This experiment is not configured to serialize the constructed models.
 
