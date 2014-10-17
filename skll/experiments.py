@@ -961,11 +961,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # allowed
     for featureset_name in featureset_names:
         if(len(featureset_name) > 210):
-            print(featureset_name)
-            raise NameError('The length of file exceeds the maximum length supported.
-                            Please specify names of your datasets with "featureset_names".
-                            If running ablation experiment please reduce the length of
-                            the features in "featuresets". ')
+            raise OSError('System generated file length "{}" exceeds the maximum length supported. '
+                'Please specify names of your datasets with "featureset_names". If '
+                'you are running ablation experiment, please reduce the length of the features '
+                'in "featuresets" because the auto-generated name would be longer than '
+                'the file system can handle'.format(featureset_name))
 
     # Run each featureset-learner combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
