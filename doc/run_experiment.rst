@@ -21,6 +21,8 @@ things work, do the following from the command prompt:
     $ run_experiment --local evaluate.cfg        # run an experiment
 
 
+.. _file_formats:
+
 Feature file formats
 --------------------
 The following feature file formats are supported:
@@ -115,7 +117,7 @@ There are four expected sections in a configuration file: ``General``,
 settings for each section is provided below, but to summarize:
 
 *   If you want to do **cross-validation**, specify a path to training feature
-    files, and set ``task`` to ``cross_validate`` You also can optionally use
+    files, and set ``task`` to ``cross_validate``. Please note that the cross-validation currently uses **StratifiedKFold**. You also can optionally use
     predetermined folds with the ``cv_folds_location`` setting.
 
 *   If you want to **train a model and evaluate it** on some data, specify
@@ -259,6 +261,8 @@ Input
         Optional list of names for the feature sets.  If omitted, then the
         prefixes will be munged together to make names.
 
+    .. _learners:
+
     **learners** [#]_
         List of scikit-learn models to try using. A separate job will be
         run for each combination of classifier and feature-set.
@@ -398,6 +402,8 @@ Tuning
     **min_feature_count** *(Optional)*
         The minimum number of examples for a which each feature must be nonzero
         to be included in the model. Defaults to 1.
+
+    .. _objective_functions:
 
     **objective** *(Optional)*
         The objective function to use for tuning. Valid options are:

@@ -18,6 +18,7 @@ Documentation
    :maxdepth: 3
 
    getting_started
+   tutorial
    run_experiment
    utilities
    skll
