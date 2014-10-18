@@ -577,10 +577,10 @@ def test_summary_feature_hasher():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 24 rows,
+            # the learner results dictionaries should have 26 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 24)
+            eq_(len(row), 26)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -630,10 +630,10 @@ def test_summary():
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 24 rows,
+            # the learner results dictionaries should have 26 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 25)
+            eq_(len(row), 26)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -1185,7 +1185,7 @@ def test_invalid_lists_kappa():
 @raises(ValueError)
 def check_invalid_grid_obj_func(learner_name, grid_objective_function):
     '''
-    Checks whether the grid objective function is 
+    Checks whether the grid objective function is
     valid for this learner
     '''
     (train_fs, _, _) = make_regression_data()

@@ -112,8 +112,9 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
         else:
             with open(json_path, 'r') as json_file:
                 obj = json.load(json_file)
-                if ablation != 0 and '_minus_' in json_path:
-                    parent_set = json_path.split('_minus_', 1)[0]
+                featureset_name = obj[0]['featureset_name']
+                if ablation != 0 and '_minus_' in featureset_name:
+                    parent_set = featureset_name.split('_minus_', 1)[0]
                     all_features[parent_set].update(
                         yaml.load(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
@@ -134,8 +135,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
 
     # Build "ablated_features" list and fix some backward compatible things
     for lrd in learner_result_dicts:
+        featureset_name = lrd['featureset_name']
         if ablation != 0:
-            ablated_features = all_features.difference(
+            parent_set = featureset_name.split('_minus_', 1)[0]
+            ablated_features = all_features[parent_set].difference(
                 yaml.load(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
@@ -516,6 +519,7 @@ def _classify_featureset(args):
     hasher_features = args.pop("hasher_features")
     job_name = args.pop("job_name")
     featureset = args.pop("featureset")
+    featureset_name = args.pop("featureset_name")
     learner_name = args.pop("learner_name")
     train_path = args.pop("train_path")
     test_path = args.pop("test_path")
@@ -622,9 +626,12 @@ def _classify_featureset(args):
                                     'test_set_name': test_set_name,
                                     'test_set_size': test_set_size,
                                     'featureset': json.dumps(featureset),
+                                    'featureset_name': featureset_name,
                                     'learner_name': learner_name,
                                     'task': task,
-                                    'start_timestamp': start_timestamp.strftime('%d %b %Y %H:%M:%S.%f'),
+                                    'start_timestamp': start_timestamp\
+                                                       .strftime('%d %b %Y %H:'
+                                                                 '%M:%S.%f'),
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
@@ -641,9 +648,10 @@ def _classify_featureset(args):
             print('\tcross-validating', file=log_file)
             task_results, grid_scores = learner.cross_validate(
                 train_examples, prediction_prefix=prediction_prefix,
-                grid_search=grid_search, grid_search_folds=grid_search_folds, cv_folds=cv_folds,
-                grid_objective=grid_objective, param_grid=param_grid,
-                grid_jobs=grid_search_jobs, feature_hasher=feature_hasher)
+                grid_search=grid_search, grid_search_folds=grid_search_folds,
+                cv_folds=cv_folds, grid_objective=grid_objective,
+                param_grid=param_grid, grid_jobs=grid_search_jobs,
+                feature_hasher=feature_hasher)
         else:
             # if we have do not have a saved model, we need to train one.
             if not os.path.exists(modelfile) or overwrite:
@@ -996,12 +1004,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # check if the length of the featureset_name exceeds the maximum length
     # allowed
     for featureset_name in featureset_names:
-        if(len(featureset_name) > 210):
-            raise OSError('System generated file length "{}" exceeds the maximum length supported. '
-                          'Please specify names of your datasets with "featureset_names". If '
-                          'you are running ablation experiment, please reduce the length of the features '
-                          'in "featuresets" because the auto-generated name would be longer than '
-                          'the file system can handle'.format(featureset_name))
+        if len(featureset_name) > 210:
+            raise OSError('System generated file length "{}" exceeds the '
+                          'maximum length supported.  Please specify names of '
+                          'your datasets with "featureset_names".  If you are '
+                          'running ablation experiment, please reduce the '
+                          'length of the features in "featuresets" because the'
+                          ' auto-generated name would be longer than the file '
+                          'system can handle'.format(featureset_name))
 
     # Run each featureset-learner combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
@@ -1044,6 +1054,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["hasher_features"] = hasher_features
             job_args["job_name"] = job_name
             job_args["featureset"] = featureset
+            job_args["featureset_name"] = featureset_name
             job_args["learner_name"] = learner_name
             job_args["train_path"] = train_path
             job_args["test_path"] = test_path
