@@ -355,7 +355,7 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
     weightdict = dict(zip(feature_names, weights))
 
     # split everything into training and testing portions
-    num_train_examples = round(train_test_ratio * num_examples)
+    num_train_examples = int(round(train_test_ratio * num_examples))
     train_features, test_features = (features[:num_train_examples],
                                      features[num_train_examples:])
     train_y, test_y = y[:num_train_examples], y[num_train_examples:]
@@ -363,7 +363,7 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
 
     # create a FeatureHasher if we are asked to use feature hashing
     # and use 2.5 times the number of features to be on the safe side
-    vectorizer = FeatureHasher(n_features = round(2.5 * num_features)) if use_feature_hashing else None
+    vectorizer = FeatureHasher(n_features = int(round(2.5 * num_features))) if use_feature_hashing else None
     train_fs = FeatureSet('regression_train', ids=train_ids,
                           classes=train_y, features=train_features,
                           vectorizer=vectorizer)
@@ -461,7 +461,7 @@ def make_classification_data(num_examples=100, train_test_ratio=-0.5,
         features.append(dict(zip(feature_names, row)))
 
     # split everything into training and testing portions
-    num_train_examples = round(train_test_ratio * num_examples)
+    num_train_examples = int(round(train_test_ratio * num_examples))
     train_features, test_features = (features[:num_train_examples],
                                      features[num_train_examples:])
     train_y, test_y = y[:num_train_examples], y[num_train_examples:]
@@ -469,7 +469,7 @@ def make_classification_data(num_examples=100, train_test_ratio=-0.5,
 
     # create a FeatureHasher if we are asked to use feature hashing
     # and use 2.5 times the number of features to be on the safe side
-    vectorizer = FeatureHasher(n_features = round(2.5 * num_features)) if use_feature_hashing else None
+    vectorizer = FeatureHasher(n_features = int(round(2.5 * num_features))) if use_feature_hashing else None
     train_fs = FeatureSet('classification_train', ids=train_ids,
                           classes=train_y, features=train_features,
                           vectorizer=vectorizer)
@@ -626,7 +626,7 @@ def check_summary_score(use_feature_hashing=False):
                             'MultinomialNB'))
 
     for result_score, summary_score, learner_name in test_tuples:
-        eq_(result_score, summary_score, msg=('mismatched scores for {} '
+        assert_almost_equal(result_score, summary_score, msg=('mismatched scores for {} '
                                           '(result:{}, summary:'
                                           '{})').format(learner_name,
                                                         result_score,
