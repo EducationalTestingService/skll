@@ -210,6 +210,9 @@ def _setup_config_parser(config_path):
     '''
     # initialize config parser
     config = configparser.ConfigParser({'test_location': '',
+                                        'train_location': '',
+                                        'train_file': '',
+                                        'test_file': '',
                                         'log': '',
                                         'results': '',
                                         'predictions': '',
@@ -223,6 +226,7 @@ def _setup_config_parser(config_path):
                                         'sampler_parameters': '[]',
                                         'param_grids': '[]',
                                         'pos_label_str': '',
+                                        'featuresets': '[]',
                                         'featureset_names': '[]',
                                         'feature_scaling': 'none',
                                         'min_feature_count': '1',
@@ -292,7 +296,8 @@ def _parse_config_file(config_path):
                             '1.0.  Please use the full name, {}, '
                             'instead.').format(learner, _SHORT_NAMES[learner]))
             learners[i] = _SHORT_NAMES[learner]
-    featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
+    if config.has_option("Input", "featuresets"):
+        featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
     if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
@@ -344,6 +349,36 @@ def _parse_config_file(config_path):
     else:
         cv_folds = 10
 
+    train_file = config.get("Input", "train_file")
+    test_file = config.get("Input", "test_file")
+
+    # The user must specify either train_file or train_path, not both.
+    if not train_file and not train_path:
+        raise ValueError("Invalid [Input] parameters: either \"train_file\"" +
+                         "or \"train_location\" must be specified in the " +
+                         "configuration file.")
+
+    # Either train_file or train_path must be specified.
+    if train_file and train_path:
+        raise ValueError("Invalid [Input] parameters: only either " +
+                         "\"train_file\" or \"train_location\" can be " +
+                         "specified in the configuration file, not both.")
+
+    # if train_file is specified, then assign its value to test_path 
+    # and assign the empty string to the value in the featuresets list;
+    # this is a workaround to make this simple use case (a single train and
+    # test file) compatible with the existing architecture using
+    # featuresets
+    if train_file:
+        train_path = train_file
+        featuresets = [['']]
+        suffix = ''
+
+    # if test_file is specified, then assign its value to test_path to
+    # enable compatibility with the pre-existing featuresets architecture
+    if test_file:
+        test_path = test_file
+
     # Get class mapping dictionary if specified
     if config.has_option("Input", "class_map"):
         orig_class_map = yaml.load(_fix_json(config.get("Input", "class_map")))
@@ -378,12 +413,18 @@ def _parse_config_file(config_path):
         os.makedirs(results_path)
 
     # make sure all the specified paths exist
-    if not os.path.exists(train_path):
-        raise IOError(errno.ENOENT, ("The training path specified in config "
-                                     "file does not exist"), train_path)
+    if train_path and not os.path.exists(train_path):
+        raise IOError(errno.ENOENT, ("The training path specified in the "
+                                     "config file does not exist"), train_path)
     if test_path and not os.path.exists(test_path):
-        raise IOError(errno.ENOENT, ("The test path specified in config "
+        raise IOError(errno.ENOENT, ("The test path specified in the config "
                                      "file does not exist"), test_path)
+    if train_file and not os.path.exists(train_file):
+        raise IOError(errno.ENOENT, ("The training file specified in the "
+                                     "config file does not exist"), train_file)
+    if test_file and not os.path.exists(test_file):
+        raise IOError(errno.ENOENT, ("The test file specified in the config "
+                                     "file does not exist"), test_file)
 
     # Tuning
     # do we need to run a grid search for the hyperparameters or are we just
@@ -405,11 +446,11 @@ def _parse_config_file(config_path):
                           '{}').format(grid_objective))
 
     # check whether the right things are set for the given task
-    if (task == 'evaluate' or task == 'predict') and not test_path:
-        raise ValueError('The test set path must be set when task is evaluate'
+    if (task == 'evaluate' or task == 'predict') and not (test_path or test_file):
+        raise ValueError('The test set must be set when task is evaluate'
                          ' or predict.')
-    if (task == 'cross_validate' or task == 'train') and test_path:
-        raise ValueError('The test set path should not be set ' +
+    if (task == 'cross_validate' or task == 'train') and (test_path or test_file):
+        raise ValueError('The test set should not be set ' +
                          'when task is cross_validate or train.')
     if (task == 'train' or task == 'predict') and results_path:
         raise ValueError('The results path should not be set ' +
@@ -478,8 +519,10 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
     :rtype: FeatureSet
     '''
     merged_set = FeatureSet('')
-    for file_name in sorted(os.path.join(dir_path, featfile + suffix) for
-                            featfile in feat_files):
+    # if the training file is specified via train_file, then dir_path
+    # actually contains the entire file name, and the trailing '/'
+    # character needs to be stripped off, since featfile and suffix are ''
+    for file_name in sorted(os.path.join(dir_path, featfile + suffix).rstrip('/') for featfile in feat_files):
         merged_set += load_examples(file_name, label_col=label_col,
                                     ids_to_floats=ids_to_floats, quiet=quiet,
                                     class_map=class_map,
@@ -981,7 +1024,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
             # for the individual job name, we need to add the feature set name
             # and the learner name
-            job_name_components.extend([featureset_name, learner_name])
+            if featureset_name != '':
+                job_name_components.extend([featureset_name, learner_name])
+            # if featureset_name is not specified, then just omit it from
+            # the job name; this is for the use case in which single
+            # training and test files are specified using train_file and
+            # test_file in the configuration
+            else:
+                job_name_components.extend([learner_name])
             job_name = '_'.join(job_name_components)
 
             # change the prediction prefix to include the feature set
@@ -1053,6 +1103,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                 name=job_name, queue=queue))
             else:
                 _classify_featureset(job_args)
+    test_set_name = os.path.basename(test_path)
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:
