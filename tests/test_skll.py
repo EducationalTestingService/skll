@@ -32,7 +32,7 @@ from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification, make_regression
 
 from skll.data import write_feature_file, load_examples, convert_examples
-from skll.data import FeatureSet
+from skll.data import FeatureSet, NDJWriter
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _setup_config_parser,
                               run_ablation)
@@ -542,128 +542,59 @@ def test_rare_class():
         assert len(pred) == 15
 
 
+# Generate and write out data for the test that checks summary scores
 def make_summary_data():
-    num_train_examples = 500
-    num_test_examples = 100
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_classes=2,
+                                                 num_features=3,
+                                                 non_negative=True)
 
-    np.random.seed(1234567890)
-
-    # Write training file
+    # Write training feature set to a file
     train_path = join(_my_dir, 'train', 'test_summary.jsonlines')
-    classes = []
-    ids = []
-    features = []
-    for i in range(num_train_examples):
-        y = "dog" if i % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, i)
-        x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4),
-             "f3": np.random.randint(1, 4)}
-        classes.append(y)
-        ids.append(ex_id)
-        features.append(x)
-    write_feature_file(train_path, ids, classes, features)
+    writer = NDJWriter(train_path, train_fs)
+    writer.write()
 
-    # Write test file
+    # Write test feature set to a file
     test_path = join(_my_dir, 'test', 'test_summary.jsonlines')
-    classes = []
-    ids = []
-    features = []
-    for i in range(num_test_examples):
-        y = "dog" if i % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, i)
-        x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4),
-             "f3": np.random.randint(1, 4)}
-        classes.append(y)
-        ids.append(ex_id)
-        features.append(x)
-    write_feature_file(test_path, ids, classes, features)
+    writer = NDJWriter(test_path, test_fs)
+    writer.write()
 
 
-def check_summary_score(result_score, summary_score, learner_name):
-    eq_(result_score, summary_score, msg=('mismatched scores for {} '
-                                          '(result:{}, summary:'
-                                          '{})').format(learner_name,
-                                                        result_score,
-                                                        summary_score))
+# Function that checks to make sure that the summary files
+# contain the right results
+def check_summary_score(use_feature_hashing=False):
 
-
-def test_summary_feature_hasher():
-    # Test to validate summary file scores with feature_hasher
-    make_summary_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_summary_feature_hasher.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(config_path, quiet=True)
-
-    with open(join(_my_dir, 'output', ('test_summary_feature_hasher_test_'
-                                       'summary_LogisticRegression'
-                                       '.results'))) as f:
-        outstr = f.read()
-        logistic_result_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
-        logistic_result_score = float(logistic_result_score_str)
-
-    with open(join(_my_dir, 'output', ('test_summary_feature_hasher_test_'
-                                       'summary_SVC.results'))) as f:
-        outstr = f.read()
-        svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
-
-    with open(join(_my_dir, 'output',
-                   'test_summary_feature_hasher_summary.tsv'), 'r') as f:
-        reader = csv.DictReader(f, dialect='excel-tab')
-
-        for row in reader:
-            # the learner results dictionaries should have 24 rows,
-            # and all of these except results_table
-            # should be printed (though some columns will be blank).
-            eq_(len(row), 24)
-            assert row['model_params']
-            assert row['grid_score']
-            assert row['score']
-
-            if row['learner_name'] == 'LogisticRegression':
-                logistic_summary_score = float(row['score'])
-            elif row['learner_name'] == 'SVC':
-                svm_summary_score = float(row['score'])
-
-    for result_score, summary_score, learner_name in [(logistic_result_score,
-                                                       logistic_summary_score,
-                                                       'LogisticRegression'),
-                                                      (svm_result_score,
-                                                       svm_summary_score,
-                                                       'SVC')]:
-        yield check_summary_score, result_score, summary_score, learner_name
-
-
-def test_summary():
     # Test to validate summary file scores
     make_summary_data()
 
-    config_template_path = join(_my_dir, 'configs',
-                                'test_summary.template.cfg')
+    cfgfile = 'test_summary_feature_hasher.template.cfg' if use_feature_hashing else 'test_summary.template.cfg'
+    config_template_path = join(_my_dir, 'configs', cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output', ('test_summary_test_summary_'
-                                       'LogisticRegression.results'))) as f:
-        outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
+    outprefix = 'test_summary_feature_hasher_test_summary' if use_feature_hashing else 'test_summary_test_summary'
+    summprefix = 'test_summary_feature_hasher' if use_feature_hashing else 'test_summary'
 
-    with open(join(_my_dir, 'output', ('test_summary_test_summary_'
-                                       'MultinomialNB.results'))) as f:
+    with open(join(_my_dir, 'output', ('{}_'
+                                       'LogisticRegression.results'.format(outprefix)))) as f:
         outstr = f.read()
-        naivebayes_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
-        naivebayes_result_score = float(naivebayes_score_str)
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(join(_my_dir, 'output',
-                   'test_summary_test_summary_SVC.results')) as f:
+    with open(join(_my_dir, 'output', '{}_SVC.results'.format(outprefix))) as f:
         outstr = f.read()
         svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(join(_my_dir, 'output', 'test_summary_summary.tsv'), 'r') as f:
+    # note that Naive Bayes doesn't work with feature hashing
+    if not use_feature_hashing:
+        with open(join(_my_dir, 'output', ('{}_'
+                                           'MultinomialNB.results'.format(outprefix)))) as f:
+            outstr = f.read()
+            naivebayes_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
+            naivebayes_result_score = float(naivebayes_score_str)
+
+    with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
@@ -682,16 +613,33 @@ def test_summary():
             elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
 
-    for result_score, summary_score, learner_name in [(logistic_result_score,
-                                                       logistic_summary_score,
-                                                       'LogisticRegression'),
-                                                      (naivebayes_result_score,
-                                                       naivebayes_summary_score,
-                                                       'MultinomialNB'),
-                                                      (svm_result_score,
-                                                       svm_summary_score,
-                                                       'SVC')]:
-        yield check_summary_score, result_score, summary_score, learner_name
+    test_tuples = [(logistic_result_score,
+                    logistic_summary_score,
+                    'LogisticRegression'),
+                    (svm_result_score,
+                     svm_summary_score,
+                     'SVC')]
+
+    if not use_feature_hashing:
+        test_tuples.append((naivebayes_result_score,
+                            naivebayes_summary_score,
+                            'MultinomialNB'))
+
+    for result_score, summary_score, learner_name in test_tuples:
+        eq_(result_score, summary_score, msg=('mismatched scores for {} '
+                                          '(result:{}, summary:'
+                                          '{})').format(learner_name,
+                                                        result_score,
+                                                        summary_score))
+
+
+def test_summary():
+
+    # test summary score without feature hashing
+    yield check_summary_score
+
+    # test summary score with feature hashing
+    yield check_summary_score, True
 
 
 def test_backward_compatibility():
