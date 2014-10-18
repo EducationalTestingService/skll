@@ -6,6 +6,7 @@ the future.
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Aoife Cahill (acahill@ets.org)
 '''
 
 from __future__ import (absolute_import, division, print_function,
@@ -1168,20 +1169,34 @@ def test_invalid_lists_kappa():
     kappa(['a', 'b', 'c'], ['a', 'b', 'c'])
 
 @raises(ValueError)
-def check_invalid_grid_obj_func(learner_name, grid_objective_function):
+def check_invalid_regr_grid_obj_func(learner_name, grid_objective_function):
     '''
-    Checks whether the grid objective function is
-    valid for this learner
+    Checks whether the grid objective function is 
+    valid for this regression learner
     '''
     (train_fs, _, _) = make_regression_data()
     clf = Learner(learner_name)
     grid_search_score = clf.train(train_fs, grid_objective=grid_objective_function)
 
 
+
 def test_invalid_grid_obj_func():
-    yield check_invalid_grid_obj_func, 'LinearRegression', 'r2'
-    yield check_invalid_grid_obj_func, 'SVR', 'accuracy'
-    yield check_invalid_grid_obj_func, 'RandomForestRegressor', 'f1_score_micro'
+    for model in ['AdaBoostRegressor', 'DecisionTreeRegressor',
+                  'ElasticNet', 'GradientBoostingRegressor',
+                  'KNeighborsRegressor', 'Lasso',
+                  'LinearRegression', 'RandomForestRegressor',
+                  'Ridge', 'SVR', 'SGDRegressor']:
+        for metric in ['accuracy',
+                       'precision',
+                       'recall',
+                       'f1',
+                       'f1_score_micro',
+                       'f1_score_macro',
+                       'f1_score_weighted',
+                       'f1_score_least_frequent',
+                       'average_precision',
+                       'roc_auc']:
+            yield check_invalid_regr_grid_obj_func, model, metric
 
 
 # Tests related to loading featuresets and merging them
