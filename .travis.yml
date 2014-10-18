@@ -35,7 +35,7 @@ install:
 
 # Run test
 script:
-  - nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG
+  - nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG tests/test_skll.py
 
 # Calculate coverage
 after_success:
