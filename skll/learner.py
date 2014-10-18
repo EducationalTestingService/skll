@@ -146,10 +146,7 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'quadratic_weighted_kappa',
                                   'uwk_off_by_one',
                                   'lwk_off_by_one',
-                                  'qwk_off_by_one',
-                                  'kendall_tau',
-                                  'pearson',
-                                  'spearman'])
+                                  'qwk_off_by_one'])
 
 _REQUIRES_DENSE = frozenset(['AdaBoostClassifier', 'AdaBoostRegressor',
                              'DecisionTreeClassifier', 'DecisionTreeRegressor',
