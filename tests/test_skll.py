@@ -410,7 +410,7 @@ def check_regression(use_feature_hashing=False):
         for feature_name in learned_weights:
             learned_w = math.ceil(learned_weights[feature_name])
             given_w = math.ceil(weightdict[feature_name])
-            assert learned_w == given_w
+            eq_(learned_w, given_w)
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
@@ -509,7 +509,7 @@ def check_predict(model='LogisticRegression', use_feature_hashing=False):
 
     # make sure we have the same number of outputs as the
     # number of test set samples
-    assert len(predictions) == test_fs.features.shape[0]
+    eq_(len(predictions), test_fs.features.shape[0])
 
 
 # the runner function for the prediction tests
