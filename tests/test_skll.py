@@ -6,6 +6,7 @@ the future.
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Aoife Cahill (acahill@ets.org)
 '''
 
 from __future__ import (absolute_import, division, print_function,
@@ -15,6 +16,7 @@ import csv
 import itertools
 import json
 import glob
+import math
 import os
 import re
 import sys
@@ -27,18 +29,23 @@ import scipy.sparse as sp
 from nose.tools import (eq_, raises, assert_almost_equal, assert_not_equal,
                         nottest)
 from numpy.testing import assert_array_equal
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
+from sklearn.datasets.samples_generator import make_classification, make_regression
 
 from skll.data import write_feature_file, load_examples, convert_examples
+from skll.data import FeatureSet, NDJWriter
 from skll.experiments import (_load_featureset, run_configuration,
                               _load_cv_folds, _setup_config_parser,
                               run_ablation)
 from skll.learner import Learner, SelectByMinCount
+from skll.learner import _REGRESSION_MODELS, _DEFAULT_PARAM_GRIDS
 from skll.metrics import kappa
 from skll.utilities import skll_convert
 from skll.utilities.compute_eval_from_predictions import compute_eval_from_predictions
+from scipy.stats import pearsonr
 
 
+_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
                              r'([\-\d\.]+)')
 GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
@@ -326,109 +333,208 @@ def test_specified_cv_folds():
     yield check_specified_cv_folds, True
 
 
-def make_regression_data():
-    num_examples = 2000
-    num_train_examples = int(num_examples / 2)
+def make_regression_data(num_examples=100, train_test_ratio=-0.5,
+                         num_features=2, sd_noise=1.0,
+                         use_feature_hashing=False,
+                         random_state=1234567890):
 
-    np.random.seed(1234567890)
-    f1 = np.random.rand(num_examples)
-    f2 = np.random.rand(num_examples)
-    f3 = np.random.rand(num_examples)
-    err = np.random.randn(num_examples) / 2.0
-    y = 1.0 * f1 + 1.0 * f2 - 2.0 * f3 + err
-    y = y.tolist()
+    # use sklearn's make_regression to generate the data for us
+    X, y, weights = make_regression(n_samples=num_examples, n_features=num_features,
+                                    noise=sd_noise, random_state=random_state, coef=True)
 
-    # Write training file
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    train_path = join(train_dir, 'test_regression1.jsonlines')
-    features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
-                range(num_train_examples)]
-    write_feature_file(train_path, None, y[:num_train_examples], features)
+    # since we want to use SKLL's FeatureSet class, we need to
+    # create a list of IDs
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
-    # Write test file
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    test_path = join(test_dir, 'test_regression1.jsonlines')
-    features = [{"f1": f1[i], "f2": f2[i], "f3": f3[i]} for i in
-                range(num_train_examples, num_examples)]
-    write_feature_file(test_path, None, y[num_train_examples: num_examples],
-                       features)
-    return y
+    # create a list of dictionaries as the features
+    feature_names = ['f{}'.format(n) for n in range(1, num_features + 1)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
 
+    # convert the weights array into a dictionary for convenience
+    weightdict = dict(zip(feature_names, weights))
 
-def test_regression1_feature_hasher():
-    # This is a bit of a contrived test, but it should fail if anything
-    # drastic happens to the regression code.
+    # split everything into training and testing portions
+    num_train_examples = int(round(train_test_ratio * num_examples))
+    train_features, test_features = (features[:num_train_examples],
+                                     features[num_train_examples:])
+    train_y, test_y = y[:num_train_examples], y[num_train_examples:]
+    train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
 
-    y = make_regression_data()
+    # create a FeatureHasher if we are asked to use feature hashing
+    # and use 2.5 times the number of features to be on the safe side
+    vectorizer = FeatureHasher(n_features = int(round(2.5 * num_features))) if use_feature_hashing else None
+    train_fs = FeatureSet('regression_train', ids=train_ids,
+                          classes=train_y, features=train_features,
+                          vectorizer=vectorizer)
+    test_fs = FeatureSet('regression_test', ids=test_ids,
+                         classes=test_y, features=test_features,
+                         vectorizer=vectorizer)
 
-    config_template_path = join(_my_dir, 'configs',
-                                'test_regression1_feature_hasher.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
+    return (train_fs, test_fs, weightdict)
 
-    config_template_path = "test_regression1_feature_hasher.cfg"
-
-    run_configuration(join(_my_dir, config_path), quiet=True)
-
-    with open(join(_my_dir, 'output',
-                   ('test_regression1_feature_hasher_test_regression1_'
-                    'RescaledRidge.results'))) as f:
-        # check held out scores
-        outstr = f.read()
-        score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
-        assert score > 0.7
-
-    with open(join(_my_dir, 'output', ('test_regression1_feature_hasher_'
-                                       'test_regression1_RescaledRidge'
-                                       '.predictions')), 'r') as f:
-        reader = csv.reader(f, dialect='excel-tab')
-        next(reader)
-        pred = [float(row[1]) for row in reader]
-
-        assert np.min(pred) >= np.min(y)
-        assert np.max(pred) <= np.max(y)
-
-        assert abs(np.mean(pred) - np.mean(y)) < 0.1
-        assert abs(np.std(pred) - np.std(y)) < 0.1
-
-
-def test_regression1():
+# the utility function to run the basic regression tests
+# with or without feature hashing
+def check_regression(use_feature_hashing=False):
     # This is a bit of a contrived test, but it should fail if anything drastic
     # happens to the regression code.
 
-    y = make_regression_data()
+    # create a FeatureSet object with the data we want to use
+    if use_feature_hashing:
+        train_fs, test_fs, weightdict = make_regression_data(num_examples=5000,
+                                                             num_features=10,
+                                                             use_feature_hashing=True)
+    else:
+        train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
+                                                             num_features=3)
 
-    config_template_path = join(_my_dir, 'configs',
-                                'test_regression1.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
+    # create a LinearRegression learner
+    learner = Learner('LinearRegression')
 
-    config_template_path = "test_regression1.cfg"
+    # train it with the training feature set we created
+    # make sure to set the grid objective to pearson
+    learner.train(train_fs, grid_objective='pearson', feature_hasher=use_feature_hashing)
 
-    run_configuration(join(_my_dir, config_path), quiet=True)
+    # make sure that the weights are close to the weights
+    # that we got from make_regression_data. Take the
+    # ceiling before  comparing since just comparing
+    # the ceilings should be enough to make sure nothing
+    # catastrophic happened. Note though that we cannot
+    # test feature weights if we are using feature hashing
+    # since model_params is not defined with a featurehasher.
+    if not use_feature_hashing:
 
-    with open(join(_my_dir, 'output', ('test_regression1_test_regression1'
-                                       '_RescaledRidge.results'))) as f:
-        # check held out scores
-        outstr = f.read()
-        score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
-        assert score > 0.7
+        # get the weights for this trained model
+        learned_weights = learner.model_params[0]
 
-    with open(join(_my_dir, 'output', ('test_regression1_test_regression1_'
-                                       'RescaledRidge.predictions')),
-              'r') as f:
-        reader = csv.reader(f, dialect='excel-tab')
-        next(reader)
-        pred = [float(row[1]) for row in reader]
+        for feature_name in learned_weights:
+            learned_w = math.ceil(learned_weights[feature_name])
+            given_w = math.ceil(weightdict[feature_name])
+            eq_(learned_w, given_w)
 
-        assert np.min(pred) >= np.min(y)
-        assert np.max(pred) <= np.max(y)
+    # now generate the predictions on the test FeatureSet
+    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
 
-        assert abs(np.mean(pred) - np.mean(y)) < 0.1
-        assert abs(np.std(pred) - np.std(y)) < 0.1
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated with pearson > 0.95
+    cor, _ = pearsonr(predictions, test_fs.classes)
+    assert cor > 0.95
 
+# the runner function for the regression tests
+def test_regression():
+
+    # without feature hashing
+    yield check_regression
+
+    # with feature hashing
+    yield check_regression, True
+
+
+def make_classification_data(num_examples=100, train_test_ratio=-0.5,
+                             num_features=10, use_feature_hashing=False,
+                             num_redundant=0, num_classes=2,
+                             class_weights=None, non_negative=False,
+                             random_state=1234567890):
+
+    # use sklearn's make_classification to generate the data for us
+    num_informative = num_features - num_redundant
+    X, y = make_classification(n_samples=num_examples, n_features=num_features,
+                               n_informative=num_informative, n_redundant=num_redundant,
+                               n_classes=num_classes, weights=class_weights,
+                               random_state=random_state)
+
+    # if we were told to only generate non-negative features, then
+    # we can simply take the absolute values of the generated features
+    if non_negative:
+        X = abs(X)
+
+    # since we want to use SKLL's FeatureSet class, we need to
+    # create a list of IDs
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+
+    # create a list of dictionaries as the features
+    feature_names = ['f{}'.format(n) for n in range(1, num_features + 1)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # split everything into training and testing portions
+    num_train_examples = int(round(train_test_ratio * num_examples))
+    train_features, test_features = (features[:num_train_examples],
+                                     features[num_train_examples:])
+    train_y, test_y = y[:num_train_examples], y[num_train_examples:]
+    train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
+
+    # create a FeatureHasher if we are asked to use feature hashing
+    # and use 2.5 times the number of features to be on the safe side
+    vectorizer = FeatureHasher(n_features = int(round(2.5 * num_features))) if use_feature_hashing else None
+    train_fs = FeatureSet('classification_train', ids=train_ids,
+                          classes=train_y, features=train_features,
+                          vectorizer=vectorizer)
+    test_fs = FeatureSet('classification_test', ids=test_ids,
+                         classes=test_y, features=test_features,
+                         vectorizer=vectorizer)
+
+    return (train_fs, test_fs)
+
+
+def check_predict(model='LogisticRegression', use_feature_hashing=False):
+    '''
+    This tests whether predict task runs and generates the same
+    number of predictions as samples in the test set. The specified
+    model indicates whether to generate random regression
+    or classification data.
+    '''
+
+    # create the random data for the given model
+    if model in _REGRESSION_MODELS:
+        train_fs, test_fs, _ = make_regression_data(use_feature_hashing=use_feature_hashing)
+    # feature hashing will not work for Naive Bayes since it requires non-negative feature values
+    elif model == 'MultinomialNB':
+        train_fs, test_fs = make_classification_data(use_feature_hashing=False, non_negative=True)
+    else:
+        train_fs, test_fs = make_classification_data(use_feature_hashing=use_feature_hashing)
+
+    # create the learner with the specified model
+    learner = Learner(model)
+
+    # now train the learner on the training data and use feature hashing when specified
+    # and when we are not using a Naive Bayes model
+    learner.train(train_fs, grid_search=False, feature_hasher=use_feature_hashing and model != 'MultinomialNB')
+
+    # now make predictions on the test set
+    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing and model != 'MultinomialNB')
+
+    # make sure we have the same number of outputs as the
+    # number of test set samples
+    eq_(len(predictions), test_fs.features.shape[0])
+
+
+# the runner function for the prediction tests
+def test_predict():
+    for model, use_feature_hashing in itertools.product(_ALL_MODELS, [True, False]):
+        yield check_predict, model, use_feature_hashing
+
+
+# the function to create data with rare classes for cross-validation
+def make_rare_class_data():
+    '''
+    We want to create data that has five instances per class, for three classes
+    and for each instance within the group of 5, there's only a single feature firing
+    '''
+
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 16)]
+    y = [0]*5 + [1]*5 + [2]*5
+    X = np.vstack([np.identity(5), np.identity(5), np.identity(5)])
+    feature_names = ['f{}'.format(i) for i in range(1, 6)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    return FeatureSet('rare-class', ids=ids, features=features, classes=y)
 
 def test_rare_class():
     '''
@@ -436,197 +542,73 @@ def test_rare_class():
     very rare, such that they only end up in test folds.
     '''
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_rare_class.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
+    rare_class_fs = make_rare_class_data()
+    prediction_prefix = join(_my_dir, 'output', 'rare_class')
+    learner = Learner('LogisticRegression')
+    _ = learner.cross_validate(rare_class_fs,
+                               grid_objective='unweighted_kappa',
+                               prediction_prefix=prediction_prefix)
 
-    config_template_path = "test_rare_class.cfg"
-
-    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
-
-    with open(os.path.join(_my_dir, 'output',
-                           'test_rare_class_test_rare_class_LogisticRegression.predictions'),
-              'r') as f:
+    with open(join(_my_dir, 'output', 'rare_class.predictions'), 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
 
         assert len(pred) == 15
 
-
-def test_predict_feature_hasher():
-    '''
-    This tests whether predict task runs for feature_hasher.
-    '''
-
-    make_regression_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_predict_feature_hasher.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(join(_my_dir, config_path), quiet=True)
-
-    with open(join(_my_dir, 'test', 'test_regression1.jsonlines')) as test_file:
-        inputs = [x for x in test_file]
-        assert len(inputs) == 1000
-
-    with open(join(_my_dir, 'output', ('test_predict_feature_hasher_test'
-                                       '_regression1_RescaledRidge'
-                                       '.predictions'))) as outfile:
-        reader = csv.DictReader(outfile, dialect=csv.excel_tab)
-        predictions = [x['prediction'] for x in reader]
-        assert len(predictions) == len(inputs)
-
-
-def test_predict():
-    '''
-    This tests whether predict task runs.
-    '''
-
-    make_regression_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_predict.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(join(_my_dir, config_path), quiet=True)
-
-    with open(join(_my_dir, 'test',
-                   'test_regression1.jsonlines')) as test_file:
-        inputs = [x for x in test_file]
-        assert len(inputs) == 1000
-
-    with open(join(_my_dir, 'output', ('test_predict_test_regression1_'
-                                       'RescaledRidge'
-                                       '.predictions'))) as outfile:
-        reader = csv.DictReader(outfile, dialect=csv.excel_tab)
-        predictions = [x['prediction'] for x in reader]
-        assert len(predictions) == len(inputs)
-
-
+# Generate and write out data for the test that checks summary scores
 def make_summary_data():
-    num_train_examples = 500
-    num_test_examples = 100
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_classes=2,
+                                                 num_features=3,
+                                                 non_negative=True)
 
-    np.random.seed(1234567890)
-
-    # Write training file
+    # Write training feature set to a file
     train_path = join(_my_dir, 'train', 'test_summary.jsonlines')
-    classes = []
-    ids = []
-    features = []
-    for i in range(num_train_examples):
-        y = "dog" if i % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, i)
-        x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4),
-             "f3": np.random.randint(1, 4)}
-        classes.append(y)
-        ids.append(ex_id)
-        features.append(x)
-    write_feature_file(train_path, ids, classes, features)
+    writer = NDJWriter(train_path, train_fs)
+    writer.write()
 
-    # Write test file
+    # Write test feature set to a file
     test_path = join(_my_dir, 'test', 'test_summary.jsonlines')
-    classes = []
-    ids = []
-    features = []
-    for i in range(num_test_examples):
-        y = "dog" if i % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, i)
-        x = {"f1": np.random.randint(1, 4), "f2": np.random.randint(1, 4),
-             "f3": np.random.randint(1, 4)}
-        classes.append(y)
-        ids.append(ex_id)
-        features.append(x)
-    write_feature_file(test_path, ids, classes, features)
+    writer = NDJWriter(test_path, test_fs)
+    writer.write()
 
 
-def check_summary_score(result_score, summary_score, learner_name):
-    eq_(result_score, summary_score, msg=('mismatched scores for {} '
-                                          '(result:{}, summary:'
-                                          '{})').format(learner_name,
-                                                        result_score,
-                                                        summary_score))
+# Function that checks to make sure that the summary files
+# contain the right results
+def check_summary_score(use_feature_hashing=False):
 
-
-def test_summary_feature_hasher():
-    # Test to validate summary file scores with feature_hasher
-    make_summary_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_summary_feature_hasher.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(config_path, quiet=True)
-
-    with open(join(_my_dir, 'output', ('test_summary_feature_hasher_test_'
-                                       'summary_LogisticRegression'
-                                       '.results'))) as f:
-        outstr = f.read()
-        logistic_result_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
-        logistic_result_score = float(logistic_result_score_str)
-
-    with open(join(_my_dir, 'output', ('test_summary_feature_hasher_test_'
-                                       'summary_SVC.results'))) as f:
-        outstr = f.read()
-        svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
-
-    with open(join(_my_dir, 'output',
-                   'test_summary_feature_hasher_summary.tsv'), 'r') as f:
-        reader = csv.DictReader(f, dialect='excel-tab')
-
-        for row in reader:
-            # the learner results dictionaries should have 24 rows,
-            # and all of these except results_table
-            # should be printed (though some columns will be blank).
-            eq_(len(row), 24)
-            assert row['model_params']
-            assert row['grid_score']
-            assert row['score']
-
-            if row['learner_name'] == 'LogisticRegression':
-                logistic_summary_score = float(row['score'])
-            elif row['learner_name'] == 'SVC':
-                svm_summary_score = float(row['score'])
-
-    for result_score, summary_score, learner_name in [(logistic_result_score,
-                                                       logistic_summary_score,
-                                                       'LogisticRegression'),
-                                                      (svm_result_score,
-                                                       svm_summary_score,
-                                                       'SVC')]:
-        yield check_summary_score, result_score, summary_score, learner_name
-
-
-def test_summary():
     # Test to validate summary file scores
     make_summary_data()
 
-    config_template_path = join(_my_dir, 'configs',
-                                'test_summary.template.cfg')
+    cfgfile = 'test_summary_feature_hasher.template.cfg' if use_feature_hashing else 'test_summary.template.cfg'
+    config_template_path = join(_my_dir, 'configs', cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output', ('test_summary_test_summary_'
-                                       'LogisticRegression.results'))) as f:
-        outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
+    outprefix = 'test_summary_feature_hasher_test_summary' if use_feature_hashing else 'test_summary_test_summary'
+    summprefix = 'test_summary_feature_hasher' if use_feature_hashing else 'test_summary'
 
-    with open(join(_my_dir, 'output', ('test_summary_test_summary_'
-                                       'MultinomialNB.results'))) as f:
+    with open(join(_my_dir, 'output', ('{}_'
+                                       'LogisticRegression.results'.format(outprefix)))) as f:
         outstr = f.read()
-        naivebayes_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
-        naivebayes_result_score = float(naivebayes_score_str)
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(join(_my_dir, 'output',
-                   'test_summary_test_summary_SVC.results')) as f:
+    with open(join(_my_dir, 'output', '{}_SVC.results'.format(outprefix))) as f:
         outstr = f.read()
         svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
-    with open(join(_my_dir, 'output', 'test_summary_summary.tsv'), 'r') as f:
+    # note that Naive Bayes doesn't work with feature hashing
+    if not use_feature_hashing:
+        with open(join(_my_dir, 'output', ('{}_'
+                                           'MultinomialNB.results'.format(outprefix)))) as f:
+            outstr = f.read()
+            naivebayes_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
+            naivebayes_result_score = float(naivebayes_score_str)
+
+    with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
@@ -645,16 +627,33 @@ def test_summary():
             elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
 
-    for result_score, summary_score, learner_name in [(logistic_result_score,
-                                                       logistic_summary_score,
-                                                       'LogisticRegression'),
-                                                      (naivebayes_result_score,
-                                                       naivebayes_summary_score,
-                                                       'MultinomialNB'),
-                                                      (svm_result_score,
-                                                       svm_summary_score,
-                                                       'SVC')]:
-        yield check_summary_score, result_score, summary_score, learner_name
+    test_tuples = [(logistic_result_score,
+                    logistic_summary_score,
+                    'LogisticRegression'),
+                    (svm_result_score,
+                     svm_summary_score,
+                     'SVC')]
+
+    if not use_feature_hashing:
+        test_tuples.append((naivebayes_result_score,
+                            naivebayes_summary_score,
+                            'MultinomialNB'))
+
+    for result_score, summary_score, learner_name in test_tuples:
+        assert_almost_equal(result_score, summary_score, msg=('mismatched scores for {} '
+                                          '(result:{}, summary:'
+                                          '{})').format(learner_name,
+                                                        result_score,
+                                                        summary_score))
+
+
+def test_summary():
+
+    # test summary score without feature hashing
+    yield check_summary_score
+
+    # test summary score with feature hashing
+    yield check_summary_score, True
 
 
 def test_backward_compatibility():
@@ -1182,11 +1181,12 @@ def test_invalid_weighted_kappa():
 def test_invalid_lists_kappa():
     kappa(['a', 'b', 'c'], ['a', 'b', 'c'])
 
+
 @raises(ValueError)
-def check_invalid_grid_obj_func(learner_name, grid_objective_function):
+def check_invalid_regr_grid_obj_func(learner_name, grid_objective_function):
     '''
-    Checks whether the grid objective function is 
-    valid for this learner
+    Checks whether the grid objective function is
+    valid for this regression learner
     '''
     (train_fs, _, _) = make_regression_data()
     clf = Learner(learner_name)
@@ -1194,9 +1194,22 @@ def check_invalid_grid_obj_func(learner_name, grid_objective_function):
 
 
 def test_invalid_grid_obj_func():
-    yield check_invalid_grid_obj_func, 'LinearRegression', 'r2'
-    yield check_invalid_grid_obj_func, 'SVR', 'accuracy'
-    yield check_invalid_grid_obj_func, 'RandomForestRegressor', 'f1_score_micro'
+    for model in ['AdaBoostRegressor', 'DecisionTreeRegressor',
+                  'ElasticNet', 'GradientBoostingRegressor',
+                  'KNeighborsRegressor', 'Lasso',
+                  'LinearRegression', 'RandomForestRegressor',
+                  'Ridge', 'SVR', 'SGDRegressor']:
+        for metric in ['accuracy',
+                       'precision',
+                       'recall',
+                       'f1',
+                       'f1_score_micro',
+                       'f1_score_macro',
+                       'f1_score_weighted',
+                       'f1_score_least_frequent',
+                       'average_precision',
+                       'roc_auc']:
+            yield check_invalid_regr_grid_obj_func, model, metric
 
 
 # Tests related to loading featuresets and merging them
