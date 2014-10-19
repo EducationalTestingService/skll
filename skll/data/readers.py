@@ -721,11 +721,16 @@ def safe_float(text, replace_dict=None):
                                                 'dictionary (e.g., class_map):'
                                                 ' {}'.format(text))
     try:
-        return float(text)
+        return int(text)
     except ValueError:
-        return text.decode('utf-8') if PY2 else text
+        try:
+            return float(text)
+        except ValueError:
+            return text.decode('utf-8') if PY2 else text
+        except TypeError:
+            return 0.0
     except TypeError:
-        return 0.0
+        return 0
 
 
 # Constants
