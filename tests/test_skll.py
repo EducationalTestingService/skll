@@ -519,29 +519,42 @@ def test_predict():
         yield check_predict, model, use_feature_hashing
 
 
+# the function to create data with rare classes for cross-validation
+def make_rare_class_data():
+    '''
+    We want to create data that has five instances per class, for three classes
+    and for each instance within the group of 5, there's only a single feature firing
+    '''
+
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 16)]
+    y = [0]*5 + [1]*5 + [2]*5
+    X = np.vstack([np.identity(5), np.identity(5), np.identity(5)])
+    feature_names = ['f{}'.format(i) for i in range(1, 6)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    return FeatureSet('rare-class', ids=ids, features=features, classes=y)
+
 def test_rare_class():
     '''
     This is to make sure cross-validation doesn't fail when some classes are
     very rare, such that they only end up in test folds.
     '''
 
-    config_template_path = os.path.join(_my_dir, 'configs',
-                                        'test_rare_class.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
+    rare_class_fs = make_rare_class_data()
+    prediction_prefix = join(_my_dir, 'output', 'rare_class')
+    learner = Learner('LogisticRegression')
+    _ = learner.cross_validate(rare_class_fs,
+                               grid_objective='unweighted_kappa',
+                               prediction_prefix=prediction_prefix)
 
-    config_template_path = "test_rare_class.cfg"
-
-    run_configuration(os.path.join(_my_dir, config_path), quiet=True)
-
-    with open(os.path.join(_my_dir, 'output',
-                           'test_rare_class_test_rare_class_LogisticRegression.predictions'),
-              'r') as f:
+    with open(join(_my_dir, 'output', 'rare_class.predictions'), 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
 
         assert len(pred) == 15
-
 
 # Generate and write out data for the test that checks summary scores
 def make_summary_data():
@@ -1168,16 +1181,16 @@ def test_invalid_weighted_kappa():
 def test_invalid_lists_kappa():
     kappa(['a', 'b', 'c'], ['a', 'b', 'c'])
 
+
 @raises(ValueError)
 def check_invalid_regr_grid_obj_func(learner_name, grid_objective_function):
     '''
-    Checks whether the grid objective function is 
+    Checks whether the grid objective function is
     valid for this regression learner
     '''
     (train_fs, _, _) = make_regression_data()
     clf = Learner(learner_name)
     grid_search_score = clf.train(train_fs, grid_objective=grid_objective_function)
-
 
 
 def test_invalid_grid_obj_func():
