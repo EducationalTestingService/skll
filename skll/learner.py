@@ -5,6 +5,7 @@ Provides easy-to-use wrapper around scikit-learn.
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Aoife Cahill (acahill@ets.org)
 :organization: ETS
 '''
 # pylint: disable=F0401,W0622,E1002,E1101
@@ -114,32 +115,38 @@ _REGRESSION_MODELS = frozenset(['AdaBoostRegressor', 'DecisionTreeRegressor',
                                 'Ridge', 'SVR', 'SGDRegressor'])
 
 # list of valid grid objective functions for regression and classification models
-# some of these are only valid in certain cases (e.g. binary/integer classes)
-_REGRESSION_OBJ_FUNCS = frozenset(['unweighted_kappa',
-                                   'linear_weighted_kappa',
-                                   'quadratic_weighted_kappa',
-                                   'uwk_off_by_one',
-                                   'lwk_off_by_one',
-                                   'qwk_off_by_one',
-                                   'kendall_tau',
-                                   'pearson',
-                                   'spearman',
-                                   'r2',
-                                   'mean_squared_error'])
+# depending on type of labels
 
-_CLASSIFICATION_OBJ_FUNCS = frozenset(['accuracy',
-                                       'precision',
-                                       'recall',
-                                       'f1',
-                                       'f1_score_micro',
-                                       'f1_score_macro',
-                                       'f1_score_weighted',
-                                       'f1_score_least_frequent',
-                                       'average_precision',
-                                       'roc_auc',
-                                       'kendall_tau',
-                                       'pearson',
-                                       'spearman'])
+_BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
+                                     'linear_weighted_kappa',
+                                     'quadratic_weighted_kappa',
+                                     'uwk_off_by_one',
+                                     'lwk_off_by_one',
+                                     'qwk_off_by_one',
+                                     'kendall_tau',
+                                     'pearson',
+                                     'spearman'])
+
+_REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
+                                        'mean_squared_error'])
+
+_CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
+                                            'precision',
+                                            'recall',
+                                            'f1',
+                                            'f1_score_micro',
+                                            'f1_score_macro',
+                                            'f1_score_weighted',
+                                            'f1_score_least_frequent',
+                                            'average_precision',
+                                            'roc_auc'])
+
+_INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
+                                  'linear_weighted_kappa',
+                                  'quadratic_weighted_kappa',
+                                  'uwk_off_by_one',
+                                  'lwk_off_by_one',
+                                  'qwk_off_by_one'])
 
 _REQUIRES_DENSE = frozenset(['AdaBoostClassifier', 'AdaBoostRegressor',
                              'DecisionTreeClassifier', 'DecisionTreeRegressor',
@@ -597,10 +604,10 @@ class Learner(object):
         Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
         regression and liblinear models.
 
-        :returns: Labeled weights and (labeled if more than one) intercept 
+        :returns: Labeled weights and (labeled if more than one) intercept
                   value(s)
-        :rtype: tuple of (``weights``, ``intercepts``), where ``weights`` is a 
-                dict and ``intercepts`` is a list of tuples
+        :rtype: tuple of (``weights``, ``intercepts``), where ``weights`` is a
+                dict and ``intercepts`` is a dictionary
         '''
         res = {}
         intercept = None
@@ -610,7 +617,7 @@ class Learner(object):
             # also includes RescaledRidge, RescaledSVR
 
             coef = self.model.coef_
-            intercept = [(None, self.model.intercept_)]
+            intercept = {'_intercept_', self.model.intercept_}
 
             # convert SVR coefficient format (1 x matrix) to array
             if isinstance(self._model, SVR):
@@ -652,7 +659,7 @@ class Learner(object):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
 
-            intercept = list(zip(label_list, self.model.intercept_))
+            intercept = dict(zip(label_list, self.model.intercept_))
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
@@ -822,6 +829,7 @@ class Learner(object):
                                              with_mean=False,
                                              with_std=False)
 
+
     def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective='f1_score_micro',
               grid_jobs=None, shuffle=True, feature_hasher=False,
@@ -863,13 +871,52 @@ class Learner(object):
         np.random.seed(rand_seed)
         logger = logging.getLogger(__name__)
 
-        #check that the grid objective function is valid for the selected learner
-        if (self._model_type in _REGRESSION_MODELS and
-                grid_objective not in _REGRESSION_OBJ_FUNCS) or \
-                (self._model_type not in _REGRESSION_MODELS and grid_objective not in
-                    _CLASSIFICATION_OBJ_FUNCS):
-            raise ValueError(("{} is not a valid grid objective function for the {}"
-                              " learner").format(grid_objective, self._model_type))
+        # if we are asked to do grid search, check that the grid objective
+        # function is valid for the selected learner
+        if grid_search:
+            if self.model_type in _REGRESSION_MODELS:
+                # types 2-4 are valid for all regression models
+                if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
+                    raise ValueError("{} is not a valid grid objective "
+                                     "function for the {} learner"
+                                     .format(grid_objective,
+                                             self._model_type))
+            elif grid_objective not in _CLASSIFICATION_ONLY_OBJ_FUNCS:
+                # This is a classifier. Valid objective functions depend on
+                # type of label (int, string, binary)
+
+                if issubclass(examples.classes.dtype.type, int):
+                # If they're ints, class 1 and 2 are valid for classifiers,
+                    if grid_objective not in _INT_CLASS_OBJ_FUNCS:
+                        raise ValueError("{} is not a valid grid objective "
+                                         "function for the {} learner with "
+                                         "integer classes"
+                                         .format(grid_objective,
+                                                 self._model_type))
+
+                elif issubclass(examples.classes.dtype.type, str):
+                    # if all of the labels are strings, only class 1 objectives
+                    # are valid (with a classifier).
+                    raise ValueError("{} is not a valid grid objective "
+                                     "function for the {} learner with string "
+                                     "classes".format(grid_objective,
+                                                      self._model_type))
+
+                elif len(set(examples.classes)) == 2:
+                    # If there are two labels, class 3 objectives are valid for
+                    # classifiers regardless of the type of the label.
+                    if not grid_objective in _BINARY_CLASS_OBJ_FUNCS:
+                        raise ValueError("{} is not a valid grid objective "
+                                         "function for the {} learner with "
+                                         "binary classes"
+                                         .format(grid_objective,
+                                                 self._model_type))
+                elif grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
+                    # simple backoff check for mixed-type classes
+                    raise ValueError("{} is not a valid grid objective "
+                                     "function for the {} learner"
+                                     .format(grid_objective,
+                                             self._model_type))
 
 
         # Shuffle so that the folds are random for the inner grid search CV.
