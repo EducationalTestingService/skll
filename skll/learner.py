@@ -877,40 +877,46 @@ class Learner(object):
             if self.model_type in _REGRESSION_MODELS:
                 # types 2-4 are valid for all regression models
                 if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
-                    raise ValueError(("{} is not a valid grid objective function for the {}"
-                                      " learner").format(grid_objective, self._model_type))
-            else:
+                    raise ValueError("{} is not a valid grid objective "
+                                     "function for the {} learner"
+                                     .format(grid_objective,
+                                             self._model_type))
+            elif grid_objective not in _CLASSIFICATION_ONLY_OBJ_FUNCS:
                 # This is a classifier. Valid objective functions depend on
                 # type of label (int, string, binary)
 
-                if all(isinstance(x, int) for x in examples.classes):
+                if issubclass(examples.classes.dtype.type, int):
                 # If they're ints, class 1 and 2 are valid for classifiers,
-                    if grid_objective not in _INT_CLASS_OBJ_FUNCS or\
-                       grid_objective not in _CLASSIFICATION_ONLY_OBJ_FUNCS:
-                        raise ValueError(("{} is not a valid grid objective function for the {}"
-                                          " learner with integer classes").format(grid_objective,
-                                                                                  self._model_type))
+                    if grid_objective not in _INT_CLASS_OBJ_FUNCS:
+                        raise ValueError("{} is not a valid grid objective "
+                                         "function for the {} learner with "
+                                         "integer classes"
+                                         .format(grid_objective,
+                                                 self._model_type))
 
-                elif all(isinstance(x, str) for x in examples.classes):
+                elif issubclass(examples.classes.dtype.type, str):
                     # if all of the labels are strings, only class 1 objectives
                     # are valid (with a classifier).
-                    if grid_objective not in _CLASSIFICATION_ONLY_OBJ_FUNCS:
-                        raise ValueError(("{} is not a valid grid objective function for the {}"
-                                          " learner with string classes").format(grid_objective,
-                                                                                 self._model_type))
+                    raise ValueError("{} is not a valid grid objective "
+                                     "function for the {} learner with string "
+                                     "classes".format(grid_objective,
+                                                      self._model_type))
 
                 elif len(set(examples.classes)) == 2:
                     # If there are two labels, class 3 objectives are valid for
                     # classifiers regardless of the type of the label.
                     if not grid_objective in _BINARY_CLASS_OBJ_FUNCS:
-                        raise ValueError(("{} is not a valid grid objective function for the {}"
-                                          " learner with binary classes").format(grid_objective,
-                                                                                 self._model_type))
-                else:
-                    #simple backoff check for mixed-type classes
-                    if grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
-                        raise ValueError(("{} is not a valid grid objective function for the {}"
-                                          " learner").format(grid_objective, self._model_type))
+                        raise ValueError("{} is not a valid grid objective "
+                                         "function for the {} learner with "
+                                         "binary classes"
+                                         .format(grid_objective,
+                                                 self._model_type))
+                elif grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
+                    # simple backoff check for mixed-type classes
+                    raise ValueError("{} is not a valid grid objective "
+                                     "function for the {} learner"
+                                     .format(grid_objective,
+                                             self._model_type))
 
 
         # Shuffle so that the folds are random for the inner grid search CV.
