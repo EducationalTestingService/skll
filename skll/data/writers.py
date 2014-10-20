@@ -194,8 +194,7 @@ class DelimitedFileWriter(FeatureSetWriter):
         '''
         # Build list of fieldnames (features + 'id' + label_col)
         fieldnames = set(self.feat_set.vectorizer.get_feature_names())
-        if self.feat_set.has_ids:
-            fieldnames.add('id')
+        fieldnames.add('id')
         if self.feat_set.has_classes:
             fieldnames.add(self.label_col)
         return sorted(fieldnames)
@@ -225,8 +224,7 @@ class DelimitedFileWriter(FeatureSetWriter):
                               'name.').format(self.label_col))
         # Add id column to feat_dict if id is provided
         if 'id' not in feat_dict:
-            if self.feat_set.has_ids:
-                feat_dict['id'] = id_
+            feat_dict['id'] = id_
         else:
             raise ValueError('ID column name "id" already used as feature '
                              'name.')
@@ -376,8 +374,7 @@ class MegaMWriter(FeatureSetWriter):
         Write the current line in the file in MegaM format.
         '''
         # Don't try to add class column if this is label-less data
-        if self.feat_set.has_ids:
-            print('# {}'.format(id_), file=output_file)
+        print('# {}'.format(id_), file=output_file)
         if self.feat_set.has_classes:
             print(class_, end='\t', file=output_file)
         print(self._replace_non_ascii(' '.join(('{} {}'.format(field,
@@ -406,8 +403,7 @@ class NDJWriter(FeatureSetWriter):
         # Don't try to add class column if this is label-less data
         if self.feat_set.has_classes:
             example_dict['y'] = np.asscalar(class_)
-        if self.feat_set.has_ids:
-            example_dict['id'] = np.asscalar(id_)
+        example_dict['id'] = np.asscalar(id_)
         example_dict["x"] = feat_dict
         print(json.dumps(example_dict, sort_keys=True), file=output_file)
 
@@ -469,9 +465,8 @@ class LibSVMWriter(FeatureSetWriter):
                         field_values)), end=' ', file=output_file)
         # Print comment with id and mappings
         print('#', end=' ', file=output_file)
-        if self.feat_set.has_ids:
-            print(self._sanitize('{}'.format(id_)), end='',
-                  file=output_file)
+        print(self._sanitize('{}'.format(id_)), end='',
+              file=output_file)
         print(' |', end=' ', file=output_file)
         if (PY2 and self.feat_set.has_classes and isinstance(class_,
                                                              text_type)):
@@ -561,7 +556,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
          'Please switch to using a Writer (e.g., NDJWriter) directly.',
          DeprecationWarning)
 
-    feature_set = FeatureSet(path, ids=ids, classes=classes, features=features,
+    feature_set = FeatureSet(path, ids, classes=classes, features=features,
                              vectorizer=feat_vectorizer)
 
     writer_args = {}

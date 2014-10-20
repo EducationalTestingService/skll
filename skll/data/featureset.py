@@ -29,7 +29,7 @@ class FeatureSet(object):
 
     :param name: The name of this feature set.
     :type name: str
-    :param ids: Example IDs for this set.  If
+    :param ids: Example IDs for this set.
     :type ids: np.array
     :param classes: Classes for this set.
     :type classes: np.array
@@ -45,7 +45,7 @@ class FeatureSet(object):
        each array must be equal.
     """
 
-    def __init__(self, name, ids=None, classes=None, features=None,
+    def __init__(self, name, ids, classes=None, features=None,
                  vectorizer=None):
         super(FeatureSet, self).__init__()
         self.name = name
@@ -111,61 +111,63 @@ class FeatureSet(object):
         Combine two feature sets to create a new one.  This is done assuming
         they both have the same instances with the same IDs in the same order.
         '''
-        new_set = FeatureSet('+'.join(sorted([self.name, other.name])))
-        # Combine feature matrices and vectorizers
-        if self.features is not None:
-            if not isinstance(self.vectorizer, type(other.vectorizer)):
-                raise ValueError('Cannot combine FeatureSets because they are '
-                                 'not both using the same type of feature '
-                                 'vectorizer (e.g., DictVectorizer, '
-                                 'FeatureHasher)')
-            feature_hasher = isinstance(self.vectorizer, FeatureHasher)
-            if feature_hasher:
-                if (self.vectorizer.n_features !=
-                        other.vectorizer.n_features):
-                    raise ValueError('Cannot combine FeatureSets that uses '
-                                     'FeatureHashers with different values of '
-                                     'n_features setting.')
-            else:
-                # Check for duplicate feature names
-                if (set(self.vectorizer.feature_names_) &
-                        set(other.vectorizer.feature_names_)):
-                    raise ValueError('Cannot combine FeatureSets because they '
-                                     'have duplicate feature names.')
-            num_feats = self.features.shape[1]
-            new_set.features = sp.hstack([self.features, other.features],
-                                         'csr')
-            new_set.vectorizer = deepcopy(self.vectorizer)
-            if not feature_hasher:
-                for feat_name, index in other.vectorizer.vocabulary_.items():
-                    new_set.vectorizer.vocabulary_[feat_name] = (index +
-                                                                 num_feats)
-                other_names = other.vectorizer.feature_names_
-                new_set.vectorizer.feature_names_.extend(other_names)
-        else:
-            new_set.features = deepcopy(other.features)
-            new_set.vectorizer = deepcopy(other.vectorizer)
 
-        # Check that IDs are in the same order
-        if self.has_ids:
-            if other.has_ids and not np.all(self.ids == other.ids):
-                raise ValueError('IDs are not in the same order in each '
-                                 'feature set')
-            else:
-                new_set.ids = deepcopy(self.ids)
-        else:
-            new_set.ids = deepcopy(other.ids)
+        # Check that the sets of IDs are equal
+        if set(self.ids) != set(other.ids):
+            raise ValueError('IDs are not in the same order in each '
+                             'feature set')
+        # Compute the relative ordering of IDs for merging the features
+        # and labels.
+        ids_indices = dict((y, x) for x, y in enumerate(other.ids))
+        relative_order = [ids_indices[self_id] for self_id in self.ids]
 
-        # If either set has labels, check that they don't conflict
+        # Initialize the new feature set with a name and the IDs.
+        new_set = FeatureSet('+'.join(sorted([self.name, other.name])),
+                             deepcopy(self.ids))
+
+        # Combine feature matrices and vectorizers.
+        if not isinstance(self.vectorizer, type(other.vectorizer)):
+            raise ValueError('Cannot combine FeatureSets because they are '
+                             'not both using the same type of feature '
+                             'vectorizer (e.g., DictVectorizer, '
+                             'FeatureHasher)')
+        uses_feature_hasher = isinstance(self.vectorizer, FeatureHasher)
+        if uses_feature_hasher:
+            if (self.vectorizer.n_features !=
+                    other.vectorizer.n_features):
+                raise ValueError('Cannot combine FeatureSets that uses '
+                                 'FeatureHashers with different values of '
+                                 'n_features setting.')
+        else:
+            # Check for duplicate feature names.
+            if (set(self.vectorizer.feature_names_) &
+                    set(other.vectorizer.feature_names_)):
+                raise ValueError('Cannot combine FeatureSets because they '
+                                 'have duplicate feature names.')
+        num_feats = self.features.shape[1]
+
+        new_set.features = sp.hstack([self.features,
+                                      other.features[relative_order]],
+                                     'csr')
+        new_set.vectorizer = deepcopy(self.vectorizer)
+        if not uses_feature_hasher:
+            for feat_name, index in other.vectorizer.vocabulary_.items():
+                new_set.vectorizer.vocabulary_[feat_name] = (index +
+                                                             num_feats)
+            other_names = other.vectorizer.feature_names_
+            new_set.vectorizer.feature_names_.extend(other_names)
+
+        # If either set has labels, check that they don't conflict.
         if self.has_classes:
-            # Classes should be the same for each ExamplesTuple, so store once
-            if other.has_classes and not np.all(self.classes == other.classes):
+            # Classes should be the same for each ExamplesTuple, so store once.
+            if other.has_classes and \
+                    not np.all(self.classes == other.classes[relative_order]):
                 raise ValueError('Feature sets have conflicting labels for '
                                  'examples with the same ID.')
-            else:
-                new_set.classes = deepcopy(self.classes)
+            new_set.classes = deepcopy(self.classes)
         else:
-            new_set.classes = deepcopy(other.classes)
+            new_set.classes = deepcopy(other.classes[relative_order])
+
         return new_set
 
     def filter(self, ids=None, classes=None, features=None, inverse=False):
@@ -289,17 +291,6 @@ class FeatureSet(object):
         if self.classes is not None:
             return not (np.issubdtype(self.classes.dtype, float) and
                         np.isnan(np.min(self.classes)))
-        else:
-            return False
-
-    @property
-    def has_ids(self):
-        '''
-        Whether or not this FeatureSet has any finite IDs.
-        '''
-        if self.ids is not None:
-            return not (np.issubdtype(self.ids.dtype, float) and
-                        np.isnan(np.min(self.ids)))
         else:
             return False
 

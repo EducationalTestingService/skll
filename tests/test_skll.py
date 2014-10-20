@@ -30,7 +30,8 @@ from nose.tools import (eq_, raises, assert_almost_equal, assert_not_equal,
                         nottest)
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
-from sklearn.datasets.samples_generator import make_classification, make_regression
+from sklearn.datasets.samples_generator import (make_classification,
+                                                make_regression)
 
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.data import FeatureSet, NDJWriter
@@ -41,7 +42,8 @@ from skll.learner import Learner, SelectByMinCount
 from skll.learner import _REGRESSION_MODELS, _DEFAULT_PARAM_GRIDS
 from skll.metrics import kappa
 from skll.utilities import skll_convert
-from skll.utilities.compute_eval_from_predictions import compute_eval_from_predictions
+from skll.utilities.compute_eval_from_predictions \
+    import compute_eval_from_predictions
 from scipy.stats import pearsonr
 
 
@@ -210,12 +212,10 @@ def check_specified_cv_folds_feature_hasher(numeric_ids):
 
     # test_cv_folds1.cfg has prespecified folds and should have ~50% accuracy
     # test_cv_folds2.cfg doesn't have prespecified folds and >95% accuracy
-    for experiment_name, test_func, grid_size in [('test_cv_folds1',
-                                                   lambda x: x < 0.6,
-                                                   3),
-                                                  ('test_cv_folds2_feature_hasher',
-                                                   lambda x: x > 0.95,
-                                                   10)]:
+    for experiment_name, test_func, grid_size in \
+        [('test_cv_folds1', lambda x: x < 0.6, 3),
+         ('test_cv_folds2_feature_hasher', lambda x: x > 0.95, 10)]:
+
         config_template_file = '{}.template.cfg'.format(experiment_name)
         config_template_path = join(_my_dir, 'configs', config_template_file)
         config_path = join(_my_dir, fill_in_config_paths(config_template_path))
@@ -333,21 +333,81 @@ def test_specified_cv_folds():
     yield check_specified_cv_folds, True
 
 
+def test_feature_merging_order_invariance():
+    '''
+    This tests whether featuresets with different orders of IDs can be merged.
+    '''
+
+    # First, randomly generate two feature sets and then make sure they have
+    # the same labels.
+    train_fs1, _, _ = make_regression_data()
+    train_fs2, _, _ = make_regression_data(start_feature_num=3,
+                                           random_state=87654321)
+    train_fs2.classes = train_fs1.classes.copy()
+
+    # make a reversed copy of feature set 2
+    shuffled_indices = list(range(len(train_fs2.ids)))
+    np.random.seed(123456789)
+    np.random.shuffle(shuffled_indices)
+    train_fs2_ids_shuf = train_fs2.ids[shuffled_indices]
+    train_fs2_classes_shuf = train_fs2.classes[shuffled_indices]
+    train_fs2_features_shuf = train_fs2.features[shuffled_indices]
+    train_fs2_shuf = FeatureSet("f2_shuf",
+                                train_fs2_ids_shuf,
+                                classes=train_fs2_classes_shuf,
+                                features=train_fs2_features_shuf,
+                                vectorizer=train_fs2.vectorizer)
+
+    # merge feature set 1 with feature set 2 and its reversed version
+    merged_fs = train_fs1 + train_fs2
+    merged_fs_shuf = train_fs1 + train_fs2_shuf
+
+    # check that the two merged versions are the same
+    feature_names = (train_fs1.vectorizer.get_feature_names()
+                     + train_fs2.vectorizer.get_feature_names())
+    assert_array_equal(merged_fs.vectorizer.get_feature_names(), feature_names)
+    assert_array_equal(merged_fs_shuf.vectorizer.get_feature_names(),
+                       feature_names)
+
+    assert_array_equal(merged_fs.classes, train_fs1.classes)
+    assert_array_equal(merged_fs.classes, train_fs2.classes)
+    assert_array_equal(merged_fs.classes, merged_fs_shuf.classes)
+
+    assert_array_equal(merged_fs.ids, train_fs1.ids)
+    assert_array_equal(merged_fs.ids, train_fs2.ids)
+    assert_array_equal(merged_fs.ids, merged_fs_shuf.ids)
+
+    assert_array_equal(merged_fs.features[:, 0:2].todense(),
+                       train_fs1.features.todense())
+    assert_array_equal(merged_fs.features[:, 2:4].todense(),
+                       train_fs2.features.todense())
+    assert_array_equal(merged_fs.features.todense(),
+                       merged_fs_shuf.features.todense())
+
+    assert not np.all(merged_fs.features[:, 0:2].todense()
+                      == merged_fs.features[:, 2:4].todense())
+
+
 def make_regression_data(num_examples=100, train_test_ratio=-0.5,
                          num_features=2, sd_noise=1.0,
                          use_feature_hashing=False,
+                         start_feature_num=1,
                          random_state=1234567890):
 
     # use sklearn's make_regression to generate the data for us
-    X, y, weights = make_regression(n_samples=num_examples, n_features=num_features,
-                                    noise=sd_noise, random_state=random_state, coef=True)
+    X, y, weights = make_regression(n_samples=num_examples,
+                                    n_features=num_features,
+                                    noise=sd_noise, random_state=random_state,
+                                    coef=True)
 
     # since we want to use SKLL's FeatureSet class, we need to
     # create a list of IDs
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
-    feature_names = ['f{}'.format(n) for n in range(1, num_features + 1)]
+    feature_names = ['f{}'.format(n) for n
+                     in range(start_feature_num,
+                              start_feature_num + num_features)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -364,11 +424,12 @@ def make_regression_data(num_examples=100, train_test_ratio=-0.5,
 
     # create a FeatureHasher if we are asked to use feature hashing
     # and use 2.5 times the number of features to be on the safe side
-    vectorizer = FeatureHasher(n_features = int(round(2.5 * num_features))) if use_feature_hashing else None
+    vectorizer = (FeatureHasher(n_features=int(round(2.5 * num_features))) if
+                  use_feature_hashing else None)
     train_fs = FeatureSet('regression_train', ids=train_ids,
                           classes=train_y, features=train_features,
                           vectorizer=vectorizer)
-    test_fs = FeatureSet('regression_test', ids=test_ids,
+    test_fs = FeatureSet('regression_test', test_ids,
                          classes=test_y, features=test_features,
                          vectorizer=vectorizer)
 
@@ -470,7 +531,8 @@ def make_classification_data(num_examples=100, train_test_ratio=-0.5,
 
     # create a FeatureHasher if we are asked to use feature hashing
     # and use 2.5 times the number of features to be on the safe side
-    vectorizer = FeatureHasher(n_features = int(round(2.5 * num_features))) if use_feature_hashing else None
+    vectorizer = (FeatureHasher(n_features=int(round(2.5 * num_features)))
+                  if use_feature_hashing else None)
     train_fs = FeatureSet('classification_train', ids=train_ids,
                           classes=train_y, features=train_features,
                           vectorizer=vectorizer)
@@ -630,9 +692,9 @@ def check_summary_score(use_feature_hashing=False):
     test_tuples = [(logistic_result_score,
                     logistic_summary_score,
                     'LogisticRegression'),
-                    (svm_result_score,
-                     svm_summary_score,
-                     'SVC')]
+                   (svm_result_score,
+                    svm_summary_score,
+                    'SVC')]
 
     if not use_feature_hashing:
         test_tuples.append((naivebayes_result_score,
@@ -640,11 +702,11 @@ def check_summary_score(use_feature_hashing=False):
                             'MultinomialNB'))
 
     for result_score, summary_score, learner_name in test_tuples:
-        assert_almost_equal(result_score, summary_score, msg=('mismatched scores for {} '
-                                          '(result:{}, summary:'
-                                          '{})').format(learner_name,
-                                                        result_score,
-                                                        summary_score))
+        assert_almost_equal(result_score, summary_score,
+                            msg=('mismatched scores for {} '
+                                 '(result:{}, summary:'
+                                 '{})').format(learner_name, result_score,
+                                               summary_score))
 
 
 def test_summary():
@@ -1349,7 +1411,7 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
     feat_vectorizer.fit(features)
     label_map = {label: num for num, label in
                  enumerate(sorted({label for label in classes if
-                 not isinstance(label, (int, float))}))}
+                                   not isinstance(label, (int, float))}))}
     # Add fake item to vectorizer for None
     label_map[None] = '00000'
 

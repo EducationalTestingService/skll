@@ -173,7 +173,7 @@ class Reader(object):
             raise ValueError('The example IDs are not unique in %s.' %
                              self.path_or_list)
 
-        return FeatureSet(self.path_or_list, ids=ids, classes=classes,
+        return FeatureSet(self.path_or_list, ids, classes=classes,
                           features=features, vectorizer=self.vectorizer)
 
 
@@ -231,7 +231,7 @@ class DictListReader(Reader):
         classes = np.array(classes)
         features = self.vectorizer.fit_transform(feat_dicts)
 
-        return FeatureSet('converted', ids=ids, classes=classes,
+        return FeatureSet('converted', ids, classes=classes,
                           features=features, vectorizer=self.vectorizer)
 
 

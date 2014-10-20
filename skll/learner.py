@@ -926,7 +926,7 @@ class Learner(object):
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
-            examples = FeatureSet(examples.name, ids=ids, classes=classes,
+            examples = FeatureSet(examples.name, ids, classes=classes,
                                   features=features,
                                   vectorizer=examples.vectorizer)
 
@@ -1356,7 +1356,7 @@ class Learner(object):
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
-            examples = FeatureSet(examples.name, ids=ids, classes=classes,
+            examples = FeatureSet(examples.name, ids, classes=classes,
                                   features=features,
                                   vectorizer=examples.vectorizer)
 
@@ -1397,7 +1397,7 @@ class Learner(object):
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
             train_set = FeatureSet(examples.name,
-                                   ids=examples.ids[train_index],
+                                   examples.ids[train_index],
                                    classes=examples.classes[train_index],
                                    features=examples.features[train_index],
                                    vectorizer=examples.vectorizer)
@@ -1418,7 +1418,7 @@ class Learner(object):
 
             # Evaluate model
             test_tuple = FeatureSet(examples.name,
-                                    ids=examples.ids[test_index],
+                                    examples.ids[test_index],
                                     classes=examples.classes[test_index],
                                     features=examples.features[test_index],
                                     vectorizer=examples.vectorizer)
