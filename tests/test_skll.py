@@ -14,7 +14,6 @@ from __future__ import (absolute_import, division, print_function,
 
 import csv
 import itertools
-import json
 import glob
 import math
 import os
