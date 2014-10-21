@@ -364,7 +364,7 @@ def _parse_config_file(config_path):
                          "\"train_file\" or \"train_location\" can be " +
                          "specified in the configuration file, not both.")
 
-    # if train_file is specified, then assign its value to test_path 
+    # if train_file is specified, then assign its value to train_path 
     # and assign the empty string to the value in the featuresets list;
     # this is a workaround to make this simple use case (a single train and
     # test file) compatible with the existing architecture using
@@ -446,10 +446,10 @@ def _parse_config_file(config_path):
                           '{}').format(grid_objective))
 
     # check whether the right things are set for the given task
-    if (task == 'evaluate' or task == 'predict') and not (test_path):
+    if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set must be set when task is evaluate'
                          ' or predict.')
-    if (task == 'cross_validate' or task == 'train') and (test_path):
+    if (task == 'cross_validate' or task == 'train') and test_path:
         raise ValueError('The test set should not be set ' +
                          'when task is cross_validate or train.')
     if (task == 'train' or task == 'predict') and results_path:
