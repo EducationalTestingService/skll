@@ -179,8 +179,9 @@ def fill_in_config_paths(config_template_path):
     return new_config_path
 
 
-def make_cv_folds_data(num_examples_per_fold=1000, num_folds=3,
-                       use_feature_hashing=False, random_state=1234567890):
+def make_cv_folds_data(num_examples_per_fold=1000,
+                       num_folds=3,
+                       use_feature_hashing=False):
     '''
     Create data for pre-specified CV folds tests
     with or without feature hashing
@@ -191,7 +192,7 @@ def make_cv_folds_data(num_examples_per_fold=1000, num_folds=3,
     # create the numeric features and the binary classes
     X, _ = make_classification(n_samples=num_total_examples,
                                n_features=3, n_informative=3, n_redundant=0,
-                               n_classes=2, random_state=random_state)
+                               n_classes=2, random_state=1234567890)
     y = np.array([0,1] * int(num_total_examples/2))
 
     # the folds mapping: the first num_examples_per_fold examples
@@ -670,77 +671,87 @@ def test_backward_compatibility():
             assert_almost_equal(float(line.strip()), new_val)
 
 
-def make_sparse_data():
-    # Create training file
-    train_path = join(_my_dir, 'train', 'test_sparse.jsonlines')
-    ids = []
-    classes = []
-    features = []
-    for i in range(1, 101):
-        y = "dog" if i % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, i)
-        # note that f1 and f5 are missing in all instances but f4 is not
-        x = {"f2": i + 1, "f3": i + 2, "f4": i + 5}
-        ids.append(ex_id)
-        classes.append(y)
-        features.append(x)
-    write_feature_file(train_path, ids, classes, features)
-
-    # Create test file
-    test_path = join(_my_dir, 'test', 'test_sparse.jsonlines')
-    ids = []
-    classes = []
-    features = []
-    for i in range(1, 51):
-        y = "dog" if i % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, i)
-        # f1 and f5 are not missing in any instances here but f4 is
-        x = {"f1": i, "f2": i + 2, "f3": i % 10, "f5": i * 2}
-        ids.append(ex_id)
-        classes.append(y)
-        features.append(x)
-    write_feature_file(test_path, ids, classes, features)
-
-
-def test_sparse_feature_hasher_predict():
+def make_sparse_data(use_feature_hashing=False):
     '''
-    Test to validate whether predict works with sparse data and feature_hasher
+    Function to create sparse data with two features always zero
+    in the training set and a different one always zero in the
+    test set
     '''
-    make_sparse_data()
+    # Create training data
+    X, y = make_classification(n_samples=500, n_features=3,
+                               n_informative=3, n_redundant=0,
+                               n_classes=2, random_state=1234567890)
 
-    config_template_path = join(_my_dir, 'configs',
-                                'test_sparse_feature_hasher.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
+    # we need features to be non-negative since we will be
+    # using naive bayes laster
+    X = np.abs(X)
 
-    run_configuration(config_path, quiet=True)
+    # make sure that none of the features are zero
+    X[np.where(X == 0)] += 1
 
-    with open(join(_my_dir, 'output', ('test_sparse_test_sparse_Logistic'
-                                       'Regression.results'))) as f:
-        outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
+    # since we want to use SKLL's FeatureSet class, we need to
+    # create a list of IDs
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 501)]
 
-    assert_almost_equal(logistic_result_score, 0.5)
+    # create a list of dictionaries as the features
+    # with f1 and f5 always 0
+    feature_names = ['f{}'.format(n) for n in range(1, 6)]
+    features = []
+    for row in X:
+        row = [0] + row.tolist() + [0]
+        features.append(dict(zip(feature_names, row)))
+
+    # use a FeatureHasher if we are asked to do feature hashing
+    vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
+    train_fs = FeatureSet('train_sparse', ids=ids,
+                          features=features, classes=y,
+                          vectorizer=vectorizer)
+
+    # now create the test set with f4 always 0 but nothing else
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=2, random_state=1234567890)
+    X = np.abs(X)
+    X[np.where(X == 0)] += 1
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 101)]
+
+    # create a list of dictionaries as the features
+    # with f4 always 0
+    feature_names = ['f{}'.format(n) for n in range(1, 6)]
+    features = []
+    for row in X:
+        row = row.tolist()
+        row = row[:3] + [0] + row[3:]
+        features.append(dict(zip(feature_names, row)))
+
+    test_fs = FeatureSet('test_sparse', ids=ids,
+                         features=features, classes=y,
+                         vectorizer=vectorizer)
+
+    return train_fs, test_fs
+
+
+def check_sparse_feature_predict(use_feature_hashing=False):
+    '''
+    Test to validate whether predict works with sparse data
+    '''
+    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
+
+    # train a linear SVM on the training data and evalute on the testing data
+    learner = Learner('LinearSVC')
+    learner.train(train_fs, feature_hasher=use_feature_hashing, grid_search=False)
+    test_score = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)[1]
+
+    expected_score = 0.52 if use_feature_hashing else 0.45
+    assert_almost_equal(test_score, expected_score)
 
 
 def test_sparse_predict():
     '''
-    Test to validate whether predict works with sparse data
+    Run the check_sparse_feature_predict test with and without feature hashing
     '''
-    make_sparse_data()
-
-    config_template_path = join(_my_dir, 'configs', 'test_sparse.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(config_path, quiet=True)
-
-    with open(join(_my_dir, 'output', ('test_sparse_test_sparse_Logistic'
-                                       'Regression.results'))) as f:
-        outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
-
-    assert_almost_equal(logistic_result_score, 0.5)
+    yield check_sparse_feature_predict, False
+    yield check_sparse_feature_predict, True
 
 
 def make_class_map_data():
