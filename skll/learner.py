@@ -21,7 +21,6 @@ from functools import wraps
 from importlib import import_module
 from multiprocessing import cpu_count
 
-import re
 import joblib
 import numpy as np
 import scipy.sparse as sp
@@ -115,8 +114,8 @@ _REGRESSION_MODELS = frozenset(['AdaBoostRegressor', 'DecisionTreeRegressor',
                                 'LinearRegression', 'RandomForestRegressor',
                                 'Ridge', 'SVR', 'SGDRegressor'])
 
-# list of valid grid objective functions for regression and classification models
-# depending on type of labels
+# list of valid grid objective functions for regression and classification
+# models depending on type of labels
 
 _BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                      'linear_weighted_kappa',
@@ -194,18 +193,22 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
 
 
 def _import_custom_model(custom_model_path, custom_model_name):
+    '''
+    Does the gruntwork of adding the custom model's module to globals.
+    '''
     if not custom_model_path:
-        raise ValueError('custom_model_path was not set\ and learner {}\
-                          was not found.'.format(custom_model_name))
+        raise ValueError('custom_model_path was not set and learner {} '
+                         'was not found.'.format(custom_model_name))
 
-    if not re.search(r'\.py$', custom_model_path):
+    if not custom_model_path.endswith('.py'):
         raise ValueError('custom_model_path must end in .py ({})'
                          .format(custom_model_path))
 
     custom_model_module_name = os.path.basename(custom_model_path)[:-3]
     sys.path.append(os.path.dirname(os.path.abspath(custom_model_path)))
     import_module(custom_model_module_name)
-    globals()[custom_model_name] = getattr(sys.modules[custom_model_module_name], custom_model_name)
+    globals()[custom_model_name] = getattr(sys.modules[custom_model_module_name],
+                                           custom_model_name)
 
 
 def _predict_binary(self, X):
@@ -527,10 +530,13 @@ class Learner(object):
             global _REGRESSION_MODELS
 
             _DEFAULT_PARAM_GRIDS.update({base_model_type: default_param_grid})
-            if hasattr(model_class, 'requires_dense') and model_class.requires_dense():
-                _REQUIRES_DENSE = frozenset(_REQUIRES_DENSE | {base_model_type})
+            if hasattr(model_class, 'requires_dense') and \
+                    model_class.requires_dense():
+                _REQUIRES_DENSE = frozenset(_REQUIRES_DENSE |
+                                            {base_model_type})
 
-            if hasattr(model_class, 'is_regression_model') and model_class.is_regression_model():
+            if hasattr(model_class, 'is_regression_model') and \
+                    model_class.is_regression_model():
                 _REGRESSION_MODELS = frozenset(_REGRESSION_MODELS |
                                                {base_model_type})
 
