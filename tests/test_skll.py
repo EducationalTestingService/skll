@@ -13,8 +13,9 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
-import itertools
 import glob
+import itertools
+import json
 import math
 import os
 import re
@@ -25,8 +26,7 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 import scipy.sparse as sp
-from nose.tools import (eq_, raises, assert_almost_equal, assert_not_equal,
-                        nottest)
+from nose.tools import eq_, raises, assert_almost_equal, assert_not_equal
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import (make_classification,
@@ -192,7 +192,7 @@ def make_cv_folds_data(num_examples_per_fold=1000,
     X, _ = make_classification(n_samples=num_total_examples,
                                n_features=3, n_informative=3, n_redundant=0,
                                n_classes=2, random_state=1234567890)
-    y = np.array([0,1] * int(num_total_examples/2))
+    y = np.array([0, 1] * int(num_total_examples/2))
 
     # the folds mapping: the first num_examples_per_fold examples
     # are in fold 1 the second num_examples_per_fold are in
@@ -256,7 +256,8 @@ def check_specified_cv_folds(use_feature_hashing=False):
 
         assert len(fold_test_scores) == grid_size
         for fold_score in fold_test_scores:
-                assert test_func(fold_score)
+            assert test_func(fold_score)
+
 
 def test_specified_cv_folds():
     yield check_specified_cv_folds, False
@@ -537,16 +538,16 @@ def test_rare_class():
     rare_class_fs = make_rare_class_data()
     prediction_prefix = join(_my_dir, 'output', 'rare_class')
     learner = Learner('LogisticRegression')
-    _ = learner.cross_validate(rare_class_fs,
-                               grid_objective='unweighted_kappa',
-                               prediction_prefix=prediction_prefix)
+    learner.cross_validate(rare_class_fs,
+                           grid_objective='unweighted_kappa',
+                           prediction_prefix=prediction_prefix)
 
-    with open(join(_my_dir, 'output', 'rare_class.predictions'), 'r') as f:
+    with open(prediction_prefix + '.predictions', 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
 
-        assert len(pred) == 15
+        eq_(len(pred), 15)
 
 # Generate and write out data for the test that checks summary scores
 def make_summary_data():
