@@ -923,7 +923,7 @@ def test_ablation_cv_all_combos():
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 220)
 
-    # make sure there are 31 ablated featuresets * 2 learners = 62 results
+    # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
     num_result_files = len(glob.glob(join(_my_dir, 'output',
                                           'ablation_cv_*results')))
@@ -977,7 +977,7 @@ def test_ablation_cv_feature_hasher_all_combos():
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 220)
 
-    # make sure there are 31 ablated featuresets * 2 learners = 62 results
+    # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
     num_result_files = len(glob.glob(join(_my_dir, 'output',
                                           ('ablation_cv_feature_hasher_'
@@ -1482,19 +1482,8 @@ def test_ablation_cv_sampler():
     # lines
     with open(join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
-        for row_num, row in enumerate(reader, 1):
-            if row['ablated_features']:
-                fs_str, ablated_str = row['featureset_name'].split('_minus_')
-                actual_ablated = json.loads(row['ablated_features'])
-            else:
-                fs_str, ablated_str = row['featureset_name'].split('_all')
-                actual_ablated = []
-            expected_fs = fs_str.split('+')
-            expected_ablated = [ablated_str] if ablated_str else []
-            actual_fs = json.loads(row['featureset'])
-            eq_(expected_ablated, actual_ablated)
-            eq_(expected_fs, actual_fs)
-        eq_(row_num, 154)
+        num_rows = check_ablation_rows(reader)
+        eq_(num_rows, 154)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
     num_result_files = len(glob.glob(join(_my_dir, 'output',
@@ -1515,14 +1504,14 @@ def test_ablation_cv_all_combos_sampler():
     run_ablation(config_path, quiet=True, all_combos=True)
 
     # read in the summary file and make sure it has
-    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682
+    # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220
     # lines
     with open(join(_my_dir, 'output', 'ablation_cv_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
-        all_rows = list(reader)
-        eq_(len(all_rows), 682)
+        num_rows = check_ablation_rows(reader)
+        eq_(num_rows, 220)
 
-    # make sure there are 31 ablated featuresets * 2 learners = 62 results
+    # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
     num_result_files = len(glob.glob(join(_my_dir, 'output',
                                           'ablation_cv_*results')))
@@ -1549,19 +1538,8 @@ def test_ablation_cv_feature_hasher_sampler():
     with open(join(_my_dir, 'output',
                    'ablation_cv_feature_hasher_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
-        for row_num, row in enumerate(reader, 1):
-            if row['ablated_features']:
-                fs_str, ablated_str = row['featureset_name'].split('_minus_')
-                actual_ablated = json.loads(row['ablated_features'])
-            else:
-                fs_str, ablated_str = row['featureset_name'].split('_all')
-                actual_ablated = []
-            expected_fs = fs_str.split('+')
-            expected_ablated = [ablated_str] if ablated_str else []
-            actual_fs = json.loads(row['featureset'])
-            eq_(expected_ablated, actual_ablated)
-            eq_(expected_fs, actual_fs)
-        eq_(row_num, 154)
+        num_rows = check_ablation_rows(reader)
+        eq_(num_rows, 154)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
     num_result_files = len(glob.glob(join(_my_dir, 'output',
@@ -1585,26 +1563,15 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
     run_ablation(config_path, quiet=True, all_combos=True)
 
     # read in the summary file and make sure it has
-    # 31 ablated featuresets * (10 folds + 1 average line) * 2 learners = 682
+    # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220
     # lines
     with open(join(_my_dir, 'output',
                    'ablation_cv_feature_hasher_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
-        for row_num, row in enumerate(reader, 1):
-            if row['ablated_features']:
-                fs_str, ablated_str = row['featureset_name'].split('_minus_')
-                actual_ablated = json.loads(row['ablated_features'])
-            else:
-                fs_str, ablated_str = row['featureset_name'].split('_all')
-                actual_ablated = []
-            expected_fs = fs_str.split('+')
-            expected_ablated = [ablated_str] if ablated_str else []
-            actual_fs = json.loads(row['featureset'])
-            eq_(expected_ablated, actual_ablated)
-            eq_(expected_fs, actual_fs)
-        eq_(row_num, 682)
+        num_rows = check_ablation_rows(reader)
+        eq_(num_rows, 220)
 
-    # make sure there are 31 ablated featuresets * 2 learners = 62 results
+    # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
     num_result_files = len(glob.glob(join(_my_dir, 'output',
                                           ('ablation_cv_feature_hasher_'
