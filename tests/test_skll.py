@@ -318,7 +318,7 @@ def test_feature_merging_order_invariance():
                       == merged_fs.features[:, 2:4].todense())
 
 
-def make_regression_data(num_examples=100, train_test_ratio=-0.5,
+def make_regression_data(num_examples=100, train_test_ratio=0.5,
                          num_features=2, sd_noise=1.0,
                          use_feature_hashing=False,
                          start_feature_num=1,
@@ -424,7 +424,7 @@ def test_regression():
     yield check_regression, True
 
 
-def make_classification_data(num_examples=100, train_test_ratio=-0.5,
+def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              num_features=10, use_feature_hashing=False,
                              num_redundant=0, num_classes=2,
                              class_weights=None, non_negative=False,
