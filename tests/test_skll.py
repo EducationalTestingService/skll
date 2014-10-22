@@ -969,7 +969,7 @@ def test_ablation_cv_feature_hasher_all_combos():
     eq_(num_result_files, 62)
 
 
-def make_scaling_data():
+def make_scaling_data(use_feature_hashing=False):
     num_train_examples = 1000
     num_test_examples = 100
 
@@ -981,23 +981,21 @@ def make_scaling_data():
     classes = []
     for j in range(num_train_examples):
         y = "dog" if j % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, j)
-        x = {"g{}".format(feat_num): np.random.randint(0, 4) for feat_num in
-             range(5)}
-        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ex_id = "EXAMPLE_{}".format(j)
+        feat_dict = {}
+        scalers = [1, 10, 100, 1000, 10000]
+        for feat_num in range(5):
+            featval = np.random.random() * scalers[feat_num]
+            feat_dict["f{}".format(feat_num)] = featval
+        features.append(feat_dict)
         ids.append(ex_id)
         classes.append(y)
-        features.append(x)
 
-    for i in range(5):
-        train_path = join(_my_dir, 'train', 'g{}.jsonlines'.format(i))
-        sub_features = []
-        for example_num in range(num_train_examples):
-            feat_num = i
-            x = {"g{}".format(feat_num):
-                 features[example_num]["g{}".format(feat_num)]}
-            sub_features.append(x)
-        write_feature_file(train_path, ids, classes, sub_features)
+    vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
+
+    train_fs = FeatureSet('train_scaling', ids=ids,
+                          features=features, classes=classes,
+                          vectorizer=vectorizer)
 
     # create the test data
     ids = []
@@ -1005,105 +1003,58 @@ def make_scaling_data():
     classes = []
     for j in range(num_test_examples):
         y = "dog" if j % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, j)
-        x = {"g{}".format(feat_num): np.random.randint(0, 4) for feat_num in
-             range(5)}
-        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ex_id = "EXAMPLE_{}".format(j)
+        feat_dict = {}
+        scalers = [1, 10, 100, 1000, 10000]
+        for feat_num in range(5):
+            featval = np.random.random() * scalers[feat_num]
+            feat_dict["f{}".format(feat_num)] = featval
+        features.append(feat_dict)
         ids.append(ex_id)
         classes.append(y)
-        features.append(x)
 
-    for i in range(5):
-        train_path = join(_my_dir, 'test', 'g{}.jsonlines'.format(i))
-        sub_features = []
-        for example_num in range(num_test_examples):
-            feat_num = i
-            x = {"g{}".format(feat_num):
-                 features[example_num]["g{}".format(feat_num)]}
-            sub_features.append(x)
-        write_feature_file(train_path, ids, classes, sub_features)
+    test_fs = FeatureSet('test_scaling', ids=ids,
+                         features=features, classes=classes,
+                         vectorizer=vectorizer)
+
+    return (train_fs, test_fs)
 
 
-@nottest
-def test_scaling_feature_hasher():
+def check_scaling_features(assert_func, use_feature_hashing=False, use_scaling=False):
     '''
     Test to validate whether feature scaling works using feature_hasher
     '''
-    make_scaling_data()
+    train_fs, test_fs = make_scaling_data(use_feature_hashing=use_feature_hashing)
 
-    # run the experiment without scaling
-    config_template_path = join(_my_dir, 'configs', ('test_scaling_without_'
-                                                     'feature_hasher.template'
-                                                     '.cfg'))
-    config_path = fill_in_config_paths(config_template_path)
+    # create a Linear SVM with the value of scaling as specified
+    feature_scaling = 'both' if use_scaling else 'none'
+    learner = Learner('LinearSVC', feature_scaling=feature_scaling)
 
-    run_configuration(config_path, quiet=True)
+    # train the learner on the training set and test on the testing set
+    learner.train(train_fs, feature_hasher=use_feature_hashing)
+    test_output = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)
+    dog_fmeasure, cat_fmeasure = [test_output[2][y]['F-measure'] for y in test_output[2]]
 
-    # now run the version with scaling
-    config_template_path = join(_my_dir, 'configs', ('test_scaling_with_'
-                                                     'feature_hasher.template'
-                                                     '.cfg'))
-    config_path = fill_in_config_paths(config_template_path)
+    # sort the f-measures to always have the larger one first
+    # we do this to be deterministic because the SVM can't seem
+    # to tell dogs and cats apart for this data very well because
+    # there are an equal number of both.
+    sorted_fmeasures = sorted([dog_fmeasure, cat_fmeasure], reverse=True)
 
-    run_configuration(config_path, quiet=True)
+    # these are the expected values of the f-measures, sorted
+    if not use_feature_hashing:
+        expected_sorted_fmeasures = [0.66666666666666663, 0.0] if not use_scaling else [0.55238095238095231, 0.50526315789473697]
+    else:
+        expected_sorted_fmeasures = [0.66666666666666663, 0.0] if not use_scaling else [0.51428571428571423, 0.4631578947368421]
 
-    # make sure that the result with and without scaling aren't the same
-    with open(join(_my_dir, 'output',
-                   'without_scaling_feature_hasher_summary.tsv')) as f:
-        reader = csv.DictReader(f, dialect=csv.excel_tab)
-        row = list(reader)[0]
-        without_scaling_score = row['score']
-        without_scaling_scaling_value = row['feature_scaling']
-
-    with open(join(_my_dir, 'output',
-                   'with_scaling_feature_hasher_summary.tsv')) as f:
-        reader = csv.DictReader(f, dialect=csv.excel_tab)
-        row = list(reader)[0]
-        with_scaling_score = row['score']
-        with_scaling_scaling_value = row['feature_scaling']
-
-    eq_(without_scaling_scaling_value, 'none')
-    eq_(with_scaling_scaling_value, 'both')
-    assert_not_equal(without_scaling_score, with_scaling_score)
+    eq_(expected_sorted_fmeasures, sorted_fmeasures)
 
 
-@nottest
 def test_scaling():
-    '''
-    Test to validate whether feature scaling works
-    '''
-    make_scaling_data()
-
-    # run the experiment without scaling
-    config_template_path = join(_my_dir, 'configs',
-                                'test_scaling_without.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(config_path, quiet=True)
-
-    # now run the version with scaling
-    config_template_path = join(_my_dir, 'configs',
-                                'test_scaling_with.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(config_path, quiet=True)
-
-    # make sure that the result with and without scaling aren't the same
-    with open(join(_my_dir, 'output', 'without_scaling_summary.tsv')) as f:
-        reader = csv.DictReader(f, dialect=csv.excel_tab)
-        row = list(reader)[0]
-        without_scaling_score = row['score']
-        without_scaling_scaling_value = row['feature_scaling']
-
-    with open(join(_my_dir, 'output', 'with_scaling_summary.tsv')) as f:
-        reader = csv.DictReader(f, dialect=csv.excel_tab)
-        row = list(reader)[0]
-        with_scaling_score = row['score']
-        with_scaling_scaling_value = row['feature_scaling']
-
-    eq_(without_scaling_scaling_value, 'none')
-    eq_(with_scaling_scaling_value, 'both')
-    assert_not_equal(without_scaling_score, with_scaling_score)
+    yield check_scaling_features, False, False
+    yield check_scaling_features, False, True
+    yield check_scaling_features, True, False
+    yield check_scaling_features, True, True
 
 
 # Test our kappa implementation based on Ben Hamner's unit tests.
