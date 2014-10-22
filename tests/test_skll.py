@@ -178,7 +178,7 @@ def fill_in_config_paths(config_template_path):
     return new_config_path
 
 
-def make_cv_folds_data(num_examples_per_fold=1000,
+def make_cv_folds_data(num_examples_per_fold=100,
                        num_folds=3,
                        use_feature_hashing=False):
     '''
@@ -227,27 +227,33 @@ def make_cv_folds_data(num_examples_per_fold=1000,
     return (cv_fs, custom_cv_folds)
 
 
-def check_specified_cv_folds(use_feature_hashing=False):
+def test_specified_cv_folds():
 
-    # this runs two tests
+    # this runs four tests
     # the first does not use feature hashing with 9 features (3 numeric, 6 binary)
     # has pre-specified folds and has less than 60% accuracy for each of the 3 folds
 
     # the second uses feature hashing with 4 features, uses 10 folds (not pre-specified)
     # and has more than 70% accuracy accuracy for each of the 10 folds.
 
-    cv_fs, custom_cv_folds = make_cv_folds_data(use_feature_hashing=use_feature_hashing)
+    # the third is the same as the first but uses an RBFSampler
 
-    learner = Learner('LogisticRegression')
+    # the fourth is the same as the second but uses an RBFSampler
 
-    # get the test scores for each fold and make sure they are as expected
-    for folds, test_func, grid_size in \
-        [(custom_cv_folds, lambda x: x < 0.7, 3),
-         (10, lambda x: x > 0.7, 10)]:
+    for test_func, grid_size, use_hashing, use_sampler in \
+        [(lambda x: x < 0.55, 3, False, False),
+         (lambda x: x > 0.7, 10, True, False),
+         (lambda x: x < 0.53, 3, False, True),
+         (lambda x: x > 0.7, 10, True, True)]:
 
-        cv_output = learner.cross_validate(cv_fs, cv_folds=folds,
+        sampler = 'RBFSampler' if use_sampler else None
+        learner = Learner('LogisticRegression', sampler=sampler)
+        cv_fs, custom_cv_folds = make_cv_folds_data(use_feature_hashing=use_hashing)
+        folds = custom_cv_folds if not use_hashing else 10
+        cv_output = learner.cross_validate(cv_fs,
+                                           cv_folds=folds,
                                            grid_search=True,
-                                           feature_hasher=use_feature_hashing)
+                                           feature_hasher=use_hashing)
         fold_test_scores = [t[-1] for t in cv_output[0]]
 
         overall_score = np.mean(fold_test_scores)
@@ -257,12 +263,6 @@ def check_specified_cv_folds(use_feature_hashing=False):
         assert len(fold_test_scores) == grid_size
         for fold_score in fold_test_scores:
             assert test_func(fold_score)
-
-
-def test_specified_cv_folds():
-    yield check_specified_cv_folds, False
-    yield check_specified_cv_folds, True
-
 
 def test_feature_merging_order_invariance():
     '''
@@ -1580,133 +1580,3 @@ def test_sparse_predict_sampler():
             SCORE_OUTPUT_RE.search(outstr).groups()[0])
 
     assert_almost_equal(logistic_result_score, 0.5, delta=0.025)
-
-
-def check_specified_cv_folds_feature_hasher_sampler(numeric_ids):
-    make_cv_folds_data(numeric_ids)
-
-    # test_cv_folds1.cfg has prespecified folds and should have ~50% accuracy
-    # test_cv_folds2.cfg doesn't have prespecified folds and >95% accuracy
-    for experiment_name, test_func, grid_size in [(('test_cv_folds1_feature_'
-                                                    'hasher_sampler'),
-                                                   lambda x: x < 0.6,
-                                                   3),
-                                                  (('test_cv_folds2_feature_'
-                                                    'hasher_sampler'),
-                                                   lambda x: x > 0.95,
-                                                   10)]:
-        config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = join(_my_dir, 'configs', config_template_file)
-        config_path = join(_my_dir, fill_in_config_paths(config_template_path))
-
-        # Modify config file to change ids_to_floats depending on numeric_ids
-        # setting
-        with open(config_path, 'r+') as config_template_file:
-            lines = config_template_file.readlines()
-            config_template_file.seek(0)
-            config_template_file.truncate()
-            for line in lines:
-                if line.startswith('ids_to_floats='):
-                    if numeric_ids:
-                        line = 'ids_to_floats=true\n'
-                    else:
-                        line = 'ids_to_floats=false\n'
-                config_template_file.write(line)
-
-        run_configuration(config_path, quiet=True)
-        result_filename = ('{}_test_cv_folds_LogisticRegression.'
-                           'results').format(experiment_name)
-        with open(join(_my_dir, 'output', result_filename)) as f:
-            # check held out scores
-            outstr = f.read()
-            score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
-            assert test_func(score)
-
-            grid_score_matches = GRID_RE.findall(outstr)
-            assert len(grid_score_matches) == grid_size
-            for match_str in grid_score_matches:
-                assert test_func(float(match_str))
-
-    # try the same tests for just training (and specifying the folds for the
-    # grid search)
-    dirpath = join(_my_dir, 'train')
-    suffix = '.jsonlines'
-    featureset = ['test_cv_folds']
-    examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
-    clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(join(_my_dir, 'train', 'test_cv_folds.csv'))
-    grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
-                                  grid_objective='accuracy', grid_jobs=1)
-    assert grid_search_score < 0.6
-    grid_search_score = clf.train(examples, grid_search_folds=5,
-                                  grid_objective='accuracy', grid_jobs=1)
-    assert grid_search_score > 0.95
-
-
-def check_specified_cv_folds_sampler(numeric_ids):
-    make_cv_folds_data(numeric_ids)
-
-    # test_cv_folds1.cfg has prespecified folds and should have ~50% accuracy
-    # test_cv_folds2.cfg doesn't have prespecified folds and >95% accuracy
-    for experiment_name, test_func, grid_size in [('test_cv_folds1_sampler',
-                                                   lambda x: x < 0.8,
-                                                   3),
-                                                  ('test_cv_folds2_sampler',
-                                                   lambda x: x > 0.95,
-                                                   10)]:
-        config_template_file = '{}.template.cfg'.format(experiment_name)
-        config_template_path = join(_my_dir, 'configs', config_template_file)
-        config_path = join(_my_dir, fill_in_config_paths(config_template_path))
-
-        # Modify config file to change ids_to_floats depending on numeric_ids
-        # setting
-        with open(config_path, 'r+') as config_template_file:
-            lines = config_template_file.readlines()
-            config_template_file.seek(0)
-            config_template_file.truncate()
-            for line in lines:
-                if line.startswith('ids_to_floats='):
-                    if numeric_ids:
-                        line = 'ids_to_floats=true\n'
-                    else:
-                        line = 'ids_to_floats=false\n'
-                config_template_file.write(line)
-
-        run_configuration(config_path, quiet=True)
-        result_filename = ('{}_test_cv_folds_LogisticRegression.'
-                           'results').format(experiment_name)
-        with open(join(_my_dir, 'output', result_filename)) as f:
-            # check held out scores
-            outstr = f.read()
-            score = float(SCORE_OUTPUT_RE.search(outstr).groups()[-1])
-            assert test_func(score)
-
-            grid_score_matches = GRID_RE.findall(outstr)
-            assert len(grid_score_matches) == grid_size
-            for match_str in grid_score_matches:
-                assert test_func(float(match_str))
-
-    # try the same tests for just training (and specifying the folds for the
-    # grid search)
-    dirpath = join(_my_dir, 'train')
-    suffix = '.jsonlines'
-    featureset = ['test_cv_folds']
-    examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
-    clf = Learner('LogisticRegression', probability=True)
-    cv_folds = _load_cv_folds(join(_my_dir, 'train', 'test_cv_folds.csv'))
-    grid_search_score = clf.train(examples, grid_search_folds=cv_folds,
-                                  grid_objective='accuracy', grid_jobs=1)
-    assert grid_search_score < 0.6
-    grid_search_score = clf.train(examples, grid_search_folds=5,
-                                  grid_objective='accuracy', grid_jobs=1)
-    assert grid_search_score > 0.95
-
-
-def test_specified_cv_folds_feature_hasher_sampler():
-    yield check_specified_cv_folds_feature_hasher_sampler, False
-    yield check_specified_cv_folds_feature_hasher_sampler, True
-
-
-def test_specified_cv_folds_sampler():
-    yield check_specified_cv_folds_sampler, False
-    yield check_specified_cv_folds_sampler, True
