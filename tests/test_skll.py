@@ -53,6 +53,17 @@ GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
 
 
+def setup():
+    train_dir = join(_my_dir, 'train')
+    if not exists(train_dir):
+        os.makedirs(train_dir)
+    test_dir = join(_my_dir, 'test')
+    if not exists(test_dir):
+        os.makedirs(test_dir)
+    output_dir = join(_my_dir, 'output')
+    if not exists(output_dir):
+        os.makedirs(output_dir)
+
 def test_SelectByMinCount():
     ''' Test SelectByMinCount feature selector '''
     m2 = [[0.001, 0.0, 0.0, 0.0],
@@ -123,21 +134,15 @@ def test_input_checking3():
     examples_tuple = _load_featureset(dirpath, featureset, suffix, quiet=True)
     assert examples_tuple.features.shape[0] == 3
 
-
 def fill_in_config_paths(config_template_path):
     '''
     Add paths to train, test, and output directories to a given config template
     file.
     '''
+
     train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
     test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
     output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
 
     config = _setup_config_parser(config_template_path)
 
