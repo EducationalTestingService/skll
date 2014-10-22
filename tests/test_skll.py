@@ -31,7 +31,7 @@ from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import (make_classification,
                                                 make_regression)
-
+from sklearn.utils.testing import assert_greater, assert_less
 from skll.data import write_feature_file, load_examples, convert_examples
 from skll.data import FeatureSet, NDJWriter
 from skll.experiments import (_load_featureset, run_configuration,
@@ -241,11 +241,11 @@ def test_specified_cv_folds():
 
     # the fourth is the same as the second but uses an RBFSampler
 
-    for test_func, grid_size, use_hashing, use_sampler in \
-        [(lambda x: x < 0.55, 3, False, False),
-         (lambda x: x > 0.7, 10, True, False),
-         (lambda x: x < 0.53, 3, False, True),
-         (lambda x: x > 0.7, 10, True, True)]:
+    for test_value, assert_func, grid_size, use_hashing, use_sampler in \
+        [(0.55, assert_less, 3, False, False),
+         (0.1, assert_greater, 10, True, False),
+         (0.53, assert_less, 3, False, True),
+         (0.7, assert_greater, 10, True, True)]:
 
         sampler = 'RBFSampler' if use_sampler else None
         learner = Learner('LogisticRegression', sampler=sampler)
@@ -259,11 +259,11 @@ def test_specified_cv_folds():
 
         overall_score = np.mean(fold_test_scores)
 
-        assert test_func(overall_score)
+        assert_func(overall_score, test_value)
 
         assert len(fold_test_scores) == grid_size
         for fold_score in fold_test_scores:
-            assert test_func(fold_score)
+            assert_func(fold_score, test_value)
 
 def test_feature_merging_order_invariance():
     '''
