@@ -719,7 +719,7 @@ class Learner(object):
 
         return estimator, default_param_grid
 
-    def _check_input(self, examples):
+    def _check_input_formatting(self, examples):
         '''
         check that the examples are properly formatted.
         '''
@@ -732,15 +732,18 @@ class Learner(object):
                                     " string labels.  Convert them to" +
                                     " integers or floats.")
 
-        max_feat_abs = float("-inf")
-
         # make sure that feature values are not strings
         for val in examples.features.data:
-            max_feat_abs = max(max_feat_abs, abs(val))
             if isinstance(val, string_types):
                 raise TypeError("You have feature values that are" +
                                 " strings.  Convert them to floats.")
 
+    def _check_max_feature_value(self, featarray):
+        '''
+        Check if the the maximum absolute value of any feature is too large
+        '''
+
+        max_feat_abs = np.max(np.abs(featarray.data))
         if max_feat_abs > 1000.0:
             logger = logging.getLogger(__name__)
             logger.warning(("You have a feature with a very large absolute " +
@@ -785,7 +788,7 @@ class Learner(object):
         :type examples: FeatureSet
         '''
         # Check feature values and labels
-        self._check_input(examples)
+        self._check_input_formatting(examples)
 
         # Create label_dict if we weren't passed one
         if self._model_type not in _REGRESSION_MODELS:
@@ -963,6 +966,9 @@ class Learner(object):
         # Scale features if necessary
         if self._model_type != 'MultinomialNB':
             xtrain = self.scaler.fit_transform(xtrain)
+
+        # check whether any feature values are too large
+        self._check_max_feature_value(xtrain)
 
         # Sampler
         if self.sampler:
