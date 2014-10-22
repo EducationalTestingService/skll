@@ -1,22 +1,5 @@
 #!/usr/bin/env python
-
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Lab.
-
-# SciKit-Learn Lab is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# SciKit-Learn Lab is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 Simple script for printing out model weights.
 
@@ -48,6 +31,11 @@ def main():
     parser.add_argument('--k',
                         help='number of top features to print (0 for all)',
                         type=int, default=50)
+    parser.add_argument('--sign',
+                        choices=['positive', 'negative', 'all'],
+                        default='all',
+                        help='show only positive, only negative, ' +
+                             'or all weights')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args()
@@ -60,11 +48,26 @@ def main():
     k = args.k if args.k > 0 else None
 
     learner = Learner.from_file(args.model_file)
-    weights = learner.model_params
+    (weights, intercept) = learner.model_params
+
+    weight_items = iteritems(weights)
+    if args.sign == 'positive':
+        weight_items = (x for x in weight_items if x[1] > 0)
+    elif args.sign == 'negative':
+        weight_items = (x for x in weight_items if x[1] < 0)
+
+    if intercept is not None:
+        # subclass of LinearModel
+        if len(intercept) == 1:
+            print("intercept = {:.12f}".format(intercept[0][1]))
+        else:
+            print("== intercept values ==")
+            for (label, val) in intercept:
+                print("{:.12f}\t{}".format(val, label))
+        print()
 
     print("Number of nonzero features:", len(weights), file=sys.stderr)
-
-    for feat, val in sorted(iteritems(weights), key=lambda x: -abs(x[1]))[:k]:
+    for feat, val in sorted(weight_items, key=lambda x: -abs(x[1]))[:k]:
         print("{:.12f}\t{}".format(val, feat))
 
 

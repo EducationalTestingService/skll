@@ -3,7 +3,7 @@
 import sys
 from setuptools import setup
 
-# To get around the fact that you can't import stuff from packages in setup.py
+# Get version without importing, which avoids dependency issues
 exec(compile(open('skll/version.py').read(), 'skll/version.py', 'exec'))
 # (we use the above instead of execfile for Python 3.x compatibility)
 
@@ -39,11 +39,11 @@ setup(name='skll',
       entry_points={'console_scripts': ['filter_megam = skll.utilities.filter_megam:main',
                                         'generate_predictions = skll.utilities.generate_predictions:main',
                                         'join_megam = skll.utilities.join_megam:main',
-                                        'megam_to_libsvm = skll.utilities.megam_to_libsvm:main',
                                         'print_model_weights = skll.utilities.print_model_weights:main',
                                         'run_experiment = skll.utilities.run_experiment:main',
                                         'skll_convert = skll.utilities.skll_convert:main',
-                                        'summarize_results = skll.utilities.summarize_results:main']},
+                                        'summarize_results = skll.utilities.summarize_results:main',
+                                        'compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main']},
       install_requires=requirements(),
       classifiers=['Intended Audience :: Science/Research',
                    'Intended Audience :: Developers',

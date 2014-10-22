@@ -1,22 +1,5 @@
 #!/usr/bin/env python
-
-# Copyright (C) 2012-2013 Educational Testing Service
-
-# This file is part of SciKit-Learn Lab.
-
-# SciKit-Learn Lab is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# SciKit-Learn Lab is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with SciKit-Learn Lab.  If not, see <http://www.gnu.org/licenses/>.
-
+# License: BSD 3 clause
 '''
 Runs a bunch of scikit-learn jobs in parallel on the cluster given a
 config file.
@@ -90,6 +73,12 @@ def main(argv=None):
     parser.add_argument('-q', '--queue',
                         help="Use this queue for gridmap.",
                         default='all.q')
+    parser.add_argument('-r', '--resume',
+                        help='If result files already exist for an experiment, \
+                              do not overwrite them. This is very useful when \
+                              doing a large ablation experiment and part of it \
+                              crashes.',
+                        action='store_true')
     parser.add_argument('-v', '--verbose',
                         help='Print more status information. For every ' +
                              'additional time this flag is specified, ' +
@@ -119,7 +108,7 @@ def main(argv=None):
     for config_file in args.config_file:
         run_configuration(config_file, local=args.local, overwrite=not
                           args.keep_models, queue=args.queue, hosts=machines,
-                          ablation=ablation)
+                          ablation=ablation, resume=args.resume)
 
 
 if __name__ == '__main__':

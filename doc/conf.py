@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # SciKit-Learn Laboratory documentation build configuration file, created by
-# sphinx-quickstart on Tue Jul 16 09:06:32 2013.
+# sphinx-quickstart on Tue Jul 16 09:06:32 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.
 #
@@ -43,7 +43,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'SciKit-Learn Laboratory'
-copyright = u'2012-2013, Educational Testing Service'
+copyright = u'2012-2014, Educational Testing Service'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -252,7 +252,7 @@ texinfo_documents = [
 epub_title = u'SciKit-Learn Laboratory'
 epub_author = u'Daniel Blanchard, Michael Heilman, and Nitin Madnani'
 epub_publisher = u'Educational Testing Service'
-epub_copyright = u'2012-2013, Educational Testing Service'
+epub_copyright = u'2012-2014, Educational Testing Service'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
