@@ -769,7 +769,9 @@ def make_class_map_data():
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
-    write_feature_file(train_path, ids, classes, features)
+    train_fs = FeatureSet('train_class_map', ids=ids, features=features, classes=classes)
+    writer = NDJWriter(train_path, train_fs)
+    writer.write()
 
     # Create test file
     test_path = join(_my_dir, 'test', 'test_class_map.jsonlines')
@@ -784,7 +786,9 @@ def make_class_map_data():
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
-    write_feature_file(test_path, ids, classes, features)
+    test_fs = FeatureSet('test_class_map', ids=ids, features=features, classes=classes)
+    writer = NDJWriter(test_path, test_fs)
+    writer.write()
 
 
 def test_class_map():
@@ -857,8 +861,9 @@ def make_ablation_data():
             x = {"f{}".format(feat_num):
                  features[example_num]["f{}".format(feat_num)]}
             sub_features.append(x)
-        write_feature_file(train_path, ids, classes, sub_features)
-
+        train_fs = FeatureSet('ablation_cv', ids=ids, features=sub_features, classes=classes)
+        writer = NDJWriter(train_path, train_fs)
+        writer.write()
 
 def check_ablation_rows(reader):
     '''
