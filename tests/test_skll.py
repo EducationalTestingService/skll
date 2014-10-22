@@ -94,8 +94,7 @@ def test_SelectByMinCount():
 @raises(ValueError)
 def test_input_checking1():
     '''
-    Ensure that we raise ValueError when trying to join featuresets with
-    different number of examples.
+    Test merging featuresets with different number of examples
     '''
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
@@ -106,8 +105,7 @@ def test_input_checking1():
 @raises(ValueError)
 def test_input_checking2():
     '''
-    Ensure that we raise ValueError when trying to join featuresets
-    that contain the same features for each instance.
+    Test joining featuresets that contain the same features for each instance
     '''
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
@@ -117,7 +115,7 @@ def test_input_checking2():
 
 def test_input_checking3():
     '''
-    Small test to ensure that we correctly merge featuresets.
+    Test to ensure that we correctly merge featuresets
     '''
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
@@ -228,6 +226,9 @@ def make_cv_folds_data(num_examples_per_fold=100,
 
 
 def test_specified_cv_folds():
+    '''
+    Test to check cross-validation results with specified folds, feature hashing, and RBFSampler
+    '''
 
     # this runs four tests
     # the first does not use feature hashing with 9 features (3 numeric, 6 binary)
@@ -266,7 +267,7 @@ def test_specified_cv_folds():
 
 def test_feature_merging_order_invariance():
     '''
-    This tests whether featuresets with different orders of IDs can be merged.
+    Test whether featuresets with different orders of IDs can be merged
     '''
 
     # First, randomly generate two feature sets and then make sure they have
@@ -417,7 +418,6 @@ def check_regression(use_feature_hashing=False):
 
 # the runner function for the regression tests
 def test_regression():
-
     # without feature hashing
     yield check_regression
 
@@ -531,8 +531,7 @@ def make_rare_class_data():
 
 def test_rare_class():
     '''
-    This is to make sure cross-validation doesn't fail when some classes are
-    very rare, such that they only end up in test folds.
+    Test cross-validation when some classes are very rare
     '''
 
     rare_class_fs = make_rare_class_data()
@@ -641,7 +640,6 @@ def check_summary_score(use_feature_hashing=False):
 
 
 def test_summary():
-
     # test summary score without feature hashing
     yield check_summary_score
 
@@ -649,9 +647,10 @@ def test_summary():
     yield check_summary_score, True
 
 
+# Verify v0.9.17 model can still be loaded and generate the same predictions.
 def test_backward_compatibility():
     '''
-    Verify v0.9.17 model can still be loaded and generate the same predictions.
+    Test to validate backward compatibility
     '''
     predict_path = join(_my_dir, 'backward_compatibility',
                         ('v0.9.17_test_summary_test_summary_'
@@ -747,9 +746,6 @@ def check_sparse_feature_predict(use_feature_hashing=False):
 
 
 def test_sparse_predict():
-    '''
-    Run the check_sparse_feature_predict test with and without feature hashing
-    '''
     yield check_sparse_feature_predict, False
     yield check_sparse_feature_predict, True
 
@@ -792,6 +788,10 @@ def make_class_map_data():
 
 
 def test_class_map():
+    '''
+    Test class maps
+    '''
+
     make_class_map_data()
 
     config_template_path = join(
@@ -812,6 +812,10 @@ def test_class_map():
 
 
 def test_class_map_feature_hasher():
+    '''
+    Test class maps with feature hashing
+    '''
+
     make_class_map_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -890,7 +894,10 @@ def check_ablation_rows(reader):
 
 
 def test_ablation_cv():
-    # Test if ablation works with cross-validate
+    '''
+    Test if ablation works with cross-validate
+    '''
+
     make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -914,7 +921,10 @@ def test_ablation_cv():
 
 
 def test_ablation_cv_all_combos():
-    # Test to validate whether ablation works with cross-validate
+    '''
+    Test to validate whether ablation all-combos works with cross-validate
+    '''
+
     make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -967,7 +977,10 @@ def test_ablation_cv_feature_hasher():
 
 
 def test_ablation_cv_feature_hasher_all_combos():
-    # Test if ablation all-combos works with cross-validate and feature_hasher
+    '''
+    Test if ablation all-combos works with cross-validate and feature_hasher
+    '''
+
     make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -1045,9 +1058,6 @@ def make_scaling_data(use_feature_hashing=False):
 
 
 def check_scaling_features(assert_func, use_feature_hashing=False, use_scaling=False):
-    '''
-    Test to validate whether feature scaling works using feature_hasher
-    '''
     train_fs, test_fs = make_scaling_data(use_feature_hashing=use_feature_hashing)
 
     # create a Linear SVM with the value of scaling as specified
@@ -1251,7 +1261,6 @@ def check_load_featureset(suffix, numeric_ids):
         eq_(merged_feats, premerged_feats)
     eq_(sorted(merged_examples.vectorizer.feature_names_),
         sorted(premerged_examples.vectorizer.feature_names_))
-
 
 def test_load_featureset():
     # Test merging with numeric IDs
