@@ -735,10 +735,7 @@ def make_sparse_data(use_feature_hashing=False):
     return train_fs, test_fs
 
 
-def check_sparse_feature_predict(use_feature_hashing=False):
-    '''
-    Test to validate whether predict works with sparse data
-    '''
+def check_sparse_predict(use_feature_hashing=False):
     train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
 
     # train a linear SVM on the training data and evalute on the testing data
@@ -751,8 +748,40 @@ def check_sparse_feature_predict(use_feature_hashing=False):
 
 
 def test_sparse_predict():
-    yield check_sparse_feature_predict, False
-    yield check_sparse_feature_predict, True
+    yield check_sparse_predict, False
+    yield check_sparse_predict, True
+
+
+def check_sparse_predict_sampler(use_feature_hashing=False):
+    '''
+    Test to validate whether predict works with sparse data
+    '''
+    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
+
+    if use_feature_hashing:
+        sampler = 'RBFSampler'
+        sampler_parameters = {"gamma": 1.0, "n_components":50}
+    else:
+        sampler = 'Nystroem'
+        sampler_parameters = {"gamma": 1.0, "n_components":50, "kernel":'rbf'}
+
+    learner = Learner('LogisticRegression',
+                      sampler=sampler,
+                      sampler_kwargs=sampler_parameters)
+
+    learner.train(train_fs, grid_search=False, feature_hasher=use_feature_hashing)
+    test_score = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)[1]
+
+    expected_score = 0.4 if use_feature_hashing else 0.48
+    assert_almost_equal(test_score, expected_score)
+
+def test_sparse_predict_sampler():
+    '''
+    Test to validate whether predict works with sparse data
+    and sampling
+    '''
+    yield check_sparse_predict_sampler, False
+    yield check_sparse_predict_sampler, True
 
 
 def make_class_map_data():
@@ -1551,46 +1580,3 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
                                            '*results'))))
     eq_(num_result_files, 20)
 
-
-def test_sparse_feature_hasher_predict_sampler():
-    '''
-    Test to validate whether predict works with sparse data
-    and feature_hasher
-    '''
-    make_sparse_data()
-
-    config_template_path = join(_my_dir, 'configs', ('test_sparse_feature_'
-                                                     'hasher_sampler.template'
-                                                     '.cfg'))
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(config_path, quiet=True)
-
-    with open(join(_my_dir, 'output',
-                   'test_sparse_test_sparse_LogisticRegression.results')) as f:
-        outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
-
-    assert_almost_equal(logistic_result_score, 0.5)
-
-
-def test_sparse_predict_sampler():
-    '''
-    Test to validate whether predict works with sparse data
-    '''
-    make_sparse_data()
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_sparse_sampler.template.cfg')
-    config_path = fill_in_config_paths(config_template_path)
-
-    run_configuration(config_path, quiet=True)
-
-    with open(join(_my_dir, 'output',
-                   'test_sparse_test_sparse_LogisticRegression.results')) as f:
-        outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
-
-    assert_almost_equal(logistic_result_score, 0.5, delta=0.025)
