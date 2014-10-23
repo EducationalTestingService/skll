@@ -1044,7 +1044,7 @@ def make_scaling_data(use_feature_hashing=False):
     features = []
     classes = []
     for j in range(num_train_examples):
-        y = "dog" if j % 2 == 0 else "cat"
+        y = np.random.choice(['dog', 'cat'])
         ex_id = "EXAMPLE_{}".format(j)
         feat_dict = {}
         scalers = [1, 10, 100, 1000, 10000]
@@ -1066,7 +1066,7 @@ def make_scaling_data(use_feature_hashing=False):
     features = []
     classes = []
     for j in range(num_test_examples):
-        y = "dog" if j % 2 == 0 else "cat"
+        y = np.random.choice(['dog', 'cat'])
         ex_id = "EXAMPLE_{}".format(j)
         feat_dict = {}
         scalers = [1, 10, 100, 1000, 10000]
@@ -1084,7 +1084,7 @@ def make_scaling_data(use_feature_hashing=False):
     return (train_fs, test_fs)
 
 
-def check_scaling_features(assert_func, use_feature_hashing=False, use_scaling=False):
+def check_scaling_features(use_feature_hashing=False, use_scaling=False):
     train_fs, test_fs = make_scaling_data(use_feature_hashing=use_feature_hashing)
 
     # create a Linear SVM with the value of scaling as specified
@@ -1104,11 +1104,12 @@ def check_scaling_features(assert_func, use_feature_hashing=False, use_scaling=F
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_sorted_fmeasures = [0.66666666666666663, 0.0] if not use_scaling else [0.55238095238095231, 0.50526315789473697]
+        expected_sorted_fmeasures = [0.51327433628318575, 0.36781609195402304] if not use_scaling else [0.57894736842105265, 0.44186046511627908]
     else:
-        expected_sorted_fmeasures = [0.66666666666666663, 0.0] if not use_scaling else [0.51428571428571423, 0.4631578947368421]
+        expected_sorted_fmeasures = [0.58646616541353391, 0.17910447761194029] if not use_scaling else [0.59677419354838701, 0.34210526315789469]
 
-    eq_(expected_sorted_fmeasures, sorted_fmeasures)
+    for expected, actual in zip(expected_sorted_fmeasures, sorted_fmeasures):
+        assert_almost_equal(expected, actual)
 
 
 def test_scaling():
