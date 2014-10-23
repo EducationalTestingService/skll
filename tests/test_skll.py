@@ -739,11 +739,11 @@ def check_sparse_predict(use_feature_hashing=False):
     train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
 
     # train a linear SVM on the training data and evalute on the testing data
-    learner = Learner('LinearSVC')
-    learner.train(train_fs, feature_hasher=use_feature_hashing, grid_search=False)
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False, feature_hasher=use_feature_hashing)
     test_score = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)[1]
 
-    expected_score = 0.52 if use_feature_hashing else 0.45
+    expected_score = 0.51 if use_feature_hashing else 0.45
     assert_almost_equal(test_score, expected_score)
 
 
@@ -753,9 +753,6 @@ def test_sparse_predict():
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
-    '''
-    Test to validate whether predict works with sparse data
-    '''
     train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
 
     if use_feature_hashing:
@@ -776,10 +773,6 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
     assert_almost_equal(test_score, expected_score)
 
 def test_sparse_predict_sampler():
-    '''
-    Test to validate whether predict works with sparse data
-    and sampling
-    '''
     yield check_sparse_predict_sampler, False
     yield check_sparse_predict_sampler, True
 
