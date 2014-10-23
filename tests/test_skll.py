@@ -132,7 +132,7 @@ def test_input_checking3():
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_2']
     examples_tuple = _load_featureset(dirpath, featureset, suffix, quiet=True)
-    assert examples_tuple.features.shape[0] == 3
+    eq_(examples_tuple.features.shape[0], 3)
 
 def fill_in_config_paths(config_template_path):
     '''
@@ -266,7 +266,7 @@ def test_specified_cv_folds():
 
         assert_func(overall_score, test_value)
 
-        assert len(fold_test_scores) == grid_size
+        eq_(len(fold_test_scores), grid_size)
         for fold_score in fold_test_scores:
             assert_func(fold_score, test_value)
 
@@ -419,7 +419,7 @@ def check_regression(use_feature_hashing=False):
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
     cor, _ = pearsonr(predictions, test_fs.classes)
-    assert cor > 0.95
+    assert_greater(cor, 0.95)
 
 # the runner function for the regression tests
 def test_regression():
