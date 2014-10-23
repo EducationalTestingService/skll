@@ -197,6 +197,11 @@ def fill_in_config_paths(config_template_path):
     if task == 'predict' or task == 'evaluate':
         config.set("Input", "test_location", test_dir)
 
+    # set up custom learner path, if relevant
+    custom_learner_path = config.get("Input", "custom_learner_path")
+    custom_learner_abs_path = join(_my_dir, custom_learner_path)
+    config.set("Input", "custom_learner_path", custom_learner_abs_path)
+
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
     new_config_path = '{}.cfg'.format(config_prefix)
@@ -1795,3 +1800,94 @@ def test_specified_cv_folds_feature_hasher_sampler():
 def test_specified_cv_folds_sampler():
     yield check_specified_cv_folds_sampler, False
     yield check_specified_cv_folds_sampler, True
+
+
+def read_predictions(path):
+    with open(path) as f:
+        reader = csv.reader(f, dialect='excel-tab')
+        next(reader)
+        res = np.array([float(x[1]) for x in reader])
+    return res
+
+
+def test_majority_class_custom_learner():
+    num_classes = 10
+
+    # This will make data where the last class happens about 50% of the time.
+    class_weights = [(0.5 / (num_classes - 1))
+                             for x in range(num_classes - 1)] + [0.5]
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_classes=num_classes,
+                                                 num_features=5,
+                                                 non_negative=True,
+                                                 class_weights=class_weights)
+
+    # Write training feature set to a file
+    train_path = join(_my_dir, 'train',
+                      'test_majority_class_custom_learner.jsonlines')
+    writer = NDJWriter(train_path, train_fs)
+    writer.write()
+
+    # Write test feature set to a file
+    test_path = join(_my_dir, 'test',
+                     'test_majority_class_custom_learner.jsonlines')
+    writer = NDJWriter(test_path, test_fs)
+    writer.write()
+
+    cfgfile = 'test_majority_class_custom_learner.template.cfg'
+    config_template_path = join(_my_dir, 'configs', cfgfile)
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, quiet=True)
+
+    outprefix = 'test_majority_class_custom_learner'
+
+    preds = read_predictions(
+        join(_my_dir, 'output', ('{}_{}_MajorityClassLearner.predictions'
+                                 .format(outprefix, outprefix))))
+    expected = np.array([float(num_classes - 1) for x in preds])
+    assert_array_equal(preds, expected)
+
+
+def test_logistic_custom_learner():
+    num_classes = 10
+
+    class_weights = [(0.5 / (num_classes - 1))
+                     for x in range(num_classes - 1)] + [0.5]
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_classes=num_classes,
+                                                 num_features=5,
+                                                 non_negative=True,
+                                                 class_weights=class_weights)
+
+    # Write training feature set to a file
+    train_path = join(_my_dir, 'train',
+                      'test_logistic_custom_learner.jsonlines')
+    writer = NDJWriter(train_path, train_fs)
+    writer.write()
+
+    # Write test feature set to a file
+    test_path = join(_my_dir, 'test',
+                     'test_logistic_custom_learner.jsonlines')
+    writer = NDJWriter(test_path, test_fs)
+    writer.write()
+
+    cfgfile = 'test_logistic_custom_learner.template.cfg'
+    config_template_path = join(_my_dir, 'configs', cfgfile)
+    config_path = fill_in_config_paths(config_template_path)
+
+    run_configuration(config_path, quiet=True)
+
+    outprefix = 'test_logistic_custom_learner'
+    preds = read_predictions(join(_my_dir, 'output',
+                                  ('{}_{}_CustomLogisticRegressionWrapper.predictions'
+                                   .format(outprefix, outprefix))))
+
+    expected = read_predictions(join(_my_dir, 'output',
+                                     ('{}_{}_LogisticRegression.predictions'
+                                      .format(outprefix, outprefix))))
+
+    assert_array_equal(preds, expected)
+

@@ -192,23 +192,23 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
             yield train_index, test_index
 
 
-def _import_custom_model(custom_model_path, custom_model_name):
+def _import_custom_learner(custom_learner_path, custom_learner_name):
     '''
     Does the gruntwork of adding the custom model's module to globals.
     '''
-    if not custom_model_path:
-        raise ValueError('custom_model_path was not set and learner {} '
-                         'was not found.'.format(custom_model_name))
+    if not custom_learner_path:
+        raise ValueError('custom_learner_path was not set and learner {} '
+                         'was not found.'.format(custom_learner_name))
 
-    if not custom_model_path.endswith('.py'):
-        raise ValueError('custom_model_path must end in .py ({})'
-                         .format(custom_model_path))
+    if not custom_learner_path.endswith('.py'):
+        raise ValueError('custom_learner_path must end in .py ({})'
+                         .format(custom_learner_path))
 
-    custom_model_module_name = os.path.basename(custom_model_path)[:-3]
-    sys.path.append(os.path.dirname(os.path.abspath(custom_model_path)))
-    import_module(custom_model_module_name)
-    globals()[custom_model_name] = getattr(sys.modules[custom_model_module_name],
-                                           custom_model_name)
+    custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
+    sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
+    import_module(custom_learner_module_name)
+    globals()[custom_learner_name] = getattr(sys.modules[custom_learner_module_name],
+                                           custom_learner_name)
 
 
 def _predict_binary(self, X):
@@ -486,14 +486,14 @@ class Learner(object):
     :param min_feature_count: The minimum number of examples a feature
                               must have a nonzero value in to be included.
     :type min_feature_count: int
-    :param custom_model_path: Path to code where a custom classifier is
+    :param custom_learner_path: Path to code where a custom classifier is
                               defined.
-    :type custom_model_path: str
+    :type custom_learner_path: str
     """
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
                  model_kwargs=None, pos_label_str=None, min_feature_count=1,
-                 sampler=None, sampler_kwargs=None, custom_model_path=None):
+                 sampler=None, sampler_kwargs=None, custom_learner_path=None):
         '''
         Initializes a learner object with the specified settings.
         '''
@@ -514,7 +514,7 @@ class Learner(object):
         if model_type not in globals():
             # here, we need to import the custom model and add it
             # to the appropriate lists of models.
-            _import_custom_model(custom_model_path, model_type)
+            _import_custom_learner(custom_learner_path, model_type)
 
             model_class = globals()[model_type]
             default_param_grid = (model_class.default_param_grid()
@@ -522,6 +522,7 @@ class Learner(object):
                                   else [{}])
 
             # remove the Rescaled prefix if specified for a regressor
+            base_model_type = model_type
             if model_type.startswith('Rescaled'):
                 base_model_type = model_type.replace('Rescaled', '', 1)
 
@@ -732,7 +733,14 @@ class Learner(object):
     @probability.setter
     def probability(self, value):
         # LinearSVC doesn't support predict_proba
-        self._probability = value and self.model_type != 'LinearSVC'
+        model_class = globals()[self.model_type]
+        self._probability = value
+        if not hasattr(model_class, "predict_proba") and value:
+            logger = logging.getLogger(__name__)
+            logger.warning(("probability was set to True, but {} does not have"
+                            " a predict_proba() method.")
+                           .format(self.model_type))
+            self._probability = False
 
     def save(self, learner_path):
         '''

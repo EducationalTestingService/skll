@@ -31,7 +31,7 @@ from sklearn import __version__ as SCIKIT_VERSION
 
 from skll.data import FeatureSet, load_examples
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
-                          _import_custom_model, _DEFAULT_PARAM_GRIDS)
+                          _import_custom_learner, _DEFAULT_PARAM_GRIDS)
 from skll.version import __version__
 
 import yaml
@@ -241,7 +241,7 @@ def _setup_config_parser(config_path):
                                         'suffix': '',
                                         'label_col': 'y',
                                         'ids_to_floats': 'False',
-                                        'custom_model_path': ''})
+                                        'custom_learner_path': ''})
     # Read file if it exists
     if not os.path.exists(config_path):
         raise IOError(errno.ENOENT, "The config file doesn't exist",
@@ -303,7 +303,7 @@ def _parse_config_file(config_path):
                             '1.0.  Please use the full name, {}, '
                             'instead.').format(learner, _SHORT_NAMES[learner]))
             learners[i] = _SHORT_NAMES[learner]
-    custom_model_path = config.get("Input", "custom_model_path")
+    custom_learner_path = config.get("Input", "custom_learner_path")
 
     featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
 
@@ -459,7 +459,7 @@ def _parse_config_file(config_path):
             feature_scaling, min_feature_count, grid_search_jobs, grid_search_folds, cv_folds,
             fixed_parameter_list, param_grid_list, featureset_names,
             learners, prediction_dir, log_path, train_path, test_path,
-            ids_to_floats, class_map, custom_model_path)
+            ids_to_floats, class_map, custom_learner_path)
 
 
 def _load_featureset(dir_path, feat_files, suffix, label_col='y',
@@ -549,7 +549,7 @@ def _classify_featureset(args):
     label_col = args.pop("label_col")
     ids_to_floats = args.pop("ids_to_floats")
     class_map = args.pop("class_map")
-    custom_model_path = args.pop("custom_model_path")
+    custom_learner_path = args.pop("custom_learner_path")
     quiet = args.pop('quiet', False)
 
     if args:
@@ -603,12 +603,12 @@ def _classify_featureset(args):
                               min_feature_count=min_feature_count,
                               sampler=sampler,
                               sampler_kwargs=sampler_parameters,
-                              custom_model_path=custom_model_path)
+                              custom_learner_path=custom_learner_path)
         # load the model if it already exists
         else:
-            # import the custom model path here in case we are reusing a saved model
-            if custom_model_path and learner_name not in _DEFAULT_PARAM_GRIDS:
-                _import_custom_model(custom_model_path, learner_name)
+            # import the custom learner path here in case we are reusing a saved model
+            if custom_learner_path and learner_name not in _DEFAULT_PARAM_GRIDS:
+                _import_custom_learner(custom_learner_path, learner_name)
             train_set_size = 'unknown'
             if os.path.exists(modelfile) and not overwrite:
                 print(('\tloading pre-existing %s model: %s') % (learner_name,
@@ -955,7 +955,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      grid_search_jobs, grid_search_folds, cv_folds, fixed_parameter_list, param_grid_list,
      featureset_names, learners, prediction_dir, log_path, train_path,
      test_path, ids_to_floats, class_map,
-     custom_model_path) = _parse_config_file(config_file)
+     custom_learner_path) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -1089,7 +1089,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["ids_to_floats"] = ids_to_floats
             job_args["quiet"] = quiet
             job_args["class_map"] = class_map
-            job_args["custom_model_path"] = custom_model_path
+            job_args["custom_learner_path"] = custom_learner_path
 
             if not local:
                 jobs.append(Job(_classify_featureset, [job_args],
