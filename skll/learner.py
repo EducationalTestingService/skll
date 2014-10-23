@@ -617,7 +617,7 @@ class Learner(object):
             # also includes RescaledRidge, RescaledSVR
 
             coef = self.model.coef_
-            intercept = {'_intercept_', self.model.intercept_}
+            intercept = {'_intercept_': self.model.intercept_}
 
             # convert SVR coefficient format (1 x matrix) to array
             if isinstance(self._model, SVR):
