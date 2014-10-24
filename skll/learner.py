@@ -12,13 +12,13 @@ Provides easy-to-use wrapper around scikit-learn.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from collections import Counter
 import inspect
 import logging
 import os
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from functools import wraps
+from importlib import import_module
 from multiprocessing import cpu_count
 
 import joblib
@@ -114,8 +114,8 @@ _REGRESSION_MODELS = frozenset(['AdaBoostRegressor', 'DecisionTreeRegressor',
                                 'LinearRegression', 'RandomForestRegressor',
                                 'Ridge', 'SVR', 'SGDRegressor'])
 
-# list of valid grid objective functions for regression and classification models
-# depending on type of labels
+# list of valid grid objective functions for regression and classification
+# models depending on type of labels
 
 _BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                      'linear_weighted_kappa',
@@ -190,6 +190,25 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
                 self._warned = True
 
             yield train_index, test_index
+
+
+def _import_custom_learner(custom_learner_path, custom_learner_name):
+    '''
+    Does the gruntwork of adding the custom model's module to globals.
+    '''
+    if not custom_learner_path:
+        raise ValueError('custom_learner_path was not set and learner {} '
+                         'was not found.'.format(custom_learner_name))
+
+    if not custom_learner_path.endswith('.py'):
+        raise ValueError('custom_learner_path must end in .py ({})'
+                         .format(custom_learner_path))
+
+    custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
+    sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
+    import_module(custom_learner_module_name)
+    globals()[custom_learner_name] = getattr(sys.modules[custom_learner_module_name],
+                                           custom_learner_name)
 
 
 def _predict_binary(self, X):
@@ -467,11 +486,14 @@ class Learner(object):
     :param min_feature_count: The minimum number of examples a feature
                               must have a nonzero value in to be included.
     :type min_feature_count: int
+    :param custom_learner_path: Path to code where a custom classifier is
+                              defined.
+    :type custom_learner_path: str
     """
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
                  model_kwargs=None, pos_label_str=None, min_feature_count=1,
-                 sampler=None, sampler_kwargs=None):
+                 sampler=None, sampler_kwargs=None, custom_learner_path=None):
         '''
         Initializes a learner object with the specified settings.
         '''
@@ -488,6 +510,37 @@ class Learner(object):
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
         self._sampler_kwargs = {}
+
+        if model_type not in globals():
+            # here, we need to import the custom model and add it
+            # to the appropriate lists of models.
+            _import_custom_learner(custom_learner_path, model_type)
+
+            model_class = globals()[model_type]
+            default_param_grid = (model_class.default_param_grid()
+                                  if hasattr(model_class, 'default_param_grid')
+                                  else [{}])
+
+            # remove the Rescaled prefix if specified for a regressor
+            base_model_type = model_type
+            if model_type.startswith('Rescaled'):
+                base_model_type = model_type.replace('Rescaled', '', 1)
+
+            # ewww, globals :-(
+            global _REQUIRES_DENSE
+            global _REGRESSION_MODELS
+
+            _DEFAULT_PARAM_GRIDS.update({base_model_type: default_param_grid})
+            if hasattr(model_class, 'requires_dense') and \
+                    model_class.requires_dense():
+                _REQUIRES_DENSE = frozenset(_REQUIRES_DENSE |
+                                            {base_model_type})
+
+            if hasattr(model_class, 'is_regression_model') and \
+                    model_class.is_regression_model():
+                _REGRESSION_MODELS = frozenset(_REGRESSION_MODELS |
+                                               {base_model_type})
+
         if model_type.startswith('Rescaled'):
             self._model_type = model_type.replace('Rescaled', '', 1)
             self._rescale = True
@@ -497,6 +550,7 @@ class Learner(object):
         else:
             self._model_type = model_type
             self._rescale = False
+
         self.probability = probability
         self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
                                     self._feature_scaling in {'with_mean',
@@ -679,7 +733,14 @@ class Learner(object):
     @probability.setter
     def probability(self, value):
         # LinearSVC doesn't support predict_proba
-        self._probability = value and self.model_type != 'LinearSVC'
+        model_class = globals()[self.model_type]
+        self._probability = value
+        if not hasattr(model_class, "predict_proba") and value:
+            logger = logging.getLogger(__name__)
+            logger.warning(("probability was set to True, but {} does not have"
+                            " a predict_proba() method.")
+                           .format(self.model_type))
+            self._probability = False
 
     def save(self, learner_path):
         '''
