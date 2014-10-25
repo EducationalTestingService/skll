@@ -736,16 +736,16 @@ def test_summary():
 
 def test_backward_compatibility():
     '''
-    Verify v0.9.17 model can still be loaded and generate the same predictions.
+    Verify v1.0.0 model can still be loaded and generate the same predictions.
     '''
     predict_path = join(_my_dir, 'backward_compatibility',
-                        ('v0.9.17_test_summary_test_summary_'
+                        ('v1.0.0_test_summary_test_summary_'
                          'LogisticRegression.predictions'))
     model_path = join(_my_dir, 'backward_compatibility',
-                      ('v0.9.17_test_summary_test_summary_LogisticRegression.'
+                      ('v1.0.0_test_summary_test_summary_LogisticRegression.'
                        '{}.model').format(sys.version_info[0]))
     test_path = join(_my_dir, 'backward_compatibility',
-                     'v0.9.17_test_summary.jsonlines')
+                     'v1.0.0_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
     examples = load_examples(test_path, quiet=True)
