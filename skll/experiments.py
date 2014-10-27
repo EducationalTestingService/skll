@@ -296,8 +296,8 @@ def _parse_config_file(config_path):
                             '1.0.  Please use the full name, {}, '
                             'instead.').format(learner, _SHORT_NAMES[learner]))
             learners[i] = _SHORT_NAMES[learner]
-    if config.has_option("Input", "featuresets"):
-        featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
+
+    featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
     if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
