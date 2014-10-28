@@ -893,7 +893,7 @@ class Learner(object):
 
     def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective='f1_score_micro',
-              grid_jobs=None, shuffle=True, feature_hasher=False,
+              grid_jobs=None, shuffle=False, feature_hasher=False,
               run_create_label_dict=True):
         '''
         Train a classification model and return the model, score, feature
@@ -981,9 +981,14 @@ class Learner(object):
 
 
         # Shuffle so that the folds are random for the inner grid search CV.
+        # If grid search is True but shuffle isn't, shuffle anyway.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
         # we make a copy of everything (and then get rid of the old version)
-        if shuffle:
+        if grid_search or shuffle:
+            msg = 'Note: training data will be shuffled'
+            msg += ' to randomize grid search folds. ' if grid_search else '. '
+            msg += 'Shuffling may yield different results compared to scikit-learn.'
+            logging.info(msg)
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
@@ -1360,7 +1365,7 @@ class Learner(object):
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=3, grid_jobs=None,
                        grid_objective='f1_score_micro', prediction_prefix=None,
-                       param_grid=None, shuffle=True,
+                       param_grid=None, shuffle=False,
                        feature_hasher=False):
         '''
         Cross-validates a given model on the training examples.
@@ -1413,7 +1418,11 @@ class Learner(object):
         # Shuffle so that the folds are random for CV.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
         # we make a copy of everything (and then get rid of the old version)
-        if shuffle:
+        if grid_search or shuffle:
+            msg = 'Note: training data will be shuffled'
+            msg += ' to randomize grid search folds. ' if grid_search else '. '
+            msg += 'Shuffling may yield different results compared to scikit-learn.'
+            logging.info(msg)
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
