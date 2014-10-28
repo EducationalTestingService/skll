@@ -587,6 +587,11 @@ class Learner(object):
                   path.
         '''
         skll_version, learner = joblib.load(learner_path)
+
+        # For backward compatibility, convert string model types to classes.
+        if isinstance(learner._model_type, string_types):
+            learner._model_type = globals()[learner._model_type]
+
         # Check that we've actually loaded a Learner (or sub-class)
         if not isinstance(learner, cls):
             raise ValueError(('The pickle stored at {} does not contain ' +
