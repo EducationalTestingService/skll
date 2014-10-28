@@ -13,37 +13,25 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
-import glob
-import itertools
-import json
-import math
 import os
 import re
 import sys
-from collections import OrderedDict
 from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
 import scipy.sparse as sp
-from nose.tools import eq_, raises, assert_almost_equal, assert_not_equal
-from numpy.testing import assert_array_equal
-from sklearn.feature_extraction import DictVectorizer, FeatureHasher
+from nose.tools import eq_, assert_almost_equal
+from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import (make_classification,
                                                 make_regression)
-from sklearn.utils.testing import assert_greater, assert_less
-from skll.data import write_feature_file, load_examples, convert_examples
+from skll.data import load_examples
 from skll.data import FeatureSet, NDJWriter
-from skll.experiments import (_load_featureset, run_configuration,
-                              _load_cv_folds, _setup_config_parser,
-                              run_ablation)
-from skll.learner import Learner, SelectByMinCount
-from skll.learner import _REGRESSION_MODELS, _DEFAULT_PARAM_GRIDS
-from skll.metrics import kappa
-from skll.utilities import skll_convert
+from skll.experiments import run_configuration, _setup_config_parser
+from skll.learner import Learner
+from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.utilities.compute_eval_from_predictions \
     import compute_eval_from_predictions
-from scipy.stats import pearsonr
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())

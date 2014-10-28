@@ -16,10 +16,7 @@ import math
 import re
 from os.path import abspath, dirname
 
-import numpy as np
-import scipy.sparse as sp
 from nose.tools import eq_
-from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_regression
 from sklearn.utils.testing import assert_greater

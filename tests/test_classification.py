@@ -21,12 +21,13 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import eq_, assert_almost_equal
+from sklearn.base import RegressorMixin
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import (make_classification,
                                                 make_regression)
 from skll.data import FeatureSet
 from skll.learner import Learner
-from skll.learner import _REGRESSION_MODELS, _DEFAULT_PARAM_GRIDS
+from skll.learner import _DEFAULT_PARAM_GRIDS
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -145,7 +146,7 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     return (train_fs, test_fs)
 
 
-def check_predict(model='LogisticRegression', use_feature_hashing=False):
+def check_predict(model, use_feature_hashing=False):
     '''
     This tests whether predict task runs and generates the same
     number of predictions as samples in the test set. The specified
@@ -154,23 +155,32 @@ def check_predict(model='LogisticRegression', use_feature_hashing=False):
     '''
 
     # create the random data for the given model
-    if model in _REGRESSION_MODELS:
-        train_fs, test_fs, _ = make_regression_data(use_feature_hashing=use_feature_hashing)
-    # feature hashing will not work for Naive Bayes since it requires non-negative feature values
-    elif model == 'MultinomialNB':
-        train_fs, test_fs = make_classification_data(use_feature_hashing=False, non_negative=True)
+    if issubclass(model, RegressorMixin):
+        train_fs, test_fs, _ = \
+            make_regression_data(use_feature_hashing=use_feature_hashing)
+    # feature hashing will not work for Naive Bayes since it requires
+    # non-negative feature values
+    elif model.__name__ == 'MultinomialNB':
+        train_fs, test_fs = \
+            make_classification_data(use_feature_hashing=False,
+                                     non_negative=True)
     else:
-        train_fs, test_fs = make_classification_data(use_feature_hashing=use_feature_hashing)
+        train_fs, test_fs = \
+            make_classification_data(use_feature_hashing=use_feature_hashing)
 
     # create the learner with the specified model
-    learner = Learner(model)
+    learner = Learner(model.__name__)
 
-    # now train the learner on the training data and use feature hashing when specified
-    # and when we are not using a Naive Bayes model
-    learner.train(train_fs, grid_search=False, feature_hasher=use_feature_hashing and model != 'MultinomialNB')
+    # now train the learner on the training data and use feature hashing when
+    # specified and when we are not using a Naive Bayes model
+    learner.train(train_fs, grid_search=False,
+                  feature_hasher=(use_feature_hashing
+                                  and model.__name__ != 'MultinomialNB'))
 
     # now make predictions on the test set
-    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing and model != 'MultinomialNB')
+    predictions = learner.predict(test_fs, \
+        feature_hasher=(use_feature_hashing and
+                        model.__name__ != 'MultinomialNB'))
 
     # make sure we have the same number of outputs as the
     # number of test set samples
@@ -179,7 +189,8 @@ def check_predict(model='LogisticRegression', use_feature_hashing=False):
 
 # the runner function for the prediction tests
 def test_predict():
-    for model, use_feature_hashing in itertools.product(_ALL_MODELS, [True, False]):
+    for model, use_feature_hashing in \
+            itertools.product(_ALL_MODELS, [True, False]):
         yield check_predict, model, use_feature_hashing
 
 

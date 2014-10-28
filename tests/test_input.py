@@ -18,7 +18,7 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, raises
-from skll.experiments import _load_featureset, _setup_config_parser
+from skll.experiments import _load_featureset
 
 _my_dir = abspath(dirname(__file__))
 
