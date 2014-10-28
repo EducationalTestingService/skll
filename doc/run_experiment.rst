@@ -264,10 +264,13 @@ Input
     .. _learners:
 
     **learners** [#]_
-        List of scikit-learn models to try using. A separate job will be
-        run for each combination of classifier and feature-set.
-        Acceptable values are described below. Names in parentheses are
-        aliases that can also be used in configuration files.
+        List of scikit-learn models to try using. A separate job will
+        be run for each combination of classifier and feature-set.
+        Acceptable values are described below. Names in parentheses
+        are aliases that can also be used inconfiguration files.
+        Custom learners can also be specified. See
+        ``custom_learner_path``.
+        
 
         Classifiers:
 
@@ -302,6 +305,17 @@ Input
             beginning of the full name (e.g., ``RescaledSVR``) to get a version
             of the regressor where predictions are rescaled and constrained to
             better match the training set.
+
+    **custom_learner_path** *(Optional)*
+        Path to a .py file that defines a custom learner.  This file will be
+        imported dynamically.  This is only required if a custom learner in
+        specified in the list of learners.  Custom learners must implement
+        the ``fit`` and ``predict`` methods and inherit
+        ``sklearn.base.BaseEstimator``.  Custom regression learners must also
+        inherit ``sklearn.base.RegressorMixin`` and implement a method
+        ``is_regression_model`` that returns ``True``.  Models that
+        require dense matrices should implement a method ``requires_dense``
+        that returns ``True``.
 
     **fixed_parameters** *(Optional)*
         List of dicts containing parameters you want to have fixed for each
