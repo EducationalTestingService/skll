@@ -1034,51 +1034,36 @@ def test_ablation_cv_feature_hasher_all_combos():
 
 
 def make_scaling_data(use_feature_hashing=False):
-    num_train_examples = 1000
-    num_test_examples = 100
 
-    np.random.seed(1234567890)
+    X, y = make_classification(n_samples=1000, n_classes=2,
+                               n_features=5, n_informative=5,
+                               n_redundant=0, random_state=1234567890)
 
-    # create training data
-    ids = []
+    # we want to arbitrary scale the various features to test the scaling
+    scalers = np.array([1, 10, 100, 1000, 10000])
+    X = X * scalers
+
+    # since we want to use SKLL's FeatureSet class, we need to
+    # create a list of IDs
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 1001)]
+
+    # create a list of dictionaries as the features
+    feature_names = ['f{}'.format(n) for n in range(1, 6)]
     features = []
-    classes = []
-    for j in range(num_train_examples):
-        y = np.random.choice(['dog', 'cat'])
-        ex_id = "EXAMPLE_{}".format(j)
-        feat_dict = {}
-        scalers = [1, 10, 100, 1000, 10000]
-        for feat_num in range(5):
-            featval = np.random.random() * scalers[feat_num]
-            feat_dict["f{}".format(feat_num)] = featval
-        features.append(feat_dict)
-        ids.append(ex_id)
-        classes.append(y)
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # split everything into training and testing portions
+    train_features, test_features = features[:800], features[800:]
+    train_y, test_y = y[:800], y[800:]
+    train_ids, test_ids = ids[:800], ids[800:]
 
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
-
-    train_fs = FeatureSet('train_scaling', ids=ids,
-                          features=features, classes=classes,
+    train_fs = FeatureSet('train_scaling', ids=train_ids,
+                          features=train_features, classes=train_y,
                           vectorizer=vectorizer)
-
-    # create the test data
-    ids = []
-    features = []
-    classes = []
-    for j in range(num_test_examples):
-        y = np.random.choice(['dog', 'cat'])
-        ex_id = "EXAMPLE_{}".format(j)
-        feat_dict = {}
-        scalers = [1, 10, 100, 1000, 10000]
-        for feat_num in range(5):
-            featval = np.random.random() * scalers[feat_num]
-            feat_dict["f{}".format(feat_num)] = featval
-        features.append(feat_dict)
-        ids.append(ex_id)
-        classes.append(y)
-
-    test_fs = FeatureSet('test_scaling', ids=ids,
-                         features=features, classes=classes,
+    test_fs = FeatureSet('test_scaling', ids=test_ids,
+                         features=test_features, classes=test_y,
                          vectorizer=vectorizer)
 
     return (train_fs, test_fs)
@@ -1089,24 +1074,23 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # create a Linear SVM with the value of scaling as specified
     feature_scaling = 'both' if use_scaling else 'none'
-    learner = Learner('LinearSVC', feature_scaling=feature_scaling)
+    learner = Learner('LinearSVC', feature_scaling=feature_scaling, pos_label_str=1)
 
     # train the learner on the training set and test on the testing set
     learner.train(train_fs, feature_hasher=use_feature_hashing)
     test_output = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)
+    print(test_output[1])
     dog_fmeasure, cat_fmeasure = [test_output[2][y]['F-measure'] for y in test_output[2]]
 
     # sort the f-measures to always have the larger one first
-    # we do this to be deterministic because the SVM can't seem
-    # to tell dogs and cats apart for this data very well because
-    # there are an equal number of both.
+    # we do this to be deterministic
     sorted_fmeasures = sorted([dog_fmeasure, cat_fmeasure], reverse=True)
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_sorted_fmeasures = [0.51327433628318575, 0.36781609195402304] if not use_scaling else [0.57894736842105265, 0.44186046511627908]
+        expected_sorted_fmeasures = [0.875, 0.86458333333333326] if not use_scaling else [0.93273542600896853, 0.9152542372881356]
     else:
-        expected_sorted_fmeasures = [0.58646616541353391, 0.17910447761194029] if not use_scaling else [0.59677419354838701, 0.34210526315789469]
+        expected_sorted_fmeasures = [0.7883817427385893, 0.679245283018868] if not use_scaling else [0.86255924170616105, 0.84656084656084651]
 
     for expected, actual in zip(expected_sorted_fmeasures, sorted_fmeasures):
         assert_almost_equal(expected, actual)
