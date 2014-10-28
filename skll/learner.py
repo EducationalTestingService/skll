@@ -598,7 +598,7 @@ class Learner(object):
                               'a {} object.').format(learner_path, cls))
         # Check that versions are compatible. (Currently, this just checks
         # that major versions match)
-        elif skll_version[0] == VERSION[0]:
+        elif skll_version >= (0, 9, 17):
             if not hasattr(learner, 'sampler'):
                 learner.sampler = None
             return learner
