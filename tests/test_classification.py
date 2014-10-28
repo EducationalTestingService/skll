@@ -25,7 +25,6 @@ from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import (make_classification,
                                                 make_regression)
 from skll.data import FeatureSet
-from skll.experiments import _setup_config_parser
 from skll.learner import Learner
 from skll.learner import _REGRESSION_MODELS, _DEFAULT_PARAM_GRIDS
 

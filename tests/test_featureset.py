@@ -25,7 +25,6 @@ from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_regression
 from skll.data import FeatureSet, write_feature_file, load_examples, convert_examples
-from skll.experiments import _load_featureset, _setup_config_parser
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.utilities import skll_convert
 

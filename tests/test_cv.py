@@ -16,7 +16,7 @@ import itertools
 import os
 import re
 from io import open
-from os.path import abspath, dirname, exists, join
+from os.path import abspath, dirname
 
 import numpy as np
 from nose.tools import eq_
@@ -24,14 +24,8 @@ from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 from sklearn.utils.testing import assert_greater, assert_less
 from skll.data import FeatureSet
-from skll.experiments import _setup_config_parser
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
-# from skll.metrics import kappa
-# from skll.utilities import skll_convert
-# from skll.utilities.compute_eval_from_predictions \
-#     import compute_eval_from_predictions
-# from scipy.stats import pearsonr
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
