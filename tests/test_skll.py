@@ -1079,19 +1079,15 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
     # train the learner on the training set and test on the testing set
     learner.train(train_fs, feature_hasher=use_feature_hashing)
     test_output = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)
-    dog_fmeasure, cat_fmeasure = [test_output[2][y]['F-measure'] for y in test_output[2]]
-
-    # sort the f-measures to always have the larger one first
-    # we do this to be deterministic
-    sorted_fmeasures = sorted([dog_fmeasure, cat_fmeasure], reverse=True)
+    fmeasures = [test_output[2][0]['F-measure'], test_output[2][1]['F-measure']]
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_sorted_fmeasures = [0.80198019801980192, 0.7979797979797979] if not use_scaling else [0.94883720930232551, 0.94054054054054048]
+        expected_fmeasures = [0.7979797979797979, 0.80198019801980192] if not use_scaling else [0.94883720930232551, 0.94054054054054048]
     else:
-        expected_sorted_fmeasures = [0.83962264150943389, 0.81914893617021278] if not use_scaling else [0.88038277511961716, 0.86910994764397898]
+        expected_fmeasures = [0.83962264150943389, 0.81914893617021278] if not use_scaling else [0.88038277511961716, 0.86910994764397898]
 
-    for expected, actual in zip(expected_sorted_fmeasures, sorted_fmeasures):
+    for expected, actual in zip(expected_fmeasures, fmeasures):
         assert_almost_equal(expected, actual)
 
 
