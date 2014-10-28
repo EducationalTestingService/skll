@@ -312,10 +312,9 @@ Input
         specified in the list of learners.  Custom learners must implement
         the ``fit`` and ``predict`` methods and inherit
         ``sklearn.base.BaseEstimator``.  Custom regression learners must also
-        inherit ``sklearn.base.RegressorMixin`` and implement a method
-        ``is_regression_model`` that returns ``True``.  Models that
-        require dense matrices should implement a method ``requires_dense``
-        that returns ``True``.
+        inherit ``sklearn.base.RegressorMixin``.  Models that require dense
+        matrices should implement a method ``requires_dense`` that returns
+        ``True``.
 
     **fixed_parameters** *(Optional)*
         List of dicts containing parameters you want to have fixed for each
@@ -346,13 +345,13 @@ Input
 
         .. code-block:: python
 
-           {'criterion': 'entropy', 'compute_importances': True, 'random_state': 123456789}
+           {'random_state': 123456789}
 
         *RandomForestClassifier* and *RandomForestRegressor*
 
         .. code-block:: python
 
-           {'n_estimators': 500, 'compute_importances': True, 'random_state': 123456789}
+           {'n_estimators': 500, 'random_state': 123456789}
 
 
         *GradientBoostingClassifier* and *GradientBoostingRegressor*

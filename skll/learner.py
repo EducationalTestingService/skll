@@ -28,6 +28,7 @@ from six import iteritems, itervalues
 from six import string_types
 from six.moves import xrange as range
 from six.moves import zip
+from sklearn.base import RegressorMixin
 from sklearn.cross_validation import KFold, StratifiedKFold
 from sklearn.cross_validation import LeaveOneLabelOut
 from sklearn.feature_selection import SelectKBest
@@ -60,59 +61,53 @@ from skll.version import VERSION
 
 
 # Constants #
-_DEFAULT_PARAM_GRIDS = {'AdaBoostClassifier': [{'learning_rate': [0.01, 0.1,
-                                                                  1.0, 10.0,
-                                                                  100.0]}],
-                        'AdaBoostRegressor': [{'learning_rate': [0.01, 0.1,
-                                                                 1.0, 10.0,
-                                                                 100.0]}],
-                        'DecisionTreeClassifier': [{'max_features': ["auto",
-                                                                     None]}],
-                        'DecisionTreeRegressor': [{'max_features': ["auto",
-                                                                    None]}],
-                        'ElasticNet': [{'alpha': [0.01, 0.1, 1.0, 10.0,
-                                                  100.0]}],
-                        'GradientBoostingClassifier': [{'max_depth':
-                                                        [1, 3, 5]}],
-                        'GradientBoostingRegressor': [{'max_depth': [1, 3,
-                                                                     5]}],
-                        'KNeighborsClassifier': [{'n_neighbors': [1, 5, 10,
-                                                                  100],
-                                                  'weights': ['uniform',
-                                                              'distance']}],
-                        'KNeighborsRegressor': [{'n_neighbors': [1, 5, 10,
-                                                                 100],
-                                                 'weights': ['uniform',
-                                                             'distance']}],
-                        'Lasso': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'LinearRegression': [{}],
-                        'LinearSVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'LogisticRegression': [{'C': [0.01, 0.1, 1.0, 10.0,
-                                                      100.0]}],
-                        'SVC': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                                 'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'MultinomialNB': [{'alpha': [0.1, 0.25, 0.5, 0.75,
-                                                     1.0]}],
-                        'RandomForestClassifier': [{'max_depth': [1, 5, 10,
-                                                                  None]}],
-                        'RandomForestRegressor': [{'max_depth': [1, 5, 10,
-                                                                 None]}],
-                        'Ridge': [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        'SGDClassifier': [{'alpha': [0.000001, 0.00001, 0.0001,
-                                                     0.001, 0.01],
-                                           'penalty': ['l1', 'l2',
-                                                       'elasticnet']}],
-                        'SGDRegressor': [{'alpha': [0.000001, 0.00001, 0.0001,
-                                                    0.001, 0.01],
-                                          'penalty': ['l1', 'l2',
-                                                      'elasticnet']}],
-                        'SVR': [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
+_DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
+                        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        AdaBoostRegressor:
+                        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        DecisionTreeClassifier:
+                        [{'max_features': ["auto", None]}],
+                        DecisionTreeRegressor:
+                        [{'max_features': ["auto", None]}],
+                        ElasticNet:
+                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        GradientBoostingClassifier:
+                        [{'max_depth': [1, 3, 5]}],
+                        GradientBoostingRegressor:
+                        [{'max_depth': [1, 3, 5]}],
+                        KNeighborsClassifier:
+                        [{'n_neighbors': [1, 5, 10, 100],
+                          'weights': ['uniform', 'distance']}],
+                        KNeighborsRegressor:
+                        [{'n_neighbors': [1, 5, 10, 100],
+                          'weights': ['uniform', 'distance']}],
+                        Lasso:
+                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        LinearRegression:
+                        [{}],
+                        LinearSVC:
+                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        LogisticRegression:
+                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        SVC: [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+                               'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        MultinomialNB:
+                        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
+                        RandomForestClassifier:
+                        [{'max_depth': [1, 5, 10, None]}],
+                        RandomForestRegressor:
+                        [{'max_depth': [1, 5, 10, None]}],
+                        Ridge:
+                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        SGDClassifier:
+                        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+                          'penalty': ['l1', 'l2', 'elasticnet']}],
+                        SGDRegressor:
+                        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+                          'penalty': ['l1', 'l2', 'elasticnet']}],
+                        SVR:
+                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
 
-_REGRESSION_MODELS = frozenset(['AdaBoostRegressor', 'DecisionTreeRegressor',
-                                'ElasticNet', 'GradientBoostingRegressor',
-                                'KNeighborsRegressor', 'Lasso',
-                                'LinearRegression', 'RandomForestRegressor',
-                                'Ridge', 'SVR', 'SGDRegressor'])
 
 # list of valid grid objective functions for regression and classification
 # models depending on type of labels
@@ -148,13 +143,12 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'lwk_off_by_one',
                                   'qwk_off_by_one'])
 
-_REQUIRES_DENSE = frozenset(['AdaBoostClassifier', 'AdaBoostRegressor',
-                             'DecisionTreeClassifier', 'DecisionTreeRegressor',
-                             'GradientBoostingClassifier',
-                             'GradientBoostingRegressor',
-                             'KNeighborsClassifier', 'KNeighborsRegressor',
-                             'MultinomialNB', 'RandomForestClassifier',
-                             'RandomForestRegressor'])
+_REQUIRES_DENSE = (AdaBoostClassifier, AdaBoostRegressor,
+                   DecisionTreeClassifier, DecisionTreeRegressor,
+                   GradientBoostingClassifier, GradientBoostingRegressor,
+                   KNeighborsClassifier, KNeighborsRegressor,
+                   MultinomialNB, RandomForestClassifier,
+                   RandomForestRegressor)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
@@ -192,6 +186,17 @@ class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
             yield train_index, test_index
 
 
+def _find_default_param_grid(cls):
+    '''
+    Finds the default parameter grid for the specified classifier.
+    '''
+    for key_cls, grid in _DEFAULT_PARAM_GRIDS.items():
+        if issubclass(cls, key_cls):
+            return grid
+    return None
+
+
+
 def _import_custom_learner(custom_learner_path, custom_learner_name):
     '''
     Does the gruntwork of adding the custom model's module to globals.
@@ -207,8 +212,8 @@ def _import_custom_learner(custom_learner_path, custom_learner_name):
     custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
     sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
     import_module(custom_learner_module_name)
-    globals()[custom_learner_name] = getattr(sys.modules[custom_learner_module_name],
-                                           custom_learner_name)
+    globals()[custom_learner_name] = \
+        getattr(sys.modules[custom_learner_module_name], custom_learner_name)
 
 
 def _predict_binary(self, X):
@@ -292,6 +297,10 @@ def rescaled(cls):
     orig_init = cls.__init__
     orig_fit = cls.fit
     orig_predict = cls.predict
+
+    if not issubclass(cls, RegressorMixin):
+        raise ValueError('Classifiers cannot be rescaled. ' +
+                         'Only regressors can.')
 
     # Define all new versions of functions
     @wraps(cls.fit)
@@ -459,12 +468,8 @@ class Learner(object):
     A simpler learner interface around many scikit-learn classification
     and regression functions.
 
-    :param model_type: Type of estimator to create. Options are:
-                       'LogisticRegression', 'LinearSVC', 'SVC',
-                       'MultinomialNB', 'DecisionTreeClassifier',
-                       'RandomForestClassifier',
-                       'GradientBoostingClassifier', 'Ridge', 'RescaledRidge',
-                       'SVR', 'RescaledSVR', and 'GradientBoostingRegressor'
+    :param model_type: Type of estimator to create (e.g., LogisticRegression).
+                       See the skll package documentation for valid options.
     :type model_type: str
     :param probability: Should learner return probabilities of all
                         classes (instead of just class with highest
@@ -515,49 +520,28 @@ class Learner(object):
             # here, we need to import the custom model and add it
             # to the appropriate lists of models.
             _import_custom_learner(custom_learner_path, model_type)
-
             model_class = globals()[model_type]
+
             default_param_grid = (model_class.default_param_grid()
                                   if hasattr(model_class, 'default_param_grid')
                                   else [{}])
 
-            # remove the Rescaled prefix if specified for a regressor
-            base_model_type = model_type
-            if model_type.startswith('Rescaled'):
-                base_model_type = model_type.replace('Rescaled', '', 1)
-
             # ewww, globals :-(
             global _REQUIRES_DENSE
-            global _REGRESSION_MODELS
 
-            _DEFAULT_PARAM_GRIDS.update({base_model_type: default_param_grid})
+            _DEFAULT_PARAM_GRIDS.update({model_class: default_param_grid})
             if hasattr(model_class, 'requires_dense') and \
                     model_class.requires_dense():
-                _REQUIRES_DENSE = frozenset(_REQUIRES_DENSE |
-                                            {base_model_type})
+                _REQUIRES_DENSE = _REQUIRES_DENSE + (model_class,)
 
-            if hasattr(model_class, 'is_regression_model') and \
-                    model_class.is_regression_model():
-                _REGRESSION_MODELS = frozenset(_REGRESSION_MODELS |
-                                               {base_model_type})
-
-        if model_type.startswith('Rescaled'):
-            self._model_type = model_type.replace('Rescaled', '', 1)
-            self._rescale = True
-            if self._model_type not in _REGRESSION_MODELS:
-                raise ValueError('Classifiers cannot be rescaled. ' +
-                                 'Only regressors can.')
-        else:
-            self._model_type = model_type
-            self._rescale = False
-
+        self._model_type = globals()[model_type]
         self.probability = probability
-        self._use_dense_features = (self._model_type in _REQUIRES_DENSE or
-                                    self._feature_scaling in {'with_mean',
-                                                              'both'})
+        self._use_dense_features = \
+            (issubclass(self._model_type, _REQUIRES_DENSE) or
+             self._feature_scaling in {'with_mean', 'both'})
 
         # Set default keyword arguments for models that we have some for.
-        if self._model_type == 'SVC':
+        if issubclass(self._model_type, SVC):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
             if self.probability:
@@ -566,27 +550,23 @@ class Learner(object):
                                'cross-validation to produce probabilities, ' +
                                'results will not be exactly replicable when ' +
                                'using SVC and probability mode.')
-        elif self._model_type == {'DecisionTreeClassifier'}:
-            self._model_kwargs['criterion'] = 'entropy'
-        elif self._model_type in {'RandomForestClassifier',
-                                  'RandomForestRegressor',
-                                  'GradientBoostingClassifier',
-                                  'GradientBoostingRegressor',
-                                  'AdaBoostClassifier', 'AdaBoostRegressor'}:
+        elif issubclass(self._model_type,
+                        (RandomForestClassifier, RandomForestRegressor,
+                         GradientBoostingClassifier, GradientBoostingRegressor,
+                         AdaBoostClassifier, AdaBoostRegressor)):
             self._model_kwargs['n_estimators'] = 500
-        elif self._model_type == 'SVR':
+        elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['kernel'] = 'linear'
-        elif self._model_type == 'SGDClassifier':
+        elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
-        if self._model_type in {'RandomForestClassifier', 'LinearSVC',
-                                'LogisticRegression', 'DecisionTreeClassifier',
-                                'GradientBoostingClassifier',
-                                'GradientBoostingRegressor',
-                                'DecisionTreeRegressor',
-                                'RandomForestRegressor', 'SGDClassifier',
-                                'SGDRegressor', 'AdaBoostRegressor',
-                                'AdaBoostClassifier'}:
+
+        if issubclass(self._model_type,
+                      (RandomForestClassifier, LinearSVC, LogisticRegression,
+                       DecisionTreeClassifier, GradientBoostingClassifier,
+                       GradientBoostingRegressor, DecisionTreeRegressor,
+                       RandomForestRegressor, SGDClassifier, SGDRegressor,
+                       AdaBoostRegressor, AdaBoostClassifier)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler in {'Nystroem', 'RBFSampler', 'SkewedChi2Sampler'}:
@@ -607,13 +587,18 @@ class Learner(object):
                   path.
         '''
         skll_version, learner = joblib.load(learner_path)
+
+        # For backward compatibility, convert string model types to classes.
+        if isinstance(learner._model_type, string_types):
+            learner._model_type = globals()[learner._model_type]
+
         # Check that we've actually loaded a Learner (or sub-class)
         if not isinstance(learner, cls):
             raise ValueError(('The pickle stored at {} does not contain ' +
                               'a {} object.').format(learner_path, cls))
         # Check that versions are compatible. (Currently, this just checks
         # that major versions match)
-        elif skll_version[0] == VERSION[0]:
+        elif skll_version >= (0, 9, 17):
             if not hasattr(learner, 'sampler'):
                 learner.sampler = None
             return learner
@@ -627,7 +612,7 @@ class Learner(object):
 
     @property
     def model_type(self):
-        ''' A string representation of the underlying modeltype '''
+        ''' The model type (i.e., the class) '''
         return self._model_type
 
     @property
@@ -733,9 +718,8 @@ class Learner(object):
     @probability.setter
     def probability(self, value):
         # LinearSVC doesn't support predict_proba
-        model_class = globals()[self.model_type]
         self._probability = value
-        if not hasattr(model_class, "predict_proba") and value:
+        if not hasattr(self.model_type, "predict_proba") and value:
             logger = logging.getLogger(__name__)
             logger.warning(("probability was set to True, but {} does not have"
                             " a predict_proba() method.")
@@ -762,21 +746,16 @@ class Learner(object):
                   estimator, and a parameter grid to search.
         '''
         estimator = None
-        default_param_grid = None
-        if self._model_type in _DEFAULT_PARAM_GRIDS:
-            model_type = self._model_type
-            # Ensure kernel argument has right type for Python version
-            if model_type == 'SVR' and sys.version_info < (3, 0):
-                self.model_kwargs['kernel'] = self.model_kwargs[
-                    'kernel'].encode()
-            if self._rescale:
-                model_type = 'Rescaled' + model_type
-            # This crazy looking line creates an estimator based on a string
-            estimator = globals()[model_type](**self._model_kwargs)
-            default_param_grid = _DEFAULT_PARAM_GRIDS[self._model_type]
-        else:
+        default_param_grid = _find_default_param_grid(self._model_type)
+        if default_param_grid is None:
             raise ValueError(("{} is not a valid learner " +
                               "type.").format(self._model_type))
+
+        # Ensure that the kernel argument has right type for Python version.
+        if issubclass(self._model_type, SVR) and sys.version_info < (3, 0):
+            self.model_kwargs['kernel'] = \
+                self.model_kwargs['kernel'].encode()
+        estimator = self._model_type(**self._model_kwargs)
 
         return estimator, default_param_grid
 
@@ -786,7 +765,7 @@ class Learner(object):
         '''
 
         # Make sure the labels for a regression task are not strings.
-        if self._model_type in _REGRESSION_MODELS:
+        if issubclass(self._model_type, RegressorMixin):
             for label in examples.classes:
                 if isinstance(label, string_types):
                     raise TypeError("You are doing regression with" +
@@ -821,7 +800,7 @@ class Learner(object):
         '''
 
         # We don't need to do this for regression models, so return.
-        if self._model_type in _REGRESSION_MODELS:
+        if issubclass(self._model_type, RegressorMixin):
             return
 
         # extract list of unique labels if we are doing classification
@@ -852,7 +831,7 @@ class Learner(object):
         self._check_input_formatting(examples)
 
         # Create label_dict if we weren't passed one
-        if self._model_type not in _REGRESSION_MODELS:
+        if not issubclass(self._model_type, RegressorMixin):
 
             # extract list of unique labels if we are doing classification
             self.label_list = np.unique(examples.classes).tolist()
@@ -861,8 +840,8 @@ class Learner(object):
             # last
             if self.pos_label_str:
                 self.label_list = sorted(self.label_list,
-                                         key=lambda x: (x == self.pos_label_str,
-                                                        x))
+                                         key=lambda x:
+                                         (x == self.pos_label_str, x))
 
             # Given a list of all labels in the dataset and a list of the
             # unique labels in the set, convert the first list to an array of
@@ -878,7 +857,7 @@ class Learner(object):
             min_count=self._min_feature_count)
 
         # Create scaler if we weren't passed one and it's necessary
-        if self._model_type != 'MultinomialNB':
+        if not issubclass(self._model_type, MultinomialNB):
             if self._feature_scaling != 'none':
                 scale_with_mean = self._feature_scaling in {
                     'with_mean', 'both'}
@@ -938,7 +917,7 @@ class Learner(object):
         # if we are asked to do grid search, check that the grid objective
         # function is valid for the selected learner
         if grid_search:
-            if self.model_type in _REGRESSION_MODELS:
+            if issubclass(self.model_type, RegressorMixin):
                 # types 2-4 are valid for all regression models
                 if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
                     raise ValueError("{} is not a valid grid objective "
@@ -1008,7 +987,7 @@ class Learner(object):
             try:
                 xtrain = xtrain.todense()
             except MemoryError:
-                if self._model_type in _REQUIRES_DENSE:
+                if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = ('{} does not support sparse ' +
                               'matrices.').format(self._model_type)
                 else:
@@ -1018,14 +997,14 @@ class Learner(object):
                                   'training data to dense. This was required' +
                                   ' because ' + reason)
 
-        if feature_hasher and (self._model_type == 'MultinomialNB'):
+        if feature_hasher and issubclass(self._model_type, MultinomialNB):
             raise ValueError('It is no possible to use feature_hasher with' +
                              ' Naive Bayes, because it can generate some' +
                              ' negative values and Naive Bayes can not' +
                              ' manage them. ')
 
         # Scale features if necessary
-        if self._model_type != 'MultinomialNB':
+        if not issubclass(self._model_type, MultinomialNB):
             xtrain = self.scaler.fit_transform(xtrain)
 
         # check whether any feature values are too large
@@ -1045,7 +1024,7 @@ class Learner(object):
 
         # use label dict transformed version of examples.classes if doing
         # classification
-        if self._model_type not in _REGRESSION_MODELS:
+        if not issubclass(self._model_type, RegressorMixin):
             classes = np.array([self.label_dict[label] for label in
                                 examples.classes])
         else:
@@ -1085,7 +1064,7 @@ class Learner(object):
             # If we're using a correlation metric for doing binary
             # classification, override the estimator's predict function
             if (grid_objective in _CORRELATION_METRICS and
-                    self._model_type not in _REGRESSION_MODELS):
+                    not issubclass(self._model_type, RegressorMixin)):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
 
@@ -1142,7 +1121,7 @@ class Learner(object):
                             append=append, feature_hasher=feature_hasher)
 
         # extract actual labels (transformed for classification tasks)
-        if self._model_type not in _REGRESSION_MODELS:
+        if not issubclass(self._model_type, RegressorMixin):
             ytest = np.array([self.label_dict[label] for label in
                               examples.classes])
         else:
@@ -1170,7 +1149,7 @@ class Learner(object):
             except ValueError:
                 grid_score = float('NaN')
 
-        if self._model_type in _REGRESSION_MODELS:
+        if issubclass(self._model_type, RegressorMixin):
             result_dict = {'descriptive': defaultdict(dict)}
             for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
                 result_dict['descriptive'][table_label]['min'] = min(y)
@@ -1282,7 +1261,7 @@ class Learner(object):
             try:
                 xtest = xtest.todense()
             except MemoryError:
-                if self._model_type in _REQUIRES_DENSE:
+                if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = ('{} does not support sparse ' +
                               'matrices.').format(self._model_type)
                 else:
@@ -1293,7 +1272,7 @@ class Learner(object):
                                   reason)
 
         # Scale xtest if necessary
-        if self._model_type != 'MultinomialNB':
+        if not issubclass(self._model_type, MultinomialNB):
             xtest = self.scaler.transform(xtest)
 
         # make the prediction on the test data
@@ -1328,7 +1307,7 @@ class Learner(object):
                                         [str(x) for x in class_probs]),
                               file=predictionfh)
                 else:
-                    if self._model_type in _REGRESSION_MODELS:
+                    if issubclass(self._model_type, RegressorMixin):
                         for example_id, pred in zip(example_ids, yhat):
                             print('{0}\t{1}'.format(example_id, pred),
                                   file=predictionfh)
@@ -1338,7 +1317,8 @@ class Learner(object):
                                                     self.label_list[int(pred)]),
                                   file=predictionfh)
 
-        if class_labels and self._model_type not in _REGRESSION_MODELS:
+        if (class_labels and not
+                issubclass(self._model_type, RegressorMixin)):
             yhat = np.array([self.label_list[int(pred)] for pred in yhat])
 
         return yhat
@@ -1347,7 +1327,7 @@ class Learner(object):
         assert isinstance(cv_folds, int)
 
         # For regression models, we can just return the current cv_folds
-        if self._model_type in _REGRESSION_MODELS:
+        if issubclass(self._model_type, RegressorMixin):
             return cv_folds
 
         min_examples_per_class = min(Counter(classes).values())
@@ -1437,7 +1417,7 @@ class Learner(object):
                 cv_folds, examples.classes)
 
             stratified = (stratified and
-                          not self._model_type in _REGRESSION_MODELS)
+                          not issubclass(self._model_type, RegressorMixin))
             kfold = (StratifiedKFold(examples.classes, n_folds=cv_folds) if
                      stratified else KFold(len(examples.classes),
                                            n_folds=cv_folds))

@@ -31,7 +31,7 @@ from sklearn import __version__ as SCIKIT_VERSION
 
 from skll.data import FeatureSet, load_examples
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
-                          _import_custom_learner, _DEFAULT_PARAM_GRIDS)
+                          _import_custom_learner)
 from skll.version import __version__
 
 import yaml
@@ -614,8 +614,9 @@ def _classify_featureset(args):
                               custom_learner_path=custom_learner_path)
         # load the model if it already exists
         else:
-            # import the custom learner path here in case we are reusing a saved model
-            if custom_learner_path and learner_name not in _DEFAULT_PARAM_GRIDS:
+            # import the custom learner path here in case we are reusing a
+            # saved model
+            if custom_learner_path:
                 _import_custom_learner(custom_learner_path, learner_name)
             train_set_size = 'unknown'
             if os.path.exists(modelfile) and not overwrite:
