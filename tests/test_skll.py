@@ -1074,12 +1074,11 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # create a Linear SVM with the value of scaling as specified
     feature_scaling = 'both' if use_scaling else 'none'
-    learner = Learner('LinearSVC', feature_scaling=feature_scaling, pos_label_str=1)
+    learner = Learner('SGDClassifier', feature_scaling=feature_scaling, pos_label_str=1)
 
     # train the learner on the training set and test on the testing set
     learner.train(train_fs, feature_hasher=use_feature_hashing)
     test_output = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)
-    print(test_output[1])
     dog_fmeasure, cat_fmeasure = [test_output[2][y]['F-measure'] for y in test_output[2]]
 
     # sort the f-measures to always have the larger one first
@@ -1088,9 +1087,9 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_sorted_fmeasures = [0.875, 0.86458333333333326] if not use_scaling else [0.93273542600896853, 0.9152542372881356]
+        expected_sorted_fmeasures = [0.80198019801980192, 0.7979797979797979] if not use_scaling else [0.94883720930232551, 0.94054054054054048]
     else:
-        expected_sorted_fmeasures = [0.7883817427385893, 0.679245283018868] if not use_scaling else [0.86255924170616105, 0.84656084656084651]
+        expected_sorted_fmeasures = [0.83962264150943389, 0.81914893617021278] if not use_scaling else [0.88038277511961716, 0.86910994764397898]
 
     for expected, actual in zip(expected_sorted_fmeasures, sorted_fmeasures):
         assert_almost_equal(expected, actual)
