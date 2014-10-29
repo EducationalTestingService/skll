@@ -967,10 +967,8 @@ class Learner(object):
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
-            msg = 'Note: training data will be shuffled'
-            msg += ' to randomize grid search folds. ' if grid_search else '. '
-            msg += 'Shuffling may yield different results compared to scikit-learn.'
-            logging.info(msg)
+            if grid_search and not shuffle:
+                logger.warning('Note: training data will be shuffled to randomize grid search folds. Shuffling may yield different results compared to scikit-learn.')
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
