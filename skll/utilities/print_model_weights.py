@@ -58,11 +58,11 @@ def main():
 
     if intercept is not None:
         # subclass of LinearModel
-        if len(intercept) == 1:
-            print("intercept = {:.12f}".format(intercept[0][1]))
+        if '_intercept_' in intercept:
+            print("intercept = {:.12f}".format(intercept['_intercept_']))
         else:
             print("== intercept values ==")
-            for (label, val) in intercept:
+            for (label, val) in intercept.items():
                 print("{:.12f}\t{}".format(val, label))
         print()
 
