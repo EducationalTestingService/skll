@@ -103,7 +103,7 @@ class FeatureSet(object):
             return
 
     def __len__(self):
-        return self.features.shape[1]
+        return self.features.shape[0]
 
     def __add__(self, other):
         '''

@@ -165,7 +165,7 @@ def test_length():
     # create a feature set
     fs = FeatureSet('test', ids, features=features, classes=y)
 
-    eq_(len(fs), 4)
+    eq_(len(fs), 100)
 
 
 @raises(ValueError)
