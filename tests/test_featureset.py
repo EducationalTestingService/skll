@@ -413,6 +413,102 @@ def test_iteration_without_dictvectorizer():
         pass
 
 
+def test_filter_ids():
+    '''
+    Test filtering with specified IDs
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set
+    fs = FeatureSet('test', ids, features=features, classes=y)
+
+    # keep just the IDs after Example_50
+    ids_to_filter = ['Example_{}'.format(i) for i in range(51, 100)]
+    fs.filter(ids=ids_to_filter)
+
+    # make sure that we removed the right things
+    assert_array_equal(fs.ids, np.array(ids_to_filter))
+
+
+def test_filter_classes():
+    '''
+    Test filtering with specified classes
+    '''
+
+    # get a 1000 instances with 4 features each
+    X, _ = make_classification(n_samples=1000, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=5, random_state=1234567890)
+
+    # artifically create the classes vector
+    y = np.array([0] * 200 + [1] * 200 + [2] * 200 + [3] * 200 + [4] * 200)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(1000)]
+
+    # create a feature set
+    fs = FeatureSet('test', ids, features=features, classes=y)
+
+    # keep just the instaces with 0, 1 and 2 labels
+    fs.filter(classes=[0, 1, 2])
+
+    # make sure that we removed the right things (the first 600 examples)
+    ids_kept = ['Example_{}'.format(i) for i in range(600)]
+    assert_array_equal(fs.ids, np.array(ids_kept))
+
+
+def test_filter_features():
+    '''
+    Test filtering with specified features
+    '''
+
+    # get a 100 instances with 5 features each
+    X, y = make_classification(n_samples=100, n_features=5,
+                               n_informative=5, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set
+    fs = FeatureSet('test', ids, features=features, classes=y)
+
+    # keep only features f1 and f4
+    fs.filter(features=['f1', 'f4'])
+
+    # make sure that we only have 2 features
+    eq_(fs.features.shape, (100, 2))
+
+    # and that they are the first and fourth columns
+    # of X that we generated
+    assert (fs.features.todense() == X[:, [0, 3]]).all()
+
+
 def test_feature_merging_order_invariance():
     '''
     Test whether featuresets with different orders of IDs can be merged

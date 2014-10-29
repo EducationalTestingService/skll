@@ -197,10 +197,9 @@ class FeatureSet(object):
         # Construct mask that indicates which examples to keep
         mask = np.ones(len(self), dtype=bool)
         if ids is not None:
-            mask = np.logical_and(mask, np.logical_not(np.in1d(self.ids, ids)))
+            mask = np.logical_and(mask, np.in1d(self.ids, ids))
         if classes is not None:
-            mask = np.logical_and(mask, np.logical_not(np.in1d(self.classes,
-                                                               classes)))
+            mask = np.logical_and(mask, np.in1d(self.classes, classes))
         if inverse:
             mask = np.logical_not(mask)
 
