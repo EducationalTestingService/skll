@@ -174,6 +174,12 @@ Input
         Note that this will cause IDs to be printed as floats in prediction
         files (e.g., "4.0" instead of "4" or "0004" or "4.000").
 
+    **shuffle** *(Optional)*
+        If ``True``, shuffle the examples in the training data before using them
+        for learning. This happens automatically when doing a grid search but
+        it might be useful in other scenarios as well, e.g., online learning.
+        Defaults to ``False``.
+
     **class_map** *(Optional)*
         If you would like to collapse several classes into one, or otherwise
         modify your labels (without modifying your original feature files), you
@@ -270,7 +276,7 @@ Input
         are aliases that can also be used inconfiguration files.
         Custom learners can also be specified. See
         ``custom_learner_path``.
-        
+
 
         Classifiers:
 
