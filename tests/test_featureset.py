@@ -169,6 +169,135 @@ def test_length():
 
 
 @raises(ValueError)
+def test_merge_different_vectorizers():
+    '''
+    Test to ensure rejection of merging featuresets with different vectorizers
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set with both ids and classes set to None
+    fs1 = FeatureSet('test1', ids, features=features, classes=y)
+
+    # create a different feature set with another vectorizer
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=5678)
+    feature_names = ['g{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    vectorizer = FeatureHasher(n_features=2)
+
+    fs2 = FeatureSet('test2', ids, features=features,
+                    classes=y, vectorizer=vectorizer)
+
+    fs = fs1 + fs2
+
+
+@raises(ValueError)
+def test_merge_different_hashers():
+    '''
+    Test to ensure rejection of merging featuresets with different FeatureHashers
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a FeatureHasher with 2 bins
+    vectorizer = FeatureHasher(n_features=2)
+
+    # create a feature set with both ids and classes set to None
+    fs1 = FeatureSet('test1', ids, features=features, classes=y, vectorizer=vectorizer)
+
+    # create a different feature set with another FeatureHasher
+    # with a different number of bins
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=5678)
+    feature_names = ['g{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    vectorizer = FeatureHasher(n_features=3)
+
+    fs2 = FeatureSet('test2', ids, features=features,
+                    classes=y, vectorizer=vectorizer)
+
+    fs = fs1 + fs2
+
+
+@raises(ValueError)
+def test_merge_different_classes_same_ids():
+    '''
+    Test to ensure rejection of merging featuresets that have conflicting labels
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set with both ids and classes set to None
+    fs1 = FeatureSet('test1', ids, features=features, classes=y)
+
+    # create a different feature set that has everything
+    # the same but has different labels for the same IDs
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=5678)
+
+    # artificially modify the class labels
+    y = y + 1
+
+    feature_names = ['g{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    fs2 = FeatureSet('test2', ids, features=features, classes=y)
+
+    fs = fs1 + fs2
+
+
+@raises(ValueError)
 def test_mismatch_ids_features():
     '''
     Test to catch mistmatch between the shape of the ids vector and the feature matrix
@@ -236,11 +365,12 @@ def test_iteration_without_dictvectorizer():
         features.append(dict(zip(feature_names, row)))
 
     # get 200 ids since we don't want to match the number of feature rows
-    ids = ['Example_{}'.format(i) for i in range(200)]
+    ids = ['Example_{}'.format(i) for i in range(100)]
 
     vectorizer = FeatureHasher(n_features=2)
     fs = FeatureSet('test', ids, features=features, classes=y, vectorizer=vectorizer)
-    g = iter(fs)
+    for _ in fs:
+        pass
 
 
 def test_feature_merging_order_invariance():
@@ -509,6 +639,7 @@ def check_convert_featureset(from_suffix, to_suffix):
         eq_(merged_feats, premerged_feats)
     eq_(sorted(merged_examples.vectorizer.feature_names_),
         sorted(premerged_examples.vectorizer.feature_names_))
+
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
