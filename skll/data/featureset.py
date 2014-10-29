@@ -206,7 +206,10 @@ class FeatureSet(object):
         # Remove examples not in mask
         self.ids = self.ids[mask]
         self.classes = self.classes[mask]
-        self.features = self.features[mask, :]
+
+        # filter the features if and only if ids/classes were specified
+        if ids is not None or classes is not None:
+            self.features = self.features[mask, :]
 
         # Filter features
         if features is not None:
@@ -219,7 +222,8 @@ class FeatureSet(object):
                                            feat_name.split('=', 1)[0] in
                                            features)}))
             if inverse:
-                columns = ~columns
+                all_columns = np.arange(self.features.shape[1])
+                columns = all_columns[np.logical_not(np.in1d(all_columns, columns))]
             self.features = self.features[:, columns]
             self.vectorizer.restrict(columns)
 

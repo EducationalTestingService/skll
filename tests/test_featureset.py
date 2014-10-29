@@ -413,10 +413,7 @@ def test_iteration_without_dictvectorizer():
         pass
 
 
-def test_filter_ids():
-    '''
-    Test filtering with specified IDs
-    '''
+def check_filter_ids(inverse=False):
 
     # get a 100 instances with 4 features each
     X, y = make_classification(n_samples=100, n_features=4,
@@ -435,18 +432,28 @@ def test_filter_ids():
     # create a feature set
     fs = FeatureSet('test', ids, features=features, classes=y)
 
-    # keep just the IDs after Example_50
+    # keep just the IDs after Example_50 or do the inverse
     ids_to_filter = ['Example_{}'.format(i) for i in range(51, 100)]
-    fs.filter(ids=ids_to_filter)
+    if inverse:
+        ids_kept = ['Example_{}'.format(i) for i in range(51)]
+    else:
+        ids_kept = ids_to_filter
+    fs.filter(ids=ids_to_filter, inverse=inverse)
 
     # make sure that we removed the right things
-    assert_array_equal(fs.ids, np.array(ids_to_filter))
+    assert_array_equal(fs.ids, np.array(ids_kept))
 
 
-def test_filter_classes():
+def test_filter_ids():
     '''
-    Test filtering with specified classes
+    Test filtering with specified IDs, with and without inverting
     '''
+
+    yield check_filter_ids
+    yield check_filter_ids, True
+
+
+def check_filter_classes(inverse=False):
 
     # get a 1000 instances with 4 features each
     X, _ = make_classification(n_samples=1000, n_features=4,
@@ -469,17 +476,29 @@ def test_filter_classes():
     fs = FeatureSet('test', ids, features=features, classes=y)
 
     # keep just the instaces with 0, 1 and 2 labels
-    fs.filter(classes=[0, 1, 2])
+    classes_to_filter = [0, 1, 2]
+    fs.filter(classes=classes_to_filter, inverse=inverse)
 
-    # make sure that we removed the right things (the first 600 examples)
-    ids_kept = ['Example_{}'.format(i) for i in range(600)]
+    # make sure that we removed the right things
+    # the first 600 examples without inverting
+    # and the last 400 with inverting
+    if inverse:
+        ids_kept = ['Example_{}'.format(i) for i in range(600, 1000)]
+    else:
+        ids_kept = ['Example_{}'.format(i) for i in range(600)]
     assert_array_equal(fs.ids, np.array(ids_kept))
 
 
-def test_filter_features():
+def test_filter_classes():
     '''
-    Test filtering with specified features
+    Test filtering with specified classes, with and without inverting
     '''
+
+    yield check_filter_classes
+    yield check_filter_classes, True
+
+
+def check_filter_features(inverse=False):
 
     # get a 100 instances with 5 features each
     X, y = make_classification(n_samples=100, n_features=5,
@@ -487,7 +506,7 @@ def test_filter_features():
                                n_classes=3, random_state=1234567890)
 
     # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    feature_names = ['f{}'.format(n) for n in range(1, 6)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -498,15 +517,31 @@ def test_filter_features():
     # create a feature set
     fs = FeatureSet('test', ids, features=features, classes=y)
 
-    # keep only features f1 and f4
-    fs.filter(features=['f1', 'f4'])
+    # filter features f1 and f4 or their inverse
+    fs.filter(features=['f1', 'f4'], inverse=inverse)
 
-    # make sure that we only have 2 features
-    eq_(fs.features.shape, (100, 2))
+    # make sure that we have the right number of feature columns
+    # depending on whether we are inverting
+    feature_shape = (100, 3) if inverse else (100, 2)
+    eq_(fs.features.shape, feature_shape)
 
     # and that they are the first and fourth columns
-    # of X that we generated
-    assert (fs.features.todense() == X[:, [0, 3]]).all()
+    # of X that we generated, if not inverting and
+    # the second, third and fifth, if inverting
+    if inverse:
+        feature_columns = X[:, [1, 2, 4]]
+    else:
+        feature_columns = X[:, [0, 3]]
+    assert (fs.features.todense() == feature_columns).all()
+
+
+def test_filter_features():
+    '''
+    Test filtering with specified features, with and without inverting
+    '''
+
+    yield check_filter_features
+    yield check_filter_features, True
 
 
 def test_feature_merging_order_invariance():
