@@ -20,10 +20,10 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import eq_
+from nose.tools import eq_, raises, nottest
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
-from sklearn.datasets.samples_generator import make_regression
+from sklearn.datasets.samples_generator import make_regression, make_classification
 from skll.data import FeatureSet, write_feature_file, load_examples, convert_examples
 from skll.experiments import _load_featureset
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -87,7 +87,7 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     # and use 2.5 times the number of features to be on the safe side
     vectorizer = (FeatureHasher(n_features=int(round(2.5 * num_features))) if
                   use_feature_hashing else None)
-    train_fs = FeatureSet('regression_train', ids=train_ids,
+    train_fs = FeatureSet('regression_train', train_ids,
                           classes=train_y, features=train_features,
                           vectorizer=vectorizer)
     test_fs = FeatureSet('regression_test', test_ids,
@@ -95,6 +95,152 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
                          vectorizer=vectorizer)
 
     return (train_fs, test_fs, weightdict)
+
+
+@raises(ValueError)
+def test_empty_ids():
+    '''
+    Test to ensure that an error is raised if ids is None
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # create a feature set with both ids and classes set to None
+    fs = FeatureSet('test', None, features=features, classes=y)
+
+
+def test_empty_classes():
+    '''
+    Test to check behaviour when classes or ids are None
+    '''
+
+    # get a 100 instances with 4 features each
+    X, _ = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set with both ids and classes set to None
+    fs = FeatureSet('test', ids, features=features)
+
+    assert np.isnan(fs.classes).all()
+
+
+def test_length():
+    '''
+    Test to whether len() returns the number of features
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set with both ids and classes set to None
+    fs = FeatureSet('test', ids, features=features, classes=y)
+
+    eq_(len(fs), 4)
+
+
+@raises(ValueError)
+def test_mismatch_ids_features():
+    '''
+    Test to catch mistmatch between the shape of the ids vector and the feature matrix
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # get 200 ids since we don't want to match the number of feature rows
+    ids = ['Example_{}'.format(i) for i in range(200)]
+
+    fs = FeatureSet('test', ids, features=features, classes=y)
+
+
+@raises(ValueError)
+def test_mismatch_classes_features():
+    '''
+    Test to catch mistmatch between the shape of the classes vector and the feature matrix
+    '''
+
+    # get a 100 instances with 4 features but ignore the classes we
+    # get from here
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # double-stack y to ensure we don't match the number of feature rows
+    y2 = np.hstack([y, y])
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # get 100 ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    fs = FeatureSet('test', ids, features=features, classes=y2)
+
+
+@raises(ValueError)
+def test_iteration_without_dictvectorizer():
+    '''
+    Test to allow iteration only if the vectorizer is a DictVectorizer
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # get 200 ids since we don't want to match the number of feature rows
+    ids = ['Example_{}'.format(i) for i in range(200)]
+
+    vectorizer = FeatureHasher(n_features=2)
+    fs = FeatureSet('test', ids, features=features, classes=y, vectorizer=vectorizer)
+    g = iter(fs)
 
 
 def test_feature_merging_order_invariance():
@@ -214,6 +360,7 @@ def check_load_featureset(suffix, numeric_ids):
         eq_(merged_feats, premerged_feats)
     eq_(sorted(merged_examples.vectorizer.feature_names_),
         sorted(premerged_examples.vectorizer.feature_names_))
+
 
 def test_load_featureset():
     # Test merging with numeric IDs
@@ -362,7 +509,6 @@ def check_convert_featureset(from_suffix, to_suffix):
         eq_(merged_feats, premerged_feats)
     eq_(sorted(merged_examples.vectorizer.feature_names_),
         sorted(premerged_examples.vectorizer.feature_names_))
-
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
