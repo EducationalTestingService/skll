@@ -65,8 +65,7 @@ class FeatureSet(object):
         if self.features is not None:
             num_feats = self.features.shape[0]
             if self.ids is None:
-                self.ids = np.empty(num_feats)
-                self.ids.fill(None)
+                raise ValueError('A list of IDs is required')
             num_ids = self.ids.shape[0]
             if num_feats != num_ids:
                 raise ValueError(('Number of IDs (%s) does not equal '
