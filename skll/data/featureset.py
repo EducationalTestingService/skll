@@ -77,8 +77,8 @@ class FeatureSet(object):
                 self.classes.fill(None)
             num_classes = self.classes.shape[0]
             if num_feats != num_classes:
-                raise ValueError(('Number of classes ({}) does not equal '
-                                  'number of feature rows({})') % (num_classes,
+                raise ValueError(('Number of classes (%s) does not equal '
+                                  'number of feature rows(%s)') % (num_classes,
                                                                    num_feats))
 
     def __contains__(self, value):
