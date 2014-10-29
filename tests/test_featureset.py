@@ -120,7 +120,7 @@ def test_empty_ids():
 
 def test_empty_classes():
     '''
-    Test to check behaviour when classes or ids are None
+    Test to check behaviour when classes is None
     '''
 
     # get a 100 instances with 4 features each
