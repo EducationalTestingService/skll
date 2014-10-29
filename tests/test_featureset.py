@@ -114,7 +114,7 @@ def test_empty_ids():
     for row in X:
         features.append(dict(zip(feature_names, row)))
 
-    # create a feature set with both ids and classes set to None
+    # create a feature set with ids set to None
     fs = FeatureSet('test', None, features=features, classes=y)
 
 
@@ -137,7 +137,7 @@ def test_empty_classes():
     # Create ids
     ids = ['Example_{}'.format(i) for i in range(100)]
 
-    # create a feature set with both ids and classes set to None
+    # create a feature set with classes set to None
     fs = FeatureSet('test', ids, features=features)
 
     assert np.isnan(fs.classes).all()
@@ -162,7 +162,7 @@ def test_length():
     # Create ids
     ids = ['Example_{}'.format(i) for i in range(100)]
 
-    # create a feature set with both ids and classes set to None
+    # create a feature set
     fs = FeatureSet('test', ids, features=features, classes=y)
 
     eq_(len(fs), 4)
@@ -188,7 +188,7 @@ def test_merge_different_vectorizers():
     # Create ids
     ids = ['Example_{}'.format(i) for i in range(100)]
 
-    # create a feature set with both ids and classes set to None
+    # create a feature set using a DictVectorizer
     fs1 = FeatureSet('test1', ids, features=features, classes=y)
 
     # create a different feature set with another vectorizer
@@ -232,7 +232,7 @@ def test_merge_different_hashers():
     # create a FeatureHasher with 2 bins
     vectorizer = FeatureHasher(n_features=2)
 
-    # create a feature set with both ids and classes set to None
+    # create a feature set with this hasher
     fs1 = FeatureSet('test1', ids, features=features, classes=y, vectorizer=vectorizer)
 
     # create a different feature set with another FeatureHasher
@@ -274,7 +274,7 @@ def test_merge_different_classes_same_ids():
     # Create ids
     ids = ['Example_{}'.format(i) for i in range(100)]
 
-    # create a feature set with both ids and classes set to None
+    # create a feature set
     fs1 = FeatureSet('test1', ids, features=features, classes=y)
 
     # create a different feature set that has everything
@@ -295,6 +295,46 @@ def test_merge_different_classes_same_ids():
     fs2 = FeatureSet('test2', ids, features=features, classes=y)
 
     fs = fs1 + fs2
+
+
+def test_merge_missing_labels():
+    '''
+    Test to ensure that labels are sucessfully copied when merging
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set with labels specified
+    fs1 = FeatureSet('test1', ids, features=features, classes=y)
+
+    # create a different feature set with no labels specified
+    X, _ = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=5678)
+    feature_names = ['g{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    fs2 = FeatureSet('test2', ids, features=features)
+
+    # merge the two featuresets
+    fs = fs1 + fs2
+
+    assert_array_equal(fs.classes, fs1.classes)
 
 
 @raises(ValueError)
