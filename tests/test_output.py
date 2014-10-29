@@ -139,10 +139,10 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     # and use 2.5 times the number of features to be on the safe side
     vectorizer = (FeatureHasher(n_features=int(round(2.5 * num_features)))
                   if use_feature_hashing else None)
-    train_fs = FeatureSet('classification_train', ids=train_ids,
+    train_fs = FeatureSet('classification_train', train_ids,
                           classes=train_y, features=train_features,
                           vectorizer=vectorizer)
-    test_fs = FeatureSet('classification_test', ids=test_ids,
+    test_fs = FeatureSet('classification_test', test_ids,
                          classes=test_y, features=test_features,
                          vectorizer=vectorizer)
 

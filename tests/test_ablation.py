@@ -127,7 +127,7 @@ def make_ablation_data():
             x = {"f{}".format(feat_num):
                  features[example_num]["f{}".format(feat_num)]}
             sub_features.append(x)
-        train_fs = FeatureSet('ablation_cv', ids=ids, features=sub_features, classes=classes)
+        train_fs = FeatureSet('ablation_cv', ids, features=sub_features, classes=classes)
         writer = NDJWriter(train_path, train_fs)
         writer.write()
 

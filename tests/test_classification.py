@@ -87,7 +87,7 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     # and use 2.5 times the number of features to be on the safe side
     vectorizer = (FeatureHasher(n_features=int(round(2.5 * num_features))) if
                   use_feature_hashing else None)
-    train_fs = FeatureSet('regression_train', ids=train_ids,
+    train_fs = FeatureSet('regression_train', train_ids,
                           classes=train_y, features=train_features,
                           vectorizer=vectorizer)
     test_fs = FeatureSet('regression_test', test_ids,
@@ -136,10 +136,10 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     # and use 2.5 times the number of features to be on the safe side
     vectorizer = (FeatureHasher(n_features=int(round(2.5 * num_features)))
                   if use_feature_hashing else None)
-    train_fs = FeatureSet('classification_train', ids=train_ids,
+    train_fs = FeatureSet('classification_train', train_ids,
                           classes=train_y, features=train_features,
                           vectorizer=vectorizer)
-    test_fs = FeatureSet('classification_test', ids=test_ids,
+    test_fs = FeatureSet('classification_test', test_ids,
                          classes=test_y, features=test_features,
                          vectorizer=vectorizer)
 
@@ -209,7 +209,7 @@ def make_rare_class_data():
     for row in X:
         features.append(dict(zip(feature_names, row)))
 
-    return FeatureSet('rare-class', ids=ids, features=features, classes=y)
+    return FeatureSet('rare-class', ids, features=features, classes=y)
 
 def test_rare_class():
     '''
@@ -263,7 +263,7 @@ def make_sparse_data(use_feature_hashing=False):
 
     # use a FeatureHasher if we are asked to do feature hashing
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
-    train_fs = FeatureSet('train_sparse', ids=ids,
+    train_fs = FeatureSet('train_sparse', ids,
                           features=features, classes=y,
                           vectorizer=vectorizer)
 
@@ -284,7 +284,7 @@ def make_sparse_data(use_feature_hashing=False):
         row = row[:3] + [0] + row[3:]
         features.append(dict(zip(feature_names, row)))
 
-    test_fs = FeatureSet('test_sparse', ids=ids,
+    test_fs = FeatureSet('test_sparse', ids,
                          features=features, classes=y,
                          vectorizer=vectorizer)
 

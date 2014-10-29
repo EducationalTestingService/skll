@@ -148,7 +148,7 @@ def make_class_map_data():
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
-    train_fs = FeatureSet('train_class_map', ids=ids, features=features, classes=classes)
+    train_fs = FeatureSet('train_class_map', ids, features=features, classes=classes)
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
@@ -165,7 +165,7 @@ def make_class_map_data():
         ids.append(ex_id)
         classes.append(y)
         features.append(x)
-    test_fs = FeatureSet('test_class_map', ids=ids, features=features, classes=classes)
+    test_fs = FeatureSet('test_class_map', ids, features=features, classes=classes)
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
@@ -242,10 +242,10 @@ def make_scaling_data(use_feature_hashing=False):
     train_ids, test_ids = ids[:800], ids[800:]
 
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
-    train_fs = FeatureSet('train_scaling', ids=train_ids,
+    train_fs = FeatureSet('train_scaling', train_ids,
                           features=train_features, classes=train_y,
                           vectorizer=vectorizer)
-    test_fs = FeatureSet('test_scaling', ids=test_ids,
+    test_fs = FeatureSet('test_scaling', test_ids,
                          features=test_features, classes=test_y,
                          vectorizer=vectorizer)
 
