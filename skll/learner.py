@@ -968,7 +968,7 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                logger.warning('Note: training data will be shuffled to randomize grid search folds. Shuffling may yield different results compared to scikit-learn.')
+                logger.warning('Training data will be shuffled to randomize grid search folds. Shuffling may yield different results compared to scikit-learn.')
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
@@ -1398,15 +1398,15 @@ class Learner(object):
         # replicable
         rand_seed = 123456789
         np.random.seed(rand_seed)
+        logger = logging.getLogger(__name__)
 
-        # Shuffle so that the folds are random for CV.
+        # Shuffle so that the folds are random for the inner grid search CV.
+        # If grid search is True but shuffle isn't, shuffle anyway.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
-            msg = 'Note: training data will be shuffled'
-            msg += ' to randomize grid search folds. ' if grid_search else '. '
-            msg += 'Shuffling may yield different results compared to scikit-learn.'
-            logging.info(msg)
+            if grid_search and not shuffle:
+                logger.warning('Training data will be shuffled to randomize grid search folds. Shuffling may yield different results compared to scikit-learn.')
             ids, classes, features = sk_shuffle(examples.ids, examples.classes,
                                                 examples.features,
                                                 random_state=rand_seed)
