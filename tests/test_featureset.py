@@ -595,6 +595,9 @@ def check_filter_features(inverse=False):
 
     assert (fs.features.todense() == feature_columns).all()
 
+    # make sure that the feature names that we kept are also correct
+    feature_names = ['f2', 'f3', 'f5'] if inverse else ['f1', 'f4']
+    assert_array_equal(np.array(fs.feat_vectorizer.feature_names_), feature_names)
 
     # make sure that number of ids, classes and features are the same
     eq_(fs.ids.shape[0], fs.classes.shape[0])
