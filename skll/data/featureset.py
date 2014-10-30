@@ -223,7 +223,7 @@ class FeatureSet(object):
                 all_columns = np.arange(self.features.shape[1])
                 columns = all_columns[np.logical_not(np.in1d(all_columns, columns))]
             self.features = self.features[:, columns]
-            self.vectorizer.restrict(columns)
+            self.vectorizer.restrict(columns, indices=True)
 
     def filtered_iter(self, ids=None, classes=None, features=None,
                       inverse=False):
