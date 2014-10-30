@@ -172,6 +172,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         lrd['train_set_size']), file=output_file)
     print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
     print('Test Set Size: {}'.format(lrd['test_set_size']), file=output_file)
+    print('Shuffle: {}'.format(lrd['shuffle']), file=output_file)
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
     print('Learner: {}'.format(lrd['learner_name']), file=output_file)
     print('Task: {}'.format(lrd['task']), file=output_file)
@@ -230,6 +231,7 @@ def _setup_config_parser(config_path):
                                         'results': '',
                                         'predictions': '',
                                         'models': '',
+                                        'shuffle': 'False',
                                         'sampler': '',
                                         'feature_hasher': 'False',
                                         'grid_search': 'False',
@@ -330,6 +332,9 @@ def _parse_config_file(config_path):
                          featureset_names])):
             raise ValueError("The featureset_names parameter should be a " +
                              "list of strings: {}".format(featureset_names))
+
+    # do we need to shuffle the training data
+    do_shuffle = config.getboolean("Input", "shuffle")
 
     fixed_parameter_list = yaml.load(_fix_json(config.get("Input",
                                                           "fixed_parameters")))
@@ -461,7 +466,7 @@ def _parse_config_file(config_path):
 
     return (experiment_name, task, sampler, fixed_sampler_parameters,
             feature_hasher, hasher_features, label_col, train_set_name,
-            test_set_name, suffix, featuresets, model_path, do_grid_search,
+            test_set_name, suffix, featuresets, do_shuffle, model_path, do_grid_search,
             grid_objective, probability, results_path, pos_label_str,
             feature_scaling, min_feature_count, grid_search_jobs, grid_search_folds, cv_folds,
             fixed_parameter_list, param_grid_list, featureset_names,
@@ -536,6 +541,7 @@ def _classify_featureset(args):
     test_path = args.pop("test_path")
     train_set_name = args.pop("train_set_name")
     test_set_name = args.pop("test_set_name")
+    shuffle = args.pop('shuffle')
     model_path = args.pop("model_path")
     prediction_prefix = args.pop("prediction_prefix")
     grid_search = args.pop("grid_search")
@@ -644,6 +650,7 @@ def _classify_featureset(args):
                                     'test_set_size': test_set_size,
                                     'featureset': json.dumps(featureset),
                                     'featureset_name': featureset_name,
+                                    'shuffle': shuffle,
                                     'learner_name': learner_name,
                                     'task': task,
                                     'start_timestamp': start_timestamp\
@@ -664,7 +671,7 @@ def _classify_featureset(args):
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
             task_results, grid_scores = learner.cross_validate(
-                train_examples, prediction_prefix=prediction_prefix,
+                train_examples, shuffle=shuffle, prediction_prefix=prediction_prefix,
                 grid_search=grid_search, grid_search_folds=grid_search_folds,
                 cv_folds=cv_folds, grid_objective=grid_objective,
                 param_grid=param_grid, grid_jobs=grid_search_jobs,
@@ -681,6 +688,7 @@ def _classify_featureset(args):
                     grid_search_folds = cv_folds
 
                 best_score = learner.train(train_examples,
+                                           shuffle=shuffle,
                                            grid_search=grid_search,
                                            grid_search_folds=grid_search_folds,
                                            grid_objective=grid_objective,
@@ -963,7 +971,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Read configuration
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
      hasher_features, label_col, train_set_name, test_set_name, suffix,
-     featuresets, model_path, do_grid_search, grid_objective, probability,
+     featuresets, do_shuffle, model_path, do_grid_search, grid_objective, probability,
      results_path, pos_label_str, feature_scaling, min_feature_count,
      grid_search_jobs, grid_search_folds, cv_folds, fixed_parameter_list, param_grid_list,
      featureset_names, learners, prediction_dir, log_path, train_path,
@@ -1078,6 +1086,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["test_path"] = test_path
             job_args["train_set_name"] = train_set_name
             job_args["test_set_name"] = test_set_name
+            job_args["shuffle"] = do_shuffle
             job_args["model_path"] = model_path
             job_args["prediction_prefix"] = prediction_prefix
             job_args["grid_search"] = do_grid_search

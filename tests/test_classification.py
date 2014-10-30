@@ -325,7 +325,7 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
     learner.train(train_fs, grid_search=False, feature_hasher=use_feature_hashing)
     test_score = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)[1]
 
-    expected_score = 0.4 if use_feature_hashing else 0.48
+    expected_score = 0.4 if use_feature_hashing else 0.48999999999999999
     assert_almost_equal(test_score, expected_score)
 
 def test_sparse_predict_sampler():
