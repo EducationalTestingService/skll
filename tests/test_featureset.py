@@ -337,6 +337,57 @@ def test_merge_missing_labels():
     assert_array_equal(fs.classes, fs1.classes)
 
 
+def test_subtract():
+    '''
+    Test to ensure that subtraction works
+    '''
+
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=2, random_state=1234)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set
+    fs1 = FeatureSet('test1', ids, features=features, classes=y)
+
+    # create a different feature set
+    X, y = make_classification(n_samples=100, n_features=3,
+                               n_informative=3, n_redundant=0,
+                               n_classes=2, random_state=5678)
+    feature_names = ['f{}'.format(n) for n in range(1, 3)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    fs2 = FeatureSet('test2', ids, features=features, classes=y)
+
+    # subtract fs1 from fs2, i.e., the features in fs2
+    # should be removed from fs1 but nothing else should change
+    fs = fs1 - fs2
+
+    # ensure that the classes are the same in fs and fs1
+    assert_array_equal(fs.classes, fs1.classes)
+
+    # ensure that there are only two features left
+    eq_(fs.features.shape[1], 2)
+
+    # and that they are f3 and f4
+    assert_array_equal(np.array(fs.feat_vectorizer.feature_names_), ['f3', 'f4'])
+
+
+
+
+
 @raises(ValueError)
 def test_mismatch_ids_features():
     '''
