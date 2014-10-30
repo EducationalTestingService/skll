@@ -15,6 +15,8 @@ from __future__ import (absolute_import, division, print_function,
 import glob
 import os
 import re
+import subprocess
+
 from io import open
 from os.path import abspath, dirname, exists, join
 
@@ -22,13 +24,13 @@ from nose.tools import eq_, assert_almost_equal
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import (make_classification,
                                                 make_regression)
-from skll.data import FeatureSet
+from skll.data import FeatureSet, NDJWriter
 from skll.experiments import _setup_config_parser
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 from skll.utilities.compute_eval_from_predictions \
     import compute_eval_from_predictions
 
-from skll.utilities.generate_predictions import Predictor, main
+from skll.utilities.generate_predictions import Predictor
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
@@ -53,7 +55,10 @@ def tearDown():
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
+    os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
     for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions.model*')):
+        os.unlink(model_chunk)
+    for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions_console.model*')):
         os.unlink(model_chunk)
 
 
@@ -212,3 +217,54 @@ def test_generate_predictions():
     yield check_generate_predictions, True, False
     yield check_generate_predictions, False, True
     yield check_generate_predictions, True, True
+
+
+def check_generate_predictions_console(use_threshold=False):
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+
+    # save the test feature set to an NDJ file
+    input_file = 'test/test_generate_predictions.jsonlines'
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier', probability=use_threshold)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True)
+
+    # get the predictions on the test featureset
+    predictions = learner.predict(test_fs)
+
+    # if we asked for probabilities, then use the threshold
+    # to convert them into binary predictions
+    if use_threshold:
+        threshold = 0.6
+        predictions = [int(p[1] >= threshold) for p in predictions]
+    else:
+        predictions = predictions.tolist()
+        threshold = None
+
+    # save the learner to a file
+    model_file = 'output/test_generate_predictions_console.model'
+    learner.save(model_file)
+
+    # now call generate_predictions.py on the command line
+    generate_cmd = ['generate_predictions']
+    if use_threshold:
+        generate_cmd.append('-t {}'.format(threshold))
+    generate_cmd.extend([model_file, input_file])
+
+    p = subprocess.Popen(generate_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    predictions_after_saving = [int(x) for x in out.decode().strip().split('\n')]
+
+    eq_(predictions, predictions_after_saving)
+
+
+def test_generate_predictions_console():
+    yield check_generate_predictions_console, False
+    yield check_generate_predictions_console, True
