@@ -20,13 +20,11 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from numpy.testing import assert_array_equal
-from sklearn.feature_extraction import FeatureHasher
-from sklearn.datasets.samples_generator import (make_classification,
-                                                make_regression)
 from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration, _setup_config_parser
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
+from utils import make_classification_data
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
@@ -105,55 +103,6 @@ def read_predictions(path):
         next(reader)
         res = np.array([float(x[1]) for x in reader])
     return res
-
-
-def make_classification_data(num_examples=100, train_test_ratio=0.5,
-                             num_features=10, use_feature_hashing=False,
-                             num_redundant=0, num_classes=2,
-                             class_weights=None, non_negative=False,
-                             random_state=1234567890):
-
-    # use sklearn's make_classification to generate the data for us
-    num_informative = num_features - num_redundant
-    X, y = make_classification(n_samples=num_examples, n_features=num_features,
-                               n_informative=num_informative, n_redundant=num_redundant,
-                               n_classes=num_classes, weights=class_weights,
-                               random_state=random_state)
-
-    # if we were told to only generate non-negative features, then
-    # we can simply take the absolute values of the generated features
-    if non_negative:
-        X = abs(X)
-
-    # since we want to use SKLL's FeatureSet class, we need to
-    # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
-
-    # create a list of dictionaries as the features
-    feature_names = ['f{}'.format(n) for n in range(1, num_features + 1)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # split everything into training and testing portions
-    num_train_examples = int(round(train_test_ratio * num_examples))
-    train_features, test_features = (features[:num_train_examples],
-                                     features[num_train_examples:])
-    train_y, test_y = y[:num_train_examples], y[num_train_examples:]
-    train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
-
-    # create a FeatureHasher if we are asked to use feature hashing
-    # and use 2.5 times the number of features to be on the safe side
-    vectorizer = (FeatureHasher(n_features=int(round(2.5 * num_features)))
-                  if use_feature_hashing else None)
-    train_fs = FeatureSet('classification_train', train_ids,
-                          classes=train_y, features=train_features,
-                          vectorizer=vectorizer)
-    test_fs = FeatureSet('classification_test', test_ids,
-                         classes=test_y, features=test_features,
-                         vectorizer=vectorizer)
-
-    return (train_fs, test_fs)
 
 
 def test_majority_class_custom_learner():

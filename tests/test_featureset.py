@@ -9,8 +9,7 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 '''
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function
 
 import itertools
 import os
@@ -22,12 +21,14 @@ from os.path import abspath, dirname, exists, join
 import numpy as np
 from nose.tools import eq_, raises, nottest
 from numpy.testing import assert_array_equal
-from sklearn.feature_extraction import DictVectorizer, FeatureHasher
-from sklearn.datasets.samples_generator import make_regression, make_classification
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.datasets.samples_generator import make_classification
 from skll.data import FeatureSet, write_feature_file, load_examples, convert_examples
 from skll.experiments import _load_featureset
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.utilities import skll_convert
+
+from utils import make_classification_data, make_regression_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -47,54 +48,6 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
-
-
-def make_regression_data(num_examples=100, train_test_ratio=0.5,
-                         num_features=2, sd_noise=1.0,
-                         use_feature_hashing=False,
-                         start_feature_num=1,
-                         random_state=1234567890):
-
-    # use sklearn's make_regression to generate the data for us
-    X, y, weights = make_regression(n_samples=num_examples,
-                                    n_features=num_features,
-                                    noise=sd_noise, random_state=random_state,
-                                    coef=True)
-
-    # since we want to use SKLL's FeatureSet class, we need to
-    # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
-
-    # create a list of dictionaries as the features
-    feature_names = ['f{}'.format(n) for n
-                     in range(start_feature_num,
-                              start_feature_num + num_features)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # convert the weights array into a dictionary for convenience
-    weightdict = dict(zip(feature_names, weights))
-
-    # split everything into training and testing portions
-    num_train_examples = int(round(train_test_ratio * num_examples))
-    train_features, test_features = (features[:num_train_examples],
-                                     features[num_train_examples:])
-    train_y, test_y = y[:num_train_examples], y[num_train_examples:]
-    train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
-
-    # create a FeatureHasher if we are asked to use feature hashing
-    # and use 2.5 times the number of features to be on the safe side
-    vectorizer = (FeatureHasher(n_features=int(round(2.5 * num_features))) if
-                  use_feature_hashing else None)
-    train_fs = FeatureSet('regression_train', train_ids,
-                          classes=train_y, features=train_features,
-                          vectorizer=vectorizer)
-    test_fs = FeatureSet('regression_test', test_ids,
-                         classes=test_y, features=test_features,
-                         vectorizer=vectorizer)
-
-    return (train_fs, test_fs, weightdict)
 
 
 @raises(ValueError)
@@ -123,47 +76,25 @@ def test_empty_classes():
     Test to check behaviour when classes is None
     '''
 
-    # get a 100 instances with 4 features each
-    X, _ = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=1234567890)
-
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    # create a feature set with classes set to None
-    fs = FeatureSet('test', ids, features=features)
-
+    # create a feature set with empty classes
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     empty_classes=True,
+                                     train_test_ratio=1.0)
     assert np.isnan(fs.classes).all()
 
 
 def test_length():
     '''
-    Test to whether len() returns the number of features
+    Test to whether len() returns the number of instances
     '''
 
     # get a 100 instances with 4 features each
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=1234567890)
-
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    # create a feature set
-    fs = FeatureSet('test', ids, features=features, classes=y)
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     train_test_ratio=1.0)
 
     eq_(len(fs), 100)
 
@@ -174,37 +105,20 @@ def test_merge_different_vectorizers():
     Test to ensure rejection of merging featuresets with different vectorizers
     '''
 
-    # get a 100 instances with 4 features each
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=1234)
+    # create a featureset each with a DictVectorizer
+    fs1, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     train_test_ratio=1.0)
 
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
 
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    # create a feature set using a DictVectorizer
-    fs1 = FeatureSet('test1', ids, features=features, classes=y)
-
-    # create a different feature set with another vectorizer
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=5678)
-    feature_names = ['g{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    vectorizer = FeatureHasher(n_features=2)
-
-    fs2 = FeatureSet('test2', ids, features=features,
-                    classes=y, vectorizer=vectorizer)
+    # create another featureset using hashing
+    fs2, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     feature_prefix='g',
+                                     num_classes=3,
+                                     train_test_ratio=1.0,
+                                     use_feature_hashing=True)
 
     fs = fs1 + fs2
 
@@ -215,41 +129,22 @@ def test_merge_different_hashers():
     Test to ensure rejection of merging featuresets with different FeatureHashers
     '''
 
-    # get a 100 instances with 4 features each
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=1234)
+    # create a feature set with 4 feature hashing bins
+    fs1, _ = make_classification_data(num_examples=100,
+                                     num_features=10,
+                                     num_classes=3,
+                                     train_test_ratio=1.0,
+                                     use_feature_hashing=True,
+                                     feature_bins=4)
 
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    # create a FeatureHasher with 2 bins
-    vectorizer = FeatureHasher(n_features=2)
-
-    # create a feature set with this hasher
-    fs1 = FeatureSet('test1', ids, features=features, classes=y, vectorizer=vectorizer)
-
-    # create a different feature set with another FeatureHasher
-    # with a different number of bins
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=5678)
-    feature_names = ['g{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    vectorizer = FeatureHasher(n_features=3)
-
-    fs2 = FeatureSet('test2', ids, features=features,
-                    classes=y, vectorizer=vectorizer)
+    # create a second feature set with 3 feature hashing bins
+    fs2, _ = make_classification_data(num_examples=100,
+                                     num_features=10,
+                                     num_classes=3,
+                                     feature_prefix='g',
+                                     train_test_ratio=1.0,
+                                     use_feature_hashing=True,
+                                     feature_bins=3)
 
     fs = fs1 + fs2
 
@@ -260,39 +155,23 @@ def test_merge_different_classes_same_ids():
     Test to ensure rejection of merging featuresets that have conflicting labels
     '''
 
-    # get a 100 instances with 4 features each
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=1234)
-
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
     # create a feature set
-    fs1 = FeatureSet('test1', ids, features=features, classes=y)
+    fs1, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     train_test_ratio=1.0)
+
 
     # create a different feature set that has everything
     # the same but has different labels for the same IDs
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=5678)
+    fs2, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     feature_prefix='g',
+                                     train_test_ratio=1.0)
 
     # artificially modify the class labels
-    y = y + 1
-
-    feature_names = ['g{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    fs2 = FeatureSet('test2', ids, features=features, classes=y)
+    fs2.classes = fs2.classes + 1
 
     fs = fs1 + fs2
 
@@ -302,34 +181,20 @@ def test_merge_missing_labels():
     Test to ensure that labels are sucessfully copied when merging
     '''
 
-    # get a 100 instances with 4 features each
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=1234)
 
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    # create a feature set with labels specified
-    fs1 = FeatureSet('test1', ids, features=features, classes=y)
+    # create a feature set
+    fs1, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     train_test_ratio=1.0)
 
     # create a different feature set with no labels specified
-    X, _ = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=5678)
-    feature_names = ['g{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    fs2 = FeatureSet('test2', ids, features=features)
+    fs2, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     feature_prefix='g',
+                                     empty_classes=True,
+                                     num_classes=3,
+                                     train_test_ratio=1.0)
 
     # merge the two featuresets in different orders
     fs12 = fs1 + fs2
@@ -345,34 +210,20 @@ def test_subtract():
     Test to ensure that subtraction works
     '''
 
-    # get a 100 instances with 4 features each
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=2, random_state=1234)
-
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
     # create a feature set
-    fs1 = FeatureSet('test1', ids, features=features, classes=y)
+    fs1, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=2,
+                                     train_test_ratio=1.0,
+                                     random_state=1234)
 
-    # create a different feature set
-    X, y = make_classification(n_samples=100, n_features=3,
-                               n_informative=3, n_redundant=0,
-                               n_classes=2, random_state=5678)
-    feature_names = ['f{}'.format(n) for n in range(1, 3)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    fs2 = FeatureSet('test2', ids, features=features, classes=y)
+    # create a different feature set with the same feature names
+    # but different feature values
+    fs2, _ = make_classification_data(num_examples=100,
+                                     num_features=2,
+                                     num_classes=2,
+                                     train_test_ratio=1.0,
+                                     random_state=5678)
 
     # subtract fs1 from fs2, i.e., the features in fs2
     # should be removed from fs1 but nothing else should change
@@ -406,7 +257,7 @@ def test_mismatch_ids_features():
         features.append(dict(zip(feature_names, row)))
 
     # get 200 ids since we don't want to match the number of feature rows
-    ids = ['Example_{}'.format(i) for i in range(200)]
+    ids = ['EXAMPLE_{}'.format(i) for i in range(200)]
 
     fs = FeatureSet('test', ids, features=features, classes=y)
 
@@ -433,7 +284,7 @@ def test_mismatch_classes_features():
         features.append(dict(zip(feature_names, row)))
 
     # get 100 ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
+    ids = ['EXAMPLE_{}'.format(i) for i in range(100)]
 
     fs = FeatureSet('test', ids, features=features, classes=y2)
 
@@ -444,49 +295,30 @@ def test_iteration_without_dictvectorizer():
     Test to allow iteration only if the vectorizer is a DictVectorizer
     '''
 
-    # get a 100 instances with 4 features each
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=1234567890)
+    # create a feature set
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     train_test_ratio=1.0,
+                                     use_feature_hashing=True,
+                                     feature_bins=2)
 
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # get 200 ids since we don't want to match the number of feature rows
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    vectorizer = FeatureHasher(n_features=2)
-    fs = FeatureSet('test', ids, features=features, classes=y, vectorizer=vectorizer)
     for _ in fs:
         pass
 
 
 def check_filter_ids(inverse=False):
 
-    # get a 100 instances with 4 features each
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=3, random_state=1234567890)
-
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
     # create a feature set
-    fs = FeatureSet('test', ids, features=features, classes=y)
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     train_test_ratio=1.0)
 
     # keep just the IDs after Example_50 or do the inverse
-    ids_to_filter = ['Example_{}'.format(i) for i in range(51, 100)]
+    ids_to_filter = ['EXAMPLE_{}'.format(i) for i in range(51, 101)]
     if inverse:
-        ids_kept = ['Example_{}'.format(i) for i in range(51)]
+        ids_kept = ['EXAMPLE_{}'.format(i) for i in range(1, 51)]
     else:
         ids_kept = ids_to_filter
     fs.filter(ids=ids_to_filter, inverse=inverse)
@@ -510,37 +342,23 @@ def test_filter_ids():
 
 def check_filter_classes(inverse=False):
 
-    # get a 1000 instances with 4 features each
-    X, _ = make_classification(n_samples=1000, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=5, random_state=1234567890)
-
-    # artifically create the classes vector
-    y = np.array([0] * 200 + [1] * 200 + [2] * 200 + [3] * 200 + [4] * 200)
-
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(1000)]
-
     # create a feature set
-    fs = FeatureSet('test', ids, features=features, classes=y)
+    fs, _ = make_classification_data(num_examples=1000,
+                                     num_features=4,
+                                     num_classes=5,
+                                     train_test_ratio=1.0)
 
     # keep just the instaces with 0, 1 and 2 labels
     classes_to_filter = [0, 1, 2]
+
+    # do the actual filtering
     fs.filter(classes=classes_to_filter, inverse=inverse)
 
     # make sure that we removed the right things
-    # the first 600 examples without inverting
-    # and the last 400 with inverting
     if inverse:
-        ids_kept = ['Example_{}'.format(i) for i in range(600, 1000)]
+        ids_kept = fs.ids[np.where(np.logical_not(np.in1d(fs.classes, classes_to_filter)))]
     else:
-        ids_kept = ['Example_{}'.format(i) for i in range(600)]
+        ids_kept = fs.ids[np.where(np.in1d(fs.classes, classes_to_filter))]
 
     assert_array_equal(fs.ids, np.array(ids_kept))
 
@@ -560,22 +378,14 @@ def test_filter_classes():
 
 def check_filter_features(inverse=False):
 
-    # get a 100 instances with 5 features each
-    X, y = make_classification(n_samples=100, n_features=5,
-                               n_informative=5, n_redundant=0,
-                               n_classes=3, random_state=1234567890)
-
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 6)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
     # create a feature set
-    fs = FeatureSet('test', ids, features=features, classes=y)
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=5,
+                                     num_classes=3,
+                                     train_test_ratio=1.0)
+
+    # store the features in a separate matrix before filtering
+    X = fs.features.todense()
 
     # filter features f1 and f4 or their inverse
     fs.filter(features=['f1', 'f4'], inverse=inverse)
@@ -619,27 +429,17 @@ def test_filter_with_hashing():
     Test to ensure rejection of filtering by features when using hashing
     '''
 
-    # get a 100 instances with 5 features each
-    X, y = make_classification(n_samples=100, n_features=5,
-                               n_informative=5, n_redundant=0,
-                               n_classes=3, random_state=1234567890)
 
-    # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 6)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # Create ids
-    ids = ['Example_{}'.format(i) for i in range(100)]
-
-    # create a feature set that uses feature hashing
-    vectorizer = FeatureHasher(n_features=2)
-    fs = FeatureSet('test', ids, features=features, classes=y, vectorizer=vectorizer)
+    # create a feature set
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=5,
+                                     num_classes=3,
+                                     train_test_ratio=1.0,
+                                     use_feature_hashing=True,
+                                     feature_bins=2)
 
     # filter features f1 and f4 or their inverse
     fs.filter(features=['f1', 'f4'])
-
 
 
 def test_feature_merging_order_invariance():

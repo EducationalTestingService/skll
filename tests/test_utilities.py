@@ -21,9 +21,7 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, assert_almost_equal
-from sklearn.feature_extraction import FeatureHasher
-from sklearn.datasets.samples_generator import (make_classification,
-                                                make_regression)
+from utils import make_classification_data
 from skll.data import FeatureSet, NDJWriter
 from skll.experiments import _setup_config_parser
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
@@ -31,6 +29,7 @@ from skll.utilities.compute_eval_from_predictions \
     import compute_eval_from_predictions
 
 from skll.utilities.generate_predictions import Predictor
+
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
@@ -109,55 +108,6 @@ def fill_in_config_paths(config_template_path):
     return new_config_path
 
 
-def make_classification_data(num_examples=100, train_test_ratio=0.5,
-                             num_features=10, use_feature_hashing=False,
-                             feature_bins=4, num_redundant=0, num_classes=2,
-                             class_weights=None, non_negative=False,
-                             random_state=1234567890):
-
-    # use sklearn's make_classification to generate the data for us
-    num_informative = num_features - num_redundant
-    X, y = make_classification(n_samples=num_examples, n_features=num_features,
-                               n_informative=num_informative, n_redundant=num_redundant,
-                               n_classes=num_classes, weights=class_weights,
-                               random_state=random_state)
-
-    # if we were told to only generate non-negative features, then
-    # we can simply take the absolute values of the generated features
-    if non_negative:
-        X = abs(X)
-
-    # since we want to use SKLL's FeatureSet class, we need to
-    # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
-
-    # create a list of dictionaries as the features
-    feature_names = ['f{}'.format(n) for n in range(1, num_features + 1)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-
-    # split everything into training and testing portions
-    num_train_examples = int(round(train_test_ratio * num_examples))
-    train_features, test_features = (features[:num_train_examples],
-                                     features[num_train_examples:])
-    train_y, test_y = y[:num_train_examples], y[num_train_examples:]
-    train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
-
-    # create a FeatureHasher if we are asked to use feature hashing
-    # and use 2.5 times the number of features to be on the safe side
-    vectorizer = (FeatureHasher(n_features=feature_bins)
-                  if use_feature_hashing else None)
-    train_fs = FeatureSet('classification_train', train_ids,
-                          classes=train_y, features=train_features,
-                          vectorizer=vectorizer)
-    test_fs = FeatureSet('classification_test', test_ids,
-                         classes=test_y, features=test_features,
-                         vectorizer=vectorizer)
-
-    return (train_fs, test_fs)
-
-
 def test_compute_eval_from_predictions():
     pred_path = join(_my_dir, 'other',
                      'test_compute_eval_from_predictions.predictions')
@@ -176,7 +126,8 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
     # create some simple classification data without feature hashing
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
-                                                 use_feature_hashing=use_feature_hashing)
+                                                 use_feature_hashing=use_feature_hashing,
+                                                 feature_bins=4)
 
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier', probability=use_threshold)
@@ -210,7 +161,7 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
 def test_generate_predictions():
     '''
-    Test generate predictions combined with hashing and a threshold
+    Test generate predictions API with hashing and a threshold
     '''
 
     yield check_generate_predictions, False, False
@@ -266,5 +217,23 @@ def check_generate_predictions_console(use_threshold=False):
 
 
 def test_generate_predictions_console():
+    '''
+    Test generate_predictions as a console script
+    '''
+
     yield check_generate_predictions_console, False
     yield check_generate_predictions_console, True
+
+
+def check_skll_convert(in_prefix, out_prefix):
+
+    # create some simple classification data
+    train_fs, _ = make_classification_data()
+
+
+
+def test_skll_convert():
+    '''
+    Test the skll_convert script
+    '''
+
