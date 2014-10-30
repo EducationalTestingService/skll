@@ -148,7 +148,9 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
         threshold = None
 
     # save the learner to a file
-    learner.save('output/test_generate_predictions.model')
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions.model')
+    learner.save(model_file)
 
     # now use Predictor to generate the predictions and make
     # sure that they are the same as before saving the model
@@ -177,7 +179,8 @@ def check_generate_predictions_console(use_threshold=False):
                                                  num_features=5)
 
     # save the test feature set to an NDJ file
-    input_file = 'test/test_generate_predictions.jsonlines'
+    input_file = join(_my_dir, 'other',
+                      'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -200,7 +203,8 @@ def check_generate_predictions_console(use_threshold=False):
         threshold = None
 
     # save the learner to a file
-    model_file = 'output/test_generate_predictions_console.model'
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call generate_predictions.py on the command line
