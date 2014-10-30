@@ -443,6 +443,10 @@ def check_filter_ids(inverse=False):
     # make sure that we removed the right things
     assert_array_equal(fs.ids, np.array(ids_kept))
 
+    # make sure that number of ids, classes and features are the same
+    eq_(fs.ids.shape[0], fs.classes.shape[0])
+    eq_(fs.classes.shape[0], fs.features.shape[0])
+
 
 def test_filter_ids():
     '''
@@ -486,7 +490,12 @@ def check_filter_classes(inverse=False):
         ids_kept = ['Example_{}'.format(i) for i in range(600, 1000)]
     else:
         ids_kept = ['Example_{}'.format(i) for i in range(600)]
+
     assert_array_equal(fs.ids, np.array(ids_kept))
+
+    # make sure that number of ids, classes and features are the same
+    eq_(fs.ids.shape[0], fs.classes.shape[0])
+    eq_(fs.classes.shape[0], fs.features.shape[0])
 
 
 def test_filter_classes():
@@ -532,7 +541,13 @@ def check_filter_features(inverse=False):
         feature_columns = X[:, [1, 2, 4]]
     else:
         feature_columns = X[:, [0, 3]]
+
     assert (fs.features.todense() == feature_columns).all()
+
+
+    # make sure that number of ids, classes and features are the same
+    eq_(fs.ids.shape[0], fs.classes.shape[0])
+    eq_(fs.classes.shape[0], fs.features.shape[0])
 
 
 def test_filter_features():

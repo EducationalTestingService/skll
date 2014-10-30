@@ -200,16 +200,14 @@ class FeatureSet(object):
             mask = np.logical_and(mask, np.in1d(self.ids, ids))
         if classes is not None:
             mask = np.logical_and(mask, np.in1d(self.classes, classes))
-        if inverse:
+
+        if inverse and (classes is not None or ids is not None):
             mask = np.logical_not(mask)
 
         # Remove examples not in mask
         self.ids = self.ids[mask]
         self.classes = self.classes[mask]
-
-        # filter the features if and only if ids/classes were specified
-        if ids is not None or classes is not None:
-            self.features = self.features[mask, :]
+        self.features = self.features[mask, :]
 
         # Filter features
         if features is not None:
