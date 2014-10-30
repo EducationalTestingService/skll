@@ -179,7 +179,7 @@ def check_generate_predictions_console(use_threshold=False):
                                                  num_features=5)
 
     # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'other',
+    input_file = join(_my_dir, 'test',
                       'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
