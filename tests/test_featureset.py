@@ -610,6 +610,35 @@ def test_filter_features():
     yield check_filter_features, True
 
 
+@raises(ValueError)
+def test_filter_with_hashing():
+    '''
+    Test to ensure rejection of filtering by features when using hashing
+    '''
+
+    # get a 100 instances with 5 features each
+    X, y = make_classification(n_samples=100, n_features=5,
+                               n_informative=5, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 6)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Create ids
+    ids = ['Example_{}'.format(i) for i in range(100)]
+
+    # create a feature set that uses feature hashing
+    vectorizer = FeatureHasher(n_features=2)
+    fs = FeatureSet('test', ids, features=features, classes=y, vectorizer=vectorizer)
+
+    # filter features f1 and f4 or their inverse
+    fs.filter(features=['f1', 'f4'])
+
+
+
 def test_feature_merging_order_invariance():
     '''
     Test whether featuresets with different orders of IDs can be merged
