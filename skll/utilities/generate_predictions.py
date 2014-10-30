@@ -14,8 +14,9 @@ from __future__ import absolute_import, print_function, unicode_literals
 import argparse
 import logging
 
+from sklearn.base import RegressorMixin
+
 from skll import Learner, load_examples
-from skll.learner import _REGRESSION_MODELS
 from skll.version import __version__
 
 
@@ -64,7 +65,7 @@ class Predictor(object):
             else:
                 return [int(pred[self._pos_index] >= self.threshold)
                         for pred in preds]
-        elif self._learner.model_type in _REGRESSION_MODELS:
+        elif issubclass(self._learner.model_type, RegressorMixin):
             return preds
         else:
             return [self._learner.label_list[pred if isinstance(pred, int) else
