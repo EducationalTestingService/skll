@@ -9,10 +9,10 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 '''
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import glob
+import itertools
 import os
 import re
 import subprocess
@@ -21,14 +21,18 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, assert_almost_equal
-from utils import make_classification_data
+from numpy.testing import assert_array_equal, assert_allclose
+
 from skll.data import FeatureSet, NDJWriter
+from skll.data.readers import EXT_TO_READER
+from skll.data.writers import EXT_TO_WRITER
 from skll.experiments import _setup_config_parser
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 from skll.utilities.compute_eval_from_predictions \
     import compute_eval_from_predictions
-
 from skll.utilities.generate_predictions import Predictor
+
+from utils import make_classification_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -51,61 +55,16 @@ def setup():
 
 
 def tearDown():
-    train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
+    other_dir = join(_my_dir, 'other')
     os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
     for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions.model*')):
         os.unlink(model_chunk)
     for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions_console.model*')):
         os.unlink(model_chunk)
-
-
-def fill_in_config_paths(config_template_path):
-    '''
-    Add paths to train, test, and output directories to a given config template
-    file.
-    '''
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
-    config = _setup_config_parser(config_template_path)
-
-    task = config.get("General", "task")
-    # experiment_name = config.get("General", "experiment_name")
-
-    config.set("Input", "train_location", train_dir)
-
-    to_fill_in = ['log', 'vocabs', 'predictions']
-
-    if task != 'cross_validate':
-        to_fill_in.append('models')
-
-    if task == 'evaluate' or task == 'cross_validate':
-        to_fill_in.append('results')
-
-    for d in to_fill_in:
-        config.set("Output", d, join(output_dir))
-
-    if task == 'cross_validate':
-        cv_folds_location = config.get("Input", "cv_folds_location")
-        if cv_folds_location:
-            config.set("Input", "cv_folds_location",
-                       join(train_dir, cv_folds_location))
-
-    if task == 'predict' or task == 'evaluate':
-        config.set("Input", "test_location", test_dir)
-
-    config_prefix = re.search(r'^(.*)\.template\.cfg',
-                              config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
-
-    with open(new_config_path, 'w') as new_config_file:
-        config.write(new_config_file)
-
-    return new_config_path
+    for f in glob.glob(join(other_dir, 'test_skll_convert*')):
+        os.unlink(f)
 
 
 def test_compute_eval_from_predictions():
@@ -222,22 +181,46 @@ def check_generate_predictions_console(use_threshold=False):
 
 def test_generate_predictions_console():
     '''
-    Test generate_predictions as a console script
+    Test generate_predictions as a console script with a threshold
     '''
 
     yield check_generate_predictions_console, False
     yield check_generate_predictions_console, True
 
 
-def check_skll_convert(in_prefix, out_prefix):
+def check_skll_convert(from_suffix, to_suffix):
 
     # create some simple classification data
-    train_fs, _ = make_classification_data()
+    orig_fs, _ = make_classification_data(train_test_ratio=1.0)
 
+    # now write out this feature set in the given suffix
+    from_suffix_file = join(_my_dir, 'other',
+                         'test_skll_convert_in{}'.format(from_suffix))
+    to_suffix_file = join(_my_dir, 'other',
+                         'test_skll_convert_out{}'.format(to_suffix))
+
+    writer = EXT_TO_WRITER[from_suffix](from_suffix_file, orig_fs, quiet=True)
+    writer.write()
+
+    # now run skll convert to convert the featureset into the other format
+    skll_convert_cmd = ['skll_convert', from_suffix_file, to_suffix_file, '--quiet']
+    retcode = subprocess.call(skll_convert_cmd)
+
+    # now read the converted file
+    reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
+    converted_fs = reader.read()
+
+    # ensure that the original and the converted feature sets
+    # have the same ids and classes and the features
+    assert_array_equal(orig_fs.ids, converted_fs.ids)
+    assert_array_equal(orig_fs.classes, converted_fs.classes)
+    assert_allclose(orig_fs.features.todense(), converted_fs.features.todense())
 
 
 def test_skll_convert():
-    '''
-    Test the skll_convert script
-    '''
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
+                                                          '.megam', '.tsv',
+                                                          '.csv', '.arff',
+                                                          '.libsvm'], 2):
+        yield check_skll_convert, from_suffix, to_suffix
 
