@@ -30,8 +30,6 @@ from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration, _setup_config_parser
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
-from skll.utilities.compute_eval_from_predictions \
-    import compute_eval_from_predictions
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -269,16 +267,3 @@ def test_backward_compatibility():
     with open(predict_path) as predict_file:
         for line, new_val in zip(predict_file, new_predictions):
             assert_almost_equal(float(line.strip()), new_val)
-
-
-def test_compute_eval_from_predictions():
-    pred_path = join(_my_dir, 'other',
-                     'test_compute_eval_from_predictions.predictions')
-    input_path = join(_my_dir, 'other',
-                      'test_compute_eval_from_predictions.jsonlines')
-
-    scores = compute_eval_from_predictions(input_path, pred_path,
-                                           ['pearson', 'unweighted_kappa'])
-
-    assert_almost_equal(scores['pearson'], 0.6197797868009122)
-    assert_almost_equal(scores['unweighted_kappa'], 0.2)
