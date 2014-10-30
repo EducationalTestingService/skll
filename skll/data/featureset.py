@@ -280,7 +280,7 @@ class FeatureSet(object):
         Return a copy of ``self`` with all features in ``other`` removed.
         '''
         new_set = deepcopy(self)
-        new_set.filter(features=other.features, inverse=True)
+        new_set.filter(features=other.feat_vectorizer.feature_names_, inverse=True)
         return new_set
 
     @property
