@@ -144,7 +144,7 @@ def main(argv=None):
     for input_file in args.input_file:
 
         # make sure each file extension is one we can process
-        input_extension = os.path.splitext(args.input_file)[1].lower()
+        input_extension = os.path.splitext(input_file)[1].lower()
         if input_extension not in EXT_TO_READER:
             logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
                           '.libsvm, .megam, .ndj, or .tsv format. Skipping file '
@@ -152,7 +152,7 @@ def main(argv=None):
             continue
         else:
             # Iterate through input file and collect the information we need
-            reader = EXT_TO_READER[input_extension](args.infile, quiet=args.quiet,
+            reader = EXT_TO_READER[input_extension](input_file, quiet=args.quiet,
                                             label_col=args.label_col)
             feature_set = reader.read()
             for pred in predictor.predict(feature_set):
