@@ -66,7 +66,6 @@ def tearDown():
     for f in glob.glob(join(other_dir, 'test_skll_convert*')):
         os.unlink(f)
 
-
 def test_compute_eval_from_predictions():
     pred_path = join(_my_dir, 'other',
                      'test_compute_eval_from_predictions.predictions')
@@ -113,8 +112,7 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
     # now use Predictor to generate the predictions and make
     # sure that they are the same as before saving the model
-    p = Predictor('output/test_generate_predictions.model',
-                  threshold=threshold)
+    p = Predictor(model_file, threshold=threshold)
     predictions_after_saving = p.predict(test_fs)
 
     eq_(predictions, predictions_after_saving)
