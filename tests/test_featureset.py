@@ -331,10 +331,13 @@ def test_merge_missing_labels():
 
     fs2 = FeatureSet('test2', ids, features=features)
 
-    # merge the two featuresets
-    fs = fs1 + fs2
+    # merge the two featuresets in different orders
+    fs12 = fs1 + fs2
+    fs21 = fs2 + fs1
 
-    assert_array_equal(fs.classes, fs1.classes)
+    # make sure that the classes are the same after merging
+    assert_array_equal(fs12.classes, fs1.classes)
+    assert_array_equal(fs21.classes, fs1.classes)
 
 
 def test_subtract():
@@ -383,9 +386,6 @@ def test_subtract():
 
     # and that they are f3 and f4
     assert_array_equal(np.array(fs.feat_vectorizer.feature_names_), ['f3', 'f4'])
-
-
-
 
 
 @raises(ValueError)
