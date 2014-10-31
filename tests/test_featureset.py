@@ -19,7 +19,7 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import eq_, raises, nottest
+from nose.tools import eq_, raises, nottest, assert_not_equal
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.datasets.samples_generator import make_classification
@@ -90,13 +90,90 @@ def test_length():
     Test to whether len() returns the number of instances
     '''
 
-    # get a 100 instances with 4 features each
+    # create a featureset
     fs, _ = make_classification_data(num_examples=100,
                                      num_features=4,
                                      num_classes=3,
                                      train_test_ratio=1.0)
 
     eq_(len(fs), 100)
+
+
+def test_equality():
+    '''
+    Test featureset equality
+    '''
+
+    # create a featureset
+    fs1, _ = make_classification_data(num_examples=100,
+                                      num_features=4,
+                                      num_classes=3,
+                                      train_test_ratio=1.0)
+
+    # create a featureset with a different set but same number
+    # of features and everything else the same
+    fs2, _ = make_classification_data(num_examples=100,
+                                      num_features=4,
+                                      num_classes=3,
+                                      train_test_ratio=1.0)
+
+    fs2.features *= 2
+
+    # create a featureset with a different set of classes
+    # and everything else the same
+    fs3, _ = make_classification_data(num_examples=100,
+                                      num_features=4,
+                                      num_classes=2,
+                                      train_test_ratio=1.0)
+
+    # create a featureset with a different set but same number
+    # of IDs and everything else the same
+    fs4, _ = make_classification_data(num_examples=100,
+                                      num_features=4,
+                                      num_classes=3,
+                                      train_test_ratio=1.0)
+    fs4.ids = np.array(['A' + i for i in fs2.ids])
+
+    # create a featureset with a different vectorizer
+    # and everything else the same
+    fs5, _ = make_classification_data(num_examples=100,
+                                      num_features=4,
+                                      num_classes=3,
+                                      train_test_ratio=1.0,
+                                      use_feature_hashing=True,
+                                      feature_bins=2)
+
+    # create a featureset with a different number of features
+    # and everything else the same
+    fs6, _ = make_classification_data(num_examples=100,
+                                      num_features=5,
+                                      num_classes=3,
+                                      train_test_ratio=1.0)
+
+    # create a featureset with a different number of examples
+    # and everything else the same
+    fs7, _ = make_classification_data(num_examples=200,
+                                      num_features=4,
+                                      num_classes=3,
+                                      train_test_ratio=1.0)
+
+
+    # create a featureset with a different vectorizer instance
+    # and everything else the same
+    fs8, _ = make_classification_data(num_examples=100,
+                                      num_features=4,
+                                      num_classes=3,
+                                      train_test_ratio=1.0)
+
+    # now check for the expected equalities
+    assert_not_equal(fs1, fs2)
+    assert_not_equal(fs1, fs3)
+    assert_not_equal(fs1, fs4)
+    assert_not_equal(fs1, fs5)
+    assert_not_equal(fs1, fs6)
+    assert_not_equal(fs1, fs7)
+    assert_not_equal(id(fs1.vectorizer), id(fs8.vectorizer))
+    eq_(fs1, fs8)
 
 
 @raises(ValueError)

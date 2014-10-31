@@ -88,7 +88,10 @@ class FeatureSet(object):
         '''
         Check whether two featuresets are the same
         '''
-        return ((self.ids == other.ids).all() and
+        return (self.ids.shape == other.ids.shape and
+                self.classes.shape == other.classes.shape and
+                self.features.shape == other.features.shape and
+                (self.ids == other.ids).all() and
                 (self.classes == other.classes).all() and
                 (self.features - other.features).nnz == 0 and
                 self.vectorizer == other.vectorizer)
