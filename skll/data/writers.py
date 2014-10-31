@@ -353,11 +353,6 @@ class ARFFWriter(DelimitedFileWriter):
 class MegaMWriter(FeatureSetWriter):
 
     """ FeatureSetWriter for writing out FeatureSets as MegaM files. """
-
-    def __init__(self, path, feature_set, **kwargs):
-        kwargs['requires_binary'] = True
-        super(MegaMWriter, self).__init__(path, feature_set, **kwargs)
-
     @staticmethod
     def _replace_non_ascii(line):
         '''
