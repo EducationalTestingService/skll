@@ -83,6 +83,17 @@ class FeatureSet(object):
     def __contains__(self, value):
         pass
 
+
+    def __eq__(self, other):
+        '''
+        Check whether two featuresets are the same
+        '''
+        return (self.ids == other.ids and
+                self.classes == other.classes and
+                (self.features - other.features).nnz == 0 and
+                self.vectorizer == other.vectorizer)
+
+
     def __iter__(self):
         '''
         Iterate through (ID, class, feature_dict) tuples in feature set.

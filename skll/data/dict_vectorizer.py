@@ -88,6 +88,15 @@ class DictVectorizer(OldDictVectorizer):
         self.feature_names_ = []
         self.vocabulary_ = {}
 
+
+    def __eq__(self, other):
+        """
+        Check whether two vectorizers are the same
+        """
+        return (self.dtype == other.dtype and
+               self.vocabulary_ == other.vocabulary_)
+
+
     def fit(self, X, y=None):
         """Learn a list of feature name -> indices mappings.
 
