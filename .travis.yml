@@ -31,7 +31,7 @@ install:
   - pip install nose-cov
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
-  - python setup.py install
+  - pip install -e .
 
 # Run test
 script:
