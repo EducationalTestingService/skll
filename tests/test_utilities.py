@@ -11,6 +11,7 @@ the future.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import copy
 import glob
 import itertools
 import os
@@ -20,10 +21,11 @@ import subprocess
 from io import open
 from os.path import abspath, dirname, exists, join
 
-from nose.tools import eq_, assert_almost_equal
+from nose.tools import eq_, assert_almost_equal, nottest
 from numpy.testing import assert_array_equal, assert_allclose
 
-from skll.data import FeatureSet, NDJWriter
+from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
+                       MegaMWriter, LibSVMReader)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
 from skll.experiments import _setup_config_parser
@@ -172,6 +174,8 @@ def check_generate_predictions_console(use_threshold=False):
 
     p = subprocess.Popen(generate_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
+    print(err)
+
     predictions_after_saving = [int(x) for x in out.decode().strip().split('\n')]
 
     eq_(predictions, predictions_after_saving)
@@ -193,16 +197,19 @@ def check_skll_convert(from_suffix, to_suffix):
 
     # now write out this feature set in the given suffix
     from_suffix_file = join(_my_dir, 'other',
-                         'test_skll_convert_in{}'.format(from_suffix))
+                            'test_skll_convert_in{}'.format(from_suffix))
     to_suffix_file = join(_my_dir, 'other',
-                         'test_skll_convert_out{}'.format(to_suffix))
+                          'test_skll_convert_out{}'.format(to_suffix))
 
     writer = EXT_TO_WRITER[from_suffix](from_suffix_file, orig_fs, quiet=True)
     writer.write()
 
     # now run skll convert to convert the featureset into the other format
-    skll_convert_cmd = ['skll_convert', from_suffix_file, to_suffix_file, '--quiet']
-    retcode = subprocess.call(skll_convert_cmd)
+    skll_convert_cmd = ['skll_convert', from_suffix_file,
+                        to_suffix_file, '--quiet']
+    p = subprocess.Popen(skll_convert_cmd, stderr=subprocess.PIPE)
+    _, err = p.communicate()
+    print(err)
 
     # now read the converted file
     reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
@@ -221,4 +228,53 @@ def test_skll_convert():
                                                           '.csv', '.arff',
                                                           '.libsvm'], 2):
         yield check_skll_convert, from_suffix, to_suffix
+
+
+def test_skll_convert_libsvm_map():
+
+    # create some simple classification data
+    orig_fs, _ = make_classification_data(train_test_ratio=1.0)
+
+    # now write out this feature set as a libsvm file
+    orig_libsvm_file = join(_my_dir, 'other',
+                            'test_skll_convert_libsvm_map.libsvm')
+    writer = LibSVMWriter(orig_libsvm_file, orig_fs, quiet=True)
+    writer.write()
+
+    # now make a copy of the dataset
+    swapped_fs = copy.deepcopy(orig_fs)
+
+    # now modify this new featureset to swap the first two columns
+    del swapped_fs.vectorizer.vocabulary_['f01']
+    del swapped_fs.vectorizer.vocabulary_['f02']
+    swapped_fs.vectorizer.vocabulary_['f01'] = 1
+    swapped_fs.vectorizer.vocabulary_['f02'] = 0
+    tmp = swapped_fs.features[:, 0]
+    swapped_fs.features[:, 0] = swapped_fs.features[:, 1]
+    swapped_fs.features[:, 1] = tmp
+
+    # now write out this new feature set as a MegaM file
+    swapped_megam_file = join(_my_dir, 'other',
+                              'test_skll_convert_libsvm_map.megam')
+    writer = MegaMWriter(swapped_megam_file, swapped_fs, quiet=True)
+    writer.write()
+
+    # now run skll_convert to convert this into a libsvm file
+    # but using the mapping specified in the first libsvm file
+    converted_libsvm_file = join(_my_dir, 'other',
+                                'test_skll_convert_libsvm_map2.libsvm')
+    skll_convert_cmd = ['skll_convert', '--reuse_libsvm_map',
+                        orig_libsvm_file, '--quiet',
+                        orig_libsvm_file, converted_libsvm_file]
+    p = subprocess.Popen(skll_convert_cmd, stderr=subprocess.PIPE)
+    _, err = p.communicate()
+    print(err)
+
+    # now read the converted libsvm file into a featureset
+    reader = LibSVMReader(converted_libsvm_file, quiet=True)
+    converted_fs = reader.read()
+
+    # now ensure that this new featureset and the original
+    # featureset are the same
+    eq_(orig_fs, converted_fs)
 
