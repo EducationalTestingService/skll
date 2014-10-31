@@ -86,14 +86,19 @@ class FeatureSet(object):
 
     def __eq__(self, other):
         '''
-        Check whether two featuresets are the same
+        Check whether two featuresets are the same.
+        Note that we consider feature values to be
+        equal if any differences are in the sixth
+        decimal place or higher.
         '''
         return (self.ids.shape == other.ids.shape and
                 self.classes.shape == other.classes.shape and
                 self.features.shape == other.features.shape and
                 (self.ids == other.ids).all() and
                 (self.classes == other.classes).all() and
-                (self.features - other.features).nnz == 0 and
+                np.allclose(self.features.data, other.features.data, rtol=1e-6) and
+                (self.features.indices == other.features.indices).all() and
+                (self.features.indptr == other.features.indptr).all() and
                 self.vectorizer == other.vectorizer)
 
 
