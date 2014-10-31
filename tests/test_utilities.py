@@ -25,7 +25,7 @@ from nose.tools import eq_, assert_almost_equal, nottest
 from numpy.testing import assert_array_equal, assert_allclose
 
 from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
-                       MegaMWriter, LibSVMReader)
+                       MegaMWriter, LibSVMReader, safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
 from skll.experiments import _setup_config_parser
@@ -34,7 +34,7 @@ from skll.utilities.compute_eval_from_predictions \
     import compute_eval_from_predictions
 from skll.utilities.generate_predictions import Predictor
 
-from utils import make_classification_data
+from utils import make_classification_data, make_regression_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -216,10 +216,8 @@ def check_skll_convert(from_suffix, to_suffix):
     converted_fs = reader.read()
 
     # ensure that the original and the converted feature sets
-    # have the same ids and classes and the features
-    assert_array_equal(orig_fs.ids, converted_fs.ids)
-    assert_array_equal(orig_fs.classes, converted_fs.classes)
-    assert_allclose(orig_fs.features.todense(), converted_fs.features.todense())
+    # are the same
+    eq_(orig_fs, converted_fs)
 
 
 def test_skll_convert():
@@ -231,6 +229,9 @@ def test_skll_convert():
 
 
 def test_skll_convert_libsvm_map():
+    '''
+    Test to check whether the --reuse_libsvm_map option works for skll_convert
+    '''
 
     # create some simple classification data
     orig_fs, _ = make_classification_data(train_test_ratio=1.0)
@@ -278,3 +279,58 @@ def test_skll_convert_libsvm_map():
     # featureset are the same
     eq_(orig_fs, converted_fs)
 
+
+def check_print_model_weights(task='classification'):
+
+    # create some simple classification or regression data
+    if task == 'classification':
+        train_fs, _ = make_classification_data(train_test_ratio=0.8)
+    else:
+        train_fs, _, _ = make_regression_data(num_features=4, train_test_ratio=0.8)
+
+    # now train the appropriate model
+    if task == 'classification':
+        learner = Learner('LogisticRegression')
+        learner.train(train_fs)
+    else:
+        learner = Learner('LinearRegression')
+        learner.train(train_fs, grid_objective='pearson')
+
+    # now save the model to disk
+    model_file = join(_my_dir, 'output',
+                      'test_print_model_weights.model')
+    learner.save(model_file)
+
+    # now call print_model_weights on this model and capture the output
+    print_model_weights_cmd = ['print_model_weights', model_file]
+    p = subprocess.Popen(print_model_weights_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    print(err)
+
+    # now parse the output of the print_model_weight command
+    # and get the intercept and the feature values
+    if task == 'classification':
+        lines_to_parse = [l for l in out.split('\n')[1:] if l]
+        intercept = safe_float(lines_to_parse[0].split('\t')[0])
+        feature_values = []
+        for ltp in lines_to_parse[1:]:
+            fields = ltp.split('\t')
+            feature_values.append((fields[2], safe_float(fields[0])))
+        feature_values = [t[1] for t in sorted(feature_values)]
+        assert_almost_equal(intercept, learner.model.intercept_)
+        assert_allclose(learner.model.coef_[0], feature_values)
+    else:
+        lines_to_parse = [l for l in out.split('\n') if l]
+        intercept = safe_float(lines_to_parse[0].split('=')[1])
+        feature_values = []
+        for ltp in lines_to_parse[1:]:
+            fields = ltp.split('\t')
+            feature_values.append((fields[1], safe_float(fields[0])))
+        feature_values = [t[1] for t in sorted(feature_values)]
+        assert_almost_equal(intercept, learner.model.intercept_)
+        assert_allclose(learner.model.coef_, feature_values)
+
+
+def test_print_model_weights():
+    yield check_print_model_weights, 'classification'
+    yield check_print_model_weights, 'regression'
