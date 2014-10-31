@@ -27,7 +27,7 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
-    feature_names = ['{}{}'.format(feature_prefix, n) for n in range(1, num_features + 1)]
+    feature_names = ['{}{:02d}'.format(feature_prefix, n) for n in range(1, num_features + 1)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -78,7 +78,7 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
-    feature_names = ['f{}'.format(n) for n
+    feature_names = ['f{:02d}'.format(n) for n
                      in range(start_feature_num,
                               start_feature_num + num_features)]
     features = []
