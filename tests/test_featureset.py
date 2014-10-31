@@ -647,7 +647,7 @@ def check_load_featureset(suffix, numeric_ids):
     eq_(sorted(merged_examples.vectorizer.feature_names_),
         sorted(premerged_examples.vectorizer.feature_names_))
 
-@nottest
+
 def test_load_featureset():
     # Test merging with numeric IDs
     for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
@@ -667,7 +667,7 @@ def test_ids_to_floats():
     assert not isinstance(examples.ids[0], float)
     assert isinstance(examples.ids[0], str)
 
-@nottest
+
 def test_convert_examples():
     examples = [{"id": "example0", "y": 1.0, "x": {"f1": 1.0}},
                 {"id": "example1", "y": 2.0, "x": {"f1": 1.0, "f2": 1.0}},
@@ -796,7 +796,7 @@ def check_convert_featureset(from_suffix, to_suffix):
     eq_(sorted(merged_examples.vectorizer.feature_names_),
         sorted(premerged_examples.vectorizer.feature_names_))
 
-@nottest
+
 def test_convert_featureset():
     # Test the conversion from every format to every other format
     for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
