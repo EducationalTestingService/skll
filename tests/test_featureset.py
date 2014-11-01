@@ -99,6 +99,35 @@ def test_length():
     eq_(len(fs), 100)
 
 
+def test_string_feature():
+    '''
+    Test to make sure that string-valued features are properly
+    encoded as binary features
+    '''
+    # create a featureset that is derived from an original
+    # set of features containing 3 numeric features and
+    # one string-valued feature that can take six possible
+    # values between 'a' to 'f'. This means that the
+    # featureset will have 3 numeric + 6 binary features.
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     num_classes=3,
+                                     one_string_feature=True,
+                                     num_string_values=6,
+                                     train_test_ratio=1.0)
+
+    # confirm that the number of features are as expected
+    eq_(fs.features.shape, (100, 9))
+
+    # confirm the feature names
+    eq_(fs.vectorizer.feature_names_, ['f01', 'f02', 'f03',
+                                       'f04=a', 'f04=b', 'f04=c',
+                                       'f04=d', 'f04=e', 'f04=f'])
+
+    # confirm that the final six features are binary
+    assert_array_equal(fs.features[:, [3, 4, 5, 6, 7, 8]].data, 1)
+
+
 def test_equality():
     '''
     Test featureset equality
@@ -165,7 +194,6 @@ def test_equality():
                                       num_features=4,
                                       num_classes=3,
                                       train_test_ratio=1.0)
-
 
     # create a featureset with a different vectorizer instance
     # and everything else the same

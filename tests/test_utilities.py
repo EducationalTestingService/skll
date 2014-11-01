@@ -60,7 +60,8 @@ def tearDown():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
     other_dir = join(_my_dir, 'other')
-    os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
+    if exists(join(test_dir, 'test_generate_predictions.jsonlines')):
+        os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
     for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions.model*')):
         os.unlink(model_chunk)
     for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions_console.model*')):
@@ -193,7 +194,7 @@ def test_generate_predictions_console():
 def check_skll_convert(from_suffix, to_suffix):
 
     # create some simple classification data
-    orig_fs, _ = make_classification_data(train_test_ratio=1.0)
+    orig_fs, _ = make_classification_data(train_test_ratio=1.0, one_string_feature=True)
 
     # now write out this feature set in the given suffix
     from_suffix_file = join(_my_dir, 'other',
@@ -234,7 +235,7 @@ def test_skll_convert_libsvm_map():
     '''
 
     # create some simple classification data
-    orig_fs, _ = make_classification_data(train_test_ratio=1.0)
+    orig_fs, _ = make_classification_data(train_test_ratio=1.0, one_string_feature=True)
 
     # now write out this feature set as a libsvm file
     orig_libsvm_file = join(_my_dir, 'other',
@@ -310,17 +311,17 @@ def check_print_model_weights(task='classification'):
     # now parse the output of the print_model_weight command
     # and get the intercept and the feature values
     if task == 'classification':
-        lines_to_parse = [l for l in out.split('\n')[1:] if l]
+        lines_to_parse = [l for l in out.decode().split('\n')[1:] if l]
         intercept = safe_float(lines_to_parse[0].split('\t')[0])
         feature_values = []
         for ltp in lines_to_parse[1:]:
             fields = ltp.split('\t')
             feature_values.append((fields[2], safe_float(fields[0])))
         feature_values = [t[1] for t in sorted(feature_values)]
-        assert_almost_equal(intercept, learner.model.intercept_)
+        assert_almost_equal(intercept, learner.model.intercept_[0])
         assert_allclose(learner.model.coef_[0], feature_values)
     else:
-        lines_to_parse = [l for l in out.split('\n') if l]
+        lines_to_parse = [l for l in out.decode().split('\n') if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
         feature_values = []
         for ltp in lines_to_parse[1:]:
