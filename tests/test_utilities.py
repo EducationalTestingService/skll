@@ -16,7 +16,9 @@ import glob
 import itertools
 import os
 import re
-import subprocess
+import sys
+
+from six import StringIO
 
 from io import open
 from os.path import abspath, dirname, exists, join
@@ -28,11 +30,12 @@ from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
                        MegaMWriter, LibSVMReader, safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
-from skll.experiments import _setup_config_parser
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 from skll.utilities.compute_eval_from_predictions \
     import compute_eval_from_predictions
-from skll.utilities.generate_predictions import Predictor
+import skll.utilities.generate_predictions as gp
+import skll.utilities.skll_convert as sk
+import skll.utilities.print_model_weights as pmw
 
 from utils import make_classification_data, make_regression_data
 
@@ -115,7 +118,7 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
     # now use Predictor to generate the predictions and make
     # sure that they are the same as before saving the model
-    p = Predictor(model_file, threshold=threshold)
+    p = gp.Predictor(model_file, threshold=threshold)
     predictions_after_saving = p.predict(test_fs)
 
     eq_(predictions, predictions_after_saving)
@@ -167,24 +170,32 @@ def check_generate_predictions_console(use_threshold=False):
                       'test_generate_predictions_console.model')
     learner.save(model_file)
 
-    # now call generate_predictions.py on the command line
-    generate_cmd = ['generate_predictions']
+    # now call main() from generate_predictions.py
+    generate_cmd = []
     if use_threshold:
         generate_cmd.append('-t {}'.format(threshold))
     generate_cmd.extend([model_file, input_file])
 
-    p = subprocess.Popen(generate_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    print(err)
-
-    predictions_after_saving = [int(x) for x in out.decode().strip().split('\n')]
-
-    eq_(predictions, predictions_after_saving)
+    # we need to capture stdout since that's what main() writes to
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        gp.main(generate_cmd)
+        out = mystdout.getvalue()
+        err = mystderr.getvalue()
+        print(err)
+        predictions_after_saving = [int(x) for x in out.strip().split('\n')]
+        eq_(predictions, predictions_after_saving)
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
 
 
 def test_generate_predictions_console():
     '''
-    Test generate_predictions as a console script with a threshold
+    Test generate_predictions as a console script with/without a threshold
     '''
 
     yield check_generate_predictions_console, False
@@ -206,11 +217,17 @@ def check_skll_convert(from_suffix, to_suffix):
     writer.write()
 
     # now run skll convert to convert the featureset into the other format
-    skll_convert_cmd = ['skll_convert', from_suffix_file,
-                        to_suffix_file, '--quiet']
-    p = subprocess.Popen(skll_convert_cmd, stderr=subprocess.PIPE)
-    _, err = p.communicate()
-    print(err)
+    skll_convert_cmd = [from_suffix_file, to_suffix_file, '--quiet']
+
+    # we need to capture stdout since that's what main() writes to
+    try:
+        old_stderr = sys.stderr
+        sys.stderr = mystderr = StringIO()
+        sk.main(skll_convert_cmd)
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stderr = old_stderr
 
     # now read the converted file
     reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
@@ -265,12 +282,19 @@ def test_skll_convert_libsvm_map():
     # but using the mapping specified in the first libsvm file
     converted_libsvm_file = join(_my_dir, 'other',
                                 'test_skll_convert_libsvm_map2.libsvm')
-    skll_convert_cmd = ['skll_convert', '--reuse_libsvm_map',
-                        orig_libsvm_file, '--quiet',
-                        orig_libsvm_file, converted_libsvm_file]
-    p = subprocess.Popen(skll_convert_cmd, stderr=subprocess.PIPE)
-    _, err = p.communicate()
-    print(err)
+
+    # now call skll convert's main function
+    skll_convert_cmd = ['--reuse_libsvm_map', orig_libsvm_file,
+                        '--quiet', orig_libsvm_file,
+                        converted_libsvm_file]
+    try:
+        old_stderr = sys.stderr
+        sys.stderr = mystderr = StringIO()
+        sk.main(skll_convert_cmd)
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stderr = old_stderr
 
     # now read the converted libsvm file into a featureset
     reader = LibSVMReader(converted_libsvm_file, quiet=True)
@@ -302,16 +326,25 @@ def check_print_model_weights(task='classification'):
                       'test_print_model_weights.model')
     learner.save(model_file)
 
-    # now call print_model_weights on this model and capture the output
-    print_model_weights_cmd = ['print_model_weights', model_file]
-    p = subprocess.Popen(print_model_weights_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    print(err)
+    # now call print_model_weights main() and capture the output
+    print_model_weights_cmd = [model_file]
+    try:
+        old_stderr = sys.stderr
+        old_stdout = sys.stdout
+        sys.stderr = mystderr = StringIO()
+        sys.stdout = mystdout = StringIO()
+        pmw.main(print_model_weights_cmd)
+        out = mystdout.getvalue()
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stderr = old_stderr
+        sys.stdout = old_stdout
 
     # now parse the output of the print_model_weight command
     # and get the intercept and the feature values
     if task == 'classification':
-        lines_to_parse = [l for l in out.decode().split('\n')[1:] if l]
+        lines_to_parse = [l for l in out.split('\n')[1:] if l]
         intercept = safe_float(lines_to_parse[0].split('\t')[0])
         feature_values = []
         for ltp in lines_to_parse[1:]:
@@ -321,7 +354,7 @@ def check_print_model_weights(task='classification'):
         assert_almost_equal(intercept, learner.model.intercept_[0])
         assert_allclose(learner.model.coef_[0], feature_values)
     else:
-        lines_to_parse = [l for l in out.decode().split('\n') if l]
+        lines_to_parse = [l for l in out.split('\n') if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
         feature_values = []
         for ltp in lines_to_parse[1:]:
