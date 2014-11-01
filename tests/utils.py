@@ -1,3 +1,6 @@
+import numpy as np
+from numpy.random import RandomState
+
 from skll.data import FeatureSet
 from sklearn.datasets.samples_generator import (make_classification,
                                                 make_regression)
@@ -9,11 +12,13 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              feature_bins=4, num_classes=2,
                              empty_classes=False, feature_prefix='f',
                              class_weights=None, non_negative=False,
+                             one_string_feature=False, num_string_values=4,
                              random_state=1234567890):
 
     # use sklearn's make_classification to generate the data for us
-    X, y = make_classification(n_samples=num_examples, n_features=num_features,
-                               n_informative=num_features, n_redundant=0,
+    num_numeric_features = num_features -1 if one_string_feature else num_features
+    X, y = make_classification(n_samples=num_examples, n_features=num_numeric_features,
+                               n_informative=num_numeric_features, n_redundant=0,
                                n_classes=num_classes, weights=class_weights,
                                random_state=random_state)
 
@@ -25,6 +30,16 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     # since we want to use SKLL's FeatureSet class, we need to
     # create a list of IDs
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+
+    # create a string feature that has four possible values
+    # 'a', 'b', 'c' and 'd' and add it to X at the end
+    if one_string_feature:
+        prng = RandomState(random_state)
+        random_indices = prng.random_integers(0, num_string_values - 1, num_examples)
+        possible_values = [chr(x) for x in range(97, 97 + num_string_values)]
+        string_feature_values = [possible_values[i] for i in random_indices]
+        string_feature_column = np.array(string_feature_values, dtype=object).reshape(100, 1)
+        X = np.append(X, string_feature_column, 1)
 
     # create a list of dictionaries as the features
     feature_names = ['{}{:02d}'.format(feature_prefix, n) for n in range(1, num_features + 1)]
