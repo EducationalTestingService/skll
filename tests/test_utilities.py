@@ -31,8 +31,7 @@ from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
-from skll.utilities.compute_eval_from_predictions \
-    import compute_eval_from_predictions
+import skll.utilities.compute_eval_from_predictions as cefp
 import skll.utilities.generate_predictions as gp
 import skll.utilities.skll_convert as sk
 import skll.utilities.print_model_weights as pmw
@@ -72,14 +71,36 @@ def tearDown():
     for f in glob.glob(join(other_dir, 'test_skll_convert*')):
         os.unlink(f)
 
+
 def test_compute_eval_from_predictions():
+    '''
+    Test compute_eval_from_predictions function console script
+    '''
+
     pred_path = join(_my_dir, 'other',
                      'test_compute_eval_from_predictions.predictions')
     input_path = join(_my_dir, 'other',
                       'test_compute_eval_from_predictions.jsonlines')
 
-    scores = compute_eval_from_predictions(input_path, pred_path,
-                                           ['pearson', 'unweighted_kappa'])
+    # we need to capture stdout since that's what main() writes to
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson', 'unweighted_kappa']
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        cefp.main(compute_eval_from_predictions_cmd)
+        score_rows = mystdout.getvalue().strip().split('\n')
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+    scores = {}
+    for score_row in score_rows:
+        score, metric_name, pred_path = score_row.split('\t')
+        scores[metric_name] = float(score)
 
     assert_almost_equal(scores['pearson'], 0.6197797868009122)
     assert_almost_equal(scores['unweighted_kappa'], 0.2)
@@ -219,7 +240,7 @@ def check_skll_convert(from_suffix, to_suffix):
     # now run skll convert to convert the featureset into the other format
     skll_convert_cmd = [from_suffix_file, to_suffix_file, '--quiet']
 
-    # we need to capture stdout since that's what main() writes to
+    # we need to capture stderr to make sure we don't miss any errors
     try:
         old_stderr = sys.stderr
         sys.stderr = mystderr = StringIO()
