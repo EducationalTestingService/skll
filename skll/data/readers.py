@@ -361,6 +361,12 @@ class LibSVMReader(Reader):
                             r'(?P<label_map>[^|]+)\s*\|\s*'
                             r'(?P<feat_map>.*)\s*)?$', flags=re.UNICODE)
 
+    LIBSVM_REPLACE_DICT = {'\u2236': ':',
+                           '\uFF03': '#',
+                           '\u2002': ' ',
+                           '\ua78a': '=',
+                           '\u2223': '|'}
+
     @staticmethod
     def _pair_to_tuple(pair, feat_map):
         '''
@@ -388,8 +394,12 @@ class LibSVMReader(Reader):
             if match.group('comments') is not None:
                 # Store mapping from feature numbers to names
                 if match.group('feat_map'):
-                    feat_map = dict(pair.split('=') for pair in
-                                    match.group('feat_map').split())
+                    feat_map = {}
+                    for pair in match.group('feat_map').split():
+                        number, name = pair.split('=')
+                        for orig, replacement in LibSVMReader.LIBSVM_REPLACE_DICT.items():
+                            name = re.sub(orig, replacement, name, flags=re.UNICODE)
+                        feat_map[number] = name
                 else:
                     feat_map = None
                 # Store mapping from label/class numbers to names
