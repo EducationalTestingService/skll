@@ -19,7 +19,7 @@ from itertools import product
 from os.path import abspath, dirname
 
 from nose.tools import eq_
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_allclose
 from sklearn.utils.testing import assert_greater, assert_less
 from skll.data import FeatureSet
 from skll.learner import Learner
@@ -150,9 +150,8 @@ def check_tree_models(name,
                                                                                  0.75901447]
         expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
 
-    # get the weights for this trained model
     feature_importances = learner.model.feature_importances_
-    assert_array_almost_equal(feature_importances, expected_feature_importances)
+    assert_allclose(feature_importances, expected_feature_importances, rtol=1e-2)
 
 
     # now generate the predictions on the test FeatureSet
@@ -221,10 +220,8 @@ def check_ensemble_models(name,
                                                                             0.288,
                                                                             0.45]
 
-    # get the weights for this trained model
     feature_importances = learner.model.feature_importances_
-    assert_array_almost_equal(feature_importances, expected_feature_importances)
-
+    assert_allclose(feature_importances, expected_feature_importances, rtol=1e-2)
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
