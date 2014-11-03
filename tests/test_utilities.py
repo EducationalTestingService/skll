@@ -206,12 +206,12 @@ def check_generate_predictions_console(use_threshold=False):
         gp.main(generate_cmd)
         out = mystdout.getvalue()
         err = mystderr.getvalue()
-        print(err)
         predictions_after_saving = [int(x) for x in out.strip().split('\n')]
         eq_(predictions, predictions_after_saving)
     finally:
         sys.stdout = old_stdout
         sys.stderr = old_stderr
+        print(err)
 
 
 def test_generate_predictions_console():
@@ -246,9 +246,9 @@ def check_skll_convert(from_suffix, to_suffix):
         sys.stderr = mystderr = StringIO()
         sk.main(skll_convert_cmd)
         err = mystderr.getvalue()
-        print(err)
     finally:
         sys.stderr = old_stderr
+        print(err)
 
     # now read the converted file
     reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
@@ -313,9 +313,9 @@ def test_skll_convert_libsvm_map():
         sys.stderr = mystderr = StringIO()
         sk.main(skll_convert_cmd)
         err = mystderr.getvalue()
-        print(err)
     finally:
         sys.stderr = old_stderr
+        print(err)
 
     # now read the converted libsvm file into a featureset
     reader = LibSVMReader(converted_libsvm_file, quiet=True)
@@ -357,10 +357,10 @@ def check_print_model_weights(task='classification'):
         pmw.main(print_model_weights_cmd)
         out = mystdout.getvalue()
         err = mystderr.getvalue()
-        print(err)
     finally:
         sys.stderr = old_stderr
         sys.stdout = old_stdout
+        print(err)
 
     # now parse the output of the print_model_weight command
     # and get the intercept and the feature values
