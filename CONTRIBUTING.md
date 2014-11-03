@@ -20,21 +20,14 @@ GitHub:
           $ git clone git@github.com:YourLogin/skll.git
           $ cd skll
 
-3. Checkout the develop branch:
-
-          $ git checkout develop
-
-   You must do this to make sure that your branches are based off the
-   ``develop`` branch, and not the ``master`` branch!
-
-4. Create a feature branch to hold your changes:
+3. Create a feature branch to hold your changes:
 
           $ git checkout -b feature/my-new-addition
 
-   and start making changes. Never work in the ``develop`` or ``master``
+   and start making changes. Never work in the ``master`` or ``stable``
    branches!
 
-5. Work on this copy on your computer using Git to do the version
+4. Work on this copy on your computer using Git to do the version
    control. When you're done editing, do:
 
           $ git add modified_files
@@ -42,13 +35,11 @@ GitHub:
 
    to record your changes in Git, then push them to GitHub with:
 
-          $ git push -u feature/my-new-addition
+          $ git push feature/my-new-addition
 
 Finally, go to the web page of the your fork of the SKLL repo,
 and click 'Pull request' to send your changes to the maintainers for
-review. **Please make sure that the "base" branch for your pull request is
-set to ``develop`` and that the "base fork" is set to
-``EducationalTestingService/skll``.**
+review.
 
 (If any of the above seems like magic to you, then look up the
 [Git documentation](http://git-scm.com/documentation) on the web.)
