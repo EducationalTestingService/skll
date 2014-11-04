@@ -72,6 +72,12 @@ Talks
 
 -  *Simpler Machine Learning with SKLL*, Dan Blanchard, PyData NYC 2013 (`video <http://vimeo.com/79511496>`__ | `slides <http://www.slideshare.net/DanielBlanchard2/simple-machine-learning-with-skll>`__)
 
+Books
+~~~~~
+
+SKLL is featured in `*Data Science at the Command Line* <http://datascienceatthecommandline.com>`__
+by `Jeroen Janssens <http://jeroenjanssens.com>`__.
+
 Changelog
 ~~~~~~~~~
 
