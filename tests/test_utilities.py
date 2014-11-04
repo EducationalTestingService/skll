@@ -18,10 +18,16 @@ import os
 import re
 import sys
 
-from six import StringIO
 
 from io import open
+from itertools import product
 from os.path import abspath, dirname, exists, join
+from six import StringIO
+
+try:
+    from unittest.mock import create_autospec
+except ImportError:
+    from mock import create_autospec
 
 from nose.tools import eq_, assert_almost_equal, nottest
 from numpy.testing import assert_array_equal, assert_allclose
@@ -30,11 +36,15 @@ from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
                        MegaMWriter, LibSVMReader, safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
+from skll.experiments import _write_summary_file, run_configuration
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 import skll.utilities.compute_eval_from_predictions as cefp
 import skll.utilities.generate_predictions as gp
 import skll.utilities.skll_convert as sk
 import skll.utilities.print_model_weights as pmw
+import skll.utilities.summarize_results as sr
+import skll.utilities.run_experiment as rex
+
 
 from utils import make_classification_data, make_regression_data
 
@@ -70,6 +80,9 @@ def tearDown():
         os.unlink(model_chunk)
     for f in glob.glob(join(other_dir, 'test_skll_convert*')):
         os.unlink(f)
+    if exists(join(other_dir, 'summary_file')):
+        os.unlink(join(other_dir, 'summary_file'))
+
 
 
 def test_compute_eval_from_predictions():
@@ -389,3 +402,120 @@ def check_print_model_weights(task='classification'):
 def test_print_model_weights():
     yield check_print_model_weights, 'classification'
     yield check_print_model_weights, 'regression'
+
+
+# a utility function to check that we are setting up
+# argument parsing correctly for summarize_results
+# we are not checking whether the summaries produced
+# are accurate because we have separate tests for that
+def check_summarize_results_argparse(use_ablation=False):
+
+    # replace the _write_summary_file function that's called
+    # by the main() in summarize_results with a mocked up version
+    write_summary_file_mock = create_autospec(_write_summary_file)
+    sr._write_summary_file = write_summary_file_mock
+
+    # now call main with some arguments
+    summary_file_name = join(_my_dir, 'other', 'summary_file')
+    list_of_input_files = ['infile1', 'infile2', 'infile3']
+    sr_cmd_args = [summary_file_name]
+    sr_cmd_args.extend(list_of_input_files)
+    if use_ablation:
+        sr_cmd_args.append('--ablation')
+    sr.main(argv=sr_cmd_args)
+
+    # now check to make sure that _write_summary_file (or our mocked up version of it)
+    # got the arguments that we passed
+    positional_arguments, keyword_arguments = write_summary_file_mock.call_args
+    eq_(positional_arguments[0], list_of_input_files)
+    eq_(positional_arguments[1].name, summary_file_name)
+    eq_(keyword_arguments['ablation'], int(use_ablation))
+
+
+def test_summarize_results_argparse():
+    yield check_summarize_results_argparse, False
+    yield check_summarize_results_argparse, True
+
+
+# a utility functionto check that we are setting up
+# argument parsing correctly for summarize_results
+# we are not checking whether the summaries produced
+# are accurate because we have separate tests for that
+def check_run_experiments_argparse(multiple_config_files=False,
+                                   n_ablated_features='1',
+                                   keep_models=False,
+                                   local=False,
+                                   resume=False):
+
+    # replace the run_configuration function that's called
+    # by the main() in run_experiment with a mocked up version
+    run_configuration_mock = create_autospec(run_configuration)
+    rex.run_configuration = run_configuration_mock
+
+    # now call main with some arguments
+    config_file1_name = join(_my_dir, 'other', 'config_file1')
+    config_files = [config_file1_name]
+    rex_cmd_args = [config_file1_name]
+    if multiple_config_files:
+        config_file2_name = join(_my_dir, 'other', 'config_file2')
+        rex_cmd_args.extend([config_file2_name])
+        config_files.extend([config_file2_name])
+
+    if n_ablated_features != 'all':
+        rex_cmd_args.extend(['-a', '{}'.format(n_ablated_features)])
+    else:
+        rex_cmd_args.append('-A')
+
+    if keep_models:
+        rex_cmd_args.append('-k')
+
+    if resume:
+        rex_cmd_args.append('-r')
+
+    if local:
+        rex_cmd_args.append('-l')
+    else:
+        machine_list = ['"foo.1.org"', '"x.test.com"' , '"z.a.b.d"']
+        rex_cmd_args.append('-m')
+        rex_cmd_args.append('{}'.format(','.join(machine_list)))
+
+    rex_cmd_args.extend(['-q', 'foobar.q'])
+
+    rex.main(argv=rex_cmd_args)
+
+    # now check to make sure that run_configuration (or our mocked up version of it)
+    # got the arguments that we passed
+    positional_arguments, keyword_arguments = run_configuration_mock.call_args
+
+    if multiple_config_files:
+        eq_(positional_arguments[0], config_files[1])
+    else:
+        eq_(positional_arguments[0], config_file1_name)
+
+    if n_ablated_features != 'all':
+        eq_(keyword_arguments['ablation'], int(n_ablated_features))
+    else:
+        eq_(keyword_arguments['ablation'], None)
+
+    if local:
+        eq_(keyword_arguments['local'], local)
+    else:
+        eq_(keyword_arguments['hosts'], machine_list)
+
+    eq_(keyword_arguments['overwrite'], not keep_models)
+    eq_(keyword_arguments['queue'], 'foobar.q')
+    eq_(keyword_arguments['resume'], resume)
+
+
+def test_run_experiment_argparse():
+    for (multiple_config_files,
+         n_ablated_features,
+         keep_models, local,
+         resume) in product([True, False],
+                            ['2', 'all'],
+                            [True, False],
+                            [True, False],
+                            [True, False]):
+
+        yield (check_run_experiments_argparse, multiple_config_files,
+                 n_ablated_features, keep_models, local, resume)
