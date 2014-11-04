@@ -21,7 +21,7 @@ import sys
 from collections import defaultdict
 from io import open
 from itertools import combinations
-from os.path import basename, exists, join
+from os.path import basename, exists, isfile, join
 
 import configparser  # Backported version from Python 3
 from prettytable import PrettyTable, ALL
