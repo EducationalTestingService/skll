@@ -75,7 +75,7 @@ Talks
 Books
 ~~~~~
 
-SKLL is featured in `*Data Science at the Command Line* <http://datascienceatthecommandline.com>`__
+SKLL is featured in `Data Science at the Command Line <http://datascienceatthecommandline.com>`__
 by `Jeroen Janssens <http://jeroenjanssens.com>`__.
 
 Changelog
