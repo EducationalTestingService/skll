@@ -173,7 +173,7 @@ class Reader(object):
             raise ValueError('The example IDs are not unique in %s.' %
                              self.path_or_list)
 
-        return FeatureSet(self.path_or_list, ids=ids, classes=classes,
+        return FeatureSet(self.path_or_list, ids, classes=classes,
                           features=features, vectorizer=self.vectorizer)
 
 
@@ -231,7 +231,7 @@ class DictListReader(Reader):
         classes = np.array(classes)
         features = self.vectorizer.fit_transform(feat_dicts)
 
-        return FeatureSet('converted', ids=ids, classes=classes,
+        return FeatureSet('converted', ids, classes=classes,
                           features=features, vectorizer=self.vectorizer)
 
 
@@ -721,11 +721,16 @@ def safe_float(text, replace_dict=None):
                                                 'dictionary (e.g., class_map):'
                                                 ' {}'.format(text))
     try:
-        return float(text)
+        return int(text)
     except ValueError:
-        return text.decode('utf-8') if PY2 else text
+        try:
+            return float(text)
+        except ValueError:
+            return text.decode('utf-8') if PY2 else text
+        except TypeError:
+            return 0.0
     except TypeError:
-        return 0.0
+        return 0
 
 
 # Constants

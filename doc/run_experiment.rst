@@ -21,6 +21,8 @@ things work, do the following from the command prompt:
     $ run_experiment --local evaluate.cfg        # run an experiment
 
 
+.. _file_formats:
+
 Feature file formats
 --------------------
 The following feature file formats are supported:
@@ -115,7 +117,7 @@ There are four expected sections in a configuration file: ``General``,
 settings for each section is provided below, but to summarize:
 
 *   If you want to do **cross-validation**, specify a path to training feature
-    files, and set ``task`` to ``cross_validate`` You also can optionally use
+    files, and set ``task`` to ``cross_validate``. Please note that the cross-validation currently uses **StratifiedKFold**. You also can optionally use
     predetermined folds with the ``cv_folds_location`` setting.
 
 *   If you want to **train a model and evaluate it** on some data, specify
@@ -171,6 +173,12 @@ Input
         this to True will save you some memory by storing IDs as floats.
         Note that this will cause IDs to be printed as floats in prediction
         files (e.g., "4.0" instead of "4" or "0004" or "4.000").
+
+    **shuffle** *(Optional)*
+        If ``True``, shuffle the examples in the training data before using them
+        for learning. This happens automatically when doing a grid search but
+        it might be useful in other scenarios as well, e.g., online learning.
+        Defaults to ``False``.
 
     **class_map** *(Optional)*
         If you would like to collapse several classes into one, or otherwise
@@ -259,11 +267,16 @@ Input
         Optional list of names for the feature sets.  If omitted, then the
         prefixes will be munged together to make names.
 
+    .. _learners:
+
     **learners** [#]_
-        List of scikit-learn models to try using. A separate job will be
-        run for each combination of classifier and feature-set.
-        Acceptable values are described below. Names in parentheses are
-        aliases that can also be used in configuration files.
+        List of scikit-learn models to try using. A separate job will
+        be run for each combination of classifier and feature-set.
+        Acceptable values are described below. Names in parentheses
+        are aliases that can also be used inconfiguration files.
+        Custom learners can also be specified. See
+        ``custom_learner_path``.
+
 
         Classifiers:
 
@@ -299,6 +312,16 @@ Input
             of the regressor where predictions are rescaled and constrained to
             better match the training set.
 
+    **custom_learner_path** *(Optional)*
+        Path to a .py file that defines a custom learner.  This file will be
+        imported dynamically.  This is only required if a custom learner in
+        specified in the list of learners.  Custom learners must implement
+        the ``fit`` and ``predict`` methods and inherit
+        ``sklearn.base.BaseEstimator``.  Custom regression learners must also
+        inherit ``sklearn.base.RegressorMixin``.  Models that require dense
+        matrices should implement a method ``requires_dense`` that returns
+        ``True``.
+
     **fixed_parameters** *(Optional)*
         List of dicts containing parameters you want to have fixed for each
         classifier in ``learners`` list. Any empty ones will be ignored
@@ -328,13 +351,13 @@ Input
 
         .. code-block:: python
 
-           {'criterion': 'entropy', 'compute_importances': True, 'random_state': 123456789}
+           {'random_state': 123456789}
 
         *RandomForestClassifier* and *RandomForestRegressor*
 
         .. code-block:: python
 
-           {'n_estimators': 500, 'compute_importances': True, 'random_state': 123456789}
+           {'n_estimators': 500, 'random_state': 123456789}
 
 
         *GradientBoostingClassifier* and *GradientBoostingRegressor*
@@ -398,6 +421,8 @@ Tuning
     **min_feature_count** *(Optional)*
         The minimum number of examples for a which each feature must be nonzero
         to be included in the model. Defaults to 1.
+
+    .. _objective_functions:
 
     **objective** *(Optional)*
         The objective function to use for tuning. Valid options are:
