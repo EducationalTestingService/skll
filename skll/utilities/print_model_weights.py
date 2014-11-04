@@ -19,9 +19,13 @@ from skll import Learner
 from skll.version import __version__
 
 
-def main():
+def main(argv=None):
     '''
     Handles command line arguments and gets things started.
+
+    :param argv: List of arguments, as if specified on the command-line.
+                 If None, ``sys.argv[1:]`` is used instead.
+    :type argv: list of str
     '''
     parser = argparse.ArgumentParser(description="Prints out the weights of a \
                                                   given model.",
@@ -38,7 +42,7 @@ def main():
                              'or all weights')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)

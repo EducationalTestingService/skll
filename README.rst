@@ -1,21 +1,23 @@
 SciKit-Learn Laboratory
 -----------------------
 
-.. image:: https://travis-ci.org/EducationalTestingService/skll.png?branch=master
+.. image:: https://travis-ci.org/EducationalTestingService/skll.svg?branch=stable
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
-.. image:: https://coveralls.io/repos/EducationalTestingService/skll/badge.png?branch=master
+.. image:: http://img.shields.io/coveralls/EducationalTestingService/skll/stable.svg
     :target: https://coveralls.io/r/EducationalTestingService/skll
 
-.. image:: https://pypip.in/d/skll/badge.png
-   :target: https://crate.io/packages/skll
+.. image:: http://img.shields.io/pypi/dm/skll.svg
+   :target: https://warehouse.python.org/project/skll/
    :alt: PyPI downloads
 
-.. image:: https://pypip.in/v/skll/badge.png
-   :target: https://crate.io/packages/skll
+.. image:: http://img.shields.io/pypi/v/skll.svg
+   :target: https://warehouse.python.org/project/skll/
    :alt: Latest version on PyPI
 
+.. image:: http://img.shields.io/pypi/l/skll.svg
+   :alt: License
 
 .. image:: https://zenodo.org/badge/doi/10.5281/zenodo.12178.png
    :target: http://dx.doi.org/10.5281/zenodo.12178
@@ -69,6 +71,12 @@ Talks
 ~~~~~
 
 -  *Simpler Machine Learning with SKLL*, Dan Blanchard, PyData NYC 2013 (`video <http://vimeo.com/79511496>`__ | `slides <http://www.slideshare.net/DanielBlanchard2/simple-machine-learning-with-skll>`__)
+
+Books
+~~~~~
+
+SKLL is featured in `Data Science at the Command Line <http://datascienceatthecommandline.com>`__
+by `Jeroen Janssens <http://jeroenjanssens.com>`__.
 
 Changelog
 ~~~~~~~~~

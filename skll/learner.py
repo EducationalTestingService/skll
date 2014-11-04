@@ -652,8 +652,9 @@ class Learner(object):
         intercept = None
         if (isinstance(self._model, LinearModel) or
                 (isinstance(self._model, SVR) and
-                 self._model.kernel == 'linear')):
-            # also includes RescaledRidge, RescaledSVR
+                 self._model.kernel == 'linear') or
+                isinstance(self._model, SGDRegressor)):
+            # also includes RescaledRidge, RescaledSVR, RescaledSGDRegressor
 
             coef = self.model.coef_
             intercept = {'_intercept_': self.model.intercept_}

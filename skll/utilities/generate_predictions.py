@@ -13,9 +13,13 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import argparse
 import logging
+import os
 
-from skll import Learner, load_examples
-from skll.learner import _REGRESSION_MODELS
+from sklearn.base import RegressorMixin
+from sklearn.feature_extraction import FeatureHasher
+
+from skll.data.readers import EXT_TO_READER
+from skll.learner import Learner
 from skll.version import __version__
 
 
@@ -50,13 +54,18 @@ class Predictor(object):
         '''
         Generate a list of predictions for the given examples.
 
-        :param data: Examples to get predictions for.
-        :type data: ExamplesTuple
+        :param data: FeatureSet to get predictions for.
+        :type data: FeatureSet
 
         :returns: A list of predictions the model generated for the given
                   examples.
         '''
-        preds = self._learner.predict(data).tolist()
+
+        # determine if the model used feature hashing or not
+        use_feature_hashing = isinstance(self._learner.feat_vectorizer, FeatureHasher)
+
+        # compute the predictions from the learner
+        preds = self._learner.predict(data, feature_hasher=use_feature_hashing).tolist()
 
         if self._learner.probability:
             if self.threshold is None:
@@ -64,7 +73,7 @@ class Predictor(object):
             else:
                 return [int(pred[self._pos_index] >= self.threshold)
                         for pred in preds]
-        elif self._learner.model_type in _REGRESSION_MODELS:
+        elif issubclass(self._learner.model_type, RegressorMixin):
             return preds
         else:
             return [self._learner.label_list[pred if isinstance(pred, int) else
@@ -124,17 +133,30 @@ def main(argv=None):
     logging.captureWarnings(True)
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
                                 '%(message)s'))
+    logger = logging.getLogger(__name__)
 
     # Create the classifier and load the model
     predictor = Predictor(args.model_file,
                           positive_class=args.positive_class,
                           threshold=args.threshold)
 
+    # Iterate over all the specified input files
     for input_file in args.input_file:
-        data = load_examples(input_file, quiet=args.quiet,
-                             label_col=args.label_col)
-        for pred in predictor.predict(data):
-            print(pred)
+
+        # make sure each file extension is one we can process
+        input_extension = os.path.splitext(input_file)[1].lower()
+        if input_extension not in EXT_TO_READER:
+            logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
+                          '.libsvm, .megam, .ndj, or .tsv format. Skipping file '
+                          '{}').format(input_file))
+            continue
+        else:
+            # Iterate through input file and collect the information we need
+            reader = EXT_TO_READER[input_extension](input_file, quiet=args.quiet,
+                                            label_col=args.label_col)
+            feature_set = reader.read()
+            for pred in predictor.predict(feature_set):
+                print(pred)
 
 
 if __name__ == '__main__':

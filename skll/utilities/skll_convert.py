@@ -114,10 +114,10 @@ def main(argv=None):
             comments = line.split('#')[1]
             _, label_map_str, feat_map_str = comments.split('|')
             feat_map.update(_pair_to_dict_tuple(pair) for pair in
-                            feat_map_str.strip())
+                            feat_map_str.strip().split())
             label_map.update(_pair_to_dict_tuple(pair) for pair in
                              label_map_str
-                             .strip())
+                             .strip().split())
         feat_vectorizer = DictVectorizer()
         feat_vectorizer.fit([{name: 1} for name in feat_map])
         feat_vectorizer.vocabulary_ = feat_map
