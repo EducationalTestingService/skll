@@ -376,7 +376,7 @@ class MegaMWriter(FeatureSetWriter):
         # Don't try to add class column if this is label-less data
         print('# {}'.format(id_), file=output_file)
         if self.feat_set.has_classes:
-            print(class_, end='\t', file=output_file)
+            print('{}'.format(class_), end='\t', file=output_file)
         print(self._replace_non_ascii(' '.join(('{} {}'.format(field,
                                                                value) for
                                                 field, value in

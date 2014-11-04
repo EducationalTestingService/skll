@@ -75,7 +75,7 @@ def make_cv_folds_data(num_examples_per_fold=100,
 
     # create the cross-validation feature set with or without feature hashing
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
-    cv_fs = FeatureSet('cv_folds', ids=ids, features=features,
+    cv_fs = FeatureSet('cv_folds', ids, features=features,
                        classes=y, vectorizer=vectorizer)
 
     # make the custom cv folds dictionary

@@ -65,8 +65,7 @@ class FeatureSet(object):
         if self.features is not None:
             num_feats = self.features.shape[0]
             if self.ids is None:
-                self.ids = np.empty(num_feats)
-                self.ids.fill(None)
+                raise ValueError('A list of IDs is required')
             num_ids = self.ids.shape[0]
             if num_feats != num_ids:
                 raise ValueError(('Number of IDs (%s) does not equal '
@@ -77,12 +76,40 @@ class FeatureSet(object):
                 self.classes.fill(None)
             num_classes = self.classes.shape[0]
             if num_feats != num_classes:
-                raise ValueError(('Number of classes ({}) does not equal '
-                                  'number of feature rows({})') % (num_classes,
-                                                                   num_feats))
+                raise ValueError(('Number of classes (%s) does not equal '
+                                  'number of feature rows (%s)') % (num_classes,
+                                                                    num_feats))
 
     def __contains__(self, value):
         pass
+
+
+    def __eq__(self, other):
+        '''
+        Check whether two featuresets are the same.
+        Note that we consider feature values to be
+        equal if any differences are in the sixth
+        decimal place or higher.
+        '''
+
+        # We need to sort the indices for the underlying
+        # feature sparse matrix in case we haven't done
+        # so already.
+        if not self.features.has_sorted_indices:
+            self.features.sort_indices()
+        if not other.features.has_sorted_indices:
+            other.features.sort_indices()
+
+        return (self.ids.shape == other.ids.shape and
+                self.classes.shape == other.classes.shape and
+                self.features.shape == other.features.shape and
+                (self.ids == other.ids).all() and
+                (self.classes == other.classes).all() and
+                np.allclose(self.features.data, other.features.data, rtol=1e-6) and
+                (self.features.indices == other.features.indices).all() and
+                (self.features.indptr == other.features.indptr).all() and
+                self.vectorizer == other.vectorizer)
+
 
     def __iter__(self):
         '''
@@ -104,7 +131,7 @@ class FeatureSet(object):
             return
 
     def __len__(self):
-        return self.features.shape[1]
+        return self.features.shape[0]
 
     def __add__(self, other):
         '''
@@ -198,11 +225,11 @@ class FeatureSet(object):
         # Construct mask that indicates which examples to keep
         mask = np.ones(len(self), dtype=bool)
         if ids is not None:
-            mask = np.logical_and(mask, np.logical_not(np.in1d(self.ids, ids)))
+            mask = np.logical_and(mask, np.in1d(self.ids, ids))
         if classes is not None:
-            mask = np.logical_and(mask, np.logical_not(np.in1d(self.classes,
-                                                               classes)))
-        if inverse:
+            mask = np.logical_and(mask, np.in1d(self.classes, classes))
+
+        if inverse and (classes is not None or ids is not None):
             mask = np.logical_not(mask)
 
         # Remove examples not in mask
@@ -221,9 +248,10 @@ class FeatureSet(object):
                                            feat_name.split('=', 1)[0] in
                                            features)}))
             if inverse:
-                columns = ~columns
+                all_columns = np.arange(self.features.shape[1])
+                columns = all_columns[np.logical_not(np.in1d(all_columns, columns))]
             self.features = self.features[:, columns]
-            self.vectorizer.restrict(columns)
+            self.vectorizer.restrict(columns, indices=True)
 
     def filtered_iter(self, ids=None, classes=None, features=None,
                       inverse=False):
@@ -280,7 +308,7 @@ class FeatureSet(object):
         Return a copy of ``self`` with all features in ``other`` removed.
         '''
         new_set = deepcopy(self)
-        new_set.filter(features=other.features, inverse=True)
+        new_set.filter(features=other.feat_vectorizer.feature_names_, inverse=True)
         return new_set
 
     @property
