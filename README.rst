@@ -1,18 +1,18 @@
 SciKit-Learn Laboratory
 -----------------------
 
-.. image:: https://travis-ci.org/EducationalTestingService/skll.png?branch=master
+.. image:: https://travis-ci.org/EducationalTestingService/skll.svg?branch=master
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
-.. image:: https://coveralls.io/repos/EducationalTestingService/skll/badge.png?branch=master
+.. image:: https://coveralls.io/repos/EducationalTestingService/skll/badge.svg?branch=stable
     :target: https://coveralls.io/r/EducationalTestingService/skll
 
-.. image:: https://pypip.in/d/skll/badge.png
+.. image:: https://pypip.in/d/skll/badge.svg
    :target: https://crate.io/packages/skll
    :alt: PyPI downloads
 
-.. image:: https://pypip.in/v/skll/badge.png
+.. image:: https://pypip.in/v/skll/badge.svg
    :target: https://crate.io/packages/skll
    :alt: Latest version on PyPI
 
