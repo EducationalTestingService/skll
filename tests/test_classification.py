@@ -1,13 +1,12 @@
 # License: BSD 3 clause
-'''
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+"""
+Tests related to classification experiments.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -51,12 +50,12 @@ def setup():
 
 
 def check_predict(model, use_feature_hashing=False):
-    '''
+    """
     This tests whether predict task runs and generates the same
     number of predictions as samples in the test set. The specified
     model indicates whether to generate random regression
     or classification data.
-    '''
+    """
 
     # create the random data for the given model
     if issubclass(model, RegressorMixin):
@@ -102,10 +101,10 @@ def test_predict():
 
 # the function to create data with rare classes for cross-validation
 def make_rare_class_data():
-    '''
+    """
     We want to create data that has five instances per class, for three classes
     and for each instance within the group of 5, there's only a single feature firing
-    '''
+    """
 
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, 16)]
     y = [0]*5 + [1]*5 + [2]*5
@@ -118,9 +117,9 @@ def make_rare_class_data():
     return FeatureSet('rare-class', ids, features=features, classes=y)
 
 def test_rare_class():
-    '''
+    """
     Test cross-validation when some classes are very rare
-    '''
+    """
 
     rare_class_fs = make_rare_class_data()
     prediction_prefix = join(_my_dir, 'output', 'rare_class')
@@ -138,11 +137,11 @@ def test_rare_class():
 
 
 def make_sparse_data(use_feature_hashing=False):
-    '''
+    """
     Function to create sparse data with two features always zero
     in the training set and a different one always zero in the
     test set
-    '''
+    """
     # Create training data
     X, y = make_classification(n_samples=500, n_features=3,
                                n_informative=3, n_redundant=0,

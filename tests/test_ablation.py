@@ -1,13 +1,12 @@
 # License: BSD 3 clause
-'''
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+"""
+Tests related to ablation experiments.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -22,7 +21,6 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-import scipy.sparse as sp
 from nose.tools import eq_
 from skll.data import FeatureSet, NDJWriter
 from skll.experiments import _setup_config_parser, run_ablation
@@ -49,10 +47,10 @@ def setup():
 
 
 def fill_in_config_paths(config_template_path):
-    '''
+    """
     Add paths to train, test, and output directories to a given config template
     file.
-    '''
+    """
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -133,12 +131,12 @@ def make_ablation_data():
 
 
 def check_ablation_rows(reader):
-    '''
+    """
     Helper function to ensure that all ablated_features and featureset values
     are correct for each row in results summary file.
 
     :returns: Number of items in reader
-    '''
+    """
     row_num = 0
     for row_num, row in enumerate(reader, 1):
         if row['ablated_features']:
@@ -157,9 +155,9 @@ def check_ablation_rows(reader):
 
 
 def test_ablation_cv():
-    '''
+    """
     Test if ablation works with cross-validate
-    '''
+    """
 
     make_ablation_data()
 
@@ -184,9 +182,9 @@ def test_ablation_cv():
 
 
 def test_ablation_cv_all_combos():
-    '''
+    """
     Test to validate whether ablation all-combos works with cross-validate
-    '''
+    """
 
     make_ablation_data()
 
@@ -212,9 +210,9 @@ def test_ablation_cv_all_combos():
 
 
 def test_ablation_cv_feature_hasher():
-    '''
+    """
     Test if ablation works with cross-validate and feature_hasher
-    '''
+    """
     make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -240,9 +238,9 @@ def test_ablation_cv_feature_hasher():
 
 
 def test_ablation_cv_feature_hasher_all_combos():
-    '''
+    """
     Test if ablation all-combos works with cross-validate and feature_hasher
-    '''
+    """
 
     make_ablation_data()
 
@@ -270,9 +268,9 @@ def test_ablation_cv_feature_hasher_all_combos():
 
 
 def test_ablation_cv_sampler():
-    '''
+    """
     Test to validate whether ablation works with cross-validate and samplers
-    '''
+    """
     make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -296,9 +294,9 @@ def test_ablation_cv_sampler():
 
 
 def test_ablation_cv_all_combos_sampler():
-    '''
+    """
     Test to validate whether ablation works with cross-validate
-    '''
+    """
     make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
@@ -323,10 +321,10 @@ def test_ablation_cv_all_combos_sampler():
 
 
 def test_ablation_cv_feature_hasher_sampler():
-    '''
+    """
     Test to validate whether ablation works with cross-validate
     and feature_hasher
-    '''
+    """
     make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs', ('test_ablation_feature_'
@@ -353,10 +351,10 @@ def test_ablation_cv_feature_hasher_sampler():
 
 
 def test_ablation_cv_feature_hasher_all_combos_sampler():
-    '''
+    """
     Test to validate whether ablation works with cross-validate
     and feature_hasher
-    '''
+    """
     make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs', ('test_ablation_feature_'
