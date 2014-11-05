@@ -1,18 +1,15 @@
 # License: BSD 3 clause
-'''
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+"""
+Module for running unit tests related to command line utilities.
 
-:author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
-:author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import copy
-import glob
 import itertools
 import os
 import re
@@ -23,18 +20,26 @@ from six import StringIO
 from io import open
 from os.path import abspath, dirname, exists, join
 
-from nose.tools import eq_, assert_almost_equal, nottest
+try:
+    from unittest.mock import create_autospec, patch
+except ImportError:
+    from mock import create_autospec, patch
+from nose.tools import eq_, assert_almost_equal
 from numpy.testing import assert_array_equal, assert_allclose
 
+import skll
+import skll.utilities.compute_eval_from_predictions as cefp
+import skll.utilities.filter_features as ff
+import skll.utilities.generate_predictions as gp
+import skll.utilities.print_model_weights as pmw
+import skll.utilities.run_experiment as rex
+import skll.utilities.skll_convert as sk
+import skll.utilities.summarize_results as sr
 from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
                        MegaMWriter, LibSVMReader, safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
-import skll.utilities.compute_eval_from_predictions as cefp
-import skll.utilities.generate_predictions as gp
-import skll.utilities.skll_convert as sk
-import skll.utilities.print_model_weights as pmw
 
 from utils import make_classification_data, make_regression_data
 
@@ -64,18 +69,20 @@ def tearDown():
     other_dir = join(_my_dir, 'other')
     if exists(join(test_dir, 'test_generate_predictions.jsonlines')):
         os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
-    for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions.model*')):
+    for model_chunk in glob(join(output_dir,
+                                 'test_generate_predictions.model*')):
         os.unlink(model_chunk)
-    for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions_console.model*')):
+    for model_chunk in glob(join(output_dir,
+                                 'test_generate_predictions_console.model*')):
         os.unlink(model_chunk)
-    for f in glob.glob(join(other_dir, 'test_skll_convert*')):
+    for f in glob(join(other_dir, 'test_skll_convert*')):
         os.unlink(f)
 
 
 def test_compute_eval_from_predictions():
-    '''
+    """
     Test compute_eval_from_predictions function console script
-    '''
+    """
 
     pred_path = join(_my_dir, 'other',
                      'test_compute_eval_from_predictions.predictions')
@@ -83,7 +90,8 @@ def test_compute_eval_from_predictions():
                       'test_compute_eval_from_predictions.jsonlines')
 
     # we need to capture stdout since that's what main() writes to
-    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson', 'unweighted_kappa']
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
+                                         'unweighted_kappa']
     try:
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -118,7 +126,8 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
     learner = Learner('SGDClassifier', probability=use_threshold)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True, feature_hasher=use_feature_hashing)
+    learner.train(train_fs, grid_search=True,
+                  feature_hasher=use_feature_hashing)
 
     # get the predictions on the test featureset
     predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
@@ -146,9 +155,9 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
 
 def test_generate_predictions():
-    '''
+    """
     Test generate predictions API with hashing and a threshold
-    '''
+    """
 
     yield check_generate_predictions, False, False
     yield check_generate_predictions, True, False
@@ -215,9 +224,9 @@ def check_generate_predictions_console(use_threshold=False):
 
 
 def test_generate_predictions_console():
-    '''
+    """
     Test generate_predictions as a console script with/without a threshold
-    '''
+    """
 
     yield check_generate_predictions_console, False
     yield check_generate_predictions_console, True
@@ -226,7 +235,8 @@ def test_generate_predictions_console():
 def check_skll_convert(from_suffix, to_suffix):
 
     # create some simple classification data
-    orig_fs, _ = make_classification_data(train_test_ratio=1.0, one_string_feature=True)
+    orig_fs, _ = make_classification_data(train_test_ratio=1.0,
+                                          one_string_feature=True)
 
     # now write out this feature set in the given suffix
     from_suffix_file = join(_my_dir, 'other',
@@ -268,12 +278,13 @@ def test_skll_convert():
 
 
 def test_skll_convert_libsvm_map():
-    '''
+    """
     Test to check whether the --reuse_libsvm_map option works for skll_convert
-    '''
+    """
 
     # create some simple classification data
-    orig_fs, _ = make_classification_data(train_test_ratio=1.0, one_string_feature=True)
+    orig_fs, _ = make_classification_data(train_test_ratio=1.0,
+                                          one_string_feature=True)
 
     # now write out this feature set as a libsvm file
     orig_libsvm_file = join(_my_dir, 'other',
@@ -332,7 +343,8 @@ def check_print_model_weights(task='classification'):
     if task == 'classification':
         train_fs, _ = make_classification_data(train_test_ratio=0.8)
     else:
-        train_fs, _, _ = make_regression_data(num_features=4, train_test_ratio=0.8)
+        train_fs, _, _ = make_regression_data(num_features=4,
+                                              train_test_ratio=0.8)
 
     # now train the appropriate model
     if task == 'classification':
@@ -389,3 +401,213 @@ def check_print_model_weights(task='classification'):
 def test_print_model_weights():
     yield check_print_model_weights, 'classification'
     yield check_print_model_weights, 'regression'
+
+
+def check_summarize_results_argparse(use_ablation=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for summarize_results. We are not checking whether the summaries
+    produced are accurate because we have separate tests for that.
+    """
+
+    # replace the _write_summary_file function that's called
+    # by the main() in summarize_results with a mocked up version
+    write_summary_file_mock = create_autospec(_write_summary_file)
+    sr._write_summary_file = write_summary_file_mock
+
+    # now call main with some arguments
+    summary_file_name = join(_my_dir, 'other', 'summary_file')
+    list_of_input_files = ['infile1', 'infile2', 'infile3']
+    sr_cmd_args = [summary_file_name]
+    sr_cmd_args.extend(list_of_input_files)
+    if use_ablation:
+        sr_cmd_args.append('--ablation')
+    sr.main(argv=sr_cmd_args)
+
+    # now check to make sure that _write_summary_file (or our mocked up version
+    # of it) got the arguments that we passed
+    positional_arguments, keyword_arguments = write_summary_file_mock.call_args
+    eq_(positional_arguments[0], list_of_input_files)
+    eq_(positional_arguments[1].name, summary_file_name)
+    eq_(keyword_arguments['ablation'], int(use_ablation))
+
+
+def test_summarize_results_argparse():
+    yield check_summarize_results_argparse, False
+    yield check_summarize_results_argparse, True
+
+
+def check_run_experiments_argparse(multiple_config_files=False,
+                                   n_ablated_features='1',
+                                   keep_models=False,
+                                   local=False,
+                                   resume=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for run_experiment.  We are not checking whether the results are
+    correct because we have separate tests for that.
+    """
+
+    # replace the run_configuration function that's called
+    # by the main() in run_experiment with a mocked up version
+    run_configuration_mock = create_autospec(run_configuration)
+    rex.run_configuration = run_configuration_mock
+
+    # now call main with some arguments
+    config_file1_name = join(_my_dir, 'other', 'config_file1')
+    config_files = [config_file1_name]
+    rex_cmd_args = [config_file1_name]
+    if multiple_config_files:
+        config_file2_name = join(_my_dir, 'other', 'config_file2')
+        rex_cmd_args.extend([config_file2_name])
+        config_files.extend([config_file2_name])
+
+    if n_ablated_features != 'all':
+        rex_cmd_args.extend(['-a', '{}'.format(n_ablated_features)])
+    else:
+        rex_cmd_args.append('-A')
+
+    if keep_models:
+        rex_cmd_args.append('-k')
+
+    if resume:
+        rex_cmd_args.append('-r')
+
+    if local:
+        rex_cmd_args.append('-l')
+    else:
+        machine_list = ['"foo.1.org"', '"x.test.com"', '"z.a.b.d"']
+        rex_cmd_args.append('-m')
+        rex_cmd_args.append('{}'.format(','.join(machine_list)))
+
+    rex_cmd_args.extend(['-q', 'foobar.q'])
+
+    rex.main(argv=rex_cmd_args)
+
+    # now check to make sure that run_configuration (or our mocked up version
+    # of it) got the arguments that we passed
+    positional_arguments, keyword_arguments = run_configuration_mock.call_args
+
+    if multiple_config_files:
+        eq_(positional_arguments[0], config_files[1])
+    else:
+        eq_(positional_arguments[0], config_file1_name)
+
+    if n_ablated_features != 'all':
+        eq_(keyword_arguments['ablation'], int(n_ablated_features))
+    else:
+        eq_(keyword_arguments['ablation'], None)
+
+    if local:
+        eq_(keyword_arguments['local'], local)
+    else:
+        eq_(keyword_arguments['hosts'], machine_list)
+
+    eq_(keyword_arguments['overwrite'], not keep_models)
+    eq_(keyword_arguments['queue'], 'foobar.q')
+    eq_(keyword_arguments['resume'], resume)
+
+
+def test_run_experiment_argparse():
+    for (multiple_config_files,
+         n_ablated_features,
+         keep_models, local,
+         resume) in product([True, False],
+                            ['2', 'all'],
+                            [True, False],
+                            [True, False],
+                            [True, False]):
+
+        yield (check_run_experiments_argparse, multiple_config_files,
+                 n_ablated_features, keep_models, local, resume)
+
+
+def check_filter_features_argparse(ids=False,
+                                   n_ablated_features='1',
+                                   keep_models=False,
+                                   local=False,
+                                   resume=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for filter_features.  We are not checking whether the results are
+    correct because we have separate tests for that.
+    """
+
+    # replace the run_configuration function that's called
+    # by the main() in filter_feature with a mocked up version
+    run_configuration_mock = create_autospec(run_configuration)
+    rex.run_configuration = run_configuration_mock
+
+    # now call main with some arguments
+    config_file1_name = join(_my_dir, 'other', 'config_file1')
+    config_files = [config_file1_name]
+    rex_cmd_args = [config_file1_name]
+    if multiple_config_files:
+        config_file2_name = join(_my_dir, 'other', 'config_file2')
+        rex_cmd_args.extend([config_file2_name])
+        config_files.extend([config_file2_name])
+
+    if n_ablated_features != 'all':
+        rex_cmd_args.extend(['-a', '{}'.format(n_ablated_features)])
+    else:
+        rex_cmd_args.append('-A')
+
+    if keep_models:
+        rex_cmd_args.append('-k')
+
+    if resume:
+        rex_cmd_args.append('-r')
+
+    if local:
+        rex_cmd_args.append('-l')
+    else:
+        machine_list = ['"foo.1.org"', '"x.test.com"', '"z.a.b.d"']
+        rex_cmd_args.append('-m')
+        rex_cmd_args.append('{}'.format(','.join(machine_list)))
+
+    rex_cmd_args.extend(['-q', 'foobar.q'])
+
+    rex.main(argv=rex_cmd_args)
+
+    # now check to make sure that run_configuration (or our mocked up version
+    # of it) got the arguments that we passed
+    positional_arguments, keyword_arguments = run_configuration_mock.call_args
+
+    if multiple_config_files:
+        eq_(positional_arguments[0], config_files[1])
+    else:
+        eq_(positional_arguments[0], config_file1_name)
+
+    if n_ablated_features != 'all':
+        eq_(keyword_arguments['ablation'], int(n_ablated_features))
+    else:
+        eq_(keyword_arguments['ablation'], None)
+
+    if local:
+        eq_(keyword_arguments['local'], local)
+    else:
+        eq_(keyword_arguments['hosts'], machine_list)
+
+    eq_(keyword_arguments['overwrite'], not keep_models)
+    eq_(keyword_arguments['queue'], 'foobar.q')
+    eq_(keyword_arguments['resume'], resume)
+
+
+def test_filter_features_argparse():
+    orig_filter = skll.data.readers.FeatureSet.filter
+    mock_filter = create_autospec(skll.data.readers.FeatureSet.filter)
+    skll.data.readers.FeatureSet.filter = mock_filter
+    try:
+        for (multiple_config_files,
+             n_ablated_features,
+             keep_models, local,
+             resume) in product([True, False],
+                                ['2', 'all'],
+                                [True, False],
+                                [True, False],
+                                [True, False]):
+
+            yield (check_filter_features_argparse, multiple_config_files,
+                     n_ablated_features, keep_models, local, resume)
+    finally:
+        skll.data.readers.FeatureSet.filter = orig_filter
