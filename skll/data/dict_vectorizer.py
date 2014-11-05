@@ -94,7 +94,7 @@ class DictVectorizer(OldDictVectorizer):
         Check whether two vectorizers are the same
         """
         return (self.dtype == other.dtype and
-               self.vocabulary_ == other.vocabulary_)
+                self.vocabulary_ == other.vocabulary_)
 
 
     def fit(self, X, y=None):

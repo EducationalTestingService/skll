@@ -18,7 +18,9 @@ import re
 from itertools import product
 from os.path import abspath, dirname
 
-from nose.tools import eq_
+from nose.tools import eq_, assert_almost_equal
+
+import numpy as np
 from numpy.testing import assert_allclose
 from sklearn.utils.testing import assert_greater, assert_less
 from skll.data import FeatureSet
@@ -34,6 +36,57 @@ SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
                              r'([\-\d\.]+)')
 GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
+
+
+# a utility function to check rescaling for linear models
+def check_rescaling(name):
+
+    train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
+                                                         sd_noise=4,
+                                                         num_features=3)
+
+    # instantiate the given learner and its rescaled counterpart
+    learner = Learner(name)
+    rescaled_learner = Learner('Rescaled' + name)
+
+    # train both the regular regressor and the rescaled regressor
+    learner.train(train_fs, grid_objective='pearson')
+    rescaled_learner.train(train_fs, grid_objective='pearson')
+
+    # now generate both sets of predictions on the test feature set
+    predictions = learner.predict(test_fs)
+    rescaled_predictions = rescaled_learner.predict(test_fs)
+
+    # ... and on the training feature set
+    train_predictions = learner.predict(train_fs)
+    rescaled_train_predictions = rescaled_learner.predict(train_fs)
+
+    # make sure that both sets of correlations are close to perfectly correlated
+    # since the only thing different is that one set has been rescaled
+    assert_almost_equal(pearsonr(predictions, rescaled_predictions)[0], 1.0, places=3)
+
+    # make sure that the standard deviation of the rescaled test set predictions
+    # is higher than the standard deviation of the regular test set predictions
+    p_std = np.std(predictions)
+    rescaled_p_std = np.std(rescaled_predictions)
+    assert_greater(rescaled_p_std, p_std)
+
+    # make sure that the standard deviation of the rescaled predictions
+    # on the TRAINING set (not the TEST) is closer to the standard
+    # deviation of the training set labels than the standard deviation
+    # of the regular predictions.
+    train_y_std = np.std(train_fs.classes)
+    train_p_std = np.std(train_predictions)
+    rescaled_train_p_std = np.std(rescaled_train_predictions)
+    assert_less(abs(rescaled_train_p_std - train_y_std), abs(train_p_std - train_y_std))
+
+
+def test_rescaling():
+    for regressor_name in ['ElasticNet', 'Lasso',
+                           'LinearRegression', 'Ridge',
+                           'SVR', 'SGDRegressor']:
+
+        yield check_rescaling, regressor_name
 
 
 # the utility function to run the linear regression tests

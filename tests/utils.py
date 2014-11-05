@@ -43,9 +43,7 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
 
     # create a list of dictionaries as the features
     feature_names = ['{}{:02d}'.format(feature_prefix, n) for n in range(1, num_features + 1)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
+    features = [dict(zip(feature_names, row)) for row in X]
 
     # split everything into training and testing portions
     num_train_examples = int(round(train_test_ratio * num_examples))
@@ -59,7 +57,7 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     test_classes = None if empty_classes else test_y
 
     # create a FeatureHasher if we are asked to use feature hashing
-    # and use 2.5 times the number of features to be on the safe side
+    # with the specified number of feature bins
     vectorizer = (FeatureHasher(n_features=feature_bins)
                   if use_feature_hashing else None)
     train_fs = FeatureSet('classification_train', train_ids,
@@ -96,9 +94,7 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     feature_names = ['f{:02d}'.format(n) for n
                      in range(start_feature_num,
                               start_feature_num + num_features)]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
+    features = [dict(zip(feature_names, row)) for row in X]
 
     # convert the weights array into a dictionary for convenience
     weightdict = dict(zip(feature_names, weights))
@@ -111,7 +107,7 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
 
     # create a FeatureHasher if we are asked to use feature hashing
-    # and use 2.5 times the number of features to be on the safe side
+    # with the specified number of feature bins
     vectorizer = (FeatureHasher(n_features=feature_bins) if
                   use_feature_hashing else None)
     train_fs = FeatureSet('regression_train', train_ids,
