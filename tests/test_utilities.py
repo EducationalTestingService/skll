@@ -17,14 +17,15 @@ import sys
 
 
 from io import open
+from glob import glob
 from itertools import product
 from os.path import abspath, dirname, exists, join
 from six import StringIO
 
 try:
-    from unittest.mock import create_autospec
+    from unittest.mock import create_autospec, patch
 except ImportError:
-    from mock import create_autospec
+    from mock import create_autospec, patch
 
 from nose.tools import eq_, assert_almost_equal, nottest
 from numpy.testing import assert_array_equal, assert_allclose
@@ -37,6 +38,7 @@ import skll.utilities.print_model_weights as pmw
 import skll.utilities.run_experiment as rex
 import skll.utilities.skll_convert as sk
 import skll.utilities.summarize_results as sr
+import skll.utilities.filter_features as ff
 from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
                        MegaMWriter, LibSVMReader, safe_float)
 from skll.data.readers import EXT_TO_READER
@@ -83,7 +85,8 @@ def tearDown():
         os.unlink(f)
     if exists(join(other_dir, 'summary_file')):
         os.unlink(join(other_dir, 'summary_file'))
-
+    if exists(join(other_dir, 'foo.arff')):
+        os.unlink(join(other_dir, 'foo.arff'))
 
 
 def test_compute_eval_from_predictions():
@@ -529,92 +532,239 @@ def test_run_experiment_argparse():
                  n_ablated_features, keep_models, local, resume)
 
 
-def check_filter_features_argparse(ids=False,
-                                   n_ablated_features='1',
-                                   keep_models=False,
-                                   local=False,
-                                   resume=False):
+def check_filter_features_no_arff_argparse(extension, filter_type,
+                                           label_col='y', inverse=False,
+                                           quiet=False):
     """
     A utility function to check that we are setting up argument parsing
-    correctly for filter_features.  We are not checking whether the results are
-    correct because we have separate tests for that.
+    correctly for filter_features for ALL file types except ARFF.
+    We are not checking whether the results are correct because we
+    have separate tests for that.
     """
 
     # replace the run_configuration function that's called
     # by the main() in filter_feature with a mocked up version
-    run_configuration_mock = create_autospec(run_configuration)
-    rex.run_configuration = run_configuration_mock
-
-    # now call main with some arguments
-    config_file1_name = join(_my_dir, 'other', 'config_file1')
-    config_files = [config_file1_name]
-    rex_cmd_args = [config_file1_name]
-    if multiple_config_files:
-        config_file2_name = join(_my_dir, 'other', 'config_file2')
-        rex_cmd_args.extend([config_file2_name])
-        config_files.extend([config_file2_name])
-
-    if n_ablated_features != 'all':
-        rex_cmd_args.extend(['-a', '{}'.format(n_ablated_features)])
+    reader_class = EXT_TO_READER[extension]
+    if extension == '.tsv':
+        writer_class = skll.utilities.filter_features.DelimitedFileWriter
     else:
-        rex_cmd_args.append('-A')
+        writer_class = EXT_TO_WRITER[extension]
 
-    if keep_models:
-        rex_cmd_args.append('-k')
+    # create some dummy input and output filenames
+    infile = 'foo{}'.format(extension)
+    outfile = 'bar{}'.format(extension)
 
-    if resume:
-        rex_cmd_args.append('-r')
+    # create a simple featureset with actual ids, classes and features
+    fs, _ = make_classification_data(num_classes=3,
+                                          train_test_ratio=1.0)
 
-    if local:
-        rex_cmd_args.append('-l')
-    else:
-        machine_list = ['"foo.1.org"', '"x.test.com"', '"z.a.b.d"']
-        rex_cmd_args.append('-m')
-        rex_cmd_args.append('{}'.format(','.join(machine_list)))
+    ff_cmd_args = [infile, outfile]
 
-    rex_cmd_args.extend(['-q', 'foobar.q'])
+    if filter_type == 'feature':
+        if inverse:
+            features_to_keep = ['f01', 'f04', 'f07', 'f10']
+        else:
+            features_to_keep = ['f02', 'f03', 'f05', 'f06', 'f08', 'f09']
 
-    rex.main(argv=rex_cmd_args)
+        ff_cmd_args.append('-f')
 
-    # now check to make sure that run_configuration (or our mocked up version
-    # of it) got the arguments that we passed
-    positional_arguments, keyword_arguments = run_configuration_mock.call_args
+        for f in features_to_keep:
+            ff_cmd_args.append(f)
 
-    if multiple_config_files:
-        eq_(positional_arguments[0], config_files[1])
-    else:
-        eq_(positional_arguments[0], config_file1_name)
+    elif filter_type == 'id':
+        if inverse:
+            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(1, 100, 2)]
+        else:
+            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(2, 102, 2)]
 
-    if n_ablated_features != 'all':
-        eq_(keyword_arguments['ablation'], int(n_ablated_features))
-    else:
-        eq_(keyword_arguments['ablation'], None)
+        ff_cmd_args.append('-I')
 
-    if local:
-        eq_(keyword_arguments['local'], local)
-    else:
-        eq_(keyword_arguments['hosts'], machine_list)
+        for idee in ids_to_keep:
+            ff_cmd_args.append(idee)
 
-    eq_(keyword_arguments['overwrite'], not keep_models)
-    eq_(keyword_arguments['queue'], 'foobar.q')
-    eq_(keyword_arguments['resume'], resume)
+    elif filter_type == 'label':
+        if inverse:
+            labels_to_keep = ['0', '1']
+        else:
+            labels_to_keep = ['2']
+
+        ff_cmd_args.append('-L')
+
+        for lbl in labels_to_keep:
+            ff_cmd_args.append(lbl)
+
+    ff_cmd_args.extend(['-l', label_col])
+
+    if inverse:
+        ff_cmd_args.append('-i')
+
+    if quiet:
+        ff_cmd_args.append('-q')
+
+    # substitute mock methods for the three main methods that get called by filter_features
+    # the __init__() method of the appropriate reader, FeatureSet.filter() and the
+    # __init__() method of the appropriate writer. We also need to mock the read() and
+    # write() methods
+    with patch.object(reader_class, '__init__', autospec=True, return_value=None) as read_init_mock, \
+            patch.object(reader_class, 'read', autospec=True, return_value=fs) as read_mock, \
+            patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
+            patch.object(writer_class, '__init__', autospec=True, return_value=None) as write_init_mock, \
+            patch.object(writer_class, 'write', autospec=True) as write_mock:
+
+        ff.main(argv=ff_cmd_args)
+
+        # get the various arguments from the three mocked up methods
+        read_pos_arguments, read_kw_arguments = read_init_mock.call_args
+        filter_pos_arguments, filter_kw_arguments = filter_mock.call_args
+        write_pos_arguments, write_kw_arguments = write_init_mock.call_args
+
+        # make sure that the arguments they got were the ones we specified
+        eq_(read_pos_arguments[1], infile)
+        eq_(read_kw_arguments['quiet'], quiet)
+        eq_(read_kw_arguments['label_col'], label_col)
+
+        eq_(write_pos_arguments[1], outfile)
+        eq_(write_kw_arguments['quiet'], quiet)
+
+        # note that we cannot test the label_col column for the writer
+        # the reason is that is set conditionally and those conditions
+        # do not execute with mocking
+
+        eq_(filter_pos_arguments[0], fs)
+        eq_(filter_kw_arguments['inverse'], inverse)
+
+        if filter_type == 'feature':
+            eq_(filter_kw_arguments['features'], features_to_keep)
+        elif filter_type == 'id':
+            eq_(filter_kw_arguments['ids'], ids_to_keep)
+        elif filter_type == 'label':
+            eq_(filter_kw_arguments['classes'], labels_to_keep)
 
 
-def test_filter_features_argparse():
-    orig_filter = skll.data.readers.FeatureSet.filter
-    mock_filter = create_autospec(skll.data.readers.FeatureSet.filter)
-    skll.data.readers.FeatureSet.filter = mock_filter
-    try:
-        for (multiple_config_files,
-             n_ablated_features,
-             keep_models, local,
-             resume) in product([True, False],
-                                ['2', 'all'],
-                                [True, False],
-                                [True, False],
-                                [True, False]):
+def test_filter_features_no_arff_argparse():
+    for (extension, filter_type,
+         label_col, inverse, quiet) in product(['.jsonlines', '.ndj',
+                                                '.megam', '.tsv',
+                                                '.csv',],
+                                               ['feature', 'id',
+                                                'label'],
+                                               ['y', 'foo'],
+                                               [True, False],
+                                               [True, False]):
 
-            yield (check_filter_features_argparse, multiple_config_files,
-                     n_ablated_features, keep_models, local, resume)
-    finally:
-        skll.data.readers.FeatureSet.filter = orig_filter
+        yield (check_filter_features_no_arff_argparse, extension,
+               filter_type, label_col, inverse, quiet)
+
+
+def check_filter_features_arff_argparse(filter_type, label_col='y',
+                                        inverse=False, quiet=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for filter_features for ARFF file types. We are not checking
+    whether the results are correct because we have separate tests for that.
+    """
+
+    # replace the run_configuration function that's called
+    # by the main() in filter_feature with a mocked up version
+    writer_class = skll.data.writers.ARFFWriter
+
+    # create some dummy input and output filenames
+    infile = join(_my_dir, 'other', 'foo.arff')
+    outfile = 'bar.arff'
+
+    # create a simple featureset with actual ids, classes and features
+    fs, _ = make_classification_data(num_classes=3,
+                                          train_test_ratio=1.0)
+
+    writer = writer_class(infile, fs, label_col=label_col)
+    writer.write()
+
+    ff_cmd_args = [infile, outfile]
+
+    if filter_type == 'feature':
+        if inverse:
+            features_to_keep = ['f01', 'f04', 'f07', 'f10']
+        else:
+            features_to_keep = ['f02', 'f03', 'f05', 'f06', 'f08', 'f09']
+
+        ff_cmd_args.append('-f')
+
+        for f in features_to_keep:
+            ff_cmd_args.append(f)
+
+    elif filter_type == 'id':
+        if inverse:
+            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(1, 100, 2)]
+        else:
+            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(2, 102, 2)]
+
+        ff_cmd_args.append('-I')
+
+        for idee in ids_to_keep:
+            ff_cmd_args.append(idee)
+
+    elif filter_type == 'label':
+        if inverse:
+            labels_to_keep = ['0', '1']
+        else:
+            labels_to_keep = ['2']
+
+        ff_cmd_args.append('-L')
+
+        for lbl in labels_to_keep:
+            ff_cmd_args.append(lbl)
+
+    ff_cmd_args.extend(['-l', label_col])
+
+    if inverse:
+        ff_cmd_args.append('-i')
+
+    if quiet:
+        ff_cmd_args.append('-q')
+
+    # substitute mock methods for the three main methods that get called by filter_features
+    # the __init__() method of the appropriate reader, FeatureSet.filter() and the
+    # __init__() method of the appropriate writer. We also need to mock the read() and
+    # write() methods
+    with patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
+            patch.object(writer_class, '__init__', autospec=True, return_value=None) as write_init_mock, \
+            patch.object(writer_class, 'write', autospec=True) as write_mock:
+
+        ff.main(argv=ff_cmd_args)
+
+        # get the various arguments from the three mocked up methods
+        filter_pos_arguments, filter_kw_arguments = filter_mock.call_args
+        write_pos_arguments, write_kw_arguments = write_init_mock.call_args
+
+        # make sure that the arguments they got were the ones we specified
+        eq_(write_pos_arguments[1], outfile)
+        eq_(write_kw_arguments['quiet'], quiet)
+
+        # note that we cannot test the label_col column for the writer
+        # the reason is that is set conditionally and those conditions
+        # do not execute with mocking
+
+        eq_(filter_pos_arguments[0], fs)
+        eq_(filter_kw_arguments['inverse'], inverse)
+
+        if filter_type == 'feature':
+            eq_(filter_kw_arguments['features'], features_to_keep)
+        elif filter_type == 'id':
+            eq_(filter_kw_arguments['ids'], ids_to_keep)
+        elif filter_type == 'label':
+            eq_(filter_kw_arguments['classes'], labels_to_keep)
+
+
+def test_filter_features_arff_argparse():
+    for (filter_type, label_col,
+         inverse, quiet) in product(['feature', 'id',
+                                     'label'],
+                                    ['y', 'foo'],
+                                   [True, False],
+                                   [True, False]):
+
+        yield (check_filter_features_arff_argparse, filter_type,
+               label_col, inverse, quiet)
+
+
+
