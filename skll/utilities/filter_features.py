@@ -80,7 +80,12 @@ def main(argv=None):
     # make sure the input file extension is one we can process
     input_extension = os.path.splitext(args.infile)[1].lower()
 
-    if input_extension not in EXT_TO_READER:
+    valid_extensions = [ext for ext in EXT_TO_READER if ext != '.libsvm']
+
+    if input_extension == '.libsvm':
+        raise ValueError('Cannot filter LibSVM files.  Please use skll_convert'
+                         ' to convert to a different datatype first.')
+    elif input_extension not in valid_extensions:
         logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
                       '.megam, .ndj, or .tsv format. You specified: '
                       '{}').format(input_extension))
@@ -104,9 +109,6 @@ def main(argv=None):
         writer_args['label_col'] = args.label_col
         writer_args['regression'] = reader.regression
         writer_args['relation'] = reader.relation
-    elif writer_type is LibSVMWriter:
-        raise ValueError('Cannot filter LibSVM files.  Please use skll_convert'
-                         ' to convert to a different datatype first.')
     writer = writer_type(args.outfile, feature_set, **writer_args)
     writer.write()
 
