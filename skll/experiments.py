@@ -389,6 +389,12 @@ def _parse_config_file(config_path):
                          "\"train_file\" or \"train_location\" can be " +
                          "specified in the configuration file, not both.")
 
+    # Cannot specify both test_file and test_path
+    if test_file and test_path:
+        raise ValueError("Invalid [Input] parameters: only either " +
+                         "\"test_file\" or \"test_location\" can be " +
+                         "specified in the configuration file, not both.")
+
     # if train_file is specified, then assign its value to train_path
     # this is a workaround to make this simple use case (a single train and
     # test file) compatible with the existing architecture using
@@ -402,7 +408,7 @@ def _parse_config_file(config_path):
     # enable compatibility with the pre-existing featuresets architecture
     if test_file:
         test_path = test_file
-        featuresets[0] += '_test_{}'.format(basename(test_file))
+        featuresets[0][0] += '_test_{}'.format(basename(test_file))
 
     # Get class mapping dictionary if specified
     if config.has_option("Input", "class_map"):

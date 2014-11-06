@@ -59,7 +59,6 @@ def fill_in_config_paths(config_template_path):
     config = _setup_config_parser(config_template_path)
 
     task = config.get("General", "task")
-    # experiment_name = config.get("General", "experiment_name")
 
     config.set("Input", "train_location", train_dir)
 

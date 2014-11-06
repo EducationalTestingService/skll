@@ -13,17 +13,22 @@ from __future__ import (absolute_import, division, print_function,
 
 import csv
 import itertools
+import json
 import os
 import re
 from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import eq_, assert_almost_equal
+from nose.tools import eq_, assert_almost_equal, raises
 from sklearn.base import RegressorMixin
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
+
 from skll.data import FeatureSet
+from skll.data.writers import NDJWriter
+from skll.experiments import (_parse_config_file, _setup_config_parser,
+                              run_configuration)
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
@@ -47,6 +52,58 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+
+
+def fill_in_config_paths(config_template_path, train_file, test_file,
+                         train_location='', test_location=''):
+    """
+    Add paths to train and test files, and output directories to a given config
+    template file.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    config = _setup_config_parser(config_template_path)
+
+    task = config.get("General", "task")
+
+    config.set("Input", "train_file", join(train_dir, train_file))
+    if task == 'predict' or task == 'evaluate':
+        config.set("Input", "test_file", join(test_dir, test_file))
+
+    if train_location:
+        config.set("Input", "train_location", join(train_dir, train_location))
+
+    if test_location:
+        config.set("Input", "test_location", join(test_dir, test_location))
+
+    to_fill_in = ['log', 'predictions']
+
+    if task != 'cross_validate':
+        to_fill_in.append('models')
+
+    if task == 'evaluate' or task == 'cross_validate':
+        to_fill_in.append('results')
+
+    for d in to_fill_in:
+        config.set("Output", d, join(output_dir))
+
+    if task == 'cross_validate':
+        cv_folds_location = config.get("Input", "cv_folds_location")
+        if cv_folds_location:
+            config.set("Input", "cv_folds_location",
+                       join(train_dir, cv_folds_location))
+
+    config_prefix = re.search(r'^(.*)\.template\.cfg',
+                              config_template_path).groups()[0]
+    new_config_path = '{}.cfg'.format(config_prefix)
+
+    with open(new_config_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    return new_config_path
 
 
 def check_predict(model, use_feature_hashing=False):
@@ -83,9 +140,10 @@ def check_predict(model, use_feature_hashing=False):
                                   and model.__name__ != 'MultinomialNB'))
 
     # now make predictions on the test set
-    predictions = learner.predict(test_fs, \
-        feature_hasher=(use_feature_hashing and
-                        model.__name__ != 'MultinomialNB'))
+    predictions = learner.predict(test_fs,
+                                  feature_hasher=(use_feature_hashing and
+                                                  (model.__name__ !=
+                                                   'MultinomialNB')))
 
     # make sure we have the same number of outputs as the
     # number of test set samples
@@ -103,7 +161,8 @@ def test_predict():
 def make_rare_class_data():
     """
     We want to create data that has five instances per class, for three classes
-    and for each instance within the group of 5, there's only a single feature firing
+    and for each instance within the group of 5, there's only a single feature
+    firing
     """
 
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, 16)]
@@ -197,13 +256,15 @@ def make_sparse_data(use_feature_hashing=False):
 
 
 def check_sparse_predict(use_feature_hashing=False):
-    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_sparse_data(
+        use_feature_hashing=use_feature_hashing)
 
     # train a linear SVM on the training data and evalute on the testing data
     learner = Learner('LogisticRegression')
-    learner.train(train_fs, grid_search=False, feature_hasher=use_feature_hashing)
-    test_score = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)[1]
-
+    learner.train(train_fs, grid_search=False,
+                  feature_hasher=use_feature_hashing)
+    test_score = learner.evaluate(test_fs,
+                                  feature_hasher=use_feature_hashing)[1]
     expected_score = 0.51 if use_feature_hashing else 0.45
     assert_almost_equal(test_score, expected_score)
 
@@ -214,7 +275,8 @@ def test_sparse_predict():
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
-    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_sparse_data(
+        use_feature_hashing=use_feature_hashing)
 
     if use_feature_hashing:
         sampler = 'RBFSampler'
@@ -227,12 +289,96 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
                       sampler=sampler,
                       sampler_kwargs=sampler_parameters)
 
-    learner.train(train_fs, grid_search=False, feature_hasher=use_feature_hashing)
-    test_score = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)[1]
+    learner.train(train_fs, grid_search=False,
+                  feature_hasher=use_feature_hashing)
+    test_score = learner.evaluate(test_fs,
+                                  feature_hasher=use_feature_hashing)[1]
 
     expected_score = 0.4 if use_feature_hashing else 0.48999999999999999
     assert_almost_equal(test_score, expected_score)
 
+
 def test_sparse_predict_sampler():
     yield check_sparse_predict_sampler, False
     yield check_sparse_predict_sampler, True
+
+
+def make_single_file_featureset_data():
+    """
+    Write a training file and a test file for tests that check whether
+    specifying train_file and test_file actually works.
+    """
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_classes=2,
+                                                 num_features=3,
+                                                 non_negative=False)
+
+    # Write training feature set to a file
+    train_path = join(_my_dir, 'train', 'train_single_file.jsonlines')
+    writer = NDJWriter(train_path, train_fs)
+    writer.write()
+
+    # Write test feature set to a file
+    test_path = join(_my_dir, 'test', 'test_single_file.jsonlines')
+    writer = NDJWriter(test_path, test_fs)
+    writer.write()
+
+
+def test_train_file_test_file():
+    """
+    Test that train_file and test_file experiments work
+    """
+    # Create data files
+    make_single_file_featureset_data()
+
+    # Run experiment
+    config_path = fill_in_config_paths(join(_my_dir, "configs",
+                                            "test_single_file.template.cfg"),
+                                       join(_my_dir, 'train',
+                                            'train_single_file.jsonlines'),
+                                       join(_my_dir, 'test',
+                                            'test_single_file.jsonlines'))
+    run_configuration(config_path, quiet=True)
+
+    # Check results
+    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
+                                       'single_file.jsonlines_test_test_single'
+                                       '_file.jsonlines_RandomForestClassifier'
+                                       '.results.json'))) as f:
+        result_dict = json.load(f)[0]
+
+    assert_almost_equal(result_dict['score'], 0.925)
+
+
+@raises(ValueError)
+def test_train_file_and_train_location():
+    """
+    Test that train_file + train_location = ValueError
+    """
+    # Run experiment
+    config_path = fill_in_config_paths(join(_my_dir, "configs",
+                                            "test_single_file.template.cfg"),
+                                       join(_my_dir, 'train',
+                                            'train_single_file.jsonlines'),
+                                       join(_my_dir, 'test',
+                                            'test_single_file.jsonlines'),
+                                       train_location='foo')
+    _parse_config_file(config_path)
+
+
+@raises(ValueError)
+def test_test_file_and_test_location():
+    """
+    Test that test_file + test_location = ValueError
+    """
+    # Run experiment
+    config_path = fill_in_config_paths(join(_my_dir, "configs",
+                                            "test_single_file.template.cfg"),
+                                       join(_my_dir, 'train',
+                                            'train_single_file.jsonlines'),
+                                       join(_my_dir, 'test',
+                                            'test_single_file.jsonlines'),
+                                       test_location='foo')
+    _parse_config_file(config_path)
+
