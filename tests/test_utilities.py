@@ -27,7 +27,7 @@ try:
 except ImportError:
     from mock import create_autospec, patch
 
-from nose.tools import eq_, assert_almost_equal, nottest
+from nose.tools import eq_, assert_almost_equal, nottest, raises
 from numpy.testing import assert_array_equal, assert_allclose
 
 import skll
@@ -601,10 +601,10 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
     if quiet:
         ff_cmd_args.append('-q')
 
-    # substitute mock methods for the three main methods that get called by filter_features
+    # substitute mock methods for the three main methods that get called by filter_features:
     # the __init__() method of the appropriate reader, FeatureSet.filter() and the
     # __init__() method of the appropriate writer. We also need to mock the read() and
-    # write() methods
+    # write() methods to prevent actual reading and writing.
     with patch.object(reader_class, '__init__', autospec=True, return_value=None) as read_init_mock, \
             patch.object(reader_class, 'read', autospec=True, return_value=fs) as read_mock, \
             patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
@@ -654,6 +654,12 @@ def test_filter_features_no_arff_argparse():
 
         yield (check_filter_features_no_arff_argparse, extension,
                filter_type, label_col, inverse, quiet)
+
+
+@raises(ValueError)
+def test_filter_features_libsvm_argparse():
+    ff_cmd_args = ['foo.libsvm', 'bar.libsvm', '-f', 'a', 'b', 'c']
+    ff.main(argv=ff_cmd_args)
 
 
 def check_filter_features_arff_argparse(filter_type, label_col='y',
@@ -722,10 +728,9 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     if quiet:
         ff_cmd_args.append('-q')
 
-    # substitute mock methods for the three main methods that get called by filter_features
-    # the __init__() method of the appropriate reader, FeatureSet.filter() and the
-    # __init__() method of the appropriate writer. We also need to mock the read() and
-    # write() methods
+    # substitute mock methods for the main methods that get called by filter_features for
+    # arff files: FeatureSet.filter() and the __init__() method of the appropriate writer.
+    # We also need to mock the write() method to prevent actual writing.
     with patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
             patch.object(writer_class, '__init__', autospec=True, return_value=None) as write_init_mock, \
             patch.object(writer_class, 'write', autospec=True) as write_mock:
