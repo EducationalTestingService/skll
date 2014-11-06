@@ -545,10 +545,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
     # replace the run_configuration function that's called
     # by the main() in filter_feature with a mocked up version
     reader_class = EXT_TO_READER[extension]
-    if extension == '.tsv':
-        writer_class = skll.utilities.filter_features.DelimitedFileWriter
-    else:
-        writer_class = EXT_TO_WRITER[extension]
+    writer_class = EXT_TO_WRITER[extension]
 
     # create some dummy input and output filenames
     infile = 'foo{}'.format(extension)
