@@ -534,7 +534,9 @@ class Learner(object):
                 _REQUIRES_DENSE = _REQUIRES_DENSE + (model_class,)
 
         self._model_type = globals()[model_type]
-        self._probability = probability
+        self._probability = None
+        # Use setter to set self.probability
+        self.probability = probability
         self._use_dense_features = \
             (issubclass(self._model_type, _REQUIRES_DENSE) or
              self._feature_scaling in {'with_mean', 'both'})
