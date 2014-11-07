@@ -66,3 +66,19 @@ def test_input_checking3():
     featureset = ['test_input_3examples_1', 'test_input_3examples_2']
     examples_tuple = _load_featureset(dirpath, featureset, suffix, quiet=True)
     eq_(examples_tuple.features.shape[0], 3)
+
+
+def test_one_file_load_featureset():
+    '''
+    Test loading a single file with _load_featureset
+    '''
+    dirpath = join(_my_dir, 'train')
+    suffix = '.jsonlines'
+    featureset = ['test_input_2examples_1']
+    single_file_fs = _load_featureset(join(dirpath,
+                                           'test_input_2examples_1.jsonlines'),
+                                      '', '', quiet=True)
+    single_fs = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    eq_(single_file_fs, single_fs)
+
+

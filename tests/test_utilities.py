@@ -27,7 +27,7 @@ try:
 except ImportError:
     from mock import create_autospec, patch
 
-from nose.tools import eq_, assert_almost_equal, nottest, raises, assert_raises
+from nose.tools import eq_, assert_almost_equal, raises, assert_raises
 from numpy.testing import assert_array_equal, assert_allclose
 
 import skll
@@ -47,7 +47,6 @@ from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
 from skll.experiments import _write_summary_file, run_configuration
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
-
 
 from utils import make_classification_data, make_regression_data
 
@@ -603,15 +602,18 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
     if quiet:
         ff_cmd_args.append('-q')
 
-    # substitute mock methods for the three main methods that get called by filter_features:
-    # the __init__() method of the appropriate reader, FeatureSet.filter() and the
-    # __init__() method of the appropriate writer. We also need to mock the read() and
-    # write() methods to prevent actual reading and writing.
-    with patch.object(reader_class, '__init__', autospec=True, return_value=None) as read_init_mock, \
-            patch.object(reader_class, 'read', autospec=True, return_value=fs) as read_mock, \
+    # substitute mock methods for the three main methods that get called by
+    # filter_features: the __init__() method of the appropriate reader,
+    # FeatureSet.filter() and the __init__() method of the appropriate writer.
+    # We also need to mock the read() and write() methods to prevent actual
+    # reading and writing.
+    with patch.object(reader_class, '__init__', autospec=True,
+                      return_value=None) as read_init_mock, \
+            patch.object(reader_class, 'read', autospec=True, return_value=fs),\
             patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
-            patch.object(writer_class, '__init__', autospec=True, return_value=None) as write_init_mock, \
-            patch.object(writer_class, 'write', autospec=True) as write_mock:
+            patch.object(writer_class, '__init__', autospec=True,
+                         return_value=None) as write_init_mock, \
+            patch.object(writer_class, 'write', autospec=True):
 
         ff.main(argv=ff_cmd_args)
 
@@ -628,10 +630,9 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
         eq_(write_pos_arguments[1], outfile)
         eq_(write_kw_arguments['quiet'], quiet)
 
-        # note that we cannot test the label_col column for the writer
-        # the reason is that is set conditionally and those conditions
-        # do not execute with mocking
-
+        # Note that we cannot test the label_col column for the writer.
+        # The reason is that it is set conditionally and those conditions
+        # do not execute with mocking.
         eq_(filter_pos_arguments[0], fs)
         eq_(filter_kw_arguments['inverse'], inverse)
 
@@ -724,11 +725,13 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     if quiet:
         ff_cmd_args.append('-q')
 
-    # substitute mock methods for the main methods that get called by filter_features for
-    # arff files: FeatureSet.filter() and the __init__() method of the appropriate writer.
-    # We also need to mock the write() method to prevent actual writing.
+    # Substitute mock methods for the main methods that get called by
+    # filter_features for arff files: FeatureSet.filter() and the __init__()
+    # method of the appropriate writer.  We also need to mock the write()
+    # method to prevent actual writing.
     with patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
-            patch.object(writer_class, '__init__', autospec=True, return_value=None) as write_init_mock, \
+            patch.object(writer_class, '__init__', autospec=True,
+                         return_value=None) as write_init_mock, \
             patch.object(writer_class, 'write', autospec=True) as write_mock:
 
         ff.main(argv=ff_cmd_args)
@@ -770,9 +773,9 @@ def test_filter_features_arff_argparse():
 
 @raises(SystemExit)
 def test_filter_features_libsvm_input_argparse():
-    '''
+    """
     Make sure an error is raised when passing libsvm files to filter_features
-    '''
+    """
 
     ff_cmd_args = ['foo.libsvm', 'bar.csv', '-f', 'a', 'b', 'c']
     ff.main(argv=ff_cmd_args)
@@ -780,9 +783,9 @@ def test_filter_features_libsvm_input_argparse():
 
 @raises(SystemExit)
 def test_filter_features_libsvm_output_argparse():
-    '''
+    """
     Make sure an error is raised when passing libsvm files to filter_features
-    '''
+    """
 
     ff_cmd_args = ['foo.csv', 'bar.libsvm', '-f', 'a', 'b', 'c']
     ff.main(argv=ff_cmd_args)
@@ -790,9 +793,9 @@ def test_filter_features_libsvm_output_argparse():
 
 @raises(SystemExit)
 def test_filter_features_unknown_input_format():
-    '''
+    """
     Make sure an error is raised when passing unknown input file format to filter_features
-    '''
+    """
 
     ff_cmd_args = ['foo.xxx', 'bar.libsvm', '-f', 'a', 'b', 'c']
     ff.main(argv=ff_cmd_args)
@@ -800,20 +803,22 @@ def test_filter_features_unknown_input_format():
 
 @raises(SystemExit)
 def test_filter_features_unknown_output_format():
-    '''
+    """
     Make sure an error is raised when passing unknown input file format to filter_features
-    '''
+    """
 
     ff_cmd_args = ['foo.xxx', 'bar.libsvm', '-f', 'a', 'b', 'c']
     ff.main(argv=ff_cmd_args)
 
 
 def test_filter_features_unmatched_formats():
-    '''
+    """
     Make sure filter_feature exits when the output file is in a different format
-    '''
-    for inext, outext in combinations(['.arff', '.megam', '.ndj', '.tsv', '.jsonlines', '.csv'], 2):
-        ff_cmd_args = ['foo{}'.format(inext), 'bar{}'.format(outext), '-f', 'a', 'b', 'c']
+    """
+    for inext, outext in combinations(['.arff', '.megam', '.ndj', '.tsv',
+                                       '.jsonlines', '.csv'], 2):
+        ff_cmd_args = ['foo{}'.format(inext), 'bar{}'.format(outext), '-f',
+                       'a', 'b', 'c']
         assert_raises(SystemExit, ff.main, ff_cmd_args)
 
 
@@ -858,12 +863,14 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
     if quiet:
         jf_cmd_args.append('-q')
 
-    # substitute mock methods for the three main methods that get called by filter_features:
-    # the __init__() method of the appropriate reader, FeatureSet.filter() and the
-    # __init__() method of the appropriate writer. We also need to mock the read() and
-    # write() methods to prevent actual reading and writing.
+    # Substitute mock methods for the three main methods that get called by
+    # filter_features: the __init__() method of the appropriate reader,
+    # FeatureSet.filter() and the __init__() method of the appropriate writer.
+    # We also need to mock the read() and write() methods to prevent actual
+    # reading and writing.
     with patch.object(FeatureSet, '__add__', autospec=True) as add_mock, \
-            patch.object(writer_class, '__init__', autospec=True, return_value=None) as write_init_mock, \
+            patch.object(writer_class, '__init__', autospec=True,
+                         return_value=None) as write_init_mock, \
             patch.object(writer_class, 'write', autospec=True) as write_mock:
 
         jf.main(argv=jf_cmd_args)
@@ -896,9 +903,9 @@ def test_join_features_argparse():
 
 @raises(SystemExit)
 def test_join_features_libsvm_input_argparse():
-    '''
+    """
     Make sure an error is raised when passing libsvm files to join_features
-    '''
+    """
 
     jf_cmd_args = ['foo.libsvm', 'bar.libsvm', 'baz.csv']
     jf.main(argv=jf_cmd_args)
@@ -906,9 +913,9 @@ def test_join_features_libsvm_input_argparse():
 
 @raises(SystemExit)
 def test_join_features_libsvm_output_argparse():
-    '''
+    """
     Make sure an error is raised when passing libsvm files to join_features
-    '''
+    """
 
     jf_cmd_args = ['foo.csv', 'bar.csv', 'baz.libsvm']
     jf.main(argv=jf_cmd_args)
@@ -916,9 +923,9 @@ def test_join_features_libsvm_output_argparse():
 
 @raises(SystemExit)
 def test_join_features_unknown_input_format():
-    '''
+    """
     Make sure an error is raised when passing unknown input file format to join_features
-    '''
+    """
 
     jf_cmd_args = ['foo.xxx', 'bar.tsv', 'baz.csv']
     jf.main(argv=jf_cmd_args)
@@ -926,27 +933,31 @@ def test_join_features_unknown_input_format():
 
 @raises(SystemExit)
 def test_join_features_unknown_output_format():
-    '''
+    """
     Make sure an error is raised when passing unknown input file format to join_features
-    '''
+    """
 
     jf_cmd_args = ['foo.csv', 'bar.csv', 'baz.xxx']
     jf.main(argv=jf_cmd_args)
 
 
 def test_join_features_unmatched_formats1():
-    '''
+    """
     Make sure join_feature exits when the input files are in different formats
-    '''
-    for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv', '.jsonlines', '.csv'], 2):
-        jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext2), 'baz{}'.format(ext1)]
+    """
+    for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
+                                    '.jsonlines', '.csv'], 2):
+        jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext2),
+                       'baz{}'.format(ext1)]
         assert_raises(SystemExit, jf.main, jf_cmd_args)
 
 
 def test_join_features_unmatched_formats2():
-    '''
+    """
     Make sure join_feature exits when the output file is in a different format
-    '''
-    for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv', '.jsonlines', '.csv'], 2):
-        jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1), 'baz{}'.format(ext2)]
+    """
+    for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
+                                    '.jsonlines', '.csv'], 2):
+        jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1),
+                       'baz{}'.format(ext2)]
         assert_raises(SystemExit, jf.main, jf_cmd_args)
