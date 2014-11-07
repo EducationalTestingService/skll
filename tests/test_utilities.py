@@ -820,9 +820,8 @@ def test_filter_features_unmatched_formats():
 def check_join_features_argparse(extension, label_col='y', quiet=False):
     """
     A utility function to check that we are setting up argument parsing
-    correctly for join_features for ALL file types except ARFF.
-    We are not checking whether the results are correct because we
-    have separate tests for that.
+    correctly for join_features for ALL file types. We are not checking
+    whether the results are correct because we have separate tests for that.
     """
 
     # replace the run_configuration function that's called
@@ -888,7 +887,7 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
 def test_join_features_argparse():
     for (extension, label_col, quiet) in product(['.jsonlines', '.ndj',
                                                   '.megam', '.tsv',
-                                                  '.csv',],
+                                                  '.csv', '.arff'],
                                                  ['y', 'foo'],
                                                  [True, False]):
 
