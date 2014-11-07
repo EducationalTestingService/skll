@@ -556,8 +556,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
     outfile = 'bar{}'.format(extension)
 
     # create a simple featureset with actual ids, classes and features
-    fs, _ = make_classification_data(num_classes=3,
-                                          train_test_ratio=1.0)
+    fs, _ = make_classification_data(num_labels=3, train_test_ratio=1.0)
 
     ff_cmd_args = [infile, outfile]
 
@@ -676,8 +675,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     outfile = 'bar.arff'
 
     # create a simple featureset with actual ids, classes and features
-    fs, _ = make_classification_data(num_classes=3,
-                                          train_test_ratio=1.0)
+    fs, _ = make_classification_data(num_labels=3, train_test_ratio=1.0)
 
     writer = writer_class(infile, fs, label_col=label_col)
     writer.write()
@@ -839,10 +837,10 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
     outfile = 'bar{}'.format(extension)
 
     # create a simple featureset with actual ids, classes and features
-    fs1, _ = make_classification_data(num_classes=3,
+    fs1, _ = make_classification_data(num_labels=3,
                                       train_test_ratio=1.0,
                                       random_state=1234)
-    fs2, _ = make_classification_data(num_classes=3,
+    fs2, _ = make_classification_data(num_labels=3,
                                       train_test_ratio=1.0,
                                       feature_prefix='g',
                                       random_state=5678)
