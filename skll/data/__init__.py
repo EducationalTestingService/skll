@@ -14,7 +14,7 @@ import csv
 
 from six import PY2
 
-from .featureset import ExamplesTuple, FeatureSet
+from .featureset import FeatureSet
 from .readers import (ARFFReader, CSVReader, LibSVMReader, MegaMReader,
                       NDJReader, TSVReader, convert_examples, safe_float,
                       load_examples)
@@ -34,7 +34,7 @@ else:
 
 
 __all__ = ['convert_examples', 'load_examples', 'safe_float',
-           'write_feature_file', 'ExamplesTuple', 'FeatureSet', 'ARFFReader',
+           'write_feature_file', 'FeatureSet', 'ARFFReader',
            'CSVReader', 'LibSVMReader', 'MegaMReader', 'NDJReader',
            'TSVReader', 'ARFFWriter', 'DelimitedFileWriter', 'LibSVMWriter',
            'MegaMWriter', 'NDJWriter']

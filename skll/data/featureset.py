@@ -186,7 +186,7 @@ class FeatureSet(object):
 
         # If either set has labels, check that they don't conflict.
         if self.has_classes:
-            # Classes should be the same for each ExamplesTuple, so store once.
+            # Classes should be the same for each FeatureSet, so store once.
             if other.has_classes and \
                     not np.all(self.classes == other.classes[relative_order]):
                 raise ValueError('Feature sets have conflicting labels for '
@@ -337,28 +337,3 @@ class FeatureSet(object):
     def __repr__(self):
         """ Return a string representation of FeatureSet """
         return repr(self.__dict__)
-
-
-class ExamplesTuple(FeatureSet):
-
-    """
-    Deprecated class only here to help people transition to Featureset.
-
-    :param name: The name of this feature set.
-    :type name: str
-    :param ids: Example IDs for this set.
-    :type ids: np.array
-    :param classes: Classes for this set.
-    :type classes: np.array
-    :param features: Feature matrix as created by the given feature vectorizer.
-    :type features: np.array
-    :param feat_vectorizer: Vectorizer that created feature matrix.
-    :type feat_vectorizer: DictVectorizer or FeatureHasher
-    """
-
-    def __init__(self, ids=None, classes=None, features=None,
-                 feat_vectorizer=None):
-        super(ExamplesTuple, self).__init__('', ids=ids, classes=classes,
-                                            features=features,
-                                            vectorizer=feat_vectorizer)
-        warn('ExamplesTuple will be removed in SKLL 1.0.0', DeprecationWarning)
