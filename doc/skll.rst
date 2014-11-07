@@ -54,7 +54,6 @@ From :py:mod:`~skll.data` Module
 
 From :py:mod:`~skll.experiments` Module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: skll.run_ablation
 .. autofunction:: skll.run_configuration
 
 From :py:mod:`~skll.learner` Module
