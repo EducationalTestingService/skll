@@ -272,38 +272,35 @@ Input
     **learners** [#]_
         List of scikit-learn models to try using. A separate job will
         be run for each combination of classifier and feature-set.
-        Acceptable values are described below. Names in parentheses
-        are aliases that can also be used inconfiguration files.
-        Custom learners can also be specified. See
-        ``custom_learner_path``.
-
+        Acceptable values are described below.  Custom learners can also be
+        specified. See  ``custom_learner_path``.
 
         Classifiers:
 
             *   *AdaBoostClassifier*: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`_
-            *   *DecisionTreeClassifier (dtree)*: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`_
-            *   *GradientBoostingClassifier (gradient)*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`_
+            *   *DecisionTreeClassifier*: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`_
+            *   *GradientBoostingClassifier*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`_
             *   *KNeighborsClassifier*: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`_
-            *   *LinearSVC (svm_linear)*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`_
-            *   *LogisticRegression (logistic)*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`_
-            *   *MultinomialNB (naivebayes)*: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`_
-            *   *RandomForestClassifier (rforest)*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`_
+            *   *LinearSVC*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`_
+            *   *LogisticRegression*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`_
+            *   *MultinomialNB*: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`_
+            *   *RandomForestClassifier*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`_
             *   *SGDClassifier*: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`_
-            *   *SVC (svm_radial)*: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`_
+            *   *SVC*: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`_
 
         Regressors:
 
             *   *AdaBoostRegressor*: `AdaBoost Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`_
             *   *DecisionTreeRegressor*: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`_
             *   *ElasticNet*: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`_
-            *   *GradientBoostingRegressor (gb_regressor)*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
+            *   *GradientBoostingRegressor*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`_
             *   *KNeighborsRegressor*: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`_
             *   *Lasso*: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`_
             *   *LinearRegression*: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`_
             *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_
-            *   *Ridge (ridge)*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`_
+            *   *Ridge*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`_
             *   *SGDRegressor*: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`_
-            *   *SVR (svr_linear)*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
+            *   *SVR*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`_
                 with a linear kernel. Can use other kernels by specifying a
                 'kernel' fixed parameter in the ``fixed_parameters`` list.
 

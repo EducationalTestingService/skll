@@ -50,20 +50,6 @@ _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 
-# Map from learner short names to full names
-_SHORT_NAMES = {'logistic': 'LogisticRegression',
-                'svm_linear': 'LinearSVC',
-                'svm_radial': 'SVC',
-                'naivebayes': 'MultinomialNB',
-                'dtree': 'DecisionTreeClassifier',
-                'rforest': 'RandomForestClassifier',
-                'gradient': 'GradientBoostingClassifier',
-                'ridge': 'Ridge',
-                'rescaled_ridge': 'RescaledRidge',
-                'svr_linear': 'SVR',
-                'rescaled_svr_linear': 'RescaledSVR',
-                'gb_regressor': 'GradientBoostingRegressor'}
-
 
 def _get_stat_float(class_result_dict, stat):
     """
@@ -310,13 +296,6 @@ def _parse_config_file(config_path):
                          'multiple times, which is not currently supported.  '
                          'Please use param_grids with tuning to find the '
                          'optimal settings for the learner.')
-    for i, learner in enumerate(learners):
-        if learner in _SHORT_NAMES:
-            logger.warning(('Using short names like {} for learners is '
-                            'deprecated and they will be removed in SKLL '
-                            '1.0.  Please use the full name, {}, '
-                            'instead.').format(learner, _SHORT_NAMES[learner]))
-            learners[i] = _SHORT_NAMES[learner]
     custom_learner_path = config.get("Input", "custom_learner_path")
 
     featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
