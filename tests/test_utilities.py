@@ -774,7 +774,7 @@ def test_filter_features_arff_argparse():
 @raises(SystemExit)
 def test_filter_features_libsvm_input_argparse():
     """
-    Make sure an error is raised when passing libsvm files to filter_features
+    Make sure filter_features exits when passing in input libsvm files
     """
 
     ff_cmd_args = ['foo.libsvm', 'bar.csv', '-f', 'a', 'b', 'c']
@@ -784,7 +784,7 @@ def test_filter_features_libsvm_input_argparse():
 @raises(SystemExit)
 def test_filter_features_libsvm_output_argparse():
     """
-    Make sure an error is raised when passing libsvm files to filter_features
+    Make sure filter_features exits when passing in output libsvm files
     """
 
     ff_cmd_args = ['foo.csv', 'bar.libsvm', '-f', 'a', 'b', 'c']
@@ -794,20 +794,20 @@ def test_filter_features_libsvm_output_argparse():
 @raises(SystemExit)
 def test_filter_features_unknown_input_format():
     """
-    Make sure an error is raised when passing unknown input file format to filter_features
+    Make sure that filter_features exits when passing in an unknown input file format
     """
 
-    ff_cmd_args = ['foo.xxx', 'bar.libsvm', '-f', 'a', 'b', 'c']
+    ff_cmd_args = ['foo.xxx', 'bar.csv', '-f', 'a', 'b', 'c']
     ff.main(argv=ff_cmd_args)
 
 
 @raises(SystemExit)
 def test_filter_features_unknown_output_format():
     """
-    Make sure an error is raised when passing unknown input file format to filter_features
+    Make sure that filter_features exits when passing in an unknown input file format
     """
 
-    ff_cmd_args = ['foo.xxx', 'bar.libsvm', '-f', 'a', 'b', 'c']
+    ff_cmd_args = ['foo.csv', 'bar.xxx', '-f', 'a', 'b', 'c']
     ff.main(argv=ff_cmd_args)
 
 
@@ -863,11 +863,10 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
     if quiet:
         jf_cmd_args.append('-q')
 
-    # Substitute mock methods for the three main methods that get called by
-    # filter_features: the __init__() method of the appropriate reader,
-    # FeatureSet.filter() and the __init__() method of the appropriate writer.
-    # We also need to mock the read() and write() methods to prevent actual
-    # reading and writing.
+    # Substitute mock methods for the main methods that get called by
+    # filter_features: FeatureSet.filter() and the __init__() method
+    # of the appropriate writer. We also need to mock the write()
+    # method to prevent actual writing.
     with patch.object(FeatureSet, '__add__', autospec=True) as add_mock, \
             patch.object(writer_class, '__init__', autospec=True,
                          return_value=None) as write_init_mock, \
@@ -904,7 +903,7 @@ def test_join_features_argparse():
 @raises(SystemExit)
 def test_join_features_libsvm_input_argparse():
     """
-    Make sure an error is raised when passing libsvm files to join_features
+    Make sure that join_features exits when passing in input libsvm files
     """
 
     jf_cmd_args = ['foo.libsvm', 'bar.libsvm', 'baz.csv']
@@ -914,7 +913,7 @@ def test_join_features_libsvm_input_argparse():
 @raises(SystemExit)
 def test_join_features_libsvm_output_argparse():
     """
-    Make sure an error is raised when passing libsvm files to join_features
+    Make sure that join_features exits when passing in output libsvm files
     """
 
     jf_cmd_args = ['foo.csv', 'bar.csv', 'baz.libsvm']
@@ -924,7 +923,7 @@ def test_join_features_libsvm_output_argparse():
 @raises(SystemExit)
 def test_join_features_unknown_input_format():
     """
-    Make sure an error is raised when passing unknown input file format to join_features
+    Make that join_features exits when passing in an unknown input file format
     """
 
     jf_cmd_args = ['foo.xxx', 'bar.tsv', 'baz.csv']
@@ -934,7 +933,7 @@ def test_join_features_unknown_input_format():
 @raises(SystemExit)
 def test_join_features_unknown_output_format():
     """
-    Make sure an error is raised when passing unknown input file format to join_features
+    Make sure that join_features exits when  passing in an unknown output file format
     """
 
     jf_cmd_args = ['foo.csv', 'bar.csv', 'baz.xxx']
@@ -943,7 +942,7 @@ def test_join_features_unknown_output_format():
 
 def test_join_features_unmatched_formats1():
     """
-    Make sure join_feature exits when the input files are in different formats
+    Make sure that join_feature exits when the input files are in different formats
     """
     for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
