@@ -97,7 +97,7 @@ def fill_in_config_paths(config_template_path):
 def make_summary_data():
     train_fs, test_fs = make_classification_data(num_examples=600,
                                                  train_test_ratio=0.8,
-                                                 num_classes=2,
+                                                 num_labels=2,
                                                  num_features=3,
                                                  non_negative=True)
 

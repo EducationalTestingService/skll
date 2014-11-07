@@ -51,7 +51,7 @@ class Reader(object):
                       considered to be unlabelled.
     :type label_col: str
     :param class_map: Mapping from original class labels to new ones. This is
-                      mainly used for collapsing multiple classes into a single
+                      mainly used for collapsing multiple labels into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
     :param sparse: Whether or not to store the features in a numpy CSR
@@ -121,9 +121,9 @@ class Reader(object):
             print(self._progress_msg, end="\r", file=sys.stderr)
             sys.stderr.flush()
 
-        # Get classes and IDs
+        # Get labels and IDs
         ids = []
-        classes = []
+        labels = []
         with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f)):
                 # Update lists of IDs, clases, and features
@@ -137,7 +137,7 @@ class Reader(object):
                                           '{}').format(id_,
                                                        self.path_or_list))
                 ids.append(id_)
-                classes.append(class_)
+                labels.append(class_)
                 if ex_num % 100 == 0:
                     self._print_progress(ex_num)
             self._print_progress(ex_num)
@@ -147,7 +147,7 @@ class Reader(object):
 
         # Convert everything to numpy arrays
         ids = np.array(ids)
-        classes = np.array(classes)
+        labels = np.array(labels)
 
         def feat_dict_generator():
             with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
@@ -165,14 +165,14 @@ class Reader(object):
         # Report that loading is complete
         self._print_progress("done", end="\n")
 
-        # Make sure we have the same number of ids, classes, and features
-        assert ids.shape[0] == classes.shape[0] == features.shape[0]
+        # Make sure we have the same number of ids, labels, and features
+        assert ids.shape[0] == labels.shape[0] == features.shape[0]
 
         if ids.shape[0] != len(set(ids)):
             raise ValueError('The example IDs are not unique in %s.' %
                              self.path_or_list)
 
-        return FeatureSet(self.path_or_list, ids, classes=classes,
+        return FeatureSet(self.path_or_list, ids, labels=labels,
                           features=features, vectorizer=self.vectorizer)
 
 
@@ -194,7 +194,7 @@ class DictListReader(Reader):
     """
     def read(self):
         ids = []
-        classes = []
+        labels = []
         feat_dicts = []
         for example_num, example in enumerate(self.path_or_list):
             curr_id = str(example.get("id",
@@ -211,7 +211,7 @@ class DictListReader(Reader):
                                      replace_dict=self.class_map)
                           if 'y' in example else None)
             example = example['x']
-            # Update lists of IDs, classes, and feature dictionaries
+            # Update lists of IDs, labels, and feature dictionaries
             if self.ids_to_floats:
                 try:
                     curr_id = float(curr_id)
@@ -220,17 +220,17 @@ class DictListReader(Reader):
                                       '{} could not be converted to float in '
                                       '{}').format(curr_id, self.path_or_list))
             ids.append(curr_id)
-            classes.append(class_name)
+            labels.append(class_name)
             feat_dicts.append(example)
             # Print out status
             if example_num % 100 == 0:
                 self._print_progress(example_num)
         # Convert lists to numpy arrays
         ids = np.array(ids)
-        classes = np.array(classes)
+        labels = np.array(labels)
         features = self.vectorizer.fit_transform(feat_dicts)
 
-        return FeatureSet('converted', ids, classes=classes,
+        return FeatureSet('converted', ids, labels=labels,
                           features=features, vectorizer=self.vectorizer)
 
 
@@ -349,7 +349,7 @@ class LibSVMReader(Reader):
 
     We use a specially formatted comment for storing example IDs, class names,
     and feature names, which are normally not supported by the format.  The
-    comment is not mandatory, but without it, your classes and features will
+    comment is not mandatory, but without it, your labels and features will
     not have names.  The comment is structured as follows:
 
         ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
@@ -625,14 +625,12 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
 
     For LibSVM files, we use a specially formatted comment for storing example
     IDs, class names, and feature names, which are normally not supported by
-    the format.  The comment is not mandatory, but without it, your classes
+    the format.  The comment is not mandatory, but without it, your labels
     and features will not have names.  The comment is structured as follows:
 
         ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
 
-    :param path: The path to the file to load the examples from, or a list of
-                 example dictionaries (like you would pass to
-                 `convert_examples`).
+    :param path: The path to the file to load the examples from.
     :type path: str or dict
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
@@ -647,7 +645,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     :param class_map: Mapping from original class labels to new ones. This is
-                      mainly used for collapsing multiple classes into a single
+                      mainly used for collapsing multiple labels into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
 
@@ -662,20 +660,14 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
 
     logger.debug('Path: %s', path)
 
-    # Build an appropriate generator for examples so we process the input file
-    # through the feature vectorizer without using tons of memory
-    if not isinstance(path, string_types):
-        return convert_examples(path, sparse=sparse,
-                                ids_to_floats=ids_to_floats)
     # Lowercase path for file extension checking, if it's a string
+    extension = splitext(path)[1].lower()
+    if extension not in EXT_TO_READER:
+        raise ValueError(('Example files must be in either .arff, .csv, '
+                          '.jsonlines, .megam, .ndj, or .tsv format. You '
+                          'specified: {}').format(path))
     else:
-        extension = splitext(path)[1].lower()
-        if extension not in EXT_TO_READER:
-            raise ValueError(('Example files must be in either .arff, .csv, '
-                              '.jsonlines, .megam, .ndj, or .tsv format. You '
-                              'specified: {}').format(path))
-        else:
-            reader_type = EXT_TO_READER[extension]
+        reader_type = EXT_TO_READER[extension]
 
     logger.debug('Example iterator type: %s', reader_type)
 
@@ -683,27 +675,6 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
                          ids_to_floats=ids_to_floats, class_map=class_map,
                          feature_hasher=feature_hasher,
                          num_features=num_features)
-    return reader.read()
-
-
-def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
-    """
-    This function is to facilitate programmatic use of Learner.predict()
-    and other functions that take FeatureSet objects as input.
-    It converts a .jsonlines/.ndj-style list of dictionaries into
-    an FeatureSet.
-
-    :param example_dicts: An list of dictionaries following the .jsonlines/.ndj
-                          format (i.e., features 'x', label 'y', and 'id').
-    :type example_dicts: iterable of dicts
-
-    :returns: an FeatureSet representing the examples in example_dicts.
-    """
-    warn('The convert_examples function will be removed in SKLL 1.0.0. '
-         'Please switch to using a DictListReader directly.',
-         DeprecationWarning)
-    reader = DictListReader(example_dicts, sparse=sparse,
-                            ids_to_floats=ids_to_floats)
     return reader.read()
 
 
@@ -715,7 +686,7 @@ def safe_float(text, replace_dict=None):
     :param text: The text to convert.
     :type text: str
     :param replace_dict: Mapping from text to replacement text values. This is
-                         mainly used for collapsing multiple classes into a
+                         mainly used for collapsing multiple labels into a
                          single class. Replacing happens before conversion to
                          floats. Anything not in the mapping will be kept the
                          same.

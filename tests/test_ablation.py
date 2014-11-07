@@ -105,7 +105,7 @@ def make_ablation_data():
     # Create lists we will write files from
     ids = []
     features = []
-    classes = []
+    labels = []
     for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, j)
@@ -113,7 +113,7 @@ def make_ablation_data():
              range(5)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
         ids.append(ex_id)
-        classes.append(y)
+        labels.append(y)
         features.append(x)
 
     for i in range(5):
@@ -124,7 +124,8 @@ def make_ablation_data():
             x = {"f{}".format(feat_num):
                  features[example_num]["f{}".format(feat_num)]}
             sub_features.append(x)
-        train_fs = FeatureSet('ablation_cv', ids, features=sub_features, classes=classes)
+        train_fs = FeatureSet('ablation_cv', ids, features=sub_features,
+                              labels=labels)
         writer = NDJWriter(train_path, train_fs)
         writer.write()
 

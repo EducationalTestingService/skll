@@ -41,9 +41,9 @@ _my_dir = abspath(dirname(__file__))
 # a utility function to check rescaling for linear models
 def check_rescaling(name):
 
-    train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
-                                                         sd_noise=4,
-                                                         num_features=3)
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000,
+                                                sd_noise=4,
+                                                num_features=3)
 
     # instantiate the given learner and its rescaled counterpart
     learner = Learner(name)
@@ -61,12 +61,15 @@ def check_rescaling(name):
     train_predictions = learner.predict(train_fs)
     rescaled_train_predictions = rescaled_learner.predict(train_fs)
 
-    # make sure that both sets of correlations are close to perfectly correlated
-    # since the only thing different is that one set has been rescaled
-    assert_almost_equal(pearsonr(predictions, rescaled_predictions)[0], 1.0, places=3)
+    # make sure that both sets of correlations are close to perfectly
+    # correlated, since the only thing different is that one set has been
+    # rescaled
+    assert_almost_equal(pearsonr(predictions, rescaled_predictions)[0], 1.0,
+                        places=3)
 
-    # make sure that the standard deviation of the rescaled test set predictions
-    # is higher than the standard deviation of the regular test set predictions
+    # make sure that the standard deviation of the rescaled test set
+    # predictions is higher than the standard deviation of the regular test set
+    # predictions
     p_std = np.std(predictions)
     rescaled_p_std = np.std(rescaled_predictions)
     assert_greater(rescaled_p_std, p_std)
@@ -75,17 +78,16 @@ def check_rescaling(name):
     # on the TRAINING set (not the TEST) is closer to the standard
     # deviation of the training set labels than the standard deviation
     # of the regular predictions.
-    train_y_std = np.std(train_fs.classes)
+    train_y_std = np.std(train_fs.labels)
     train_p_std = np.std(train_predictions)
     rescaled_train_p_std = np.std(rescaled_train_predictions)
-    assert_less(abs(rescaled_train_p_std - train_y_std), abs(train_p_std - train_y_std))
+    assert_less(abs(rescaled_train_p_std - train_y_std), abs(train_p_std -
+                                                             train_y_std))
 
 
 def test_rescaling():
-    for regressor_name in ['ElasticNet', 'Lasso',
-                           'LinearRegression', 'Ridge',
+    for regressor_name in ['ElasticNet', 'Lasso', 'LinearRegression', 'Ridge',
                            'SVR', 'SGDRegressor']:
-
         yield check_rescaling, regressor_name
 
 
@@ -139,7 +141,7 @@ def check_linear_models(name,
     # the actual test FeatureSet labels that we generated
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
-    cor, _ = pearsonr(predictions, test_fs.classes)
+    cor, _ = pearsonr(predictions, test_fs.labels)
     expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
     assert_greater(cor, expected_cor_range[0])
     assert_less(cor, expected_cor_range[1])
@@ -150,13 +152,13 @@ def test_linear_models():
 
     for (regressor_name,
         use_feature_hashing,
-        use_rescaling) in product(['ElasticNet', 'Lasso',
-                                   'LinearRegression', 'Ridge',
-                                   'SVR', 'SGDRegressor'],
+        use_rescaling) in product(['ElasticNet', 'Lasso', 'LinearRegression',
+                                   'Ridge', 'SVR', 'SGDRegressor'],
                                   [False, True],
                                   [False, True]):
 
-        yield check_linear_models, regressor_name, use_feature_hashing, use_rescaling
+        yield (check_linear_models, regressor_name, use_feature_hashing,
+               use_rescaling)
 
 
 # the utility function to run the tree-based regression tests
@@ -181,30 +183,34 @@ def check_tree_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson', feature_hasher=use_feature_hashing)
+    learner.train(train_fs, grid_objective='pearson',
+                  feature_hasher=use_feature_hashing)
 
     # make sure that the feature importances are as expected.
     if name.endswith('DecisionTreeRegressor'):
-        expected_feature_importances = [0.37331461,
-                                        0.08572699,
-                                        0.2543484,
-                                        0.1841172,
-                                        0.1024928] if use_feature_hashing else [0.08931994,
-                                                                                0.15545093,
-                                                                                0.75522913]
+        expected_feature_importances = ([0.37331461,
+                                         0.08572699,
+                                         0.2543484,
+                                         0.1841172,
+                                         0.1024928] if use_feature_hashing else
+                                        [0.08931994,
+                                         0.15545093,
+                                         0.75522913])
         expected_cor_range = [0.5, 0.6] if use_feature_hashing else [0.9, 1.0]
     else:
-        expected_feature_importances = [0.40195655,
-                                        0.06702161,
-                                        0.25814858,
-                                        0.18183947,
-                                        0.09103379] if use_feature_hashing else [0.07975691,
-                                                                                 0.16122862,
-                                                                                 0.75901447]
+        expected_feature_importances = ([0.40195655,
+                                         0.06702161,
+                                         0.25814858,
+                                         0.18183947,
+                                         0.09103379] if use_feature_hashing else
+                                        [0.07975691,
+                                         0.16122862,
+                                         0.75901447])
         expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
 
     feature_importances = learner.model.feature_importances_
-    assert_allclose(feature_importances, expected_feature_importances, rtol=1e-2)
+    assert_allclose(feature_importances, expected_feature_importances,
+                    rtol=1e-2)
 
 
     # now generate the predictions on the test FeatureSet
@@ -214,9 +220,10 @@ def check_tree_models(name,
     # the actual test FeatureSet labels that we generated
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
-    cor, _ = pearsonr(predictions, test_fs.classes)
+    cor, _ = pearsonr(predictions, test_fs.labels)
     assert_greater(cor, expected_cor_range[0])
     assert_less(cor, expected_cor_range[1])
+
 
 # the runner function for tree-based regression models
 def test_tree_models():
@@ -228,7 +235,8 @@ def test_tree_models():
                                   [False, True],
                                   [False, True]):
 
-        yield check_tree_models, regressor_name, use_feature_hashing, use_rescaling
+        yield (check_tree_models, regressor_name, use_feature_hashing,
+               use_rescaling)
 
 
 # the utility function to run the ensemble-based regression tests
@@ -253,28 +261,32 @@ def check_ensemble_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson', feature_hasher=use_feature_hashing)
+    learner.train(train_fs, grid_objective='pearson',
+                  feature_hasher=use_feature_hashing)
 
     # make sure that the feature importances are as expected.
     if name.endswith('AdaBoostRegressor'):
-        expected_feature_importances = [0.33260501,
-                                        0.07685393,
-                                        0.25858443,
-                                        0.19214259,
-                                        0.13981404] if use_feature_hashing else [0.10266744,
-                                                                                 0.18681777,
-                                                                                 0.71051479]
+        expected_feature_importances = ([0.33260501,
+                                         0.07685393,
+                                         0.25858443,
+                                         0.19214259,
+                                         0.13981404] if use_feature_hashing else
+                                        [0.10266744,
+                                         0.18681777,
+                                         0.71051479])
     else:
-        expected_feature_importances = [0.204,
-                                        0.172,
-                                        0.178,
-                                        0.212,
-                                        0.234] if use_feature_hashing else [0.262,
-                                                                            0.288,
-                                                                            0.45]
+        expected_feature_importances = ([0.204,
+                                         0.172,
+                                         0.178,
+                                         0.212,
+                                         0.234] if use_feature_hashing else
+                                        [0.262,
+                                         0.288,
+                                         0.45])
 
     feature_importances = learner.model.feature_importances_
-    assert_allclose(feature_importances, expected_feature_importances, rtol=1e-2)
+    assert_allclose(feature_importances, expected_feature_importances,
+                    rtol=1e-2)
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
@@ -283,7 +295,7 @@ def check_ensemble_models(name,
     # the actual test FeatureSet labels that we generated
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
-    cor, _ = pearsonr(predictions, test_fs.classes)
+    cor, _ = pearsonr(predictions, test_fs.labels)
     expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
     assert_greater(cor, expected_cor_range[0])
     assert_less(cor, expected_cor_range[1])
@@ -299,5 +311,5 @@ def test_ensemble_models():
                                   [False, True],
                                   [False, True]):
 
-        yield check_ensemble_models, regressor_name, use_feature_hashing, use_rescaling
-
+        yield (check_ensemble_models, regressor_name, use_feature_hashing,
+               use_rescaling)

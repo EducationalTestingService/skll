@@ -106,14 +106,14 @@ def read_predictions(path):
 
 
 def test_majority_class_custom_learner():
-    num_classes = 10
+    num_labels = 10
 
     # This will make data where the last class happens about 50% of the time.
-    class_weights = [(0.5 / (num_classes - 1))
-                             for x in range(num_classes - 1)] + [0.5]
+    class_weights = [(0.5 / (num_labels - 1))
+                             for x in range(num_labels - 1)] + [0.5]
     train_fs, test_fs = make_classification_data(num_examples=600,
                                                  train_test_ratio=0.8,
-                                                 num_classes=num_classes,
+                                                 num_labels=num_labels,
                                                  num_features=5,
                                                  non_negative=True,
                                                  class_weights=class_weights)
@@ -141,18 +141,18 @@ def test_majority_class_custom_learner():
     preds = read_predictions(
         join(_my_dir, 'output', ('{}_{}_MajorityClassLearner.predictions'
                                  .format(outprefix, outprefix))))
-    expected = np.array([float(num_classes - 1) for x in preds])
+    expected = np.array([float(num_labels - 1) for x in preds])
     assert_array_equal(preds, expected)
 
 
 def test_logistic_custom_learner():
-    num_classes = 10
+    num_labels = 10
 
-    class_weights = [(0.5 / (num_classes - 1))
-                     for x in range(num_classes - 1)] + [0.5]
+    class_weights = [(0.5 / (num_labels - 1))
+                     for x in range(num_labels - 1)] + [0.5]
     train_fs, test_fs = make_classification_data(num_examples=600,
                                                  train_test_ratio=0.8,
-                                                 num_classes=num_classes,
+                                                 num_labels=num_labels,
                                                  num_features=5,
                                                  non_negative=True,
                                                  class_weights=class_weights)

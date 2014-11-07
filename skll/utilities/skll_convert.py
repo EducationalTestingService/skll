@@ -74,7 +74,7 @@ def main(argv=None):
                         default='skll_relation')
     parser.add_argument('--reuse_libsvm_map',
                         help='If you want to output multiple files that use \
-                              the same mapping from classes and features to \
+                              the same mapping from labels and features to \
                               numbers when writing libsvm files, you can \
                               specify an existing .libsvm file to reuse the \
                               mapping from.',

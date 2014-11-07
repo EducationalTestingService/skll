@@ -471,15 +471,15 @@ class Learner(object):
                        See the skll package documentation for valid options.
     :type model_type: str
     :param probability: Should learner return probabilities of all
-                        classes (instead of just class with highest
+                        labels (instead of just label with highest
                         probability)?
     :type probability: bool
     :param model_kwargs: A dictionary of keyword arguments to pass to the
                          initializer for the specified model.
     :type model_kwargs: dict
-    :param pos_label_str: The string for the positive class in the binary
+    :param pos_label_str: The string for the positive label in the binary
                           classification setting.  Otherwise, an arbitrary
-                          class is picked.
+                          label is picked.
     :type pos_label_str: str
     :param feature_scaling: how to scale the features, if at all. Options are:
                     'with_std': scale features using the standard deviation,
@@ -587,7 +587,7 @@ class Learner(object):
         """
         skll_version, learner = joblib.load(learner_path)
 
-        # For backward compatibility, convert string model types to classes.
+        # For backward compatibility, convert string model types to labels.
         if isinstance(learner._model_type, string_types):
             learner._model_type = globals()[learner._model_type]
 
@@ -685,7 +685,7 @@ class Learner(object):
         elif isinstance(self._model, BaseLibLinear):
             label_list = self.label_list
 
-            # if there are only two classes, scikit-learn will only have one
+            # if there are only two labels, scikit-learn will only have one
             # set of parameters and they will be associated with label 1 (not
             # 0)
             if len(self.label_list) == 2:
@@ -710,8 +710,8 @@ class Learner(object):
     @property
     def probability(self):
         """
-        Should learner return probabilities of all classes (instead of just
-        class with highest probability)?
+        Should learner return probabilities of all labels (instead of just
+        label with highest probability)?
         """
         return self._probability
 
@@ -766,7 +766,7 @@ class Learner(object):
 
         # Make sure the labels for a regression task are not strings.
         if issubclass(self._model_type, RegressorMixin):
-            for label in examples.classes:
+            for label in examples.labels:
                 if isinstance(label, string_types):
                     raise TypeError("You are doing regression with" +
                                     " string labels.  Convert them to" +
@@ -805,7 +805,7 @@ class Learner(object):
             return
 
         # extract list of unique labels if we are doing classification
-        self.label_list = np.unique(examples.classes).tolist()
+        self.label_list = np.unique(examples.labels).tolist()
 
         # if one label is specified as the positive class, make sure it's
         # last
@@ -835,9 +835,9 @@ class Learner(object):
         if not issubclass(self._model_type, RegressorMixin):
 
             # extract list of unique labels if we are doing classification
-            self.label_list = np.unique(examples.classes).tolist()
+            self.label_list = np.unique(examples.labels).tolist()
 
-            # if one label is specified as the positive class, make sure it's
+            # if one label is specified as the positive label, make sure it's
             # last
             if self.pos_label_str:
                 self.label_list = sorted(self.label_list,
@@ -929,34 +929,34 @@ class Learner(object):
                 # This is a classifier. Valid objective functions depend on
                 # type of label (int, string, binary)
 
-                if issubclass(examples.classes.dtype.type, int):
+                if issubclass(examples.labels.dtype.type, int):
                 # If they're ints, class 1 and 2 are valid for classifiers,
                     if grid_objective not in _INT_CLASS_OBJ_FUNCS:
                         raise ValueError("{} is not a valid grid objective "
                                          "function for the {} learner with "
-                                         "integer classes"
+                                         "integer labels"
                                          .format(grid_objective,
                                                  self._model_type))
 
-                elif issubclass(examples.classes.dtype.type, str):
+                elif issubclass(examples.labels.dtype.type, str):
                     # if all of the labels are strings, only class 1 objectives
                     # are valid (with a classifier).
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner with string "
-                                     "classes".format(grid_objective,
+                                     "labels".format(grid_objective,
                                                       self._model_type))
 
-                elif len(set(examples.classes)) == 2:
+                elif len(set(examples.labels)) == 2:
                     # If there are two labels, class 3 objectives are valid for
                     # classifiers regardless of the type of the label.
                     if not grid_objective in _BINARY_CLASS_OBJ_FUNCS:
                         raise ValueError("{} is not a valid grid objective "
                                          "function for the {} learner with "
-                                         "binary classes"
+                                         "binary labels"
                                          .format(grid_objective,
                                                  self._model_type))
                 elif grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
-                    # simple backoff check for mixed-type classes
+                    # simple backoff check for mixed-type labels
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner"
                                      .format(grid_objective,
@@ -970,10 +970,10 @@ class Learner(object):
         if grid_search or shuffle:
             if grid_search and not shuffle:
                 logger.warning('Training data will be shuffled to randomize grid search folds. Shuffling may yield different results compared to scikit-learn.')
-            ids, classes, features = sk_shuffle(examples.ids, examples.classes,
+            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                 examples.features,
                                                 random_state=rand_seed)
-            examples = FeatureSet(examples.name, ids, classes=classes,
+            examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
 
@@ -1026,13 +1026,13 @@ class Learner(object):
         # Instantiate an estimator and get the default parameter grid to search
         estimator, default_param_grid = self._create_estimator()
 
-        # use label dict transformed version of examples.classes if doing
+        # use label dict transformed version of examples.labels if doing
         # classification
         if not issubclass(self._model_type, RegressorMixin):
-            classes = np.array([self.label_dict[label] for label in
-                                examples.classes])
+            labels = np.array([self.label_dict[label] for label in
+                                examples.labels])
         else:
-            classes = examples.classes
+            labels = examples.labels
 
         # set up a grid searcher if we are asked to
         if grid_search:
@@ -1040,7 +1040,7 @@ class Learner(object):
             if isinstance(grid_search_folds, int):
                 grid_search_folds = \
                     self._compute_num_folds_from_example_counts(
-                        grid_search_folds, classes)
+                        grid_search_folds, labels)
 
                 if not grid_jobs:
                     grid_jobs = grid_search_folds
@@ -1082,11 +1082,11 @@ class Learner(object):
                                          pre_dispatch=grid_jobs)
 
             # run the grid search for hyperparameters
-            grid_searcher.fit(xtrain, classes)
+            grid_searcher.fit(xtrain, labels)
             self._model = grid_searcher.best_estimator_
             grid_score = grid_searcher.best_score_
         else:
-            self._model = estimator.fit(xtrain, classes)
+            self._model = estimator.fit(xtrain, labels)
             grid_score = 0.0
 
         return grid_score
@@ -1112,7 +1112,7 @@ class Learner(object):
         :param feature_hasher: are we using a feature_hasher?
         :type feature_hasher: bool
 
-        :return: The confusion matrix, the overall accuracy, the per-class
+        :return: The confusion matrix, the overall accuracy, the per-label
                  PRFs, the model parameters, and the grid search objective
                  function score.
         :rtype: 5-tuple
@@ -1127,11 +1127,11 @@ class Learner(object):
         # extract actual labels (transformed for classification tasks)
         if not issubclass(self._model_type, RegressorMixin):
             ytest = np.array([self.label_dict[label] for label in
-                              examples.classes])
+                              examples.labels])
         else:
-            ytest = examples.classes
+            ytest = examples.labels
 
-        # if run in probability mode, convert yhat to list of classes predicted
+        # if run in probability mode, convert yhat to list of labels predicted
         if self.probability:
             # if we're using a correlation grid objective, calculate it here
             if grid_objective and grid_objective in _CORRELATION_METRICS:
@@ -1176,11 +1176,11 @@ class Learner(object):
 
             # Store results
             result_dict = defaultdict(dict)
-            for actual_class in sorted(self.label_list):
-                col = self.label_dict[actual_class]
-                result_dict[actual_class]["Precision"] = result_matrix[0][col]
-                result_dict[actual_class]["Recall"] = result_matrix[1][col]
-                result_dict[actual_class]["F-measure"] = result_matrix[2][col]
+            for actual_label in sorted(self.label_list):
+                col = self.label_dict[actual_label]
+                result_dict[actual_label]["Precision"] = result_matrix[0][col]
+                result_dict[actual_label]["Recall"] = result_matrix[1][col]
+                result_dict[actual_label]["F-measure"] = result_matrix[2][col]
 
             res = (conf_mat.tolist(), overall_accuracy, result_dict,
                    self._model.get_params(), grid_score)
@@ -1191,7 +1191,7 @@ class Learner(object):
         """
         Uses a given model to generate predictions on a given data set
 
-        :param examples: The examples to predict the classes for.
+        :param examples: The examples to predict the labels for.
         :type examples: FeatureSet
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the
@@ -1327,24 +1327,24 @@ class Learner(object):
 
         return yhat
 
-    def _compute_num_folds_from_example_counts(self, cv_folds, classes):
+    def _compute_num_folds_from_example_counts(self, cv_folds, labels):
         assert isinstance(cv_folds, int)
 
         # For regression models, we can just return the current cv_folds
         if issubclass(self._model_type, RegressorMixin):
             return cv_folds
 
-        min_examples_per_class = min(Counter(classes).values())
-        if min_examples_per_class <= 1:
+        min_examples_per_label = min(Counter(labels).values())
+        if min_examples_per_label <= 1:
             raise ValueError(('The training set has only {} example for a' +
-                              ' class.').format(min_examples_per_class))
-        if min_examples_per_class < cv_folds:
+                              ' label.').format(min_examples_per_label))
+        if min_examples_per_label < cv_folds:
             logger = logging.getLogger(__name__)
             logger.warning(('The minimum number of examples per ' +
-                            'class was {}. Setting the number of ' +
+                            'label was {}. Setting the number of ' +
                             'cross-validation folds to that ' +
-                            'value.').format(min_examples_per_class))
-            cv_folds = min_examples_per_class
+                            'value.').format(min_examples_per_label))
+            cv_folds = min_examples_per_label
         return cv_folds
 
     def cross_validate(self, examples, stratified=True, cv_folds=10,
@@ -1358,7 +1358,7 @@ class Learner(object):
         :param examples: The data to cross-validate learner performance on.
         :type examples: FeatureSet
         :param stratified: Should we stratify the folds to ensure an even
-                           distribution of classes for each fold?
+                           distribution of labels for each fold?
         :type stratified: bool
         :param cv_folds: The number of folds to use for cross-validation, or
                          a mapping from example IDs to folds.
@@ -1391,7 +1391,7 @@ class Learner(object):
         :param feature_hasher: Are we using feature_hasher?
         :type feature_hasher: bool
 
-        :return: The confusion matrix, overall accuracy, per-class PRFs, and
+        :return: The confusion matrix, overall accuracy, per-label PRFs, and
                  model parameters for each fold.
         :rtype: list of 4-tuples
         """
@@ -1408,10 +1408,10 @@ class Learner(object):
         if grid_search or shuffle:
             if grid_search and not shuffle:
                 logger.warning('Training data will be shuffled to randomize grid search folds. Shuffling may yield different results compared to scikit-learn.')
-            ids, classes, features = sk_shuffle(examples.ids, examples.classes,
+            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                 examples.features,
                                                 random_state=rand_seed)
-            examples = FeatureSet(examples.name, ids, classes=classes,
+            examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
 
@@ -1422,12 +1422,12 @@ class Learner(object):
         # setup the cross-validation iterator
         if isinstance(cv_folds, int):
             cv_folds = self._compute_num_folds_from_example_counts(
-                cv_folds, examples.classes)
+                cv_folds, examples.labels)
 
             stratified = (stratified and
                           not issubclass(self._model_type, RegressorMixin))
-            kfold = (StratifiedKFold(examples.classes, n_folds=cv_folds) if
-                     stratified else KFold(len(examples.classes),
+            kfold = (StratifiedKFold(examples.labels, n_folds=cv_folds) if
+                     stratified else KFold(len(examples.labels),
                                            n_folds=cv_folds))
         else:
             # if we have a mapping from IDs to folds, use it for the overall
@@ -1453,7 +1453,7 @@ class Learner(object):
             self._model = None  # prevent feature vectorizer from being reset.
             train_set = FeatureSet(examples.name,
                                    examples.ids[train_index],
-                                   classes=examples.classes[train_index],
+                                   labels=examples.labels[train_index],
                                    features=examples.features[train_index],
                                    vectorizer=examples.vectorizer)
             # Set run_create_label_dict to False since we already created the
@@ -1474,7 +1474,7 @@ class Learner(object):
             # Evaluate model
             test_tuple = FeatureSet(examples.name,
                                     examples.ids[test_index],
-                                    classes=examples.classes[test_index],
+                                    labels=examples.labels[test_index],
                                     features=examples.features[test_index],
                                     vectorizer=examples.vectorizer)
             results.append(self.evaluate(test_tuple,

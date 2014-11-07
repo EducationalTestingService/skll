@@ -72,7 +72,7 @@ The following feature file formats are supported:
         and `SVMLight <http://svmlight.joachims.org>`__, we also support
         specifying extra metadata usually missing from the format in comments
         at the of each line. The comments are not mandatory, but without them,
-        your classes and features will not have names.  The comment is
+        your labels and features will not have names.  The comment is
         structured as follows::
 
             ID | 1=ClassX | 1=FeatureA 2=FeatureB
@@ -83,7 +83,7 @@ The following feature file formats are supported:
             1 5:7.0 6:19.1 # Example2 | 1=ClassX | 5=FeatureE 6=FeatureF
 
         .. note::
-            IDs, classes, and feature names cannot contain the following
+            IDs, labels, and feature names cannot contain the following
             characters:  ``|`` ``#`` ``=``
 
     **megam**
@@ -181,18 +181,18 @@ Input
         Defaults to ``False``.
 
     **class_map** *(Optional)*
-        If you would like to collapse several classes into one, or otherwise
+        If you would like to collapse several labels into one, or otherwise
         modify your labels (without modifying your original feature files), you
         can specify a dictionary mapping from new class labels to lists of
         original class labels. For example, if you wanted to collapse the
-        classes "beagle" and "dachsund" into a "dog" class, you would specify
+        labels "beagle" and "dachsund" into a "dog" class, you would specify
         the following for `class_map`:
 
         .. code-block:: python
 
            {'dog': ['beagle', 'dachsund']}
 
-        Any classes not included in the dictionary will be left untouched.
+        Any labels not included in the dictionary will be left untouched.
 
     **cv_folds_location** *(Optional)*
         Path to a csv file (with a header that is ignored) specifyingfolds for
@@ -370,26 +370,26 @@ Input
            {'cache_size': 1000, 'kernel': b'linear'}
 
         .. note::
-            This option helps us to manage the case of imbalance data sets
-            with the parameter ``class_weight`` for the classifiers: ``SVC``,
+            This option allows us to deal with imbalanced data sets by using
+            the parameter ``class_weight`` for the classifiers: ``SVC``,
             ``LogisticRegression``, ``LinearSVC`` and ``SGDClassifier``.
 
-            Two possible options are available. The first one with an 'auto' option that
-            uses the values of y (the classes) to automatically adjust weights inversely
-            proportional to class frequencies, as shown in the following code:
+            Two possible options are available. The first one is ``auto``,
+            which automatically adjust weights inversely proportional to class
+            frequencies, as shown in the following code:
 
             .. code-block:: python
 
                {'class_weight': 'auto'}
 
-            And the second option allows you to assign an specific weight per each class.
-            The default weight per class is 1. An example could be:
+            The second option allows you to assign an specific weight per each
+            class. The default weight per class is 1. For example:
 
             .. code-block:: python
 
                {'class_weight': {1: 10}}
 
-            Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_classes.html>`_.
+            Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_labels.html>`_.
 
 Tuning
 ^^^^^^
@@ -442,7 +442,7 @@ Tuning
             *   *roc_auc*: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`_
                 (for binary classification)
 
-        Regression or classification with integer classes:
+        Regression or classification with integer labels:
 
             *   *unweighted_kappa*: Unweighted `Cohen's kappa <http://en.wikipedia.org/wiki/Cohen's_kappa>`_ (any floating point
                 values are rounded to ints)
@@ -458,7 +458,7 @@ Tuning
             *   *qwk_off_by_one*: Same as ``quadratic_weighted_kappa``, but all
                 ranking differences are discounted by one.
 
-        Regression or classification with binary classes:
+        Regression or classification with binary labels:
 
             *   *kendall_tau*: `Kendall's tau <http://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`_
             *   *pearson*: `Pearson correlation <http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`_

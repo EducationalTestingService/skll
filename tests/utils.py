@@ -16,8 +16,8 @@ from skll.data import FeatureSet
 
 def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              num_features=10, use_feature_hashing=False,
-                             feature_bins=4, num_classes=2,
-                             empty_classes=False, feature_prefix='f',
+                             feature_bins=4, num_labels=2,
+                             empty_labels=False, feature_prefix='f',
                              class_weights=None, non_negative=False,
                              one_string_feature=False, num_string_values=4,
                              random_state=1234567890):
@@ -28,7 +28,7 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     X, y = make_classification(n_samples=num_examples,
                                n_features=num_numeric_features,
                                n_informative=num_numeric_features,
-                               n_redundant=0, n_classes=num_classes,
+                               n_redundant=0, n_classes=num_labels,
                                weights=class_weights,
                                random_state=random_state)
 
@@ -65,20 +65,20 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     train_y, test_y = y[:num_train_examples], y[num_train_examples:]
     train_ids, test_ids = ids[:num_train_examples], ids[num_train_examples:]
 
-    # are we told to generate empty classes
-    train_classes = None if empty_classes else train_y
-    test_classes = None if empty_classes else test_y
+    # are we told to generate empty labels
+    train_labels = None if empty_labels else train_y
+    test_labels = None if empty_labels else test_y
 
     # create a FeatureHasher if we are asked to use feature hashing
     # with the specified number of feature bins
     vectorizer = (FeatureHasher(n_features=feature_bins)
                   if use_feature_hashing else None)
     train_fs = FeatureSet('classification_train', train_ids,
-                          classes=train_classes, features=train_features,
+                          labels=train_labels, features=train_features,
                           vectorizer=vectorizer)
     if train_test_ratio < 1.0:
         test_fs = FeatureSet('classification_test', test_ids,
-                             classes=test_classes, features=test_features,
+                             labels=test_labels, features=test_features,
                              vectorizer=vectorizer)
     else:
         test_fs = None
@@ -124,10 +124,10 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     vectorizer = (FeatureHasher(n_features=feature_bins) if
                   use_feature_hashing else None)
     train_fs = FeatureSet('regression_train', train_ids,
-                          classes=train_y, features=train_features,
+                          labels=train_y, features=train_features,
                           vectorizer=vectorizer)
     test_fs = FeatureSet('regression_test', test_ids,
-                         classes=test_y, features=test_features,
+                         labels=test_y, features=test_features,
                          vectorizer=vectorizer)
 
     return (train_fs, test_fs, weightdict)

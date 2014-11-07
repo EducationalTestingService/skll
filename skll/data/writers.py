@@ -131,8 +131,8 @@ class FeatureSetWriter(object):
             # Write out the header if this format requires it
             self._write_header(filtered_set, output_file)
             # Write individual lines
-            for ex_num, (id_, class_, feat_dict) in enumerate(filtered_set):
-                self._write_line(id_, class_, feat_dict, output_file)
+            for ex_num, (id_, label_, feat_dict) in enumerate(filtered_set):
+                self._write_line(id_, label_, feat_dict, output_file)
                 if not self.quiet and ex_num % 100 == 0:
                     print("{}{:>15}".format(self._progress_msg, ex_num),
                           end="\r", file=sys.stderr)
@@ -149,7 +149,7 @@ class FeatureSetWriter(object):
         """
         pass
 
-    def _write_line(self, id_, class_, feat_dict, output_file):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in this FeatureSetWriter's format.
         """
@@ -195,7 +195,7 @@ class DelimitedFileWriter(FeatureSetWriter):
         # Build list of fieldnames (features + 'id' + label_col)
         fieldnames = set(self.feat_set.vectorizer.get_feature_names())
         fieldnames.add('id')
-        if self.feat_set.has_classes:
+        if self.feat_set.has_labels:
             fieldnames.add(self.label_col)
         return sorted(fieldnames)
 
@@ -211,14 +211,14 @@ class DelimitedFileWriter(FeatureSetWriter):
         # Actually output the header to the file
         self._dict_writer.writeheader()
 
-    def _write_line(self, id_, class_, feat_dict, output_file):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in this FeatureSetWriter's format.
         """
         # Add class column to feat_dict (unless this is unlabelled data)
         if self.label_col not in feat_dict:
-            if self.feat_set.has_classes:
-                feat_dict[self.label_col] = class_
+            if self.feat_set.has_labels:
+                feat_dict[self.label_col] = label_
         else:
             raise ValueError(('Class column name "{}" already used as feature '
                               'name.').format(self.label_col))
@@ -334,10 +334,10 @@ class ARFFWriter(DelimitedFileWriter):
             print("@attribute {} numeric".format(self.label_col),
                   file=output_file)
         else:
-            if self.feat_set.has_classes:
+            if self.feat_set.has_labels:
                 print("@attribute {} ".format(self.label_col) +
                       "{" + ','.join(map(str,
-                                         sorted(set(self.feat_set.classes)))) +
+                                         sorted(set(self.feat_set.labels)))) +
                       "}", file=output_file)
         fieldnames.append(self.label_col)
 
@@ -369,14 +369,14 @@ class MegaMWriter(FeatureSetWriter):
                 '<U{}>'.format(char_num) if char_num > 127 else char)
         return ''.join(char_list)
 
-    def _write_line(self, id_, class_, feat_dict, output_file):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
         """
         # Don't try to add class column if this is label-less data
         print('# {}'.format(id_), file=output_file)
-        if self.feat_set.has_classes:
-            print('{}'.format(class_), end='\t', file=output_file)
+        if self.feat_set.has_labels:
+            print('{}'.format(label_), end='\t', file=output_file)
         print(self._replace_non_ascii(' '.join(('{} {}'.format(field,
                                                                value) for
                                                 field, value in
@@ -395,14 +395,14 @@ class NDJWriter(FeatureSetWriter):
         kwargs['requires_binary'] = True
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
 
-    def _write_line(self, id_, class_, feat_dict, output_file):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
         """
         example_dict = {}
         # Don't try to add class column if this is label-less data
-        if self.feat_set.has_classes:
-            example_dict['y'] = np.asscalar(class_)
+        if self.feat_set.has_labels:
+            example_dict['y'] = np.asscalar(label_)
         example_dict['id'] = np.asscalar(id_)
         example_dict["x"] = feat_dict
         print(json.dumps(example_dict, sort_keys=True), file=output_file)
@@ -425,10 +425,10 @@ class LibSVMWriter(FeatureSetWriter):
         super(LibSVMWriter, self).__init__(path, feature_set, **kwargs)
         if self.label_map is None:
             self.label_map = {}
-            if feature_set.has_classes:
+            if feature_set.has_labels:
                 self.label_map = {label: num for num, label in
                                   enumerate(sorted({label for label in
-                                                    feature_set.classes if
+                                                    feature_set.labels if
                                                     not isinstance(label,
                                                                    (int,
                                                                     float))}))}
@@ -447,7 +447,7 @@ class LibSVMWriter(FeatureSetWriter):
                 name = name.replace(orig, replacement)
         return name
 
-    def _write_line(self, id_, class_, feat_dict, output_file):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
         """
@@ -455,11 +455,11 @@ class LibSVMWriter(FeatureSetWriter):
                                 1, value) for field, value in
                                iteritems(feat_dict) if Decimal(value) != 0])
         # Print label
-        if class_ in self.label_map:
-            print('{}'.format(self.label_map[class_]), end=' ',
+        if label_ in self.label_map:
+            print('{}'.format(self.label_map[label_]), end=' ',
                   file=output_file)
         else:
-            print('{}'.format(class_), end=' ', file=output_file)
+            print('{}'.format(label_), end=' ', file=output_file)
         # Print features
         print(' '.join(('{}:{}'.format(field, value) for field, value in
                         field_values)), end=' ', file=output_file)
@@ -468,12 +468,12 @@ class LibSVMWriter(FeatureSetWriter):
         print(self._sanitize('{}'.format(id_)), end='',
               file=output_file)
         print(' |', end=' ', file=output_file)
-        if (PY2 and self.feat_set.has_classes and isinstance(class_,
+        if (PY2 and self.feat_set.has_labels and isinstance(label_,
                                                              text_type)):
-            class_ = class_.encode('utf-8')
-        if class_ in self.label_map:
-            print('%s=%s' % (self._sanitize(self.label_map[class_]),
-                             self._sanitize(class_)),
+            label_ = label_.encode('utf-8')
+        if label_ in self.label_map:
+            print('%s=%s' % (self._sanitize(self.label_map[label_]),
+                             self._sanitize(label_)),
                   end=' | ', file=output_file)
         else:
             print(' |', end=' ', file=output_file)
@@ -484,14 +484,14 @@ class LibSVMWriter(FeatureSetWriter):
         print(line, file=output_file)
 
 
-def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
+def write_feature_file(path, ids, labels, features, feat_vectorizer=None,
                        id_prefix='EXAMPLE_', label_col='y',
                        arff_regression=False, arff_relation='skll_relation',
                        subsets=None, label_map=None):
     """
     Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
     ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
-    classes, and features.
+    labels, and features.
 
     :param path: A path to the feature file we would like to create. The suffix
                  to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
@@ -506,10 +506,10 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                 by `id_prefix` followed by the row number. If `id_prefix` is
                 also None, no IDs will be written to the file.
     :type ids: list of str
-    :param classes: The class labels for each instance in the feature
+    :param labels: The class labels for each instance in the feature
                     list/array. If None, no class labels will be added to
                     output file.
-    :type classes: list of str
+    :type labels: list of str
     :param features: The features for each instance represented as either a
                      list of dictionaries or an array-like (if
                      `feat_vectorizer` is also specified).
@@ -526,7 +526,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                             that are written should be written for regression
                             rather than classification, i.e., the class
                             variable y is numerical rather than an enumeration
-                            of classes and all non-numeric attributes are
+                            of labels and all non-numeric attributes are
                             removed.
     :type arff_regression: bool
     :param arff_relation: Relation name for ARFF file.
@@ -556,7 +556,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
          'Please switch to using a Writer (e.g., NDJWriter) directly.',
          DeprecationWarning)
 
-    feature_set = FeatureSet(path, ids, classes=classes, features=features,
+    feature_set = FeatureSet(path, ids, labels=labels, features=features,
                              vectorizer=feat_vectorizer)
 
     writer_args = {}

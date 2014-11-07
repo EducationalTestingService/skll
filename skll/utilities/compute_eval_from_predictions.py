@@ -33,7 +33,7 @@ def compute_eval_from_predictions(examples_file, predictions_file,
 
     # read gold standard labels
     data = load_examples(examples_file)
-    gold = dict(zip(data.ids, data.classes))
+    gold = dict(zip(data.ids, data.labels))
 
     # read predictions
     pred = {}

@@ -1,6 +1,6 @@
 # License: BSD 3 clause
 """
-Classes related to storing/merging feature sets.
+labels related to storing/merging feature sets.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
@@ -31,8 +31,8 @@ class FeatureSet(object):
     :type name: str
     :param ids: Example IDs for this set.
     :type ids: np.array
-    :param classes: Classes for this set.
-    :type classes: np.array
+    :param labels: labels for this set.
+    :type labels: np.array
     :param features: The features for each instance represented as either a
                      list of dictionaries or an array-like (if
                      `feat_vectorizer` is also specified).
@@ -41,20 +41,20 @@ class FeatureSet(object):
     :type vectorizer: DictVectorizer or FeatureHasher
 
     .. note::
-       If ids, classes, and/or features are not None, the number of rows in
+       If ids, labels, and/or features are not None, the number of rows in
        each array must be equal.
     """
 
-    def __init__(self, name, ids, classes=None, features=None,
+    def __init__(self, name, ids, labels=None, features=None,
                  vectorizer=None):
         super(FeatureSet, self).__init__()
         self.name = name
         if isinstance(ids, list):
             ids = np.array(ids)
         self.ids = ids
-        if isinstance(classes, list):
-            classes = np.array(classes)
-        self.classes = classes
+        if isinstance(labels, list):
+            labels = np.array(labels)
+        self.labels = labels
         self.features = features
         self.vectorizer = vectorizer
         # Convert list of dicts to numpy array
@@ -71,13 +71,13 @@ class FeatureSet(object):
                 raise ValueError(('Number of IDs (%s) does not equal '
                                   'number of feature rows (%s)') % (num_ids,
                                                                     num_feats))
-            if self.classes is None:
-                self.classes = np.empty(num_feats)
-                self.classes.fill(None)
-            num_classes = self.classes.shape[0]
-            if num_feats != num_classes:
-                raise ValueError(('Number of classes (%s) does not equal '
-                                  'number of feature rows (%s)') % (num_classes,
+            if self.labels is None:
+                self.labels = np.empty(num_feats)
+                self.labels.fill(None)
+            num_labels = self.labels.shape[0]
+            if num_feats != num_labels:
+                raise ValueError(('Number of labels (%s) does not equal '
+                                  'number of feature rows (%s)') % (num_labels,
                                                                     num_feats))
 
     def __contains__(self, value):
@@ -101,10 +101,10 @@ class FeatureSet(object):
             other.features.sort_indices()
 
         return (self.ids.shape == other.ids.shape and
-                self.classes.shape == other.classes.shape and
+                self.labels.shape == other.labels.shape and
                 self.features.shape == other.features.shape and
                 (self.ids == other.ids).all() and
-                (self.classes == other.classes).all() and
+                (self.labels == other.labels).all() and
                 np.allclose(self.features.data, other.features.data, rtol=1e-6) and
                 (self.features.indices == other.features.indices).all() and
                 (self.features.indptr == other.features.indptr).all() and
@@ -113,19 +113,19 @@ class FeatureSet(object):
 
     def __iter__(self):
         """
-        Iterate through (ID, class, feature_dict) tuples in feature set.
+        Iterate through (ID, label, feature_dict) tuples in feature set.
         """
         if self.features is not None:
             if not isinstance(self.vectorizer, DictVectorizer):
                 raise ValueError('FeatureSets can only be iterated through if '
                                  'they use a DictVectorizer for their feature '
                                  'vectorizer.')
-            for id_, class_, feats in zip(self.ids, self.classes,
+            for id_, label_, feats in zip(self.ids, self.labels,
                                           self.features):
                 # When calling inverse_transform we have to add [0] to get the
                 # results for the current instance because it always returns a
                 # 2D array
-                yield (id_, class_,
+                yield (id_, label_,
                        self.vectorizer.inverse_transform(feats)[0])
         else:
             return
@@ -185,19 +185,19 @@ class FeatureSet(object):
             new_set.vectorizer.feature_names_.extend(other_names)
 
         # If either set has labels, check that they don't conflict.
-        if self.has_classes:
-            # Classes should be the same for each FeatureSet, so store once.
-            if other.has_classes and \
-                    not np.all(self.classes == other.classes[relative_order]):
+        if self.has_labels:
+            # labels should be the same for each FeatureSet, so store once.
+            if other.has_labels and \
+                    not np.all(self.labels == other.labels[relative_order]):
                 raise ValueError('Feature sets have conflicting labels for '
                                  'examples with the same ID.')
-            new_set.classes = deepcopy(self.classes)
+            new_set.labels = deepcopy(self.labels)
         else:
-            new_set.classes = deepcopy(other.classes[relative_order])
+            new_set.labels = deepcopy(other.labels[relative_order])
 
         return new_set
 
-    def filter(self, ids=None, classes=None, features=None, inverse=False):
+    def filter(self, ids=None, labels=None, features=None, inverse=False):
         """
         Removes or keeps features and/or examples from the Featureset depending
         on the passed in parameters.
@@ -205,9 +205,9 @@ class FeatureSet(object):
         :param ids: Examples to keep in the FeatureSet. If `None`, no ID
                     filtering takes place.
         :type ids: list of str/float
-        :param classes: Classes that we want to retain examples for. If `None`,
-                        no class filtering takes place.
-        :type classes: list of str/float
+        :param labels: labels that we want to retain examples for. If `None`,
+                        no label filtering takes place.
+        :type labels: list of str/float
         :param features: Features to keep in the FeatureSet. To help with
                          filtering string-valued features that were converted
                          to sequences of boolean features when read in, any
@@ -226,15 +226,15 @@ class FeatureSet(object):
         mask = np.ones(len(self), dtype=bool)
         if ids is not None:
             mask = np.logical_and(mask, np.in1d(self.ids, ids))
-        if classes is not None:
-            mask = np.logical_and(mask, np.in1d(self.classes, classes))
+        if labels is not None:
+            mask = np.logical_and(mask, np.in1d(self.labels, labels))
 
-        if inverse and (classes is not None or ids is not None):
+        if inverse and (labels is not None or ids is not None):
             mask = np.logical_not(mask)
 
         # Remove examples not in mask
         self.ids = self.ids[mask]
-        self.classes = self.classes[mask]
+        self.labels = self.labels[mask]
         self.features = self.features[mask, :]
 
         # Filter features
@@ -253,7 +253,7 @@ class FeatureSet(object):
             self.features = self.features[:, columns]
             self.vectorizer.restrict(columns, indices=True)
 
-    def filtered_iter(self, ids=None, classes=None, features=None,
+    def filtered_iter(self, ids=None, labels=None, features=None,
                       inverse=False):
         """
         A version of ``__iter__`` that retains only the specified features
@@ -262,9 +262,9 @@ class FeatureSet(object):
         :param ids: Examples in the FeatureSet to keep. If `None`, no ID
                     filtering takes place.
         :type ids: list of str/float
-        :param classes: Classes that we want to retain examples for. If `None`,
-                        no class filtering takes place.
-        :type classes: list of str/float
+        :param labels: labels that we want to retain examples for. If `None`,
+                       no label filtering takes place.
+        :type labels: list of str/float
         :param features: Features in the FeatureSet to keep. To help with
                          filtering string-valued features that were converted
                          to sequences of boolean features when read in, any
@@ -285,12 +285,12 @@ class FeatureSet(object):
                              ' use a DictVectorizer for their feature '
                              'vectorizer.')
 
-        for id_, class_, feats in zip(self.ids, self.classes, self.features):
+        for id_, label_, feats in zip(self.ids, self.labels, self.features):
             # Skip instances with IDs not in filter
             if ids is not None and (id_ in ids) == inverse:
                 continue
-            # Skip instances with classes not in filter
-            if classes is not None and (class_ in classes) == inverse:
+            # Skip instances with labels not in filter
+            if labels is not None and (label_ in labels) == inverse:
                 continue
             feat_dict = self.vectorizer.inverse_transform(feats)[0]
             if features is not None:
@@ -300,7 +300,7 @@ class FeatureSet(object):
                               (name.split('=', 1)[0] in features))}
             elif not inverse:
                 feat_dict = {}
-            yield id_, class_, feat_dict
+            yield id_, label_, feat_dict
 
 
     def __sub__(self, other):
@@ -312,13 +312,13 @@ class FeatureSet(object):
         return new_set
 
     @property
-    def has_classes(self):
+    def has_labels(self):
         """
-        Whether or not this FeatureSet has any finite classes.
+        Whether or not this FeatureSet has any finite labels.
         """
-        if self.classes is not None:
-            return not (np.issubdtype(self.classes.dtype, float) and
-                        np.isnan(np.min(self.classes)))
+        if self.labels is not None:
+            return not (np.issubdtype(self.labels.dtype, float) and
+                        np.isnan(np.min(self.labels)))
         else:
             return False
 

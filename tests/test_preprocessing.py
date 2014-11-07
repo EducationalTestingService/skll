@@ -134,7 +134,7 @@ def make_class_map_data():
     # Create training file
     train_path = join(_my_dir, 'train', 'test_class_map.jsonlines')
     ids = []
-    classes = []
+    labels = []
     features = []
     class_names = ['beagle', 'cat', 'dachsund', 'cat']
     for i in range(1, 101):
@@ -143,16 +143,17 @@ def make_class_map_data():
         # note that f1 and f5 are missing in all instances but f4 is not
         x = {"f2": i + 1, "f3": i + 2, "f4": i + 5}
         ids.append(ex_id)
-        classes.append(y)
+        labels.append(y)
         features.append(x)
-    train_fs = FeatureSet('train_class_map', ids, features=features, classes=classes)
+    train_fs = FeatureSet('train_class_map', ids, features=features,
+                          labels=labels)
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
     # Create test file
     test_path = join(_my_dir, 'test', 'test_class_map.jsonlines')
     ids = []
-    classes = []
+    labels = []
     features = []
     for i in range(1, 51):
         y = class_names[i % 4]
@@ -160,9 +161,10 @@ def make_class_map_data():
         # f1 and f5 are not missing in any instances here but f4 is
         x = {"f1": i, "f2": i + 2, "f3": i % 10, "f5": i * 2}
         ids.append(ex_id)
-        classes.append(y)
+        labels.append(y)
         features.append(x)
-    test_fs = FeatureSet('test_class_map', ids, features=features, classes=classes)
+    test_fs = FeatureSet('test_class_map', ids, features=features,
+                         labels=labels)
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
@@ -240,10 +242,10 @@ def make_scaling_data(use_feature_hashing=False):
 
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
     train_fs = FeatureSet('train_scaling', train_ids,
-                          features=train_features, classes=train_y,
+                          features=train_features, labels=train_y,
                           vectorizer=vectorizer)
     test_fs = FeatureSet('test_scaling', test_ids,
-                         features=test_features, classes=test_y,
+                         features=test_features, labels=test_y,
                          vectorizer=vectorizer)
 
     return (train_fs, test_fs)
@@ -254,18 +256,24 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # create a Linear SVM with the value of scaling as specified
     feature_scaling = 'both' if use_scaling else 'none'
-    learner = Learner('SGDClassifier', feature_scaling=feature_scaling, pos_label_str=1)
+    learner = Learner('SGDClassifier', feature_scaling=feature_scaling,
+                      pos_label_str=1)
 
     # train the learner on the training set and test on the testing set
     learner.train(train_fs, feature_hasher=use_feature_hashing)
     test_output = learner.evaluate(test_fs, feature_hasher=use_feature_hashing)
-    fmeasures = [test_output[2][0]['F-measure'], test_output[2][1]['F-measure']]
+    fmeasures = [test_output[2][0]['F-measure'],
+                 test_output[2][1]['F-measure']]
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_fmeasures = [0.7979797979797979, 0.80198019801980192] if not use_scaling else [0.94883720930232551, 0.94054054054054048]
+        expected_fmeasures = ([0.7979797979797979, 0.80198019801980192] if
+                              not use_scaling else
+                              [0.94883720930232551, 0.94054054054054048])
     else:
-        expected_fmeasures = [0.83962264150943389, 0.81914893617021278] if not use_scaling else [0.88038277511961716, 0.86910994764397898]
+        expected_fmeasures = ([0.83962264150943389, 0.81914893617021278] if
+                              not use_scaling else
+                              [0.88038277511961716, 0.86910994764397898])
 
     for expected, actual in zip(expected_fmeasures, fmeasures):
         assert_almost_equal(expected, actual)

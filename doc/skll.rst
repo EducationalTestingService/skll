@@ -48,7 +48,6 @@ to the module level. They are documented in both places for convenience.
 
 From :py:mod:`~skll.data` Module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: skll.convert_examples
 .. autofunction:: skll.load_examples
 .. autofunction:: skll.write_feature_file
 

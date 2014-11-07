@@ -13,7 +13,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import itertools
-import os
 import re
 from io import open
 from os.path import abspath, dirname
@@ -45,7 +44,7 @@ def make_cv_folds_data(num_examples_per_fold=100,
 
     num_total_examples = num_examples_per_fold * num_folds
 
-    # create the numeric features and the binary classes
+    # create the numeric features and the binary labels
     X, _ = make_classification(n_samples=num_total_examples,
                                n_features=3, n_informative=3, n_redundant=0,
                                n_classes=2, random_state=1234567890)
@@ -76,7 +75,7 @@ def make_cv_folds_data(num_examples_per_fold=100,
     # create the cross-validation feature set with or without feature hashing
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
     cv_fs = FeatureSet('cv_folds', ids, features=features,
-                       classes=y, vectorizer=vectorizer)
+                       labels=y, vectorizer=vectorizer)
 
     # make the custom cv folds dictionary
     custom_cv_folds = dict(zip(ids, folds))
@@ -88,23 +87,24 @@ def test_specified_cv_folds():
     """
     Test to check cross-validation results with specified folds, feature hashing, and RBFSampler
     """
+    # This runs four tests.
 
-    # this runs four tests
-    # the first does not use feature hashing with 9 features (3 numeric, 6 binary)
-    # has pre-specified folds and has less than 60% accuracy for each of the 3 folds
+    # The first does not use feature hashing with 9 features (3 numeric, 6
+    # binary) has pre-specified folds and has less than 60% accuracy for each
+    # of the 3 folds.
 
-    # the second uses feature hashing with 4 features, uses 10 folds (not pre-specified)
+    # The second uses feature hashing with 4 features, uses 10 folds (not pre-specified)
     # and has more than 70% accuracy accuracy for each of the 10 folds.
 
-    # the third is the same as the first but uses an RBFSampler
+    # The third is the same as the first but uses an RBFSampler.
 
-    # the fourth is the same as the second but uses an RBFSampler
+    # The fourth is the same as the second but uses an RBFSampler.
 
     for test_value, assert_func, grid_size, use_hashing, use_sampler in \
-        [(0.55, assert_less, 3, False, False),
-         (0.1, assert_greater, 10, True, False),
-         (0.53, assert_less, 3, False, True),
-         (0.7, assert_greater, 10, True, True)]:
+            [(0.55, assert_less, 3, False, False),
+             (0.1, assert_greater, 10, True, False),
+             (0.53, assert_less, 3, False, True),
+             (0.7, assert_greater, 10, True, True)]:
 
         sampler = 'RBFSampler' if use_sampler else None
         learner = Learner('LogisticRegression', sampler=sampler)

@@ -140,7 +140,7 @@ def kendall_tau(y_true, y_pred):
     Kendall's tau.
 
     This is useful in cases where you want to use the actual probabilities of
-    the different classes after the fact, and not just the optimize based on
+    the different labels after the fact, and not just the optimize based on
     the classification accuracy.
     """
     ret_score = kendalltau(y_true, y_pred)[0]
@@ -153,7 +153,7 @@ def spearman(y_true, y_pred):
     Spearman rank correlation.
 
     This is useful in cases where you want to use the actual probabilities of
-    the different classes after the fact, and not just the optimize based on
+    the different labels after the fact, and not just the optimize based on
     the classification accuracy.
     """
     ret_score = spearmanr(y_true, y_pred)[0]
@@ -172,7 +172,7 @@ def pearson(y_true, y_pred):
 def f1_score_least_frequent(y_true, y_pred):
     """
     Optimize the hyperparameter values during the grid search based on the F1
-    measure of the least frequent class.
+    measure of the least frequent label.
 
     This is mostly intended for use when you're doing binary classification
     and your data is highly skewed. You should probably use f1_score_macro if

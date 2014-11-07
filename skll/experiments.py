@@ -51,14 +51,14 @@ _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 
 
-def _get_stat_float(class_result_dict, stat):
+def _get_stat_float(label_result_dict, stat):
     """
     Little helper for getting output for precision, recall, and f-score
     columns in confusion matrix.
 
-    :param class_result_dict: Dictionary containing the stat we'd like
-                              to retrieve for a particular class.
-    :type class_result_dict: dict
+    :param label_result_dict: Dictionary containing the stat we'd like
+                              to retrieve for a particular label.
+    :type label_result_dict: dict
     :param stat: The statistic we're looking for in the dictionary.
     :type stat: str
 
@@ -66,8 +66,8 @@ def _get_stat_float(class_result_dict, stat):
              otherwise.
     :rtype: float
     """
-    if stat in class_result_dict and class_result_dict[stat] is not None:
-        return class_result_dict[stat]
+    if stat in label_result_dict and label_result_dict[stat] is not None:
+        return label_result_dict[stat]
     else:
         return float('nan')
 
@@ -523,11 +523,11 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
     :param class_map: Mapping from original class labels to new ones. This is
-                      mainly used for collapsing multiple classes into a single
+                      mainly used for collapsing multiple labels into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
 
-    :returns: The classes, IDs, features, and feature vectorizer representing
+    :returns: The labels, IDs, features, and feature vectorizer representing
               the given featureset.
     :rtype: FeatureSet
     """
@@ -638,7 +638,7 @@ def _classify_featureset(args):
                                               num_features=hasher_features)
 
             train_set_size = len(train_examples.ids)
-            if not train_examples.has_classes:
+            if not train_examples.has_labels:
                 raise ValueError('Training examples do not have labels')
             # initialize a classifer object
             learner = Learner(learner_name,
@@ -835,29 +835,29 @@ def _create_learner_result_dicts(task_results, grid_scores,
             learner_result_dict['grid_score'] = grid_score
 
         if conf_matrix:
-            classes = sorted(iterkeys(task_results[0][2]))
-            result_table = PrettyTable([""] + classes + ["Precision",
+            labels = sorted(iterkeys(task_results[0][2]))
+            result_table = PrettyTable([""] + labels + ["Precision",
                                                          "Recall",
                                                          "F-measure"],
                                        header=True, hrules=ALL)
             result_table.align = 'r'
             result_table.float_format = '.3'
-            for i, actual_class in enumerate(classes):
+            for i, actual_label in enumerate(labels):
                 conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
-                class_prec = _get_stat_float(result_dict[actual_class],
+                label_prec = _get_stat_float(result_dict[actual_label],
                                              "Precision")
-                class_recall = _get_stat_float(result_dict[actual_class],
+                label_recall = _get_stat_float(result_dict[actual_label],
                                                "Recall")
-                class_f = _get_stat_float(result_dict[actual_class],
+                label_f = _get_stat_float(result_dict[actual_label],
                                           "F-measure")
-                if not math.isnan(class_prec):
-                    prec_sum_dict[actual_class] += float(class_prec)
-                if not math.isnan(class_recall):
-                    recall_sum_dict[actual_class] += float(class_recall)
-                if not math.isnan(class_f):
-                    f_sum_dict[actual_class] += float(class_f)
-                result_row = ([actual_class] + conf_matrix[i] +
-                              [class_prec, class_recall, class_f])
+                if not math.isnan(label_prec):
+                    prec_sum_dict[actual_label] += float(label_prec)
+                if not math.isnan(label_recall):
+                    recall_sum_dict[actual_label] += float(label_recall)
+                if not math.isnan(label_f):
+                    f_sum_dict[actual_label] += float(label_f)
+                result_row = ([actual_label] + conf_matrix[i] +
+                              [label_prec, label_recall, label_f])
                 result_table.add_row(result_row)
 
             result_table_str = '{}'.format(result_table)
@@ -887,18 +887,18 @@ def _create_learner_result_dicts(task_results, grid_scores,
         learner_result_dict['fold'] = 'average'
 
         if result_table:
-            result_table = PrettyTable(["Class", "Precision", "Recall",
+            result_table = PrettyTable(["Label", "Precision", "Recall",
                                         "F-measure"],
                                        header=True)
             result_table.align = "r"
-            result_table.align["Class"] = "l"
+            result_table.align["Label"] = "l"
             result_table.float_format = '.3'
-            for actual_class in classes:
+            for actual_label in labels:
                 # Convert sums to means
-                prec_mean = prec_sum_dict[actual_class] / num_folds
-                recall_mean = recall_sum_dict[actual_class] / num_folds
-                f_mean = f_sum_dict[actual_class] / num_folds
-                result_table.add_row([actual_class] +
+                prec_mean = prec_sum_dict[actual_label] / num_folds
+                recall_mean = recall_sum_dict[actual_label] / num_folds
+                f_mean = f_sum_dict[actual_label] / num_folds
+                result_table.add_row([actual_label] +
                                      [prec_mean, recall_mean, f_mean])
 
             learner_result_dict['result_table'] = '{}'.format(result_table)
@@ -1187,42 +1187,3 @@ def _check_job_results(job_results):
         if not result_dicts or 'task' not in result_dicts[0]:
             logger.error('There was an error running the experiment:\n%s',
                          result_dicts)
-
-
-def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
-                 hosts=None, quiet=False, all_combos=False):
-    """
-    Takes a configuration file and runs repeated experiments where each
-    feature set has been removed from the configuration.
-
-    :param config_path: Path to the configuration file we would like to use.
-    :type config_path: str
-    :param local: Should this be run locally instead of on the cluster?
-    :type local: bool
-    :param overwrite: If the model files already exist, should we overwrite
-                      them instead of re-using them?
-    :type overwrite: bool
-    :param queue: The DRMAA queue to use if we're running on the cluster.
-    :type queue: str
-    :param hosts: If running on the cluster, these are the machines we should
-                  use.
-    :type hosts: list of str
-    :param quiet: Suppress printing of "Loading..." messages.
-    :type quiet: bool
-    :param all_combos: By default we only exclude one feature from set, but if
-                       `all_combos` is `True`, we do a true ablation study with
-                       all feature combinations.
-    :type all_combos: bool
-
-    .. deprecated:: 0.20.0
-       Use :func:`run_configuration` with the ablation argument instead.
-
-    """
-    if all_combos:
-        run_configuration(config_path, local=local, overwrite=overwrite,
-                          queue=queue, hosts=hosts, write_summary=True,
-                          quiet=quiet, ablation=None)
-    else:
-        run_configuration(config_path, local=local, overwrite=overwrite,
-                          queue=queue, hosts=hosts, write_summary=True,
-                          quiet=quiet, ablation=1)
