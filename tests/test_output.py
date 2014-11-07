@@ -1,12 +1,10 @@
 # License: BSD 3 clause
 '''
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+Tests related to output from run_experiment
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
-:author: Aoife Cahill (acahill@ets.org)
 '''
 
 from __future__ import (absolute_import, division, print_function,
@@ -65,7 +63,7 @@ def fill_in_config_paths(config_template_path):
 
     config.set("Input", "train_location", train_dir)
 
-    to_fill_in = ['log', 'vocabs', 'predictions']
+    to_fill_in = ['log', 'predictions']
 
     if task != 'cross_validate':
         to_fill_in.append('models')
