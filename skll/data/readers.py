@@ -19,8 +19,6 @@ import sys
 from csv import DictReader
 from itertools import chain, islice
 from io import open, BytesIO, StringIO
-from os.path import splitext
-from warnings import warn
 
 import numpy as np
 from bs4 import UnicodeDammit
@@ -82,6 +80,47 @@ class Reader(object):
             self.vectorizer = FeatureHasher(n_features=num_features)
         else:
             self.vectorizer = DictVectorizer(sparse=sparse)
+
+    @classmethod
+    def for_path(cls, path_or_list, **kwargs):
+        """
+        :param path: The path to the file to load the examples from, or a list
+                     of example dictionaries.
+        :type path: str or dict
+        :param quiet: Do not print "Loading..." status message to stderr.
+        :type quiet: bool
+        :param sparse: Whether or not to store the features in a numpy CSR
+                       matrix.
+        :type sparse: bool
+        :param label_col: Name of the column which contains the class labels
+                          for ARFF/CSV/TSV files. If no column with that name
+                          exists, or `None` is specified, the data is
+                          considered to be unlabelled.
+        :type label_col: str
+        :param ids_to_floats: Convert IDs to float to save memory. Will raise
+                              error if we encounter an a non-numeric ID.
+        :type ids_to_floats: bool
+        :param class_map: Mapping from original class labels to new ones. This
+                          is mainly used for collapsing multiple classes into a
+                          single class. Anything not in the mapping will be
+                          kept the same.
+        :type class_map: dict from str to str
+
+        :returns: New instance of the ``Reader`` sub-class that is
+                  appropriate for the given path, or ``DictListReader`` if
+                  given a list of dictionaries.
+        """
+        if not isinstance(path_or_list, string_types):
+            return DictListReader(path_or_list)
+        else:
+            # Get lowercase extension for file extension checking
+            ext = '.' + path_or_list.rsplit('.', 1)[-1].lower()
+            if ext not in EXT_TO_READER:
+                raise ValueError(('Example files must be in either .arff, '
+                                  '.csv, .jsonlines, .megam, .ndj, or .tsv '
+                                  'format. You specified: '
+                                  '{}').format(path_or_list))
+        return EXT_TO_READER[ext](path_or_list, **kwargs)
 
     def _sub_read(self, f):
         """
@@ -396,8 +435,9 @@ class LibSVMReader(Reader):
                     feat_map = {}
                     for pair in match.group('feat_map').split():
                         number, name = pair.split('=')
-                        for orig, replacement in LibSVMReader.LIBSVM_REPLACE_DICT.items():
-                            name = re.sub(orig, replacement, name, flags=re.UNICODE)
+                        for orig, replacement in \
+                                LibSVMReader.LIBSVM_REPLACE_DICT.items():
+                            name = name.replace(orig, replacement)
                         feat_map[number] = name
                 else:
                     feat_map = None
@@ -614,84 +654,10 @@ class TSVReader(DelimitedReader):
         super(TSVReader, self).__init__(path_or_list, **kwargs)
 
 
-def load_examples(path, quiet=False, sparse=True, label_col='y',
-                  ids_to_floats=False, class_map=None, feature_hasher=False,
-                  num_features=None):
-    """
-    Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
-    ``.megam``, ``.ndj``, or ``.tsv`` formats.
-
-    If you would like to include example/instance IDs in your files, they must
-    be specified in the following ways:
-
-    * MegaM: As a comment line directly preceding the line with feature values.
-    * LibSVM: As the first item in the three-part comment described below.
-    * CSV/TSV/ARFF: An "id" column.
-    * JSONLINES: An "id" key in each JSON dictionary.
-
-    Also, for ARFF, CSV, and TSV files, there must be a column with the name
-    specified by `label_col` if the data is labelled. For ARFF files, this
-    column must also be the final one (as it is in Weka).
-
-    For LibSVM files, we use a specially formatted comment for storing example
-    IDs, class names, and feature names, which are normally not supported by
-    the format.  The comment is not mandatory, but without it, your labels
-    and features will not have names.  The comment is structured as follows:
-
-        ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
-
-    :param path: The path to the file to load the examples from.
-    :type path: str or dict
-    :param quiet: Do not print "Loading..." status message to stderr.
-    :type quiet: bool
-    :param sparse: Whether or not to store the features in a numpy CSR matrix.
-    :type sparse: bool
-    :param label_col: Name of the column which contains the class labels for
-                      ARFF/CSV/TSV files. If no column with that name exists, or
-                      `None` is specified, the data is considered to be
-                      unlabelled.
-    :type label_col: str
-    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
-                          if we encounter an a non-numeric ID.
-    :type ids_to_floats: bool
-    :param class_map: Mapping from original class labels to new ones. This is
-                      mainly used for collapsing multiple labels into a single
-                      class. Anything not in the mapping will be kept the same.
-    :type class_map: dict from str to str
-
-    :returns: 4-tuple of an array example ids, an array of class labels, a
-              scipy CSR matrix of features, and a DictVectorizer containing
-              the mapping between feature names and the column indices in
-              the feature matrix.
-    """
-
-    # Setup logger
-    logger = logging.getLogger(__name__)
-
-    logger.debug('Path: %s', path)
-
-    # Lowercase path for file extension checking, if it's a string
-    extension = splitext(path)[1].lower()
-    if extension not in EXT_TO_READER:
-        raise ValueError(('Example files must be in either .arff, .csv, '
-                          '.jsonlines, .megam, .ndj, or .tsv format. You '
-                          'specified: {}').format(path))
-    else:
-        reader_type = EXT_TO_READER[extension]
-
-    logger.debug('Example iterator type: %s', reader_type)
-
-    reader = reader_type(path, quiet=quiet, sparse=sparse, label_col=label_col,
-                         ids_to_floats=ids_to_floats, class_map=class_map,
-                         feature_hasher=feature_hasher,
-                         num_features=num_features)
-    return reader.read()
-
-
 def safe_float(text, replace_dict=None):
     """
-    Attempts to convert a string to a float, but if that's not possible, just
-    returns the original value.
+    Attempts to convert a string to an int, and then a float, but if neither is
+    possible, just returns the original string value.
 
     :param text: The text to convert.
     :type text: str

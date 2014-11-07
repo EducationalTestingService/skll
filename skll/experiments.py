@@ -30,7 +30,8 @@ from six.moves import zip
 from sklearn.metrics import SCORERS
 from sklearn import __version__ as SCIKIT_VERSION
 
-from skll.data import FeatureSet, load_examples
+from skll.data.featureset import FeatureSet
+from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
                           _import_custom_learner)
 from skll.version import __version__
@@ -534,20 +535,20 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
     if isfile(dir_path):
-        return load_examples(dir_path, label_col=label_col,
-                             ids_to_floats=ids_to_floats, quiet=quiet,
-                             class_map=class_map,
-                             feature_hasher=feature_hasher,
-                             num_features=num_features)
+        return Reader.for_path(dir_path, label_col=label_col,
+                               ids_to_floats=ids_to_floats, quiet=quiet,
+                               class_map=class_map,
+                               feature_hasher=feature_hasher,
+                               num_features=num_features).read()
     else:
         merged_set = None
         for file_name in sorted(join(dir_path, featfile + suffix) for
                                 featfile in feat_files):
-            fs = load_examples(file_name, label_col=label_col,
-                               ids_to_floats=ids_to_floats, quiet=quiet,
-                               class_map=class_map,
-                               feature_hasher=feature_hasher,
-                               num_features=num_features)
+            fs = Reader.for_path(file_name, label_col=label_col,
+                                 ids_to_floats=ids_to_floats, quiet=quiet,
+                                 class_map=class_map,
+                                 feature_hasher=feature_hasher,
+                                 num_features=num_features).read()
             if merged_set is None:
                 merged_set = fs
             else:

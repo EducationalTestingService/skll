@@ -16,10 +16,9 @@ from six import PY2
 
 from .featureset import FeatureSet
 from .readers import (ARFFReader, CSVReader, LibSVMReader, MegaMReader,
-                      NDJReader, TSVReader, convert_examples, safe_float,
-                      load_examples)
-from .writers import (ARFFWriter, DelimitedFileWriter, LibSVMWriter,
-                      MegaMWriter, NDJWriter, write_feature_file)
+                      NDJReader, TSVReader, safe_float, Reader)
+from .writers import (ARFFWriter, DelimitedFileWriter, FeatureSetWriter,
+                      LibSVMWriter, MegaMWriter, NDJWriter)
 
 
 # Register dialect for handling ARFF files
@@ -33,8 +32,7 @@ else:
                          lineterminator='\n', skipinitialspace=True)
 
 
-__all__ = ['convert_examples', 'load_examples', 'safe_float',
-           'write_feature_file', 'FeatureSet', 'ARFFReader',
+__all__ = ['Reader', 'safe_float', 'FeatureSet', 'ARFFReader',
            'CSVReader', 'LibSVMReader', 'MegaMReader', 'NDJReader',
            'TSVReader', 'ARFFWriter', 'DelimitedFileWriter', 'LibSVMWriter',
-           'MegaMWriter', 'NDJWriter']
+           'MegaMWriter', 'NDJWriter', 'FeatureSetWriter']

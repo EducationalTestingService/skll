@@ -18,8 +18,7 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, assert_almost_equal
-from skll.data import load_examples
-from skll.data import FeatureSet, NDJWriter
+from skll.data import FeatureSet, NDJWriter, Reader
 from skll.experiments import run_configuration, _setup_config_parser
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -207,7 +206,7 @@ def test_backward_compatibility():
                      'v0.9.17_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
-    examples = load_examples(test_path, quiet=True)
+    examples = Reader.for_path(test_path, quiet=True).read()
     new_predictions = learner.predict(examples)[:, 1]
 
     with open(predict_path) as predict_file:

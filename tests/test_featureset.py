@@ -25,7 +25,7 @@ from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.datasets.samples_generator import make_classification
 
-from skll.data import FeatureSet, write_feature_file, load_examples
+from skll.data import FeatureSet, FeatureSetWriter, Reader
 from skll.data.readers import DictListReader
 from skll.experiments import _load_featureset
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -354,7 +354,7 @@ def test_subtract():
     eq_(fs.features.shape[1], 2)
 
     # and that they are f3 and f4
-    assert_array_equal(np.array(fs.feat_vectorizer.feature_names_), ['f03', 'f04'])
+    assert_array_equal(np.array(fs.vectorizer.feature_names_), ['f03', 'f04'])
 
 
 @raises(ValueError)
@@ -525,7 +525,7 @@ def check_filter_features(inverse=False):
 
     # make sure that the feature names that we kept are also correct
     feature_names = ['f02', 'f03', 'f05'] if inverse else ['f01', 'f04']
-    assert_array_equal(np.array(fs.feat_vectorizer.feature_names_),
+    assert_array_equal(np.array(fs.vectorizer.feature_names_),
                        feature_names)
 
     # make sure that number of ids, labels and features are the same
@@ -648,11 +648,12 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
         subset_dict['{}'.format(i)] = ["f{:03d}".format(feat_num + j) for j in
                                        range(num_feats_per_file)]
     train_path = join(merge_dir, suffix)
-    write_feature_file(train_path, ids, labels, features, subsets=subset_dict)
+    train_fs = FeatureSet('train', ids, labels=labels, features=features)
+    FeatureSetWriter.for_path(train_path, train_fs).write(subsets=subset_dict)
 
     # Merged
     train_path = join(merge_dir, 'all{}'.format(suffix))
-    write_feature_file(train_path, ids, labels, features)
+    FeatureSetWriter.for_path(train_path, train_fs).write()
 
 
 def check_load_featureset(suffix, numeric_ids):
@@ -692,10 +693,10 @@ def test_load_featureset():
 def test_ids_to_floats():
     path = join(_my_dir, 'train', 'test_input_2examples_1.jsonlines')
 
-    examples = load_examples(path, ids_to_floats=True, quiet=True)
+    examples = Reader.for_path(path, ids_to_floats=True, quiet=True).read()
     assert isinstance(examples.ids[0], float)
 
-    examples = load_examples(path, quiet=True)
+    examples = Reader.for_path(path, quiet=True).read()
     assert not isinstance(examples.ids[0], float)
     assert isinstance(examples.ids[0], str)
 
@@ -772,15 +773,25 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
                  features[example_num]["f{:03d}".format(feat_num + j)] for j in
                  range(num_feats_per_file)}
             sub_features.append(x)
-        write_feature_file(train_path, ids, labels, sub_features,
-                           feat_vectorizer=feat_vectorizer,
-                           label_map=label_map)
+        train_fs = FeatureSet('sub_train', ids, labels=labels,
+                              features=sub_features,
+                              vectorizer=feat_vectorizer)
+        if from_suffix == '.libsvm':
+            FeatureSetWriter.for_path(train_path, train_fs,
+                                      label_map=label_map).write()
+        else:
+            FeatureSetWriter.for_path(train_path, train_fs).write()
 
     # Write out the merged features in the `to_suffix` file format
     train_path = join(convert_dir, '{}_all{}'.format(feature_name_prefix,
                                                      to_suffix))
-    write_feature_file(train_path, ids, labels, features,
-                       feat_vectorizer=feat_vectorizer, label_map=label_map)
+    train_fs = FeatureSet('train', ids, labels=labels, features=features,
+                          vectorizer=feat_vectorizer)
+    if to_suffix == '.libsvm':
+        FeatureSetWriter.for_path(train_path, train_fs,
+                                  label_map=label_map).write()
+    else:
+        FeatureSetWriter.for_path(train_path, train_fs).write()
 
 
 def check_convert_featureset(from_suffix, to_suffix):

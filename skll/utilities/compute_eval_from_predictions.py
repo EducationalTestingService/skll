@@ -11,7 +11,7 @@ import argparse
 import csv
 import logging
 
-from skll.data import load_examples, safe_float
+from skll.data import Reader, safe_float
 from skll.metrics import use_score_func
 from skll.version import __version__
 
@@ -32,7 +32,7 @@ def compute_eval_from_predictions(examples_file, predictions_file,
     """
 
     # read gold standard labels
-    data = load_examples(examples_file)
+    data = Reader.for_path(examples_file).read()
     gold = dict(zip(data.ids, data.labels))
 
     # read predictions

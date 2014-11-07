@@ -18,14 +18,11 @@ import sys
 from csv import DictWriter
 from decimal import Decimal
 from io import open
-from warnings import warn
 
 import numpy as np
 from six import iteritems, PY2, string_types, text_type
 from six.moves import map, zip
 from sklearn.feature_extraction import FeatureHasher
-
-from skll.data import FeatureSet
 
 
 class FeatureSetWriter(object):
@@ -36,12 +33,12 @@ class FeatureSetWriter(object):
     :param path: A path to the feature file we would like to create. The suffix
                  to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
                  ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets``
-                 is not ``None``, path is assumed to be a string containing the
-                 path to the directory to write the feature files with an
-                 additional file extension specifying the file type. For
-                 example ``/foo/.csv``.
+                 is not ``None``, when calling the ``write()`` method, path is
+                 assumed to be a string containing the path to the directory to
+                 write the feature files with an additional file extension
+                 specifying the file type. For example ``/foo/.csv``.
     :type path: str
-    :param feature_set: The FeatureSet to dump a file.
+    :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
     :param requires_binary: Whether or not the FeatureSetWriter must open the
                             file in binary mode for writing with Python 2.
@@ -63,6 +60,28 @@ class FeatureSetWriter(object):
         if kwargs:
             raise ValueError('Passed extra keyword arguments to '
                              'FeatureSetWriter constructor: {}'.format(kwargs))
+
+    @classmethod
+    def for_path(cls, path, feature_set, **kwargs):
+        """
+        :param path: A path to the feature file we would like to create. The
+                     suffix to this filename must be ``.arff``, ``.csv``,
+                     ``.jsonlines``, ``.libsvm``, ``.megam``, ``.ndj``, or
+                     ``.tsv``. If ``subsets`` is not ``None``, when calling the
+                     ``write()`` method, path is assumed to be a string
+                     containing the path to the directory to write the feature
+                     files with an additional file extension specifying the
+                     file type. For example ``/foo/.csv``.
+        :type path: str
+        :param feature_set: The FeatureSet to dump to a file.
+        :type feature_set: FeatureSet
+
+        :returns: New instance of the FeatureSetWriter sub-class that is
+                  appropriate for the given path.
+        """
+        # Get lowercase extension for file extension checking
+        ext = '.' + path.rsplit('.', 1)[-1].lower()
+        return EXT_TO_WRITER[ext](path, feature_set, **kwargs)
 
     def write(self, subsets=None):
         """
@@ -129,7 +148,7 @@ class FeatureSetWriter(object):
         file_mode = 'wb' if (self.requires_binary and PY2) else 'w'
         with open(sub_path, file_mode) as output_file:
             # Write out the header if this format requires it
-            self._write_header(filtered_set, output_file)
+            self._write_header(filtered_set, output_file, filter_features)
             # Write individual lines
             for ex_num, (id_, label_, feat_dict) in enumerate(filtered_set):
                 self._write_line(id_, label_, feat_dict, output_file)
@@ -142,7 +161,7 @@ class FeatureSetWriter(object):
                       file=sys.stderr)
                 sys.stderr.flush()
 
-    def _write_header(self, feature_set, output_file):
+    def _write_header(self, feature_set, output_file, filter_features):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
@@ -188,25 +207,35 @@ class DelimitedFileWriter(FeatureSetWriter):
         super(DelimitedFileWriter, self).__init__(path, feature_set, **kwargs)
         self._dict_writer = None
 
-    def _get_fieldnames(self):
+    def _get_fieldnames(self, filter_features):
         """
         Build list of fieldnames for DictWriter from self.feat_set.
+
+        :param filter_features: Set of features to include in current feature
+                                file.
+        :type filter_features: set of str
         """
         # Build list of fieldnames (features + 'id' + label_col)
-        fieldnames = set(self.feat_set.vectorizer.get_feature_names())
+        if filter_features is not None:
+            fieldnames = {feat_name for feat_name in
+                          self.feat_set.vectorizer.get_feature_names() if
+                          (feat_name in filter_features or
+                           feat_name.split('=', 1)[0] in filter_features)}
+        else:
+            fieldnames = set(self.feat_set.vectorizer.get_feature_names())
         fieldnames.add('id')
         if self.feat_set.has_labels:
             fieldnames.add(self.label_col)
         return sorted(fieldnames)
 
-    def _write_header(self, feature_set, output_file):
+    def _write_header(self, feature_set, output_file, filter_features):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
         """
         # Initialize DictWriter that will be used to write header and rows
         self._dict_writer = DictWriter(output_file,
-                                       self._get_fieldnames(),
+                                       self._get_fieldnames(filter_features),
                                        restval=0, dialect=self.dialect)
         # Actually output the header to the file
         self._dict_writer.writeheader()
@@ -243,7 +272,7 @@ class CSVWriter(DelimitedFileWriter):
                  files with an additional file extension specifying the file
                  type. For example ``/foo/.csv``.
     :type path: str
-    :param feature_set: The FeatureSet to dump a file.
+    :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
     :param quiet: Do not print "Writing..." status message to stderr.
     :type quiet: bool
@@ -266,7 +295,7 @@ class TSVWriter(DelimitedFileWriter):
                  files with an additional file extension specifying the file
                  type. For example ``/foo/.csv``.
     :type path: str
-    :param feature_set: The FeatureSet to dump a file.
+    :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
     :param quiet: Do not print "Writing..." status message to stderr.
     :type quiet: bool
@@ -289,7 +318,7 @@ class ARFFWriter(DelimitedFileWriter):
                  files with an additional file extension specifying the file
                  type. For example ``/foo/.csv``.
     :type path: str
-    :param feature_set: The FeatureSet to dump a file.
+    :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
     :param requires_binary: Whether or not the FeatureSetWriter must open the
                             file in binary mode for writing with Python 2.
@@ -311,12 +340,12 @@ class ARFFWriter(DelimitedFileWriter):
         super(ARFFWriter, self).__init__(path, feature_set, **kwargs)
         self._dict_writer = None
 
-    def _write_header(self, feature_set, output_file):
+    def _write_header(self, feature_set, output_file, filter_features):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
         """
-        fieldnames = self._get_fieldnames()
+        fieldnames = self._get_fieldnames(filter_features)
         if self.label_col in fieldnames:
             fieldnames.remove(self.label_col)
 
@@ -482,106 +511,6 @@ class LibSVMWriter(FeatureSetWriter):
                          field, value in feat_dict.items() if
                          Decimal(value) != 0))
         print(line, file=output_file)
-
-
-def write_feature_file(path, ids, labels, features, feat_vectorizer=None,
-                       id_prefix='EXAMPLE_', label_col='y',
-                       arff_regression=False, arff_relation='skll_relation',
-                       subsets=None, label_map=None):
-    """
-    Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
-    labels, and features.
-
-    :param path: A path to the feature file we would like to create. The suffix
-                 to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
-                 ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets``
-                 is not ``None``, this is assumed to be a string containing the
-                 path to the directory to write the feature files with an
-                 additional file extension specifying the file type. For
-                 example ``/foo/.csv``.
-    :type path: str
-    :param ids: The IDs for each instance in the feature list/array. If None,
-                IDs will be automatically generated with the prefix specified
-                by `id_prefix` followed by the row number. If `id_prefix` is
-                also None, no IDs will be written to the file.
-    :type ids: list of str
-    :param labels: The class labels for each instance in the feature
-                    list/array. If None, no class labels will be added to
-                    output file.
-    :type labels: list of str
-    :param features: The features for each instance represented as either a
-                     list of dictionaries or an array-like (if
-                     `feat_vectorizer` is also specified).
-    :type features: list of dict or array-like
-    :param feat_vectorizer: A `DictVectorizer` to map to/from feature columns
-                            indices and names.
-    :type feat_vectorizer: DictVectorizer
-    :param label_col: Name of the column which contains the class labels for
-                      CSV/TSV files. If no column with that name exists, or
-                      `None` is specified, the data is considered to be
-                      unlabelled.
-    :type label_col: str
-    :param arff_regression: A boolean value indicating whether the ARFF files
-                            that are written should be written for regression
-                            rather than classification, i.e., the class
-                            variable y is numerical rather than an enumeration
-                            of labels and all non-numeric attributes are
-                            removed.
-    :type arff_regression: bool
-    :param arff_relation: Relation name for ARFF file.
-    :type arff_relation: str
-    :param subsets: A mapping from subset names to lists of feature names that
-                    are included in those sets. If given, a feature file will
-                    be written for every subset (with the name containing the
-                    subset name as suffix to ``path``). Note, since string-
-                    valued features are automatically converted into boolean
-                    features with names of the form
-                    ``FEATURE_NAME=STRING_VALUE``, when doing the filtering,
-                    the portion before the ``=`` is all that's used for
-                    matching. Therefore, you do not need to enumerate all of
-                    these boolean feature names in your mapping.
-    :type subsets: dict (str to list of str)
-    :param label_map: Mapping from class name to numbers to use for writing
-                      LibSVM files.
-    :type label_map: dict (str -> int)
-    """
-    # Setup logger
-    logger = logging.getLogger(__name__)
-
-    logger.debug('Feature vectorizer: %s', feat_vectorizer)
-    # logger.debug('Features: %s', features)
-
-    warn('The write_feature_file function will be removed in SKLL 1.0.0. '
-         'Please switch to using a Writer (e.g., NDJWriter) directly.',
-         DeprecationWarning)
-
-    feature_set = FeatureSet(path, ids, labels=labels, features=features,
-                             vectorizer=feat_vectorizer)
-
-    writer_args = {}
-
-    # Get lowercase extension for file extension checking
-    ext = '.' + path.rsplit('.', 1)[-1].lower()
-
-    if ext not in EXT_TO_WRITER:
-        raise ValueError(('Output file must be in either .arff, .csv, '
-                          '.jsonlines, .libsvm, .megam, .ndj, or .tsv format. '
-                          'You specified: {}').format(path))
-    else:
-        writer_type = EXT_TO_WRITER[ext]
-
-    # Setup writer-type-specific arguments
-    if issubclass(writer_type, DelimitedFileWriter):
-        writer_args['label_col'] = label_col
-        if writer_type is ARFFWriter:
-            writer_args['relation'] = arff_relation
-            writer_args['regression'] = arff_regression
-    elif issubclass(writer_type, LibSVMWriter):
-        writer_args['label_map'] = label_map
-
-    writer = writer_type(path, feature_set, **writer_args)
-    writer.write(subsets=subsets)
 
 
 # Constants

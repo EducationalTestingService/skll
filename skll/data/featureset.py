@@ -33,8 +33,8 @@ class FeatureSet(object):
     :param labels: labels for this set.
     :type labels: np.array
     :param features: The features for each instance represented as either a
-                     list of dictionaries or an array-like (if
-                     `feat_vectorizer` is also specified).
+                     list of dictionaries or an array-like (if `vectorizer` is
+                     also specified).
     :type features: list of dict or array-like
     :param vectorizer: Vectorizer that created feature matrix.
     :type vectorizer: DictVectorizer or FeatureHasher
@@ -297,8 +297,8 @@ class FeatureSet(object):
             if features is not None:
                 feat_dict = {name: value for name, value in
                              iteritems(feat_dict) if
-                             (inverse != (name in features) or
-                              (name.split('=', 1)[0] in features))}
+                             (inverse != (name in features or
+                                          name.split('=', 1)[0] in features))}
             elif not inverse:
                 feat_dict = {}
             yield id_, label_, feat_dict
@@ -309,7 +309,7 @@ class FeatureSet(object):
         :returns: a copy of ``self`` with all features in ``other`` removed.
         """
         new_set = deepcopy(self)
-        new_set.filter(features=other.feat_vectorizer.feature_names_,
+        new_set.filter(features=other.vectorizer.feature_names_,
                        inverse=True)
         return new_set
 
