@@ -9,7 +9,6 @@ labels related to storing/merging feature sets.
 from __future__ import absolute_import, print_function, unicode_literals
 
 from copy import deepcopy
-from warnings import warn
 
 import numpy as np
 import scipy.sparse as sp
@@ -81,8 +80,10 @@ class FeatureSet(object):
                                                                     num_feats))
 
     def __contains__(self, value):
-        pass
-
+        """
+        Check if example ID is in set
+        """
+        return value in self.ids
 
     def __eq__(self, other):
         """
@@ -305,16 +306,17 @@ class FeatureSet(object):
 
     def __sub__(self, other):
         """
-        Return a copy of ``self`` with all features in ``other`` removed.
+        :returns: a copy of ``self`` with all features in ``other`` removed.
         """
         new_set = deepcopy(self)
-        new_set.filter(features=other.feat_vectorizer.feature_names_, inverse=True)
+        new_set.filter(features=other.feat_vectorizer.feature_names_,
+                       inverse=True)
         return new_set
 
     @property
     def has_labels(self):
         """
-        Whether or not this FeatureSet has any finite labels.
+        :returns: Whether or not this FeatureSet has any finite labels.
         """
         if self.labels is not None:
             return not (np.issubdtype(self.labels.dtype, float) and
@@ -322,18 +324,36 @@ class FeatureSet(object):
         else:
             return False
 
-    @property
-    def feat_vectorizer(self):
-        """ Backward compatible name for vectorizer """
-        warn('FeatureSet.feat_vectorizer will be removed in SKLL 1.0.0. '
-             'Please switch to using FeatureSet.vectorizer to access the '
-             'feature vectorizer.', DeprecationWarning)
-        return self.vectorizer
-
     def __str__(self):
-        """ Return a string representation of FeatureSet """
+        """
+        :returns: a string representation of FeatureSet
+        """
         return str(self.__dict__)
 
     def __repr__(self):
-        """ Return a string representation of FeatureSet """
+        """
+        :returns:  a string representation of FeatureSet
+        """
         return repr(self.__dict__)
+
+    def __getitem__(self, value):
+        """
+        :returns: A specific example by row number, or if given a slice,
+                  a new FeatureSet containing a subset of the data.
+        """
+        # Check if we're slicing
+        if isinstance(value, slice):
+            sliced_ids = self.ids[value]
+            sliced_feats = (self.features[value] if self.features is not None
+                            else None)
+            sliced_labels = (self.labels[value] if self.labels is not None
+                             else None)
+            return FeatureSet('{}_{}'.format(self.name, value), sliced_ids,
+                              features=sliced_feats, labels=sliced_labels,
+                              vectorizer=self.vectorizer)
+        else:
+            label = self.labels[value] if self.labels is not None else None
+            feats = self.features[value, :]
+            features = (self.vectorizer.inverse_transform(feats)[0] if
+                        self.features is not None else {})
+            return self.ids[value], label, features
