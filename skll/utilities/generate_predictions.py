@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-'''
+"""
 Loads a trained model and outputs predictions based on input feature files.
 
 :author: Dan Blanchard
 :contact: dblanchard@ets.org
 :organization: ETS
 :date: February 2013
-'''
+"""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -30,7 +30,7 @@ class Predictor(object):
     """
 
     def __init__(self, model_path, threshold=None, positive_class=1):
-        '''
+        """
         Initialize the predictor.
 
         :param model_path: Path to use when loading trained model.
@@ -45,13 +45,13 @@ class Predictor(object):
                                predicting. 1 = second class, which is default
                                for binary classification.
         :type positive_class: int
-        '''
+        """
         self._learner = Learner.from_file(model_path)
         self._pos_index = positive_class
         self.threshold = threshold
 
     def predict(self, data):
-        '''
+        """
         Generate a list of predictions for the given examples.
 
         :param data: FeatureSet to get predictions for.
@@ -59,7 +59,7 @@ class Predictor(object):
 
         :returns: A list of predictions the model generated for the given
                   examples.
-        '''
+        """
 
         # determine if the model used feature hashing or not
         use_feature_hashing = isinstance(self._learner.feat_vectorizer, FeatureHasher)
@@ -81,13 +81,13 @@ class Predictor(object):
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
                  If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
-    '''
+    """
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Loads a trained model and outputs predictions based \

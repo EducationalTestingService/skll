@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
 
@@ -7,7 +7,7 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -86,9 +86,9 @@ def tearDown():
 
 
 def test_compute_eval_from_predictions():
-    '''
+    """
     Test compute_eval_from_predictions function console script
-    '''
+    """
 
     pred_path = join(_my_dir, 'other',
                      'test_compute_eval_from_predictions.predictions')
@@ -159,9 +159,9 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
 
 def test_generate_predictions():
-    '''
+    """
     Test generate predictions API with hashing and a threshold
-    '''
+    """
 
     yield check_generate_predictions, False, False
     yield check_generate_predictions, True, False
@@ -228,9 +228,9 @@ def check_generate_predictions_console(use_threshold=False):
 
 
 def test_generate_predictions_console():
-    '''
+    """
     Test generate_predictions as a console script with/without a threshold
-    '''
+    """
 
     yield check_generate_predictions_console, False
     yield check_generate_predictions_console, True
@@ -281,9 +281,9 @@ def test_skll_convert():
 
 
 def test_skll_convert_libsvm_map():
-    '''
+    """
     Test to check whether the --reuse_libsvm_map option works for skll_convert
-    '''
+    """
 
     # create some simple classification data
     orig_fs, _ = make_classification_data(train_test_ratio=1.0, one_string_feature=True)

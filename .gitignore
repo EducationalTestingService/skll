@@ -9,6 +9,7 @@ __pycache__
 
 .DS_Store
 .coverage
+.idea
 
 examples/train.csv
 examples/test.csv

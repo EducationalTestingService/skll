@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-'''
+"""
 Filter MegaM file to remove non-content word features
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :date: Feb 2012
-'''
+"""
 
 from __future__ import print_function, unicode_literals
 
@@ -21,13 +21,13 @@ from skll.version import __version__
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
                  If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
-    '''
+    """
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Filter MegaM file to remove\
                                                   features with names in stop\

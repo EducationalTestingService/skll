@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
 
@@ -7,7 +7,7 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -123,10 +123,10 @@ def test_invalid_lists_kappa():
 
 @raises(ValueError)
 def check_invalid_regr_grid_obj_func(learner_name, grid_objective_function):
-    '''
+    """
     Checks whether the grid objective function is
     valid for this regression learner
-    '''
+    """
     (train_fs, _, _) = make_regression_data()
     clf = Learner(learner_name)
     grid_search_score = clf.train(train_fs, grid_objective=grid_objective_function)

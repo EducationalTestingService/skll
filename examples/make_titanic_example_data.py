@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-'''
+"""
 This is a simple script to split the train.csv and test.csv files from the
 Kaggle "Titanic: Machine Learning from Disaster" competition into the format
 titanic.cfg expects.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import division, print_function, unicode_literals
 
@@ -17,9 +17,9 @@ import sys
 from skll import load_examples, write_feature_file
 
 def main():
-    '''
+    """
     Create directories and split CSV files into subsets.
-    '''
+    """
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
                                 '%(message)s'), level=logging.INFO)
     logger = logging.getLogger(__name__)

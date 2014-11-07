@@ -1,12 +1,12 @@
 # License: BSD 3 clause
-'''
+"""
 Handles loading data from various types of data files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -65,7 +65,7 @@ class FeatureSetWriter(object):
                              'FeatureSetWriter constructor: {}'.format(kwargs))
 
     def write(self, subsets=None):
-        '''
+        """
         Writes out this FeatureSetWriter's FeatureSet to a file in its
         format.
 
@@ -81,7 +81,7 @@ class FeatureSetWriter(object):
                         enumerate all of these boolean feature names in your
                         mapping.
         :type subsets: dict (str to list of str)
-        '''
+        """
         # Setup logger
         logger = logging.getLogger(__name__)
 
@@ -102,13 +102,13 @@ class FeatureSetWriter(object):
                 self._write_subset(sub_path, set(filter_features))
 
     def _write_subset(self, sub_path, filter_features):
-        '''
+        """
         Writes out the given FeatureSet to a file in this class's format.
 
         :param filter_features: Set of features to include in current feature
                                 file.
         :type filter_features: set of str
-        '''
+        """
         # Setup logger
         logger = logging.getLogger(__name__)
 
@@ -143,16 +143,16 @@ class FeatureSetWriter(object):
                 sys.stderr.flush()
 
     def _write_header(self, feature_set, output_file):
-        '''
+        """
         Called before lines are written to file, so that headers can be written
         for files that need them.
-        '''
+        """
         pass
 
     def _write_line(self, id_, class_, feat_dict, output_file):
-        '''
+        """
         Write the current line in the file in this FeatureSetWriter's format.
-        '''
+        """
         raise NotImplementedError
 
 
@@ -189,9 +189,9 @@ class DelimitedFileWriter(FeatureSetWriter):
         self._dict_writer = None
 
     def _get_fieldnames(self):
-        '''
+        """
         Build list of fieldnames for DictWriter from self.feat_set.
-        '''
+        """
         # Build list of fieldnames (features + 'id' + label_col)
         fieldnames = set(self.feat_set.vectorizer.get_feature_names())
         fieldnames.add('id')
@@ -200,10 +200,10 @@ class DelimitedFileWriter(FeatureSetWriter):
         return sorted(fieldnames)
 
     def _write_header(self, feature_set, output_file):
-        '''
+        """
         Called before lines are written to file, so that headers can be written
         for files that need them.
-        '''
+        """
         # Initialize DictWriter that will be used to write header and rows
         self._dict_writer = DictWriter(output_file,
                                        self._get_fieldnames(),
@@ -212,9 +212,9 @@ class DelimitedFileWriter(FeatureSetWriter):
         self._dict_writer.writeheader()
 
     def _write_line(self, id_, class_, feat_dict, output_file):
-        '''
+        """
         Write the current line in the file in this FeatureSetWriter's format.
-        '''
+        """
         # Add class column to feat_dict (unless this is unlabelled data)
         if self.label_col not in feat_dict:
             if self.feat_set.has_classes:
@@ -312,10 +312,10 @@ class ARFFWriter(DelimitedFileWriter):
         self._dict_writer = None
 
     def _write_header(self, feature_set, output_file):
-        '''
+        """
         Called before lines are written to file, so that headers can be written
         for files that need them.
-        '''
+        """
         fieldnames = self._get_fieldnames()
         if self.label_col in fieldnames:
             fieldnames.remove(self.label_col)
@@ -355,13 +355,13 @@ class MegaMWriter(FeatureSetWriter):
     """ FeatureSetWriter for writing out FeatureSets as MegaM files. """
     @staticmethod
     def _replace_non_ascii(line):
-        '''
+        """
         :param line: The line to clean up.
         :type line: str
 
         :returns: Copy of line with all non-ASCII characters replaced with
         <U1234> sequences where 1234 is the value of ord() for the character.
-        '''
+        """
         char_list = []
         for char in line:
             char_num = ord(char)
@@ -370,9 +370,9 @@ class MegaMWriter(FeatureSetWriter):
         return ''.join(char_list)
 
     def _write_line(self, id_, class_, feat_dict, output_file):
-        '''
+        """
         Write the current line in the file in MegaM format.
-        '''
+        """
         # Don't try to add class column if this is label-less data
         print('# {}'.format(id_), file=output_file)
         if self.feat_set.has_classes:
@@ -396,9 +396,9 @@ class NDJWriter(FeatureSetWriter):
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
 
     def _write_line(self, id_, class_, feat_dict, output_file):
-        '''
+        """
         Write the current line in the file in MegaM format.
-        '''
+        """
         example_dict = {}
         # Don't try to add class column if this is label-less data
         if self.feat_set.has_classes:
@@ -437,20 +437,20 @@ class LibSVMWriter(FeatureSetWriter):
 
     @staticmethod
     def _sanitize(name):
-        '''
+        """
         Replace illegal characters in class names with close unicode
         equivalents to make things loadable in by LibSVM, LibLinear, or
         SVMLight.
-        '''
+        """
         if isinstance(name, string_types):
             for orig, replacement in LibSVMWriter.LIBSVM_REPLACE_DICT.items():
                 name = name.replace(orig, replacement)
         return name
 
     def _write_line(self, id_, class_, feat_dict, output_file):
-        '''
+        """
         Write the current line in the file in MegaM format.
-        '''
+        """
         field_values = sorted([(self.feat_set.vectorizer.vocabulary_[field] +
                                 1, value) for field, value in
                                iteritems(feat_dict) if Decimal(value) != 0])
@@ -488,7 +488,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
                        id_prefix='EXAMPLE_', label_col='y',
                        arff_regression=False, arff_relation='skll_relation',
                        subsets=None, label_map=None):
-    '''
+    """
     Writes a feature file in either ``.arff``, ``.csv``, ``.jsonlines``,
     ``.megam``, ``.ndj``, or ``.tsv`` formats with the given a list of IDs,
     classes, and features.
@@ -545,7 +545,7 @@ def write_feature_file(path, ids, classes, features, feat_vectorizer=None,
     :param label_map: Mapping from class name to numbers to use for writing
                       LibSVM files.
     :type label_map: dict (str -> int)
-    '''
+    """
     # Setup logger
     logger = logging.getLogger(__name__)
 

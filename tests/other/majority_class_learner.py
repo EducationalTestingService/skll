@@ -1,9 +1,9 @@
 # License: BSD 3 clause
-'''
+"""
 A simple majority class classifier, an example of a custom classifier.
 
 :author: Michael Heilman (mheilman@ets.org)
-'''
+"""
 
 from collections import Counter
 

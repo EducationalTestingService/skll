@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
 
@@ -7,7 +7,7 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -38,10 +38,10 @@ _my_dir = abspath(dirname(__file__))
 def make_cv_folds_data(num_examples_per_fold=100,
                        num_folds=3,
                        use_feature_hashing=False):
-    '''
+    """
     Create data for pre-specified CV folds tests
     with or without feature hashing
-    '''
+    """
 
     num_total_examples = num_examples_per_fold * num_folds
 
@@ -85,9 +85,9 @@ def make_cv_folds_data(num_examples_per_fold=100,
 
 
 def test_specified_cv_folds():
-    '''
+    """
     Test to check cross-validation results with specified folds, feature hashing, and RBFSampler
-    '''
+    """
 
     # this runs four tests
     # the first does not use feature hashing with 9 features (3 numeric, 6 binary)

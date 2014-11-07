@@ -44,9 +44,9 @@ warned_about = set()
 
 
 def parse_num_list(num_string):
-    '''
+    """
     Convert a string representing a range of numbers to a list of integers.
-    '''
+    """
     range_list = []
     if (num_string != '') and (not re.match(r'^(\d+(-\d+)?,)*\d+(-\d+)?$',
                                             num_string)):
@@ -65,7 +65,7 @@ def parse_num_list(num_string):
 
 
 def get_unique_name(feature_name, prev_feature_set, filename):
-    '''
+    """
     Get a name that doesn't overlap with the previous features.
 
     :param feature_name: The feature that we want a unique name for.
@@ -77,7 +77,7 @@ def get_unique_name(feature_name, prev_feature_set, filename):
 
     :returns: Either feature_name or feature_name with a unique suffix based
               on the current MegaM file if there was an overlap.
-    '''
+    """
     global warned_about
 
     new_feature_name = feature_name
@@ -97,13 +97,13 @@ def get_unique_name(feature_name, prev_feature_set, filename):
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
                  If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
-    '''
+    """
     # Get command line arguments
     parser = argparse.ArgumentParser(description="Combine MegaM files that \
                                                   contain features for the same\

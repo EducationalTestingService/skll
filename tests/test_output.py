@@ -1,11 +1,11 @@
 # License: BSD 3 clause
-'''
+"""
 Tests related to output from run_experiment
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -47,10 +47,10 @@ def setup():
 
 
 def fill_in_config_paths(config_template_path):
-    '''
+    """
     Add paths to train, test, and output directories to a given config template
     file.
-    '''
+    """
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -194,9 +194,9 @@ def test_summary():
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.
 def test_backward_compatibility():
-    '''
+    """
     Test to validate backward compatibility
-    '''
+    """
     predict_path = join(_my_dir, 'backward_compatibility',
                         ('v0.9.17_test_summary_test_summary_'
                          'LogisticRegression.predictions'))

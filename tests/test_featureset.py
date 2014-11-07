@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
 
@@ -7,7 +7,7 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -52,9 +52,9 @@ def setup():
 
 @raises(ValueError)
 def test_empty_ids():
-    '''
+    """
     Test to ensure that an error is raised if ids is None
-    '''
+    """
 
     # get a 100 instances with 4 features each
     X, y = make_classification(n_samples=100, n_features=4,
@@ -72,9 +72,9 @@ def test_empty_ids():
 
 
 def test_empty_classes():
-    '''
+    """
     Test to check behaviour when classes is None
-    '''
+    """
 
     # create a feature set with empty classes
     fs, _ = make_classification_data(num_examples=100,
@@ -86,9 +86,9 @@ def test_empty_classes():
 
 
 def test_length():
-    '''
+    """
     Test to whether len() returns the number of instances
-    '''
+    """
 
     # create a featureset
     fs, _ = make_classification_data(num_examples=100,
@@ -100,10 +100,10 @@ def test_length():
 
 
 def test_string_feature():
-    '''
+    """
     Test to make sure that string-valued features are properly
     encoded as binary features
-    '''
+    """
     # create a featureset that is derived from an original
     # set of features containing 3 numeric features and
     # one string-valued feature that can take six possible
@@ -129,9 +129,9 @@ def test_string_feature():
 
 
 def test_equality():
-    '''
+    """
     Test featureset equality
-    '''
+    """
 
     # create a featureset
     fs1, _ = make_classification_data(num_examples=100,
@@ -216,9 +216,9 @@ def test_equality():
 
 @raises(ValueError)
 def test_merge_different_vectorizers():
-    '''
+    """
     Test to ensure rejection of merging featuresets with different vectorizers
-    '''
+    """
 
     # create a featureset each with a DictVectorizer
     fs1, _ = make_classification_data(num_examples=100,
@@ -240,9 +240,9 @@ def test_merge_different_vectorizers():
 
 @raises(ValueError)
 def test_merge_different_hashers():
-    '''
+    """
     Test to ensure rejection of merging featuresets with different FeatureHashers
-    '''
+    """
 
     # create a feature set with 4 feature hashing bins
     fs1, _ = make_classification_data(num_examples=100,
@@ -266,9 +266,9 @@ def test_merge_different_hashers():
 
 @raises(ValueError)
 def test_merge_different_classes_same_ids():
-    '''
+    """
     Test to ensure rejection of merging featuresets that have conflicting labels
-    '''
+    """
 
     # create a feature set
     fs1, _ = make_classification_data(num_examples=100,
@@ -292,9 +292,9 @@ def test_merge_different_classes_same_ids():
 
 
 def test_merge_missing_labels():
-    '''
+    """
     Test to ensure that labels are sucessfully copied when merging
-    '''
+    """
 
 
     # create a feature set
@@ -321,9 +321,9 @@ def test_merge_missing_labels():
 
 
 def test_subtract():
-    '''
+    """
     Test to ensure that subtraction works
-    '''
+    """
 
     # create a feature set
     fs1, _ = make_classification_data(num_examples=100,
@@ -356,9 +356,9 @@ def test_subtract():
 
 @raises(ValueError)
 def test_mismatch_ids_features():
-    '''
+    """
     Test to catch mistmatch between the shape of the ids vector and the feature matrix
-    '''
+    """
 
     # get a 100 instances with 4 features each
     X, y = make_classification(n_samples=100, n_features=4,
@@ -379,9 +379,9 @@ def test_mismatch_ids_features():
 
 @raises(ValueError)
 def test_mismatch_classes_features():
-    '''
+    """
     Test to catch mistmatch between the shape of the classes vector and the feature matrix
-    '''
+    """
 
     # get a 100 instances with 4 features but ignore the classes we
     # get from here
@@ -406,9 +406,9 @@ def test_mismatch_classes_features():
 
 @raises(ValueError)
 def test_iteration_without_dictvectorizer():
-    '''
+    """
     Test to allow iteration only if the vectorizer is a DictVectorizer
-    '''
+    """
 
     # create a feature set
     fs, _ = make_classification_data(num_examples=100,
@@ -447,9 +447,9 @@ def check_filter_ids(inverse=False):
 
 
 def test_filter_ids():
-    '''
+    """
     Test filtering with specified IDs, with and without inverting
-    '''
+    """
 
     yield check_filter_ids
     yield check_filter_ids, True
@@ -483,9 +483,9 @@ def check_filter_classes(inverse=False):
 
 
 def test_filter_classes():
-    '''
+    """
     Test filtering with specified classes, with and without inverting
-    '''
+    """
 
     yield check_filter_classes
     yield check_filter_classes, True
@@ -530,9 +530,9 @@ def check_filter_features(inverse=False):
 
 
 def test_filter_features():
-    '''
+    """
     Test filtering with specified features, with and without inverting
-    '''
+    """
 
     yield check_filter_features
     yield check_filter_features, True
@@ -540,9 +540,9 @@ def test_filter_features():
 
 @raises(ValueError)
 def test_filter_with_hashing():
-    '''
+    """
     Test to ensure rejection of filtering by features when using hashing
-    '''
+    """
 
 
     # create a feature set
@@ -558,9 +558,9 @@ def test_filter_with_hashing():
 
 
 def test_feature_merging_order_invariance():
-    '''
+    """
     Test whether featuresets with different orders of IDs can be merged
-    '''
+    """
 
     # First, randomly generate two feature sets and then make sure they have
     # the same labels.

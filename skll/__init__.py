@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 This package provides a number of utilities to make it simpler to run
 common scikit-learn experiments with pre-generated features.
 
@@ -7,7 +7,7 @@ common scikit-learn experiments with pre-generated features.
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import absolute_import, print_function, unicode_literals
 

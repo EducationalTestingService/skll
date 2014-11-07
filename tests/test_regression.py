@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
 
@@ -7,7 +7,7 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)

@@ -1,10 +1,10 @@
 # License: BSD 3 clause
-'''
+"""
 Classes related to storing/merging feature sets.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -85,12 +85,12 @@ class FeatureSet(object):
 
 
     def __eq__(self, other):
-        '''
+        """
         Check whether two featuresets are the same.
         Note that we consider feature values to be
         equal if any differences are in the sixth
         decimal place or higher.
-        '''
+        """
 
         # We need to sort the indices for the underlying
         # feature sparse matrix in case we haven't done
@@ -112,9 +112,9 @@ class FeatureSet(object):
 
 
     def __iter__(self):
-        '''
+        """
         Iterate through (ID, class, feature_dict) tuples in feature set.
-        '''
+        """
         if self.features is not None:
             if not isinstance(self.vectorizer, DictVectorizer):
                 raise ValueError('FeatureSets can only be iterated through if '
@@ -134,10 +134,10 @@ class FeatureSet(object):
         return self.features.shape[0]
 
     def __add__(self, other):
-        '''
+        """
         Combine two feature sets to create a new one.  This is done assuming
         they both have the same instances with the same IDs in the same order.
-        '''
+        """
 
         # Check that the sets of IDs are equal
         if set(self.ids) != set(other.ids):
@@ -198,7 +198,7 @@ class FeatureSet(object):
         return new_set
 
     def filter(self, ids=None, classes=None, features=None, inverse=False):
-        '''
+        """
         Removes or keeps features and/or examples from the Featureset depending
         on the passed in parameters.
 
@@ -221,7 +221,7 @@ class FeatureSet(object):
         :param inverse: Instead of keeping features and/or examples in lists,
                         remove them.
         :type inverse: bool
-        '''
+        """
         # Construct mask that indicates which examples to keep
         mask = np.ones(len(self), dtype=bool)
         if ids is not None:
@@ -255,7 +255,7 @@ class FeatureSet(object):
 
     def filtered_iter(self, ids=None, classes=None, features=None,
                       inverse=False):
-        '''
+        """
         A version of ``__iter__`` that retains only the specified features
         and/or examples from the output.
 
@@ -278,7 +278,7 @@ class FeatureSet(object):
         :param inverse: Instead of keeping features and/or examples in lists,
                         remove them.
         :type inverse: bool
-        '''
+        """
         if self.features is not None and not isinstance(self.vectorizer,
                                                         DictVectorizer):
             raise ValueError('FeatureSets can only be iterated through if they'
@@ -304,18 +304,18 @@ class FeatureSet(object):
 
 
     def __sub__(self, other):
-        '''
+        """
         Return a copy of ``self`` with all features in ``other`` removed.
-        '''
+        """
         new_set = deepcopy(self)
         new_set.filter(features=other.feat_vectorizer.feature_names_, inverse=True)
         return new_set
 
     @property
     def has_classes(self):
-        '''
+        """
         Whether or not this FeatureSet has any finite classes.
-        '''
+        """
         if self.classes is not None:
             return not (np.issubdtype(self.classes.dtype, float) and
                         np.isnan(np.min(self.classes)))
@@ -324,24 +324,24 @@ class FeatureSet(object):
 
     @property
     def feat_vectorizer(self):
-        ''' Backward compatible name for vectorizer '''
+        """ Backward compatible name for vectorizer """
         warn('FeatureSet.feat_vectorizer will be removed in SKLL 1.0.0. '
              'Please switch to using FeatureSet.vectorizer to access the '
              'feature vectorizer.', DeprecationWarning)
         return self.vectorizer
 
     def __str__(self):
-        ''' Return a string representation of FeatureSet '''
+        """ Return a string representation of FeatureSet """
         return str(self.__dict__)
 
     def __repr__(self):
-        ''' Return a string representation of FeatureSet '''
+        """ Return a string representation of FeatureSet """
         return repr(self.__dict__)
 
 
 class ExamplesTuple(FeatureSet):
 
-    '''
+    """
     Deprecated class only here to help people transition to Featureset.
 
     :param name: The name of this feature set.
@@ -354,7 +354,7 @@ class ExamplesTuple(FeatureSet):
     :type features: np.array
     :param feat_vectorizer: Vectorizer that created feature matrix.
     :type feat_vectorizer: DictVectorizer or FeatureHasher
-    '''
+    """
 
     def __init__(self, ids=None, classes=None, features=None,
                  feat_vectorizer=None):

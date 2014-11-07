@@ -1,12 +1,12 @@
 # License: BSD 3 clause
-'''
+"""
 Handles loading data from various types of data files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -84,20 +84,20 @@ class Reader(object):
             self.vectorizer = DictVectorizer(sparse=sparse)
 
     def _sub_read(self, f):
-        '''
+        """
         Does the actual reading of the given file or list.
 
         :param f: An open file to iterate through
         :type f: file
-        '''
+        """
         raise NotImplementedError
 
     def _print_progress(self, progress_num, end="\r"):
-        '''
+        """
         Little helper to print out progress numbers in proper format.
 
         Nothing gets printed if ``self.quiet`` is ``True``.
-        '''
+        """
         # Print out status
         if not self.quiet:
             print("{}{:>15}".format(self._progress_msg, progress_num),
@@ -105,12 +105,12 @@ class Reader(object):
             sys.stderr.flush()
 
     def read(self):
-        '''
+        """
         Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
         ``.megam``, ``.ndj``, or ``.tsv`` formats.
 
         :returns: FeatureSet representing the file we read in.
-        '''
+        """
         # Setup logger
         logger = logging.getLogger(__name__)
 
@@ -151,8 +151,7 @@ class Reader(object):
 
         def feat_dict_generator():
             with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
-                for ex_num, (_, _,
-                                  feat_dict) in enumerate(self._sub_read(f)):
+                for ex_num, (_, _, feat_dict) in enumerate(self._sub_read(f)):
                     yield feat_dict
                     if ex_num % 100 == 0:
                         self._print_progress('{:.8}%'.format(100 * ((ex_num +
@@ -179,7 +178,7 @@ class Reader(object):
 
 class DictListReader(Reader):
 
-    '''
+    """
     This class is to facilitate programmatic use of ``Learner.predict()``
     and other functions that take ``FeatureSet`` objects as input.
     It iterates over examples in the same way as other ``Reader``s, but uses
@@ -192,7 +191,7 @@ class DictListReader(Reader):
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
-    '''
+    """
     def read(self):
         ids = []
         classes = []
@@ -237,13 +236,13 @@ class DictListReader(Reader):
 
 class NDJReader(Reader):
 
-    '''
+    """
     Reader to create a FeatureSet out of a .jsonlines/.ndj file
 
     If you would like to include example/instance IDs in your files, they
     must be specified in the following ways as an "id" key in each JSON
     dictionary.
-    '''
+    """
 
     def _sub_read(self, f):
         for example_num, line in enumerate(f):
@@ -278,13 +277,13 @@ class NDJReader(Reader):
 
 class MegaMReader(Reader):
 
-    '''
+    """
     Reader to create a FeatureSet out ouf a MegaM -fvals file.
 
     If you would like to include example/instance IDs in your files, they
     must be specified as a comment line directly preceding the line with
     feature values.
-    '''
+    """
 
     def _sub_read(self, f):
         example_num = 0
@@ -345,7 +344,7 @@ class MegaMReader(Reader):
 
 class LibSVMReader(Reader):
 
-    '''
+    """
     Reader to create a FeatureSet out ouf a LibSVM/LibLinear/SVMLight file.
 
     We use a specially formatted comment for storing example IDs, class names,
@@ -354,7 +353,7 @@ class LibSVMReader(Reader):
     not have names.  The comment is structured as follows:
 
         ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
-    '''
+    """
 
     line_regex = re.compile(r'^(?P<label_num>[^ ]+)\s+(?P<features>[^#]*)\s*'
                             r'(?P<comments>#\s*(?P<example_id>[^|]+)\s*\|\s*'
@@ -369,10 +368,10 @@ class LibSVMReader(Reader):
 
     @staticmethod
     def _pair_to_tuple(pair, feat_map):
-        '''
+        """
         Split a feature-value pair separated by a colon into a tuple.  Also
         do safe_float conversion on the value.
-        '''
+        """
         name, value = pair.split(':')
         if feat_map is not None:
             name = feat_map[name]
@@ -429,7 +428,7 @@ class LibSVMReader(Reader):
 
 
 class DelimitedReader(Reader):
-    '''
+    """
     Reader for creating a FeatureSet out of a delimited (CSV/TSV) file.
 
     If you would like to include example/instance IDs in your files, they
@@ -442,7 +441,7 @@ class DelimitedReader(Reader):
     :param dialect: The dialect of to pass on to the underlying CSV reader.
                     Default: 'excel-tab'
     :type dialect: str
-    '''
+    """
 
     def __init__(self, path_or_list, **kwargs):
         self.dialect = kwargs.pop('dialect', 'excel-tab')
@@ -500,7 +499,7 @@ class DelimitedReader(Reader):
 
 class CSVReader(DelimitedReader):
 
-    '''
+    """
     Reader for creating a FeatureSet out of a CSV file.
 
     If you would like to include example/instance IDs in your files, they
@@ -508,7 +507,7 @@ class CSVReader(DelimitedReader):
 
     Also, there must be a column with the name specified by `label_col` if the
     data is labelled.
-    '''
+    """
 
     def __init__(self, path_or_list, **kwargs):
         kwargs['dialect'] = 'excel'
@@ -517,7 +516,7 @@ class CSVReader(DelimitedReader):
 
 class ARFFReader(DelimitedReader):
 
-    '''
+    """
     Reader for creating a FeatureSet out of an ARFF file.
 
     If you would like to include example/instance IDs in your files, they
@@ -525,7 +524,7 @@ class ARFFReader(DelimitedReader):
 
     Also, there must be a column with the name specified by `label_col` if the
     data is labelled, and this column must be the final one (as it is in Weka).
-    '''
+    """
 
     def __init__(self, path_or_list, **kwargs):
         kwargs['dialect'] = 'arff'
@@ -533,10 +532,10 @@ class ARFFReader(DelimitedReader):
 
     @staticmethod
     def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
-        '''
+        """
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
-        '''
+        """
         if PY2:
             delimiter = delimiter.encode()
             quote_char = quote_char.encode()
@@ -590,7 +589,7 @@ class ARFFReader(DelimitedReader):
 
 class TSVReader(DelimitedReader):
 
-    '''
+    """
     Reader for creating a FeatureSet out of a TSV file.
 
     If you would like to include example/instance IDs in your files, they
@@ -598,7 +597,7 @@ class TSVReader(DelimitedReader):
 
     Also there must be a column with the name specified by `label_col` if the
     data is labelled.
-    '''
+    """
 
     def __init__(self, path_or_list, **kwargs):
         kwargs['dialect'] = 'excel-tab'
@@ -608,7 +607,7 @@ class TSVReader(DelimitedReader):
 def load_examples(path, quiet=False, sparse=True, label_col='y',
                   ids_to_floats=False, class_map=None, feature_hasher=False,
                   num_features=None):
-    '''
+    """
     Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
     ``.megam``, ``.ndj``, or ``.tsv`` formats.
 
@@ -656,7 +655,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
               scipy CSR matrix of features, and a DictVectorizer containing
               the mapping between feature names and the column indices in
               the feature matrix.
-    '''
+    """
 
     # Setup logger
     logger = logging.getLogger(__name__)
@@ -688,7 +687,7 @@ def load_examples(path, quiet=False, sparse=True, label_col='y',
 
 
 def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
-    '''
+    """
     This function is to facilitate programmatic use of Learner.predict()
     and other functions that take FeatureSet objects as input.
     It converts a .jsonlines/.ndj-style list of dictionaries into
@@ -699,7 +698,7 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
     :type example_dicts: iterable of dicts
 
     :returns: an FeatureSet representing the examples in example_dicts.
-    '''
+    """
     warn('The convert_examples function will be removed in SKLL 1.0.0. '
          'Please switch to using a DictListReader directly.',
          DeprecationWarning)
@@ -709,7 +708,7 @@ def convert_examples(example_dicts, sparse=True, ids_to_floats=False):
 
 
 def safe_float(text, replace_dict=None):
-    '''
+    """
     Attempts to convert a string to a float, but if that's not possible, just
     returns the original value.
 
@@ -721,7 +720,7 @@ def safe_float(text, replace_dict=None):
                          floats. Anything not in the mapping will be kept the
                          same.
     :type replace_dict: dict from str to str
-    '''
+    """
     if replace_dict is not None:
         if text in replace_dict:
             text = replace_dict[text]

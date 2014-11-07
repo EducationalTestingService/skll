@@ -1,12 +1,12 @@
 # License: BSD 3 clause
-'''
+"""
 Functions related to running experiments and parsing configuration files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Chee Wee Leong (cleong@ets.org)
-'''
+"""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -66,7 +66,7 @@ _SHORT_NAMES = {'logistic': 'LogisticRegression',
 
 
 def _get_stat_float(class_result_dict, stat):
-    '''
+    """
     Little helper for getting output for precision, recall, and f-score
     columns in confusion matrix.
 
@@ -79,7 +79,7 @@ def _get_stat_float(class_result_dict, stat):
     :return: The value of the stat if it's in the dictionary, and NaN
              otherwise.
     :rtype: float
-    '''
+    """
     if stat in class_result_dict and class_result_dict[stat] is not None:
         return class_result_dict[stat]
     else:
@@ -87,7 +87,7 @@ def _get_stat_float(class_result_dict, stat):
 
 
 def _write_summary_file(result_json_paths, output_file, ablation=0):
-    '''
+    """
     Function to take a list of paths to individual result
     json files and returns a single file that summarizes
     all of them.
@@ -99,7 +99,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     :returns: The output file to contain a summary of the individual result
               files.
     :rtype: file
-    '''
+    """
     learner_result_dicts = []
     # Map from feature set names to all features in them
     all_features = defaultdict(set)
@@ -157,10 +157,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
 
 
 def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
-    '''
+    """
     Function to take all of the results from all of the folds and print
     nice tables with the results.
-    '''
+    """
     if not learner_result_dicts:
         raise ValueError('Result dictionary list is empty!')
 
@@ -222,10 +222,10 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
 
 
 def _setup_config_parser(config_path):
-    '''
+    """
     Returns a config parser at a given path. Only implemented as a separate
     function to simplify testing.
-    '''
+    """
     # initialize config parser
     config = configparser.ConfigParser({'test_location': '',
                                         'train_location': '',
@@ -265,9 +265,9 @@ def _setup_config_parser(config_path):
 
 
 def _parse_config_file(config_path):
-    '''
+    """
     Parses a SKLL experiment configuration file with the given path.
-    '''
+    """
     logger = logging.getLogger(__name__)
     config = _setup_config_parser(config_path)
 
@@ -524,7 +524,7 @@ def _parse_config_file(config_path):
 def _load_featureset(dir_path, feat_files, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
                      feature_hasher=False, num_features=None):
-    '''
+    """
     Load a list of feature files and merge them.
 
     :param dir_path: Path to the directory that contains the feature files.
@@ -551,7 +551,7 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
     :returns: The classes, IDs, features, and feature vectorizer representing
               the given featureset.
     :rtype: FeatureSet
-    '''
+    """
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
     if isfile(dir_path):
@@ -577,7 +577,7 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
 
 
 def _classify_featureset(args):
-    ''' Classification job to be submitted to grid '''
+    """ Classification job to be submitted to grid """
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
     # required keyword arguments.)
@@ -817,10 +817,10 @@ def _classify_featureset(args):
 
 def _create_learner_result_dicts(task_results, grid_scores,
                                  learner_result_dict_base):
-    '''
+    """
     Create the learner result dictionaries that are used to create JSON and
     plain-text results files.
-    '''
+    """
     res = []
 
     num_folds = len(task_results)
@@ -934,10 +934,10 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
 
 def _munge_featureset_name(featureset):
-    '''
+    """
     Joins features in featureset by '+' if featureset is not a string, and
     just returns featureset otherwise.
-    '''
+    """
     if isinstance(featureset, string_types):
         return featureset
 
@@ -946,10 +946,10 @@ def _munge_featureset_name(featureset):
 
 
 def _fix_json(json_string):
-    '''
+    """
     Takes a bit of JSON that might have bad quotes or capitalized booleans
     and fixes that stuff.
-    '''
+    """
     json_string = json_string.replace('True', 'true')
     json_string = json_string.replace('False', 'false')
     json_string = json_string.replace("'", '"')
@@ -957,10 +957,10 @@ def _fix_json(json_string):
 
 
 def _load_cv_folds(cv_folds_location, ids_to_floats=False):
-    '''
+    """
     Loads CV folds from a CSV file with columns for example ID and fold ID
     (and a header).
-    '''
+    """
     with open(cv_folds_location, 'r') as f:
         reader = csv.reader(f)
         next(reader)  # discard the header
@@ -981,7 +981,7 @@ def _load_cv_folds(cv_folds_location, ids_to_floats=False):
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                       hosts=None, write_summary=True, quiet=False,
                       ablation=0, resume=False):
-    '''
+    """
     Takes a configuration file and runs the specified jobs on the grid.
 
     :param config_path: Path to the configuration file we would like to use.
@@ -1017,7 +1017,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
              experiment.
     :rtype: list of str
 
-    '''
+    """
     # Initialize logger
     logger = logging.getLogger(__name__)
 
@@ -1199,9 +1199,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
 
 def _check_job_results(job_results):
-    '''
+    """
     See if we have a complete results dictionary for every job.
-    '''
+    """
     logger = logging.getLogger(__name__)
     logger.info('Checking job results')
     for result_dicts in job_results:
@@ -1212,7 +1212,7 @@ def _check_job_results(job_results):
 
 def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
                  hosts=None, quiet=False, all_combos=False):
-    '''
+    """
     Takes a configuration file and runs repeated experiments where each
     feature set has been removed from the configuration.
 
@@ -1238,7 +1238,7 @@ def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
     .. deprecated:: 0.20.0
        Use :func:`run_configuration` with the ablation argument instead.
 
-    '''
+    """
     if all_combos:
         run_configuration(config_path, local=local, overwrite=overwrite,
                           queue=queue, hosts=hosts, write_summary=True,

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-'''
+"""
 This is a simple script to download and transform some example data from
 sklearn.datasets.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import print_function, unicode_literals
 
@@ -20,10 +20,10 @@ from sklearn.cross_validation import train_test_split
 
 
 def main():
-    '''
+    """
     Download some example data and split it into training and test data.
-    The boston data set is meant for regression modeling. 
-    '''
+    The boston data set is meant for regression modeling.
+    """
     print('Retrieving boston data from servers...', end='')
     boston_data = sklearn.datasets.load_boston()
     sys.stdout.flush()

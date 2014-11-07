@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-'''
+"""
 Runs a bunch of scikit-learn jobs in parallel on the cluster given a
 config file.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
-'''
+"""
 
 
 from __future__ import print_function, unicode_literals
@@ -22,13 +22,13 @@ from skll.version import __version__
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
                  If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
-    '''
+    """
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Runs the scikit-learn experiments in a given config file.\
