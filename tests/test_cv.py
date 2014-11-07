@@ -74,8 +74,8 @@ def make_cv_folds_data(num_examples_per_fold=100,
 
     # create the cross-validation feature set with or without feature hashing
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
-    cv_fs = FeatureSet('cv_folds', ids, features=features,
-                       labels=y, vectorizer=vectorizer)
+    cv_fs = FeatureSet('cv_folds', ids, features=features, labels=y,
+                       vectorizer=vectorizer)
 
     # make the custom cv folds dictionary
     custom_cv_folds = dict(zip(ids, folds))
@@ -108,7 +108,8 @@ def test_specified_cv_folds():
 
         sampler = 'RBFSampler' if use_sampler else None
         learner = Learner('LogisticRegression', sampler=sampler)
-        cv_fs, custom_cv_folds = make_cv_folds_data(use_feature_hashing=use_hashing)
+        cv_fs, custom_cv_folds = make_cv_folds_data(
+            use_feature_hashing=use_hashing)
         folds = custom_cv_folds if not use_hashing else 10
         cv_output = learner.cross_validate(cv_fs,
                                            cv_folds=folds,

@@ -875,7 +875,6 @@ class Learner(object):
                                              with_mean=False,
                                              with_std=False)
 
-
     def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective='f1_score_micro',
               grid_jobs=None, shuffle=False, feature_hasher=False,
@@ -971,10 +970,12 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                logger.warning('Training data will be shuffled to randomize grid search folds. Shuffling may yield different results compared to scikit-learn.')
+                logger.warning('Training data will be shuffled to randomize '
+                               'grid search folds.  Shuffling may yield '
+                               'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
-                                                examples.features,
-                                                random_state=rand_seed)
+                                               examples.features,
+                                               random_state=rand_seed)
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
@@ -1219,9 +1220,10 @@ class Learner(object):
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
         if feature_hasher:
-            if self.feat_vectorizer.n_features != examples.vectorizer.n_features:
-                logger.warning(
-                    "Warning: there is mismatch between the training model features and the data passed to predict.")
+            if (self.feat_vectorizer.n_features !=
+                    examples.vectorizer.n_features):
+                logger.warning("There is mismatch between the training model "
+                               "features and the data passed to predict.")
 
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
@@ -1239,9 +1241,10 @@ class Learner(object):
                     examples.vectorizer.inverse_transform(
                         examples.features))
         else:
-            if(set(self.feat_vectorizer.feature_names_) != set(examples.vectorizer.feature_names_)):
-                logger.warning(
-                    "Warning: there is mismatch between the training model features and the data passed to predict.")
+            if (set(self.feat_vectorizer.feature_names_) !=
+                    set(examples.vectorizer.feature_names_)):
+                logger.warning("There is mismatch between the training model "
+                               "features and the data passed to predict.")
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
