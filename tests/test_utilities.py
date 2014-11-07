@@ -1,18 +1,15 @@
 # License: BSD 3 clause
-'''
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+"""
+Module for running unit tests related to command line utilities.
 
-:author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
-:author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import copy
-import glob
 import itertools
 import os
 import re
@@ -20,17 +17,29 @@ import sys
 
 
 from io import open
-from itertools import product
+from glob import glob
+from itertools import combinations, product
 from os.path import abspath, dirname, exists, join
 from six import StringIO
 
 try:
-    from unittest.mock import create_autospec
+    from unittest.mock import create_autospec, patch
 except ImportError:
-    from mock import create_autospec
+    from mock import create_autospec, patch
 
-from nose.tools import eq_, assert_almost_equal, nottest
+from nose.tools import eq_, assert_almost_equal, raises, assert_raises
 from numpy.testing import assert_array_equal, assert_allclose
+
+import skll
+import skll.utilities.compute_eval_from_predictions as cefp
+import skll.utilities.filter_features as ff
+import skll.utilities.generate_predictions as gp
+import skll.utilities.print_model_weights as pmw
+import skll.utilities.run_experiment as rex
+import skll.utilities.skll_convert as sk
+import skll.utilities.summarize_results as sr
+import skll.utilities.filter_features as ff
+import skll.utilities.join_features as jf
 
 from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
                        MegaMWriter, LibSVMReader, safe_float)
@@ -38,13 +47,6 @@ from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
 from skll.experiments import _write_summary_file, run_configuration
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
-import skll.utilities.compute_eval_from_predictions as cefp
-import skll.utilities.generate_predictions as gp
-import skll.utilities.skll_convert as sk
-import skll.utilities.print_model_weights as pmw
-import skll.utilities.summarize_results as sr
-import skll.utilities.run_experiment as rex
-
 
 from utils import make_classification_data, make_regression_data
 
@@ -74,21 +76,27 @@ def tearDown():
     other_dir = join(_my_dir, 'other')
     if exists(join(test_dir, 'test_generate_predictions.jsonlines')):
         os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
-    for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions.model*')):
+    for model_chunk in glob(join(output_dir,
+                                 'test_generate_predictions.model*')):
         os.unlink(model_chunk)
-    for model_chunk in glob.glob(join(output_dir, 'test_generate_predictions_console.model*')):
+    for model_chunk in glob(join(output_dir,
+                                 'test_generate_predictions_console.model*')):
         os.unlink(model_chunk)
-    for f in glob.glob(join(other_dir, 'test_skll_convert*')):
+    for f in glob(join(other_dir, 'test_skll_convert*')):
         os.unlink(f)
     if exists(join(other_dir, 'summary_file')):
         os.unlink(join(other_dir, 'summary_file'))
-
+    if exists(join(other_dir, 'test_filter_features_input.arff')):
+        os.unlink(join(other_dir, 'test_filter_features_input.arff'))
+    for ffile in glob(join(other_dir,
+                                 'test_join_features*')):
+        os.unlink(ffile)
 
 
 def test_compute_eval_from_predictions():
-    '''
+    """
     Test compute_eval_from_predictions function console script
-    '''
+    """
 
     pred_path = join(_my_dir, 'other',
                      'test_compute_eval_from_predictions.predictions')
@@ -96,7 +104,8 @@ def test_compute_eval_from_predictions():
                       'test_compute_eval_from_predictions.jsonlines')
 
     # we need to capture stdout since that's what main() writes to
-    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson', 'unweighted_kappa']
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
+                                         'unweighted_kappa']
     try:
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -131,7 +140,8 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
     learner = Learner('SGDClassifier', probability=use_threshold)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True, feature_hasher=use_feature_hashing)
+    learner.train(train_fs, grid_search=True,
+                  feature_hasher=use_feature_hashing)
 
     # get the predictions on the test featureset
     predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
@@ -159,9 +169,9 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
 
 def test_generate_predictions():
-    '''
+    """
     Test generate predictions API with hashing and a threshold
-    '''
+    """
 
     yield check_generate_predictions, False, False
     yield check_generate_predictions, True, False
@@ -228,9 +238,9 @@ def check_generate_predictions_console(use_threshold=False):
 
 
 def test_generate_predictions_console():
-    '''
+    """
     Test generate_predictions as a console script with/without a threshold
-    '''
+    """
 
     yield check_generate_predictions_console, False
     yield check_generate_predictions_console, True
@@ -239,7 +249,8 @@ def test_generate_predictions_console():
 def check_skll_convert(from_suffix, to_suffix):
 
     # create some simple classification data
-    orig_fs, _ = make_classification_data(train_test_ratio=1.0, one_string_feature=True)
+    orig_fs, _ = make_classification_data(train_test_ratio=1.0,
+                                          one_string_feature=True)
 
     # now write out this feature set in the given suffix
     from_suffix_file = join(_my_dir, 'other',
@@ -281,12 +292,13 @@ def test_skll_convert():
 
 
 def test_skll_convert_libsvm_map():
-    '''
+    """
     Test to check whether the --reuse_libsvm_map option works for skll_convert
-    '''
+    """
 
     # create some simple classification data
-    orig_fs, _ = make_classification_data(train_test_ratio=1.0, one_string_feature=True)
+    orig_fs, _ = make_classification_data(train_test_ratio=1.0,
+                                          one_string_feature=True)
 
     # now write out this feature set as a libsvm file
     orig_libsvm_file = join(_my_dir, 'other',
@@ -345,7 +357,8 @@ def check_print_model_weights(task='classification'):
     if task == 'classification':
         train_fs, _ = make_classification_data(train_test_ratio=0.8)
     else:
-        train_fs, _, _ = make_regression_data(num_features=4, train_test_ratio=0.8)
+        train_fs, _, _ = make_regression_data(num_features=4,
+                                              train_test_ratio=0.8)
 
     # now train the appropriate model
     if task == 'classification':
@@ -404,11 +417,12 @@ def test_print_model_weights():
     yield check_print_model_weights, 'regression'
 
 
-# a utility function to check that we are setting up
-# argument parsing correctly for summarize_results
-# we are not checking whether the summaries produced
-# are accurate because we have separate tests for that
 def check_summarize_results_argparse(use_ablation=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for summarize_results. We are not checking whether the summaries
+    produced are accurate because we have separate tests for that.
+    """
 
     # replace the _write_summary_file function that's called
     # by the main() in summarize_results with a mocked up version
@@ -424,8 +438,8 @@ def check_summarize_results_argparse(use_ablation=False):
         sr_cmd_args.append('--ablation')
     sr.main(argv=sr_cmd_args)
 
-    # now check to make sure that _write_summary_file (or our mocked up version of it)
-    # got the arguments that we passed
+    # now check to make sure that _write_summary_file (or our mocked up version
+    # of it) got the arguments that we passed
     positional_arguments, keyword_arguments = write_summary_file_mock.call_args
     eq_(positional_arguments[0], list_of_input_files)
     eq_(positional_arguments[1].name, summary_file_name)
@@ -437,15 +451,16 @@ def test_summarize_results_argparse():
     yield check_summarize_results_argparse, True
 
 
-# a utility functionto check that we are setting up
-# argument parsing correctly for summarize_results
-# we are not checking whether the summaries produced
-# are accurate because we have separate tests for that
 def check_run_experiments_argparse(multiple_config_files=False,
                                    n_ablated_features='1',
                                    keep_models=False,
                                    local=False,
                                    resume=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for run_experiment.  We are not checking whether the results are
+    correct because we have separate tests for that.
+    """
 
     # replace the run_configuration function that's called
     # by the main() in run_experiment with a mocked up version
@@ -475,7 +490,7 @@ def check_run_experiments_argparse(multiple_config_files=False,
     if local:
         rex_cmd_args.append('-l')
     else:
-        machine_list = ['"foo.1.org"', '"x.test.com"' , '"z.a.b.d"']
+        machine_list = ['"foo.1.org"', '"x.test.com"', '"z.a.b.d"']
         rex_cmd_args.append('-m')
         rex_cmd_args.append('{}'.format(','.join(machine_list)))
 
@@ -483,8 +498,8 @@ def check_run_experiments_argparse(multiple_config_files=False,
 
     rex.main(argv=rex_cmd_args)
 
-    # now check to make sure that run_configuration (or our mocked up version of it)
-    # got the arguments that we passed
+    # now check to make sure that run_configuration (or our mocked up version
+    # of it) got the arguments that we passed
     positional_arguments, keyword_arguments = run_configuration_mock.call_args
 
     if multiple_config_files:
@@ -519,3 +534,429 @@ def test_run_experiment_argparse():
 
         yield (check_run_experiments_argparse, multiple_config_files,
                  n_ablated_features, keep_models, local, resume)
+
+
+def check_filter_features_no_arff_argparse(extension, filter_type,
+                                           label_col='y', inverse=False,
+                                           quiet=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for filter_features for ALL file types except ARFF.
+    We are not checking whether the results are correct because we
+    have separate tests for that.
+    """
+
+    # replace the run_configuration function that's called
+    # by the main() in filter_feature with a mocked up version
+    reader_class = EXT_TO_READER[extension]
+    writer_class = EXT_TO_WRITER[extension]
+
+    # create some dummy input and output filenames
+    infile = 'foo{}'.format(extension)
+    outfile = 'bar{}'.format(extension)
+
+    # create a simple featureset with actual ids, classes and features
+    fs, _ = make_classification_data(num_classes=3,
+                                          train_test_ratio=1.0)
+
+    ff_cmd_args = [infile, outfile]
+
+    if filter_type == 'feature':
+        if inverse:
+            features_to_keep = ['f01', 'f04', 'f07', 'f10']
+        else:
+            features_to_keep = ['f02', 'f03', 'f05', 'f06', 'f08', 'f09']
+
+        ff_cmd_args.append('-f')
+
+        for f in features_to_keep:
+            ff_cmd_args.append(f)
+
+    elif filter_type == 'id':
+        if inverse:
+            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(1, 100, 2)]
+        else:
+            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(2, 102, 2)]
+
+        ff_cmd_args.append('-I')
+
+        for idee in ids_to_keep:
+            ff_cmd_args.append(idee)
+
+    elif filter_type == 'label':
+        if inverse:
+            labels_to_keep = ['0', '1']
+        else:
+            labels_to_keep = ['2']
+
+        ff_cmd_args.append('-L')
+
+        for lbl in labels_to_keep:
+            ff_cmd_args.append(lbl)
+
+    ff_cmd_args.extend(['-l', label_col])
+
+    if inverse:
+        ff_cmd_args.append('-i')
+
+    if quiet:
+        ff_cmd_args.append('-q')
+
+    # substitute mock methods for the three main methods that get called by
+    # filter_features: the __init__() method of the appropriate reader,
+    # FeatureSet.filter() and the __init__() method of the appropriate writer.
+    # We also need to mock the read() and write() methods to prevent actual
+    # reading and writing.
+    with patch.object(reader_class, '__init__', autospec=True,
+                      return_value=None) as read_init_mock, \
+            patch.object(reader_class, 'read', autospec=True, return_value=fs),\
+            patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
+            patch.object(writer_class, '__init__', autospec=True,
+                         return_value=None) as write_init_mock, \
+            patch.object(writer_class, 'write', autospec=True):
+
+        ff.main(argv=ff_cmd_args)
+
+        # get the various arguments from the three mocked up methods
+        read_pos_arguments, read_kw_arguments = read_init_mock.call_args
+        filter_pos_arguments, filter_kw_arguments = filter_mock.call_args
+        write_pos_arguments, write_kw_arguments = write_init_mock.call_args
+
+        # make sure that the arguments they got were the ones we specified
+        eq_(read_pos_arguments[1], infile)
+        eq_(read_kw_arguments['quiet'], quiet)
+        eq_(read_kw_arguments['label_col'], label_col)
+
+        eq_(write_pos_arguments[1], outfile)
+        eq_(write_kw_arguments['quiet'], quiet)
+
+        # Note that we cannot test the label_col column for the writer.
+        # The reason is that it is set conditionally and those conditions
+        # do not execute with mocking.
+        eq_(filter_pos_arguments[0], fs)
+        eq_(filter_kw_arguments['inverse'], inverse)
+
+        if filter_type == 'feature':
+            eq_(filter_kw_arguments['features'], features_to_keep)
+        elif filter_type == 'id':
+            eq_(filter_kw_arguments['ids'], ids_to_keep)
+        elif filter_type == 'label':
+            eq_(filter_kw_arguments['classes'], labels_to_keep)
+
+
+def test_filter_features_no_arff_argparse():
+    for (extension, filter_type,
+         label_col, inverse, quiet) in product(['.jsonlines', '.ndj',
+                                                '.megam', '.tsv',
+                                                '.csv',],
+                                               ['feature', 'id',
+                                                'label'],
+                                               ['y', 'foo'],
+                                               [True, False],
+                                               [True, False]):
+
+        yield (check_filter_features_no_arff_argparse, extension,
+               filter_type, label_col, inverse, quiet)
+
+
+def check_filter_features_arff_argparse(filter_type, label_col='y',
+                                        inverse=False, quiet=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for filter_features for ARFF file types. We are not checking
+    whether the results are correct because we have separate tests for that.
+    """
+
+    # replace the run_configuration function that's called
+    # by the main() in filter_feature with a mocked up version
+    writer_class = skll.data.writers.ARFFWriter
+
+    # create some dummy input and output filenames
+    infile = join(_my_dir, 'other', 'test_filter_features_input.arff')
+    outfile = 'bar.arff'
+
+    # create a simple featureset with actual ids, classes and features
+    fs, _ = make_classification_data(num_classes=3,
+                                          train_test_ratio=1.0)
+
+    writer = writer_class(infile, fs, label_col=label_col)
+    writer.write()
+
+    ff_cmd_args = [infile, outfile]
+
+    if filter_type == 'feature':
+        if inverse:
+            features_to_keep = ['f01', 'f04', 'f07', 'f10']
+        else:
+            features_to_keep = ['f02', 'f03', 'f05', 'f06', 'f08', 'f09']
+
+        ff_cmd_args.append('-f')
+
+        for f in features_to_keep:
+            ff_cmd_args.append(f)
+
+    elif filter_type == 'id':
+        if inverse:
+            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(1, 100, 2)]
+        else:
+            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(2, 102, 2)]
+
+        ff_cmd_args.append('-I')
+
+        for idee in ids_to_keep:
+            ff_cmd_args.append(idee)
+
+    elif filter_type == 'label':
+        if inverse:
+            labels_to_keep = ['0', '1']
+        else:
+            labels_to_keep = ['2']
+
+        ff_cmd_args.append('-L')
+
+        for lbl in labels_to_keep:
+            ff_cmd_args.append(lbl)
+
+    ff_cmd_args.extend(['-l', label_col])
+
+    if inverse:
+        ff_cmd_args.append('-i')
+
+    if quiet:
+        ff_cmd_args.append('-q')
+
+    # Substitute mock methods for the main methods that get called by
+    # filter_features for arff files: FeatureSet.filter() and the __init__()
+    # method of the appropriate writer.  We also need to mock the write()
+    # method to prevent actual writing.
+    with patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
+            patch.object(writer_class, '__init__', autospec=True,
+                         return_value=None) as write_init_mock, \
+            patch.object(writer_class, 'write', autospec=True) as write_mock:
+
+        ff.main(argv=ff_cmd_args)
+
+        # get the various arguments from the three mocked up methods
+        filter_pos_arguments, filter_kw_arguments = filter_mock.call_args
+        write_pos_arguments, write_kw_arguments = write_init_mock.call_args
+
+        # make sure that the arguments they got were the ones we specified
+        eq_(write_pos_arguments[1], outfile)
+        eq_(write_kw_arguments['quiet'], quiet)
+
+        # note that we cannot test the label_col column for the writer
+        # the reason is that is set conditionally and those conditions
+        # do not execute with mocking
+
+        eq_(filter_pos_arguments[0], fs)
+        eq_(filter_kw_arguments['inverse'], inverse)
+
+        if filter_type == 'feature':
+            eq_(filter_kw_arguments['features'], features_to_keep)
+        elif filter_type == 'id':
+            eq_(filter_kw_arguments['ids'], ids_to_keep)
+        elif filter_type == 'label':
+            eq_(filter_kw_arguments['classes'], labels_to_keep)
+
+
+def test_filter_features_arff_argparse():
+    for (filter_type, label_col,
+         inverse, quiet) in product(['feature', 'id',
+                                     'label'],
+                                    ['y', 'foo'],
+                                   [True, False],
+                                   [True, False]):
+
+        yield (check_filter_features_arff_argparse, filter_type,
+               label_col, inverse, quiet)
+
+
+@raises(SystemExit)
+def test_filter_features_libsvm_input_argparse():
+    """
+    Make sure filter_features exits when passing in input libsvm files
+    """
+
+    ff_cmd_args = ['foo.libsvm', 'bar.csv', '-f', 'a', 'b', 'c']
+    ff.main(argv=ff_cmd_args)
+
+
+@raises(SystemExit)
+def test_filter_features_libsvm_output_argparse():
+    """
+    Make sure filter_features exits when passing in output libsvm files
+    """
+
+    ff_cmd_args = ['foo.csv', 'bar.libsvm', '-f', 'a', 'b', 'c']
+    ff.main(argv=ff_cmd_args)
+
+
+@raises(SystemExit)
+def test_filter_features_unknown_input_format():
+    """
+    Make sure that filter_features exits when passing in an unknown input file format
+    """
+
+    ff_cmd_args = ['foo.xxx', 'bar.csv', '-f', 'a', 'b', 'c']
+    ff.main(argv=ff_cmd_args)
+
+
+@raises(SystemExit)
+def test_filter_features_unknown_output_format():
+    """
+    Make sure that filter_features exits when passing in an unknown input file format
+    """
+
+    ff_cmd_args = ['foo.csv', 'bar.xxx', '-f', 'a', 'b', 'c']
+    ff.main(argv=ff_cmd_args)
+
+
+def test_filter_features_unmatched_formats():
+    """
+    Make sure filter_feature exits when the output file is in a different format
+    """
+    for inext, outext in combinations(['.arff', '.megam', '.ndj', '.tsv',
+                                       '.jsonlines', '.csv'], 2):
+        ff_cmd_args = ['foo{}'.format(inext), 'bar{}'.format(outext), '-f',
+                       'a', 'b', 'c']
+        assert_raises(SystemExit, ff.main, ff_cmd_args)
+
+
+def check_join_features_argparse(extension, label_col='y', quiet=False):
+    """
+    A utility function to check that we are setting up argument parsing
+    correctly for join_features for ALL file types. We are not checking
+    whether the results are correct because we have separate tests for that.
+    """
+
+    # replace the run_configuration function that's called
+    # by the main() in filter_feature with a mocked up version
+    writer_class = EXT_TO_WRITER[extension]
+
+    # create some dummy input and output filenames
+    infile1 = join(_my_dir, 'other', 'test_join_features1{}'.format(extension))
+    infile2 = join(_my_dir, 'other', 'test_join_features2{}'.format(extension))
+    outfile = 'bar{}'.format(extension)
+
+    # create a simple featureset with actual ids, classes and features
+    fs1, _ = make_classification_data(num_classes=3,
+                                      train_test_ratio=1.0,
+                                      random_state=1234)
+    fs2, _ = make_classification_data(num_classes=3,
+                                      train_test_ratio=1.0,
+                                      feature_prefix='g',
+                                      random_state=5678)
+
+    jf_cmd_args = [infile1, infile2, outfile]
+
+    if extension in ['.tsv', '.csv', '.arff']:
+        writer1 = writer_class(infile1, fs1, label_col=label_col)
+        writer2 = writer_class(infile2, fs2, label_col=label_col)
+        jf_cmd_args.extend(['-l', label_col])
+    else:
+        writer1 = writer_class(infile1, fs1)
+        writer2 = writer_class(infile2, fs2)
+
+    writer1.write()
+    writer2.write()
+
+    if quiet:
+        jf_cmd_args.append('-q')
+
+    # Substitute mock methods for the main methods that get called by
+    # filter_features: FeatureSet.filter() and the __init__() method
+    # of the appropriate writer. We also need to mock the write()
+    # method to prevent actual writing.
+    with patch.object(FeatureSet, '__add__', autospec=True) as add_mock, \
+            patch.object(writer_class, '__init__', autospec=True,
+                         return_value=None) as write_init_mock, \
+            patch.object(writer_class, 'write', autospec=True) as write_mock:
+
+        jf.main(argv=jf_cmd_args)
+
+        # get the various arguments from the three mocked up methods
+        add_pos_arguments, add_kw_arguments = add_mock.call_args
+        write_pos_arguments, write_kw_arguments = write_init_mock.call_args
+
+        # make sure that the arguments they got were the ones we specified
+        eq_(write_pos_arguments[1], outfile)
+        eq_(write_kw_arguments['quiet'], quiet)
+
+        # note that we cannot test the label_col column for the writer
+        # the reason is that is set conditionally and those conditions
+        # do not execute with mocking
+
+        eq_(add_pos_arguments[0], fs1)
+        eq_(add_pos_arguments[1], fs2)
+
+
+def test_join_features_argparse():
+    for (extension, label_col, quiet) in product(['.jsonlines', '.ndj',
+                                                  '.megam', '.tsv',
+                                                  '.csv', '.arff'],
+                                                 ['y', 'foo'],
+                                                 [True, False]):
+
+        yield (check_join_features_argparse, extension, label_col, quiet)
+
+
+@raises(SystemExit)
+def test_join_features_libsvm_input_argparse():
+    """
+    Make sure that join_features exits when passing in input libsvm files
+    """
+
+    jf_cmd_args = ['foo.libsvm', 'bar.libsvm', 'baz.csv']
+    jf.main(argv=jf_cmd_args)
+
+
+@raises(SystemExit)
+def test_join_features_libsvm_output_argparse():
+    """
+    Make sure that join_features exits when passing in output libsvm files
+    """
+
+    jf_cmd_args = ['foo.csv', 'bar.csv', 'baz.libsvm']
+    jf.main(argv=jf_cmd_args)
+
+
+@raises(SystemExit)
+def test_join_features_unknown_input_format():
+    """
+    Make that join_features exits when passing in an unknown input file format
+    """
+
+    jf_cmd_args = ['foo.xxx', 'bar.tsv', 'baz.csv']
+    jf.main(argv=jf_cmd_args)
+
+
+@raises(SystemExit)
+def test_join_features_unknown_output_format():
+    """
+    Make sure that join_features exits when  passing in an unknown output file format
+    """
+
+    jf_cmd_args = ['foo.csv', 'bar.csv', 'baz.xxx']
+    jf.main(argv=jf_cmd_args)
+
+
+def test_join_features_unmatched_formats1():
+    """
+    Make sure that join_feature exits when the input files are in different formats
+    """
+    for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
+                                    '.jsonlines', '.csv'], 2):
+        jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext2),
+                       'baz{}'.format(ext1)]
+        assert_raises(SystemExit, jf.main, jf_cmd_args)
+
+
+def test_join_features_unmatched_formats2():
+    """
+    Make sure join_feature exits when the output file is in a different format
+    """
+    for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
+                                    '.jsonlines', '.csv'], 2):
+        jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1),
+                       'baz{}'.format(ext2)]
+        assert_raises(SystemExit, jf.main, jf_cmd_args)

@@ -530,6 +530,8 @@ class ARFFReader(DelimitedReader):
     def __init__(self, path_or_list, **kwargs):
         kwargs['dialect'] = 'arff'
         super(ARFFReader, self).__init__(path_or_list, **kwargs)
+        self.relation = ''
+        self.regression = False
 
     @staticmethod
     def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
@@ -564,7 +566,15 @@ class ARFFReader(DelimitedReader):
                 row_type = split_header[0].lower()
                 if row_type == '@attribute':
                     # Add field name to list
-                    field_names.append(split_header[1])
+                    field_name = split_header[1]
+                    field_names.append(field_name)
+                    # Check if we're doing regression
+                    if field_name == self.label_col:
+                        self.regression = (len(split_header) > 2 and
+                                           split_header[2] == 'numeric')
+                # Save relation if specified
+                elif row_type == '@relation':
+                    self.relation = split_header[1]
                 # Stop at data
                 elif row_type == '@data':
                     break
