@@ -77,18 +77,26 @@ def main(argv=None):
                                 '%(message)s'))
     logger = logging.getLogger(__name__)
 
-    # make sure the input file extension is one we can process
-    input_extension = os.path.splitext(args.infile)[1].lower()
-
+    # all extensions except .libsvm can be processed
     valid_extensions = [ext for ext in EXT_TO_READER if ext != '.libsvm']
 
+    # make sure the input file extension is one we can process
+    input_extension = os.path.splitext(args.infile)[1].lower()
+    output_extension = os.path.splitext(args.outfile)[1].lower()
+
     if input_extension == '.libsvm':
-        raise ValueError('Cannot filter LibSVM files.  Please use skll_convert'
-                         ' to convert to a different datatype first.')
+        logger.error(('Cannot filter LibSVM files.  Please use skll_convert'
+                         ' to convert to a different datatype first.'))
+        sys.exit(1)
     elif input_extension not in valid_extensions:
         logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
                       '.megam, .ndj, or .tsv format. You specified: '
                       '{}').format(input_extension))
+        sys.exit(1)
+
+    if output_extension != input_extension:
+        logger.error(('Output file must be in the same format as the input file.'
+                      'You specified: {}').format(output_extension))
         sys.exit(1)
 
     # Read input file
