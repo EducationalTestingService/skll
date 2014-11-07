@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
 
@@ -7,7 +7,7 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -46,10 +46,10 @@ def setup():
 
 
 def fill_in_config_paths(config_template_path):
-    '''
+    """
     Add paths to train, test, and output directories to a given config template
     file.
-    '''
+    """
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -62,7 +62,7 @@ def fill_in_config_paths(config_template_path):
 
     config.set("Input", "train_location", train_dir)
 
-    to_fill_in = ['log', 'vocabs', 'predictions']
+    to_fill_in = ['log', 'predictions']
 
     if task != 'cross_validate':
         to_fill_in.append('models')

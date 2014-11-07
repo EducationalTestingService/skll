@@ -50,6 +50,7 @@ tests/configs/test_scaling_with.cfg
 tests/configs/test_scaling_with_feature_hasher.cfg
 tests/configs/test_scaling_without.cfg
 tests/configs/test_scaling_without_feature_hasher.cfg
+tests/configs/test_single_file.cfg
 tests/configs/test_sparse_feature_hasher.cfg
 tests/configs/test_sparse_feature_hasher_sampler.cfg
 tests/configs/test_sparse_sampler.cfg
