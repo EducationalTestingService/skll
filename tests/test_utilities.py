@@ -555,7 +555,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
     infile = 'foo{}'.format(extension)
     outfile = 'bar{}'.format(extension)
 
-    # create a simple featureset with actual ids, classes and features
+    # create a simple featureset with actual ids, labels and features
     fs, _ = make_classification_data(num_labels=3, train_test_ratio=1.0)
 
     ff_cmd_args = [infile, outfile]
@@ -640,7 +640,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
         elif filter_type == 'id':
             eq_(filter_kw_arguments['ids'], ids_to_keep)
         elif filter_type == 'label':
-            eq_(filter_kw_arguments['classes'], labels_to_keep)
+            eq_(filter_kw_arguments['labels'], labels_to_keep)
 
 
 def test_filter_features_no_arff_argparse():
@@ -674,7 +674,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     infile = join(_my_dir, 'other', 'test_filter_features_input.arff')
     outfile = 'bar.arff'
 
-    # create a simple featureset with actual ids, classes and features
+    # create a simple featureset with actual ids, labels and features
     fs, _ = make_classification_data(num_labels=3, train_test_ratio=1.0)
 
     writer = writer_class(infile, fs, label_col=label_col)
@@ -754,7 +754,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
         elif filter_type == 'id':
             eq_(filter_kw_arguments['ids'], ids_to_keep)
         elif filter_type == 'label':
-            eq_(filter_kw_arguments['classes'], labels_to_keep)
+            eq_(filter_kw_arguments['labels'], labels_to_keep)
 
 
 def test_filter_features_arff_argparse():
@@ -836,7 +836,7 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
     infile2 = join(_my_dir, 'other', 'test_join_features2{}'.format(extension))
     outfile = 'bar{}'.format(extension)
 
-    # create a simple featureset with actual ids, classes and features
+    # create a simple featureset with actual ids, labels and features
     fs1, _ = make_classification_data(num_labels=3,
                                       train_test_ratio=1.0,
                                       random_state=1234)

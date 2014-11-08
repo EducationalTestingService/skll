@@ -105,7 +105,7 @@ def main(argv=None):
     feature_set = reader.read()
 
     # Do the actual filtering
-    feature_set.filter(ids=args.id, classes=args.label, features=args.feature,
+    feature_set.filter(ids=args.id, labels=args.label, features=args.feature,
                        inverse=args.inverse)
 
     # write out the file in the requested output format
