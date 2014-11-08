@@ -1059,9 +1059,9 @@ class Learner(object):
                                     grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(itervalues(grid_search_folds))
-                labels = [grid_search_folds.get(curr_id, dummy_label) for
+                fold_labels = [grid_search_folds.get(curr_id, dummy_label) for
                           curr_id in examples.ids]
-                folds = FilteredLeaveOneLabelOut(labels, grid_search_folds,
+                folds = FilteredLeaveOneLabelOut(fold_labels, grid_search_folds,
                                                  examples)
 
             # Use default parameter grid if we weren't passed one
@@ -1442,10 +1442,10 @@ class Learner(object):
             # the outer cross-validation.
             # Only retain IDs within folds if they're in grid_search_folds
             dummy_label = next(itervalues(cv_folds))
-            labels = [cv_folds.get(curr_id, dummy_label) for curr_id in
+            fold_labels = [cv_folds.get(curr_id, dummy_label) for curr_id in
                       examples.ids]
             # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneLabelOut(labels, cv_folds, examples)
+            kfold = FilteredLeaveOneLabelOut(fold_labels, cv_folds, examples)
             grid_search_folds = cv_folds
 
         # handle each fold separately and accumulate the predictions and the
