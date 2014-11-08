@@ -1,11 +1,11 @@
 # License: BSD 3 clause
-'''
+"""
 Tests related to output from run_experiment
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -18,8 +18,7 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, assert_almost_equal
-from skll.data import load_examples
-from skll.data import FeatureSet, NDJWriter
+from skll.data import FeatureSet, NDJWriter, Reader
 from skll.experiments import run_configuration, _setup_config_parser
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -47,10 +46,10 @@ def setup():
 
 
 def fill_in_config_paths(config_template_path):
-    '''
+    """
     Add paths to train, test, and output directories to a given config template
     file.
-    '''
+    """
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -97,7 +96,7 @@ def fill_in_config_paths(config_template_path):
 def make_summary_data():
     train_fs, test_fs = make_classification_data(num_examples=600,
                                                  train_test_ratio=0.8,
-                                                 num_classes=2,
+                                                 num_labels=2,
                                                  num_features=3,
                                                  non_negative=True)
 
@@ -194,9 +193,9 @@ def test_summary():
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.
 def test_backward_compatibility():
-    '''
+    """
     Test to validate backward compatibility
-    '''
+    """
     predict_path = join(_my_dir, 'backward_compatibility',
                         ('v0.9.17_test_summary_test_summary_'
                          'LogisticRegression.predictions'))
@@ -207,7 +206,7 @@ def test_backward_compatibility():
                      'v0.9.17_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
-    examples = load_examples(test_path, quiet=True)
+    examples = Reader.for_path(test_path, quiet=True).read()
     new_predictions = learner.predict(examples)[:, 1]
 
     with open(predict_path) as predict_file:

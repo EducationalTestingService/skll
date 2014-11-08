@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-'''
+"""
 Simple script for printing out model weights.
 
 :author: Michael Heilman (mheilman@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import print_function, unicode_literals
 
@@ -20,13 +20,13 @@ from skll.version import __version__
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
                  If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
-    '''
+    """
     parser = argparse.ArgumentParser(description="Prints out the weights of a \
                                                   given model.",
                                      conflict_handler='resolve',

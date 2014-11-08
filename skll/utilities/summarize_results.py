@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-'''
+"""
 Little helper script to create a summary file out of a list of JSON results
 files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :date: September 2013
-'''
+"""
 
 from __future__ import print_function, unicode_literals
 
@@ -20,13 +20,13 @@ from skll.version import __version__
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
                  If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
-    '''
+    """
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Creates an experiment summary TSV file from a list of JSON\

@@ -1,12 +1,12 @@
 # License: BSD 3 clause
-'''
+"""
 Functions related to running experiments and parsing configuration files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Chee Wee Leong (cleong@ets.org)
-'''
+"""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -30,7 +30,8 @@ from six.moves import zip
 from sklearn.metrics import SCORERS
 from sklearn import __version__ as SCIKIT_VERSION
 
-from skll.data import FeatureSet, load_examples
+from skll.data.featureset import FeatureSet
+from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
                           _import_custom_learner)
 from skll.version import __version__
@@ -50,44 +51,30 @@ _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 
-# Map from learner short names to full names
-_SHORT_NAMES = {'logistic': 'LogisticRegression',
-                'svm_linear': 'LinearSVC',
-                'svm_radial': 'SVC',
-                'naivebayes': 'MultinomialNB',
-                'dtree': 'DecisionTreeClassifier',
-                'rforest': 'RandomForestClassifier',
-                'gradient': 'GradientBoostingClassifier',
-                'ridge': 'Ridge',
-                'rescaled_ridge': 'RescaledRidge',
-                'svr_linear': 'SVR',
-                'rescaled_svr_linear': 'RescaledSVR',
-                'gb_regressor': 'GradientBoostingRegressor'}
 
-
-def _get_stat_float(class_result_dict, stat):
-    '''
+def _get_stat_float(label_result_dict, stat):
+    """
     Little helper for getting output for precision, recall, and f-score
     columns in confusion matrix.
 
-    :param class_result_dict: Dictionary containing the stat we'd like
-                              to retrieve for a particular class.
-    :type class_result_dict: dict
+    :param label_result_dict: Dictionary containing the stat we'd like
+                              to retrieve for a particular label.
+    :type label_result_dict: dict
     :param stat: The statistic we're looking for in the dictionary.
     :type stat: str
 
     :return: The value of the stat if it's in the dictionary, and NaN
              otherwise.
     :rtype: float
-    '''
-    if stat in class_result_dict and class_result_dict[stat] is not None:
-        return class_result_dict[stat]
+    """
+    if stat in label_result_dict and label_result_dict[stat] is not None:
+        return label_result_dict[stat]
     else:
         return float('nan')
 
 
 def _write_summary_file(result_json_paths, output_file, ablation=0):
-    '''
+    """
     Function to take a list of paths to individual result
     json files and returns a single file that summarizes
     all of them.
@@ -99,7 +86,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     :returns: The output file to contain a summary of the individual result
               files.
     :rtype: file
-    '''
+    """
     learner_result_dicts = []
     # Map from feature set names to all features in them
     all_features = defaultdict(set)
@@ -157,10 +144,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
 
 
 def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
-    '''
+    """
     Function to take all of the results from all of the folds and print
     nice tables with the results.
-    '''
+    """
     if not learner_result_dicts:
         raise ValueError('Result dictionary list is empty!')
 
@@ -222,10 +209,10 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
 
 
 def _setup_config_parser(config_path):
-    '''
+    """
     Returns a config parser at a given path. Only implemented as a separate
     function to simplify testing.
-    '''
+    """
     # initialize config parser
     config = configparser.ConfigParser({'test_location': '',
                                         'train_location': '',
@@ -265,9 +252,9 @@ def _setup_config_parser(config_path):
 
 
 def _parse_config_file(config_path):
-    '''
+    """
     Parses a SKLL experiment configuration file with the given path.
-    '''
+    """
     logger = logging.getLogger(__name__)
     config = _setup_config_parser(config_path)
 
@@ -310,13 +297,6 @@ def _parse_config_file(config_path):
                          'multiple times, which is not currently supported.  '
                          'Please use param_grids with tuning to find the '
                          'optimal settings for the learner.')
-    for i, learner in enumerate(learners):
-        if learner in _SHORT_NAMES:
-            logger.warning(('Using short names like {} for learners is '
-                            'deprecated and they will be removed in SKLL '
-                            '1.0.  Please use the full name, {}, '
-                            'instead.').format(learner, _SHORT_NAMES[learner]))
-            learners[i] = _SHORT_NAMES[learner]
     custom_learner_path = config.get("Input", "custom_learner_path")
 
     featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
@@ -524,7 +504,7 @@ def _parse_config_file(config_path):
 def _load_featureset(dir_path, feat_files, suffix, label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
                      feature_hasher=False, num_features=None):
-    '''
+    """
     Load a list of feature files and merge them.
 
     :param dir_path: Path to the directory that contains the feature files.
@@ -544,31 +524,31 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
     :param quiet: Do not print "Loading..." status message to stderr.
     :type quiet: bool
     :param class_map: Mapping from original class labels to new ones. This is
-                      mainly used for collapsing multiple classes into a single
+                      mainly used for collapsing multiple labels into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
 
-    :returns: The classes, IDs, features, and feature vectorizer representing
+    :returns: The labels, IDs, features, and feature vectorizer representing
               the given featureset.
     :rtype: FeatureSet
-    '''
+    """
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
     if isfile(dir_path):
-        return load_examples(dir_path, label_col=label_col,
-                             ids_to_floats=ids_to_floats, quiet=quiet,
-                             class_map=class_map,
-                             feature_hasher=feature_hasher,
-                             num_features=num_features)
+        return Reader.for_path(dir_path, label_col=label_col,
+                               ids_to_floats=ids_to_floats, quiet=quiet,
+                               class_map=class_map,
+                               feature_hasher=feature_hasher,
+                               num_features=num_features).read()
     else:
         merged_set = None
         for file_name in sorted(join(dir_path, featfile + suffix) for
                                 featfile in feat_files):
-            fs = load_examples(file_name, label_col=label_col,
-                               ids_to_floats=ids_to_floats, quiet=quiet,
-                               class_map=class_map,
-                               feature_hasher=feature_hasher,
-                               num_features=num_features)
+            fs = Reader.for_path(file_name, label_col=label_col,
+                                 ids_to_floats=ids_to_floats, quiet=quiet,
+                                 class_map=class_map,
+                                 feature_hasher=feature_hasher,
+                                 num_features=num_features).read()
             if merged_set is None:
                 merged_set = fs
             else:
@@ -577,7 +557,7 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
 
 
 def _classify_featureset(args):
-    ''' Classification job to be submitted to grid '''
+    """ Classification job to be submitted to grid """
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
     # required keyword arguments.)
@@ -659,7 +639,7 @@ def _classify_featureset(args):
                                               num_features=hasher_features)
 
             train_set_size = len(train_examples.ids)
-            if not train_examples.has_classes:
+            if not train_examples.has_labels:
                 raise ValueError('Training examples do not have labels')
             # initialize a classifer object
             learner = Learner(learner_name,
@@ -817,10 +797,10 @@ def _classify_featureset(args):
 
 def _create_learner_result_dicts(task_results, grid_scores,
                                  learner_result_dict_base):
-    '''
+    """
     Create the learner result dictionaries that are used to create JSON and
     plain-text results files.
-    '''
+    """
     res = []
 
     num_folds = len(task_results)
@@ -856,29 +836,29 @@ def _create_learner_result_dicts(task_results, grid_scores,
             learner_result_dict['grid_score'] = grid_score
 
         if conf_matrix:
-            classes = sorted(iterkeys(task_results[0][2]))
-            result_table = PrettyTable([""] + classes + ["Precision",
+            labels = sorted(iterkeys(task_results[0][2]))
+            result_table = PrettyTable([""] + labels + ["Precision",
                                                          "Recall",
                                                          "F-measure"],
                                        header=True, hrules=ALL)
             result_table.align = 'r'
             result_table.float_format = '.3'
-            for i, actual_class in enumerate(classes):
+            for i, actual_label in enumerate(labels):
                 conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
-                class_prec = _get_stat_float(result_dict[actual_class],
+                label_prec = _get_stat_float(result_dict[actual_label],
                                              "Precision")
-                class_recall = _get_stat_float(result_dict[actual_class],
+                label_recall = _get_stat_float(result_dict[actual_label],
                                                "Recall")
-                class_f = _get_stat_float(result_dict[actual_class],
+                label_f = _get_stat_float(result_dict[actual_label],
                                           "F-measure")
-                if not math.isnan(class_prec):
-                    prec_sum_dict[actual_class] += float(class_prec)
-                if not math.isnan(class_recall):
-                    recall_sum_dict[actual_class] += float(class_recall)
-                if not math.isnan(class_f):
-                    f_sum_dict[actual_class] += float(class_f)
-                result_row = ([actual_class] + conf_matrix[i] +
-                              [class_prec, class_recall, class_f])
+                if not math.isnan(label_prec):
+                    prec_sum_dict[actual_label] += float(label_prec)
+                if not math.isnan(label_recall):
+                    recall_sum_dict[actual_label] += float(label_recall)
+                if not math.isnan(label_f):
+                    f_sum_dict[actual_label] += float(label_f)
+                result_row = ([actual_label] + conf_matrix[i] +
+                              [label_prec, label_recall, label_f])
                 result_table.add_row(result_row)
 
             result_table_str = '{}'.format(result_table)
@@ -908,18 +888,18 @@ def _create_learner_result_dicts(task_results, grid_scores,
         learner_result_dict['fold'] = 'average'
 
         if result_table:
-            result_table = PrettyTable(["Class", "Precision", "Recall",
+            result_table = PrettyTable(["Label", "Precision", "Recall",
                                         "F-measure"],
                                        header=True)
             result_table.align = "r"
-            result_table.align["Class"] = "l"
+            result_table.align["Label"] = "l"
             result_table.float_format = '.3'
-            for actual_class in classes:
+            for actual_label in labels:
                 # Convert sums to means
-                prec_mean = prec_sum_dict[actual_class] / num_folds
-                recall_mean = recall_sum_dict[actual_class] / num_folds
-                f_mean = f_sum_dict[actual_class] / num_folds
-                result_table.add_row([actual_class] +
+                prec_mean = prec_sum_dict[actual_label] / num_folds
+                recall_mean = recall_sum_dict[actual_label] / num_folds
+                f_mean = f_sum_dict[actual_label] / num_folds
+                result_table.add_row([actual_label] +
                                      [prec_mean, recall_mean, f_mean])
 
             learner_result_dict['result_table'] = '{}'.format(result_table)
@@ -934,10 +914,10 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
 
 def _munge_featureset_name(featureset):
-    '''
+    """
     Joins features in featureset by '+' if featureset is not a string, and
     just returns featureset otherwise.
-    '''
+    """
     if isinstance(featureset, string_types):
         return featureset
 
@@ -946,10 +926,10 @@ def _munge_featureset_name(featureset):
 
 
 def _fix_json(json_string):
-    '''
+    """
     Takes a bit of JSON that might have bad quotes or capitalized booleans
     and fixes that stuff.
-    '''
+    """
     json_string = json_string.replace('True', 'true')
     json_string = json_string.replace('False', 'false')
     json_string = json_string.replace("'", '"')
@@ -957,10 +937,10 @@ def _fix_json(json_string):
 
 
 def _load_cv_folds(cv_folds_location, ids_to_floats=False):
-    '''
+    """
     Loads CV folds from a CSV file with columns for example ID and fold ID
     (and a header).
-    '''
+    """
     with open(cv_folds_location, 'r') as f:
         reader = csv.reader(f)
         next(reader)  # discard the header
@@ -981,7 +961,7 @@ def _load_cv_folds(cv_folds_location, ids_to_floats=False):
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                       hosts=None, write_summary=True, quiet=False,
                       ablation=0, resume=False):
-    '''
+    """
     Takes a configuration file and runs the specified jobs on the grid.
 
     :param config_path: Path to the configuration file we would like to use.
@@ -1017,7 +997,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
              experiment.
     :rtype: list of str
 
-    '''
+    """
     # Initialize logger
     logger = logging.getLogger(__name__)
 
@@ -1199,51 +1179,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
 
 def _check_job_results(job_results):
-    '''
+    """
     See if we have a complete results dictionary for every job.
-    '''
+    """
     logger = logging.getLogger(__name__)
     logger.info('Checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
             logger.error('There was an error running the experiment:\n%s',
                          result_dicts)
-
-
-def run_ablation(config_path, local=False, overwrite=True, queue='all.q',
-                 hosts=None, quiet=False, all_combos=False):
-    '''
-    Takes a configuration file and runs repeated experiments where each
-    feature set has been removed from the configuration.
-
-    :param config_path: Path to the configuration file we would like to use.
-    :type config_path: str
-    :param local: Should this be run locally instead of on the cluster?
-    :type local: bool
-    :param overwrite: If the model files already exist, should we overwrite
-                      them instead of re-using them?
-    :type overwrite: bool
-    :param queue: The DRMAA queue to use if we're running on the cluster.
-    :type queue: str
-    :param hosts: If running on the cluster, these are the machines we should
-                  use.
-    :type hosts: list of str
-    :param quiet: Suppress printing of "Loading..." messages.
-    :type quiet: bool
-    :param all_combos: By default we only exclude one feature from set, but if
-                       `all_combos` is `True`, we do a true ablation study with
-                       all feature combinations.
-    :type all_combos: bool
-
-    .. deprecated:: 0.20.0
-       Use :func:`run_configuration` with the ablation argument instead.
-
-    '''
-    if all_combos:
-        run_configuration(config_path, local=local, overwrite=overwrite,
-                          queue=queue, hosts=hosts, write_summary=True,
-                          quiet=quiet, ablation=None)
-    else:
-        run_configuration(config_path, local=local, overwrite=overwrite,
-                          queue=queue, hosts=hosts, write_summary=True,
-                          quiet=quiet, ablation=1)

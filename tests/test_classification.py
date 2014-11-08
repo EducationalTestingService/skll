@@ -157,10 +157,10 @@ def test_predict():
         yield check_predict, model, use_feature_hashing
 
 
-# the function to create data with rare classes for cross-validation
+# the function to create data with rare labels for cross-validation
 def make_rare_class_data():
     """
-    We want to create data that has five instances per class, for three classes
+    We want to create data that has five instances per class, for three labels
     and for each instance within the group of 5, there's only a single feature
     firing
     """
@@ -173,11 +173,11 @@ def make_rare_class_data():
     for row in X:
         features.append(dict(zip(feature_names, row)))
 
-    return FeatureSet('rare-class', ids, features=features, classes=y)
+    return FeatureSet('rare-class', ids, features=features, labels=y)
 
 def test_rare_class():
     """
-    Test cross-validation when some classes are very rare
+    Test cross-validation when some labels are very rare
     """
 
     rare_class_fs = make_rare_class_data()
@@ -228,7 +228,7 @@ def make_sparse_data(use_feature_hashing=False):
     # use a FeatureHasher if we are asked to do feature hashing
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
     train_fs = FeatureSet('train_sparse', ids,
-                          features=features, classes=y,
+                          features=features, labels=y,
                           vectorizer=vectorizer)
 
     # now create the test set with f4 always 0 but nothing else
@@ -249,7 +249,7 @@ def make_sparse_data(use_feature_hashing=False):
         features.append(dict(zip(feature_names, row)))
 
     test_fs = FeatureSet('test_sparse', ids,
-                         features=features, classes=y,
+                         features=features, labels=y,
                          vectorizer=vectorizer)
 
     return train_fs, test_fs
@@ -310,7 +310,7 @@ def make_single_file_featureset_data():
     """
     train_fs, test_fs = make_classification_data(num_examples=600,
                                                  train_test_ratio=0.8,
-                                                 num_classes=2,
+                                                 num_labels=2,
                                                  num_features=3,
                                                  non_negative=False)
 

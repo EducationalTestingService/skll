@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 This module contains a bunch of evaluation metrics that can be used to
 evaluate the performance of learners.
 
@@ -7,7 +7,7 @@ evaluate the performance of learners.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import print_function, unicode_literals
 
@@ -25,7 +25,7 @@ _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 
 
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
-    '''
+    """
     Calculates the kappa inter-rater agreement between two the gold standard
     and the predicted ratings. Potential values range from -1 (representing
     complete disagreement) to 1 (representing complete agreement).  A kappa
@@ -58,7 +58,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                              equal, whereas 1 and 3 will have a difference of 1
                              for when building the weights matrix.
     :type allow_off_by_one: bool
-    '''
+    """
     logger = logging.getLogger(__name__)
 
     # Ensure that the lists are both the same length
@@ -135,59 +135,59 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
 
 def kendall_tau(y_true, y_pred):
-    '''
+    """
     Optimize the hyperparameter values during the grid search based on
     Kendall's tau.
 
     This is useful in cases where you want to use the actual probabilities of
-    the different classes after the fact, and not just the optimize based on
+    the different labels after the fact, and not just the optimize based on
     the classification accuracy.
-    '''
+    """
     ret_score = kendalltau(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def spearman(y_true, y_pred):
-    '''
+    """
     Optimize the hyperparameter values during the grid search based on
     Spearman rank correlation.
 
     This is useful in cases where you want to use the actual probabilities of
-    the different classes after the fact, and not just the optimize based on
+    the different labels after the fact, and not just the optimize based on
     the classification accuracy.
-    '''
+    """
     ret_score = spearmanr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def pearson(y_true, y_pred):
-    '''
+    """
     Optimize the hyperparameter values during the grid search based on Pearson
     correlation.
-    '''
+    """
     ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def f1_score_least_frequent(y_true, y_pred):
-    '''
+    """
     Optimize the hyperparameter values during the grid search based on the F1
-    measure of the least frequent class.
+    measure of the least frequent label.
 
     This is mostly intended for use when you're doing binary classification
     and your data is highly skewed. You should probably use f1_score_macro if
     your data is skewed and you're doing multi-class classification.
-    '''
+    """
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
 
 
 def use_score_func(func_name, y_true, y_pred):
-    '''
+    """
     Call the scoring function in `sklearn.metrics.SCORERS` with the given name.
     This takes care of handling keyword arguments that were pre-specified when
     creating the scorer. This applies any sign-flipping that was specified by
     `make_scorer` when the scorer was created.
-    '''
+    """
     scorer = SCORERS[func_name]
     return scorer._sign * scorer._score_func(y_true, y_pred, **scorer._kwargs)

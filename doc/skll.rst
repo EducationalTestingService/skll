@@ -4,11 +4,12 @@ The complete Python API is documented below, but here is a quick run-down of
 how you accomplish common tasks.
 
 
-Load some examples::
+Load some a FeatureSet from a file::
 
-    from skll import load_examples
+    from skll import Reader
 
-    train_examples = load_examples('myexamples.megam')
+    example_reader = Reader.for_path('myexamples.megam')
+    train_examples = example_reader.read()
 
 
 Train a linear svm (assuming we have `train_examples`)::
@@ -21,7 +22,7 @@ Train a linear svm (assuming we have `train_examples`)::
 
 Evaluate a trained model::
 
-    test_examples = load_examples('test.tsv')
+    test_examples = Reader.for_path('test.tsv').read()
     conf_matrix, accuracy, prf_dict, model_params, obj_score = learner.evaluate(test_examples)
 
 
@@ -46,15 +47,17 @@ Generate predictions from a trained model::
 The most useful parts of our API are available at the package level in addition
 to the module level. They are documented in both places for convenience.
 
-From :py:mod:`~skll.data` Module
+From :py:mod:`~skll.data` Package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: skll.convert_examples
-.. autofunction:: skll.load_examples
-.. autofunction:: skll.write_feature_file
+.. autoclass:: skll.FeatureSetWriter
+    :members:
+    :show-inheritance:
+.. autoclass:: skll.Reader
+    :members:
+    :show-inheritance:
 
 From :py:mod:`~skll.experiments` Module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: skll.run_ablation
 .. autofunction:: skll.run_configuration
 
 From :py:mod:`~skll.learner` Module

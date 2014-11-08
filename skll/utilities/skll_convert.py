@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-'''
+"""
 Script that converts feature files from one format to another
 
 :author: Nitin Madnani (nmadnani@ets.org)
 :date: September 2013
-'''
+"""
 
 from __future__ import print_function, unicode_literals
 
@@ -25,10 +25,10 @@ from skll.version import __version__
 
 
 def _pair_to_dict_tuple(pair):
-    '''
+    """
     Little helper method for constructing mappings from feature/class names to
     numbers.
-    '''
+    """
     number, name = pair.split('=')
     if PY2:
         name = name.encode('utf-8')
@@ -37,13 +37,13 @@ def _pair_to_dict_tuple(pair):
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
                  If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
-    '''
+    """
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Takes an input feature file and converts it to another \
@@ -74,7 +74,7 @@ def main(argv=None):
                         default='skll_relation')
     parser.add_argument('--reuse_libsvm_map',
                         help='If you want to output multiple files that use \
-                              the same mapping from classes and features to \
+                              the same mapping from labels and features to \
                               numbers when writing libsvm files, you can \
                               specify an existing .libsvm file to reuse the \
                               mapping from.',

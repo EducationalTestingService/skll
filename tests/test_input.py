@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 Module for running a bunch of simple unit tests. Should be expanded more in
 the future.
 
@@ -7,7 +7,7 @@ the future.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-'''
+"""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -37,9 +37,9 @@ def setup():
 
 @raises(ValueError)
 def test_input_checking1():
-    '''
+    """
     Test merging featuresets with different number of examples
-    '''
+    """
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_2examples_1', 'test_input_3examples_1']
@@ -48,9 +48,9 @@ def test_input_checking1():
 
 @raises(ValueError)
 def test_input_checking2():
-    '''
+    """
     Test joining featuresets that contain the same features for each instance
-    '''
+    """
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_1']
@@ -58,9 +58,9 @@ def test_input_checking2():
 
 
 def test_input_checking3():
-    '''
+    """
     Test to ensure that we correctly merge featuresets
-    '''
+    """
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_2']
@@ -69,9 +69,9 @@ def test_input_checking3():
 
 
 def test_one_file_load_featureset():
-    '''
+    """
     Test loading a single file with _load_featureset
-    '''
+    """
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_2examples_1']
