@@ -13,6 +13,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
+import glob
 import os
 import re
 from io import open
@@ -43,6 +44,11 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+
+def tearDown():
+    config_dir = join(_my_dir, 'configs')
+    for cfg_file in glob.glob(join(config_dir, '*custom_learner.cfg')):
+        os.unlink(cfg_file)
 
 
 def fill_in_config_paths(config_template_path):
