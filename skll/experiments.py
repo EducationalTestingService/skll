@@ -127,10 +127,6 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
             lrd['ablated_features'] = ''
             if ablated_features:
                 lrd['ablated_features'] = json.dumps(sorted(ablated_features))
-        # Backward compatibility for older JSON results files.
-        if 'comparative' in lrd:
-            lrd['pearson'] = lrd['comparative']['pearson']
-            del lrd['comparative']
 
         # write out the new learner dict with the readable fields
         writer.writerow(lrd)
