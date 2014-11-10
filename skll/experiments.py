@@ -30,7 +30,6 @@ from six.moves import zip
 from sklearn.metrics import SCORERS
 from sklearn import __version__ as SCIKIT_VERSION
 
-from skll.data.featureset import FeatureSet
 from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
                           _import_custom_learner)
@@ -113,10 +112,6 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
                                                     'descriptive'}
     if ablation != 0:
         header.add('ablated_features')
-    # Backward compatibility for older JSON results files.
-    if 'comparative' in header:
-        header.remove('comparative')
-        header.add('pearson')
     header = sorted(header)
     writer = csv.DictWriter(output_file, header, extrasaction='ignore',
                             dialect=csv.excel_tab)
@@ -255,7 +250,6 @@ def _parse_config_file(config_path):
     """
     Parses a SKLL experiment configuration file with the given path.
     """
-    logger = logging.getLogger(__name__)
     config = _setup_config_parser(config_path)
 
     ###########################
@@ -264,16 +258,17 @@ def _parse_config_file(config_path):
     # General
     task = config.get("General", "task")
     if task not in _VALID_TASKS:
-        raise ValueError('An invalid task was specified: {}. '.format(task) +
-                         'Valid tasks are: {}'.format(' '.join(_VALID_TASKS)))
+        raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
+                         ' {}'.format(task, ', '.join(_VALID_TASKS)))
 
     experiment_name = config.get("General", "experiment_name")
 
     # Input
     sampler = config.get("Input", "sampler")
     if sampler not in _VALID_SAMPLERS:
-        raise ValueError('An invalid sample was specified: {}. '.format(sampler) +
-                         'Valid samplers are: {}'.format(', '.join(_VALID_SAMPLERS)))
+        raise ValueError('An invalid sample was specified: {}.  Valid samplers'
+                         ' are: {}'.format(sampler,
+                                           ', '.join(_VALID_SAMPLERS)))
     hasher_features = None
     feature_hasher = config.getboolean("Input", "feature_hasher")
     if feature_hasher:
@@ -286,8 +281,6 @@ def _parse_config_file(config_path):
 
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
-    elif config.has_option("Input", "classifiers"):
-        learners_string = config.get("Input", "classifiers")  # For old files
     else:
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
@@ -302,8 +295,8 @@ def _parse_config_file(config_path):
     featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
 
     # ensure that featuresets is a list of lists
-    if not isinstance(featuresets, list) or not all([isinstance(fs, list) for fs
-                                                     in featuresets]):
+    if not isinstance(featuresets, list) or not all(isinstance(fs, list) for fs
+                                                    in featuresets):
         raise ValueError("The featuresets parameter should be a " +
                          "list of lists: {}".format(featuresets))
 
@@ -315,8 +308,8 @@ def _parse_config_file(config_path):
         if (not isinstance(featureset_names, list) or
                 not all([isinstance(fs, string_types) for fs in
                          featureset_names])):
-            raise ValueError("The featureset_names parameter should be a " +
-                             "list of strings: {}".format(featureset_names))
+            raise ValueError("The featureset_names parameter should be a list "
+                             "of strings: {}".format(featureset_names))
 
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
@@ -339,11 +332,7 @@ def _parse_config_file(config_path):
     train_path = config.get("Input", "train_location").rstrip('/')
     test_path = config.get("Input", "test_location").rstrip('/')
     suffix = config.get("Input", "suffix")
-    # Support tsv_label for old files
-    if config.has_option("Input", "tsv_label"):
-        label_col = config.get("Input", "tsv_label")
-    else:
-        label_col = config.get("Input", "label_col")
+    label_col = config.get("Input", "label_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
     # get the cv folds file and make a dictionary from it
@@ -359,21 +348,21 @@ def _parse_config_file(config_path):
 
     # The user must specify either train_file or train_path, not both.
     if not train_file and not train_path:
-        raise ValueError("Invalid [Input] parameters: either \"train_file\"" +
-                         "or \"train_location\" must be specified in the " +
-                         "configuration file.")
+        raise ValueError('Invalid [Input] parameters: either "train_file" or '
+                         '"train_location" must be specified in the '
+                         'configuration file.')
 
     # Either train_file or train_path must be specified.
     if train_file and train_path:
-        raise ValueError("Invalid [Input] parameters: only either " +
-                         "\"train_file\" or \"train_location\" can be " +
-                         "specified in the configuration file, not both.")
+        raise ValueError('Invalid [Input] parameters: only either "train_file"'
+                         ' or "train_location" can be specified in the '
+                         'configuration file, not both.')
 
     # Cannot specify both test_file and test_path
     if test_file and test_path:
-        raise ValueError("Invalid [Input] parameters: only either " +
-                         "\"test_file\" or \"test_location\" can be " +
-                         "specified in the configuration file, not both.")
+        raise ValueError('Invalid [Input] parameters: only either "test_file" '
+                         'or "test_location" can be specified in the '
+                         'configuration file, not both.')
 
     # if train_file is specified, then assign its value to train_path
     # this is a workaround to make this simple use case (a single train and
@@ -393,8 +382,8 @@ def _parse_config_file(config_path):
     # Get class mapping dictionary if specified
     if config.has_option("Input", "class_map"):
         orig_class_map = yaml.load(_fix_json(config.get("Input", "class_map")))
-        # Change class_map to map from originals to replacements instead of from
-        # replacement to list of originals
+        # Change class_map to map from originals to replacements instead of
+        # from replacement to list of originals
         class_map = {}
         for replacement, original_list in iteritems(orig_class_map):
             for original in original_list:
@@ -456,28 +445,27 @@ def _parse_config_file(config_path):
     # what is the objective function for the grid search?
     grid_objective = config.get("Tuning", "objective")
     if grid_objective not in SCORERS:
-        raise ValueError(('Invalid grid objective function: ' +
-                          '{}').format(grid_objective))
+        raise ValueError('Invalid grid objective function: '
+                         '{}'.format(grid_objective))
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
-        raise ValueError('The test set must be set when task is evaluate'
-                         ' or predict.')
+        raise ValueError('The test set must be set when task is evaluate or '
+                         'predict.')
     if (task == 'cross_validate' or task == 'train') and test_path:
-        raise ValueError('The test set should not be set ' +
-                         'when task is cross_validate or train.')
+        raise ValueError('The test set should not be set when task is '
+                         'cross_validate or train.')
     if (task == 'train' or task == 'predict') and results_path:
-        raise ValueError('The results path should not be set ' +
-                         'when task is predict or train.')
+        raise ValueError('The results path should not be set when task is '
+                         'predict or train.')
     if task == 'train' and not model_path:
-        raise ValueError('The model path should be set ' +
-                         'when task is train.')
+        raise ValueError('The model path should be set when task is train.')
     if task == 'train' and prediction_dir:
-        raise ValueError('The predictions path should not be set ' +
-                         'when task is train.')
+        raise ValueError('The predictions path should not be set when task is '
+                         'train.')
     if task == 'cross_validate' and model_path:
-        raise ValueError('The models path should not be set ' +
-                         'when task is cross_validate.')
+        raise ValueError('The models path should not be set when task is '
+                         'cross_validate.')
 
     # Create feature set names if unspecified
     if not featureset_names:
@@ -495,10 +483,11 @@ def _parse_config_file(config_path):
             feature_hasher, hasher_features, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objective, probability, results_path,
-            pos_label_str, feature_scaling, min_feature_count, grid_search_jobs,
-            grid_search_folds, cv_folds, fixed_parameter_list, param_grid_list,
-            featureset_names, learners, prediction_dir, log_path, train_path,
-            test_path, ids_to_floats, class_map, custom_learner_path)
+            pos_label_str, feature_scaling, min_feature_count,
+            grid_search_jobs, grid_search_folds, cv_folds,
+            fixed_parameter_list, param_grid_list, featureset_names, learners,
+            prediction_dir, log_path, train_path, test_path, ids_to_floats,
+            class_map, custom_learner_path)
 
 
 def _load_featureset(dir_path, feat_files, suffix, label_col='y',
@@ -837,9 +826,8 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
         if conf_matrix:
             labels = sorted(iterkeys(task_results[0][2]))
-            result_table = PrettyTable([""] + labels + ["Precision",
-                                                         "Recall",
-                                                         "F-measure"],
+            result_table = PrettyTable([""] + labels + ["Precision", "Recall",
+                                                        "F-measure"],
                                        header=True, hrules=ALL)
             result_table.align = 'r'
             result_table.float_format = '.3'
@@ -915,8 +903,8 @@ def _create_learner_result_dicts(task_results, grid_scores,
 
 def _munge_featureset_name(featureset):
     """
-    Joins features in featureset by '+' if featureset is not a string, and
-    just returns featureset otherwise.
+    Joins features in featureset by '+' if featureset is not a string, and just
+    returns featureset otherwise.
     """
     if isinstance(featureset, string_types):
         return featureset
@@ -927,8 +915,8 @@ def _munge_featureset_name(featureset):
 
 def _fix_json(json_string):
     """
-    Takes a bit of JSON that might have bad quotes or capitalized booleans
-    and fixes that stuff.
+    Takes a bit of JSON that might have bad quotes or capitalized booleans and
+    fixes that stuff.
     """
     json_string = json_string.replace('True', 'true')
     json_string = json_string.replace('False', 'false')
@@ -938,8 +926,8 @@ def _fix_json(json_string):
 
 def _load_cv_folds(cv_folds_location, ids_to_floats=False):
     """
-    Loads CV folds from a CSV file with columns for example ID and fold ID
-    (and a header).
+    Loads CV folds from a CSV file with columns for example ID and fold ID (and
+    a header).
     """
     with open(cv_folds_location, 'r') as f:
         reader = csv.reader(f)
@@ -1099,8 +1087,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             # If result file already exists and we're resuming, move on
             if resume and (exists(result_json_path) and
                            os.path.getsize(result_json_path)):
-                logger.info('Running in resume mode and %s exists, so skipping '
-                            'job.', result_json_path)
+                logger.info('Running in resume mode and %s exists, so skipping'
+                            ' job.', result_json_path)
                 continue
 
             # create job if we're doing things on the grid
