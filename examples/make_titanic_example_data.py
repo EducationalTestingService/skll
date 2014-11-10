@@ -61,23 +61,26 @@ def main():
     writer = Writer.for_path('titanic/train/.csv',
                                        train_fs[:num_train],
                                        label_col='Survived',
-                                       quiet=False)
-    writer.write(subsets=subset_dict)
+                                       quiet=False,
+                                       subsets=subset_dict)
+    writer.write()
 
     # Write train+dev set for training model to use to generate predictions on
     # test
     writer = Writer.for_path('titanic/train+dev/.csv',
                                        train_fs,
                                        label_col='Survived',
-                                       quiet=False)
-    writer.write(subsets=subset_dict)
+                                       quiet=False,
+                                       subsets=subset_dict)
+    writer.write()
 
     # Write dev FeatureSet
     writer = Writer.for_path('titanic/dev/.csv',
                                        train_fs[num_train:],
                                        label_col='Survived',
-                                       quiet=False)
-    writer.write(subsets=subset_dict)
+                                       quiet=False,
+                                       subsets=subset_dict)
+    writer.write()
 
     # Read and write test FeatureSet
     test_fs = Reader.for_path('test.csv', label_col='Survived', quiet=False,
@@ -89,8 +92,9 @@ def main():
     writer = Writer.for_path('titanic/test/.csv',
                                        test_fs,
                                        label_col='Survived',
-                                       quiet=False)
-    writer.write(subsets=subset_dict)
+                                       quiet=False,
+                                       subsets=subset_dict)
+    writer.write()
 
 
 if __name__ == '__main__':

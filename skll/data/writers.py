@@ -40,11 +40,23 @@ class Writer(object):
     :type path: str
     :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
+    :param quiet: Do not print "Writing..." status message to stderr.
+    :type quiet: bool
     :param requires_binary: Whether or not the Writer must open the
                             file in binary mode for writing with Python 2.
     :type requires_binary: bool
-    :param quiet: Do not print "Writing..." status message to stderr.
-    :type quiet: bool
+    :param subsets: A mapping from subset names to lists of feature names
+                    that are included in those sets. If given, a feature
+                    file will be written for every subset (with the name
+                    containing the subset name as suffix to ``path``).
+                    Note, since string- valued features are automatically
+                    converted into boolean features with names of the form
+                    ``FEATURE_NAME=STRING_VALUE``, when doing the
+                    filtering, the portion before the ``=`` is all that's
+                    used for matching. Therefore, you do not need to
+                    enumerate all of these boolean feature names in your
+                    mapping.
+    :type subsets: dict (str to list of str)
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -53,6 +65,7 @@ class Writer(object):
         self.quiet = kwargs.pop('quiet', True)
         self.path = path
         self.feat_set = feature_set
+        self.subsets = kwargs.pop('subsets', None)
         # Get prefix & extension for checking file types & writing subset files
         # TODO: Determine if we purposefully used this instead of os.path.split
         self.root, self.ext = re.search(r'^(.*)(\.[^.]*)$', path).groups()
@@ -83,23 +96,10 @@ class Writer(object):
         ext = '.' + path.rsplit('.', 1)[-1].lower()
         return EXT_TO_WRITER[ext](path, feature_set, **kwargs)
 
-    def write(self, subsets=None):
+    def write(self):
         """
         Writes out this Writer's FeatureSet to a file in its
         format.
-
-        :param subsets: A mapping from subset names to lists of feature names
-                        that are included in those sets. If given, a feature
-                        file will be written for every subset (with the name
-                        containing the subset name as suffix to ``path``).
-                        Note, since string- valued features are automatically
-                        converted into boolean features with names of the form
-                        ``FEATURE_NAME=STRING_VALUE``, when doing the
-                        filtering, the portion before the ``=`` is all that's
-                        used for matching. Therefore, you do not need to
-                        enumerate all of these boolean feature names in your
-                        mapping.
-        :type subsets: dict (str to list of str)
         """
         # Setup logger
         logger = logging.getLogger(__name__)
@@ -109,11 +109,11 @@ class Writer(object):
                              'FeatureHasher for vectorization.')
 
         # Write one feature file if we weren't given a dict of subsets
-        if subsets is None:
+        if self.subsets is None:
             self._write_subset(self.path, None)
         # Otherwise write one feature file per subset
         else:
-            for subset_name, filter_features in iteritems(subsets):
+            for subset_name, filter_features in iteritems(self.subsets):
                 logger.debug('Subset (%s) features: %s', subset_name,
                              filter_features)
                 sub_path = os.path.join(self.root, '{}{}'.format(subset_name,

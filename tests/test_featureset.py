@@ -649,7 +649,7 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
                                        range(num_feats_per_file)]
     train_path = join(merge_dir, suffix)
     train_fs = FeatureSet('train', ids, labels=labels, features=features)
-    Writer.for_path(train_path, train_fs).write(subsets=subset_dict)
+    Writer.for_path(train_path, train_fs, subsets=subset_dict).write()
 
     # Merged
     train_path = join(merge_dir, 'all{}'.format(suffix))
