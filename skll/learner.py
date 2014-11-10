@@ -1153,8 +1153,7 @@ class Learner(object):
                 result_dict['descriptive'][table_label]['max'] = max(y)
                 result_dict['descriptive'][table_label]['avg'] = np.mean(y)
                 result_dict['descriptive'][table_label]['std'] = np.std(y)
-            result_dict['pearson'] = SCORERS['pearson']._score_func(ytest,
-                                                                    yhat)
+            result_dict['pearson'] = use_score_func('pearson', ytest, yhat)
             res = (None, None, result_dict, self._model.get_params(),
                    grid_score)
         else:

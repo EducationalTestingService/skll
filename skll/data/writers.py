@@ -88,6 +88,9 @@ class Writer(object):
         :type path: str
         :param feature_set: The FeatureSet to dump to a file.
         :type feature_set: FeatureSet
+        :param kwargs: The keyword arguments for ``for_path`` are the same as
+                       the initializer for the desired ``Writer`` subclass.
+        :type kwargs: dict
 
         :returns: New instance of the Writer sub-class that is
                   appropriate for the given path.
@@ -124,6 +127,9 @@ class Writer(object):
         """
         Writes out the given FeatureSet to a file in this class's format.
 
+        :param sub_path: The path to the file we want to create for this subset
+                         of our data.
+        :type sub_path: str
         :param filter_features: Set of features to include in current feature
                                 file.
         :type filter_features: set of str
@@ -165,12 +171,30 @@ class Writer(object):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
+
+        :param feature_set: The FeatureSet being written to a file.
+        :type feature_set: FeatureSet
+        :param output_file: The file being written to.
+        :type output_file: file
+        :param filter_features: If only writing a subset of the features in the
+                                FeatureSet to ``output_file``, these are the
+                                features to include in this file.
+        :type filter_features: set of str
         """
         pass
 
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in this Writer's format.
+
+        :param id_: The ID for the current instance.
+        :type id_: str
+        :param label_: The label for the current instance.
+        :type label_: str
+        :param feat_dict: The feature dictionary for the current instance.
+        :type feat_dict: str
+        :param output_file: The file being written to.
+        :type output_file: file
         """
         raise NotImplementedError
 
@@ -232,6 +256,15 @@ class DelimitedFileWriter(Writer):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
+
+        :param feature_set: The FeatureSet being written to a file.
+        :type feature_set: FeatureSet
+        :param output_file: The file being written to.
+        :type output_file: file
+        :param filter_features: If only writing a subset of the features in the
+                                FeatureSet to ``output_file``, these are the
+                                features to include in this file.
+        :type filter_features: set of str
         """
         # Initialize DictWriter that will be used to write header and rows
         self._dict_writer = DictWriter(output_file,
@@ -243,6 +276,15 @@ class DelimitedFileWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in this Writer's format.
+
+        :param id_: The ID for the current instance.
+        :type id_: str
+        :param label_: The label for the current instance.
+        :type label_: str
+        :param feat_dict: The feature dictionary for the current instance.
+        :type feat_dict: str
+        :param output_file: The file being written to.
+        :type output_file: file
         """
         # Add class column to feat_dict (unless this is unlabelled data)
         if self.label_col not in feat_dict:
@@ -344,6 +386,15 @@ class ARFFWriter(DelimitedFileWriter):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
+
+        :param feature_set: The FeatureSet being written to a file.
+        :type feature_set: FeatureSet
+        :param output_file: The file being written to.
+        :type output_file: file
+        :param filter_features: If only writing a subset of the features in the
+                                FeatureSet to ``output_file``, these are the
+                                features to include in this file.
+        :type filter_features: set of str
         """
         fieldnames = self._get_fieldnames(filter_features)
         if self.label_col in fieldnames:
@@ -401,6 +452,15 @@ class MegaMWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
+
+        :param id_: The ID for the current instance.
+        :type id_: str
+        :param label_: The label for the current instance.
+        :type label_: str
+        :param feat_dict: The feature dictionary for the current instance.
+        :type feat_dict: str
+        :param output_file: The file being written to.
+        :type output_file: file
         """
         # Don't try to add class column if this is label-less data
         print('# {}'.format(id_), file=output_file)
@@ -427,6 +487,15 @@ class NDJWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
+
+        :param id_: The ID for the current instance.
+        :type id_: str
+        :param label_: The label for the current instance.
+        :type label_: str
+        :param feat_dict: The feature dictionary for the current instance.
+        :type feat_dict: str
+        :param output_file: The file being written to.
+        :type output_file: file
         """
         example_dict = {}
         # Don't try to add class column if this is label-less data
@@ -479,6 +548,15 @@ class LibSVMWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
+
+        :param id_: The ID for the current instance.
+        :type id_: str
+        :param label_: The label for the current instance.
+        :type label_: str
+        :param feat_dict: The feature dictionary for the current instance.
+        :type feat_dict: str
+        :param output_file: The file being written to.
+        :type output_file: file
         """
         field_values = sorted([(self.feat_set.vectorizer.vocabulary_[field] +
                                 1, value) for field, value in

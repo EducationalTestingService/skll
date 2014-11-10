@@ -88,9 +88,10 @@ class FeatureSet(object):
     def __eq__(self, other):
         """
         Check whether two featuresets are the same.
-        Note that we consider feature values to be
-        equal if any differences are in the sixth
-        decimal place or higher.
+
+        .. note::
+           We consider feature values to be equal if any differences are in the
+           sixth decimal place or higher.
         """
 
         # We need to sort the indices for the underlying

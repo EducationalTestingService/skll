@@ -60,9 +60,9 @@ class Reader(object):
                            vectorize the features.
     :type feature_hasher: bool
     :param num_features: If using a FeatureHasher, how many features should the
-                         resulting matrix have? You should set this to at least
-                         twice the number of features you have to avoid
-                         collisions.
+                         resulting matrix have?  You should set this to a power
+                         of 2 greater than the actual number of features to
+                         avoid collisions.
     :type num_features: int
     """
 
@@ -136,6 +136,13 @@ class Reader(object):
         Little helper to print out progress numbers in proper format.
 
         Nothing gets printed if ``self.quiet`` is ``True``.
+
+        :param progress_num: Progress indicator value.  Usually either a line
+                             number or a percentage.
+        :type progress_num: anything that can be converted to str
+        :param end: The string to put at the end of the line.  "\\r" should be
+                    used for every update except for the final one.
+        :type end: str
         """
         # Print out status
         if not self.quiet:

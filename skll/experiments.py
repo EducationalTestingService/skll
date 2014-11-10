@@ -516,6 +516,13 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
                       mainly used for collapsing multiple labels into a single
                       class. Anything not in the mapping will be kept the same.
     :type class_map: dict from str to str
+    :param feature_hasher: Should we use a FeatureHasher when vectorizing
+                           features?
+    :type feature_hasher: bool
+    :param num_features: The number of features to use with the FeatureHasher.
+                         This should always be set to the power of 2 greater
+                         than the actual number of features you're using.
+    :type num_features: int
 
     :returns: The labels, IDs, features, and feature vectorizer representing
               the given featureset.

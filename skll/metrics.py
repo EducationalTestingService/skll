@@ -40,6 +40,10 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     This function contains a combination of code from yorchopolis's kappa-stats
     and Ben Hamner's Metrics projects on Github.
 
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
     :param weights: Specifies the weight matrix for the calculation.
                     Options are:
 
@@ -76,7 +80,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
         y_true = [int(np.round(float(y))) for y in y_true]
         y_pred = [int(np.round(float(y))) for y in y_pred]
     except ValueError as e:
-        logger.error("For kappa, the labels should be integers or strings " +
+        logger.error("For kappa, the labels should be integers or strings "
                      "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
@@ -114,8 +118,8 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                 elif not wt_scheme:  # unweighted
                     weights[i, j] = bool(diff)
                 else:
-                    raise ValueError(('Invalid weight scheme specified for ' +
-                                      'kappa: {}').format(wt_scheme))
+                    raise ValueError('Invalid weight scheme specified for '
+                                     'kappa: {}'.format(wt_scheme))
 
     hist_true = np.bincount(y_true, minlength=num_ratings)
     hist_true = hist_true[: num_ratings] / num_scored_items
@@ -136,12 +140,14 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
 def kendall_tau(y_true, y_pred):
     """
-    Optimize the hyperparameter values during the grid search based on
-    Kendall's tau.
+    Calculate Kendall's tau between ``y_true`` and ``y_pred``.
 
-    This is useful in cases where you want to use the actual probabilities of
-    the different labels after the fact, and not just the optimize based on
-    the classification accuracy.
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
+
+    :returns: Kendall's tau if well-defined, else 0
     """
     ret_score = kendalltau(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -149,12 +155,15 @@ def kendall_tau(y_true, y_pred):
 
 def spearman(y_true, y_pred):
     """
-    Optimize the hyperparameter values during the grid search based on
-    Spearman rank correlation.
+    Calculate Spearman's rank correlation coefficient between ``y_true`` and
+    ``y_pred``.
 
-    This is useful in cases where you want to use the actual probabilities of
-    the different labels after the fact, and not just the optimize based on
-    the classification accuracy.
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
+
+    :returns: Spearman's rank correlation coefficient if well-defined, else 0
     """
     ret_score = spearmanr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -162,8 +171,16 @@ def spearman(y_true, y_pred):
 
 def pearson(y_true, y_pred):
     """
-    Optimize the hyperparameter values during the grid search based on Pearson
-    correlation.
+    Calculate Pearson product-moment correlation coefficient between ``y_true``
+    and ``y_pred``.
+
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
+
+    :returns: Pearson product-moment correlation coefficient if well-defined,
+              else 0
     """
     ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -171,12 +188,15 @@ def pearson(y_true, y_pred):
 
 def f1_score_least_frequent(y_true, y_pred):
     """
-    Optimize the hyperparameter values during the grid search based on the F1
-    measure of the least frequent label.
+    Calculate the F1 score of the least frequent label/class in ``y_true`` for
+    ``y_pred``.
 
-    This is mostly intended for use when you're doing binary classification
-    and your data is highly skewed. You should probably use f1_score_macro if
-    your data is skewed and you're doing multi-class classification.
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
+
+    :returns: F1 score of the least frequent label
     """
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
