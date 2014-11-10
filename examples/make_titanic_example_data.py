@@ -15,7 +15,7 @@ import os
 import sys
 from itertools import chain
 
-from skll import FeatureSetWriter, Reader
+from skll import Writer, Reader
 
 def main():
     """
@@ -58,7 +58,7 @@ def main():
     train_fs.filter(features=features_to_keep)
     num_train_dev = len(train_fs)
     num_train = int((num_train_dev / 5) * 4)
-    writer = FeatureSetWriter.for_path('titanic/train/.csv',
+    writer = Writer.for_path('titanic/train/.csv',
                                        train_fs[:num_train],
                                        label_col='Survived',
                                        quiet=False)
@@ -66,14 +66,14 @@ def main():
 
     # Write train+dev set for training model to use to generate predictions on
     # test
-    writer = FeatureSetWriter.for_path('titanic/train+dev/.csv',
+    writer = Writer.for_path('titanic/train+dev/.csv',
                                        train_fs,
                                        label_col='Survived',
                                        quiet=False)
     writer.write(subsets=subset_dict)
 
     # Write dev FeatureSet
-    writer = FeatureSetWriter.for_path('titanic/dev/.csv',
+    writer = Writer.for_path('titanic/dev/.csv',
                                        train_fs[num_train:],
                                        label_col='Survived',
                                        quiet=False)
@@ -86,7 +86,7 @@ def main():
     num_test = len(test_fs)
     test_fs.ids = ['EXAMPLE_{}'.format(i) for i in
                    range(num_train_dev + 1, num_test + num_train_dev + 1)]
-    writer = FeatureSetWriter.for_path('titanic/test/.csv',
+    writer = Writer.for_path('titanic/test/.csv',
                                        test_fs,
                                        label_col='Survived',
                                        quiet=False)

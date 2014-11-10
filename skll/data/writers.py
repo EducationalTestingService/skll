@@ -25,7 +25,7 @@ from six.moves import map, zip
 from sklearn.feature_extraction import FeatureHasher
 
 
-class FeatureSetWriter(object):
+class Writer(object):
 
     """
     Helper class for writing out FeatureSets to files.
@@ -40,7 +40,7 @@ class FeatureSetWriter(object):
     :type path: str
     :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
-    :param requires_binary: Whether or not the FeatureSetWriter must open the
+    :param requires_binary: Whether or not the Writer must open the
                             file in binary mode for writing with Python 2.
     :type requires_binary: bool
     :param quiet: Do not print "Writing..." status message to stderr.
@@ -48,7 +48,7 @@ class FeatureSetWriter(object):
     """
 
     def __init__(self, path, feature_set, **kwargs):
-        super(FeatureSetWriter, self).__init__()
+        super(Writer, self).__init__()
         self.requires_binary = kwargs.pop('requires_binary', False)
         self.quiet = kwargs.pop('quiet', True)
         self.path = path
@@ -59,7 +59,7 @@ class FeatureSetWriter(object):
         self._progress_msg = ''
         if kwargs:
             raise ValueError('Passed extra keyword arguments to '
-                             'FeatureSetWriter constructor: {}'.format(kwargs))
+                             'Writer constructor: {}'.format(kwargs))
 
     @classmethod
     def for_path(cls, path, feature_set, **kwargs):
@@ -76,7 +76,7 @@ class FeatureSetWriter(object):
         :param feature_set: The FeatureSet to dump to a file.
         :type feature_set: FeatureSet
 
-        :returns: New instance of the FeatureSetWriter sub-class that is
+        :returns: New instance of the Writer sub-class that is
                   appropriate for the given path.
         """
         # Get lowercase extension for file extension checking
@@ -85,7 +85,7 @@ class FeatureSetWriter(object):
 
     def write(self, subsets=None):
         """
-        Writes out this FeatureSetWriter's FeatureSet to a file in its
+        Writes out this Writer's FeatureSet to a file in its
         format.
 
         :param subsets: A mapping from subset names to lists of feature names
@@ -105,7 +105,7 @@ class FeatureSetWriter(object):
         logger = logging.getLogger(__name__)
 
         if isinstance(self.feat_set.vectorizer, FeatureHasher):
-            raise ValueError('FeatureSetWriter cannot write sets that use'
+            raise ValueError('Writer cannot write sets that use'
                              'FeatureHasher for vectorization.')
 
         # Write one feature file if we weren't given a dict of subsets
@@ -170,15 +170,15 @@ class FeatureSetWriter(object):
 
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
-        Write the current line in the file in this FeatureSetWriter's format.
+        Write the current line in the file in this Writer's format.
         """
         raise NotImplementedError
 
 
-class DelimitedFileWriter(FeatureSetWriter):
+class DelimitedFileWriter(Writer):
 
     """
-    FeatureSetWriter for writing out FeatureSets as TSV/CSV files.
+    Writer for writing out FeatureSets as TSV/CSV files.
 
     :param path: A path to the feature file we would like to create.
                  If ``subsets`` is not ``None``, this is assumed to be a string
@@ -242,7 +242,7 @@ class DelimitedFileWriter(FeatureSetWriter):
 
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
-        Write the current line in the file in this FeatureSetWriter's format.
+        Write the current line in the file in this Writer's format.
         """
         # Add class column to feat_dict (unless this is unlabelled data)
         if self.label_col not in feat_dict:
@@ -264,7 +264,7 @@ class DelimitedFileWriter(FeatureSetWriter):
 class CSVWriter(DelimitedFileWriter):
 
     """
-    FeatureSetWriter for writing out FeatureSets as TSV files.
+    Writer for writing out FeatureSets as TSV files.
 
     :param path: A path to the feature file we would like to create.
                  If ``subsets`` is not ``None``, this is assumed to be a string
@@ -287,7 +287,7 @@ class CSVWriter(DelimitedFileWriter):
 class TSVWriter(DelimitedFileWriter):
 
     """
-    FeatureSetWriter for writing out FeatureSets as TSV files.
+    Writer for writing out FeatureSets as TSV files.
 
     :param path: A path to the feature file we would like to create.
                  If ``subsets`` is not ``None``, this is assumed to be a string
@@ -310,7 +310,7 @@ class TSVWriter(DelimitedFileWriter):
 class ARFFWriter(DelimitedFileWriter):
 
     """
-    FeatureSetWriter for writing out FeatureSets as ARFF files.
+    Writer for writing out FeatureSets as ARFF files.
 
     :param path: A path to the feature file we would like to create. If
                  ``subsets`` is not ``None``, this is assumed to be a string
@@ -320,7 +320,7 @@ class ARFFWriter(DelimitedFileWriter):
     :type path: str
     :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
-    :param requires_binary: Whether or not the FeatureSetWriter must open the
+    :param requires_binary: Whether or not the Writer must open the
                             file in binary mode for writing with Python 2.
     :type requires_binary: bool
     :param quiet: Do not print "Writing..." status message to stderr.
@@ -379,9 +379,9 @@ class ARFFWriter(DelimitedFileWriter):
         print("\n@data", file=output_file)
 
 
-class MegaMWriter(FeatureSetWriter):
+class MegaMWriter(Writer):
 
-    """ FeatureSetWriter for writing out FeatureSets as MegaM files. """
+    """ Writer for writing out FeatureSets as MegaM files. """
     @staticmethod
     def _replace_non_ascii(line):
         """
@@ -414,10 +414,10 @@ class MegaMWriter(FeatureSetWriter):
               file=output_file)
 
 
-class NDJWriter(FeatureSetWriter):
+class NDJWriter(Writer):
 
     """
-    FeatureSetWriter for writing out FeatureSets as .jsonlines/.ndj files.
+    Writer for writing out FeatureSets as .jsonlines/.ndj files.
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -437,10 +437,10 @@ class NDJWriter(FeatureSetWriter):
         print(json.dumps(example_dict, sort_keys=True), file=output_file)
 
 
-class LibSVMWriter(FeatureSetWriter):
+class LibSVMWriter(Writer):
 
     """
-    FeatureSetWriter for writing out FeatureSets as LibSVM/SVMLight files.
+    Writer for writing out FeatureSets as LibSVM/SVMLight files.
     """
 
     LIBSVM_REPLACE_DICT = {':': '\u2236',

@@ -49,7 +49,7 @@ to the module level. They are documented in both places for convenience.
 
 From :py:mod:`~skll.data` Package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. autoclass:: skll.FeatureSetWriter
+.. autoclass:: skll.Writer
     :members:
     :show-inheritance:
 .. autoclass:: skll.Reader

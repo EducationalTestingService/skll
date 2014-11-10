@@ -17,7 +17,7 @@ from six import PY2
 from .featureset import FeatureSet
 from .readers import (ARFFReader, CSVReader, LibSVMReader, MegaMReader,
                       NDJReader, TSVReader, safe_float, Reader)
-from .writers import (ARFFWriter, DelimitedFileWriter, FeatureSetWriter,
+from .writers import (ARFFWriter, DelimitedFileWriter, Writer,
                       LibSVMWriter, MegaMWriter, NDJWriter)
 
 
@@ -35,4 +35,4 @@ else:
 __all__ = ['Reader', 'safe_float', 'FeatureSet', 'ARFFReader',
            'CSVReader', 'LibSVMReader', 'MegaMReader', 'NDJReader',
            'TSVReader', 'ARFFWriter', 'DelimitedFileWriter', 'LibSVMWriter',
-           'MegaMWriter', 'NDJWriter', 'FeatureSetWriter']
+           'MegaMWriter', 'NDJWriter', 'Writer']

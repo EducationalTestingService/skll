@@ -25,7 +25,7 @@ from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.datasets.samples_generator import make_classification
 
-from skll.data import FeatureSet, FeatureSetWriter, Reader
+from skll.data import FeatureSet, Writer, Reader
 from skll.data.readers import DictListReader
 from skll.experiments import _load_featureset
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -649,11 +649,11 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
                                        range(num_feats_per_file)]
     train_path = join(merge_dir, suffix)
     train_fs = FeatureSet('train', ids, labels=labels, features=features)
-    FeatureSetWriter.for_path(train_path, train_fs).write(subsets=subset_dict)
+    Writer.for_path(train_path, train_fs).write(subsets=subset_dict)
 
     # Merged
     train_path = join(merge_dir, 'all{}'.format(suffix))
-    FeatureSetWriter.for_path(train_path, train_fs).write()
+    Writer.for_path(train_path, train_fs).write()
 
 
 def check_load_featureset(suffix, numeric_ids):
@@ -777,10 +777,10 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
                               features=sub_features,
                               vectorizer=feat_vectorizer)
         if from_suffix == '.libsvm':
-            FeatureSetWriter.for_path(train_path, train_fs,
+            Writer.for_path(train_path, train_fs,
                                       label_map=label_map).write()
         else:
-            FeatureSetWriter.for_path(train_path, train_fs).write()
+            Writer.for_path(train_path, train_fs).write()
 
     # Write out the merged features in the `to_suffix` file format
     train_path = join(convert_dir, '{}_all{}'.format(feature_name_prefix,
@@ -788,10 +788,10 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
     train_fs = FeatureSet('train', ids, labels=labels, features=features,
                           vectorizer=feat_vectorizer)
     if to_suffix == '.libsvm':
-        FeatureSetWriter.for_path(train_path, train_fs,
+        Writer.for_path(train_path, train_fs,
                                   label_map=label_map).write()
     else:
-        FeatureSetWriter.for_path(train_path, train_fs).write()
+        Writer.for_path(train_path, train_fs).write()
 
 
 def check_convert_featureset(from_suffix, to_suffix):
