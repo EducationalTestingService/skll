@@ -140,11 +140,10 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
     learner = Learner('SGDClassifier', probability=use_threshold)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True,
-                  feature_hasher=use_feature_hashing)
+    learner.train(train_fs, grid_search=True)
 
     # get the predictions on the test featureset
-    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
+    predictions = learner.predict(test_fs)
 
     # if we asked for probabilities, then use the threshold
     # to convert them into binary predictions
@@ -221,6 +220,7 @@ def check_generate_predictions_console(use_threshold=False):
     generate_cmd.extend([model_file, input_file])
 
     # we need to capture stdout since that's what main() writes to
+    err = ''
     try:
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -265,6 +265,7 @@ def check_skll_convert(from_suffix, to_suffix):
     skll_convert_cmd = [from_suffix_file, to_suffix_file, '--quiet']
 
     # we need to capture stderr to make sure we don't miss any errors
+    err = ''
     try:
         old_stderr = sys.stderr
         sys.stderr = mystderr = StringIO()
@@ -333,6 +334,7 @@ def test_skll_convert_libsvm_map():
     skll_convert_cmd = ['--reuse_libsvm_map', orig_libsvm_file,
                         '--quiet', orig_libsvm_file,
                         converted_libsvm_file]
+    err = ''
     try:
         old_stderr = sys.stderr
         sys.stderr = mystderr = StringIO()
@@ -375,6 +377,7 @@ def check_print_model_weights(task='classification'):
 
     # now call print_model_weights main() and capture the output
     print_model_weights_cmd = [model_file]
+    err = ''
     try:
         old_stderr = sys.stderr
         old_stdout = sys.stdout

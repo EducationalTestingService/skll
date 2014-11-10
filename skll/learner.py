@@ -29,31 +29,30 @@ from six import string_types
 from six.moves import xrange as range
 from six.moves import zip
 from sklearn.base import RegressorMixin
-from sklearn.cross_validation import KFold, StratifiedKFold
-from sklearn.cross_validation import LeaveOneLabelOut
-from sklearn.feature_selection import SelectKBest
-from sklearn.grid_search import GridSearchCV
-from sklearn.metrics import (accuracy_score, confusion_matrix,
-                             precision_recall_fscore_support, SCORERS)
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm.base import BaseLibLinear
-from sklearn.utils import shuffle as sk_shuffle
-# sklearn models: these are used indirectly, so ignore linting messages
-# pylint: disable=F0401,W0611
+from sklearn.cross_validation import KFold, LeaveOneLabelOut, StratifiedKFold
 from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
                               GradientBoostingClassifier,
                               GradientBoostingRegressor,
                               RandomForestClassifier, RandomForestRegressor)
+from sklearn.feature_extraction import FeatureHasher
+from sklearn.feature_selection import SelectKBest
+from sklearn.grid_search import GridSearchCV
+# AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor)
 from sklearn.linear_model.base import LinearModel
+from sklearn.metrics import (accuracy_score, confusion_matrix,
+                             precision_recall_fscore_support, SCORERS)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, SVR
+from sklearn.svm.base import BaseLibLinear
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
 from skll.metrics import _CORRELATION_METRICS, use_score_func
@@ -474,6 +473,12 @@ class Learner(object):
                         labels (instead of just label with highest
                         probability)?
     :type probability: bool
+    :param feature_scaling: how to scale the features, if at all. Options are:
+                    'with_std': scale features using the standard deviation,
+                    'with_mean': center features using the mean,
+                    'both': do both scaling as well as centering,
+                    'none': do neither scaling nor centering
+    :type feature_scaling: str
     :param model_kwargs: A dictionary of keyword arguments to pass to the
                          initializer for the specified model.
     :type model_kwargs: dict
@@ -481,17 +486,18 @@ class Learner(object):
                           classification setting.  Otherwise, an arbitrary
                           label is picked.
     :type pos_label_str: str
-    :param feature_scaling: how to scale the features, if at all. Options are:
-                    'with_std': scale features using the standard deviation,
-                    'with_mean': center features using the mean,
-                    'both': do both scaling as well as centering,
-                    'none': do neither scaling nor centering
-    :type feature_scaling: str
     :param min_feature_count: The minimum number of examples a feature
                               must have a nonzero value in to be included.
     :type min_feature_count: int
-    :param custom_learner_path: Path to code where a custom classifier is
-                              defined.
+    :param sampler: The sampler to use for kernel approximation, if desired.
+                    Valid values are: ``'AdditiveChi2Sampler'``, ``'Nystroem'``,
+                    ``'RBFSampler'``, and ``'SkewedChi2Sampler'``.
+    :type sampler: str
+    :param sampler_kwargs: A dictionary of keyword arguments to pass to the
+                          initializer for the specified sampler.
+    :type sampler_kwargs: dict
+    :param custom_learner_path: Path to module where a custom classifier is
+                                defined.
     :type custom_learner_path: str
     """
 
@@ -570,13 +576,16 @@ class Learner(object):
                        AdaBoostRegressor, AdaBoostClassifier)):
             self._model_kwargs['random_state'] = 123456789
 
-        if sampler in {'Nystroem', 'RBFSampler', 'SkewedChi2Sampler'}:
-            self._sampler_kwargs['random_state'] = 123456789
-        self.sampler = None
         if sampler_kwargs:
             self._sampler_kwargs.update(sampler_kwargs)
         if sampler:
-            self.sampler = globals()[sampler](**self._sampler_kwargs)
+            sampler_type = globals()[sampler]
+            if issubclass(sampler_type, (Nystroem, RBFSampler,
+                                         SkewedChi2Sampler)):
+                self._sampler_kwargs['random_state'] = 123456789
+            self.sampler = sampler_type(**self._sampler_kwargs)
+        else:
+            self.sampler = None
 
         if model_kwargs:
             self._model_kwargs.update(model_kwargs)
@@ -750,13 +759,12 @@ class Learner(object):
         estimator = None
         default_param_grid = _find_default_param_grid(self._model_type)
         if default_param_grid is None:
-            raise ValueError(("{} is not a valid learner " +
-                              "type.").format(self._model_type))
+            raise ValueError("%s is not a valid learner type." %
+                             (self._model_type,))
 
         # Ensure that the kernel argument has right type for Python version.
         if issubclass(self._model_type, SVR) and sys.version_info < (3, 0):
-            self.model_kwargs['kernel'] = \
-                self.model_kwargs['kernel'].encode()
+            self.model_kwargs['kernel'] = self.model_kwargs['kernel'].encode()
         estimator = self._model_type(**self._model_kwargs)
 
         return estimator, default_param_grid
@@ -765,27 +773,25 @@ class Learner(object):
         """
         check that the examples are properly formatted.
         """
-
         # Make sure the labels for a regression task are not strings.
         if issubclass(self._model_type, RegressorMixin):
             for label in examples.labels:
                 if isinstance(label, string_types):
-                    raise TypeError("You are doing regression with" +
-                                    " string labels.  Convert them to" +
-                                    " integers or floats.")
+                    raise TypeError("You are doing regression with string "
+                                    "labels.  Convert them to integers or "
+                                    "floats.")
 
         # make sure that feature values are not strings
         for val in examples.features.data:
             if isinstance(val, string_types):
-                raise TypeError("You have feature values that are" +
-                                " strings.  Convert them to floats.")
+                raise TypeError("You have feature values that are strings.  "
+                                "Convert them to floats.")
 
     @staticmethod
     def _check_max_feature_value(feat_array):
         """
         Check if the the maximum absolute value of any feature is too large
         """
-
         max_feat_abs = np.max(np.abs(feat_array.data))
         if max_feat_abs > 1000.0:
             logger = logging.getLogger(__name__)
@@ -801,7 +807,6 @@ class Learner(object):
         :param examples: The examples to use for training.
         :type examples: FeatureSet
         """
-
         # We don't need to do this for regression models, so return.
         if issubclass(self._model_type, RegressorMixin):
             return
@@ -819,38 +824,17 @@ class Learner(object):
         # Given a list of all labels in the dataset and a list of the
         # unique labels in the set, convert the first list to an array of
         # numbers.
-        self.label_dict = {label: i for i, label in
-                           enumerate(self.label_list)}
+        self.label_dict = {label: i for i, label in enumerate(self.label_list)}
 
     def _train_setup(self, examples):
         """
-        Set up the feature vectorizer, the scaler and the label dict and
-        return the features and the labels.
+        Set up the feature vectorizer and the scaler.
 
         :param examples: The examples to use for training.
         :type examples: FeatureSet
         """
         # Check feature values and labels
         self._check_input_formatting(examples)
-
-        # Create label_dict if we weren't passed one
-        if not issubclass(self._model_type, RegressorMixin):
-
-            # extract list of unique labels if we are doing classification
-            self.label_list = np.unique(examples.labels).tolist()
-
-            # if one label is specified as the positive label, make sure it's
-            # last
-            if self.pos_label_str:
-                self.label_list = sorted(self.label_list,
-                                         key=lambda x:
-                                         (x == self.pos_label_str, x))
-
-            # Given a list of all labels in the dataset and a list of the
-            # unique labels in the set, convert the first list to an array of
-            # numbers.
-            self.label_dict = {label: i for i, label in
-                               enumerate(self.label_list)}
 
         # Create feature name -> value mapping
         self.feat_vectorizer = examples.vectorizer
@@ -877,8 +861,7 @@ class Learner(object):
 
     def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective='f1_score_micro',
-              grid_jobs=None, shuffle=False, feature_hasher=False,
-              run_create_label_dict=True):
+              grid_jobs=None, shuffle=False, create_label_dict=True):
         """
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -905,6 +888,14 @@ class Learner(object):
         :type grid_jobs: int
         :param shuffle: Shuffle examples (e.g., for grid search CV.)
         :type shuffle: bool
+        :param create_label_dict: Should we create the label dictionary?  This
+                                  dictionary is used to map between string
+                                  labels and their corresponding numerical
+                                  values.  This should only be done once per
+                                  experiment, so when ``cross_validate`` calls
+                                  ``train``, ``create_label_dict`` gets set to
+                                  ``False``.
+        :type create_label_dict: bool
 
         :return: The best grid search objective function score, or 0 if we're
                  not doing grid search.
@@ -982,7 +973,7 @@ class Learner(object):
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
-        if run_create_label_dict:
+        if create_label_dict:
             self._create_label_dict(examples)
         self._train_setup(examples)
 
@@ -1000,15 +991,15 @@ class Learner(object):
                 else:
                     reason = ('{} feature scaling requires a dense ' +
                               'matrix.').format(self._feature_scaling)
-                raise MemoryError('Ran out of memory when converting ' +
-                                  'training data to dense. This was required' +
-                                  ' because ' + reason)
+                raise MemoryError('Ran out of memory when converting training '
+                                  'data to dense. This was required because ' +
+                                  reason)
 
-        if feature_hasher and issubclass(self._model_type, MultinomialNB):
-            raise ValueError('It is no possible to use feature_hasher with' +
-                             ' Naive Bayes, because it can generate some' +
-                             ' negative values and Naive Bayes can not' +
-                             ' manage them. ')
+        if isinstance(self.feat_vectorizer, FeatureHasher) and \
+                issubclass(self._model_type, MultinomialNB):
+            raise ValueError('Cannot use FeatureHasher with MultinomialNB, '
+                             'because MultinomialNB cannot handle negative '
+                             'feature values.')
 
         # Scale features if necessary
         if not issubclass(self._model_type, MultinomialNB):
@@ -1061,7 +1052,8 @@ class Learner(object):
                 dummy_label = next(itervalues(grid_search_folds))
                 fold_labels = [grid_search_folds.get(curr_id, dummy_label) for
                           curr_id in examples.ids]
-                folds = FilteredLeaveOneLabelOut(fold_labels, grid_search_folds,
+                folds = FilteredLeaveOneLabelOut(fold_labels,
+                                                 grid_search_folds,
                                                  examples)
 
             # Use default parameter grid if we weren't passed one
@@ -1095,7 +1087,7 @@ class Learner(object):
         return grid_score
 
     def evaluate(self, examples, prediction_prefix=None, append=False,
-                 grid_objective=None, feature_hasher=False):
+                 grid_objective=None):
         """
         Evaluates a given model on a given dev or test example set.
 
@@ -1112,8 +1104,6 @@ class Learner(object):
         :param grid_objective: The objective function that was used when doing
                                the grid search.
         :type grid_objective: function
-        :param feature_hasher: are we using a feature_hasher?
-        :type feature_hasher: bool
 
         :return: The confusion matrix, the overall accuracy, the per-label
                  PRFs, the model parameters, and the grid search objective
@@ -1125,7 +1115,7 @@ class Learner(object):
 
         # make the prediction on the test data
         yhat = self.predict(examples, prediction_prefix=prediction_prefix,
-                            append=append, feature_hasher=feature_hasher)
+                            append=append)
 
         # extract actual labels (transformed for classification tasks)
         if not issubclass(self._model_type, RegressorMixin):
@@ -1190,7 +1180,7 @@ class Learner(object):
         return res
 
     def predict(self, examples, prediction_prefix=None, append=False,
-                class_labels=False, feature_hasher=False):
+                class_labels=False):
         """
         Uses a given model to generate predictions on a given data set
 
@@ -1207,8 +1197,6 @@ class Learner(object):
         :param class_labels: For classifier, should we convert class
                              indices to their (str) labels?
         :type class_labels: bool
-        :param feature_hasher: For classifier, are we using a feature_hasher?
-        :type feature_hasher: bool
 
         :return: The predictions returned by the learner.
         :rtype: array
@@ -1219,7 +1207,7 @@ class Learner(object):
         # Need to do some transformations so the features are in the right
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
-        if feature_hasher:
+        if isinstance(self.feat_vectorizer, FeatureHasher):
             if (self.feat_vectorizer.n_features !=
                     examples.vectorizer.n_features):
                 logger.warning("There is mismatch between the training model "
@@ -1333,6 +1321,10 @@ class Learner(object):
         return yhat
 
     def _compute_num_folds_from_example_counts(self, cv_folds, labels):
+        """
+        Calculate the number of folds we should use for cross validation, based
+        on the number of examples we have for each label.
+        """
         assert isinstance(cv_folds, int)
 
         # For regression models, we can just return the current cv_folds
@@ -1345,18 +1337,16 @@ class Learner(object):
                               ' label.').format(min_examples_per_label))
         if min_examples_per_label < cv_folds:
             logger = logging.getLogger(__name__)
-            logger.warning(('The minimum number of examples per ' +
-                            'label was {}. Setting the number of ' +
-                            'cross-validation folds to that ' +
-                            'value.').format(min_examples_per_label))
+            logger.warning('The minimum number of examples per label was %s.  '
+                           'Setting the number of cross-validation folds to '
+                           'that value.', min_examples_per_label)
             cv_folds = min_examples_per_label
         return cv_folds
 
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=3, grid_jobs=None,
                        grid_objective='f1_score_micro', prediction_prefix=None,
-                       param_grid=None, shuffle=False,
-                       feature_hasher=False):
+                       param_grid=None, shuffle=False):
         """
         Cross-validates a given model on the training examples.
 
@@ -1393,12 +1383,11 @@ class Learner(object):
         :type prediction_prefix: str
         :param shuffle: Shuffle examples before splitting into folds for CV.
         :type shuffle: bool
-        :param feature_hasher: Are we using feature_hasher?
-        :type feature_hasher: bool
 
         :return: The confusion matrix, overall accuracy, per-label PRFs, and
-                 model parameters for each fold.
-        :rtype: list of 4-tuples
+                 model parameters for each fold in one list, and another list
+                 with the grid search scores for each fold.
+        :rtype: (list of 4-tuples, list of float)
         """
         # seed the random number generator so that randomized algorithms are
         # replicable
@@ -1412,10 +1401,12 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                logger.warning('Training data will be shuffled to randomize grid search folds. Shuffling may yield different results compared to scikit-learn.')
+                logger.warning('Training data will be shuffled to randomize '
+                               'grid search folds. Shuffling may yield '
+                               'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
-                                                examples.features,
-                                                random_state=rand_seed)
+                                               examples.features,
+                                               random_state=rand_seed)
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
@@ -1470,8 +1461,7 @@ class Learner(object):
                                            param_grid=param_grid,
                                            grid_jobs=grid_jobs,
                                            shuffle=False,
-                                           feature_hasher=feature_hasher,
-                                           run_create_label_dict=False)
+                                           create_label_dict=False)
             grid_search_scores.append(grid_search_score)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
@@ -1485,8 +1475,7 @@ class Learner(object):
             results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
                                          append=append_predictions,
-                                         grid_objective=grid_objective,
-                                         feature_hasher=feature_hasher))
+                                         grid_objective=grid_objective))
             append_predictions = True
 
         # return list of results for all folds

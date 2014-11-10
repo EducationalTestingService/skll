@@ -693,11 +693,11 @@ def _classify_featureset(args):
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
             task_results, grid_scores = learner.cross_validate(
-                train_examples, shuffle=shuffle, prediction_prefix=prediction_prefix,
-                grid_search=grid_search, grid_search_folds=grid_search_folds,
-                cv_folds=cv_folds, grid_objective=grid_objective,
-                param_grid=param_grid, grid_jobs=grid_search_jobs,
-                feature_hasher=feature_hasher)
+                train_examples, shuffle=shuffle,
+                prediction_prefix=prediction_prefix, grid_search=grid_search,
+                grid_search_folds=grid_search_folds, cv_folds=cv_folds,
+                grid_objective=grid_objective, param_grid=param_grid,
+                grid_jobs=grid_search_jobs)
         else:
             # if we have do not have a saved model, we need to train one.
             if not exists(modelfile) or overwrite:
@@ -715,8 +715,7 @@ def _classify_featureset(args):
                                            grid_search_folds=grid_search_folds,
                                            grid_objective=grid_objective,
                                            param_grid=param_grid,
-                                           grid_jobs=grid_search_jobs,
-                                           feature_hasher=feature_hasher)
+                                           grid_jobs=grid_search_jobs)
                 grid_scores = [best_score]
 
                 # save model
@@ -747,13 +746,11 @@ def _classify_featureset(args):
                 print('\tevaluating predictions', file=log_file)
                 task_results = [learner.evaluate(
                     test_examples, prediction_prefix=prediction_prefix,
-                    grid_objective=grid_objective,
-                    feature_hasher=feature_hasher)]
+                    grid_objective=grid_objective)]
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
-                                prediction_prefix=prediction_prefix,
-                                feature_hasher=feature_hasher)
+                                prediction_prefix=prediction_prefix)
             # do nothing here for train
 
         end_timestamp = datetime.datetime.now()

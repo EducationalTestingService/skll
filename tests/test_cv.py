@@ -113,8 +113,7 @@ def test_specified_cv_folds():
         folds = custom_cv_folds if not use_hashing else 10
         cv_output = learner.cross_validate(cv_fs,
                                            cv_folds=folds,
-                                           grid_search=True,
-                                           feature_hasher=use_hashing)
+                                           grid_search=True)
         fold_test_scores = [t[-1] for t in cv_output[0]]
 
         overall_score = np.mean(fold_test_scores)

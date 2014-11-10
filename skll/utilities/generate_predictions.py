@@ -16,7 +16,6 @@ import logging
 import os
 
 from sklearn.base import RegressorMixin
-from sklearn.feature_extraction import FeatureHasher
 
 from skll.data.readers import EXT_TO_READER
 from skll.learner import Learner
@@ -60,14 +59,8 @@ class Predictor(object):
         :returns: A list of predictions the model generated for the given
                   examples.
         """
-
-        # determine if the model used feature hashing or not
-        use_feature_hashing = isinstance(self._learner.feat_vectorizer,
-                                         FeatureHasher)
-
         # compute the predictions from the learner
-        preds = self._learner.predict(data,
-                                      feature_hasher=use_feature_hashing)
+        preds = self._learner.predict(data)
         preds = preds.tolist()
 
         if self._learner.probability:

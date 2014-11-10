@@ -113,9 +113,7 @@ def check_linear_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs,
-                  grid_objective='pearson',
-                  feature_hasher=use_feature_hashing)
+    learner.train(train_fs, grid_objective='pearson')
 
     # make sure that the weights are close to the weights
     # that we got from make_regression_data. Take the
@@ -135,7 +133,7 @@ def check_linear_models(name,
             eq_(learned_w, given_w)
 
     # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
+    predictions = learner.predict(test_fs)
 
     # now make sure that the predictions are close to
     # the actual test FeatureSet labels that we generated
@@ -183,8 +181,7 @@ def check_tree_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson',
-                  feature_hasher=use_feature_hashing)
+    learner.train(train_fs, grid_objective='pearson')
 
     # make sure that the feature importances are as expected.
     if name.endswith('DecisionTreeRegressor'):
@@ -214,7 +211,7 @@ def check_tree_models(name,
 
 
     # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
+    predictions = learner.predict(test_fs)
 
     # now make sure that the predictions are close to
     # the actual test FeatureSet labels that we generated
@@ -261,8 +258,7 @@ def check_ensemble_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson',
-                  feature_hasher=use_feature_hashing)
+    learner.train(train_fs, grid_objective='pearson')
 
     # make sure that the feature importances are as expected.
     if name.endswith('AdaBoostRegressor'):
@@ -289,7 +285,7 @@ def check_ensemble_models(name,
                     rtol=1e-2)
 
     # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs, feature_hasher=use_feature_hashing)
+    predictions = learner.predict(test_fs)
 
     # now make sure that the predictions are close to
     # the actual test FeatureSet labels that we generated

@@ -135,15 +135,10 @@ def check_predict(model, use_feature_hashing=False):
 
     # now train the learner on the training data and use feature hashing when
     # specified and when we are not using a Naive Bayes model
-    learner.train(train_fs, grid_search=False,
-                  feature_hasher=(use_feature_hashing
-                                  and model.__name__ != 'MultinomialNB'))
+    learner.train(train_fs, grid_search=False)
 
     # now make predictions on the test set
-    predictions = learner.predict(test_fs,
-                                  feature_hasher=(use_feature_hashing and
-                                                  (model.__name__ !=
-                                                   'MultinomialNB')))
+    predictions = learner.predict(test_fs)
 
     # make sure we have the same number of outputs as the
     # number of test set samples
@@ -261,10 +256,8 @@ def check_sparse_predict(use_feature_hashing=False):
 
     # train a linear SVM on the training data and evalute on the testing data
     learner = Learner('LogisticRegression')
-    learner.train(train_fs, grid_search=False,
-                  feature_hasher=use_feature_hashing)
-    test_score = learner.evaluate(test_fs,
-                                  feature_hasher=use_feature_hashing)[1]
+    learner.train(train_fs, grid_search=False)
+    test_score = learner.evaluate(test_fs)[1]
     expected_score = 0.51 if use_feature_hashing else 0.45
     assert_almost_equal(test_score, expected_score)
 
@@ -289,10 +282,8 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
                       sampler=sampler,
                       sampler_kwargs=sampler_parameters)
 
-    learner.train(train_fs, grid_search=False,
-                  feature_hasher=use_feature_hashing)
-    test_score = learner.evaluate(test_fs,
-                                  feature_hasher=use_feature_hashing)[1]
+    learner.train(train_fs, grid_search=False)
+    test_score = learner.evaluate(test_fs)[1]
 
     expected_score = 0.4 if use_feature_hashing else 0.48999999999999999
     assert_almost_equal(test_score, expected_score)
