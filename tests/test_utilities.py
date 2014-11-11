@@ -89,7 +89,7 @@ def tearDown():
     if exists(join(other_dir, 'test_filter_features_input.arff')):
         os.unlink(join(other_dir, 'test_filter_features_input.arff'))
     for ffile in glob(join(other_dir,
-                                 'test_join_features*')):
+                           'test_join_features*')):
         os.unlink(ffile)
 
 
@@ -131,10 +131,9 @@ def test_compute_eval_from_predictions():
 def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
     # create some simple classification data without feature hashing
-    train_fs, test_fs = make_classification_data(num_examples=1000,
-                                                 num_features=5,
-                                                 use_feature_hashing=use_feature_hashing,
-                                                 feature_bins=4)
+    train_fs, test_fs = make_classification_data(
+        num_examples=1000, num_features=5,
+        use_feature_hashing=use_feature_hashing, feature_bins=4)
 
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier', probability=use_threshold)
@@ -328,7 +327,7 @@ def test_skll_convert_libsvm_map():
     # now run skll_convert to convert this into a libsvm file
     # but using the mapping specified in the first libsvm file
     converted_libsvm_file = join(_my_dir, 'other',
-                                'test_skll_convert_libsvm_map2.libsvm')
+                                 'test_skll_convert_libsvm_map2.libsvm')
 
     # now call skll convert's main function
     skll_convert_cmd = ['--reuse_libsvm_map', orig_libsvm_file,
@@ -536,7 +535,7 @@ def test_run_experiment_argparse():
                             [True, False]):
 
         yield (check_run_experiments_argparse, multiple_config_files,
-                 n_ablated_features, keep_models, local, resume)
+               n_ablated_features, keep_models, local, resume)
 
 
 def check_filter_features_no_arff_argparse(extension, filter_type,
@@ -650,7 +649,7 @@ def test_filter_features_no_arff_argparse():
     for (extension, filter_type,
          label_col, inverse, quiet) in product(['.jsonlines', '.ndj',
                                                 '.megam', '.tsv',
-                                                '.csv',],
+                                                '.csv', ],
                                                ['feature', 'id',
                                                 'label'],
                                                ['y', 'foo'],
@@ -765,8 +764,8 @@ def test_filter_features_arff_argparse():
          inverse, quiet) in product(['feature', 'id',
                                      'label'],
                                     ['y', 'foo'],
-                                   [True, False],
-                                   [True, False]):
+                                    [True, False],
+                                    [True, False]):
 
         yield (check_filter_features_arff_argparse, filter_type,
                label_col, inverse, quiet)

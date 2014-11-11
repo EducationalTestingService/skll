@@ -252,7 +252,8 @@ def make_scaling_data(use_feature_hashing=False):
 
 
 def check_scaling_features(use_feature_hashing=False, use_scaling=False):
-    train_fs, test_fs = make_scaling_data(use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_scaling_data(
+        use_feature_hashing=use_feature_hashing)
 
     # create a Linear SVM with the value of scaling as specified
     feature_scaling = 'both' if use_scaling else 'none'

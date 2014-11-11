@@ -238,6 +238,7 @@ class DictListReader(Reader):
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
     """
+
     def read(self):
         ids = []
         labels = []
@@ -475,6 +476,7 @@ class LibSVMReader(Reader):
 
 
 class DelimitedReader(Reader):
+
     """
     Reader for creating a FeatureSet out of a delimited (CSV/TSV) file.
 
@@ -598,9 +600,9 @@ class ARFFReader(DelimitedReader):
         for line in f:
             # Process encoding
             if not isinstance(line, text_type):
-                decoded_line = UnicodeDammit(
-                    line, [
-                        'utf-8', 'windows-1252']).unicode_markup
+                decoded_line = UnicodeDammit(line,
+                                             ['utf-8',
+                                              'windows-1252']).unicode_markup
             else:
                 decoded_line = line
             line = decoded_line.strip()

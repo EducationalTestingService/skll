@@ -161,7 +161,7 @@ def make_rare_class_data():
     """
 
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, 16)]
-    y = [0]*5 + [1]*5 + [2]*5
+    y = [0] * 5 + [1] * 5 + [2] * 5
     X = np.vstack([np.identity(5), np.identity(5), np.identity(5)])
     feature_names = ['f{}'.format(i) for i in range(1, 6)]
     features = []
@@ -169,6 +169,7 @@ def make_rare_class_data():
         features.append(dict(zip(feature_names, row)))
 
     return FeatureSet('rare-class', ids, features=features, labels=y)
+
 
 def test_rare_class():
     """
@@ -273,10 +274,11 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
 
     if use_feature_hashing:
         sampler = 'RBFSampler'
-        sampler_parameters = {"gamma": 1.0, "n_components":50}
+        sampler_parameters = {"gamma": 1.0, "n_components": 50}
     else:
         sampler = 'Nystroem'
-        sampler_parameters = {"gamma": 1.0, "n_components":50, "kernel":'rbf'}
+        sampler_parameters = {"gamma": 1.0, "n_components": 50,
+                              "kernel": 'rbf'}
 
     learner = Learner('LogisticRegression',
                       sampler=sampler,
@@ -372,4 +374,3 @@ def test_test_file_and_test_location():
                                             'test_single_file.jsonlines'),
                                        test_location='foo')
     _parse_config_file(config_path)
-

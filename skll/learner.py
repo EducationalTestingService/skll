@@ -922,7 +922,7 @@ class Learner(object):
                 # type of label (int, string, binary)
 
                 if issubclass(examples.labels.dtype.type, int):
-                # If they're ints, class 1 and 2 are valid for classifiers,
+                    # If they're ints, class 1 and 2 are valid for classifiers,
                     if grid_objective not in _INT_CLASS_OBJ_FUNCS:
                         raise ValueError("{} is not a valid grid objective "
                                          "function for the {} learner with "
@@ -936,12 +936,12 @@ class Learner(object):
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner with string "
                                      "labels".format(grid_objective,
-                                                      self._model_type))
+                                                     self._model_type))
 
                 elif len(set(examples.labels)) == 2:
                     # If there are two labels, class 3 objectives are valid for
                     # classifiers regardless of the type of the label.
-                    if not grid_objective in _BINARY_CLASS_OBJ_FUNCS:
+                    if grid_objective not in _BINARY_CLASS_OBJ_FUNCS:
                         raise ValueError("{} is not a valid grid objective "
                                          "function for the {} learner with "
                                          "binary labels"
@@ -953,7 +953,6 @@ class Learner(object):
                                      "function for the {} learner"
                                      .format(grid_objective,
                                              self._model_type))
-
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1024,7 +1023,7 @@ class Learner(object):
         # classification
         if not issubclass(self._model_type, RegressorMixin):
             labels = np.array([self.label_dict[label] for label in
-                                examples.labels])
+                               examples.labels])
         else:
             labels = examples.labels
 
@@ -1051,7 +1050,7 @@ class Learner(object):
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(itervalues(grid_search_folds))
                 fold_labels = [grid_search_folds.get(curr_id, dummy_label) for
-                          curr_id in examples.ids]
+                               curr_id in examples.ids]
                 folds = FilteredLeaveOneLabelOut(fold_labels,
                                                  grid_search_folds,
                                                  examples)
@@ -1309,8 +1308,8 @@ class Learner(object):
                                   file=predictionfh)
                     else:
                         for example_id, pred in zip(example_ids, yhat):
-                            print('{0}\t{1}'.format(example_id,
-                                                    self.label_list[int(pred)]),
+                            print('%s\t%s' % (example_id,
+                                              self.label_list[int(pred)]),
                                   file=predictionfh)
 
         if (class_labels and not
@@ -1433,7 +1432,7 @@ class Learner(object):
             # Only retain IDs within folds if they're in grid_search_folds
             dummy_label = next(itervalues(cv_folds))
             fold_labels = [cv_folds.get(curr_id, dummy_label) for curr_id in
-                      examples.ids]
+                           examples.ids]
             # Only retain IDs within folds if they're in cv_folds
             kfold = FilteredLeaveOneLabelOut(fold_labels, cv_folds, examples)
             grid_search_folds = cv_folds

@@ -48,12 +48,12 @@ def make_cv_folds_data(num_examples_per_fold=100,
     X, _ = make_classification(n_samples=num_total_examples,
                                n_features=3, n_informative=3, n_redundant=0,
                                n_classes=2, random_state=1234567890)
-    y = np.array([0, 1] * int(num_total_examples/2))
+    y = np.array([0, 1] * int(num_total_examples / 2))
 
     # the folds mapping: the first num_examples_per_fold examples
     # are in fold 1 the second num_examples_per_fold are in
     # fold 2 and so on
-    foldgen = ([i]*num_examples_per_fold for i in range(num_folds))
+    foldgen = ([i] * num_examples_per_fold for i in range(num_folds))
     folds = list(itertools.chain(*foldgen))
 
     # now create the list of feature dictionaries
@@ -69,8 +69,8 @@ def make_cv_folds_data(num_examples_per_fold=100,
         features.append(feat_dict)
 
     # create the example IDs
-    ids = ['EXAMPLE_{}'.format(num_examples_per_fold * k + i) \
-            for k in range(num_folds) for i in range(num_examples_per_fold)]
+    ids = ['EXAMPLE_{}'.format(num_examples_per_fold * k + i)
+           for k in range(num_folds) for i in range(num_examples_per_fold)]
 
     # create the cross-validation feature set with or without feature hashing
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
@@ -123,4 +123,3 @@ def test_specified_cv_folds():
         eq_(len(fold_test_scores), grid_size)
         for fold_score in fold_test_scores:
             assert_func(fold_score, test_value)
-

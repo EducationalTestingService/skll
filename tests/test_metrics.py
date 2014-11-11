@@ -129,7 +129,8 @@ def check_invalid_regr_grid_obj_func(learner_name, grid_objective_function):
     """
     (train_fs, _, _) = make_regression_data()
     clf = Learner(learner_name)
-    grid_search_score = clf.train(train_fs, grid_objective=grid_objective_function)
+    grid_search_score = clf.train(train_fs,
+                                  grid_objective=grid_objective_function)
 
 
 def test_invalid_grid_obj_func():

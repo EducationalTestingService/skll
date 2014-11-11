@@ -98,10 +98,9 @@ def check_linear_models(name,
 
     # create a FeatureSet object with the data we want to use
     if use_feature_hashing:
-        train_fs, test_fs, weightdict = make_regression_data(num_examples=5000,
-                                                             num_features=10,
-                                                             use_feature_hashing=True,
-                                                             feature_bins=5)
+        train_fs, test_fs, weightdict = make_regression_data(
+            num_examples=5000, num_features=10, use_feature_hashing=True,
+            feature_bins=5)
     else:
         train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
                                                              num_features=3)
@@ -149,11 +148,11 @@ def check_linear_models(name,
 def test_linear_models():
 
     for (regressor_name,
-        use_feature_hashing,
-        use_rescaling) in product(['ElasticNet', 'Lasso', 'LinearRegression',
-                                   'Ridge', 'SVR', 'SGDRegressor'],
-                                  [False, True],
-                                  [False, True]):
+         use_feature_hashing,
+         use_rescaling) in product(['ElasticNet', 'Lasso', 'LinearRegression',
+                                    'Ridge', 'SVR', 'SGDRegressor'],
+                                   [False, True],
+                                   [False, True]):
 
         yield (check_linear_models, regressor_name, use_feature_hashing,
                use_rescaling)
@@ -195,20 +194,19 @@ def check_tree_models(name,
                                          0.75522913])
         expected_cor_range = [0.5, 0.6] if use_feature_hashing else [0.9, 1.0]
     else:
-        expected_feature_importances = ([0.40195655,
-                                         0.06702161,
-                                         0.25814858,
-                                         0.18183947,
-                                         0.09103379] if use_feature_hashing else
-                                        [0.07975691,
-                                         0.16122862,
-                                         0.75901447])
+        if use_feature_hashing:
+            expected_feature_importances = [0.40195655,
+                                            0.06702161,
+                                            0.25814858,
+                                            0.18183947,
+                                            0.09103379]
+        else:
+            expected_feature_importances = [0.07975691, 0.16122862, 0.75901447]
         expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
 
     feature_importances = learner.model.feature_importances_
     assert_allclose(feature_importances, expected_feature_importances,
                     rtol=1e-2)
-
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
@@ -226,11 +224,11 @@ def check_tree_models(name,
 def test_tree_models():
 
     for (regressor_name,
-        use_feature_hashing,
-        use_rescaling) in product(['DecisionTreeRegressor',
-                                   'RandomForestRegressor'],
-                                  [False, True],
-                                  [False, True]):
+         use_feature_hashing,
+         use_rescaling) in product(['DecisionTreeRegressor',
+                                    'RandomForestRegressor'],
+                                   [False, True],
+                                   [False, True]):
 
         yield (check_tree_models, regressor_name, use_feature_hashing,
                use_rescaling)
@@ -262,14 +260,14 @@ def check_ensemble_models(name,
 
     # make sure that the feature importances are as expected.
     if name.endswith('AdaBoostRegressor'):
-        expected_feature_importances = ([0.33260501,
-                                         0.07685393,
-                                         0.25858443,
-                                         0.19214259,
-                                         0.13981404] if use_feature_hashing else
-                                        [0.10266744,
-                                         0.18681777,
-                                         0.71051479])
+        if use_feature_hashing:
+            expected_feature_importances = [0.33260501,
+                                            0.07685393,
+                                            0.25858443,
+                                            0.19214259,
+                                            0.13981404]
+        else:
+            expected_feature_importances = [0.10266744, 0.18681777, 0.71051479]
     else:
         expected_feature_importances = ([0.204,
                                          0.172,
@@ -301,11 +299,11 @@ def check_ensemble_models(name,
 def test_ensemble_models():
 
     for (regressor_name,
-        use_feature_hashing,
-        use_rescaling) in product(['AdaBoostRegressor',
-                                   'GradientBoostingRegressor'],
-                                  [False, True],
-                                  [False, True]):
+         use_feature_hashing,
+         use_rescaling) in product(['AdaBoostRegressor',
+                                    'GradientBoostingRegressor'],
+                                   [False, True],
+                                   [False, True]):
 
         yield (check_ensemble_models, regressor_name, use_feature_hashing,
                use_rescaling)

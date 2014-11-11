@@ -95,7 +95,8 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
     # Build the observed/confusion matrix
     num_ratings = max_rating - min_rating + 1
-    observed = confusion_matrix(y_true, y_pred, labels=list(range(num_ratings)))
+    observed = confusion_matrix(y_true, y_pred,
+                                labels=list(range(num_ratings)))
     num_scored_items = float(len(y_true))
 
     # Build weight array if weren't passed one

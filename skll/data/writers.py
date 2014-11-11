@@ -576,7 +576,7 @@ class LibSVMWriter(Writer):
               file=output_file)
         print(' |', end=' ', file=output_file)
         if (PY2 and self.feat_set.has_labels and isinstance(label_,
-                                                             text_type)):
+                                                            text_type)):
             label_ = label_.encode('utf-8')
         if label_ in self.label_map:
             print('%s=%s' % (self._sanitize(self.label_map[label_]),

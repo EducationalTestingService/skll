@@ -130,7 +130,8 @@ def check_summary_score(use_feature_hashing=False):
     with open(join(_my_dir, 'output', ('{}_'
                                        'LogisticRegression.results'.format(outprefix)))) as f:
         outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr)
+                                      .groups()[0])
 
     with open(join(_my_dir, 'output', '{}_SVC.results'.format(outprefix))) as f:
         outstr = f.read()
