@@ -250,6 +250,11 @@ def _parse_config_file(config_path):
     """
     Parses a SKLL experiment configuration file with the given path.
     """
+
+    # Initialize logger
+    logger = logging.getLogger(__name__)
+
+
     config = _setup_config_parser(config_path)
 
     ###########################
@@ -260,13 +265,13 @@ def _parse_config_file(config_path):
     if config.has_option("General", "experiment_name"):
         experiment_name = config.get("General", "experiment_name")
     else:
-        raise ValueError("Configuration file does not contain an experiment name " +
+        raise ValueError("Configuration file does not contain experiment_name " +
                          "in the [Input] section.")
 
     if config.has_option("General", "task"):
         task = config.get("General", "task")
     else:
-        raise ValueError("Configuration file does not contain a task " +
+        raise ValueError("Configuration file does not contain task " +
                          "in the [Input] section.")
     if task not in _VALID_TASKS:
         raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
@@ -287,6 +292,19 @@ def _parse_config_file(config_path):
             raise ValueError("Configuration file does not contain" +
                              " option hasher_features, which is " +
                              "necessary when feature_hasher is True.")
+
+    # produce warnings if hasher_features is set but feature_hasher
+    # is missing or set to False.
+    if config.has_option("Input", "hasher_features"):
+        if not config.has_option("Input", "hasher_features"):
+            logger.warning("Ignoring hasher_features since feature_hasher" +
+                           " is missing from the config file.")
+        else:
+            feature_hasher = config.getboolean("Input", "feature_hasher")
+            if not feature_hasher:
+                logger.warning("Ignoring hasher_features since feature_hasher" +
+                               " is set to False.")
+
 
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
