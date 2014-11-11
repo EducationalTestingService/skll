@@ -256,12 +256,21 @@ def _parse_config_file(config_path):
     # extract parameters from the config file
 
     # General
-    task = config.get("General", "task")
+
+    if config.has_option("General", "experiment_name"):
+        experiment_name = config.get("General", "experiment_name")
+    else:
+        raise ValueError("Configuration file does not contain an experiment name " +
+                         "in the [Input] section.")
+
+    if config.has_option("General", "task"):
+        task = config.get("General", "task")
+    else:
+        raise ValueError("Configuration file does not contain a task " +
+                         "in the [Input] section.")
     if task not in _VALID_TASKS:
         raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
                          ' {}'.format(task, ', '.join(_VALID_TASKS)))
-
-    experiment_name = config.get("General", "experiment_name")
 
     # Input
     sampler = config.get("Input", "sampler")
@@ -285,7 +294,7 @@ def _parse_config_file(config_path):
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
     learners = yaml.load(_fix_json(learners_string))
-    if len(set(learners)) < len(learners):
+    if len(learners) == 0 or len(set(learners)) < len(learners):
         raise ValueError('Configuration file containes the same learner '
                          'multiple times, which is not currently supported.  '
                          'Please use param_grids with tuning to find the '
