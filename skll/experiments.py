@@ -326,14 +326,11 @@ def _parse_config_file(config_path):
                          "in the [Input] section.")
 
     # ensure that featuresets is either a list of features or a list of lists
-    # of features and that if it is a list, it's not empty
+    # of features
     if not isinstance(featuresets, list) or not all(isinstance(fs, list) for fs
                                                     in featuresets):
         raise ValueError("The featuresets parameter should be a list of features or a " +
                          "list of lists of features. You specified: {}".format(featuresets))
-
-    if isinstance(featuresets, list) and len(featuresets) == 0:
-        raise ValueError("The featuresets parameters cannot be an empty list.")
 
     featureset_names = yaml.load(_fix_json(config.get("Input",
                                                       "featureset_names")))
@@ -381,6 +378,11 @@ def _parse_config_file(config_path):
 
     train_file = config.get("Input", "train_file")
     test_file = config.get("Input", "test_file")
+
+    # make sure that featuresets is not an empty list unless
+    # train_file and test_file are specified
+    if not train_file and not test_file and isinstance(featuresets, list) and len(featuresets) == 0:
+        raise ValueError("The featuresets parameters cannot be an empty list.")
 
     # The user must specify either train_file or train_path, not both.
     if not train_file and not train_path:
