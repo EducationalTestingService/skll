@@ -159,7 +159,6 @@ def test_equality():
                                       feature_prefix='g',
                                       train_test_ratio=1.0)
 
-
     # create a featureset with a different set of labels
     # and everything else the same
     fs4, _ = make_classification_data(num_examples=100,
@@ -225,18 +224,17 @@ def test_merge_different_vectorizers():
 
     # create a featureset each with a DictVectorizer
     fs1, _ = make_classification_data(num_examples=100,
-                                     num_features=4,
-                                     num_labels=3,
-                                     train_test_ratio=1.0)
-
+                                      num_features=4,
+                                      num_labels=3,
+                                      train_test_ratio=1.0)
 
     # create another featureset using hashing
     fs2, _ = make_classification_data(num_examples=100,
-                                     num_features=4,
-                                     feature_prefix='g',
-                                     num_labels=3,
-                                     train_test_ratio=1.0,
-                                     use_feature_hashing=True)
+                                      num_features=4,
+                                      feature_prefix='g',
+                                      num_labels=3,
+                                      train_test_ratio=1.0,
+                                      use_feature_hashing=True)
     # This should raise a ValueError
     fs1 + fs2
 
@@ -249,20 +247,20 @@ def test_merge_different_hashers():
 
     # create a feature set with 4 feature hashing bins
     fs1, _ = make_classification_data(num_examples=100,
-                                     num_features=10,
-                                     num_labels=3,
-                                     train_test_ratio=1.0,
-                                     use_feature_hashing=True,
-                                     feature_bins=4)
+                                      num_features=10,
+                                      num_labels=3,
+                                      train_test_ratio=1.0,
+                                      use_feature_hashing=True,
+                                      feature_bins=4)
 
     # create a second feature set with 3 feature hashing bins
     fs2, _ = make_classification_data(num_examples=100,
-                                     num_features=10,
-                                     num_labels=3,
-                                     feature_prefix='g',
-                                     train_test_ratio=1.0,
-                                     use_feature_hashing=True,
-                                     feature_bins=3)
+                                      num_features=10,
+                                      num_labels=3,
+                                      feature_prefix='g',
+                                      train_test_ratio=1.0,
+                                      use_feature_hashing=True,
+                                      feature_bins=3)
 
     fs = fs1 + fs2
 
@@ -275,18 +273,17 @@ def test_merge_different_labels_same_ids():
 
     # create a feature set
     fs1, _ = make_classification_data(num_examples=100,
-                                     num_features=4,
-                                     num_labels=3,
-                                     train_test_ratio=1.0)
-
+                                      num_features=4,
+                                      num_labels=3,
+                                      train_test_ratio=1.0)
 
     # create a different feature set that has everything
     # the same but has different labels for the same IDs
     fs2, _ = make_classification_data(num_examples=100,
-                                     num_features=4,
-                                     num_labels=3,
-                                     feature_prefix='g',
-                                     train_test_ratio=1.0)
+                                      num_features=4,
+                                      num_labels=3,
+                                      feature_prefix='g',
+                                      train_test_ratio=1.0)
 
     # artificially modify the class labels
     fs2.labels = fs2.labels + 1
@@ -299,20 +296,19 @@ def test_merge_missing_labels():
     Test to ensure that labels are sucessfully copied when merging
     """
 
-
     # create a feature set
     fs1, _ = make_classification_data(num_examples=100,
-                                     num_features=4,
-                                     num_labels=3,
-                                     train_test_ratio=1.0)
+                                      num_features=4,
+                                      num_labels=3,
+                                      train_test_ratio=1.0)
 
     # create a different feature set with no labels specified
     fs2, _ = make_classification_data(num_examples=100,
-                                     num_features=4,
-                                     feature_prefix='g',
-                                     empty_labels=True,
-                                     num_labels=3,
-                                     train_test_ratio=1.0)
+                                      num_features=4,
+                                      feature_prefix='g',
+                                      empty_labels=True,
+                                      num_labels=3,
+                                      train_test_ratio=1.0)
 
     # merge the two featuresets in different orders
     fs12 = fs1 + fs2
@@ -330,18 +326,18 @@ def test_subtract():
 
     # create a feature set
     fs1, _ = make_classification_data(num_examples=100,
-                                     num_features=4,
-                                     num_labels=2,
-                                     train_test_ratio=1.0,
-                                     random_state=1234)
+                                      num_features=4,
+                                      num_labels=2,
+                                      train_test_ratio=1.0,
+                                      random_state=1234)
 
     # create a different feature set with the same feature names
     # but different feature values
     fs2, _ = make_classification_data(num_examples=100,
-                                     num_features=2,
-                                     num_labels=2,
-                                     train_test_ratio=1.0,
-                                     random_state=5678)
+                                      num_features=2,
+                                      num_labels=2,
+                                      train_test_ratio=1.0,
+                                      random_state=5678)
 
     # subtract fs1 from fs2, i.e., the features in fs2
     # should be removed from fs1 but nothing else should change
@@ -474,7 +470,12 @@ def check_filter_labels(inverse=False):
 
     # make sure that we removed the right things
     if inverse:
-        ids_kept = fs.ids[np.where(np.logical_not(np.in1d(fs.labels, labels_to_filter)))]
+        ids_kept = fs.ids[
+            np.where(
+                np.logical_not(
+                    np.in1d(
+                        fs.labels,
+                        labels_to_filter)))]
     else:
         ids_kept = fs.ids[np.where(np.in1d(fs.labels, labels_to_filter))]
 
@@ -547,7 +548,6 @@ def test_filter_with_hashing():
     """
     Test to ensure rejection of filtering by features when using hashing
     """
-
 
     # create a feature set
     fs, _ = make_classification_data(num_examples=100,
@@ -665,20 +665,20 @@ def check_load_featureset(suffix, numeric_ids):
     # Load unmerged data and merge it
     dirpath = join(_my_dir, 'train', 'test_merging')
     featureset = ['{}'.format(i) for i in range(num_feat_files)]
-    merged_examples = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    merged_exs = _load_featureset(dirpath, featureset, suffix, quiet=True)
 
     # Load pre-merged data
     featureset = ['all']
-    premerged_examples = _load_featureset(dirpath, featureset, suffix,
-                                          quiet=True)
+    premerged_exs = _load_featureset(dirpath, featureset, suffix,
+                                     quiet=True)
 
-    assert_array_equal(merged_examples.ids, premerged_examples.ids)
-    assert_array_equal(merged_examples.labels, premerged_examples.labels)
-    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_examples,
-                                                             premerged_examples):
+    assert_array_equal(merged_exs.ids, premerged_exs.ids)
+    assert_array_equal(merged_exs.labels, premerged_exs.labels)
+    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_exs,
+                                                             premerged_exs):
         eq_(merged_feats, premerged_feats)
-    eq_(sorted(merged_examples.vectorizer.feature_names_),
-        sorted(premerged_examples.vectorizer.feature_names_))
+    eq_(sorted(merged_exs.vectorizer.feature_names_),
+        sorted(premerged_exs.vectorizer.feature_names_))
 
 
 def test_load_featureset():
@@ -778,7 +778,7 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
                               vectorizer=feat_vectorizer)
         if from_suffix == '.libsvm':
             Writer.for_path(train_path, train_fs,
-                                      label_map=label_map).write()
+                            label_map=label_map).write()
         else:
             Writer.for_path(train_path, train_fs).write()
 
@@ -789,7 +789,7 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
                           vectorizer=feat_vectorizer)
     if to_suffix == '.libsvm':
         Writer.for_path(train_path, train_fs,
-                                  label_map=label_map).write()
+                        label_map=label_map).write()
     else:
         Writer.for_path(train_path, train_fs).write()
 
@@ -821,23 +821,23 @@ def check_convert_featureset(from_suffix, to_suffix):
     # format
     featureset = ['{}_{}'.format(feature_name_prefix, i) for i in
                   range(num_feat_files)]
-    merged_examples = _load_featureset(dirpath, featureset, to_suffix,
-                                       quiet=True)
+    merged_exs = _load_featureset(dirpath, featureset, to_suffix,
+                                  quiet=True)
 
     # Load pre-merged data in the `to_suffix` format
     featureset = ['{}_all'.format(feature_name_prefix)]
-    premerged_examples = _load_featureset(dirpath, featureset, to_suffix,
-                                          quiet=True)
+    premerged_exs = _load_featureset(dirpath, featureset, to_suffix,
+                                     quiet=True)
 
     # make sure that the pre-generated merged data in the to_suffix format
     # is the same as the converted, merged data in the to_suffix format
-    assert_array_equal(merged_examples.ids, premerged_examples.ids)
-    assert_array_equal(merged_examples.labels, premerged_examples.labels)
-    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_examples,
-                                                             premerged_examples):
+    assert_array_equal(merged_exs.ids, premerged_exs.ids)
+    assert_array_equal(merged_exs.labels, premerged_exs.labels)
+    for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_exs,
+                                                             premerged_exs):
         eq_(merged_feats, premerged_feats)
-    eq_(sorted(merged_examples.vectorizer.feature_names_),
-        sorted(premerged_examples.vectorizer.feature_names_))
+    eq_(sorted(merged_exs.vectorizer.feature_names_),
+        sorted(premerged_exs.vectorizer.feature_names_))
 
 
 def test_convert_featureset():

@@ -316,8 +316,9 @@ def _parse_config_file(config_path):
 
     fixed_parameter_list = yaml.load(_fix_json(config.get("Input",
                                                           "fixed_parameters")))
-    fixed_sampler_parameters = yaml.load(_fix_json(config.get("Input",
-                                                              "sampler_parameters")))
+    fixed_sampler_parameters = _fix_json(config.get("Input",
+                                                    "sampler_parameters"))
+    fixed_sampler_parameters = yaml.load(fixed_sampler_parameters)
     param_grid_list = yaml.load(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
 
@@ -682,9 +683,9 @@ def _classify_featureset(args):
                                     'shuffle': shuffle,
                                     'learner_name': learner_name,
                                     'task': task,
-                                    'start_timestamp': start_timestamp\
-                                                       .strftime('%d %b %Y %H:'
-                                                                 '%M:%S.%f'),
+                                    'start_timestamp':
+                                    start_timestamp.strftime('%d %b %Y %H:%M:'
+                                                             '%S.%f'),
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'grid_search': grid_search,
@@ -767,8 +768,8 @@ def _classify_featureset(args):
         learner_result_dict_base['total_time'] = str(total_time)
 
         if task == 'cross_validate' or task == 'evaluate':
-            results_json_path = join(results_path, '{}.results.json'
-                                                           .format(job_name))
+            results_json_path = join(results_path,
+                                     '{}.results.json'.format(job_name))
 
             res = _create_learner_result_dicts(task_results, grid_scores,
                                                learner_result_dict_base)
@@ -779,7 +780,7 @@ def _classify_featureset(args):
                 json.dump(res, json_file)
 
             with open(join(results_path,
-                                   '{}.results'.format(job_name)),
+                           '{}.results'.format(job_name)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
         else:
@@ -1025,15 +1026,19 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                     for excluded_features in combinations(features, i):
                         expanded_fs.append(sorted(featureset -
                                                   set(excluded_features)))
-                        expanded_fs_names.append(featureset_name + '_minus_' +
-                                                 _munge_featureset_name(excluded_features))
+                        expanded_fs_names.append(
+                            featureset_name +
+                            '_minus_' +
+                            _munge_featureset_name(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
                                               set(excluded_features)))
-                    expanded_fs_names.append(featureset_name + '_minus_' +
-                                             _munge_featureset_name(excluded_features))
+                    expanded_fs_names.append(
+                        featureset_name +
+                        '_minus_' +
+                        _munge_featureset_name(excluded_features))
             # Also add version with nothing removed as baseline
             expanded_fs.append(features)
             expanded_fs_names.append(featureset_name + '_all')
@@ -1083,7 +1088,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
             # Figure out result json file path
             result_json_path = join(results_path,
-                                            '{}.results.json'.format(job_name))
+                                    '{}.results.json'.format(job_name))
 
             # save the path to the results json file that will be written
             result_json_paths.append(result_json_path)

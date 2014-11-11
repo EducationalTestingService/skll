@@ -18,6 +18,7 @@ from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
 
+
 class FeatureSet(object):
 
     """
@@ -111,7 +112,6 @@ class FeatureSet(object):
                 (self.features.indices == other.features.indices).all() and
                 (self.features.indptr == other.features.indptr).all() and
                 self.vectorizer == other.vectorizer)
-
 
     def __iter__(self):
         """
@@ -251,7 +251,8 @@ class FeatureSet(object):
                                            features)}))
             if inverse:
                 all_columns = np.arange(self.features.shape[1])
-                columns = all_columns[np.logical_not(np.in1d(all_columns, columns))]
+                columns = all_columns[np.logical_not(np.in1d(all_columns,
+                                                             columns))]
             self.features = self.features[:, columns]
             self.vectorizer.restrict(columns, indices=True)
 
@@ -303,7 +304,6 @@ class FeatureSet(object):
             elif not inverse:
                 feat_dict = {}
             yield id_, label_, feat_dict
-
 
     def __sub__(self, other):
         """

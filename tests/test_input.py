@@ -13,7 +13,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
-import re
 from io import open
 from os.path import abspath, dirname, exists, join
 
@@ -80,5 +79,3 @@ def test_one_file_load_featureset():
                                       '', '', quiet=True)
     single_fs = _load_featureset(dirpath, featureset, suffix, quiet=True)
     eq_(single_file_fs, single_fs)
-
-

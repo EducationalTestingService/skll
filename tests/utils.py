@@ -131,5 +131,3 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
                          vectorizer=vectorizer)
 
     return (train_fs, test_fs, weightdict)
-
-

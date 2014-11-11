@@ -45,6 +45,7 @@ def setup():
     if not exists(output_dir):
         os.makedirs(output_dir)
 
+
 def tearDown():
     config_dir = join(_my_dir, 'configs')
     for cfg_file in glob.glob(join(config_dir, '*custom_learner.cfg')):
@@ -116,7 +117,7 @@ def test_majority_class_custom_learner():
 
     # This will make data where the last class happens about 50% of the time.
     class_weights = [(0.5 / (num_labels - 1))
-                             for x in range(num_labels - 1)] + [0.5]
+                     for x in range(num_labels - 1)] + [0.5]
     train_fs, test_fs = make_classification_data(num_examples=600,
                                                  train_test_ratio=0.8,
                                                  num_labels=num_labels,
@@ -144,9 +145,9 @@ def test_majority_class_custom_learner():
 
     outprefix = 'test_majority_class_custom_learner'
 
-    preds = read_predictions(
-        join(_my_dir, 'output', ('{}_{}_MajorityClassLearner.predictions'
-                                 .format(outprefix, outprefix))))
+    preds = read_predictions(join(_my_dir, 'output',
+                                  ('{}_{}_MajorityClassLearner.predictions'
+                                   .format(outprefix, outprefix))))
     expected = np.array([float(num_labels - 1) for x in preds])
     assert_array_equal(preds, expected)
 
@@ -183,8 +184,9 @@ def test_logistic_custom_learner():
 
     outprefix = 'test_logistic_custom_learner'
     preds = read_predictions(join(_my_dir, 'output',
-                                  ('{}_{}_CustomLogisticRegressionWrapper.predictions'
-                                   .format(outprefix, outprefix))))
+                                  ('{}_{}_CustomLogisticRegressionWrapper'
+                                   '.predictions'.format(outprefix,
+                                                         outprefix))))
 
     expected = read_predictions(join(_my_dir, 'output',
                                      ('{}_{}_LogisticRegression.predictions'
