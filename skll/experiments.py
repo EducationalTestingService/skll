@@ -305,7 +305,6 @@ def _parse_config_file(config_path):
                 logger.warning("Ignoring hasher_features since feature_hasher" +
                                " is set to False.")
 
-
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     else:
@@ -319,13 +318,22 @@ def _parse_config_file(config_path):
                          'optimal settings for the learner.')
     custom_learner_path = config.get("Input", "custom_learner_path")
 
-    featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
+    # make sure we have featuresets
+    if config.has_option("Input", "featuresets"):
+        featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
+    else:
+        raise ValueError("Configuration file does not contain featuresets " +
+                         "in the [Input] section.")
 
-    # ensure that featuresets is a list of lists
+    # ensure that featuresets is either a list of features or a list of lists
+    # of features and that if it is a list, it's not empty
     if not isinstance(featuresets, list) or not all(isinstance(fs, list) for fs
                                                     in featuresets):
-        raise ValueError("The featuresets parameter should be a " +
-                         "list of lists: {}".format(featuresets))
+        raise ValueError("The featuresets parameter should be a list of features or a " +
+                         "list of lists of features. You specified: {}".format(featuresets))
+
+    if isinstance(featuresets, list) and len(featuresets) == 0:
+        raise ValueError("The featuresets parameters cannot be an empty list.")
 
     featureset_names = yaml.load(_fix_json(config.get("Input",
                                                       "featureset_names")))
@@ -336,7 +344,7 @@ def _parse_config_file(config_path):
                 not all([isinstance(fs, string_types) for fs in
                          featureset_names])):
             raise ValueError("The featureset_names parameter should be a list "
-                             "of strings: {}".format(featureset_names))
+                             "of strings. You specified: {}".format(featureset_names))
 
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
