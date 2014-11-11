@@ -13,11 +13,10 @@ compute_eval_from_predictions
 Compute evaluation metrics from prediction files after you have run an
 experiment.
 
-filter_megam
-------------
-Filter MegaM file to remove features with names in stop word list (or non
-alphabetic characters). Also has side-effect of removing ``TEST``, ``TRAIN``,
-and ``DEV`` lines if they are present.
+filter_features
+---------------
+Filter feature file to remove (or keep) any instances with the specified IDs or
+labels.  Can also be used to remove/keep feature columns.
 
 generate_predictions
 --------------------
@@ -25,9 +24,9 @@ Loads a trained model and outputs predictions based on input feature files.
 Useful if you want to reuse a trained model as part of a larger system without
 creating configuration files.
 
-join_megam
-----------
-Combine MegaM files that contain features for the same examples.
+join_features
+-------------
+Combine multiple feature files into one larger file.
 
 print_model_weights
 -------------------
