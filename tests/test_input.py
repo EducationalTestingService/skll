@@ -141,9 +141,7 @@ def test_config_parsing_no_name():
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'False',
-                           'feature_scaling': 'none'}
+                           'results': output_dir}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -155,7 +153,7 @@ def test_config_parsing_no_name():
 
 def test_config_parsing_bad_task():
     """
-    Test to ensure config file parsing raises an error with invalid or missing tasks
+    Test to ensure config file parsing raises an error with invalid or missing task
     """
 
     train_dir = join(_my_dir, 'train')
@@ -170,9 +168,7 @@ def test_config_parsing_bad_task():
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'False',
-                           'feature_scaling': 'none'}
+                           'results': output_dir}
 
     for task_value, sub_prefix in zip([None, '', 'procrastinate'],
                                       ['no_task', 'missing_task', 'bad_task']):
@@ -203,9 +199,7 @@ def test_config_parsing_bad_learner():
                            'test_location': test_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'False',
-                           'feature_scaling': 'none'}
+                           'results': output_dir}
 
     for learners_list, sub_prefix in zip([None, '[]', 'LogisticRegression',
                                           "['LogisticRegression', 'LogisticRegression']"],
@@ -219,6 +213,134 @@ def test_config_parsing_bad_learner():
         config_path = fill_in_config_paths(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
-        # _parse_config_file(config_path)
         assert_raises(ValueError, _parse_config_file, config_path)
 
+
+@raises(ValueError)
+def test_config_parsing_bad_sampler():
+    """
+    Test to ensure config file parsing raises an error with an invalid sampler
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_location': train_dir,
+                           'test_location': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'sampler': 'RFBSampler'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_paths(config_template_path,
+                                       values_to_fill_dict, 'bad_sampler')
+
+    _parse_config_file(config_path)
+
+
+@raises(ValueError)
+def test_config_parsing_bad_hashing():
+    """
+    Test to ensure config file parsing raises an error when feature_hasher is
+    specified but not hasher_features
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_location': train_dir,
+                           'test_location': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'feature_hasher': 'True'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_paths(config_template_path,
+                                       values_to_fill_dict, 'bad_hashing')
+
+    _parse_config_file(config_path)
+
+
+def test_config_parsing_bad_featuresets():
+    """
+    Test to ensure config file parsing raises an error with badly specified featuresets
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_location': train_dir,
+                           'test_location': test_dir,
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    for featuresets, sub_prefix in zip([None, '[]', "{'f1', 'f2', 'f3'}",
+                                        "[['f1', 'f2'], 'f3', 'f4']"],
+                                       ['no_feats', 'empty_feats',
+                                        'non_list_feats1', 'non_list_feats2']):
+        if featuresets != None:
+            values_to_fill_dict['featuresets'] = featuresets
+
+        config_template_path = join(_my_dir, 'configs',
+                                    'test_config_parsing.template.cfg')
+        config_path = fill_in_config_paths(config_template_path,
+                                           values_to_fill_dict, sub_prefix)
+
+        assert_raises(ValueError, _parse_config_file, config_path)
+
+
+def test_config_parsing_bad_featurenames():
+    """
+    Test to ensure config file parsing raises an error with badly
+    specified featureset names
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_location': train_dir,
+                           'test_location': test_dir,
+                           'learners': "['LogisticRegression']",
+                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    for fname, sub_prefix in zip(["['set_a']", "['1', 2]", "set_a", "1"],
+                                   ['wrong_num_names', 'wrong_type_names',
+                                    'wrong_num_and_type1', 'wrong_num_and_type2']):
+        if fname != None:
+            values_to_fill_dict['featureset_names'] = fname
+
+        config_template_path = join(_my_dir, 'configs',
+                                    'test_config_parsing.template.cfg')
+        config_path = fill_in_config_paths(config_template_path,
+                                           values_to_fill_dict, sub_prefix)
+
+        assert_raises(ValueError, _parse_config_file, config_path)
