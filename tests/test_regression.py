@@ -12,18 +12,21 @@ the future.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import glob
 import math
+import os
 import re
 
 from itertools import product
-from os.path import abspath, dirname
+from os.path import abspath, dirname, join, exists
 
 from nose.tools import eq_, assert_almost_equal
 
 import numpy as np
 from numpy.testing import assert_allclose
 from sklearn.utils.testing import assert_greater, assert_less
-from skll.data import FeatureSet
+from skll.data import FeatureSet, NDJWriter
+from skll.experiments import _setup_config_parser, run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from scipy.stats import pearsonr
@@ -36,6 +39,40 @@ SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
                              r'([\-\d\.]+)')
 GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
+
+
+def setup():
+    train_dir = join(_my_dir, 'train')
+    if not exists(train_dir):
+        os.makedirs(train_dir)
+    test_dir = join(_my_dir, 'test')
+    if not exists(test_dir):
+        os.makedirs(test_dir)
+    output_dir = join(_my_dir, 'output')
+    if not exists(output_dir):
+        os.makedirs(output_dir)
+
+
+def tearDown():
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+    config_dir = join(_my_dir, 'configs')
+
+    train_file = join(train_dir, 'fancy_train.jsonlines')
+    if exists(train_file):
+        os.unlink(train_file)
+
+    test_file = join(test_dir, 'fancy_test.jsonlines')
+    if exists(test_file):
+        os.unlink(test_file)
+
+    for output_file in glob.glob(join(output_dir, 'regression_fancy_output_*')):
+        os.unlink(output_file)
+
+    config_file = join(config_dir, 'test_regression_fancy_output.cfg')
+    if exists(config_file):
+        os.unlink(config_file)
 
 
 # a utility function to check rescaling for linear models
@@ -307,3 +344,94 @@ def test_ensemble_models():
 
         yield (check_ensemble_models, regressor_name, use_feature_hashing,
                use_rescaling)
+
+
+def fill_in_config_paths_for_fancy_output(config_template_path):
+    """
+    Add paths to train, test, and output directories to a given config template
+    file.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    config = _setup_config_parser(config_template_path)
+
+    config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
+    config.set("Input", "test_location", join(test_dir, "fancy_test.jsonlines"))
+    config.set("Output", "results", output_dir)
+    config.set("Output", "log", output_dir)
+    config.set("Output", "predictions", output_dir)
+
+    config_prefix = re.search(r'^(.*)\.template\.cfg',
+                              config_template_path).groups()[0]
+    new_config_path = '{}.cfg'.format(config_prefix)
+
+    with open(new_config_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    return new_config_path
+
+
+
+def test_fancy_output():
+    """
+    Test the descriptive statistics output in the results file for a regressor
+    """
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000,
+                                                num_features=3)
+
+
+    # train a regression model using the train feature set
+    learner = Learner('LinearRegression')
+    learner.train(train_fs, grid_objective='pearson')
+
+    # evaluate the trained model using the test feature set
+    resultdict = learner.evaluate(test_fs)
+    actual_stats_from_api = dict(resultdict[2]['descriptive']['actual'])
+    predicted_stats_from_api = dict(resultdict[2]['descriptive']['predicted'])
+
+    # write out the training and test feature set
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    train_writer = NDJWriter(join(train_dir, 'fancy_train.jsonlines'), train_fs)
+    train_writer.write()
+    test_writer = NDJWriter(join(test_dir, 'fancy_test.jsonlines'), test_fs)
+    test_writer.write()
+
+    # now get the config file template, fill it in and run it
+    # so that we can get a results file
+    config_template_path = join(_my_dir, 'configs',
+                                'test_regression_fancy_output.template.cfg')
+    config_path = fill_in_config_paths_for_fancy_output(config_template_path)
+
+    run_configuration(config_path, quiet=True)
+
+    # read in the results file and get the descriptive statistics
+    actual_stats_from_file = {}
+    predicted_stats_from_file = {}
+    with open(join(output_dir, 'regression_fancy_output_train_fancy_train.jsonlines_LinearRegression.results'), 'r') as resultf:
+
+        result_output = resultf.read().strip().split('\n')
+        for desc_stat_line in result_output[27:31]:
+            desc_stat_line = desc_stat_line.strip()
+            if not desc_stat_line:
+                continue
+            else:
+                m = re.search(r'([A-Za-z]+)\s+=\s+(-?[0-9]+.?[0-9]*)\s+\((actual)\),\s+(-?[0-9]+.?[0-9]*)\s+\((predicted)\)', desc_stat_line)
+                stat_type, actual_value, _, predicted_value, _ = m.groups()
+                actual_stats_from_file[stat_type.lower()] = float(actual_value)
+                predicted_stats_from_file[stat_type.lower()] = float(predicted_value)
+
+    for stat_type in actual_stats_from_api:
+
+        assert_almost_equal(actual_stats_from_file[stat_type],
+                            actual_stats_from_api[stat_type],
+                            places=4)
+
+        assert_almost_equal(predicted_stats_from_file[stat_type],
+                            predicted_stats_from_api[stat_type],
+                            places=4)
