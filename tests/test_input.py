@@ -603,8 +603,7 @@ def test_config_parsing_bad_task_paths():
         config_path = fill_in_config_paths(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
-        _parse_config_file(config_path)
-        # assert_raises(ValueError, _parse_config_file, config_path)
+        assert_raises(ValueError, _parse_config_file, config_path)
 
         if sub_prefix == 'xv_with_test_file':
             test_fh1.close()
