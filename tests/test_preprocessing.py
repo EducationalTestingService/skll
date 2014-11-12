@@ -9,6 +9,7 @@ Tests related to data preprocessing options with run_experiment.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import glob
 import os
 import re
 from io import open
@@ -43,6 +44,28 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+
+
+def tearDown():
+    output_dir = join(_my_dir, 'output')
+    config_dir = join(_my_dir, 'configs')
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+
+    for output_file in glob.glob(join(output_dir, 'test_class_map_*')):
+        os.unlink(output_file)
+
+    if exists(join(train_dir, 'test_class_map.jsonlines')):
+        os.unlink(join(train_dir, 'test_class_map.jsonlines'))
+
+    if exists(join(test_dir, 'test_class_map.jsonlines')):
+        os.unlink(join(test_dir, 'test_class_map.jsonlines'))
+
+    config_files = ['test_class_map.cfg',
+                    'test_class_map_feature_hasher.cfg']
+    for cf in config_files:
+        if exists(join(config_dir, cf)):
+            os.unlink(join(config_dir, cf))
 
 
 def fill_in_config_paths(config_template_path):

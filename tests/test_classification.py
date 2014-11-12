@@ -12,6 +12,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
+import glob
 import itertools
 import json
 import os
@@ -53,6 +54,28 @@ def setup():
     if not exists(output_dir):
         os.makedirs(output_dir)
 
+
+def tearDown():
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+    config_dir = join(_my_dir, 'configs')
+
+    if exists(join(train_dir, 'train_single_file.jsonlines')):
+        os.unlink(join(train_dir, 'train_single_file.jsonlines'))
+
+    if exists(join(test_dir, 'test_single_file.jsonlines')):
+        os.unlink(join(test_dir, 'test_single_file.jsonlines'))
+
+    if exists(join(output_dir, 'rare_class.predictions')):
+        os.unlink(join(output_dir, 'rare_class.predictions'))
+
+    for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
+        os.unlink(output_file)
+
+    config_file = join(config_dir, 'test_single_file.cfg')
+    if exists(config_file):
+        os.unlink(config_file)
 
 def fill_in_config_paths(config_template_path, train_file, test_file,
                          train_location='', test_location=''):

@@ -46,6 +46,22 @@ def setup():
         os.makedirs(output_dir)
 
 
+def tearDown():
+    output_dir = join(_my_dir, 'output')
+    config_dir = join(_my_dir, 'configs')
+
+    for output_file in glob.glob(join(output_dir, 'ablation_cv_*')):
+        os.unlink(output_file)
+
+    config_files = ['test_ablation.cfg',
+                    'test_ablation_feature_hasher.cfg',
+                    'test_ablation_sampler.cfg',
+                    'test_ablation_feature_hasher_sampler.cfg']
+    for cf in config_files:
+        if exists(join(config_dir, cf)):
+            os.unlink(join(config_dir, cf))
+
+
 def fill_in_config_paths(config_template_path):
     """
     Add paths to train, test, and output directories to a given config template

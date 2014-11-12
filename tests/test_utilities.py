@@ -74,18 +74,28 @@ def tearDown():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
     other_dir = join(_my_dir, 'other')
+
     if exists(join(test_dir, 'test_generate_predictions.jsonlines')):
         os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
+
+    for model_chunk in glob(join(output_dir,
+                                 'test_print_model_weights.model*')):
+        os.unlink(model_chunk)
+
     for model_chunk in glob(join(output_dir,
                                  'test_generate_predictions.model*')):
         os.unlink(model_chunk)
+
     for model_chunk in glob(join(output_dir,
                                  'test_generate_predictions_console.model*')):
         os.unlink(model_chunk)
+
     for f in glob(join(other_dir, 'test_skll_convert*')):
         os.unlink(f)
+
     if exists(join(other_dir, 'summary_file')):
         os.unlink(join(other_dir, 'summary_file'))
+
     if exists(join(other_dir, 'test_filter_features_input.arff')):
         os.unlink(join(other_dir, 'test_filter_features_input.arff'))
     for ffile in glob(join(other_dir,

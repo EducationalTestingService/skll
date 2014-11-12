@@ -11,6 +11,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
+import glob
 import os
 import re
 import sys
@@ -43,6 +44,29 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+
+
+def tearDown():
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+    config_dir = join(_my_dir, 'configs')
+
+    if exists(join(train_dir, 'test_summary.jsonlines')):
+        os.unlink(join(train_dir, 'test_summary.jsonlines'))
+
+    if exists(join(test_dir, 'test_summary.jsonlines')):
+        os.unlink(join(test_dir, 'test_summary.jsonlines'))
+
+    config_files = ['test_summary.cfg',
+                    'test_summary_feature_hasher.cfg']
+    for cf in config_files:
+        if exists(join(config_dir, cf)):
+            os.unlink(join(config_dir, cf))
+
+    for output_file in glob.glob(join(output_dir, 'test_summary_*')) \
+                       + glob.glob(join(output_dir, 'test_majority_class_custom_learner_*')):
+        os.unlink(output_file)
 
 
 def fill_in_config_paths(config_template_path):

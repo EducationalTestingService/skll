@@ -47,9 +47,26 @@ def setup():
 
 
 def tearDown():
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
+
+    input_files = ['test_logistic_custom_learner.jsonlines',
+                   'test_majority_class_custom_learner.jsonlines']
+    for inf in input_files:
+        if exists(join(train_dir, inf)):
+            os.unlink(join(train_dir, inf))
+        if exists(join(test_dir, inf)):
+            os.unlink(join(test_dir, inf))
+
+
     for cfg_file in glob.glob(join(config_dir, '*custom_learner.cfg')):
         os.unlink(cfg_file)
+
+    for output_file in glob.glob(join(output_dir, 'test_logistic_custom_learner_*')) \
+                       + glob.glob(join(output_dir, 'test_majority_class_custom_learner_*')):
+        os.unlink(output_file)
 
 
 def fill_in_config_paths(config_template_path):
