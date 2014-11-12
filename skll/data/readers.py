@@ -679,7 +679,7 @@ def safe_float(text, replace_dict=None):
     """
 
     # convert to text to be "Safe"!
-    text = str(text)
+    text = text_type(text)
 
     if replace_dict is not None:
         if text in replace_dict:
