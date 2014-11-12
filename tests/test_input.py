@@ -22,6 +22,7 @@ from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, raises, assert_raises
 from skll.experiments import _load_featureset, _setup_config_parser, _parse_config_file
+from skll.data.readers import safe_float
 
 _my_dir = abspath(dirname(__file__))
 
@@ -42,6 +43,17 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
     for config_file in glob.glob(join(config_dir, 'test_config_parsing_*.cfg')):
         os.unlink(config_file)
+
+
+def test_safe_float_conversion():
+    """
+    Tests for the safe_float number conversion
+    """
+    for input_val, expected_val in zip(['1.234', 1.234, '3.0', '3', 3],
+                                     [1.234, 1.234, 3.0, 3, 3]):
+        converted_val = safe_float(input_val)
+        eq_(converted_val, expected_val)
+        eq_(type(converted_val), type(expected_val))
 
 
 def fill_in_config_paths(config_template_path, values_to_fill_dict, sub_prefix):
