@@ -249,8 +249,7 @@ def test_config_parsing_bad_sampler():
 @raises(ValueError)
 def test_config_parsing_bad_hashing():
     """
-    Test to ensure config file parsing raises an error when feature_hasher is
-    specified but not hasher_features
+    Test to ensure config file parsing raises an error when feature_hasher is specified but not hasher_features
     """
 
     train_dir = join(_my_dir, 'train')
@@ -313,8 +312,7 @@ def test_config_parsing_bad_featuresets():
 
 def test_config_parsing_bad_featurenames():
     """
-    Test to ensure config file parsing raises an error with badly
-    specified featureset names
+    Test to ensure config file parsing raises an error with badly specified featureset names
     """
 
     train_dir = join(_my_dir, 'train')
@@ -382,8 +380,7 @@ def test_config_parsing_bad_scaling():
 
 def test_config_parsing_bad_train():
     """
-    Test to ensure config file parsing raises an error with invalid train
-    path or file specifications
+    Test to ensure config file parsing raises an error with invalid train path specifications
     """
 
     train_dir = join(_my_dir, 'train')
@@ -432,8 +429,7 @@ def test_config_parsing_bad_train():
 
 def test_config_parsing_bad_test():
     """
-    Test to ensure config file parsing raises an error with invalid test
-    path or file specifications
+    Test to ensure config file parsing raises an error with invalid test path specifications
     """
 
     train_dir = join(_my_dir, 'train')
@@ -511,8 +507,7 @@ def test_config_parsing_bad_objective():
 
 def test_config_parsing_bad_task_paths():
     """
-    Test to ensure config file parsing raises an error with incorrectly
-    set paths for models, results and predictions etc. for various tasks
+    Test to ensure config file parsing raises an error with various incorrectly set path
     """
 
     train_dir = join(_my_dir, 'train')
