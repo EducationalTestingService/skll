@@ -479,4 +479,137 @@ def test_config_parsing_bad_test():
             test_fh.close()
 
 
+@raises(ValueError)
+def test_config_parsing_bad_objective():
+    """
+    Test to ensure config file parsing raises an error with an invalid grid objective
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_location': train_dir,
+                           'test_location': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'foobar'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_paths(config_template_path,
+                                       values_to_fill_dict, 'bad_objective')
+
+    _parse_config_file(config_path)
+
+
+def test_config_parsing_bad_task_paths():
+    """
+    Test to ensure config file parsing raises an error with incorrectly
+    set paths for models, results and predictions etc. for various tasks
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'train_location': train_dir,
+                           'learners': "['LogisticRegression']",
+                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'log': output_dir}
+
+    for sub_prefix in ['predict_no_test', 'evaluate_no_test',
+                       'xv_with_test_path', 'train_with_test_path',
+                       'xv_with_test_file', 'train_with_test_file',
+                       'train_with_results', 'predict_with_results',
+                       'train_no_model', 'train_with_predictions',
+                       'xv_with_model']:
+
+        if sub_prefix == 'predict_no_test':
+            values_to_fill_dict['task'] = 'predict'
+            values_to_fill_dict['predictions'] = output_dir
+
+        elif sub_prefix == 'evaluate_no_test':
+            values_to_fill_dict['task'] = 'evaluate'
+            values_to_fill_dict['results'] = output_dir
+
+        elif sub_prefix == 'xv_with_test_path':
+            values_to_fill_dict['task'] = 'cross_validate'
+            values_to_fill_dict['results'] = output_dir
+            values_to_fill_dict['test_location'] = test_dir
+
+        elif sub_prefix == 'train_with_test_path':
+            values_to_fill_dict['task'] = 'train'
+            values_to_fill_dict['models'] = output_dir
+            values_to_fill_dict['test_location'] = test_dir
+
+        elif sub_prefix == 'xv_with_test_file':
+            values_to_fill_dict['task'] = 'cross_validate'
+            values_to_fill_dict['results'] = output_dir
+            test_fh1 = tempfile.NamedTemporaryFile(suffix='jsonlines',
+                                                    prefix=join(_my_dir,
+                                                                'other',
+                                                                'test_config_parsing_'))
+
+            values_to_fill_dict['test_file'] = test_fh1.name
+
+
+        elif sub_prefix == 'train_with_test_file':
+            values_to_fill_dict['task'] = 'train'
+            values_to_fill_dict['models'] = output_dir
+            test_fh2 = tempfile.NamedTemporaryFile(suffix='jsonlines',
+                                                    prefix=join(_my_dir,
+                                                                'other',
+                                                                'test_config_parsing_'))
+
+            values_to_fill_dict['test_file'] = test_fh2.name
+
+        elif sub_prefix == 'train_with_results':
+            values_to_fill_dict['task'] = 'train'
+            values_to_fill_dict['models'] = output_dir
+            values_to_fill_dict['results'] = output_dir
+
+        elif sub_prefix == 'predict_with_results':
+            values_to_fill_dict['task'] = 'predict'
+            values_to_fill_dict['test_location'] = test_dir
+            values_to_fill_dict['predictions'] = output_dir
+            values_to_fill_dict['results'] = output_dir
+
+        elif sub_prefix == 'train_no_model':
+            values_to_fill_dict['task'] = 'train'
+
+        elif sub_prefix == 'train_with_predictions':
+            values_to_fill_dict['task'] = 'train'
+            values_to_fill_dict['models'] = output_dir
+            values_to_fill_dict['predictions'] = output_dir
+
+        elif sub_prefix == 'xv_with_model':
+            values_to_fill_dict['task'] = 'cross_validate'
+            values_to_fill_dict['results'] = output_dir
+            values_to_fill_dict['models'] = output_dir
+
+
+        config_template_path = join(_my_dir, 'configs',
+                                    'test_config_parsing.template.cfg')
+        config_path = fill_in_config_paths(config_template_path,
+                                           values_to_fill_dict, sub_prefix)
+
+        _parse_config_file(config_path)
+        # assert_raises(ValueError, _parse_config_file, config_path)
+
+        if sub_prefix == 'xv_with_test_file':
+            test_fh1.close()
+
+        elif sub_prefix == 'train_with_test_file':
+            test_fh2.close()
+
 
