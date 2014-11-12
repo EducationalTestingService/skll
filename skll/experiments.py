@@ -356,7 +356,7 @@ def _parse_config_file(config_path):
 
     # ensure that feature_scaling is specified only as one of the
     # four available choices
-    feature_scaling = config.get("Tuning", "feature_scaling")
+    feature_scaling = config.get("Input", "feature_scaling")
     if feature_scaling not in ['with_std', 'with_mean', 'both', 'none']:
         raise ValueError("Invalid value for feature_scaling parameter: " +
                          "{}".format(feature_scaling))
