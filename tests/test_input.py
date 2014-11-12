@@ -56,8 +56,8 @@ def fill_in_config_paths(config_template_path, values_to_fill_dict, sub_prefix):
                   'Input': ['train_location', 'train_file',
                             'test_location', 'test_file', 'featuresets',
                             'featureset_names', 'feature_hasher', 'hasher_features',
-                            'learners', 'sampler', 'shuffle'],
-                  'Tuning': ['grid_search', 'objective', 'feature_scaling'],
+                            'learners', 'sampler', 'shuffle', 'feature_scaling'],
+                  'Tuning': ['grid_search', 'objective'],
                   'Output': ['probability', 'results', 'log', 'models',
                              'predictions']}
 
@@ -344,3 +344,139 @@ def test_config_parsing_bad_featurenames():
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)
+
+
+def test_config_parsing_bad_scaling():
+    """
+    Test to ensure config file parsing raises an error with invalid scaling type
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_location': train_dir,
+                           'test_location': test_dir,
+                           'learners': "['LogisticRegression']",
+                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    for scaling_type, sub_prefix in zip(["foo", "True", "False"],
+                                        ['bad_scaling1', 'bad_scaling2',
+                                         'bad_scaling3']):
+
+        values_to_fill_dict['feature_scaling'] = scaling_type
+
+        config_template_path = join(_my_dir, 'configs',
+                                    'test_config_parsing.template.cfg')
+        config_path = fill_in_config_paths(config_template_path,
+                                           values_to_fill_dict, sub_prefix)
+
+        assert_raises(ValueError, _parse_config_file, config_path)
+
+
+def test_config_parsing_bad_train():
+    """
+    Test to ensure config file parsing raises an error with invalid train
+    path or file specifications
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'test_location': test_dir,
+                           'learners': "['LogisticRegression']",
+                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    for sub_prefix in ['no_train_path_or_file',
+                       'both_train_path_and_file',
+                       'nonexistent_train_path',
+                       'nonexistent_test_file']:
+
+        if sub_prefix == 'both_train_path_and_file':
+            train_fh = tempfile.NamedTemporaryFile(suffix='jsonlines',
+                                                   prefix=join(_my_dir,
+                                                               'other',
+                                                               'test_config_parsing_'))
+            values_to_fill_dict['train_file'] = train_fh.name
+            values_to_fill_dict['train_location'] = train_dir
+
+        elif sub_prefix == 'nonexistent_train_path':
+            values_to_fill_dict['train_location'] = join(train_dir, 'foo')
+
+        elif sub_prefix == 'nonexistent_test_file':
+            values_to_fill_dict['train_file'] = 'foo.jsonlines'
+
+        config_template_path = join(_my_dir, 'configs',
+                                    'test_config_parsing.template.cfg')
+        config_path = fill_in_config_paths(config_template_path,
+                                           values_to_fill_dict, sub_prefix)
+
+        assert_raises(ValueError, _parse_config_file, config_path)
+
+        if sub_prefix == 'both_train_path_and_file':
+            train_fh.close()
+
+
+def test_config_parsing_bad_test():
+    """
+    Test to ensure config file parsing raises an error with invalid test
+    path or file specifications
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_location': train_dir,
+                           'learners': "['LogisticRegression']",
+                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    for sub_prefix in ['both_test_path_and_file',
+                       'nonexistent_test_path',
+                       'nonexistent_test_file']:
+
+        if sub_prefix == 'both_test_path_and_file':
+            test_fh = tempfile.NamedTemporaryFile(suffix='jsonlines',
+                                                   prefix=join(_my_dir,
+                                                               'other',
+                                                               'test_config_parsing_'))
+            values_to_fill_dict['test_file'] = test_fh.name
+            values_to_fill_dict['test_location'] = test_dir
+
+        elif sub_prefix == 'nonexistent_test_path':
+            values_to_fill_dict['test_location'] = join(test_dir, 'foo')
+
+        elif sub_prefix == 'nonexistent_test_file':
+            values_to_fill_dict['test_file'] = 'foo.jsonlines'
+
+        config_template_path = join(_my_dir, 'configs',
+                                    'test_config_parsing.template.cfg')
+        config_path = fill_in_config_paths(config_template_path,
+                                           values_to_fill_dict, sub_prefix)
+
+        assert_raises(ValueError, _parse_config_file, config_path)
+
+        if sub_prefix == 'both_test_path_and_file':
+            test_fh.close()
+
+
+
