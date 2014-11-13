@@ -19,7 +19,7 @@ SciKit-Learn Laboratory
 .. image:: http://img.shields.io/pypi/l/skll.svg
    :alt: License
 
-.. image:: http://img.shields.io/badge/DOI-10.5281%20%2F%20zenodo.12521-blue.svg
+.. image:: http://img.shields.io/badge/DOI-10.5281%2Fzenodo.12521-blue.svg
    :target: http://dx.doi.org/10.5281/zenodo.12521
    :alt: DOI for citing SKLL 0.28.1
 
