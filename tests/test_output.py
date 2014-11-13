@@ -30,7 +30,6 @@ from utils import fill_in_config_paths, make_classification_data
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
                              r'([\-\d\.]+)')
-GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
 
 
