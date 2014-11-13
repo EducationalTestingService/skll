@@ -246,18 +246,32 @@ def _parse_config_file(config_path):
     """
     Parses a SKLL experiment configuration file with the given path.
     """
+
+    # Initialize logger
+    logger = logging.getLogger(__name__)
+
+
     config = _setup_config_parser(config_path)
 
     ###########################
     # extract parameters from the config file
 
     # General
-    task = config.get("General", "task")
+
+    if config.has_option("General", "experiment_name"):
+        experiment_name = config.get("General", "experiment_name")
+    else:
+        raise ValueError("Configuration file does not contain experiment_name " +
+                         "in the [Input] section.")
+
+    if config.has_option("General", "task"):
+        task = config.get("General", "task")
+    else:
+        raise ValueError("Configuration file does not contain task " +
+                         "in the [Input] section.")
     if task not in _VALID_TASKS:
         raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
                          ' {}'.format(task, ', '.join(_VALID_TASKS)))
-
-    experiment_name = config.get("General", "experiment_name")
 
     # Input
     sampler = config.get("Input", "sampler")
@@ -275,26 +289,49 @@ def _parse_config_file(config_path):
                              " option hasher_features, which is " +
                              "necessary when feature_hasher is True.")
 
+    # produce warnings if hasher_features is set but feature_hasher
+    # is missing or set to False.
+    if config.has_option("Input", "hasher_features"):
+        if not config.has_option("Input", "hasher_features"):
+            logger.warning("Ignoring hasher_features since feature_hasher" +
+                           " is missing from the config file.")
+        else:
+            feature_hasher = config.getboolean("Input", "feature_hasher")
+            if not feature_hasher:
+                logger.warning("Ignoring hasher_features since feature_hasher" +
+                               " is set to False.")
+
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     else:
         raise ValueError("Configuration file does not contain list of " +
                          "learners in [Input] section.")
     learners = yaml.load(_fix_json(learners_string))
-    if len(set(learners)) < len(learners):
-        raise ValueError('Configuration file containes the same learner '
+
+    if len(learners) == 0:
+        raise ValueError("Configuration file contains an empty list of " +
+                         "learners in the [Input] section.")
+
+    elif len(set(learners)) < len(learners):
+        raise ValueError('Configuration file contains the same learner '
                          'multiple times, which is not currently supported.  '
                          'Please use param_grids with tuning to find the '
                          'optimal settings for the learner.')
     custom_learner_path = config.get("Input", "custom_learner_path")
 
-    featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
+    # make sure we have featuresets
+    if config.has_option("Input", "featuresets"):
+        featuresets = yaml.load(_fix_json(config.get("Input", "featuresets")))
+    else:
+        raise ValueError("Configuration file does not contain featuresets " +
+                         "in the [Input] section.")
 
-    # ensure that featuresets is a list of lists
+    # ensure that featuresets is either a list of features or a list of lists
+    # of features
     if not isinstance(featuresets, list) or not all(isinstance(fs, list) for fs
                                                     in featuresets):
-        raise ValueError("The featuresets parameter should be a " +
-                         "list of lists: {}".format(featuresets))
+        raise ValueError("The featuresets parameter should be a list of features or a " +
+                         "list of lists of features. You specified: {}".format(featuresets))
 
     featureset_names = yaml.load(_fix_json(config.get("Input",
                                                       "featureset_names")))
@@ -305,7 +342,7 @@ def _parse_config_file(config_path):
                 not all([isinstance(fs, string_types) for fs in
                          featureset_names])):
             raise ValueError("The featureset_names parameter should be a list "
-                             "of strings: {}".format(featureset_names))
+                             "of strings. You specified: {}".format(featureset_names))
 
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
@@ -320,7 +357,7 @@ def _parse_config_file(config_path):
 
     # ensure that feature_scaling is specified only as one of the
     # four available choices
-    feature_scaling = config.get("Tuning", "feature_scaling")
+    feature_scaling = config.get("Input", "feature_scaling")
     if feature_scaling not in ['with_std', 'with_mean', 'both', 'none']:
         raise ValueError("Invalid value for feature_scaling parameter: " +
                          "{}".format(feature_scaling))
@@ -342,6 +379,11 @@ def _parse_config_file(config_path):
 
     train_file = config.get("Input", "train_file")
     test_file = config.get("Input", "test_file")
+
+    # make sure that featuresets is not an empty list unless
+    # train_file and test_file are specified
+    if not train_file and not test_file and isinstance(featuresets, list) and len(featuresets) == 0:
+        raise ValueError("The featuresets parameters cannot be an empty list.")
 
     # The user must specify either train_file or train_path, not both.
     if not train_file and not train_path:

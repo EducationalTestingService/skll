@@ -55,17 +55,17 @@ Requirements
 
 -  Python 2.7+
 -  `scikit-learn <http://scikit-learn.org/stable/>`__
--  `six <https://pypi.python.org/pypi/six>`__
--  `PrettyTable <http://pypi.python.org/pypi/PrettyTable>`__
+-  `six <https://warehouse.python.org/project/six>`__
+-  `PrettyTable <https://warehouse.python.org/project/PrettyTable>`__
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
--  `Grid Map <http://pypi.python.org/pypi/gridmap>`__ (only required if you plan
+-  `Grid Map <https://warehouse.python.org/project/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
--  `joblib <http://pypi.python.org/pypi/joblib>`__
--  `PyYAML <http://pypi.python.org/pypi/PyYAML>`__
--  `configparser <http://pypi.python.org/pypi/configparser>`__ (only required for
+-  `joblib <https://warehouse.python.org/project/joblib>`__
+-  `PyYAML <https://warehouse.python.org/project/PyYAML>`__
+-  `configparser <https://warehouse.python.org/project/configparser>`__ (only required for
    Python 2.7)
--  `logutils <http://pypi.python.org/pypi/logutils>`__ (only required for Python 2.7)
-
+-  `logutils <https://warehouse.python.org/project/logutils>`__ (only required for Python 2.7)
+-  `mock <https://warehouse.python.org/project/mock>`__ (only required for Python 2.7)
 
 Talks
 ~~~~~

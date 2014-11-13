@@ -12,26 +12,33 @@ the future.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import csv
 import itertools
-import re
 from io import open
-from os.path import abspath, dirname
+import os
+from os.path import abspath, dirname, join, exists
 
 import numpy as np
-from nose.tools import eq_
+from nose.tools import eq_, raises
+from six import PY2
+
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 from sklearn.utils.testing import assert_greater, assert_less
 from skll.data import FeatureSet
+from skll.experiments import _load_cv_folds
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
-SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
-                             r'([\-\d\.]+)')
-GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
+
+
+def tearDown():
+    fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
+    if exists(fold_file_path):
+        os.unlink(fold_file_path)
 
 
 def make_cv_folds_data(num_examples_per_fold=100,
@@ -53,7 +60,7 @@ def make_cv_folds_data(num_examples_per_fold=100,
     # the folds mapping: the first num_examples_per_fold examples
     # are in fold 1 the second num_examples_per_fold are in
     # fold 2 and so on
-    foldgen = ([i] * num_examples_per_fold for i in range(num_folds))
+    foldgen = ([str(i)] * num_examples_per_fold for i in range(num_folds))
     folds = list(itertools.chain(*foldgen))
 
     # now create the list of feature dictionaries
@@ -123,3 +130,47 @@ def test_specified_cv_folds():
         eq_(len(fold_test_scores), grid_size)
         for fold_score in fold_test_scores:
             assert_func(fold_score, test_value)
+
+
+def test_load_cv_folds():
+    """
+    Test to check that cross-validation folds are correctly loaded from a CSV file
+    """
+
+    # create custom CV folds
+    cv_fs, custom_cv_folds = make_cv_folds_data()
+
+    # write the generated CV folds to a CSV file
+    fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
+    with open(fold_file_path, 'wb' if PY2 else 'w') as foldf:
+        w = csv.writer(foldf)
+        w.writerow(['id', 'fold'])
+        for example_id, fold_label in custom_cv_folds.items():
+            w.writerow([example_id, fold_label])
+
+    # now read the CSV file using _load_cv_folds
+    custom_cv_folds_loaded = _load_cv_folds(fold_file_path)
+
+    eq_(custom_cv_folds_loaded, custom_cv_folds)
+
+
+@raises(ValueError)
+def test_load_cv_folds_non_float_ids():
+    """
+    Test to check that CV folds with non-float IDs raise error when converted to floats
+    """
+
+    # create custom CV folds
+    cv_fs, custom_cv_folds = make_cv_folds_data()
+
+    # write the generated CV folds to a CSV file
+    fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
+    with open(fold_file_path, 'wb' if PY2 else 'w') as foldf:
+        w = csv.writer(foldf)
+        w.writerow(['id', 'fold'])
+        for example_id, fold_label in custom_cv_folds.items():
+            w.writerow([example_id, fold_label])
+
+    # now read the CSV file using _load_cv_folds
+    custom_cv_folds_loaded = _load_cv_folds(fold_file_path, ids_to_floats=True)
+

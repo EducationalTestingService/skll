@@ -11,25 +11,23 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
+import glob
+import json
 import os
-import re
 import sys
 from io import open
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, assert_almost_equal
 from skll.data import FeatureSet, NDJWriter, Reader
-from skll.experiments import run_configuration, _setup_config_parser
+from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import make_classification_data
+from utils import fill_in_config_paths, make_classification_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
-SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
-                             r'([\-\d\.]+)')
-GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
 
 
@@ -45,51 +43,27 @@ def setup():
         os.makedirs(output_dir)
 
 
-def fill_in_config_paths(config_template_path):
-    """
-    Add paths to train, test, and output directories to a given config template
-    file.
-    """
-
+def tearDown():
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
+    config_dir = join(_my_dir, 'configs')
 
-    config = _setup_config_parser(config_template_path)
+    if exists(join(train_dir, 'test_summary.jsonlines')):
+        os.unlink(join(train_dir, 'test_summary.jsonlines'))
 
-    task = config.get("General", "task")
-    # experiment_name = config.get("General", "experiment_name")
+    if exists(join(test_dir, 'test_summary.jsonlines')):
+        os.unlink(join(test_dir, 'test_summary.jsonlines'))
 
-    config.set("Input", "train_location", train_dir)
+    config_files = ['test_summary.cfg',
+                    'test_summary_feature_hasher.cfg']
+    for cf in config_files:
+        if exists(join(config_dir, cf)):
+            os.unlink(join(config_dir, cf))
 
-    to_fill_in = ['log', 'predictions']
-
-    if task != 'cross_validate':
-        to_fill_in.append('models')
-
-    if task == 'evaluate' or task == 'cross_validate':
-        to_fill_in.append('results')
-
-    for d in to_fill_in:
-        config.set("Output", d, join(output_dir))
-
-    if task == 'cross_validate':
-        cv_folds_location = config.get("Input", "cv_folds_location")
-        if cv_folds_location:
-            config.set("Input", "cv_folds_location",
-                       join(train_dir, cv_folds_location))
-
-    if task == 'predict' or task == 'evaluate':
-        config.set("Input", "test_location", test_dir)
-
-    config_prefix = re.search(r'^(.*)\.template\.cfg',
-                              config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
-
-    with open(new_config_path, 'w') as new_config_file:
-        config.write(new_config_file)
-
-    return new_config_path
+    for output_file in glob.glob(join(output_dir, 'test_summary_*')) \
+                       + glob.glob(join(output_dir, 'test_majority_class_custom_learner_*')):
+        os.unlink(output_file)
 
 
 # Generate and write out data for the test that checks summary scores
@@ -128,22 +102,20 @@ def check_summary_score(use_feature_hashing=False):
     summprefix = 'test_summary_feature_hasher' if use_feature_hashing else 'test_summary'
 
     with open(join(_my_dir, 'output', ('{}_'
-                                       'LogisticRegression.results'.format(outprefix)))) as f:
-        outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr)
-                                      .groups()[0])
+                                       'LogisticRegression.results.json'.format(outprefix)))) as f:
+        outd = json.loads(f.read())
+        logistic_result_score = outd[0]['score']
 
-    with open(join(_my_dir, 'output', '{}_SVC.results'.format(outprefix))) as f:
-        outstr = f.read()
-        svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+    with open(join(_my_dir, 'output', '{}_SVC.results.json'.format(outprefix))) as f:
+        outd = json.loads(f.read())
+        svm_result_score = outd[0]['score']
 
     # note that Naive Bayes doesn't work with feature hashing
     if not use_feature_hashing:
         with open(join(_my_dir, 'output', ('{}_'
-                                           'MultinomialNB.results'.format(outprefix)))) as f:
-            outstr = f.read()
-            naivebayes_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
-            naivebayes_result_score = float(naivebayes_score_str)
+                                           'MultinomialNB.results.json'.format(outprefix)))) as f:
+            outd = json.loads(f.read())
+            naivebayes_result_score = outd[0]['score']
 
     with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
