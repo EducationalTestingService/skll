@@ -13,7 +13,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
-import re
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import raises, assert_almost_equal
@@ -25,9 +24,6 @@ from skll.metrics import kappa
 from utils import make_regression_data
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
-SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
-                             r'([\-\d\.]+)')
-GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
 
 

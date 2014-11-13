@@ -677,6 +677,10 @@ def safe_float(text, replace_dict=None):
                          same.
     :type replace_dict: dict from str to str
     """
+
+    # convert to text to be "Safe"!
+    text = text_type(text)
+
     if replace_dict is not None:
         if text in replace_dict:
             text = replace_dict[text]

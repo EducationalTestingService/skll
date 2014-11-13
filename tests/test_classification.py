@@ -12,6 +12,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
+import glob
 import itertools
 import json
 import os
@@ -36,9 +37,6 @@ from utils import make_classification_data, make_regression_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
-SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
-                             r'([\-\d\.]+)')
-GRID_RE = re.compile(r'Grid Objective Score \(Train\) = ([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
 
 
@@ -54,8 +52,31 @@ def setup():
         os.makedirs(output_dir)
 
 
-def fill_in_config_paths(config_template_path, train_file, test_file,
-                         train_location='', test_location=''):
+def tearDown():
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+    config_dir = join(_my_dir, 'configs')
+
+    if exists(join(train_dir, 'train_single_file.jsonlines')):
+        os.unlink(join(train_dir, 'train_single_file.jsonlines'))
+
+    if exists(join(test_dir, 'test_single_file.jsonlines')):
+        os.unlink(join(test_dir, 'test_single_file.jsonlines'))
+
+    if exists(join(output_dir, 'rare_class.predictions')):
+        os.unlink(join(output_dir, 'rare_class.predictions'))
+
+    for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
+        os.unlink(output_file)
+
+    config_file = join(config_dir, 'test_single_file.cfg')
+    if exists(config_file):
+        os.unlink(config_file)
+
+
+def fill_in_config_paths_for_single_file(config_template_path, train_file, test_file,
+                                         train_location='', test_location=''):
     """
     Add paths to train and test files, and output directories to a given config
     template file.
@@ -326,12 +347,12 @@ def test_train_file_test_file():
     make_single_file_featureset_data()
 
     # Run experiment
-    config_path = fill_in_config_paths(join(_my_dir, "configs",
-                                            "test_single_file.template.cfg"),
-                                       join(_my_dir, 'train',
-                                            'train_single_file.jsonlines'),
-                                       join(_my_dir, 'test',
-                                            'test_single_file.jsonlines'))
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file.template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.jsonlines'))
     run_configuration(config_path, quiet=True)
 
     # Check results
@@ -350,13 +371,13 @@ def test_train_file_and_train_location():
     Test that train_file + train_location = ValueError
     """
     # Run experiment
-    config_path = fill_in_config_paths(join(_my_dir, "configs",
-                                            "test_single_file.template.cfg"),
-                                       join(_my_dir, 'train',
-                                            'train_single_file.jsonlines'),
-                                       join(_my_dir, 'test',
-                                            'test_single_file.jsonlines'),
-                                       train_location='foo')
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file.template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.jsonlines'),
+                                                       train_location='foo')
     _parse_config_file(config_path)
 
 
@@ -366,11 +387,11 @@ def test_test_file_and_test_location():
     Test that test_file + test_location = ValueError
     """
     # Run experiment
-    config_path = fill_in_config_paths(join(_my_dir, "configs",
-                                            "test_single_file.template.cfg"),
-                                       join(_my_dir, 'train',
-                                            'train_single_file.jsonlines'),
-                                       join(_my_dir, 'test',
-                                            'test_single_file.jsonlines'),
-                                       test_location='foo')
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file.template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.jsonlines'),
+                                                       test_location='foo')
     _parse_config_file(config_path)
