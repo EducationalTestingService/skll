@@ -10,6 +10,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import glob
+import json
 import os
 import re
 from io import open
@@ -162,10 +163,12 @@ def test_class_map():
     run_configuration(config_path, quiet=True)
 
     with open(join(_my_dir, 'output', ('test_class_map_test_class_map_Logistic'
-                                       'Regression.results'))) as f:
-        outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
+                                       'Regression.results.json'))) as f:
+        outd = json.loads(f.read())
+        # outstr = f.read()
+        # logistic_result_score = float(
+            # SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = outd[0]['score']
 
     assert_almost_equal(logistic_result_score, 0.5)
 
@@ -184,10 +187,12 @@ def test_class_map_feature_hasher():
     run_configuration(config_path, quiet=True)
 
     with open(join(_my_dir, 'output', ('test_class_map_test_class_map_'
-                                       'LogisticRegression.results'))) as f:
-        outstr = f.read()
-        logistic_result_score = float(
-            SCORE_OUTPUT_RE.search(outstr).groups()[0])
+                                       'LogisticRegression.results.json'))) as f:
+        # outstr = f.read()
+        outd = json.loads(f.read())
+        # logistic_result_score = float(
+        #     SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = outd[0]['score']
 
     assert_almost_equal(logistic_result_score, 0.5)
 

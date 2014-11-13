@@ -12,8 +12,8 @@ from __future__ import (absolute_import, division, print_function,
 
 import csv
 import glob
+import json
 import os
-import re
 import sys
 from io import open
 from os.path import abspath, dirname, exists, join
@@ -28,8 +28,6 @@ from utils import fill_in_config_paths, make_classification_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
-SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
-                             r'([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))
 
 
@@ -104,22 +102,20 @@ def check_summary_score(use_feature_hashing=False):
     summprefix = 'test_summary_feature_hasher' if use_feature_hashing else 'test_summary'
 
     with open(join(_my_dir, 'output', ('{}_'
-                                       'LogisticRegression.results'.format(outprefix)))) as f:
-        outstr = f.read()
-        logistic_result_score = float(SCORE_OUTPUT_RE.search(outstr)
-                                      .groups()[0])
+                                       'LogisticRegression.results.json'.format(outprefix)))) as f:
+        outd = json.loads(f.read())
+        logistic_result_score = outd[0]['score']
 
-    with open(join(_my_dir, 'output', '{}_SVC.results'.format(outprefix))) as f:
-        outstr = f.read()
-        svm_result_score = float(SCORE_OUTPUT_RE.search(outstr).groups()[0])
+    with open(join(_my_dir, 'output', '{}_SVC.results.json'.format(outprefix))) as f:
+        outd = json.loads(f.read())
+        svm_result_score = outd[0]['score']
 
     # note that Naive Bayes doesn't work with feature hashing
     if not use_feature_hashing:
         with open(join(_my_dir, 'output', ('{}_'
-                                           'MultinomialNB.results'.format(outprefix)))) as f:
-            outstr = f.read()
-            naivebayes_score_str = SCORE_OUTPUT_RE.search(outstr).groups()[0]
-            naivebayes_result_score = float(naivebayes_score_str)
+                                           'MultinomialNB.results.json'.format(outprefix)))) as f:
+            outd = json.loads(f.read())
+            naivebayes_result_score = outd[0]['score']
 
     with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)), 'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
