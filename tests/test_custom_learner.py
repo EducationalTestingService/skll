@@ -15,7 +15,6 @@ from __future__ import (absolute_import, division, print_function,
 import csv
 import glob
 import os
-import re
 from io import open
 from os.path import abspath, dirname, exists, join
 

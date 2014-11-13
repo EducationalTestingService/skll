@@ -56,6 +56,11 @@ def fill_in_config_paths(config_template_path):
     if task == 'predict' or task == 'evaluate':
         config.set("Input", "test_location", test_dir)
 
+    # set up custom learner path, if relevant
+    custom_learner_path = config.get("Input", "custom_learner_path")
+    custom_learner_abs_path = join(_my_dir, custom_learner_path)
+    config.set("Input", "custom_learner_path", custom_learner_abs_path)
+
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
     new_config_path = '{}.cfg'.format(config_prefix)
