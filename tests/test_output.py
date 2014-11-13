@@ -20,11 +20,11 @@ from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, assert_almost_equal
 from skll.data import FeatureSet, NDJWriter, Reader
-from skll.experiments import run_configuration, _setup_config_parser
+from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import make_classification_data
+from utils import fill_in_config_paths, make_classification_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -67,53 +67,6 @@ def tearDown():
     for output_file in glob.glob(join(output_dir, 'test_summary_*')) \
                        + glob.glob(join(output_dir, 'test_majority_class_custom_learner_*')):
         os.unlink(output_file)
-
-
-def fill_in_config_paths(config_template_path):
-    """
-    Add paths to train, test, and output directories to a given config template
-    file.
-    """
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
-    config = _setup_config_parser(config_template_path)
-
-    task = config.get("General", "task")
-    # experiment_name = config.get("General", "experiment_name")
-
-    config.set("Input", "train_location", train_dir)
-
-    to_fill_in = ['log', 'predictions']
-
-    if task != 'cross_validate':
-        to_fill_in.append('models')
-
-    if task == 'evaluate' or task == 'cross_validate':
-        to_fill_in.append('results')
-
-    for d in to_fill_in:
-        config.set("Output", d, join(output_dir))
-
-    if task == 'cross_validate':
-        cv_folds_location = config.get("Input", "cv_folds_location")
-        if cv_folds_location:
-            config.set("Input", "cv_folds_location",
-                       join(train_dir, cv_folds_location))
-
-    if task == 'predict' or task == 'evaluate':
-        config.set("Input", "test_location", test_dir)
-
-    config_prefix = re.search(r'^(.*)\.template\.cfg',
-                              config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
-
-    with open(new_config_path, 'w') as new_config_file:
-        config.write(new_config_file)
-
-    return new_config_path
 
 
 # Generate and write out data for the test that checks summary scores

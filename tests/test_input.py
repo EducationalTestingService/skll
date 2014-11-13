@@ -56,7 +56,7 @@ def test_safe_float_conversion():
         eq_(type(converted_val), type(expected_val))
 
 
-def fill_in_config_paths(config_template_path, values_to_fill_dict, sub_prefix):
+def fill_in_config_paths_for_parsing(config_template_path, values_to_fill_dict, sub_prefix):
     """
     Add paths to train, test, and output directories to a given config template
     file.
@@ -157,7 +157,7 @@ def test_config_parsing_no_name():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths(config_template_path,
+    config_path = fill_in_config_paths_for_parsing(config_template_path,
                                        values_to_fill_dict, 'no_name')
 
     _parse_config_file(config_path)
@@ -188,7 +188,7 @@ def test_config_parsing_bad_task():
             values_to_fill_dict['task'] = task_value
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths(config_template_path,
+        config_path = fill_in_config_paths_for_parsing(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)
@@ -222,7 +222,7 @@ def test_config_parsing_bad_learner():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths(config_template_path,
+        config_path = fill_in_config_paths_for_parsing(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)
@@ -252,7 +252,7 @@ def test_config_parsing_bad_sampler():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths(config_template_path,
+    config_path = fill_in_config_paths_for_parsing(config_template_path,
                                        values_to_fill_dict, 'bad_sampler')
 
     _parse_config_file(config_path)
@@ -282,7 +282,7 @@ def test_config_parsing_bad_hashing():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths(config_template_path,
+    config_path = fill_in_config_paths_for_parsing(config_template_path,
                                        values_to_fill_dict, 'bad_hashing')
 
     _parse_config_file(config_path)
@@ -316,7 +316,7 @@ def test_config_parsing_bad_featuresets():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths(config_template_path,
+        config_path = fill_in_config_paths_for_parsing(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)
@@ -350,7 +350,7 @@ def test_config_parsing_bad_featurenames():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths(config_template_path,
+        config_path = fill_in_config_paths_for_parsing(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)
@@ -384,7 +384,7 @@ def test_config_parsing_bad_scaling():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths(config_template_path,
+        config_path = fill_in_config_paths_for_parsing(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)
@@ -430,7 +430,7 @@ def test_config_parsing_bad_train():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths(config_template_path,
+        config_path = fill_in_config_paths_for_parsing(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)
@@ -478,7 +478,7 @@ def test_config_parsing_bad_test():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths(config_template_path,
+        config_path = fill_in_config_paths_for_parsing(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)
@@ -511,7 +511,7 @@ def test_config_parsing_bad_objective():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths(config_template_path,
+    config_path = fill_in_config_paths_for_parsing(config_template_path,
                                        values_to_fill_dict, 'bad_objective')
 
     _parse_config_file(config_path)
@@ -607,7 +607,7 @@ def test_config_parsing_bad_task_paths():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths(config_template_path,
+        config_path = fill_in_config_paths_for_parsing(config_template_path,
                                            values_to_fill_dict, sub_prefix)
 
         assert_raises(ValueError, _parse_config_file, config_path)

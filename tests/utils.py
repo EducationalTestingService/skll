@@ -5,6 +5,10 @@ Utilities functions to make SKLL testing simpler
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import re
+
+from os.path import abspath, dirname, join
+
 import numpy as np
 from numpy.random import RandomState
 from sklearn.datasets.samples_generator import (make_classification,
@@ -12,6 +16,54 @@ from sklearn.datasets.samples_generator import (make_classification,
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
+from skll.experiments import _setup_config_parser
+
+_my_dir = abspath(dirname(__file__))
+
+def fill_in_config_paths(config_template_path):
+    """
+    Add paths to train, test, and output directories to a given config template
+    file.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    config = _setup_config_parser(config_template_path)
+
+    task = config.get("General", "task")
+
+    config.set("Input", "train_location", train_dir)
+
+    to_fill_in = ['log', 'vocabs', 'predictions']
+
+    if task != 'cross_validate':
+        to_fill_in.append('models')
+
+    if task == 'evaluate' or task == 'cross_validate':
+        to_fill_in.append('results')
+
+    for d in to_fill_in:
+        config.set("Output", d, join(output_dir))
+
+    if task == 'cross_validate':
+        cv_folds_location = config.get("Input", "cv_folds_location")
+        if cv_folds_location:
+            config.set("Input", "cv_folds_location",
+                       join(train_dir, cv_folds_location))
+
+    if task == 'predict' or task == 'evaluate':
+        config.set("Input", "test_location", test_dir)
+
+    config_prefix = re.search(r'^(.*)\.template\.cfg',
+                              config_template_path).groups()[0]
+    new_config_path = '{}.cfg'.format(config_prefix)
+
+    with open(new_config_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    return new_config_path
 
 
 def make_classification_data(num_examples=100, train_test_ratio=0.5,

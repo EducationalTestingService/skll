@@ -77,8 +77,9 @@ def tearDown():
     if exists(config_file):
         os.unlink(config_file)
 
-def fill_in_config_paths(config_template_path, train_file, test_file,
-                         train_location='', test_location=''):
+
+def fill_in_config_paths_for_single_file(config_template_path, train_file, test_file,
+                                         train_location='', test_location=''):
     """
     Add paths to train and test files, and output directories to a given config
     template file.
@@ -349,12 +350,12 @@ def test_train_file_test_file():
     make_single_file_featureset_data()
 
     # Run experiment
-    config_path = fill_in_config_paths(join(_my_dir, "configs",
-                                            "test_single_file.template.cfg"),
-                                       join(_my_dir, 'train',
-                                            'train_single_file.jsonlines'),
-                                       join(_my_dir, 'test',
-                                            'test_single_file.jsonlines'))
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file.template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.jsonlines'))
     run_configuration(config_path, quiet=True)
 
     # Check results
@@ -373,13 +374,13 @@ def test_train_file_and_train_location():
     Test that train_file + train_location = ValueError
     """
     # Run experiment
-    config_path = fill_in_config_paths(join(_my_dir, "configs",
-                                            "test_single_file.template.cfg"),
-                                       join(_my_dir, 'train',
-                                            'train_single_file.jsonlines'),
-                                       join(_my_dir, 'test',
-                                            'test_single_file.jsonlines'),
-                                       train_location='foo')
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file.template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.jsonlines'),
+                                                       train_location='foo')
     _parse_config_file(config_path)
 
 
@@ -389,11 +390,11 @@ def test_test_file_and_test_location():
     Test that test_file + test_location = ValueError
     """
     # Run experiment
-    config_path = fill_in_config_paths(join(_my_dir, "configs",
-                                            "test_single_file.template.cfg"),
-                                       join(_my_dir, 'train',
-                                            'train_single_file.jsonlines'),
-                                       join(_my_dir, 'test',
-                                            'test_single_file.jsonlines'),
-                                       test_location='foo')
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file.template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.jsonlines'),
+                                                       test_location='foo')
     _parse_config_file(config_path)
