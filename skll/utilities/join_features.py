@@ -72,7 +72,7 @@ def main(argv=None):
     input_extension = list(input_extension_set)[0]
 
     if input_extension not in valid_extensions:
-        logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
+        logger.error(('Input files must be in either .arff, .csv, .jsonlines, '
                       '.megam, .ndj, or .tsv format. You specified: '
                       '{}').format(input_extension))
         sys.exit(1)
