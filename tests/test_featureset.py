@@ -38,6 +38,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -257,8 +260,8 @@ def test_merge_different_hashers():
                                       train_test_ratio=1.0,
                                       use_feature_hashing=True,
                                       feature_bins=3)
-
-    fs = fs1 + fs2
+    # This should raise a ValueError
+    fs1 + fs2
 
 
 @raises(ValueError)
@@ -284,7 +287,8 @@ def test_merge_different_labels_same_ids():
     # artificially modify the class labels
     fs2.labels = fs2.labels + 1
 
-    fs = fs1 + fs2
+    # This should raise a ValueError
+    fs1 + fs2
 
 
 def test_merge_missing_labels():
@@ -369,7 +373,8 @@ def test_mismatch_ids_features():
     # get 200 ids since we don't want to match the number of feature rows
     ids = ['EXAMPLE_{}'.format(i) for i in range(200)]
 
-    fs = FeatureSet('test', ids, features=features, labels=y)
+    # This should raise a ValueError
+    FeatureSet('test', ids, features=features, labels=y)
 
 
 @raises(ValueError)
@@ -396,7 +401,8 @@ def test_mismatch_labels_features():
     # get 100 ids
     ids = ['EXAMPLE_{}'.format(i) for i in range(100)]
 
-    fs = FeatureSet('test', ids, features=features, labels=y2)
+    # This should raise a ValueError
+    FeatureSet('test', ids, features=features, labels=y2)
 
 
 @raises(ValueError)
@@ -412,7 +418,7 @@ def test_iteration_without_dictvectorizer():
                                      train_test_ratio=1.0,
                                      use_feature_hashing=True,
                                      feature_bins=2)
-
+    # This should raise a ValueError
     for _ in fs:
         pass
 
@@ -466,12 +472,8 @@ def check_filter_labels(inverse=False):
 
     # make sure that we removed the right things
     if inverse:
-        ids_kept = fs.ids[
-            np.where(
-                np.logical_not(
-                    np.in1d(
-                        fs.labels,
-                        labels_to_filter)))]
+        ids_kept = fs.ids[np.where(np.logical_not(np.in1d(fs.labels,
+                                                          labels_to_filter)))]
     else:
         ids_kept = fs.ids[np.where(np.in1d(fs.labels, labels_to_filter))]
 

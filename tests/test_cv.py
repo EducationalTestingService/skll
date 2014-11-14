@@ -36,6 +36,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def tearDown():
+    """
+    Clean up after tests.
+    """
     fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
     if exists(fold_file_path):
         os.unlink(fold_file_path)
@@ -100,8 +103,9 @@ def test_specified_cv_folds():
     # binary) has pre-specified folds and has less than 60% accuracy for each
     # of the 3 folds.
 
-    # The second uses feature hashing with 4 features, uses 10 folds (not pre-specified)
-    # and has more than 70% accuracy accuracy for each of the 10 folds.
+    # The second uses feature hashing with 4 features, uses 10 folds (not pre-
+    # specified) and has more than 70% accuracy accuracy for each of the 10
+    # folds.
 
     # The third is the same as the first but uses an RBFSampler.
 
@@ -138,7 +142,7 @@ def test_load_cv_folds():
     """
 
     # create custom CV folds
-    cv_fs, custom_cv_folds = make_cv_folds_data()
+    custom_cv_folds = make_cv_folds_data()[1]
 
     # write the generated CV folds to a CSV file
     fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
@@ -161,7 +165,7 @@ def test_load_cv_folds_non_float_ids():
     """
 
     # create custom CV folds
-    cv_fs, custom_cv_folds = make_cv_folds_data()
+    custom_cv_folds = make_cv_folds_data()[1]
 
     # write the generated CV folds to a CSV file
     fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
@@ -171,6 +175,5 @@ def test_load_cv_folds_non_float_ids():
         for example_id, fold_label in custom_cv_folds.items():
             w.writerow([example_id, fold_label])
 
-    # now read the CSV file using _load_cv_folds
-    custom_cv_folds_loaded = _load_cv_folds(fold_file_path, ids_to_floats=True)
-
+    # now read the CSV file using _load_cv_folds, which should raise ValueError
+    _load_cv_folds(fold_file_path, ids_to_floats=True)

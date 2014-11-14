@@ -20,6 +20,7 @@ from skll.experiments import _setup_config_parser
 
 _my_dir = abspath(dirname(__file__))
 
+
 def fill_in_config_paths(config_template_path):
     """
     Add paths to train, test, and output directories to a given config template

@@ -75,8 +75,9 @@ def tearDown():
         os.unlink(config_file)
 
 
-def fill_in_config_paths_for_single_file(config_template_path, train_file, test_file,
-                                         train_location='', test_location=''):
+def fill_in_config_paths_for_single_file(config_template_path, train_file,
+                                         test_file, train_location='',
+                                         test_location=''):
     """
     Add paths to train and test files, and output directories to a given config
     template file.
@@ -348,11 +349,14 @@ def test_train_file_test_file():
 
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
-                                                            "test_single_file.template.cfg"),
+                                                            "test_single_file"
+                                                            ".template.cfg"),
                                                        join(_my_dir, 'train',
-                                                            'train_single_file.jsonlines'),
+                                                            'train_single_file'
+                                                            '.jsonlines'),
                                                        join(_my_dir, 'test',
-                                                            'test_single_file.jsonlines'))
+                                                            'test_single_file.'
+                                                            'jsonlines'))
     run_configuration(config_path, quiet=True)
 
     # Check results
@@ -372,11 +376,14 @@ def test_train_file_and_train_location():
     """
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
-                                                            "test_single_file.template.cfg"),
+                                                            "test_single_file"
+                                                            ".template.cfg"),
                                                        join(_my_dir, 'train',
-                                                            'train_single_file.jsonlines'),
+                                                            'train_single_file'
+                                                            '.jsonlines'),
                                                        join(_my_dir, 'test',
-                                                            'test_single_file.jsonlines'),
+                                                            'test_single_file.'
+                                                            'jsonlines'),
                                                        train_location='foo')
     _parse_config_file(config_path)
 
@@ -388,10 +395,13 @@ def test_test_file_and_test_location():
     """
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
-                                                            "test_single_file.template.cfg"),
+                                                            "test_single_file"
+                                                            ".template.cfg"),
                                                        join(_my_dir, 'train',
-                                                            'train_single_file.jsonlines'),
+                                                            'train_single_file'
+                                                            '.jsonlines'),
                                                        join(_my_dir, 'test',
-                                                            'test_single_file.jsonlines'),
+                                                            'test_single_file.'
+                                                            'jsonlines'),
                                                        test_location='foo')
     _parse_config_file(config_path)

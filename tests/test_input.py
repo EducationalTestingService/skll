@@ -12,22 +12,26 @@ the future.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import glob
 import os
 import re
 import tempfile
-
+from glob import glob
 from io import open
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_, raises, assert_raises
-from skll.experiments import _load_featureset, _setup_config_parser, _parse_config_file
+
+from skll.experiments import (_load_featureset, _setup_config_parser,
+                              _parse_config_file)
 from skll.data.readers import safe_float
 
 _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -40,23 +44,30 @@ def setup():
 
 
 def tearDown():
+    """
+    Clean up after tests.
+    """
     config_dir = join(_my_dir, 'configs')
-    for config_file in glob.glob(join(config_dir, 'test_config_parsing_*.cfg')):
+    for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
         os.unlink(config_file)
 
 
+def check_safe_float_conversion(converted_val, expected_val):
+    """
+    Check that value and type of converted_val and expected_val are equal.
+    """
+    eq_(converted_val, expected_val)
+    eq_(type(converted_val), type(expected_val))
+
+
 def test_safe_float_conversion():
-    """
-    Tests for the safe_float number conversion
-    """
-    for input_val, expected_val in zip(['1.234', 1.234, '3.0', '3', 3],
-                                     [1.234, 1.234, 3.0, 3, 3]):
-        converted_val = safe_float(input_val)
-        eq_(converted_val, expected_val)
-        eq_(type(converted_val), type(expected_val))
+    for input_val, expected_val in zip(['1.234', 1.234, '3.0', '3', 3, 'foo'],
+                                       [1.234, 1.234, 3.0, 3, 3, 'foo']):
+        yield check_safe_float_conversion, safe_float(input_val), expected_val
 
 
-def fill_in_config_paths_for_parsing(config_template_path, values_to_fill_dict, sub_prefix):
+def fill_in_config_paths_for_parsing(config_template_path, values_to_fill_dict,
+                                     sub_prefix):
     """
     Add paths to train, test, and output directories to a given config template
     file.
@@ -65,10 +76,10 @@ def fill_in_config_paths_for_parsing(config_template_path, values_to_fill_dict, 
     config = _setup_config_parser(config_template_path)
 
     to_fill_in = {'General': ['experiment_name', 'task'],
-                  'Input': ['train_location', 'train_file',
-                            'test_location', 'test_file', 'featuresets',
-                            'featureset_names', 'feature_hasher', 'hasher_features',
-                            'learners', 'sampler', 'shuffle', 'feature_scaling'],
+                  'Input': ['train_location', 'train_file', 'test_location',
+                            'test_file', 'featuresets', 'featureset_names',
+                            'feature_hasher', 'hasher_features', 'learners',
+                            'sampler', 'shuffle', 'feature_scaling'],
                   'Tuning': ['grid_search', 'objective'],
                   'Output': ['probability', 'results', 'log', 'models',
                              'predictions']}
@@ -76,7 +87,8 @@ def fill_in_config_paths_for_parsing(config_template_path, values_to_fill_dict, 
     for section in to_fill_in:
         for param_name in to_fill_in[section]:
             if param_name in values_to_fill_dict:
-                config.set(section, param_name, values_to_fill_dict[param_name])
+                config.set(section, param_name,
+                           values_to_fill_dict[param_name])
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
@@ -158,16 +170,15 @@ def test_config_parsing_no_name():
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
     config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                       values_to_fill_dict, 'no_name')
+                                                   values_to_fill_dict,
+                                                   'no_name')
 
     _parse_config_file(config_path)
 
 
 def test_config_parsing_bad_task():
-    """
-    Test to ensure config file parsing raises an error with invalid or missing task
-    """
-
+    # Test to ensure config file parsing raises an error with invalid or
+    # missing task
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
@@ -184,20 +195,28 @@ def test_config_parsing_bad_task():
 
     for task_value, sub_prefix in zip([None, '', 'procrastinate'],
                                       ['no_task', 'missing_task', 'bad_task']):
-        if task_value != None:
+        if task_value is not None:
             values_to_fill_dict['task'] = task_value
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
         config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                           values_to_fill_dict, sub_prefix)
+                                                       values_to_fill_dict,
+                                                       sub_prefix)
 
-        assert_raises(ValueError, _parse_config_file, config_path)
+        yield check_config_parsing_value_error, config_path
+
+
+@raises(ValueError)
+def check_config_parsing_value_error(config_path):
+    """
+    Assert that calling _parse_config_file on config_path raises ValueError
+    """
+    _parse_config_file(config_path)
 
 
 def test_config_parsing_bad_learner():
-    """
-    Test to ensure config file parsing raises an error with missing, bad and duplicate learners
-    """
+    # Test to ensure config file parsing raises an error with missing, bad and
+    # duplicate learners
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -214,18 +233,20 @@ def test_config_parsing_bad_learner():
                            'results': output_dir}
 
     for learners_list, sub_prefix in zip([None, '[]', 'LogisticRegression',
-                                          "['LogisticRegression', 'LogisticRegression']"],
+                                          "['LogisticRegression', "
+                                          "'LogisticRegression']"],
                                          ['no_learner', 'empty_learner',
-                                          'not_list_learner', 'duplicate_learner']):
-        if learners_list != None:
+                                          'not_list_learner',
+                                          'duplicate_learner']):
+        if learners_list is not None:
             values_to_fill_dict['learners'] = learners_list
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
         config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                           values_to_fill_dict, sub_prefix)
-
-        assert_raises(ValueError, _parse_config_file, config_path)
+                                                       values_to_fill_dict,
+                                                       sub_prefix)
+        yield check_config_parsing_value_error, config_path
 
 
 @raises(ValueError)
@@ -253,7 +274,8 @@ def test_config_parsing_bad_sampler():
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
     config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                       values_to_fill_dict, 'bad_sampler')
+                                                   values_to_fill_dict,
+                                                   'bad_sampler')
 
     _parse_config_file(config_path)
 
@@ -283,15 +305,15 @@ def test_config_parsing_bad_hashing():
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
     config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                       values_to_fill_dict, 'bad_hashing')
+                                                   values_to_fill_dict,
+                                                   'bad_hashing')
 
     _parse_config_file(config_path)
 
 
 def test_config_parsing_bad_featuresets():
-    """
-    Test to ensure config file parsing raises an error with badly specified featuresets
-    """
+    # Test to ensure config file parsing raises an error with badly specified
+    # featuresets
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -311,21 +333,20 @@ def test_config_parsing_bad_featuresets():
                                         "[['f1', 'f2'], 'f3', 'f4']"],
                                        ['no_feats', 'empty_feats',
                                         'non_list_feats1', 'non_list_feats2']):
-        if featuresets != None:
+        if featuresets is not None:
             values_to_fill_dict['featuresets'] = featuresets
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
         config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                           values_to_fill_dict, sub_prefix)
-
-        assert_raises(ValueError, _parse_config_file, config_path)
+                                                       values_to_fill_dict,
+                                                       sub_prefix)
+        yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_featurenames():
-    """
-    Test to ensure config file parsing raises an error with badly specified featureset names
-    """
+    # Test to ensure config file parsing raises an error with badly specified
+    # featureset names
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -338,28 +359,30 @@ def test_config_parsing_bad_featurenames():
                            'train_location': train_dir,
                            'test_location': test_dir,
                            'learners': "['LogisticRegression']",
-                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
+                                           "'f6']]"),
                            'log': output_dir,
                            'results': output_dir}
 
     for fname, sub_prefix in zip(["['set_a']", "['1', 2]", "set_a", "1"],
-                                   ['wrong_num_names', 'wrong_type_names',
-                                    'wrong_num_and_type1', 'wrong_num_and_type2']):
-        if fname != None:
+                                 ['wrong_num_names', 'wrong_type_names',
+                                  'wrong_num_and_type1',
+                                  'wrong_num_and_type2']):
+        if fname is not None:
             values_to_fill_dict['featureset_names'] = fname
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
         config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                           values_to_fill_dict, sub_prefix)
+                                                       values_to_fill_dict,
+                                                       sub_prefix)
 
-        assert_raises(ValueError, _parse_config_file, config_path)
+        yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_scaling():
-    """
-    Test to ensure config file parsing raises an error with invalid scaling type
-    """
+    # Test to ensure config file parsing raises an error with invalid scaling
+    # type
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -372,7 +395,8 @@ def test_config_parsing_bad_scaling():
                            'train_location': train_dir,
                            'test_location': test_dir,
                            'learners': "['LogisticRegression']",
-                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
+                                           "'f6']]"),
                            'log': output_dir,
                            'results': output_dir}
 
@@ -385,15 +409,15 @@ def test_config_parsing_bad_scaling():
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
         config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                           values_to_fill_dict, sub_prefix)
+                                                       values_to_fill_dict,
+                                                       sub_prefix)
 
-        assert_raises(ValueError, _parse_config_file, config_path)
+        yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_train():
-    """
-    Test to ensure config file parsing raises an error with invalid train path specifications
-    """
+    # Test to ensure config file parsing raises an error with invalid train
+    # path specifications
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -405,7 +429,8 @@ def test_config_parsing_bad_train():
                            'task': 'evaluate',
                            'test_location': test_dir,
                            'learners': "['LogisticRegression']",
-                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
+                                           "'f6']]"),
                            'log': output_dir,
                            'results': output_dir}
 
@@ -418,7 +443,8 @@ def test_config_parsing_bad_train():
             train_fh = tempfile.NamedTemporaryFile(suffix='jsonlines',
                                                    prefix=join(_my_dir,
                                                                'other',
-                                                               'test_config_parsing_'))
+                                                               ('test_config_'
+                                                                'parsing_')))
             values_to_fill_dict['train_file'] = train_fh.name
             values_to_fill_dict['train_location'] = train_dir
 
@@ -431,18 +457,18 @@ def test_config_parsing_bad_train():
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
         config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                           values_to_fill_dict, sub_prefix)
+                                                       values_to_fill_dict,
+                                                       sub_prefix)
 
-        assert_raises(ValueError, _parse_config_file, config_path)
+        yield check_config_parsing_value_error, config_path
 
         if sub_prefix == 'both_train_path_and_file':
             train_fh.close()
 
 
 def test_config_parsing_bad_test():
-    """
-    Test to ensure config file parsing raises an error with invalid test path specifications
-    """
+    # Test to ensure config file parsing raises an error with invalid test path
+    # specifications
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -454,7 +480,8 @@ def test_config_parsing_bad_test():
                            'task': 'evaluate',
                            'train_location': train_dir,
                            'learners': "['LogisticRegression']",
-                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
+                                           "'f6']]"),
                            'log': output_dir,
                            'results': output_dir}
 
@@ -464,9 +491,10 @@ def test_config_parsing_bad_test():
 
         if sub_prefix == 'both_test_path_and_file':
             test_fh = tempfile.NamedTemporaryFile(suffix='jsonlines',
-                                                   prefix=join(_my_dir,
-                                                               'other',
-                                                               'test_config_parsing_'))
+                                                  prefix=join(_my_dir,
+                                                              'other',
+                                                              ('test_config_'
+                                                               'parsing_')))
             values_to_fill_dict['test_file'] = test_fh.name
             values_to_fill_dict['test_location'] = test_dir
 
@@ -479,9 +507,10 @@ def test_config_parsing_bad_test():
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
         config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                           values_to_fill_dict, sub_prefix)
+                                                       values_to_fill_dict,
+                                                       sub_prefix)
 
-        assert_raises(ValueError, _parse_config_file, config_path)
+        yield check_config_parsing_value_error, config_path
 
         if sub_prefix == 'both_test_path_and_file':
             test_fh.close()
@@ -512,15 +541,15 @@ def test_config_parsing_bad_objective():
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
     config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                       values_to_fill_dict, 'bad_objective')
+                                                   values_to_fill_dict,
+                                                   'bad_objective')
 
     _parse_config_file(config_path)
 
 
 def test_config_parsing_bad_task_paths():
-    """
-    Test to ensure config file parsing raises an error with various incorrectly set path
-    """
+    # Test to ensure config file parsing raises an error with various
+    # incorrectly set path
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -531,7 +560,8 @@ def test_config_parsing_bad_task_paths():
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'train_location': train_dir,
                            'learners': "['LogisticRegression']",
-                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
+                                           "'f6']]"),
                            'log': output_dir}
 
     for sub_prefix in ['predict_no_test', 'evaluate_no_test',
@@ -563,20 +593,20 @@ def test_config_parsing_bad_task_paths():
             values_to_fill_dict['task'] = 'cross_validate'
             values_to_fill_dict['results'] = output_dir
             test_fh1 = tempfile.NamedTemporaryFile(suffix='jsonlines',
-                                                    prefix=join(_my_dir,
-                                                                'other',
-                                                                'test_config_parsing_'))
-
+                                                   prefix=join(_my_dir,
+                                                               'other',
+                                                               ('test_config_'
+                                                                'parsing_')))
             values_to_fill_dict['test_file'] = test_fh1.name
-
 
         elif sub_prefix == 'train_with_test_file':
             values_to_fill_dict['task'] = 'train'
             values_to_fill_dict['models'] = output_dir
             test_fh2 = tempfile.NamedTemporaryFile(suffix='jsonlines',
-                                                    prefix=join(_my_dir,
-                                                                'other',
-                                                                'test_config_parsing_'))
+                                                   prefix=join(_my_dir,
+                                                               'other',
+                                                               ('test_config_'
+                                                                'parsing_')))
 
             values_to_fill_dict['test_file'] = test_fh2.name
 
@@ -604,18 +634,16 @@ def test_config_parsing_bad_task_paths():
             values_to_fill_dict['results'] = output_dir
             values_to_fill_dict['models'] = output_dir
 
-
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
         config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                           values_to_fill_dict, sub_prefix)
+                                                       values_to_fill_dict,
+                                                       sub_prefix)
 
-        assert_raises(ValueError, _parse_config_file, config_path)
+        yield check_config_parsing_value_error, config_path
 
         if sub_prefix == 'xv_with_test_file':
             test_fh1.close()
 
         elif sub_prefix == 'train_with_test_file':
             test_fh2.close()
-
-

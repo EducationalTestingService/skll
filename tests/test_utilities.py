@@ -55,6 +55,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -67,6 +70,9 @@ def setup():
 
 
 def tearDown():
+    """
+    Clean up after tests.
+    """
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
     other_dir = join(_my_dir, 'other')
@@ -812,20 +818,27 @@ def test_filter_features_unknown_output_format():
     """
     Make sure that filter_features exits when passing in an unknown input file format
     """
-
     ff_cmd_args = ['foo.csv', 'bar.xxx', '-f', 'a', 'b', 'c']
     ff.main(argv=ff_cmd_args)
 
 
+@raises(SystemExit)
+def check_filter_features_raises_system_exit(cmd_args):
+    """
+    Little helper to make test output cleaner for tests that check that
+    filter_features exits with the specified arguments.
+    """
+    ff.main(cmd_args)
+
+
 def test_filter_features_unmatched_formats():
-    """
-    Make sure filter_feature exits when the output file is in a different format
-    """
+    # Make sure filter_feature exits when the output file is in a different
+    # format
     for inext, outext in combinations(['.arff', '.megam', '.ndj', '.tsv',
                                        '.jsonlines', '.csv'], 2):
         ff_cmd_args = ['foo{}'.format(inext), 'bar{}'.format(outext), '-f',
                        'a', 'b', 'c']
-        assert_raises(SystemExit, ff.main, ff_cmd_args)
+        yield check_filter_features_raises_system_exit, ff_cmd_args
 
 
 def check_join_features_argparse(extension, label_col='y', quiet=False):
@@ -939,30 +952,37 @@ def test_join_features_unknown_input_format():
 @raises(SystemExit)
 def test_join_features_unknown_output_format():
     """
-    Make sure that join_features exits when  passing in an unknown output file format
+    Make sure that join_features exits when passing in an unknown output file format
     """
 
     jf_cmd_args = ['foo.csv', 'bar.csv', 'baz.xxx']
     jf.main(argv=jf_cmd_args)
 
 
-def test_join_features_unmatched_formats1():
+@raises(SystemExit)
+def check_join_features_raises_system_exit(cmd_args):
     """
-    Make sure that join_feature exits when the input files are in different formats
+    Little helper to make test output cleaner for tests that check that
+    join_features exits with the specified arguments.
     """
+    jf.main(cmd_args)
+
+
+def test_join_features_unmatched_input_formats():
+    # Make sure that join_feature exits when the input files are in different
+    # formats
     for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
         jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext2),
                        'baz{}'.format(ext1)]
-        assert_raises(SystemExit, jf.main, jf_cmd_args)
+        yield check_join_features_raises_system_exit, jf_cmd_args
 
 
-def test_join_features_unmatched_formats2():
-    """
-    Make sure join_feature exits when the output file is in a different format
-    """
+def test_join_features_unmatched_output_format():
+    # Make sure join_features exits when the output file is in a different
+    # format
     for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
         jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1),
                        'baz{}'.format(ext2)]
-        assert_raises(SystemExit, jf.main, jf_cmd_args)
+        yield check_join_features_raises_system_exit, jf_cmd_args

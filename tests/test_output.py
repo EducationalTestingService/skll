@@ -11,15 +11,16 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
-import glob
 import json
 import os
 import sys
+from glob import glob
 from io import open
 from os.path import abspath, dirname, exists, join
 
-from nose.tools import eq_, assert_almost_equal
-from skll.data import FeatureSet, NDJWriter, Reader
+from numpy.testing import assert_almost_equal
+from nose.tools import eq_
+from skll.data import NDJWriter, Reader
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -32,6 +33,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -44,6 +48,9 @@ def setup():
 
 
 def tearDown():
+    """
+    Clean up after tests.
+    """
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
@@ -61,8 +68,9 @@ def tearDown():
         if exists(join(config_dir, cf)):
             os.unlink(join(config_dir, cf))
 
-    for output_file in glob.glob(join(output_dir, 'test_summary_*')) \
-                       + glob.glob(join(output_dir, 'test_majority_class_custom_learner_*')):
+    for output_file in (glob(join(output_dir, 'test_summary_*')) +
+                        glob(join(output_dir,
+                                  'test_majority_class_custom_learner_*'))):
         os.unlink(output_file)
 
 
@@ -92,32 +100,37 @@ def check_summary_score(use_feature_hashing=False):
     # Test to validate summary file scores
     make_summary_data()
 
-    cfgfile = 'test_summary_feature_hasher.template.cfg' if use_feature_hashing else 'test_summary.template.cfg'
+    cfgfile = ('test_summary_feature_hasher.template.cfg' if
+               use_feature_hashing else 'test_summary.template.cfg')
     config_template_path = join(_my_dir, 'configs', cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    outprefix = 'test_summary_feature_hasher_test_summary' if use_feature_hashing else 'test_summary_test_summary'
-    summprefix = 'test_summary_feature_hasher' if use_feature_hashing else 'test_summary'
+    outprefix = ('test_summary_feature_hasher_test_summary' if
+                 use_feature_hashing else 'test_summary_test_summary')
+    summprefix = ('test_summary_feature_hasher' if use_feature_hashing else
+                  'test_summary')
 
-    with open(join(_my_dir, 'output', ('{}_'
-                                       'LogisticRegression.results.json'.format(outprefix)))) as f:
+    with open(join(_my_dir, 'output', ('{}_LogisticRegression.results.'
+                                       'json'.format(outprefix)))) as f:
         outd = json.loads(f.read())
         logistic_result_score = outd[0]['score']
 
-    with open(join(_my_dir, 'output', '{}_SVC.results.json'.format(outprefix))) as f:
+    with open(join(_my_dir, 'output',
+                   '{}_SVC.results.json'.format(outprefix))) as f:
         outd = json.loads(f.read())
         svm_result_score = outd[0]['score']
 
     # note that Naive Bayes doesn't work with feature hashing
     if not use_feature_hashing:
-        with open(join(_my_dir, 'output', ('{}_'
-                                           'MultinomialNB.results.json'.format(outprefix)))) as f:
+        with open(join(_my_dir, 'output', ('{}_MultinomialNB.results.'
+                                           'json'.format(outprefix)))) as f:
             outd = json.loads(f.read())
             naivebayes_result_score = outd[0]['score']
 
-    with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)), 'r') as f:
+    with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)),
+              'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
@@ -183,5 +196,6 @@ def test_backward_compatibility():
     new_predictions = learner.predict(examples)[:, 1]
 
     with open(predict_path) as predict_file:
-        for line, new_val in zip(predict_file, new_predictions):
-            assert_almost_equal(float(line.strip()), new_val)
+        old_predictions = [float(line.strip()) for
+                           line in predict_file]
+    assert_almost_equal(new_predictions, old_predictions)
