@@ -163,10 +163,10 @@ def check_summary_score(use_feature_hashing=False):
 
     for result_score, summary_score, learner_name in test_tuples:
         assert_almost_equal(result_score, summary_score,
-                            msg=('mismatched scores for {} '
-                                 '(result:{}, summary:'
-                                 '{})').format(learner_name, result_score,
-                                               summary_score))
+                            err_msg=('mismatched scores for {} '
+                                     '(result:{}, summary:'
+                                     '{})').format(learner_name, result_score,
+                                                   summary_score))
 
 
 def test_summary():
