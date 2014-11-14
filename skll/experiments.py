@@ -164,7 +164,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
           file=output_file)
     print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
           file=output_file)
-    print('Scikit-learn Verion: {}'.format(lrd['scikit_learn_version']),
+    print('Scikit-learn Version: {}'.format(lrd['scikit_learn_version']),
           file=output_file)
     print('Start Timestamp: {}'.format(
         lrd['start_timestamp']), file=output_file)
