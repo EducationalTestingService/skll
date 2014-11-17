@@ -108,7 +108,8 @@ class FeatureSet(object):
                 self.features.shape == other.features.shape and
                 (self.ids == other.ids).all() and
                 (self.labels == other.labels).all() and
-                np.allclose(self.features.data, other.features.data, rtol=1e-6) and
+                np.allclose(self.features.data, other.features.data,
+                            rtol=1e-6) and
                 (self.features.indices == other.features.indices).all() and
                 (self.features.indptr == other.features.indptr).all() and
                 self.vectorizer == other.vectorizer)

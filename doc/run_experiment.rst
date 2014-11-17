@@ -33,22 +33,24 @@ The following feature file formats are supported:
 
         *   Only simple numeric, string, and nomimal values are supported.
         *   Nominal values are converted to strings.
-        *   If there is an attribute called "id" present, this will be treated
-            as the ID for each row.
+        *   There must be a column with the name specified by `id_col` in the
+            `Input` section of the configuration file you create for your
+            experiment. This defaults to "id".
         *   If the data is labelled, there must be an attribute with the name
             specified by `label_col` in the `Input` section of the
-            configuartion file you create for your experiment. This defaults to
-            'y'. This must also be the final attribute listed (like in Weka).
+            configuration file you create for your experiment. This defaults to
+            "y". This must also be the final attribute listed (like in Weka).
 
     **csv**/**tsv**
         A simple comma or tab-delimited format with the following restrictions:
 
+        *   There must be a column with the name specified by `id_col` in the
+            `Input` section of the configuration file you create for your
+            experiment. This defaults to "id".
         *   If the data is labelled, there must be a column with the name
             specified by `label_col` in the `Input` section of the
-            configuartion file you create for your experiment. This defaults to
-            'y'.
-        *   If there is a column called "id" present, this will be treated as
-            the ID for each row.
+            configuration file you create for your experiment. This defaults to
+            "y".
         *   All other columns contain feature values, and every feature value
             must be specified (making this a poor choice for sparse data).
 
@@ -139,9 +141,9 @@ Example configuration files are available
 General
 ^^^^^^^
     **experiment_name**
-        A string used to identify this particular experiment configuration. When
-        generating result summary files, this name helps prevent overwriting
-        previous summaries.
+        A string used to identify this particular experiment configuration.
+        When generating result summary files, this name helps prevent
+        overwriting previous summaries.
 
     **task**
         What types of experiment we're trying to run. Valid options are:
@@ -160,12 +162,17 @@ Input
         Path to directory containing test data files. There must be a file
         for each featureset.
 
+    **id_col** *(Optional)*
+        If you're using ARFF, CSV, or TSV files, the IDs for each instance are
+        assumed to be in a column with this name. If no column with this name
+        is found, the IDs are generated automatically. Defaults to "id".
+
     **label_col** *(Optional)*
         If you're using ARFF, CSV, or TSV files, the class labels for each
-        instance are assumed to be in a column with this name. If no column with
-        this name is found, the data is assumed to be unlabelled. Defaults to
-        'y'. For ARFF files only, this must also be the final column to count as
-        the label (for compatibility with Weka).
+        instance are assumed to be in a column with this name. If no column
+        with this name is found, the data is assumed to be unlabelled. Defaults
+        to "y". For ARFF files only, this must also be the final column to
+        count as the label (for compatibility with Weka).
 
     **ids_to_floats** *(Optional)*
         If you have a dataset with lots of examples, and your input files have
@@ -175,10 +182,10 @@ Input
         files (e.g., "4.0" instead of "4" or "0004" or "4.000").
 
     **shuffle** *(Optional)*
-        If ``True``, shuffle the examples in the training data before using them
-        for learning. This happens automatically when doing a grid search but
-        it might be useful in other scenarios as well, e.g., online learning.
-        Defaults to ``False``.
+        If ``True``, shuffle the examples in the training data before using
+        them for learning. This happens automatically when doing a grid search
+        but it might be useful in other scenarios as well, e.g., online
+        learning. Defaults to ``False``.
 
     **class_map** *(Optional)*
         If you would like to collapse several labels into one, or otherwise

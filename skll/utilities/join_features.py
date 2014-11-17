@@ -37,6 +37,10 @@ def main(argv=None):
                               .csv, .arff, or .megam)', nargs='+')
     parser.add_argument('outfile',
                         help='output feature file')
+    parser.add_argument('-i', '--id_col',
+                        help='Name of the column which contains the instance \
+                              IDs in ARFF, CSV, or TSV files.',
+                        default='id')
     parser.add_argument('-l', '--label_col',
                         help='Name of the column which contains the class \
                               labels in ARFF, CSV, or TSV files. For ARFF \
@@ -86,7 +90,8 @@ def main(argv=None):
     merged_set = None
     for infile in args.infile:
         reader = EXT_TO_READER[input_extension](infile, quiet=args.quiet,
-                                                label_col=args.label_col)
+                                                label_col=args.label_col,
+                                                id_col=args.id_col)
         fs = reader.read()
         if merged_set is None:
             merged_set = fs
@@ -98,8 +103,10 @@ def main(argv=None):
     writer_args = {'quiet': args.quiet}
     if writer_type is DelimitedFileWriter:
         writer_args['label_col'] = args.label_col
+        writer_args['id_col'] = args.id_col
     elif writer_type is ARFFWriter:
         writer_args['label_col'] = args.label_col
+        writer_args['id_col'] = args.id_col
         writer_args['regression'] = reader.regression
         writer_args['relation'] = reader.relation
     writer = writer_type(args.outfile, merged_set, **writer_args)
