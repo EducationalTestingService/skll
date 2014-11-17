@@ -337,7 +337,7 @@ class TSVWriter(DelimitedFileWriter):
                  If ``subsets`` is not ``None``, this is assumed to be a string
                  containing the path to the directory to write the feature
                  files with an additional file extension specifying the file
-                 type. For example ``/foo/.csv``.
+                 type. For example ``/foo/.tsv``.
     :type path: str
     :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
@@ -360,7 +360,7 @@ class ARFFWriter(DelimitedFileWriter):
                  ``subsets`` is not ``None``, this is assumed to be a string
                  containing the path to the directory to write the feature
                  files with an additional file extension specifying the file
-                 type. For example ``/foo/.csv``.
+                 type. For example ``/foo/.arff``.
     :type path: str
     :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
