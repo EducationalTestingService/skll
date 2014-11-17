@@ -308,7 +308,7 @@ class DelimitedFileWriter(Writer):
 class CSVWriter(DelimitedFileWriter):
 
     """
-    Writer for writing out FeatureSets as TSV files.
+    Writer for writing out FeatureSets as CSV files.
 
     :param path: A path to the feature file we would like to create.
                  If ``subsets`` is not ``None``, this is assumed to be a string
