@@ -214,8 +214,8 @@ class DelimitedFileWriter(Writer):
     :type feature_set: FeatureSet
     :param quiet: Do not print "Writing..." status message to stderr.
     :type quiet: bool
-    :param id_col: Name of the column to store the instance IDs in for CSV/TSV
-                   files.
+    :param id_col: Name of the column to store the instance IDs in for
+                   ARFF, CSV, and TSV files.
     :type id_col: str
     :param label_col: Name of the column which contains the class labels for
                       CSV/TSV files.
