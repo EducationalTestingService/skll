@@ -710,6 +710,7 @@ def _classify_featureset(args):
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              label_col=label_col,
+                                             id_col=id_col,
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet, class_map=class_map,
                                              feature_hasher=feature_hasher,
