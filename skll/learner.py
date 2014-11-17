@@ -1458,7 +1458,7 @@ class Learner(object):
                                            grid_objective=grid_objective,
                                            param_grid=param_grid,
                                            grid_jobs=grid_jobs,
-                                           shuffle=False,
+                                           shuffle=grid_search,
                                            create_label_dict=False)
             grid_search_scores.append(grid_search_score)
             # note: there is no need to shuffle again within each fold,
