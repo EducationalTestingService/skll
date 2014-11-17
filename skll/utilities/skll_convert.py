@@ -56,6 +56,10 @@ def main(argv=None):
     parser.add_argument('outfile',
                         help='output feature file (ends in .jsonlines, .tsv, \
                               .csv, .arff, or .megam)')
+    parser.add_argument('-i', '--id_col',
+                        help='Name of the column which contains the instance \
+                              IDs in ARFF, CSV, or TSV files.',
+                        default='id')
     parser.add_argument('-l', '--label_col',
                         help='Name of the column which contains the class \
                               labels in ARFF, CSV, or TSV files. For ARFF \
@@ -127,15 +131,18 @@ def main(argv=None):
 
     # Iterate through input file and collect the information we need
     reader = EXT_TO_READER[input_extension](args.infile, quiet=args.quiet,
-                                            label_col=args.label_col)
+                                            label_col=args.label_col,
+                                            id_col=args.id_col)
     feature_set = reader.read()
     # write out the file in the requested output format
     writer_type = EXT_TO_WRITER[output_extension]
     writer_args = {'quiet': args.quiet}
     if writer_type is DelimitedFileWriter:
         writer_args['label_col'] = args.label_col
+        writer_args['id_col'] = args.id_col
     elif writer_type is ARFFWriter:
         writer_args['label_col'] = args.label_col
+        writer_args['id_col'] = args.id_col
         writer_args['regression'] = args.arff_regression
         writer_args['relation'] = args.arff_relation
     elif writer_type is LibSVMWriter:
