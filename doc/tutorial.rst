@@ -1,14 +1,19 @@
-Step 2: Tutorial!
-=================
+.. sectionauthor:: Dan Blanchard <dblanchard@ets.org>
+.. sectionauthor:: Diane Napolitano <dnapolitano@ets.org>
+
+Tutorial
+========
 
 For this tutorial, we're going to make use of the examples provided in the ``examples/`` directory in your copy of SKLL.  Of course, the provided examples are already perfect and ready to use.  If this weren't the case, you would need to...
 
-1. Get your data into the correct format
-----------------------------------------
+Get your data into the correct format
+-------------------------------------
 
 SKLL can work with several common data formats, each of which are described :ref:`here <file_formats>`.
 
-Should you need your data to be in any number of these formats, or should you like to have say, one ARFF file for use with SKLL and Weka, the :ref:`skll_convert` script can help you out.  This is as easy as::
+Should you need your data to be in any number of these formats, or should you like to have say, one ARFF file for use with SKLL and Weka, the :ref:`skll_convert` script can help you out.  This is as easy as:
+
+.. code-block:: bash
 
     $ skll_convert examples/iris/train/example_iris_features.jsonlines examples/iris/train/example_iris_features.arff
 
@@ -18,8 +23,9 @@ At minimum you will probably want to work with a training set and a testing set.
 
 At this time, utilities necessary to split data into training and testing are not part of SKLL.
 
-2. Create a configuration file for the experiment you'd like to run
--------------------------------------------------------------------
+
+Create a configuration file for the experiment you'd like to run
+----------------------------------------------------------------
 
 For this tutorial, we will refer to an "experiment" as having a single data set split into (at minimum) training and testing portions.  As part of each experiment, we can train and test several models, either simultaneously or sequentially, depending on the availability of a grid engine.  This will be described in more detail later on, when we are ready to run our experiment.
 
@@ -29,7 +35,7 @@ You can consult :ref:`the full list of learners currently available in SKLL <lea
 * Random Forest, Decision Tree, C-SVC, and Multinomial Naïve Bayes with the **Titanic** example;
 * Random Forest Regression (``RandomForestRegressor``), Support Vector Regression (``SVR``), and Linear Regression with the **Boston** example.
 
-Optionally, you can also tune your models in such a way that they maximize a certain evaluation metric, which we refer to as an "objective function".  The full list of available objective functions can be found :ref:`here <objective_functions>`.
+Optionally, you can also tune your models in such a way that they maximize a certain evaluation metric, which we refer to as an "objective function".  The full list of available objective functions can be found :ref:`here <objective>`.
 
 Configuration File for the Iris Example
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

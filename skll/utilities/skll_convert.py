@@ -51,11 +51,11 @@ def main(argv=None):
                      extensions.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .jsonlines, .tsv, \
-                              .csv, .arff, or .megam)')
+                        help='input feature file (ends in .arff, .csv, \
+                             .jsonlines, .megam, .ndj, or .tsv)')
     parser.add_argument('outfile',
-                        help='output feature file (ends in .jsonlines, .tsv, \
-                              .csv, .arff, or .megam)')
+                        help='output feature file (ends in .arff, .csv, \
+                             .jsonlines, .megam, .ndj, or .tsv)')
     parser.add_argument('-l', '--label_col',
                         help='Name of the column which contains the class \
                               labels in ARFF, CSV, or TSV files. For ARFF \
