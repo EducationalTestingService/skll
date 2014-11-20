@@ -68,9 +68,9 @@ either JSON dictionary (the entire contents of a normal JSON file), or a
 comment line starting with ``//``. Each dictionary is expected to contain the
 following keys:
 
-*   *y*: The class label.
-*   *x*: A dictionary of feature values.
-*   *id*: An optional instance ID.
+*   **y**: The class label.
+*   **x**: A dictionary of feature values.
+*   **id**: An optional instance ID.
 
 This is the preferred file format for SKLL, as it is sparse and can be slightly
 faster to load than other formats.
@@ -129,16 +129,17 @@ Creating configuration files
 The experiment configuration files that run_experiment accepts are standard
 `Python configuration files <http://docs.python.org/2/library/configparser.html>`__
 that are similar in format to Windows INI files. [#]_
-There are four expected sections in a configuration file: ``General``,
-``Input``, ``Tuning``, and ``Output``.  A detailed description of each possible
-settings for each section is provided below, but to summarize:
+There are four expected sections in a configuration file: :ref:`General`,
+:ref:`Input`, :ref:`Tuning`, and :ref:`Output`.  A detailed description of each
+possible settings for each section is provided below, but to summarize:
 
 .. _cross_validate:
 
 *   If you want to do **cross-validation**, specify a path to training feature
     files, and set :ref:`task` to ``cross_validate``. Please note that the
-    cross-validation currently uses **StratifiedKFold**. You also can
-    optionally use predetermined folds with the
+    cross-validation currently uses
+    `StratifiedKFold <http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedKFold.html>`__.
+    You also can optionally use predetermined folds with the
     :ref:`cv_folds_location <cv_folds_location>` setting.
 
 .. _evaluate:
@@ -197,7 +198,7 @@ train_file *(Optional)*
 
 Path to a file containing the features to train on.  Cannot be used in
 combination with :ref:`featuresets <featuresets>`,
-:ref:`train_location <train_location>`, or :ref:`test_location <test_location>`
+:ref:`train_location <train_location>`, or :ref:`test_location <test_location>`.
 
 .. note::
 
@@ -211,7 +212,7 @@ train_location *(Optional)*
 
 Path to directory containing training data files. There must be a file for each
 featureset.  Cannot be used in combination with :ref:`train_file <train_file>`
-or :ref:`test_file <test_file>`
+or :ref:`test_file <test_file>`.
 
 .. note::
 
@@ -233,18 +234,19 @@ test_location *(Optional)*
 """"""""""""""""""""""""""
 
 Path to directory containing test data files. There must be a file
-for each featureset.
+for each featureset.  Cannot be used in combination with
+:ref:`train_file <train_file>` or :ref:`test_file <test_file>`.
 
 .. _label_col:
 
 label_col *(Optional)*
 """"""""""""""""""""""
 
-If you're using ARFF, CSV, or TSV files, the class labels for each instance are
-assumed to be in a column with this name. If no column with this name is found,
-the data is assumed to be unlabelled. Defaults to ``y``. For ARFF files only,
-this must also be the final column to count as the label (for compatibility
-with Weka).
+If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
+files, the class labels for each instance are assumed to be in a column with
+this name. If no column with this name is found, the data is assumed to be
+unlabelled. Defaults to ``y``. For ARFF files only, this must also be the final
+column to count as the label (for compatibility with Weka).
 
 .. _ids_to_floats:
 
@@ -406,34 +408,35 @@ below.  Custom learners can also be specified. See
 
 Classifiers:
 
-    *   *AdaBoostClassifier*: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__
-    *   *DecisionTreeClassifier*: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
-    *   *GradientBoostingClassifier*: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
-    *   *KNeighborsClassifier*: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
-    *   *LinearSVC*: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
-    *   *LogisticRegression*: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
-    *   *MultinomialNB*: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
-    *   *RandomForestClassifier*: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
-    *   *SGDClassifier*: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
-    *   *SVC*: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
+    *   **AdaBoostClassifier**: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__
+    *   **DecisionTreeClassifier**: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
+    *   **GradientBoostingClassifier**: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
+    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
+    *   **LinearSVC**: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
+    *   **LogisticRegression**: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
+    *   **MultinomialNB**: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
+    *   **RandomForestClassifier**: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
+    *   **SGDClassifier**: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
+    *   **SVC**: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
 
 .. _regressors:
 
 Regressors:
 
-    *   *AdaBoostRegressor*: `AdaBoost Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__
-    *   *DecisionTreeRegressor*: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
-    *   *ElasticNet*: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
-    *   *GradientBoostingRegressor*: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
-    *   *KNeighborsRegressor*: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
-    *   *Lasso*: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
-    *   *LinearRegression*: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
-    *   *RandomForestRegressor*: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
-    *   *Ridge*: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
-    *   *SGDRegressor*: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
-    *   *SVR*: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
-        with a linear kernel. Can use other kernels by specifying a
-        'kernel' fixed parameter in the ``fixed_parameters`` list.
+    *   **AdaBoostRegressor**: `AdaBoost Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__
+    *   **DecisionTreeRegressor**: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
+    *   **ElasticNet**: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
+    *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
+    *   **KNeighborsRegressor**: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
+    *   **Lasso**: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
+    *   **LinearRegression**: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
+    *   **RandomForestRegressor**: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
+    *   **Ridge**: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
+    *   **SGDRegressor**: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
+    *   **SVR**: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
+        with a linear kernel. Can use other kernels by specifying a ``kernel``
+        fixed parameter in the
+        :ref:`fixed_parameters <fixed_parameters>` list.
 
     For all regressors you can also prepend ``Rescaled`` to the
     beginning of the full name (e.g., ``RescaledSVR``) to get a version
@@ -445,14 +448,14 @@ Regressors:
 custom_learner_path *(Optional)*
 """"""""""""""""""""""""""""""""
 
-Path to a .py file that defines a custom learner.  This file will be
-imported dynamically.  This is only required if a custom learner in
-specified in the list of learners.  Custom learners must implement
-the ``fit`` and ``predict`` methods and inherit
-``sklearn.base.BaseEstimator``.  Custom regression learners must also
-inherit ``sklearn.base.RegressorMixin``.  Models that require dense
-matrices should implement a method ``requires_dense`` that returns
-``True``.
+Path to a .py file that defines a custom learner.  This file will be imported
+dynamically.  This is only required if a custom learner in specified in the
+list of learners.  Custom learners must implement the ``fit`` and ``predict``
+methods and inherit `sklearn.base.BaseEstimator <http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__.
+Custom regression learners must also inherit
+`sklearn.base.RegressorMixin <http://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
+Models that require dense matrices should implement a method ``requires_dense``
+that returns ``True``.
 
 .. _fixed_parameters:
 
@@ -460,53 +463,48 @@ fixed_parameters *(Optional)*
 """""""""""""""""""""""""""""
 
 List of dicts containing parameters you want to have fixed for each
-classifier in ``learners`` list. Any empty ones will be ignored
+classifier in :ref:`learners` list. Any empty ones will be ignored
 (and the defaults will be used).
 
 The default fixed parameters (beyond those that scikit-learn sets) are:
 
-*LogisticRegression*
+LogisticRegression
+    .. code-block:: python
 
-.. code-block:: python
+       {'random_state': 123456789}
 
-   {'random_state': 123456789}
+LinearSVC
+    .. code-block:: python
 
-*LinearSVC*
+       {'random_state': 123456789}
 
-.. code-block:: python
+SVC
+    .. code-block:: python
 
-   {'random_state': 123456789}
+       {'cache_size': 1000}
 
-*SVC*
+DecisionTreeClassifier and DecisionTreeRegressor
+    .. code-block:: python
 
-.. code-block:: python
+       {'random_state': 123456789}
 
-   {'cache_size': 1000}
+RandomForestClassifier and RandomForestRegressor
+    .. code-block:: python
 
-*DecisionTreeClassifier* and *DecisionTreeRegressor*
-
-.. code-block:: python
-
-   {'random_state': 123456789}
-
-*RandomForestClassifier* and *RandomForestRegressor*
-
-.. code-block:: python
-
-   {'n_estimators': 500, 'random_state': 123456789}
+       {'n_estimators': 500, 'random_state': 123456789}
 
 
-*GradientBoostingClassifier* and *GradientBoostingRegressor*
+GradientBoostingClassifier and GradientBoostingRegressor
+    .. code-block:: python
 
-.. code-block:: python
+       {'n_estimators': 500, 'random_state': 123456789}
 
-   {'n_estimators': 500, 'random_state': 123456789}
+SVR
+    .. code-block:: python
 
-*SVR*
+       {'cache_size': 1000, 'kernel': b'linear'}
 
-.. code-block:: python
-
-   {'cache_size': 1000, 'kernel': b'linear'}
+.. _imbalanced_data:
 
 .. note::
     This option allows us to deal with imbalanced data sets by using
@@ -539,16 +537,21 @@ Tuning
 feature_scaling *(Optional)*
 """"""""""""""""""""""""""""
 
-Whether to scale features by their mean and/or their standard deviation.
-This defaults to ``none``, which does no scaling of any kind. If you
-scale by mean, your data will automatically be converted to dense, so
-use caution when you have a very large dataset. Valid options are:
+Whether to scale features by their mean and/or their standard deviation. If you
+scale by mean, your data will automatically be converted to dense, so use
+caution when you have a very large dataset. Valid options are:
 
-*   *none*: perform no feature scaling at all.
-*   *with_std*: Scale feature values by their standard deviation.
-*   *with_mean*: Center features by subtracting their mean.
-*   *both*: perform both centering and scaling.
+none
+    perform no feature scaling at all.
 
+with_std
+    Scale feature values by their standard deviation.
+
+with_mean
+    Center features by subtracting their mean.
+
+both
+    perform both centering and scaling.
 
 Defaults to ``none``.
 
@@ -587,54 +590,57 @@ The objective function to use for tuning. Valid options are:
 
 Classification:
 
-    *   *accuracy*: Overall `accuracy <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__
-    *   *precision*: `Precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`__
-    *   *recall*: `Recall <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`__
-    *   *f1*: The default scikit-learn `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`__
-        (F1 of the positive class for binary classification, or the weighted average F1 for multiclass classification)
-    *   *f1_score_micro*: Micro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`__
-    *   *f1_score_macro*: Macro-averaged `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`__
-    *   *f1_score_weighted*: Weighted average `F1 score <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html>`__
-    *   *f1_score_least_frequent*: F1 score of the least frequent class. The
+    *   **accuracy**: Overall `accuracy <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__
+    *   **precision**: `Precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`__
+    *   **recall**: `Recall <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`__
+    *   **f1**: The default scikit-learn |F1 link|_
+        (F\ :sub:`1` of the positive class for binary classification, or the weighted average F\ :sub:`1` for multiclass classification)
+    *   **f1_score_micro**: Micro-averaged |F1 link|_
+    *   **f1_score_macro**: Macro-averaged |F1 link|_
+    *   **f1_score_weighted**: Weighted average |F1 link|_
+    *   **f1_score_least_frequent**: F:sub:`1` score of the least frequent class. The
         least frequent class may vary from fold to fold for certain data
         distributions.
-    *   *average_precision*: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
+    *   **average_precision**: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
         (for binary classification)
-    *   *roc_auc*: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__
+    *   **roc_auc**: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__
         (for binary classification)
+
+.. |F1 link| replace:: F\ :sub:`1` score
+.. _F1 link: http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 
 .. _int_label_classification_obj:
 
 Regression or classification with integer labels:
 
-    *   *unweighted_kappa*: Unweighted `Cohen's kappa <http://en.wikipedia.org/wiki/Cohen's_kappa>`__ (any floating point
+    *   **unweighted_kappa**: Unweighted `Cohen's kappa <http://en.wikipedia.org/wiki/Cohen's_kappa>`__ (any floating point
         values are rounded to ints)
-    *   *linear_weighted_kappa*: Linear weighted kappa (any floating
+    *   **linear_weighted_kappa**: Linear weighted kappa (any floating
         point values are rounded to ints)
-    *   *quadratic_weighted_kappa*: Quadratic weighted kappa (any
+    *   **quadratic_weighted_kappa**: Quadratic weighted kappa (any
         floating point values are rounded to ints)
-    *   *uwk_off_by_one*: Same as ``unweighted_kappa``, but all ranking
+    *   **uwk_off_by_one**: Same as ``unweighted_kappa``, but all ranking
         differences are discounted by one. In other words, a ranking of
         1 and a ranking of 2 would be considered equal.
-    *   *lwk_off_by_one*: Same as ``linear_weighted_kappa``, but all
+    *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
         ranking differences are discounted by one.
-    *   *qwk_off_by_one*: Same as ``quadratic_weighted_kappa``, but all
+    *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
         ranking differences are discounted by one.
 
 .. _binary_label_classification_obj:
 
 Regression or classification with binary labels:
 
-    *   *kendall_tau*: `Kendall's tau <http://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__
-    *   *pearson*: `Pearson correlation <http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__
-    *   *spearman*: `Spearman rank-correlation <http://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__
+    *   **kendall_tau**: `Kendall's tau <http://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__
+    *   **pearson**: `Pearson correlation <http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__
+    *   **spearman**: `Spearman rank-correlation <http://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__
 
 .. _regression_obj:
 
 Regression:
 
-    *   *r2*: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
-    *   *mean_squared_error*: `Mean squared error regression loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__
+    *   **r2**: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
+    *   **mean_squared_error**: `Mean squared error regression loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__
 
 
 Defaults to ``f1_score_micro``.
@@ -651,59 +657,50 @@ the default parameter grid for that classifier will be searched.
 
 The default parameter grids for each classifier are:
 
-*LogisticRegression*
+LogisticRegression
+    .. code-block:: python
 
-.. code-block:: python
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-   [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+LinearSVC
+    .. code-block:: python
 
-*LinearSVC*
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-.. code-block:: python
+SVC
+    .. code-block:: python
 
-   [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-*SVC*
+MultinomialNB
+    .. code-block:: python
 
-.. code-block:: python
+       [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
 
-   [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+DecisionTreeClassifier and DecisionTreeRegressor
+    .. code-block:: python
 
-*MultinomialNB*
+       [{'max_features': ["auto", None]}]
 
-.. code-block:: python
+RandomForestClassifier and RandomForestRegressor
+    .. code-block:: python
 
-   [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
+       [{'max_depth': [1, 5, 10, None]}]
 
-*DecisionTreeClassifier* and *DecisionTreeRegressor*
+GradientBoostingClassifier and GradientBoostingRegressor
+    .. code-block:: python
 
-.. code-block:: python
+       [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
 
-   [{'max_features': ["auto", None]}]
+ElasticNet, Lasso, and Ridge
+    .. code-block:: python
 
-*RandomForestClassifier* and *RandomForestRegressor*
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-.. code-block:: python
+SVR
+    .. code-block:: python
 
-   [{'max_depth': [1, 5, 10, None]}]
-
-*GradientBoostingClassifier* and *GradientBoostingRegressor*
-
-.. code-block:: python
-
-   [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
-
-*ElasticNet*, *Lasso*, and *Ridge*
-
-.. code-block:: python
-
-   [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-*SVR*
-
-.. code-block:: python
-
-   [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
 
 .. _pos_label_str:
@@ -834,7 +831,7 @@ behavior.
 
 .. option:: -q <queue>, --queue <queue>
 
-    Use this queue for `Grid Map <http://pypi.python.org/pypi/gridmap>`__.
+    Use this queue for `GridMap <http://pypi.python.org/pypi/gridmap>`__.
     (default: ``all.q``)
 
 .. option:: -m <machines>, --machines <machines>
@@ -875,4 +872,4 @@ learner-featureset combination you have in your configuration file. It is named
    future, but we have not added this functionality yet.
 .. [#] K-1 folds will be used for grid search within CV, so there should be at
    least 3 fold IDs.
-.. [#] This will happen automatically if Grid Map cannot be imported.
+.. [#] This will happen automatically if GridMap cannot be imported.
