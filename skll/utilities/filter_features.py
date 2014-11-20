@@ -34,8 +34,8 @@ def main(argv=None):
                      features that do not match the specified patterns.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .jsonlines, .tsv, \
-                              .csv, .arff, or .megam)')
+                        help='input feature file (ends in .arff, .csv, \
+                              .jsonlines, .megam, .ndj, or .tsv)')
     parser.add_argument('outfile',
                         help='output feature file (must have same extension as\
                               input file)')

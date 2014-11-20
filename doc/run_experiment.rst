@@ -168,6 +168,8 @@ Example configuration files are available `here <https://github.com/EducationalT
 General
 ^^^^^^^
 
+Both fields in the General section are required.
+
 .. _experiment_name:
 
 experiment_name
@@ -190,6 +192,58 @@ What types of experiment we're trying to run. Valid options are:
 
 Input
 ^^^^^
+
+The Input section has only one required field, :ref:`learners`, but also must
+contain either :ref:`train_file <train_file>` or
+:ref:`train_location <train_location>`.
+
+.. _learners:
+
+learners
+""""""""
+List of scikit-learn models to try using. A separate job will be run for each
+combination of classifier and feature-set. Acceptable values are described
+below.  Custom learners can also be specified. See
+:ref:`custom_learner_path <custom_learner_path>`.
+
+.. _classifiers:
+
+Classifiers:
+
+    *   **AdaBoostClassifier**: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__
+    *   **DecisionTreeClassifier**: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
+    *   **GradientBoostingClassifier**: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
+    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
+    *   **LinearSVC**: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
+    *   **LogisticRegression**: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
+    *   **MultinomialNB**: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
+    *   **RandomForestClassifier**: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
+    *   **SGDClassifier**: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
+    *   **SVC**: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
+
+.. _regressors:
+
+Regressors:
+
+    *   **AdaBoostRegressor**: `AdaBoost Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__
+    *   **DecisionTreeRegressor**: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
+    *   **ElasticNet**: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
+    *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
+    *   **KNeighborsRegressor**: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
+    *   **Lasso**: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
+    *   **LinearRegression**: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
+    *   **RandomForestRegressor**: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
+    *   **Ridge**: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
+    *   **SGDRegressor**: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
+    *   **SVR**: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
+        with a linear kernel. Can use other kernels by specifying a ``kernel``
+        fixed parameter in the
+        :ref:`fixed_parameters <fixed_parameters>` list.
+
+    For all regressors you can also prepend ``Rescaled`` to the
+    beginning of the full name (e.g., ``RescaledSVR``) to get a version
+    of the regressor where predictions are rescaled and constrained to
+    better match the training set.
 
 .. _train_file:
 
@@ -236,6 +290,38 @@ test_location *(Optional)*
 Path to directory containing test data files. There must be a file
 for each featureset.  Cannot be used in combination with
 :ref:`train_file <train_file>` or :ref:`test_file <test_file>`.
+
+.. _featuresets:
+
+featuresets *(Optional)*
+""""""""""""""""""""""""
+List of lists of prefixes for the files containing the features you would like
+to train/test on.  Each list will end up being a job. IDs are required to be
+the same in all of the feature files, and a :py:exc:`ValueError` will be raised
+if this is not the case.  Cannot be used in combination with
+:ref:`train_file <train_file>` or :ref:`test_file <test_file>`.
+
+.. note::
+
+    If specifying :ref:`train_location <train_location>` or
+    :ref:`test_location <test_location>`, :ref:`featuresets <featuresets>`
+    is required.
+
+.. _suffix:
+
+suffix *(Optional)*
+"""""""""""""""""""
+
+The file format the training/test files are in. Valid option are
+:ref:`.arff <arff>`, :ref:`.csv <csv>`, :ref:`.jsonlines <ndj>`,
+:ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, :ref:`.ndj <ndj>`, and
+:ref:`.tsv <csv>`.
+
+If you omit this field, it is assumed that the "prefixes" listed in
+:ref:`featuresets <featuresets>` are actually complete filenames. This can be
+useful if you have feature files that are all in different formats that you
+would like to combine.
+
 
 .. _label_col:
 
@@ -296,14 +382,20 @@ validation. The first column should consist of training set IDs and the second
 should be a string for the fold ID (e.g., 1 through 5, A through D, etc.).  If
 specified, the CV and grid search will leave one fold ID out at a time. [#]_
 
-.. _featuresets:
+.. _custom_learner_path:
 
-featuresets
-"""""""""""
-List of lists of prefixes for the files containing the features you would like
-to train/test on.  Each list will end up being a job. IDs are required to be
-the same in all of the feature files, and a :py:exc:`ValueError` will be raised
-if this is not the case.
+custom_learner_path *(Optional)*
+""""""""""""""""""""""""""""""""
+
+Path to a ``.py`` file that defines a custom learner.  This file will be
+imported dynamically.  This is only required if a custom learner in specified
+in the list of :ref:`learners`.  Custom learners must implement the ``fit`` and
+``predict`` methods and inherit from
+`sklearn.base.BaseEstimator <http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__.
+Custom regressors must also inherit from
+`sklearn.base.RegressorMixin <http://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
+Models that require dense matrices should implement a method ``requires_dense``
+that returns ``True``.
 
 .. _sampler:
 
@@ -372,21 +464,6 @@ The number of features used by the `FeatureHasher <http://scikit-learn.org/stabl
     number of features in the data set for this setting. For example, if you
     had 17 features, you would want to set the flag to 32.
 
-.. _suffix:
-
-suffix *(Optional)*
-"""""""""""""""""""
-
-The file format the training/test files are in. Valid option are
-:ref:`.arff <arff>`, :ref:`.csv <csv>`, :ref:`.jsonlines <ndj>`,
-:ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, :ref:`.ndj <ndj>`, and
-:ref:`.tsv <csv>`.
-
-If you omit this field, it is assumed that the "prefixes" listed in
-:ref:`featuresets` are actually complete filenames. This can be useful if you
-have feature files that are all in different formats that you would like to
-combine.
-
 .. _featureset_names:
 
 featureset_names *(Optional)*
@@ -394,68 +471,6 @@ featureset_names *(Optional)*
 
 Optional list of names for the feature sets.  If omitted, then the prefixes
 will be munged together to make names.
-
-.. _learners:
-
-learners
-""""""""
-List of scikit-learn models to try using. A separate job will be run for each
-combination of classifier and feature-set. Acceptable values are described
-below.  Custom learners can also be specified. See
-:ref:`custom_learner_path <custom_learner_path>`.
-
-.. _classifiers:
-
-Classifiers:
-
-    *   **AdaBoostClassifier**: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__
-    *   **DecisionTreeClassifier**: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
-    *   **GradientBoostingClassifier**: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
-    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
-    *   **LinearSVC**: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
-    *   **LogisticRegression**: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
-    *   **MultinomialNB**: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
-    *   **RandomForestClassifier**: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
-    *   **SGDClassifier**: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
-    *   **SVC**: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
-
-.. _regressors:
-
-Regressors:
-
-    *   **AdaBoostRegressor**: `AdaBoost Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__
-    *   **DecisionTreeRegressor**: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
-    *   **ElasticNet**: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
-    *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
-    *   **KNeighborsRegressor**: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
-    *   **Lasso**: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
-    *   **LinearRegression**: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
-    *   **RandomForestRegressor**: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
-    *   **Ridge**: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
-    *   **SGDRegressor**: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
-    *   **SVR**: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
-        with a linear kernel. Can use other kernels by specifying a ``kernel``
-        fixed parameter in the
-        :ref:`fixed_parameters <fixed_parameters>` list.
-
-    For all regressors you can also prepend ``Rescaled`` to the
-    beginning of the full name (e.g., ``RescaledSVR``) to get a version
-    of the regressor where predictions are rescaled and constrained to
-    better match the training set.
-
-.. _custom_learner_path:
-
-custom_learner_path *(Optional)*
-""""""""""""""""""""""""""""""""
-
-Path to a .py file that defines a custom learner.  This file will be imported
-dynamically.  This is only required if a custom learner in specified in the
-list of learners.  Custom learners must implement the ``fit`` and ``predict``
-methods and inherit `sklearn.base.BaseEstimator <http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__.
-Custom regression learners must also inherit
-`sklearn.base.RegressorMixin <http://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
-Models that require dense matrices should implement a method ``requires_dense``
-that returns ``True``.
 
 .. _fixed_parameters:
 
@@ -528,10 +543,6 @@ SVR
 
     Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_labels.html>`__.
 
-.. _tuning:
-
-Tuning
-^^^^^^
 .. _feature_scaling:
 
 feature_scaling *(Optional)*
@@ -555,6 +566,11 @@ both
 
 Defaults to ``none``.
 
+.. _tuning:
+
+Tuning
+^^^^^^
+
 .. _grid_search:
 
 grid_search *(Optional)*
@@ -576,7 +592,7 @@ number of grid search folds.
 min_feature_count *(Optional)*
 """"""""""""""""""""""""""""""
 
-The minimum number of examples for a which each feature must be nonzero
+The minimum number of examples for which the value of a feature must be nonzero
 to be included in the model. Defaults to 1.
 
 .. _objective:

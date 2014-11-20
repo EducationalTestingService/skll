@@ -52,8 +52,8 @@ Positional Arguments
 ^^^^^^^^^^^^^^^^^^^^
 .. option:: infile
 
-    Input feature file (ends in ``.jsonlines``, ``.tsv``, ``.csv``, ``.arff``,
-    or ``.megam``)
+    Input feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.megam``, ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
@@ -160,8 +160,8 @@ Positional Arguments
 ^^^^^^^^^^^^^^^^^^^^
 .. option:: infile ...
 
-    Input feature files (end in ``.jsonlines``, ``.tsv``, ``.csv``, ``.arff``,
-    or ``.megam``)
+    Input feature files (ends in ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.megam``, ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
@@ -231,12 +231,14 @@ Positional Arguments
 
 .. option:: infile
 
-    Input feature file (ends in .arff, .csv, .jsonlines, .megam, .ndj, or .tsv)
+    Input feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
-    Output feature file (ends in .arff, .csv, .jsonlines, .megam, .ndj, or
-    .tsv)
+    Output feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``)
+
 
 Optional Arguments
 ^^^^^^^^^^^^^^^^^^

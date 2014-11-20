@@ -33,8 +33,9 @@ def main(argv=None):
                      file.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .jsonlines, .tsv, \
-                              .csv, .arff, or .megam)', nargs='+')
+                        help='input feature file (ends in .arff, .csv, \
+                              .jsonlines, .megam, .ndj, or .tsv)',
+                        nargs='+')
     parser.add_argument('outfile',
                         help='output feature file')
     parser.add_argument('-l', '--label_col',
