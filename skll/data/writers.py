@@ -214,10 +214,11 @@ class DelimitedFileWriter(Writer):
     :type feature_set: FeatureSet
     :param quiet: Do not print "Writing..." status message to stderr.
     :type quiet: bool
+    :param id_col: Name of the column to store the instance IDs in for
+                   ARFF, CSV, and TSV files.
+    :type id_col: str
     :param label_col: Name of the column which contains the class labels for
-                      CSV/TSV files. If no column with that name exists, or
-                      `None` is specified, the data is considered to be
-                      unlabelled.
+                      CSV/TSV files.
     :type label_col: str
     :param dialect: The dialect to use for the underlying ``csv.DictWriter``
                     Default: 'excel-tab'
@@ -228,6 +229,7 @@ class DelimitedFileWriter(Writer):
         kwargs['requires_binary'] = True
         self.dialect = kwargs.pop('dialect', 'excel-tab')
         self.label_col = kwargs.pop('label_col', 'y')
+        self.id_col = kwargs.pop('id_col', 'id')
         super(DelimitedFileWriter, self).__init__(path, feature_set, **kwargs)
         self._dict_writer = None
 
@@ -239,7 +241,7 @@ class DelimitedFileWriter(Writer):
                                 file.
         :type filter_features: set of str
         """
-        # Build list of fieldnames (features + 'id' + label_col)
+        # Build list of fieldnames (features + id_col + label_col)
         if filter_features is not None:
             fieldnames = {feat_name for feat_name in
                           self.feat_set.vectorizer.get_feature_names() if
@@ -247,7 +249,7 @@ class DelimitedFileWriter(Writer):
                            feat_name.split('=', 1)[0] in filter_features)}
         else:
             fieldnames = set(self.feat_set.vectorizer.get_feature_names())
-        fieldnames.add('id')
+        fieldnames.add(self.id_col)
         if self.feat_set.has_labels:
             fieldnames.add(self.label_col)
         return sorted(fieldnames)
@@ -294,11 +296,11 @@ class DelimitedFileWriter(Writer):
             raise ValueError(('Class column name "{}" already used as feature '
                               'name.').format(self.label_col))
         # Add id column to feat_dict if id is provided
-        if 'id' not in feat_dict:
-            feat_dict['id'] = id_
+        if self.id_col not in feat_dict:
+            feat_dict[self.id_col] = id_
         else:
-            raise ValueError('ID column name "id" already used as feature '
-                             'name.')
+            raise ValueError('ID column name "{}" already used as feature '
+                             'name.'.format(self.id_col))
         # Write out line
         self._dict_writer.writerow(feat_dict)
 
@@ -306,7 +308,7 @@ class DelimitedFileWriter(Writer):
 class CSVWriter(DelimitedFileWriter):
 
     """
-    Writer for writing out FeatureSets as TSV files.
+    Writer for writing out FeatureSets as CSV files.
 
     :param path: A path to the feature file we would like to create.
                  If ``subsets`` is not ``None``, this is assumed to be a string
@@ -335,7 +337,7 @@ class TSVWriter(DelimitedFileWriter):
                  If ``subsets`` is not ``None``, this is assumed to be a string
                  containing the path to the directory to write the feature
                  files with an additional file extension specifying the file
-                 type. For example ``/foo/.csv``.
+                 type. For example ``/foo/.tsv``.
     :type path: str
     :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet
@@ -358,7 +360,7 @@ class ARFFWriter(DelimitedFileWriter):
                  ``subsets`` is not ``None``, this is assumed to be a string
                  containing the path to the directory to write the feature
                  files with an additional file extension specifying the file
-                 type. For example ``/foo/.csv``.
+                 type. For example ``/foo/.arff``.
     :type path: str
     :param feature_set: The FeatureSet to dump to a file.
     :type feature_set: FeatureSet

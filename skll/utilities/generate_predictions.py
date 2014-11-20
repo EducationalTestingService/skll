@@ -98,6 +98,10 @@ def main(argv=None):
                               (with or without the label column), \
                               with the appropriate suffix.',
                         nargs='+')
+    parser.add_argument('-i', '--id_col',
+                        help='Name of the column which contains the instance \
+                              IDs in ARFF, CSV, or TSV files.',
+                        default='id')
     parser.add_argument('-l', '--label_col',
                         help='Name of the column which contains the labels\
                               in ARFF, CSV, or TSV files. For ARFF files, this\
@@ -149,7 +153,8 @@ def main(argv=None):
             # Iterate through input file and collect the information we need
             reader = EXT_TO_READER[input_extension](input_file,
                                                     quiet=args.quiet,
-                                                    label_col=args.label_col)
+                                                    label_col=args.label_col,
+                                                    id_col=args.id_col)
             feature_set = reader.read()
             for pred in predictor.predict(feature_set):
                 print(pred)

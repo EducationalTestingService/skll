@@ -36,8 +36,10 @@ with the following added restrictions:
 
 *   Only simple numeric, string, and nomimal values are supported.
 *   Nominal values are converted to strings.
-*   If there is an attribute called "id" present, this will be treated as the
-    ID for each row.
+*   There should be an attribute with the name specified by :ref:`id_col <id_col>` in 
+    the :ref:`Input` section of the configuration file you create for your
+    experiment. This defaults to "id".  If there is no such column, IDs will be
+    generated automatically.
 *   If the data is labelled, there must be an attribute with the name specified
     by :ref:`label_col <label_col>` in the :ref:`Input` section of the
     configuartion file you create for your experiment. This defaults to ``y``.
@@ -54,8 +56,10 @@ A simple comma or tab-delimited format with the following restrictions:
     specified by :ref:`label_col <label_col>` in the :ref:`Input` section of the
     configuartion file you create for your experiment. This defaults to
     ``y``.
-*   If there is a column called ``id`` present, this will be treated as
-    the ID for each row.
+*   There should be a column with the name specified by :ref:`id_col <id_col>` in 
+    the :ref:`Input` section of the configuration file you create for your
+    experiment. This defaults to "id".  If there is no such column, IDs will be
+    generated automatically.
 *   All other columns contain feature values, and every feature value
     must be specified (making this a poor choice for sparse data).
 
@@ -322,6 +326,15 @@ If you omit this field, it is assumed that the "prefixes" listed in
 useful if you have feature files that are all in different formats that you
 would like to combine.
 
+
+.. _id_col:
+
+id_col *(Optional)*
+"""""""""""""""""""
+If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
+files, the IDs for each instance are assumed to be in a column with this 
+name. If no column with this name is found, the IDs are generated 
+automatically. Defaults to ``id``.
 
 .. _label_col:
 

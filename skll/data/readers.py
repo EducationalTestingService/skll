@@ -43,6 +43,11 @@ class Reader(object):
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
+    :param id_col: Name of the column which contains the instance IDs for
+                   ARFF/CSV/TSV files. If no column with that name exists, or
+                   `None` is specified, the IDs will be generated
+                   automatically.
+    :type id_col: str
     :param label_col: Name of the column which contains the class labels
                       for ARFF/CSV/TSV files. If no column with that name
                       exists, or `None` is specified, the data is
@@ -67,13 +72,14 @@ class Reader(object):
     """
 
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y', class_map=None, sparse=True,
+                 label_col='y', id_col='id', class_map=None, sparse=True,
                  feature_hasher=False, num_features=None):
         super(Reader, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
         self.label_col = label_col
+        self.id_col = id_col
         self.class_map = class_map
         self._progress_msg = ''
         if feature_hasher:
@@ -92,6 +98,11 @@ class Reader(object):
         :param sparse: Whether or not to store the features in a numpy CSR
                        matrix.
         :type sparse: bool
+        :param id_col: Name of the column which contains the instance IDs for
+                       ARFF/CSV/TSV files. If no column with that name exists, or
+                       `None` is specified, the IDs will be generated
+                       automatically.
+        :type id_col: str
         :param label_col: Name of the column which contains the class labels
                           for ARFF/CSV/TSV files. If no column with that name
                           exists, or `None` is specified, the data is
@@ -506,11 +517,11 @@ class DelimitedReader(Reader):
             else:
                 class_name = None
 
-            if "id" not in row:
+            if self.id_col not in row:
                 curr_id = "EXAMPLE_{}".format(example_num)
             else:
-                curr_id = row["id"]
-                del row["id"]
+                curr_id = row[self.id_col]
+                del row[self.id_col]
 
             # Convert features to floats and if a feature is 0
             # then store the name of the feature so we can

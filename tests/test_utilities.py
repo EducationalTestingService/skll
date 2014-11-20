@@ -551,8 +551,8 @@ def test_run_experiment_argparse():
 
 
 def check_filter_features_no_arff_argparse(extension, filter_type,
-                                           label_col='y', inverse=False,
-                                           quiet=False):
+                                           label_col='y', id_col='id',
+                                           inverse=False, quiet=False):
     """
     A utility function to check that we are setting up argument parsing
     correctly for filter_features for ALL file types except ARFF.
@@ -608,6 +608,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
             ff_cmd_args.append(lbl)
 
     ff_cmd_args.extend(['-l', label_col])
+    ff_cmd_args.extend(['--id_col', id_col])
 
     if inverse:
         ff_cmd_args.append('-i')
@@ -639,6 +640,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
         eq_(read_pos_arguments[1], infile)
         eq_(read_kw_arguments['quiet'], quiet)
         eq_(read_kw_arguments['label_col'], label_col)
+        eq_(read_kw_arguments['id_col'], id_col)
 
         eq_(write_pos_arguments[1], outfile)
         eq_(write_kw_arguments['quiet'], quiet)
@@ -658,22 +660,24 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
 
 
 def test_filter_features_no_arff_argparse():
-    for (extension, filter_type,
+    for (extension, filter_type, id_col,
          label_col, inverse, quiet) in product(['.jsonlines', '.ndj',
                                                 '.megam', '.tsv',
                                                 '.csv', ],
                                                ['feature', 'id',
                                                 'label'],
+                                               ['id', 'id_foo'],
                                                ['y', 'foo'],
                                                [True, False],
                                                [True, False]):
 
         yield (check_filter_features_no_arff_argparse, extension,
-               filter_type, label_col, inverse, quiet)
+               filter_type, label_col, id_col, inverse, quiet)
 
 
 def check_filter_features_arff_argparse(filter_type, label_col='y',
-                                        inverse=False, quiet=False):
+                                        id_col='id', inverse=False,
+                                        quiet=False):
     """
     A utility function to check that we are setting up argument parsing
     correctly for filter_features for ARFF file types. We are not checking
@@ -691,7 +695,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     # create a simple featureset with actual ids, labels and features
     fs, _ = make_classification_data(num_labels=3, train_test_ratio=1.0)
 
-    writer = writer_class(infile, fs, label_col=label_col)
+    writer = writer_class(infile, fs, label_col=label_col, id_col=id_col)
     writer.write()
 
     ff_cmd_args = [infile, outfile]
@@ -730,6 +734,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
             ff_cmd_args.append(lbl)
 
     ff_cmd_args.extend(['-l', label_col])
+    ff_cmd_args.extend(['--id_col', id_col])
 
     if inverse:
         ff_cmd_args.append('-i')
@@ -772,15 +777,16 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
 
 
 def test_filter_features_arff_argparse():
-    for (filter_type, label_col,
+    for (filter_type, label_col, id_col,
          inverse, quiet) in product(['feature', 'id',
                                      'label'],
                                     ['y', 'foo'],
+                                    ['id', 'id_foo'],
                                     [True, False],
                                     [True, False]):
 
         yield (check_filter_features_arff_argparse, filter_type,
-               label_col, inverse, quiet)
+               label_col, id_col, inverse, quiet)
 
 
 @raises(SystemExit)
@@ -841,7 +847,8 @@ def test_filter_features_unmatched_formats():
         yield check_filter_features_raises_system_exit, ff_cmd_args
 
 
-def check_join_features_argparse(extension, label_col='y', quiet=False):
+def check_join_features_argparse(extension, label_col='y', id_col='id',
+                                 quiet=False):
     """
     A utility function to check that we are setting up argument parsing
     correctly for join_features for ALL file types. We are not checking
@@ -869,9 +876,12 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
     jf_cmd_args = [infile1, infile2, outfile]
 
     if extension in ['.tsv', '.csv', '.arff']:
-        writer1 = writer_class(infile1, fs1, label_col=label_col)
-        writer2 = writer_class(infile2, fs2, label_col=label_col)
+        writer1 = writer_class(infile1, fs1, label_col=label_col,
+                               id_col=id_col)
+        writer2 = writer_class(infile2, fs2, label_col=label_col,
+                               id_col=id_col)
         jf_cmd_args.extend(['-l', label_col])
+        jf_cmd_args.extend(['--id_col', id_col])
     else:
         writer1 = writer_class(infile1, fs1)
         writer2 = writer_class(infile2, fs2)
@@ -910,13 +920,15 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
 
 
 def test_join_features_argparse():
-    for (extension, label_col, quiet) in product(['.jsonlines', '.ndj',
-                                                  '.megam', '.tsv',
-                                                  '.csv', '.arff'],
-                                                 ['y', 'foo'],
-                                                 [True, False]):
+    for (extension, label_col, id_col, quiet) in product(['.jsonlines', '.ndj',
+                                                          '.megam', '.tsv',
+                                                          '.csv', '.arff'],
+                                                         ['y', 'foo'],
+                                                         ['id', 'id_foo'],
+                                                         [True, False]):
 
-        yield (check_join_features_argparse, extension, label_col, quiet)
+        yield (check_join_features_argparse, extension, label_col, id_col,
+               quiet)
 
 
 @raises(SystemExit)

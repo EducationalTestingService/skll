@@ -232,6 +232,7 @@ def _setup_config_parser(config_path):
                                         'cv_folds_location': '',
                                         'suffix': '',
                                         'label_col': 'y',
+                                        'id_col': 'id',
                                         'ids_to_floats': 'False',
                                         'custom_learner_path': ''})
     # Read file if it exists
@@ -367,6 +368,7 @@ def _parse_config_file(config_path):
     test_path = config.get("Input", "test_location").rstrip('/')
     suffix = config.get("Input", "suffix")
     label_col = config.get("Input", "label_col")
+    id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
     # get the cv folds file and make a dictionary from it
@@ -519,7 +521,7 @@ def _parse_config_file(config_path):
     test_set_name = basename(test_path) if test_path else "cv"
 
     return (experiment_name, task, sampler, fixed_sampler_parameters,
-            feature_hasher, hasher_features, label_col, train_set_name,
+            feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objective, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count,
@@ -529,7 +531,7 @@ def _parse_config_file(config_path):
             class_map, custom_learner_path)
 
 
-def _load_featureset(dir_path, feat_files, suffix, label_col='y',
+def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
                      feature_hasher=False, num_features=None):
     """
@@ -546,6 +548,10 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
                       If no column with that name exists, or `None` is
                       specified, the data is considered to be unlabelled.
     :type label_col: str
+    :param id_col: Name of the column which contains the instance IDs.
+                   If no column with that name exists, or `None` is
+                   specified, example IDs will be automatically generated.
+    :type id_col: str
     :param ids_to_floats: Convert IDs to float to save memory. Will raise error
                           if we encounter an a non-numeric ID.
     :type ids_to_floats: bool
@@ -570,7 +576,7 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
     if isfile(dir_path):
-        return Reader.for_path(dir_path, label_col=label_col,
+        return Reader.for_path(dir_path, label_col=label_col, id_col=id_col,
                                ids_to_floats=ids_to_floats, quiet=quiet,
                                class_map=class_map,
                                feature_hasher=feature_hasher,
@@ -579,7 +585,7 @@ def _load_featureset(dir_path, feat_files, suffix, label_col='y',
         merged_set = None
         for file_name in sorted(join(dir_path, featfile + suffix) for
                                 featfile in feat_files):
-            fs = Reader.for_path(file_name, label_col=label_col,
+            fs = Reader.for_path(file_name, label_col=label_col, id_col=id_col,
                                  ids_to_floats=ids_to_floats, quiet=quiet,
                                  class_map=class_map,
                                  feature_hasher=feature_hasher,
@@ -629,6 +635,7 @@ def _classify_featureset(args):
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
     label_col = args.pop("label_col")
+    id_col = args.pop("id_col")
     ids_to_floats = args.pop("ids_to_floats")
     class_map = args.pop("class_map")
     custom_learner_path = args.pop("custom_learner_path")
@@ -668,6 +675,7 @@ def _classify_featureset(args):
                                         overwrite):
             train_examples = _load_featureset(train_path, featureset, suffix,
                                               label_col=label_col,
+                                              id_col=id_col,
                                               ids_to_floats=ids_to_floats,
                                               quiet=quiet, class_map=class_map,
                                               feature_hasher=feature_hasher,
@@ -702,6 +710,7 @@ def _classify_featureset(args):
         if task == 'evaluate' or task == 'predict':
             test_examples = _load_featureset(test_path, featureset, suffix,
                                              label_col=label_col,
+                                             id_col=id_col,
                                              ids_to_floats=ids_to_floats,
                                              quiet=quiet, class_map=class_map,
                                              feature_hasher=feature_hasher,
@@ -1034,7 +1043,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # Read configuration
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
-     hasher_features, label_col, train_set_name, test_set_name, suffix,
+     hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
      featuresets, do_shuffle, model_path, do_grid_search, grid_objective,
      probability, results_path, pos_label_str, feature_scaling,
      min_feature_count, grid_search_jobs, grid_search_folds, cv_folds,
@@ -1178,6 +1187,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["grid_search_folds"] = grid_search_folds
             job_args["cv_folds"] = cv_folds
             job_args["label_col"] = label_col
+            job_args["id_col"] = id_col
             job_args["ids_to_floats"] = ids_to_floats
             job_args["quiet"] = quiet
             job_args["class_map"] = class_map
