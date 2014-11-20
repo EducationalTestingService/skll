@@ -4,6 +4,14 @@
 SciKit-Learn Laboratory (SKLL)
 ==============================
 
+.. image:: skll.png
+   :alt: SKLL logo
+   :align: right
+
+.. container:: clear
+
+    .. image:: spacer.png
+
 SKLL (pronounced "skull") provides a number of utilities to make it simpler to
 run common scikit-learn experiments with pre-generated features.
 

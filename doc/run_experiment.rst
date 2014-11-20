@@ -598,9 +598,9 @@ Classification:
     *   **f1_score_micro**: Micro-averaged |F1 link|_
     *   **f1_score_macro**: Macro-averaged |F1 link|_
     *   **f1_score_weighted**: Weighted average |F1 link|_
-    *   **f1_score_least_frequent**: F:sub:`1` score of the least frequent class. The
-        least frequent class may vary from fold to fold for certain data
-        distributions.
+    *   **f1_score_least_frequent**: F:\ :sub:`1` score of the least frequent
+        class. The least frequent class may vary from fold to fold for certain
+        data distributions.
     *   **average_precision**: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
         (for binary classification)
     *   **roc_auc**: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__
@@ -792,7 +792,7 @@ specified via command-line arguments instead of in the configuration file:
     Runs an ablation study where repeated experiments are conducted with all
     combinations of feature files in each featureset.
 
-    .. note::
+    .. warning::
 
         This can create a huge number of jobs, so please use with caution.
 
