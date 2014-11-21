@@ -36,10 +36,8 @@ with the following added restrictions:
 
 *   Only simple numeric, string, and nomimal values are supported.
 *   Nominal values are converted to strings.
-*   There should be an attribute with the name specified by :ref:`id_col <id_col>` in 
-    the :ref:`Input` section of the configuration file you create for your
-    experiment. This defaults to "id".  If there is no such column, IDs will be
-    generated automatically.
+*   If the data has instance IDs, there should be an attribute with the name
+    specified by :ref:`id_col <id_col>` in the :ref:`Input` section of the configuration file you create for your experiment. This defaults to ``id``.  If there is no such attribute, IDs will be generated automatically.
 *   If the data is labelled, there must be an attribute with the name specified
     by :ref:`label_col <label_col>` in the :ref:`Input` section of the
     configuartion file you create for your experiment. This defaults to ``y``.
@@ -56,10 +54,8 @@ A simple comma or tab-delimited format with the following restrictions:
     specified by :ref:`label_col <label_col>` in the :ref:`Input` section of the
     configuartion file you create for your experiment. This defaults to
     ``y``.
-*   There should be a column with the name specified by :ref:`id_col <id_col>` in 
-    the :ref:`Input` section of the configuration file you create for your
-    experiment. This defaults to "id".  If there is no such column, IDs will be
-    generated automatically.
+*   If the data has instance IDs, there should be a column with the name
+    specified by :ref:`id_col <id_col>` in the :ref:`Input` section of the configuration file you create for your experiment. This defaults to ``id``.  If there is no such column, IDs will be generated automatically.
 *   All other columns contain feature values, and every feature value
     must be specified (making this a poor choice for sparse data).
 
@@ -144,7 +140,7 @@ possible settings for each section is provided below, but to summarize:
     cross-validation currently uses
     `StratifiedKFold <http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedKFold.html>`__.
     You also can optionally use predetermined folds with the
-    :ref:`cv_folds_location <cv_folds_location>` setting.
+    :ref:`cv_folds_file <cv_folds_file>` setting.
 
 .. _evaluate:
 
@@ -161,6 +157,8 @@ possible settings for each section is provided below, but to summarize:
 
 *   If you want to just **train a model**, specify a training location, and set
     :ref:`task` to ``train``.
+
+.. _learners_required:
 
 *   A :ref:`list of classifiers/regressors <learners>` to try on your feature
     files is required.
@@ -199,7 +197,7 @@ Input
 
 The Input section has only one required field, :ref:`learners`, but also must
 contain either :ref:`train_file <train_file>` or
-:ref:`train_location <train_location>`.
+:ref:`train_directory <train_directory>`.
 
 .. _learners:
 
@@ -252,21 +250,21 @@ Regressors:
 .. _train_file:
 
 train_file *(Optional)*
-"""""""""""""""""""""""""""
+"""""""""""""""""""""""
 
 Path to a file containing the features to train on.  Cannot be used in
 combination with :ref:`featuresets <featuresets>`,
-:ref:`train_location <train_location>`, or :ref:`test_location <test_location>`.
+:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`.
 
 .. note::
 
     If :ref:`train_file <train_file>` is not specified,
-    :ref:`train_location <train_location>` must be.
+    :ref:`train_directory <train_directory>` must be.
 
-.. _train_location:
+.. _train_directory:
 
-train_location *(Optional)*
-"""""""""""""""""""""""""""
+train_directory *(Optional)*
+""""""""""""""""""""""""""""
 
 Path to directory containing training data files. There must be a file for each
 featureset.  Cannot be used in combination with :ref:`train_file <train_file>`
@@ -274,22 +272,22 @@ or :ref:`test_file <test_file>`.
 
 .. note::
 
-    If :ref:`train_location <train_location>` is not specified,
+    If :ref:`train_directory <train_directory>` is not specified,
     :ref:`train_file <train_file>` must be.
 
 .. _test_file:
 
 test_file *(Optional)*
-"""""""""""""""""""""""""""
+""""""""""""""""""""""
 
 Path to a file containing the features to test on.  Cannot be used in
 combination with :ref:`featuresets <featuresets>`,
-:ref:`train_location <train_location>`, or :ref:`test_location <test_location>`
+:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`
 
-.. _test_location:
+.. _test_directory:
 
-test_location *(Optional)*
-""""""""""""""""""""""""""
+test_directory *(Optional)*
+"""""""""""""""""""""""""""
 
 Path to directory containing test data files. There must be a file
 for each featureset.  Cannot be used in combination with
@@ -307,8 +305,8 @@ if this is not the case.  Cannot be used in combination with
 
 .. note::
 
-    If specifying :ref:`train_location <train_location>` or
-    :ref:`test_location <test_location>`, :ref:`featuresets <featuresets>`
+    If specifying :ref:`train_directory <train_directory>` or
+    :ref:`test_directory <test_directory>`, :ref:`featuresets <featuresets>`
     is required.
 
 .. _suffix:
@@ -332,8 +330,8 @@ would like to combine.
 id_col *(Optional)*
 """""""""""""""""""
 If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
-files, the IDs for each instance are assumed to be in a column with this 
-name. If no column with this name is found, the IDs are generated 
+files, the IDs for each instance are assumed to be in a column with this
+name. If no column with this name is found, the IDs are generated
 automatically. Defaults to ``id``.
 
 .. _label_col:
@@ -385,9 +383,9 @@ example, if you wanted to collapse the labels ``beagle`` and ``dachsund`` into a
 
 Any labels not included in the dictionary will be left untouched.
 
-.. _cv_folds_location:
+.. _cv_folds_file:
 
-cv_folds_location *(Optional)*
+cv_folds_file *(Optional)*
 """"""""""""""""""""""""""""""
 
 Path to a csv file (with a header that is ignored) specifying folds for cross-

@@ -35,7 +35,7 @@ def fill_in_config_paths(config_template_path):
 
     task = config.get("General", "task")
 
-    config.set("Input", "train_location", train_dir)
+    config.set("Input", "train_directory", train_dir)
 
     to_fill_in = ['log', 'vocabs', 'predictions']
 
@@ -49,13 +49,13 @@ def fill_in_config_paths(config_template_path):
         config.set("Output", d, join(output_dir))
 
     if task == 'cross_validate':
-        cv_folds_location = config.get("Input", "cv_folds_location")
-        if cv_folds_location:
-            config.set("Input", "cv_folds_location",
-                       join(train_dir, cv_folds_location))
+        cv_folds_file = config.get("Input", "cv_folds_file")
+        if cv_folds_file:
+            config.set("Input", "cv_folds_file",
+                       join(train_dir, cv_folds_file))
 
     if task == 'predict' or task == 'evaluate':
-        config.set("Input", "test_location", test_dir)
+        config.set("Input", "test_directory", test_dir)
 
     # set up custom learner path, if relevant
     custom_learner_path = config.get("Input", "custom_learner_path")

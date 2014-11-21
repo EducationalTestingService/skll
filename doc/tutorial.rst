@@ -4,10 +4,20 @@
 Tutorial
 ========
 
-For this tutorial, we're going to make use of the examples provided in the
+Workflow
+--------
+
+In general, there are three steps to using SKLL:
+
+1.  Get some data in a :ref:`SKLL-compatible format <file_formats>`.
+2.  Create a small :ref:`configuration file <create_config>` describing the
+    machine learning experiment you would like to run.
+3.  Run that configuration file with :ref:`run_experiment <run_experiment>`.
+
+For this tutorial, we're going to use some of the examples provided in the
 `examples <https://github.com/EducationalTestingService/skll/blob/master/examples/>`__
-directory in your copy of SKLL.  Of course, the provided examples are already
-perfect and ready to use.  If this weren't the case, you would need to...
+directory included with your copy of SKLL.  Of course, the provided examples
+are already perfect and ready to use.  If this weren't the case, you would need to...
 
 Get your data into the correct format
 -------------------------------------
@@ -48,10 +58,9 @@ experiment, we can train and test several models, either simultaneously or
 sequentially, depending on the availability of a grid engine.  This will be
 described in more detail later on, when we are ready to run our experiment.
 
-You can consult
-:ref:`the full list of learners currently available in SKLL <learners>` to get
-an idea for the things you can do.  As part of this tutorial, we will use the
-following learners:
+You can consult :ref:`the full list of learners currently available in SKLL <learners>`
+to get an idea for the things you can do.  As part of this tutorial, we will
+use the following learners:
 
 *   Random Forest (``RandomForestClassifier``), C-Support Vector Classification
     (``SVC``), Linear Support Vector Classification (``LinearSVC``), Logistic
@@ -77,8 +86,8 @@ are only going to train a model and evaluate its performance, because in the
 :ref:`General` section, :ref:`task` is set to "evaluate".  We will explore the
 other options for :ref:`task` later.
 
-In the :ref:`Input` section, you may want to adjust :ref:`train_location` and
-:ref:`test_location` to point to the directories containing the Iris training
+In the :ref:`Input` section, you may want to adjust :ref:`train_directory` and
+:ref:`test_directory` to point to the directories containing the Iris training
 and testing data (most likely ``skll/examples/iris/train`` and
 ``skll/examples/iris/test`` respectively, relative to your installation of
 SKLL).  :ref:`featuresets <featuresets>` indicates the name of both the

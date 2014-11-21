@@ -76,7 +76,7 @@ def fill_in_config_paths_for_parsing(config_template_path, values_to_fill_dict,
     config = _setup_config_parser(config_template_path)
 
     to_fill_in = {'General': ['experiment_name', 'task'],
-                  'Input': ['train_location', 'train_file', 'test_location',
+                  'Input': ['train_directory', 'train_file', 'test_directory',
                             'test_file', 'featuresets', 'featureset_names',
                             'feature_hasher', 'hasher_features', 'learners',
                             'sampler', 'shuffle', 'feature_scaling'],
@@ -159,8 +159,8 @@ def test_config_parsing_no_name():
 
     # make a simple config file that has a bad task
     # but everything else is correct
-    values_to_fill_dict = {'train_location': train_dir,
-                           'test_location': test_dir,
+    values_to_fill_dict = {'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'task': 'evaluate',
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
@@ -186,8 +186,8 @@ def test_config_parsing_bad_task():
     # make a simple config file that has a bad task
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'train_location': train_dir,
-                           'test_location': test_dir,
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
@@ -226,8 +226,8 @@ def test_config_parsing_bad_learner():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'train_location': train_dir,
-                           'test_location': test_dir,
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'log': output_dir,
                            'results': output_dir}
@@ -263,8 +263,8 @@ def test_config_parsing_bad_sampler():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'train_location': train_dir,
-                           'test_location': test_dir,
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
@@ -294,8 +294,8 @@ def test_config_parsing_bad_hashing():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'train_location': train_dir,
-                           'test_location': test_dir,
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
@@ -323,8 +323,8 @@ def test_config_parsing_bad_featuresets():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'train_location': train_dir,
-                           'test_location': test_dir,
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir}
@@ -356,8 +356,8 @@ def test_config_parsing_bad_featurenames():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'train_location': train_dir,
-                           'test_location': test_dir,
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'learners': "['LogisticRegression']",
                            'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
                                            "'f6']]"),
@@ -392,8 +392,8 @@ def test_config_parsing_bad_scaling():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'train_location': train_dir,
-                           'test_location': test_dir,
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'learners': "['LogisticRegression']",
                            'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
                                            "'f6']]"),
@@ -427,7 +427,7 @@ def test_config_parsing_bad_train():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'test_location': test_dir,
+                           'test_directory': test_dir,
                            'learners': "['LogisticRegression']",
                            'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
                                            "'f6']]"),
@@ -446,10 +446,10 @@ def test_config_parsing_bad_train():
                                                                ('test_config_'
                                                                 'parsing_')))
             values_to_fill_dict['train_file'] = train_fh.name
-            values_to_fill_dict['train_location'] = train_dir
+            values_to_fill_dict['train_directory'] = train_dir
 
         elif sub_prefix == 'nonexistent_train_path':
-            values_to_fill_dict['train_location'] = join(train_dir, 'foo')
+            values_to_fill_dict['train_directory'] = join(train_dir, 'foo')
 
         elif sub_prefix == 'nonexistent_test_file':
             values_to_fill_dict['train_file'] = 'foo.jsonlines'
@@ -478,7 +478,7 @@ def test_config_parsing_bad_test():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'train_location': train_dir,
+                           'train_directory': train_dir,
                            'learners': "['LogisticRegression']",
                            'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
                                            "'f6']]"),
@@ -496,10 +496,10 @@ def test_config_parsing_bad_test():
                                                               ('test_config_'
                                                                'parsing_')))
             values_to_fill_dict['test_file'] = test_fh.name
-            values_to_fill_dict['test_location'] = test_dir
+            values_to_fill_dict['test_directory'] = test_dir
 
         elif sub_prefix == 'nonexistent_test_path':
-            values_to_fill_dict['test_location'] = join(test_dir, 'foo')
+            values_to_fill_dict['test_directory'] = join(test_dir, 'foo')
 
         elif sub_prefix == 'nonexistent_test_file':
             values_to_fill_dict['test_file'] = 'foo.jsonlines'
@@ -530,8 +530,8 @@ def test_config_parsing_bad_objective():
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
-                           'train_location': train_dir,
-                           'test_location': test_dir,
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
@@ -558,7 +558,7 @@ def test_config_parsing_bad_task_paths():
     # make a simple config file that has a bad task
     # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'train_location': train_dir,
+                           'train_directory': train_dir,
                            'learners': "['LogisticRegression']",
                            'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
                                            "'f6']]"),
@@ -582,12 +582,12 @@ def test_config_parsing_bad_task_paths():
         elif sub_prefix == 'xv_with_test_path':
             values_to_fill_dict['task'] = 'cross_validate'
             values_to_fill_dict['results'] = output_dir
-            values_to_fill_dict['test_location'] = test_dir
+            values_to_fill_dict['test_directory'] = test_dir
 
         elif sub_prefix == 'train_with_test_path':
             values_to_fill_dict['task'] = 'train'
             values_to_fill_dict['models'] = output_dir
-            values_to_fill_dict['test_location'] = test_dir
+            values_to_fill_dict['test_directory'] = test_dir
 
         elif sub_prefix == 'xv_with_test_file':
             values_to_fill_dict['task'] = 'cross_validate'
@@ -617,7 +617,7 @@ def test_config_parsing_bad_task_paths():
 
         elif sub_prefix == 'predict_with_results':
             values_to_fill_dict['task'] = 'predict'
-            values_to_fill_dict['test_location'] = test_dir
+            values_to_fill_dict['test_directory'] = test_dir
             values_to_fill_dict['predictions'] = output_dir
             values_to_fill_dict['results'] = output_dir
 

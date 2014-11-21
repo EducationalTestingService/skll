@@ -76,8 +76,8 @@ def tearDown():
 
 
 def fill_in_config_paths_for_single_file(config_template_path, train_file,
-                                         test_file, train_location='',
-                                         test_location=''):
+                                         test_file, train_directory='',
+                                         test_directory=''):
     """
     Add paths to train and test files, and output directories to a given config
     template file.
@@ -95,11 +95,11 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
     if task == 'predict' or task == 'evaluate':
         config.set("Input", "test_file", join(test_dir, test_file))
 
-    if train_location:
-        config.set("Input", "train_location", join(train_dir, train_location))
+    if train_directory:
+        config.set("Input", "train_directory", join(train_dir, train_directory))
 
-    if test_location:
-        config.set("Input", "test_location", join(test_dir, test_location))
+    if test_directory:
+        config.set("Input", "test_directory", join(test_dir, test_directory))
 
     to_fill_in = ['log', 'predictions']
 
@@ -113,10 +113,10 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
         config.set("Output", d, join(output_dir))
 
     if task == 'cross_validate':
-        cv_folds_location = config.get("Input", "cv_folds_location")
-        if cv_folds_location:
-            config.set("Input", "cv_folds_location",
-                       join(train_dir, cv_folds_location))
+        cv_folds_file = config.get("Input", "cv_folds_file")
+        if cv_folds_file:
+            config.set("Input", "cv_folds_file",
+                       join(train_dir, cv_folds_file))
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
@@ -370,9 +370,9 @@ def test_train_file_test_file():
 
 
 @raises(ValueError)
-def test_train_file_and_train_location():
+def test_train_file_and_train_directory():
     """
-    Test that train_file + train_location = ValueError
+    Test that train_file + train_directory = ValueError
     """
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
@@ -384,14 +384,14 @@ def test_train_file_and_train_location():
                                                        join(_my_dir, 'test',
                                                             'test_single_file.'
                                                             'jsonlines'),
-                                                       train_location='foo')
+                                                       train_directory='foo')
     _parse_config_file(config_path)
 
 
 @raises(ValueError)
-def test_test_file_and_test_location():
+def test_test_file_and_test_directory():
     """
-    Test that test_file + test_location = ValueError
+    Test that test_file + test_directory = ValueError
     """
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
@@ -403,5 +403,5 @@ def test_test_file_and_test_location():
                                                        join(_my_dir, 'test',
                                                             'test_single_file.'
                                                             'jsonlines'),
-                                                       test_location='foo')
+                                                       test_directory='foo')
     _parse_config_file(config_path)

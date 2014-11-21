@@ -99,8 +99,8 @@ class Reader(object):
                        matrix.
         :type sparse: bool
         :param id_col: Name of the column which contains the instance IDs for
-                       ARFF/CSV/TSV files. If no column with that name exists, or
-                       `None` is specified, the IDs will be generated
+                       ARFF/CSV/TSV files. If no column with that name exists,
+                       or `None` is specified, the IDs will be generated
                        automatically.
         :type id_col: str
         :param label_col: Name of the column which contains the class labels
@@ -117,8 +117,8 @@ class Reader(object):
                           kept the same.
         :type class_map: dict from str to str
 
-        :returns: New instance of the ``Reader`` sub-class that is
-                  appropriate for the given path, or ``DictListReader`` if
+        :returns: New instance of the :class:`Reader` sub-class that is
+                  appropriate for the given path, or :class:`DictListReader` if
                   given a list of dictionaries.
         """
         if not isinstance(path_or_list, string_types):
@@ -166,7 +166,8 @@ class Reader(object):
         Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
         ``.megam``, ``.ndj``, or ``.tsv`` formats.
 
-        :returns: FeatureSet representing the file we read in.
+        :returns: :class:`~skll.data.featureset.FeatureSet` representing the
+                  file we read in.
         """
         # Setup logger
         logger = logging.getLogger(__name__)
@@ -236,10 +237,11 @@ class Reader(object):
 class DictListReader(Reader):
 
     """
-    This class is to facilitate programmatic use of ``Learner.predict()``
-    and other functions that take ``FeatureSet`` objects as input.
-    It iterates over examples in the same way as other ``Reader``s, but uses
-    a list of example dictionaries instead of a path to a file.
+    This class is to facilitate programmatic use of
+    :meth:`~skll.learner.Learner.predict` and other functions that take
+    :class:`~skll.data.featureset.FeatureSet` objects as input. It iterates
+    over examples in the same way as other :class:`Reader` clases, but uses a
+    list of example dictionaries instead of a path to a file.
 
     :param path_or_list: List of example dictionaries.
     :type path_or_list: Iterable of dict
@@ -295,7 +297,8 @@ class DictListReader(Reader):
 class NDJReader(Reader):
 
     """
-    Reader to create a FeatureSet out of a .jsonlines/.ndj file
+    Reader to create a :class:`~skll.data.featureset.FeatureSet` out of a
+    .jsonlines/.ndj file
 
     If you would like to include example/instance IDs in your files, they
     must be specified in the following ways as an "id" key in each JSON
@@ -336,7 +339,8 @@ class NDJReader(Reader):
 class MegaMReader(Reader):
 
     """
-    Reader to create a FeatureSet out ouf a MegaM -fvals file.
+    Reader to create a :class:`~skll.data.featureset.FeatureSet` out ouf a
+    MegaM -fvals file.
 
     If you would like to include example/instance IDs in your files, they
     must be specified as a comment line directly preceding the line with
@@ -403,12 +407,13 @@ class MegaMReader(Reader):
 class LibSVMReader(Reader):
 
     """
-    Reader to create a FeatureSet out ouf a LibSVM/LibLinear/SVMLight file.
+    Reader to create a :class:`~skll.data.featureset.FeatureSet` out ouf a
+    LibSVM/LibLinear/SVMLight file.
 
     We use a specially formatted comment for storing example IDs, class names,
     and feature names, which are normally not supported by the format.  The
     comment is not mandatory, but without it, your labels and features will
-    not have names.  The comment is structured as follows:
+    not have names.  The comment is structured as follows::
 
         ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
     """
@@ -489,17 +494,18 @@ class LibSVMReader(Reader):
 class DelimitedReader(Reader):
 
     """
-    Reader for creating a FeatureSet out of a delimited (CSV/TSV) file.
+    Reader for creating a :class:`~skll.data.featureset.FeatureSet` out of a
+    delimited (CSV/TSV) file.
 
     If you would like to include example/instance IDs in your files, they
-    must be specified as an "id" column.
+    must be specified as an ``id`` column.
 
     Also, for ARFF, CSV, and TSV files, there must be a column with the
     name specified by `label_col` if the data is labelled. For ARFF files,
     this column must also be the final one (as it is in Weka).
 
     :param dialect: The dialect of to pass on to the underlying CSV reader.
-                    Default: 'excel-tab'
+                    Default: ``excel-tab``
     :type dialect: str
     """
 
@@ -560,7 +566,8 @@ class DelimitedReader(Reader):
 class CSVReader(DelimitedReader):
 
     """
-    Reader for creating a FeatureSet out of a CSV file.
+    Reader for creating a :class:`~skll.data.featureset.FeatureSet` out of a
+    CSV file.
 
     If you would like to include example/instance IDs in your files, they
     must be specified as an "id" column.
@@ -577,7 +584,8 @@ class CSVReader(DelimitedReader):
 class ARFFReader(DelimitedReader):
 
     """
-    Reader for creating a FeatureSet out of an ARFF file.
+    Reader for creating a :class:`~skll.data.featureset.FeatureSet` out of an
+    ARFF file.
 
     If you would like to include example/instance IDs in your files, they
     must be specified as an "id" column.
@@ -660,7 +668,8 @@ class ARFFReader(DelimitedReader):
 class TSVReader(DelimitedReader):
 
     """
-    Reader for creating a FeatureSet out of a TSV file.
+    Reader for creating a :class:`~skll.data.featureset.FeatureSet` out of a
+    TSV file.
 
     If you would like to include example/instance IDs in your files, they
     must be specified as an "id" column.

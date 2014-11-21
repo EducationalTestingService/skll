@@ -362,7 +362,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
     config = _setup_config_parser(config_template_path)
 
     config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
-    config.set("Input", "test_location", join(test_dir,
+    config.set("Input", "test_directory", join(test_dir,
                                               "fancy_test.jsonlines"))
     config.set("Output", "results", output_dir)
     config.set("Output", "log", output_dir)

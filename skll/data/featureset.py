@@ -25,7 +25,7 @@ class FeatureSet(object):
     Encapsulation of all of the features, values, and metadata about a given
     set of data.
 
-    This replaces ExamplesTuple in older versions.
+    This replaces ``ExamplesTuple`` from older versions.
 
     :param name: The name of this feature set.
     :type name: str
