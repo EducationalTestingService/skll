@@ -16,7 +16,7 @@ SKLL (pronounced "skull") provides a number of utilities to make it simpler to
 run common scikit-learn experiments with pre-generated features.
 
 There are two primary means of using SKLL: :doc:`the run_experiment script <run_experiment>`
-and :doc:`the Python API <skll>`.
+and :doc:`the Python API <api>`.
 
 
 Documentation
@@ -29,7 +29,7 @@ Documentation
    tutorial
    run_experiment
    utilities
-   skll
+   api
 
 
 Indices and tables
