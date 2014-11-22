@@ -6,9 +6,11 @@ skll.egg-info/
 dist/
 build/
 __pycache__
+doc/_build
 
 .DS_Store
 .coverage
+.idea
 
 examples/train.csv
 examples/test.csv
@@ -50,6 +52,7 @@ tests/configs/test_scaling_with.cfg
 tests/configs/test_scaling_with_feature_hasher.cfg
 tests/configs/test_scaling_without.cfg
 tests/configs/test_scaling_without_feature_hasher.cfg
+tests/configs/test_single_file.cfg
 tests/configs/test_sparse_feature_hasher.cfg
 tests/configs/test_sparse_feature_hasher_sampler.cfg
 tests/configs/test_sparse_sampler.cfg

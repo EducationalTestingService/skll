@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-'''
+"""
 Simple script for printing out model weights.
 
 :author: Michael Heilman (mheilman@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import print_function, unicode_literals
 
@@ -19,10 +19,14 @@ from skll import Learner
 from skll.version import __version__
 
 
-def main():
-    '''
+def main(argv=None):
+    """
     Handles command line arguments and gets things started.
-    '''
+
+    :param argv: List of arguments, as if specified on the command-line.
+                 If None, ``sys.argv[1:]`` is used instead.
+    :type argv: list of str
+    """
     parser = argparse.ArgumentParser(description="Prints out the weights of a \
                                                   given model.",
                                      conflict_handler='resolve',
@@ -38,7 +42,7 @@ def main():
                              'or all weights')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
@@ -48,9 +52,7 @@ def main():
     k = args.k if args.k > 0 else None
 
     learner = Learner.from_file(args.model_file)
-    weights = learner.model_params
-
-    print("Number of nonzero features:", len(weights), file=sys.stderr)
+    (weights, intercept) = learner.model_params
 
     weight_items = iteritems(weights)
     if args.sign == 'positive':
@@ -58,6 +60,17 @@ def main():
     elif args.sign == 'negative':
         weight_items = (x for x in weight_items if x[1] < 0)
 
+    if intercept is not None:
+        # subclass of LinearModel
+        if '_intercept_' in intercept:
+            print("intercept = {:.12f}".format(intercept['_intercept_']))
+        else:
+            print("== intercept values ==")
+            for (label, val) in intercept.items():
+                print("{:.12f}\t{}".format(val, label))
+        print()
+
+    print("Number of nonzero features:", len(weights), file=sys.stderr)
     for feat, val in sorted(weight_items, key=lambda x: -abs(x[1]))[:k]:
         print("{:.12f}\t{}".format(val, feat))
 

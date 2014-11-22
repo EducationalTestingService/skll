@@ -1,8 +1,8 @@
-'''
+"""
 This module is just here until a version of scikit-learn is released with the
 changes present here.  It has already been merged in scikit-learn master via
 https://github.com/scikit-learn/scikit-learn/pull/3683.
-'''
+"""
 
 # Authors: Lars Buitinck <L.J.Buitinck@uva.nl>
 #          Dan Blanchard <dblanchard@ets.org>
@@ -87,6 +87,13 @@ class DictVectorizer(OldDictVectorizer):
         self.sort = sort
         self.feature_names_ = []
         self.vocabulary_ = {}
+
+    def __eq__(self, other):
+        """
+        Check whether two vectorizers are the same
+        """
+        return (self.dtype == other.dtype and
+                self.vocabulary_ == other.vocabulary_)
 
     def fit(self, X, y=None):
         """Learn a list of feature name -> indices mappings.

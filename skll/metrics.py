@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 This module contains a bunch of evaluation metrics that can be used to
 evaluate the performance of learners.
 
@@ -7,7 +7,7 @@ evaluate the performance of learners.
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import print_function, unicode_literals
 
@@ -25,7 +25,7 @@ _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
 
 
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
-    '''
+    """
     Calculates the kappa inter-rater agreement between two the gold standard
     and the predicted ratings. Potential values range from -1 (representing
     complete disagreement) to 1 (representing complete agreement).  A kappa
@@ -40,6 +40,10 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     This function contains a combination of code from yorchopolis's kappa-stats
     and Ben Hamner's Metrics projects on Github.
 
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
     :param weights: Specifies the weight matrix for the calculation.
                     Options are:
 
@@ -58,7 +62,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                              equal, whereas 1 and 3 will have a difference of 1
                              for when building the weights matrix.
     :type allow_off_by_one: bool
-    '''
+    """
     logger = logging.getLogger(__name__)
 
     # Ensure that the lists are both the same length
@@ -76,7 +80,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
         y_true = [int(np.round(float(y))) for y in y_true]
         y_pred = [int(np.round(float(y))) for y in y_pred]
     except ValueError as e:
-        logger.error("For kappa, the labels should be integers or strings " +
+        logger.error("For kappa, the labels should be integers or strings "
                      "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
@@ -91,7 +95,8 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
     # Build the observed/confusion matrix
     num_ratings = max_rating - min_rating + 1
-    observed = confusion_matrix(y_true, y_pred, labels=list(range(num_ratings)))
+    observed = confusion_matrix(y_true, y_pred,
+                                labels=list(range(num_ratings)))
     num_scored_items = float(len(y_true))
 
     # Build weight array if weren't passed one
@@ -114,8 +119,8 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                 elif not wt_scheme:  # unweighted
                     weights[i, j] = bool(diff)
                 else:
-                    raise ValueError(('Invalid weight scheme specified for ' +
-                                      'kappa: {}').format(wt_scheme))
+                    raise ValueError('Invalid weight scheme specified for '
+                                     'kappa: {}'.format(wt_scheme))
 
     hist_true = np.bincount(y_true, minlength=num_ratings)
     hist_true = hist_true[: num_ratings] / num_scored_items
@@ -135,59 +140,75 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
 
 def kendall_tau(y_true, y_pred):
-    '''
-    Optimize the hyperparameter values during the grid search based on
-    Kendall's tau.
+    """
+    Calculate Kendall's tau between ``y_true`` and ``y_pred``.
 
-    This is useful in cases where you want to use the actual probabilities of
-    the different classes after the fact, and not just the optimize based on
-    the classification accuracy.
-    '''
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
+
+    :returns: Kendall's tau if well-defined, else 0
+    """
     ret_score = kendalltau(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def spearman(y_true, y_pred):
-    '''
-    Optimize the hyperparameter values during the grid search based on
-    Spearman rank correlation.
+    """
+    Calculate Spearman's rank correlation coefficient between ``y_true`` and
+    ``y_pred``.
 
-    This is useful in cases where you want to use the actual probabilities of
-    the different classes after the fact, and not just the optimize based on
-    the classification accuracy.
-    '''
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
+
+    :returns: Spearman's rank correlation coefficient if well-defined, else 0
+    """
     ret_score = spearmanr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def pearson(y_true, y_pred):
-    '''
-    Optimize the hyperparameter values during the grid search based on Pearson
-    correlation.
-    '''
+    """
+    Calculate Pearson product-moment correlation coefficient between ``y_true``
+    and ``y_pred``.
+
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
+
+    :returns: Pearson product-moment correlation coefficient if well-defined,
+              else 0
+    """
     ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def f1_score_least_frequent(y_true, y_pred):
-    '''
-    Optimize the hyperparameter values during the grid search based on the F1
-    measure of the least frequent class.
+    """
+    Calculate the F1 score of the least frequent label/class in ``y_true`` for
+    ``y_pred``.
 
-    This is mostly intended for use when you're doing binary classification
-    and your data is highly skewed. You should probably use f1_score_macro if
-    your data is skewed and you're doing multi-class classification.
-    '''
+    :param y_true: The true/actual/gold labels for the data.
+    :type y_true: array-like of float
+    :param y_pred: The predicted/observed labels for the data.
+    :type y_pred: array-like of float
+
+    :returns: F1 score of the least frequent label
+    """
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
 
 
 def use_score_func(func_name, y_true, y_pred):
-    '''
+    """
     Call the scoring function in `sklearn.metrics.SCORERS` with the given name.
     This takes care of handling keyword arguments that were pre-specified when
     creating the scorer. This applies any sign-flipping that was specified by
     `make_scorer` when the scorer was created.
-    '''
+    """
     scorer = SCORERS[func_name]
     return scorer._sign * scorer._score_func(y_true, y_pred, **scorer._kwargs)

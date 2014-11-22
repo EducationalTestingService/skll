@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-'''
+"""
 script for computing additional evaluation metrics
 
 :author: Michael Heilman (mheilman@ets.org)
-'''
+"""
 from __future__ import print_function, unicode_literals
 
 import argparse
 import csv
 import logging
 
-from skll.data import load_examples, safe_float
+from skll.data import Reader, safe_float
 from skll.metrics import use_score_func
 from skll.version import __version__
 
 
 def compute_eval_from_predictions(examples_file, predictions_file,
                                   metric_names):
-    '''
+    """
     Compute evaluation metrics from prediction files after you have run an
     experiment.
 
@@ -29,11 +29,11 @@ def compute_eval_from_predictions(examples_file, predictions_file,
                          (e.g., [pearson, unweighted_kappa])
 
     :returns: a dictionary from metrics names to values
-    '''
+    """
 
     # read gold standard labels
-    data = load_examples(examples_file)
-    gold = dict(zip(data.ids, data.classes))
+    data = Reader.for_path(examples_file).read()
+    gold = dict(zip(data.ids, data.labels))
 
     # read predictions
     pred = {}
@@ -59,13 +59,13 @@ def compute_eval_from_predictions(examples_file, predictions_file,
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     :param argv: List of arguments, as if specified on the command-line.
                  If None, ``sys.argv[1:]`` is used instead.
     :type argv: list of str
-    '''
+    """
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Computes evaluation metrics from prediction files after \

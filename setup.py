@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 import sys
-from setuptools import setup
+from setuptools import find_packages, setup
 
 # Get version without importing, which avoids dependency issues
 exec(compile(open('skll/version.py').read(), 'skll/version.py', 'exec'))
@@ -35,11 +35,12 @@ setup(name='skll',
       author='Daniel Blanchard',
       author_email='dblanchard@ets.org',
       license='BSD 3 clause',
-      packages=['skll', 'skll.data', 'skll.utilities'],
+      packages=find_packages(),
+      include_package_data=True,
       entry_points={'console_scripts':
-                    ['filter_megam = skll.utilities.filter_megam:main',
+                    ['filter_features = skll.utilities.filter_features:main',
                      'generate_predictions = skll.utilities.generate_predictions:main',
-                     'join_megam = skll.utilities.join_megam:main',
+                     'join_features = skll.utilities.join_features:main',
                      'print_model_weights = skll.utilities.print_model_weights:main',
                      'run_experiment = skll.utilities.run_experiment:main',
                      'skll_convert = skll.utilities.skll_convert:main',
@@ -60,5 +61,6 @@ setup(name='skll',
                    'Programming Language :: Python :: 2.7',
                    'Programming Language :: Python :: 3',
                    'Programming Language :: Python :: 3.3',
+                   'Programming Language :: Python :: 3.4',
                    ],
       zip_safe=False)

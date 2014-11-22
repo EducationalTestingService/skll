@@ -1,11 +1,17 @@
+.. _install:
+
 Installation
 ============
 SKLL can easily be installed via pip::
 
-	pip install skll
+    pip install skll
+
+or via conda (for Linux and OS X)::
+
+    conda install -c dan_blanchard skll
 
 It can also be downloaded directly from
-`Github <http://github.com/EducationalTestingService/skll>`_.
+`GitHub <http://github.com/EducationalTestingService/skll>`_.
 
 
 License

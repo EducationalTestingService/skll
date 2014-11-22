@@ -1,25 +1,26 @@
 #!/usr/bin/env python
-'''
+"""
 This is a simple script to split the train.csv and test.csv files from the
 Kaggle "Titanic: Machine Learning from Disaster" competition into the format
 titanic.cfg expects.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import division, print_function, unicode_literals
 
 import logging
 import os
 import sys
+from itertools import chain
 
-from skll import load_examples, write_feature_file
+from skll import Writer, Reader
 
 def main():
-    '''
+    """
     Create directories and split CSV files into subsets.
-    '''
+    """
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
                                 '%(message)s'), level=logging.INFO)
     logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ def main():
                    'socioeconomic': ['Pclass', 'Fare'],
                    'family': ['SibSp', 'Parch'],
                    'misc': ['Embarked']}
+    features_to_keep = list(chain(*subset_dict.values()))
 
     # Create directories to store files
     if not os.path.exists('titanic/train'):
@@ -50,48 +52,53 @@ def main():
         logger.info('Creating titanic/test directory')
         os.makedirs('titanic/test')
 
-    # Read and write training examples
-    train_examples = load_examples('train.csv', label_col='Survived',
-                                   quiet=False, sparse=False)
-    num_train_dev = len(train_examples.classes)
+    # Read and write training FeatureSet
+    train_fs = Reader.for_path('train.csv', label_col='Survived',
+                               id_col='PassengerId', quiet=False,
+                               sparse=False).read()
+    train_fs.filter(features=features_to_keep)
+    num_train_dev = len(train_fs)
     num_train = int((num_train_dev / 5) * 4)
-    train_ids = list(range(1, num_train_dev + 1))
-    write_feature_file('titanic/train/.csv',
-                       train_ids[:num_train],
-                       train_examples.classes[:num_train],
-                       train_examples.features[:num_train, :],
-                       feat_vectorizer=train_examples.feat_vectorizer,
-                       subsets=subset_dict, label_col='Survived',
-                       id_prefix='train_example')
+    writer = Writer.for_path('titanic/train/.csv',
+                                       train_fs[:num_train],
+                                       id_col='PassengerId',
+                                       label_col='Survived',
+                                       quiet=False,
+                                       subsets=subset_dict)
+    writer.write()
 
-    # Write train+dev set for training model to use to generate predictions on test
-    write_feature_file('titanic/train+dev/.csv',
-                       train_ids,
-                       train_examples.classes,
-                       train_examples.features,
-                       feat_vectorizer=train_examples.feat_vectorizer,
-                       subsets=subset_dict, label_col='Survived',
-                       id_prefix='train_example')
+    # Write train+dev set for training model to use to generate predictions on
+    # test
+    writer = Writer.for_path('titanic/train+dev/.csv',
+                                       train_fs,
+                                       label_col='Survived',
+                                       id_col='PassengerId',
+                                       quiet=False,
+                                       subsets=subset_dict)
+    writer.write()
 
-    # Write dev examples
-    write_feature_file('titanic/dev/.csv',
-                       train_ids[num_train:],
-                       train_examples.classes[num_train:],
-                       train_examples.features[num_train:, :],
-                       feat_vectorizer=train_examples.feat_vectorizer,
-                       subsets=subset_dict, label_col='Survived',
-                       id_prefix='dev_example')
+    # Write dev FeatureSet
+    writer = Writer.for_path('titanic/dev/.csv',
+                                       train_fs[num_train:],
+                                       label_col='Survived',
+                                       id_col='PassengerId',
+                                       quiet=False,
+                                       subsets=subset_dict)
+    writer.write()
 
-    # Read and write test examples
-    test_examples = load_examples('test.csv', label_col='Survived',
-                                   quiet=False, sparse=False)
-    num_test = len(test_examples.classes)
-    test_ids = list(range(num_train_dev + 1, num_test + num_train_dev + 1))
-    write_feature_file('titanic/test/.csv', test_ids,
-                       test_examples.classes, test_examples.features,
-                       feat_vectorizer=test_examples.feat_vectorizer,
-                       subsets=subset_dict, label_col='Survived',
-                       id_prefix='test_example')
+    # Read and write test FeatureSet
+    test_fs = Reader.for_path('test.csv', label_col='Survived', quiet=False,
+                              sparse=False).read()
+    test_fs.filter(features=features_to_keep)
+    num_test = len(test_fs)
+    test_fs.ids = list(range(num_train_dev + 1, num_test + num_train_dev + 1))
+    writer = Writer.for_path('titanic/test/.csv',
+                                       test_fs,
+                                       label_col='Survived',
+                                       id_col='PassengerId',
+                                       quiet=False,
+                                       subsets=subset_dict)
+    writer.write()
 
 
 if __name__ == '__main__':

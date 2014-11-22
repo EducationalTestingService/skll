@@ -1,5 +1,5 @@
 # License: BSD 3 clause
-'''
+"""
 This package provides a number of utilities to make it simpler to run
 common scikit-learn experiments with pre-generated features.
 
@@ -7,23 +7,23 @@ common scikit-learn experiments with pre-generated features.
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
-'''
+"""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
 from sklearn.metrics import f1_score, make_scorer, SCORERS
 
-from .data import convert_examples, load_examples, write_feature_file
-from .experiments import run_ablation, run_configuration
+from .data import FeatureSet, Reader, Writer
+from .experiments import run_configuration
 from .learner import Learner
 from .metrics import (kappa, kendall_tau, spearman, pearson,
                       f1_score_least_frequent)
 from .version import __version__, VERSION
 
 
-__all__ = ['Learner', 'load_examples', 'kappa', 'kendall_tau', 'spearman',
-           'pearson', 'f1_score_least_frequent', 'run_configuration',
-           'run_ablation', 'write_feature_file', 'convert_examples']
+__all__ = ['FeatureSet', 'Learner', 'Reader', 'kappa', 'kendall_tau',
+           'spearman', 'pearson', 'f1_score_least_frequent',
+           'run_configuration', 'Writer']
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll
