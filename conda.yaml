@@ -1,10 +1,12 @@
 package:
   name: skll
-  version: {{ environ.get['GIT_DESCRIBE_TAG'] }}
+  version: {{ environ['GIT_DESCRIBE_TAG'].replace('v', '') }}
+
+source:
+  git_url: ./
 
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
-  string: {{ environ.get('GIT_BUILD_STR', '') }}
   script:
     - cd $RECIPE_DIR
     - $PYTHON setup.py install
@@ -39,7 +41,7 @@ requirements:
     - python
     - joblib
     - setuptools
-    - scikit-learn
+    - scikit-learn 0.15.2
     - six
     - prettytable
     - beautiful-soup
@@ -53,7 +55,7 @@ requirements:
   run:
     - python
     - joblib
-    - scikit-learn
+    - scikit-learn 0.15.2
     - six
     - prettytable
     - beautiful-soup
