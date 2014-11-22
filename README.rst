@@ -70,6 +70,7 @@ Requirements
 Talks
 ~~~~~
 
+-  *Simpler Machine Learning with SKLL 1.0*, Dan Blanchard, PyData NYC 2014 (`slides <http://www.slideshare.net/DanielBlanchard2/py-data-nyc-2014>`__)
 -  *Simpler Machine Learning with SKLL*, Dan Blanchard, PyData NYC 2013 (`video <http://vimeo.com/79511496>`__ | `slides <http://www.slideshare.net/DanielBlanchard2/simple-machine-learning-with-skll>`__)
 
 Books
