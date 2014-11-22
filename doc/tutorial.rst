@@ -35,7 +35,7 @@ Once you have those files, you'll also want to grab the
 on our GitHub page and put ``train.csv`` and ``test.csv`` in ``examples``.
 
 The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`,
-will create split the training and test data files from Kaggle up into groups
+will split the training and test data files from Kaggle up into groups
 of related features and store them in ``dev``, ``test``, ``train``, and
 ``train+dev`` subdirectories.  The development set that gets created by the
 script is 20% of the data that was in the original training set, and ``train``
@@ -45,7 +45,7 @@ Create a configuration file for the experiment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For this tutorial, we will refer to an "experiment" as having a single data set
-split into (at minimum) training and testing portions.  As part of each
+split into training and testing portions.  As part of each
 experiment, we can train and test several models, either simultaneously or
 sequentially, depending whether we're using
 `GridMap <https://github.com/EducationalTestingService/gridmap>`__ or not.
@@ -155,6 +155,11 @@ That should produce output like::
 
 We could squelch the warnings about shuffling by setting
 :ref:`shuffle <shuffle>` to ``True`` in the :ref:`Input` section.
+
+The reason we see the loading messages repeated is that we are running the 
+different learners sequentially, whereas SKLL is designed to take advantage
+of a cluster to execute everything in parallel via GridMap. 
+
 
 Examine the results
 ^^^^^^^^^^^^^^^^^^^
@@ -266,7 +271,7 @@ file with all of your features and a similar single testing file, you should
 use the :ref:`train_file <train_file>` and :ref:`test_file <test_file>`
 settings in your config file.
 
-If you would like to split an existing file up into a traing set and a test
+If you would like to split an existing file up into a training set and a testing
 set, you can employ the :ref:`filter_features` tool to select instances you
 would like to include in each file.
 
