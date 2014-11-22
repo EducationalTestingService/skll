@@ -13,14 +13,14 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
-import glob
 import os
+from glob import glob
 from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from numpy.testing import assert_array_equal
-from skll.data import FeatureSet, NDJWriter
+from skll.data import NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
@@ -31,6 +31,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -43,6 +46,9 @@ def setup():
 
 
 def tearDown():
+    """
+    Clean up after tests.
+    """
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
@@ -57,17 +63,21 @@ def tearDown():
         if exists(join(test_dir, inf)):
             os.unlink(join(test_dir, inf))
 
-
-    for cfg_file in glob.glob(join(config_dir, '*custom_learner.cfg')):
+    for cfg_file in glob(join(config_dir, '*custom_learner.cfg')):
         os.unlink(cfg_file)
 
-    for output_file in glob.glob(join(output_dir, 'test_logistic_custom_learner_*')) \
-                       + glob.glob(join(output_dir, 'test_majority_class_custom_learner_*')) \
-                       + glob.glob(join(output_dir, 'test_model_custom_learner_*')):
+    for output_file in (glob(join(output_dir,
+                                  'test_logistic_custom_learner_*')) +
+                        glob(join(output_dir,
+                                  'test_majority_class_custom_learner_*')) +
+                        glob(join(output_dir, 'test_model_custom_learner_*'))):
         os.unlink(output_file)
 
 
 def read_predictions(path):
+    """
+    Read in prediction file as a numpy array.
+    """
     with open(path) as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
@@ -195,7 +205,7 @@ def test_custom_learner_model_loading():
     pred_file = join(_my_dir, 'output',
                      '{}_{}_CustomLogisticRegressionWrapper'
                      '.predictions'.format(outprefix,
-                                            outprefix))
+                                           outprefix))
     preds1 = read_predictions(pred_file)
     os.unlink(pred_file)
 

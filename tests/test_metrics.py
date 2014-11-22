@@ -15,7 +15,9 @@ from __future__ import (absolute_import, division, print_function,
 import os
 from os.path import abspath, dirname, exists, join
 
-from nose.tools import raises, assert_almost_equal
+from nose.tools import raises
+from numpy.testing import assert_almost_equal
+
 from skll.data import FeatureSet
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -28,6 +30,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -120,13 +125,12 @@ def test_invalid_lists_kappa():
 @raises(ValueError)
 def check_invalid_regr_grid_obj_func(learner_name, grid_objective_function):
     """
-    Checks whether the grid objective function is
-    valid for this regression learner
+    Checks whether the grid objective function is valid for this regression
+    learner
     """
     (train_fs, _, _) = make_regression_data()
     clf = Learner(learner_name)
-    grid_search_score = clf.train(train_fs,
-                                  grid_objective=grid_objective_function)
+    clf.train(train_fs, grid_objective=grid_objective_function)
 
 
 def test_invalid_grid_obj_func():

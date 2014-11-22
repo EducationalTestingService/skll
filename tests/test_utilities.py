@@ -55,6 +55,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -67,6 +70,9 @@ def setup():
 
 
 def tearDown():
+    """
+    Clean up after tests.
+    """
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
     other_dir = join(_my_dir, 'other')
@@ -545,8 +551,8 @@ def test_run_experiment_argparse():
 
 
 def check_filter_features_no_arff_argparse(extension, filter_type,
-                                           label_col='y', inverse=False,
-                                           quiet=False):
+                                           label_col='y', id_col='id',
+                                           inverse=False, quiet=False):
     """
     A utility function to check that we are setting up argument parsing
     correctly for filter_features for ALL file types except ARFF.
@@ -602,6 +608,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
             ff_cmd_args.append(lbl)
 
     ff_cmd_args.extend(['-l', label_col])
+    ff_cmd_args.extend(['--id_col', id_col])
 
     if inverse:
         ff_cmd_args.append('-i')
@@ -633,6 +640,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
         eq_(read_pos_arguments[1], infile)
         eq_(read_kw_arguments['quiet'], quiet)
         eq_(read_kw_arguments['label_col'], label_col)
+        eq_(read_kw_arguments['id_col'], id_col)
 
         eq_(write_pos_arguments[1], outfile)
         eq_(write_kw_arguments['quiet'], quiet)
@@ -652,22 +660,24 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
 
 
 def test_filter_features_no_arff_argparse():
-    for (extension, filter_type,
+    for (extension, filter_type, id_col,
          label_col, inverse, quiet) in product(['.jsonlines', '.ndj',
                                                 '.megam', '.tsv',
                                                 '.csv', ],
                                                ['feature', 'id',
                                                 'label'],
+                                               ['id', 'id_foo'],
                                                ['y', 'foo'],
                                                [True, False],
                                                [True, False]):
 
         yield (check_filter_features_no_arff_argparse, extension,
-               filter_type, label_col, inverse, quiet)
+               filter_type, label_col, id_col, inverse, quiet)
 
 
 def check_filter_features_arff_argparse(filter_type, label_col='y',
-                                        inverse=False, quiet=False):
+                                        id_col='id', inverse=False,
+                                        quiet=False):
     """
     A utility function to check that we are setting up argument parsing
     correctly for filter_features for ARFF file types. We are not checking
@@ -685,7 +695,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     # create a simple featureset with actual ids, labels and features
     fs, _ = make_classification_data(num_labels=3, train_test_ratio=1.0)
 
-    writer = writer_class(infile, fs, label_col=label_col)
+    writer = writer_class(infile, fs, label_col=label_col, id_col=id_col)
     writer.write()
 
     ff_cmd_args = [infile, outfile]
@@ -724,6 +734,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
             ff_cmd_args.append(lbl)
 
     ff_cmd_args.extend(['-l', label_col])
+    ff_cmd_args.extend(['--id_col', id_col])
 
     if inverse:
         ff_cmd_args.append('-i')
@@ -766,15 +777,16 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
 
 
 def test_filter_features_arff_argparse():
-    for (filter_type, label_col,
+    for (filter_type, label_col, id_col,
          inverse, quiet) in product(['feature', 'id',
                                      'label'],
                                     ['y', 'foo'],
+                                    ['id', 'id_foo'],
                                     [True, False],
                                     [True, False]):
 
         yield (check_filter_features_arff_argparse, filter_type,
-               label_col, inverse, quiet)
+               label_col, id_col, inverse, quiet)
 
 
 @raises(SystemExit)
@@ -812,23 +824,31 @@ def test_filter_features_unknown_output_format():
     """
     Make sure that filter_features exits when passing in an unknown input file format
     """
-
     ff_cmd_args = ['foo.csv', 'bar.xxx', '-f', 'a', 'b', 'c']
     ff.main(argv=ff_cmd_args)
 
 
+@raises(SystemExit)
+def check_filter_features_raises_system_exit(cmd_args):
+    """
+    Little helper to make test output cleaner for tests that check that
+    filter_features exits with the specified arguments.
+    """
+    ff.main(cmd_args)
+
+
 def test_filter_features_unmatched_formats():
-    """
-    Make sure filter_feature exits when the output file is in a different format
-    """
+    # Make sure filter_feature exits when the output file is in a different
+    # format
     for inext, outext in combinations(['.arff', '.megam', '.ndj', '.tsv',
                                        '.jsonlines', '.csv'], 2):
         ff_cmd_args = ['foo{}'.format(inext), 'bar{}'.format(outext), '-f',
                        'a', 'b', 'c']
-        assert_raises(SystemExit, ff.main, ff_cmd_args)
+        yield check_filter_features_raises_system_exit, ff_cmd_args
 
 
-def check_join_features_argparse(extension, label_col='y', quiet=False):
+def check_join_features_argparse(extension, label_col='y', id_col='id',
+                                 quiet=False):
     """
     A utility function to check that we are setting up argument parsing
     correctly for join_features for ALL file types. We are not checking
@@ -856,9 +876,12 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
     jf_cmd_args = [infile1, infile2, outfile]
 
     if extension in ['.tsv', '.csv', '.arff']:
-        writer1 = writer_class(infile1, fs1, label_col=label_col)
-        writer2 = writer_class(infile2, fs2, label_col=label_col)
+        writer1 = writer_class(infile1, fs1, label_col=label_col,
+                               id_col=id_col)
+        writer2 = writer_class(infile2, fs2, label_col=label_col,
+                               id_col=id_col)
         jf_cmd_args.extend(['-l', label_col])
+        jf_cmd_args.extend(['--id_col', id_col])
     else:
         writer1 = writer_class(infile1, fs1)
         writer2 = writer_class(infile2, fs2)
@@ -897,13 +920,15 @@ def check_join_features_argparse(extension, label_col='y', quiet=False):
 
 
 def test_join_features_argparse():
-    for (extension, label_col, quiet) in product(['.jsonlines', '.ndj',
-                                                  '.megam', '.tsv',
-                                                  '.csv', '.arff'],
-                                                 ['y', 'foo'],
-                                                 [True, False]):
+    for (extension, label_col, id_col, quiet) in product(['.jsonlines', '.ndj',
+                                                          '.megam', '.tsv',
+                                                          '.csv', '.arff'],
+                                                         ['y', 'foo'],
+                                                         ['id', 'id_foo'],
+                                                         [True, False]):
 
-        yield (check_join_features_argparse, extension, label_col, quiet)
+        yield (check_join_features_argparse, extension, label_col, id_col,
+               quiet)
 
 
 @raises(SystemExit)
@@ -939,30 +964,37 @@ def test_join_features_unknown_input_format():
 @raises(SystemExit)
 def test_join_features_unknown_output_format():
     """
-    Make sure that join_features exits when  passing in an unknown output file format
+    Make sure that join_features exits when passing in an unknown output file format
     """
 
     jf_cmd_args = ['foo.csv', 'bar.csv', 'baz.xxx']
     jf.main(argv=jf_cmd_args)
 
 
-def test_join_features_unmatched_formats1():
+@raises(SystemExit)
+def check_join_features_raises_system_exit(cmd_args):
     """
-    Make sure that join_feature exits when the input files are in different formats
+    Little helper to make test output cleaner for tests that check that
+    join_features exits with the specified arguments.
     """
+    jf.main(cmd_args)
+
+
+def test_join_features_unmatched_input_formats():
+    # Make sure that join_feature exits when the input files are in different
+    # formats
     for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
         jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext2),
                        'baz{}'.format(ext1)]
-        assert_raises(SystemExit, jf.main, jf_cmd_args)
+        yield check_join_features_raises_system_exit, jf_cmd_args
 
 
-def test_join_features_unmatched_formats2():
-    """
-    Make sure join_feature exits when the output file is in a different format
-    """
+def test_join_features_unmatched_output_format():
+    # Make sure join_features exits when the output file is in a different
+    # format
     for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
         jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1),
                        'baz{}'.format(ext2)]
-        assert_raises(SystemExit, jf.main, jf_cmd_args)
+        yield check_join_features_raises_system_exit, jf_cmd_args

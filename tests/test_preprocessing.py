@@ -18,8 +18,7 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 import scipy.sparse as sp
-from nose.tools import assert_almost_equal
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_almost_equal
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 from skll.data import FeatureSet, NDJWriter
@@ -37,6 +36,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -49,6 +51,9 @@ def setup():
 
 
 def tearDown():
+    """
+    Clean up after tests.
+    """
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
     train_dir = join(_my_dir, 'train')
@@ -187,7 +192,8 @@ def test_class_map_feature_hasher():
     run_configuration(config_path, quiet=True)
 
     with open(join(_my_dir, 'output', ('test_class_map_test_class_map_'
-                                       'LogisticRegression.results.json'))) as f:
+                                       'LogisticRegression.results.'
+                                       'json'))) as f:
         # outstr = f.read()
         outd = json.loads(f.read())
         # logistic_result_score = float(
@@ -258,8 +264,7 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
                               not use_scaling else
                               [0.88038277511961716, 0.86910994764397898])
 
-    for expected, actual in zip(expected_fmeasures, fmeasures):
-        assert_almost_equal(expected, actual)
+    assert_almost_equal(expected_fmeasures, fmeasures)
 
 
 def test_scaling():

@@ -6,6 +6,7 @@ skll.egg-info/
 dist/
 build/
 __pycache__
+doc/_build
 
 .DS_Store
 .coverage

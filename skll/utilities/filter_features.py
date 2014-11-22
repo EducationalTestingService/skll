@@ -34,8 +34,8 @@ def main(argv=None):
                      features that do not match the specified patterns.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .jsonlines, .tsv, \
-                              .csv, .arff, or .megam)')
+                        help='input feature file (ends in .arff, .csv, \
+                              .jsonlines, .megam, .ndj, or .tsv)')
     parser.add_argument('outfile',
                         help='output feature file (must have same extension as\
                               input file)')
@@ -48,6 +48,10 @@ def main(argv=None):
                               like to keep.  If unspecified, no instances are \
                               removed based on their IDs.',
                         nargs='*')
+    parser.add_argument('--id_col',
+                        help='Name of the column which contains the instance \
+                              IDs in ARFF, CSV, or TSV files.',
+                        default='id')
     parser.add_argument('-i', '--inverse',
                         help='Instead of keeping features and/or examples in \
                               lists, remove them.',
@@ -101,7 +105,8 @@ def main(argv=None):
 
     # Read input file
     reader = EXT_TO_READER[input_extension](args.infile, quiet=args.quiet,
-                                            label_col=args.label_col)
+                                            label_col=args.label_col,
+                                            id_col=args.id_col)
     feature_set = reader.read()
 
     # Do the actual filtering
@@ -113,8 +118,10 @@ def main(argv=None):
     writer_args = {'quiet': args.quiet}
     if writer_type is DelimitedFileWriter:
         writer_args['label_col'] = args.label_col
+        writer_args['id_col'] = args.id_col
     elif writer_type is ARFFWriter:
         writer_args['label_col'] = args.label_col
+        writer_args['id_col'] = args.id_col
         writer_args['regression'] = reader.regression
         writer_args['relation'] = reader.relation
     writer = writer_type(args.outfile, feature_set, **writer_args)

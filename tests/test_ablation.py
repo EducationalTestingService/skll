@@ -33,6 +33,9 @@ _my_dir = abspath(dirname(__file__))
 
 
 def setup():
+    """
+    Create necessary directories for testing.
+    """
     train_dir = join(_my_dir, 'train')
     if not exists(train_dir):
         os.makedirs(train_dir)
@@ -45,6 +48,9 @@ def setup():
 
 
 def tearDown():
+    """
+    Clean up after tests.
+    """
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
 

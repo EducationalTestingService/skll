@@ -53,13 +53,15 @@ def main():
         os.makedirs('titanic/test')
 
     # Read and write training FeatureSet
-    train_fs = Reader.for_path('train.csv', label_col='Survived', quiet=False,
+    train_fs = Reader.for_path('train.csv', label_col='Survived',
+                               id_col='PassengerId', quiet=False,
                                sparse=False).read()
     train_fs.filter(features=features_to_keep)
     num_train_dev = len(train_fs)
     num_train = int((num_train_dev / 5) * 4)
     writer = Writer.for_path('titanic/train/.csv',
                                        train_fs[:num_train],
+                                       id_col='PassengerId',
                                        label_col='Survived',
                                        quiet=False,
                                        subsets=subset_dict)
@@ -70,6 +72,7 @@ def main():
     writer = Writer.for_path('titanic/train+dev/.csv',
                                        train_fs,
                                        label_col='Survived',
+                                       id_col='PassengerId',
                                        quiet=False,
                                        subsets=subset_dict)
     writer.write()
@@ -78,6 +81,7 @@ def main():
     writer = Writer.for_path('titanic/dev/.csv',
                                        train_fs[num_train:],
                                        label_col='Survived',
+                                       id_col='PassengerId',
                                        quiet=False,
                                        subsets=subset_dict)
     writer.write()
@@ -87,11 +91,11 @@ def main():
                               sparse=False).read()
     test_fs.filter(features=features_to_keep)
     num_test = len(test_fs)
-    test_fs.ids = ['EXAMPLE_{}'.format(i) for i in
-                   range(num_train_dev + 1, num_test + num_train_dev + 1)]
+    test_fs.ids = list(range(num_train_dev + 1, num_test + num_train_dev + 1))
     writer = Writer.for_path('titanic/test/.csv',
                                        test_fs,
                                        label_col='Survived',
+                                       id_col='PassengerId',
                                        quiet=False,
                                        subsets=subset_dict)
     writer.write()
