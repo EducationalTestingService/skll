@@ -14,8 +14,6 @@ from __future__ import print_function, unicode_literals
 
 import argparse
 import logging
-import sys
-from functools import partial
 
 from skll.experiments import run_configuration
 from skll.version import __version__
@@ -99,7 +97,6 @@ def main(argv=None):
     if args.machines:
         machines = args.machines.split(',')
 
-    # Create partial function to map onto list of config files
     ablation = args.ablation
     if args.ablation_all:
         ablation = None
