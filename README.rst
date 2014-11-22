@@ -19,9 +19,9 @@ SciKit-Learn Laboratory
 .. image:: http://img.shields.io/pypi/l/skll.svg
    :alt: License
 
-.. image:: http://img.shields.io/badge/DOI-10.5281%2Fzenodo.12521-blue.svg
-   :target: http://dx.doi.org/10.5281/zenodo.12521
-   :alt: DOI for citing SKLL 0.28.1
+.. image:: http://img.shields.io/badge/DOI-10.5281%2Fzenodo.12825-blue.svg
+   :target: http://dx.doi.org/10.5281/zenodo.12825
+   :alt: DOI for citing SKLL 1.0.0
 
 This Python package provides utilities to make it easier to run
 machine learning experiments with scikit-learn.
