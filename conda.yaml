@@ -11,30 +11,30 @@ build:
     - cd $RECIPE_DIR
     - $PYTHON setup.py install
   entry_points:
-      - filter_megam = skll.utilities.filter_megam:main
-      - generate_predictions = skll.utilities.generate_predictions:main
-      - join_megam = skll.utilities.join_megam:main
-      - megam_to_libsvm = skll.utilities.megam_to_libsvm:main
-      - print_model_weights = skll.utilities.print_model_weights:main
-      - run_experiment = skll.utilities.run_experiment:main
-      - skll_convert = skll.utilities.skll_convert:main
-      - summarize_results = skll.utilities.summarize_results:main
-      - filter_megam2 = skll.utilities.filter_megam:main [py2k]
-      - generate_predictions2 = skll.utilities.generate_predictions:main [py2k]
-      - join_megam2 = skll.utilities.join_megam:main [py2k]
-      - megam_to_libsvm2 = skll.utilities.megam_to_libsvm:main [py2k]
-      - print_model_weights2 = skll.utilities.print_model_weights:main [py2k]
-      - run_experiment2 = skll.utilities.run_experiment:main [py2k]
-      - skll_convert2 = skll.utilities.skll_convert:main [py2k]
-      - summarize_results2 = skll.utilities.summarize_results:main [py2k]
-      - filter_megam3 = skll.utilities.filter_megam:main [py3k]
-      - generate_predictions3 = skll.utilities.generate_predictions:main [py3k]
-      - join_megam3 = skll.utilities.join_megam:main [py3k]
-      - megam_to_libsvm3 = skll.utilities.megam_to_libsvm:main [py3k]
-      - print_model_weights3 = skll.utilities.print_model_weights:main [py3k]
-      - run_experiment3 = skll.utilities.run_experiment:main [py3k]
-      - skll_convert3 = skll.utilities.skll_convert:main [py3k]
-      - summarize_results3 = skll.utilities.summarize_results:main [py3k]
+    - compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main
+    - filter_features = skll.utilities.filter_features:main
+    - generate_predictions = skll.utilities.generate_predictions:main
+    - join_features = skll.utilities.join_features:main
+    - print_model_weights = skll.utilities.print_model_weights:main
+    - run_experiment = skll.utilities.run_experiment:main
+    - skll_convert = skll.utilities.skll_convert:main
+    - summarize_results = skll.utilities.summarize_results:main
+    - compute_eval_from_predictions2 = skll.utilities.compute_eval_from_predictions:main [py2k]
+    - filter_features2 = skll.utilities.filter_features:main [py2k]
+    - generate_predictions2 = skll.utilities.generate_predictions:main [py2k]
+    - join_features2 = skll.utilities.join_features:main [py2k]
+    - print_model_weights2 = skll.utilities.print_model_weights:main [py2k]
+    - run_experiment2 = skll.utilities.run_experiment:main [py2k]
+    - skll_convert2 = skll.utilities.skll_convert:main [py2k]
+    - summarize_results2 = skll.utilities.summarize_results:main [py2k]
+    - compute_eval_from_predictions3 = skll.utilities.compute_eval_from_predictions:main [py3k]
+    - filter_features3 = skll.utilities.filter_features:main [py3k]
+    - generate_predictions3 = skll.utilities.generate_predictions:main [py3k]
+    - join_features3 = skll.utilities.join_features:main [py3k]
+    - print_model_weights3 = skll.utilities.print_model_weights:main [py3k]
+    - run_experiment3 = skll.utilities.run_experiment:main [py3k]
+    - skll_convert3 = skll.utilities.skll_convert:main [py3k]
+    - summarize_results3 = skll.utilities.summarize_results:main [py3k]
 
 requirements:
   build:
@@ -51,6 +51,7 @@ requirements:
     - configparser [py2k]
     - futures [py2k]
     - logutils [py2k]
+    - mock [py2k]
 
   run:
     - python
@@ -65,6 +66,7 @@ requirements:
     - configparser [py2k]
     - futures [py2k]
     - logutils [py2k]
+    - mock [py2k]
 
 test:
   # Python imports
@@ -72,10 +74,10 @@ test:
     - skll
 
   commands:
-    - filter_megam --help
+    - compute_eval_from_predictions --help
+    - filter_features --help
     - generate_predictions --help
-    - join_megam --help
-    - megam_to_libsvm --help
+    - join_features --help
     - print_model_weights --help
     - run_experiment --help
     - skll_convert --help
