@@ -677,24 +677,45 @@ Defaults to ``f1_score_micro``.
 param_grids *(Optional)*
 """"""""""""""""""""""""
 
-List of parameter grids to search for each classifier. Each parameter
+List of parameter grids to search for each learner. Each parameter
 grid should be a list of dictionaries mapping from strings to lists
-of parameter values. When you specify an empty list for a classifier,
-the default parameter grid for that classifier will be searched.
+of parameter values. When you specify an empty list for a learner,
+the default parameter grid for that learner will be searched.
 
-The default parameter grids for each classifier are:
+The default parameter grids for each learner are:
 
-LogisticRegression
+AdaBoostClassifier and AdaBoostRegressor
     .. code-block:: python
 
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+DecisionTreeClassifier and DecisionTreeRegressor
+    .. code-block:: python
+
+       [{'max_features': ["auto", None]}]
+
+ElasticNet, Lasso, and Ridge
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+GradientBoostingClassifier and GradientBoostingRegressor
+    .. code-block:: python
+
+       [{'max_depth': [1, 3, 5]}]
+
+KNeighborsClassifier and KNeighborsRegressor
+    .. code-block:: python
+
+        [{'n_neighbors': [1, 5, 10, 100],
+          'weights': ['uniform', 'distance']}]
 
 LinearSVC
     .. code-block:: python
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-SVC
+LogisticRegression
     .. code-block:: python
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
@@ -704,25 +725,22 @@ MultinomialNB
 
        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
 
-DecisionTreeClassifier and DecisionTreeRegressor
-    .. code-block:: python
-
-       [{'max_features': ["auto", None]}]
-
 RandomForestClassifier and RandomForestRegressor
     .. code-block:: python
 
        [{'max_depth': [1, 5, 10, None]}]
 
-GradientBoostingClassifier and GradientBoostingRegressor
+SGDClassifier and SGDRegressor
     .. code-block:: python
 
-       [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
+        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+          'penalty': ['l1', 'l2', 'elasticnet']}]
 
-ElasticNet, Lasso, and Ridge
+SVC
     .. code-block:: python
 
-       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+         'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
 SVR
     .. code-block:: python
