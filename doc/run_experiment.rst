@@ -145,8 +145,8 @@ possible settings for each section is provided below, but to summarize:
 .. _evaluate:
 
 *   If you want to **train a model and evaluate it** on some data, specify a
-    training location, a test location, and a directory to store to store
-    results, and set :ref:`task` to ``evaluate``.
+    training location, a test location, and a directory to store results, 
+    and set :ref:`task` to ``evaluate``.
 
 .. _predict:
 
