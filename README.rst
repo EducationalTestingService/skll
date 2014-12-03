@@ -73,7 +73,8 @@ like:
 
 
 For more information about getting started with ``run_experiment``, please check
-out `our tutorial <https://skll.readthedocs.org/en/latest/tutorial.html>`__.
+out `our tutorial <https://skll.readthedocs.org/en/latest/tutorial.html>`__, or
+`our config file specs <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
 
 We also provide utilities for:
 
