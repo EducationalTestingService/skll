@@ -91,7 +91,7 @@ Python API
 If you just want to avoid writing a lot of boilerplate learning code, you can
 also use our simple Python API. The main way you'll want to use the API is through
 the ``Learner`` and ``Reader`` classes. For more details on our API, see
-`the documentation <https://skll.readthedocs.org/en/latest/index.html>`__.
+`the documentation <https://skll.readthedocs.org/en/latest/api.html>`__.
 
 While our API can be broadly useful, it should be noted that the command-line 
 utilities are intended as the primary way of using SKLL.  The API is just a nice
