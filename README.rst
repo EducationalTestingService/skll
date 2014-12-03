@@ -23,29 +23,90 @@ SciKit-Learn Laboratory
    :target: http://dx.doi.org/10.5281/zenodo.12825
    :alt: DOI for citing SKLL 1.0.0
 
-This Python package provides utilities to make it easier to run
-machine learning experiments with scikit-learn.
+This Python package provides command-line utilities to make it easier to run
+machine learning experiments with scikit-learn.  One of the primary goals of
+our project is to make it so that you can run scikit-learn experiments without
+actually needing to write any code other than what you used to generate/extract
+the features.
 
 Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~
 
-``run_experiment`` is a command-line utility for running a series of learners on
-datasets specified in a configuration file. For more information about using
-run_experiment (including a quick example), go
-`here <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
+The main utility we provide is called ``run_experiment`` and it can be used to
+easily run a series of learners on datasets specified in a configuration file 
+like:
+
+.. code:: ini
+
+  [General]
+  experiment_name = Titanic_Evaluate_Tuned
+  # valid tasks: cross_validate, evaluate, predict, train
+  task = evaluate
+  
+  [Input]
+  # these directories could also be absolute paths 
+  # (and must be if you're not running things in local mode)
+  train_directory = train
+  test_directory = dev
+  # Can specify multiple sets of feature files that are merged together automatically
+  # (even across formats)
+  featuresets = [["family.ndj", "misc.csv", "socioeconomic.arff", "vitals.csv"]]
+  # List of scikit-learn learners to use
+  learners = ["RandomForestClassifier", "DecisionTreeClassifier", "SVC", "MultinomialNB"]
+  # Column in CSV containing labels to predict
+  label_col = Survived
+  # Column in CSV containing instance IDs (if any)
+  id_col = PassengerId
+  
+  [Tuning]
+  # Should we tune parameters of all learners by searching provided parameter grids?
+  grid_search = true
+  # Function to maximize when performing grid search
+  objective = accuracy
+  
+  [Output]
+  # again, these can/should be absolute paths
+  log = output
+  results = output
+  predictions = output
+  models = output
+
+
+For more information about getting started with ``run_experiment``, please check
+out `our tutorial <https://skll.readthedocs.org/en/latest/tutorial.html>`__.
+
+We also provide utilities for:
+
+-  `converting between machine learning toolkit formats <https://skll.readthedocs.org/en/latest/utilities.html#skll-convert>`__
+   (e.g., ARFF, CSV, MegaM)
+-  `filtering feature files <https://skll.readthedocs.org/en/latest/utilities.html#filter-features>`__
+-  `joining feature files <https://skll.readthedocs.org/en/latest/utilities.html#join-features>`__
+-  `other common tasks <https://skll.readthedocs.org/en/latest/utilities.html>`__
+
 
 Python API
 ~~~~~~~~~~
 
 If you just want to avoid writing a lot of boilerplate learning code, you can
-use our simple Python API. The main way you'll want to use the API is through
-the ``Learner`` and ``Reader`` classes. For more details on how to simply
-train, test, cross-validate, and run grid search on a variety of scikit-learn
-models see
+also use our simple Python API. The main way you'll want to use the API is through
+the ``Learner`` and ``Reader`` classes. For more details on our API, see
 `the documentation <https://skll.readthedocs.org/en/latest/index.html>`__.
+
+While our API can be broadly useful, it should be noted that the command-line 
+utilities are intended as the primary way of using SKLL.  The API is just a nice
+side-effect of our developing the utilities.
+
 
 A Note on Pronunciation
 ~~~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: doc/skll.png
+   :alt: SKLL logo
+   :align: right
+   
+.. container:: clear
+
+  .. image:: doc/spacer.png
 
 SciKit-Learn Laboratory (SKLL) is pronounced "skull": that's where the learning
 happens.
