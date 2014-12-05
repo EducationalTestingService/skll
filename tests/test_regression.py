@@ -378,6 +378,25 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
     return new_config_path
 
 
+def test_int_labels():
+    config_template_path = join(_my_dir, 'configs',
+                                'test_int_labels_cv.template.cfg')
+    config_path = join(_my_dir, 'configs', 'test_int_labels_cv.cfg')
+    output_dir = join(_my_dir, 'output')
+
+    config = _setup_config_parser(config_template_path)
+    config.set("Input", "train_file",
+               join(_my_dir, 'other', 'test_int_labels_cv.jsonlines'))
+    config.set("Output", "results", output_dir)
+    config.set("Output", "log", output_dir)
+    config.set("Output", "predictions", output_dir)
+
+    with open(config_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    run_configuration(config_path, quiet=True)
+
+
 def test_fancy_output():
     """
     Test the descriptive statistics output in the results file for a regressor
