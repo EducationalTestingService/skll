@@ -380,6 +380,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
 
 def test_int_labels():
     """
+    Testing that SKLL can take integer input.
     This is just to test that SKLL can take int labels in the input
     (rather than floats or strings).  For v1.0.0, it could not because the
     json package doesn't know how to serialize numpy.int64 objects.
