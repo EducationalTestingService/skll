@@ -362,7 +362,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
     config = _setup_config_parser(config_template_path)
 
     config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
-    config.set("Input", "test_directory", join(test_dir,
+    config.set("Input", "test_file", join(test_dir,
                                               "fancy_test.jsonlines"))
     config.set("Output", "results", output_dir)
     config.set("Output", "log", output_dir)
@@ -442,7 +442,8 @@ def test_fancy_output():
     actual_stats_from_file = {}
     pred_stats_from_file = {}
     with open(join(output_dir, ('regression_fancy_output_train_fancy_train.'
-                                'jsonlines_LinearRegression.results')),
+                                'jsonlines_test_fancy_test.jsonlines'
+                                '_LinearRegression.results')),
               'r') as resultf:
 
         result_output = resultf.read().strip().split('\n')
