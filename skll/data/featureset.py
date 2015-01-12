@@ -1,6 +1,6 @@
 # License: BSD 3 clause
 """
-labels related to storing/merging feature sets.
+Classes related to storing/merging feature sets.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
