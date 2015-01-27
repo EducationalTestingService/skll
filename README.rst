@@ -1,25 +1,25 @@
 SciKit-Learn Laboratory
 -----------------------
 
-.. image:: https://travis-ci.org/EducationalTestingService/skll.svg?branch=stable
+.. image:: https://img.shields.io/travis/EducationalTestingService/skll/stable.svg
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
-.. image:: http://img.shields.io/coveralls/EducationalTestingService/skll/stable.svg
+.. image:: https://img.shields.io/coveralls/EducationalTestingService/skll/stable.svg
     :target: https://coveralls.io/r/EducationalTestingService/skll
 
-.. image:: http://img.shields.io/pypi/dm/skll.svg
+.. image:: https://img.shields.io/pypi/dm/skll.svg
    :target: https://warehouse.python.org/project/skll/
    :alt: PyPI downloads
 
-.. image:: http://img.shields.io/pypi/v/skll.svg
+.. image:: https://img.shields.io/pypi/v/skll.svg
    :target: https://warehouse.python.org/project/skll/
    :alt: Latest version on PyPI
 
-.. image:: http://img.shields.io/pypi/l/skll.svg
+.. image:: https://img.shields.io/pypi/l/skll.svg
    :alt: License
 
-.. image:: http://img.shields.io/badge/DOI-10.5281%2Fzenodo.12825-blue.svg
+.. image:: https://img.shields.io/badge/DOI-10.5281%2Fzenodo.12825-blue.svg
    :target: http://dx.doi.org/10.5281/zenodo.12825
    :alt: DOI for citing SKLL 1.0.0
 
