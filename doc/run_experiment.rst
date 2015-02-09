@@ -826,8 +826,10 @@ specified via command-line arguments instead of in the configuration file:
     specified number of feature files in each featureset in the
     configuration file held out. For example, if you have three feature
     files (``A``, ``B``, and ``C``) in your featureset and you specifiy
-    ``--ablation 1``, there will be three three experiments conducted with
-    the following featuresets: ``[[A, B], [B, C], [A, C]]``.
+    ``--ablation 1``, there will be three experiments conducted with
+    the following featuresets: ``[[A, B], [B, C], [A, C]]``. Additionally,
+    since every ablation experiment includes a run with all the features as a
+    baseline, the following featureset will also be run: ``[[A, B, C]]``.
 
     If you would like to try all possible combinations of feature files, you
     can use the :option:`run_experiment --ablation_all` option instead.
