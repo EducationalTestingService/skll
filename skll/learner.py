@@ -43,6 +43,7 @@ from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor)
+from sklearn.cluster import (KMeans)
 from sklearn.linear_model.base import LinearModel
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support, SCORERS)
@@ -74,6 +75,8 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'max_depth': [1, 3, 5]}],
                         GradientBoostingRegressor:
                         [{'max_depth': [1, 3, 5]}],
+                        KMeans:
+                        [{}],
                         KNeighborsClassifier:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
