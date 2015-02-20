@@ -362,7 +362,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
     config = _setup_config_parser(config_template_path)
 
     config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
-    config.set("Input", "test_directory", join(test_dir,
+    config.set("Input", "test_file", join(test_dir,
                                               "fancy_test.jsonlines"))
     config.set("Output", "results", output_dir)
     config.set("Output", "log", output_dir)
@@ -376,6 +376,31 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
         config.write(new_config_file)
 
     return new_config_path
+
+
+def test_int_labels():
+    """
+    Testing that SKLL can take integer input.
+    This is just to test that SKLL can take int labels in the input
+    (rather than floats or strings).  For v1.0.0, it could not because the
+    json package doesn't know how to serialize numpy.int64 objects.
+    """
+    config_template_path = join(_my_dir, 'configs',
+                                'test_int_labels_cv.template.cfg')
+    config_path = join(_my_dir, 'configs', 'test_int_labels_cv.cfg')
+    output_dir = join(_my_dir, 'output')
+
+    config = _setup_config_parser(config_template_path)
+    config.set("Input", "train_file",
+               join(_my_dir, 'other', 'test_int_labels_cv.jsonlines'))
+    config.set("Output", "results", output_dir)
+    config.set("Output", "log", output_dir)
+    config.set("Output", "predictions", output_dir)
+
+    with open(config_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    run_configuration(config_path, quiet=True)
 
 
 def test_fancy_output():
@@ -417,7 +442,8 @@ def test_fancy_output():
     actual_stats_from_file = {}
     pred_stats_from_file = {}
     with open(join(output_dir, ('regression_fancy_output_train_fancy_train.'
-                                'jsonlines_LinearRegression.results')),
+                                'jsonlines_test_fancy_test.jsonlines'
+                                '_LinearRegression.results')),
               'r') as resultf:
 
         result_output = resultf.read().strip().split('\n')

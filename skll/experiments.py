@@ -16,6 +16,7 @@ import errno
 import json
 import logging
 import math
+import numpy as np
 import os
 import sys
 from collections import defaultdict
@@ -49,6 +50,21 @@ else:
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
+
+
+class NumpyTypeEncoder(json.JSONEncoder):
+    '''
+    This class is used when serializing results, particularly the input label
+    values if the input has int-valued labels.  Numpy int64 objects can't
+    be serialized by the json module, so we must convert them to int objects.
+
+    A related issue where this was adapted from:
+    http://stackoverflow.com/questions/11561932/why-does-json-dumpslistnp-arange5-fail-while-json-dumpsnp-arange5-tolis
+    '''
+    def default(self, obj):
+        if isinstance(obj, np.int64):
+            return int(obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 def _get_stat_float(label_result_dict, stat):
@@ -824,7 +840,7 @@ def _classify_featureset(args):
             # write out the result dictionary to a json file
             file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
             with open(results_json_path, file_mode) as json_file:
-                json.dump(res, json_file)
+                json.dump(res, json_file, cls=NumpyTypeEncoder)
 
             with open(join(results_path,
                            '{}.results'.format(job_name)),

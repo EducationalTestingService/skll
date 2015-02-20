@@ -145,8 +145,8 @@ possible settings for each section is provided below, but to summarize:
 .. _evaluate:
 
 *   If you want to **train a model and evaluate it** on some data, specify a
-    training location, a test location, and a directory to store to store
-    results, and set :ref:`task` to ``evaluate``.
+    training location, a test location, and a directory to store results, 
+    and set :ref:`task` to ``evaluate``.
 
 .. _predict:
 
@@ -388,10 +388,13 @@ Any labels not included in the dictionary will be left untouched.
 cv_folds_file *(Optional)*
 """"""""""""""""""""""""""""""
 
-Path to a csv file (with a header that is ignored) specifying folds for cross-
-validation. The first column should consist of training set IDs and the second
-should be a string for the fold ID (e.g., 1 through 5, A through D, etc.).  If
-specified, the CV and grid search will leave one fold ID out at a time. [#]_
+Path to a csv file specifying folds for cross-validation. The first row must be
+a header. This header row is ignored, so it doesn't matter what the header row
+contains, but it must be there. If there is no header row, whatever row is in
+its place will be ignored. The first column should consist of training set IDs
+and the second should be a string for the fold ID (e.g., 1 through 5, A through
+D, etc.).  If specified, the CV and grid search will leave one fold ID out at a
+time. [#]_
 
 .. _custom_learner_path:
 
@@ -677,24 +680,45 @@ Defaults to ``f1_score_micro``.
 param_grids *(Optional)*
 """"""""""""""""""""""""
 
-List of parameter grids to search for each classifier. Each parameter
+List of parameter grids to search for each learner. Each parameter
 grid should be a list of dictionaries mapping from strings to lists
-of parameter values. When you specify an empty list for a classifier,
-the default parameter grid for that classifier will be searched.
+of parameter values. When you specify an empty list for a learner,
+the default parameter grid for that learner will be searched.
 
-The default parameter grids for each classifier are:
+The default parameter grids for each learner are:
 
-LogisticRegression
+AdaBoostClassifier and AdaBoostRegressor
     .. code-block:: python
 
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+DecisionTreeClassifier and DecisionTreeRegressor
+    .. code-block:: python
+
+       [{'max_features': ["auto", None]}]
+
+ElasticNet, Lasso, and Ridge
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+GradientBoostingClassifier and GradientBoostingRegressor
+    .. code-block:: python
+
+       [{'max_depth': [1, 3, 5]}]
+
+KNeighborsClassifier and KNeighborsRegressor
+    .. code-block:: python
+
+        [{'n_neighbors': [1, 5, 10, 100],
+          'weights': ['uniform', 'distance']}]
 
 LinearSVC
     .. code-block:: python
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-SVC
+LogisticRegression
     .. code-block:: python
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
@@ -704,25 +728,22 @@ MultinomialNB
 
        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
 
-DecisionTreeClassifier and DecisionTreeRegressor
-    .. code-block:: python
-
-       [{'max_features': ["auto", None]}]
-
 RandomForestClassifier and RandomForestRegressor
     .. code-block:: python
 
        [{'max_depth': [1, 5, 10, None]}]
 
-GradientBoostingClassifier and GradientBoostingRegressor
+SGDClassifier and SGDRegressor
     .. code-block:: python
 
-       [{'max_depth': [1, 3, 5], 'n_estimators': [500]}]
+        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+          'penalty': ['l1', 'l2', 'elasticnet']}]
 
-ElasticNet, Lasso, and Ridge
+SVC
     .. code-block:: python
 
-       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+         'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
 SVR
     .. code-block:: python
@@ -808,8 +829,10 @@ specified via command-line arguments instead of in the configuration file:
     specified number of feature files in each featureset in the
     configuration file held out. For example, if you have three feature
     files (``A``, ``B``, and ``C``) in your featureset and you specifiy
-    ``--ablation 1``, there will be three three experiments conducted with
-    the following featuresets: ``[[A, B], [B, C], [A, C]]``.
+    ``--ablation 1``, there will be three experiments conducted with
+    the following featuresets: ``[[A, B], [B, C], [A, C]]``. Additionally,
+    since every ablation experiment includes a run with all the features as a
+    baseline, the following featureset will also be run: ``[[A, B, C]]``.
 
     If you would like to try all possible combinations of feature files, you
     can use the :option:`run_experiment --ablation_all` option instead.
