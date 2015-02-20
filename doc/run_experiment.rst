@@ -388,10 +388,13 @@ Any labels not included in the dictionary will be left untouched.
 cv_folds_file *(Optional)*
 """"""""""""""""""""""""""""""
 
-Path to a csv file (with a header that is ignored) specifying folds for cross-
-validation. The first column should consist of training set IDs and the second
-should be a string for the fold ID (e.g., 1 through 5, A through D, etc.).  If
-specified, the CV and grid search will leave one fold ID out at a time. [#]_
+Path to a csv file specifying folds for cross-validation. The first row must be
+a header. This header row is ignored, so it doesn't matter what the header row
+contains, but it must be there. If there is no header row, whatever row is in
+its place will be ignored. The first column should consist of training set IDs
+and the second should be a string for the fold ID (e.g., 1 through 5, A through
+D, etc.).  If specified, the CV and grid search will leave one fold ID out at a
+time. [#]_
 
 .. _custom_learner_path:
 
