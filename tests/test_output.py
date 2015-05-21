@@ -174,20 +174,20 @@ def check_summary_score(use_feature_hashing=False):
 
     # We itereate over each model with an expected
     # accuracy score. T est proves that the report
-    # written out at least as a correct format for 
+    # written out at least as a correct format for
     # this line. See _print_fancy_output
     for report_name, val in (("LogisticRegression", .5),
                              ("MultinomialNB", .5),
                              ("SVC", .7)):
-        filename = "test_summary_test_summary_%s.results" % report_name
+        filename = "test_summary_test_summary_{}.results".format(report_name)
         test_path = join(_my_dir, 'output', filename)
         with open(test_path) as f:
             report = f.read()
-            expected_string = "Accuracy = %.1f" % val
+            expected_string = "Accuracy = {:.1f}".format(val)
             eq_(expected_string in report,  # approximate
                 True,
-                msg="%s is not in %s" % (expected_string,
-                                         report))
+                msg="{} is not in {}".format(expected_string,
+                                             report))
 
 
 def test_summary():
