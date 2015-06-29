@@ -246,6 +246,8 @@ def _setup_config_parser(config_path):
                                         'grid_search_jobs': '0',
                                         'grid_search_folds': '3',
                                         'cv_folds_file': '',
+                                        'num_cv_folds': '10',
+                                        'stratified_folds': 'True',
                                         'suffix': '',
                                         'label_col': 'y',
                                         'id_col': 'id',
@@ -387,13 +389,23 @@ def _parse_config_file(config_path):
     id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
-    # get the cv folds file and make a dictionary from it
+    # get the cv folds file and make a dictionary from it, if it exists
     cv_folds_file = config.get("Input", "cv_folds_file")
+    num_cv_folds = config.get("Input", "num_cv_folds")
     if cv_folds_file:
         cv_folds = _load_cv_folds(cv_folds_file,
                                   ids_to_floats=ids_to_floats)
     else:
-        cv_folds = 10
+        # set the number of folds for cross-validation
+        if num_cv_folds:
+            cv_folds = num_cv_folds
+        else:
+            # default number of cross-validation folds
+            cv_folds = 10
+
+    # whether or not to do stratified cross validation
+    stratified_folds = config.get("Input", "stratified_folds")
+    do_stratified_folds = True if stratified_folds else False
 
     train_file = config.get("Input", "train_file")
     test_file = config.get("Input", "test_file")
@@ -541,7 +553,7 @@ def _parse_config_file(config_path):
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objective, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count,
-            grid_search_jobs, grid_search_folds, cv_folds,
+            grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
             fixed_parameter_list, param_grid_list, featureset_names, learners,
             prediction_dir, log_path, train_path, test_path, ids_to_floats,
             class_map, custom_learner_path)
@@ -650,6 +662,7 @@ def _classify_featureset(args):
     grid_search_jobs = args.pop("grid_search_jobs")
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
+    stratified_folds = args.pop("stratified_folds")
     label_col = args.pop("label_col")
     id_col = args.pop("id_col")
     ids_to_floats = args.pop("ids_to_floats")
@@ -666,8 +679,8 @@ def _classify_featureset(args):
         # logging
         print("Task:", task, file=log_file)
         if task == 'cross_validate':
-            print(("Cross-validating on {}, feature " +
-                   "set {} ...").format(train_set_name, featureset),
+            print(("Cross-validating ({} folds) on {}, feature " +
+                   "set {} ...").format(cv_folds, train_set_name, featureset),
                   file=log_file)
         elif task == 'evaluate':
             print(("Training on {}, Test on {}, " +
@@ -756,6 +769,7 @@ def _classify_featureset(args):
                                     'grid_search_folds': grid_search_folds,
                                     'min_feature_count': min_feature_count,
                                     'cv_folds': cv_folds,
+                                    'stratified_folds': stratified_folds,
                                     'scikit_learn_version': SCIKIT_VERSION}
 
         # check if we're doing cross-validation, because we only load/save
@@ -764,7 +778,7 @@ def _classify_featureset(args):
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
             task_results, grid_scores = learner.cross_validate(
-                train_examples, shuffle=shuffle,
+                train_examples, shuffle=shuffle, stratified=stratified_folds,
                 prediction_prefix=prediction_prefix, grid_search=grid_search,
                 grid_search_folds=grid_search_folds, cv_folds=cv_folds,
                 grid_objective=grid_objective, param_grid=param_grid,
