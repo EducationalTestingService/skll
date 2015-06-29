@@ -1,7 +1,7 @@
 configparser
 logutils
 mock
-scikit-learn>=0.14
+scikit-learn==0.15.2
 six
 PrettyTable
 beautifulsoup4
