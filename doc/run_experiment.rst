@@ -383,6 +383,20 @@ example, if you wanted to collapse the labels ``beagle`` and ``dachsund`` into a
 
 Any labels not included in the dictionary will be left untouched.
 
+.. _cv_folds:
+
+cv_folds *(Optional)*
+""""""""""""""""""""""
+
+The number of folds to use for cross-validation. Defaults to 10.
+
+.. _random_folds:
+
+random_folds *(Optional)*
+"""""""""""""""""""""""""
+
+Whether to use random folds for cross-validation. Defaults to ``False``.
+
 .. _cv_folds_file:
 
 cv_folds_file *(Optional)*
@@ -592,6 +606,13 @@ grid_search *(Optional)*
 
 Whether or not to perform grid search to find optimal parameters for
 classifier. Defaults to ``False``.
+
+.. _grid_search_folds:
+
+grid_search_folds *(Optional)*
+""""""""""""""""""""""""""""""
+
+The number of folds to use for grid search. Defaults to 3.
 
 .. _grid_search_jobs:
 
