@@ -647,3 +647,34 @@ def test_config_parsing_bad_task_paths():
 
         elif sub_prefix == 'train_with_test_file':
             test_fh2.close()
+
+@raises(ValueError)
+def test_config_parsing_bad_cv_folds():
+    """
+    Test to ensure config file parsing raises an error with an invalid cv_folds
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad value for cv_folds
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'cv_folds': 'random',
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_paths_for_parsing(config_template_path,
+                                                   values_to_fill_dict,
+                                                   'bad_cv_folds')
+
+    _parse_config_file(config_path)

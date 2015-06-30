@@ -403,7 +403,11 @@ def _parse_config_file(config_path):
     else:
         # set the number of folds for cross-validation
         if num_cv_folds:
-            cv_folds = int(num_cv_folds)
+            try:
+                cv_folds = int(num_cv_folds)
+            except:
+                raise ValueError("The value for cv_folds should be an integer. " +
+                                 "You specified {}".format(cv_folds))
         else:
             # default number of cross-validation folds
             cv_folds = 10
