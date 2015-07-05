@@ -415,6 +415,9 @@ def _parse_config_file(config_path):
     # whether or not to do stratified cross validation
     random_folds = config.get("Input", "random_folds")
     if random_folds == 'True':
+        if cv_folds_file:
+            logger.warning('Random folds will not override'+
+                           'values in cv_folds_file')
         do_stratified_folds = False
     else:
         do_stratified_folds = True
