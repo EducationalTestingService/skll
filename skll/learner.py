@@ -49,8 +49,7 @@ from sklearn.metrics import (accuracy_score, confusion_matrix,
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import LinearSVC, SVC, SVR
-from sklearn.svm.base import BaseLibLinear
+from sklearn.svm import LinearSVC, SVC, LinearSVR, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import shuffle as sk_shuffle
 
@@ -104,8 +103,11 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         SGDRegressor:
                         [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
                           'penalty': ['l1', 'l2', 'elasticnet']}],
+                        LinearSVR:
+                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
+                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+                          'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
 
 
 # list of valid grid objective functions for regression and classification
@@ -456,6 +458,11 @@ class RescaledSVR(SVR):
 
 
 @rescaled
+class RescaledLinearSVR(LinearSVR):
+    pass
+
+
+@rescaled
 class RescaledSGDRegressor(SGDRegressor):
     pass
 
@@ -564,7 +571,6 @@ class Learner(object):
             self._model_kwargs['n_estimators'] = 500
         elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
-            self._model_kwargs['kernel'] = 'linear'
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
 
@@ -661,9 +667,9 @@ class Learner(object):
         res = {}
         intercept = None
         if (isinstance(self._model, LinearModel) or
-                (isinstance(self._model, SVR) and
+            (isinstance(self._model, SVR) and
                  self._model.kernel == 'linear') or
-                isinstance(self._model, SGDRegressor)):
+            isinstance(self._model, SGDRegressor)):
             # also includes RescaledRidge, RescaledSVR, RescaledSGDRegressor
 
             coef = self.model.coef_
@@ -673,27 +679,13 @@ class Learner(object):
             if isinstance(self._model, SVR):
                 coef = coef.toarray()[0]
 
-            # correct coefficients for SVR.
-            # scikit-learn currently has a bug as of March 4, 2014.
-            # See https://github.com/scikit-learn/scikit-learn/issues/2933.
-            # This should be removed when that bug is fixed.
-            correction = 1.0
-            if isinstance(self._model, SVR):
-                correction = -1.0
-                logger = logging.getLogger(__name__)
-                logger.warning('correcting SVR coefficients because of ' +
-                               'scikit-learn bug ' +
-                               '(https://github.com/scikit-learn/scikit-' +
-                               'learn/issues/2933).')
-
             # inverse transform to get indices for before feature selection
             coef = self.feat_selector.inverse_transform(coef)[0]
             for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                 if coef[idx]:
-                    res[feat] = correction * coef[idx]
-                    # res[feat] = coef[idx]
+                    res[feat] = coef[idx]
 
-        elif isinstance(self._model, BaseLibLinear):
+        elif isinstance(self._model, LinearSVC) or isinstance(self._model, LogisticRegression):
             label_list = self.label_list
 
             # if there are only two labels, scikit-learn will only have one
