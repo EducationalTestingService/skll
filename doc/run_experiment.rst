@@ -145,7 +145,7 @@ possible settings for each section is provided below, but to summarize:
 .. _evaluate:
 
 *   If you want to **train a model and evaluate it** on some data, specify a
-    training location, a test location, and a directory to store results, 
+    training location, a test location, and a directory to store results,
     and set :ref:`task` to ``evaluate``.
 
 .. _predict:
@@ -234,13 +234,11 @@ Regressors:
     *   **KNeighborsRegressor**: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
     *   **Lasso**: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
     *   **LinearRegression**: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
+    *   **LinearSVR**: `Support Vector Regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR>`__
     *   **RandomForestRegressor**: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
     *   **Ridge**: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
     *   **SGDRegressor**: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
-    *   **SVR**: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
-        with a linear kernel. Can use other kernels by specifying a ``kernel``
-        fixed parameter in the
-        :ref:`fixed_parameters <fixed_parameters>` list.
+    *   **SVR**: `Support Vector Regression using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
 
     For all regressors you can also prepend ``Rescaled`` to the
     beginning of the full name (e.g., ``RescaledSVR``) to get a version
