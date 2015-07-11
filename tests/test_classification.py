@@ -274,8 +274,7 @@ def make_sparse_data(use_feature_hashing=False):
 
 
 def check_sparse_predict(use_feature_hashing=False):
-    train_fs, test_fs = make_sparse_data(
-        use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
 
     # train a logistic regression classifier on the training
     # data and evalute on the testing data
@@ -406,3 +405,24 @@ def test_test_file_and_test_directory():
                                                             'jsonlines'),
                                                        test_directory='foo')
     _parse_config_file(config_path)
+
+def check_adaboost_predict(base_estimator, algorithm, expected_score):
+    train_fs, test_fs = make_sparse_data()
+
+    # train an AdaBoostClassifier on the training data and evalute on the testing data
+    learner = Learner('AdaBoostClassifier', model_kwargs={'base_estimator': base_estimator,
+                                                          'algorithm': algorithm})
+    learner.train(train_fs, grid_search=False)
+    test_score = learner.evaluate(test_fs)[1]
+    assert_almost_equal(test_score, expected_score)
+
+
+def test_adaboost_predict():
+    for base_estimator_name, algorithm, expected_score in zip(['MultinomialNB',
+                                                               'DecisionTreeClassifier',
+                                                               'SGDClassifier',
+                                                               'SVC'],
+                                                               ['SAMME.R', 'SAMME.R',
+                                                                'SAMME', 'SAMME'],
+                                                               [0.45, 0.5, 0.45, 0.43]):
+        yield check_adaboost_predict, base_estimator_name, algorithm, expected_score

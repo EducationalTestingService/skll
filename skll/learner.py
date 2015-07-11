@@ -594,6 +594,14 @@ class Learner(object):
             self.sampler = None
 
         if model_kwargs:
+            # if the model is an AdaBoost classifier or regressor, then we
+            # need to convert any specified `base_estimator` (a string)
+            # into an object before passing it in to the learner constructor
+            if issubclass(self._model_type,
+                          (AdaBoostRegressor, AdaBoostClassifier)) and ('base_estimator' in model_kwargs):
+                base_estimator_name = model_kwargs['base_estimator']
+                base_estimator = globals()[base_estimator_name]()
+                model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
 
     @classmethod

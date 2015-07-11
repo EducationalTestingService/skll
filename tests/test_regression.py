@@ -77,6 +77,10 @@ def tearDown():
     if exists(config_file):
         os.unlink(config_file)
 
+    config_file = join(config_dir, 'test_int_labels_cv.cfg')
+    if exists(config_file):
+        os.unlink(config_file)
+
 
 # a utility function to check rescaling for linear models
 def check_rescaling(name):
@@ -523,3 +527,26 @@ def test_fancy_output():
         assert_almost_equal(pred_stats_from_file[stat_type],
                             pred_stats_from_api[stat_type],
                             places=4)
+
+def check_adaboost_regression(base_estimator):
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000,
+                                                sd_noise=4,
+                                                num_features=3)
+
+    # train an AdaBoostClassifier on the training data and evalute on the testing data
+    learner = Learner('AdaBoostRegressor', model_kwargs={'base_estimator': base_estimator})
+    learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated
+    cor, _ = pearsonr(predictions, test_fs.labels)
+    assert_greater(cor, 0.95)
+
+def test_adaboost_regression():
+    for base_estimator_name in ['DecisionTreeRegressor', 'SGDRegressor', 'SVR']:
+        yield check_adaboost_regression, base_estimator_name
