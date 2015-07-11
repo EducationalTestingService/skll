@@ -405,7 +405,7 @@ def _parse_config_file(config_path):
         if num_cv_folds:
             try:
                 cv_folds = int(num_cv_folds)
-            except:
+            except ValueError:
                 raise ValueError("The value for cv_folds should be an integer. " +
                                  "You specified {}".format(num_cv_folds))
         else:
