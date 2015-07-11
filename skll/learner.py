@@ -754,9 +754,6 @@ class Learner(object):
             raise ValueError("%s is not a valid learner type." %
                              (self._model_type,))
 
-        # Ensure that the kernel argument has right type for Python version.
-        if issubclass(self._model_type, SVR) and sys.version_info < (3, 0):
-            self.model_kwargs['kernel'] = self.model_kwargs['kernel'].encode()
         estimator = self._model_type(**self._model_kwargs)
 
         return estimator, default_param_grid
