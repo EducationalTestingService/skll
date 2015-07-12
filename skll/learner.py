@@ -579,7 +579,8 @@ class Learner(object):
                        DecisionTreeClassifier, GradientBoostingClassifier,
                        GradientBoostingRegressor, DecisionTreeRegressor,
                        RandomForestRegressor, SGDClassifier, SGDRegressor,
-                       AdaBoostRegressor, AdaBoostClassifier)):
+                       AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
+                       Lasso, ElasticNet)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
@@ -898,10 +899,6 @@ class Learner(object):
                  not doing grid search.
         :rtype: float
         """
-        # seed the random number generator so that randomized algorithms are
-        # replicable
-        rand_seed = 123456789
-        np.random.seed(rand_seed)
         logger = logging.getLogger(__name__)
 
         # if we are asked to do grid search, check that the grid objective
@@ -962,7 +959,7 @@ class Learner(object):
                                'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
-                                               random_state=rand_seed)
+                                               random_state=123456789)
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
@@ -1386,8 +1383,6 @@ class Learner(object):
         """
         # seed the random number generator so that randomized algorithms are
         # replicable
-        rand_seed = 123456789
-        np.random.seed(rand_seed)
         logger = logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -1401,7 +1396,7 @@ class Learner(object):
                                'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
-                                               random_state=rand_seed)
+                                               random_state=123456789)
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
