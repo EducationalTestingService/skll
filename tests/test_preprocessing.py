@@ -240,8 +240,7 @@ def make_scaling_data(use_feature_hashing=False):
 
 
 def check_scaling_features(use_feature_hashing=False, use_scaling=False):
-    train_fs, test_fs = make_scaling_data(
-        use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_scaling_data(use_feature_hashing=use_feature_hashing)
 
     # create a Linear SVM with the value of scaling as specified
     feature_scaling = 'both' if use_scaling else 'none'
@@ -256,13 +255,13 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_fmeasures = ([0.7979797979797979, 0.80198019801980192] if
+        expected_fmeasures = ([0.77319587628865982, 0.78640776699029125] if
                               not use_scaling else
-                              [0.94883720930232551, 0.94054054054054048])
+                              [0.94930875576036866, 0.93989071038251359])
     else:
-        expected_fmeasures = ([0.83962264150943389, 0.81914893617021278] if
+        expected_fmeasures = ([0.42774566473988435, 0.5638766519823788] if
                               not use_scaling else
-                              [0.88038277511961716, 0.86910994764397898])
+                              [0.87323943661971837, 0.85561497326203206])
 
     assert_almost_equal(expected_fmeasures, fmeasures)
 
