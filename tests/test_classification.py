@@ -424,5 +424,5 @@ def test_adaboost_predict():
                                                                'SVC'],
                                                                ['SAMME.R', 'SAMME.R',
                                                                 'SAMME', 'SAMME'],
-                                                               [0.45, 0.5, 0.44, 0.43]):
+                                                               [0.45, 0.5, 0.45, 0.43]):
         yield check_adaboost_predict, base_estimator_name, algorithm, expected_score
