@@ -597,11 +597,15 @@ class Learner(object):
         if model_kwargs:
             # if the model is an AdaBoost classifier or regressor, then we
             # need to convert any specified `base_estimator` (a string)
-            # into an object before passing it in to the learner constructor
+            # into an object before passing it in to the learner constructor.
+            # we also need to make sure that if the base estimator is
+            # anything other than MultinomialNB, we set the random state
+            # to a fixed seed such that results are replicable
             if issubclass(self._model_type,
                           (AdaBoostRegressor, AdaBoostClassifier)) and ('base_estimator' in model_kwargs):
                 base_estimator_name = model_kwargs['base_estimator']
-                base_estimator = globals()[base_estimator_name]()
+                base_estimator_kwargs = {} if base_estimator_name == 'MultinomialNB' else {'random_state': 123456789}
+                base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
                 model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
 
