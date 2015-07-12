@@ -144,12 +144,7 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'lwk_off_by_one',
                                   'qwk_off_by_one'])
 
-_REQUIRES_DENSE = (AdaBoostClassifier, AdaBoostRegressor,
-                   DecisionTreeClassifier, DecisionTreeRegressor,
-                   GradientBoostingClassifier, GradientBoostingRegressor,
-                   KNeighborsClassifier, KNeighborsRegressor,
-                   MultinomialNB, RandomForestClassifier,
-                   RandomForestRegressor)
+_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
@@ -604,7 +599,7 @@ class Learner(object):
             if issubclass(self._model_type,
                           (AdaBoostRegressor, AdaBoostClassifier)) and ('base_estimator' in model_kwargs):
                 base_estimator_name = model_kwargs['base_estimator']
-                base_estimator_kwargs = {} if base_estimator_name == 'MultinomialNB' else {'random_state': 123456789}
+                base_estimator_kwargs = {} if base_estimator_name in ['MultinomialNB', 'SVR'] else {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
                 model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
