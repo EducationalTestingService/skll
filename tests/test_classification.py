@@ -23,8 +23,6 @@ from os.path import abspath, dirname, exists, join
 import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
 from sklearn.base import RegressorMixin
-from sklearn.feature_extraction import FeatureHasher
-from sklearn.datasets.samples_generator import make_classification
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
@@ -33,7 +31,7 @@ from skll.experiments import (_parse_config_file, _setup_config_parser,
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import make_classification_data, make_regression_data
+from utils import make_classification_data, make_regression_data, make_sparse_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -213,81 +211,30 @@ def test_rare_class():
         eq_(len(pred), 15)
 
 
-def make_sparse_data(use_feature_hashing=False):
-    """
-    Function to create sparse data with two features always zero
-    in the training set and a different one always zero in the
-    test set
-    """
-    # Create training data
-    X, y = make_classification(n_samples=500, n_features=3,
-                               n_informative=3, n_redundant=0,
-                               n_classes=2, random_state=1234567890)
-
-    # we need features to be non-negative since we will be
-    # using naive bayes laster
-    X = np.abs(X)
-
-    # make sure that none of the features are zero
-    X[np.where(X == 0)] += 1
-
-    # since we want to use SKLL's FeatureSet class, we need to
-    # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 501)]
-
-    # create a list of dictionaries as the features
-    # with f1 and f5 always 0
-    feature_names = ['f{}'.format(n) for n in range(1, 6)]
-    features = []
-    for row in X:
-        row = [0] + row.tolist() + [0]
-        features.append(dict(zip(feature_names, row)))
-
-    # use a FeatureHasher if we are asked to do feature hashing
-    vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
-    train_fs = FeatureSet('train_sparse', ids,
-                          features=features, labels=y,
-                          vectorizer=vectorizer)
-
-    # now create the test set with f4 always 0 but nothing else
-    X, y = make_classification(n_samples=100, n_features=4,
-                               n_informative=4, n_redundant=0,
-                               n_classes=2, random_state=1234567890)
-    X = np.abs(X)
-    X[np.where(X == 0)] += 1
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 101)]
-
-    # create a list of dictionaries as the features
-    # with f4 always 0
-    feature_names = ['f{}'.format(n) for n in range(1, 6)]
-    features = []
-    for row in X:
-        row = row.tolist()
-        row = row[:3] + [0] + row[3:]
-        features.append(dict(zip(feature_names, row)))
-
-    test_fs = FeatureSet('test_sparse', ids,
-                         features=features, labels=y,
-                         vectorizer=vectorizer)
-
-    return train_fs, test_fs
-
-
-def check_sparse_predict(use_feature_hashing=False):
+def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False):
     train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
 
     # train a logistic regression classifier on the training
     # data and evalute on the testing data
-    learner = Learner('LogisticRegression')
+    learner = Learner(learner_name)
     learner.train(train_fs, grid_search=False)
     test_score = learner.evaluate(test_fs)[1]
-    expected_score = 0.51 if use_feature_hashing else 0.45
     assert_almost_equal(test_score, expected_score)
 
 
 def test_sparse_predict():
-    yield check_sparse_predict, False
-    yield check_sparse_predict, True
+    for learner_name, expected_scores in zip(['LogisticRegression',
+                                              'DecisionTreeClassifier',
+                                              'RandomForestClassifier',
+                                              'AdaBoostClassifier',
+                                              'MultinomialNB',
+                                              'KNeighborsClassifier'],
+                                             [(0.45, 0.51), (0.5, 0.51),
+                                              (0.46, 0.46), (0.5, 0.5),
+                                              (0.44, 0), (0.51, 0.43)]):
+        yield check_sparse_predict, learner_name, expected_scores[0], False
+        if learner_name != 'MultinomialNB':
+            yield check_sparse_predict, learner_name, expected_scores[1], True
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):

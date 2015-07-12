@@ -189,3 +189,62 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
                          vectorizer=vectorizer)
 
     return (train_fs, test_fs, weightdict)
+
+def make_sparse_data(use_feature_hashing=False):
+    """
+    Function to create sparse data with two features always zero
+    in the training set and a different one always zero in the
+    test set
+    """
+    # Create training data
+    X, y = make_classification(n_samples=500, n_features=3,
+                               n_informative=3, n_redundant=0,
+                               n_classes=2, random_state=1234567890)
+
+    # we need features to be non-negative since we will be
+    # using naive bayes laster
+    X = np.abs(X)
+
+    # make sure that none of the features are zero
+    X[np.where(X == 0)] += 1
+
+    # since we want to use SKLL's FeatureSet class, we need to
+    # create a list of IDs
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 501)]
+
+    # create a list of dictionaries as the features
+    # with f1 and f5 always 0
+    feature_names = ['f{}'.format(n) for n in range(1, 6)]
+    features = []
+    for row in X:
+        row = [0] + row.tolist() + [0]
+        features.append(dict(zip(feature_names, row)))
+
+    # use a FeatureHasher if we are asked to do feature hashing
+    vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
+    train_fs = FeatureSet('train_sparse', ids,
+                          features=features, labels=y,
+                          vectorizer=vectorizer)
+
+    # now create the test set with f4 always 0 but nothing else
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=2, random_state=1234567890)
+    X = np.abs(X)
+    X[np.where(X == 0)] += 1
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 101)]
+
+    # create a list of dictionaries as the features
+    # with f4 always 0
+    feature_names = ['f{}'.format(n) for n in range(1, 6)]
+    features = []
+    for row in X:
+        row = row.tolist()
+        row = row[:3] + [0] + row[3:]
+        features.append(dict(zip(feature_names, row)))
+
+    test_fs = FeatureSet('test_sparse', ids,
+                         features=features, labels=y,
+                         vectorizer=vectorizer)
+
+    return train_fs, test_fs
