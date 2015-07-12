@@ -171,6 +171,11 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
     print('Learner: {}'.format(lrd['learner_name']), file=output_file)
     print('Task: {}'.format(lrd['task']), file=output_file)
+    if lrd['task'] == 'cross_validate':
+        print('Number of Folds: {}'.format(lrd['cv_folds']),
+          file=output_file)
+        print('Stratified Folds: {}'.format(lrd['stratified_folds']),
+          file=output_file)
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
@@ -246,6 +251,8 @@ def _setup_config_parser(config_path):
                                         'grid_search_jobs': '0',
                                         'grid_search_folds': '3',
                                         'cv_folds_file': '',
+                                        'num_cv_folds': '10',
+                                        'random_folds': 'False',
                                         'suffix': '',
                                         'label_col': 'y',
                                         'id_col': 'id',
@@ -387,13 +394,33 @@ def _parse_config_file(config_path):
     id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
-    # get the cv folds file and make a dictionary from it
+    # get the cv folds file and make a dictionary from it, if it exists
     cv_folds_file = config.get("Input", "cv_folds_file")
+    num_cv_folds = config.get("Input", "num_cv_folds")
     if cv_folds_file:
         cv_folds = _load_cv_folds(cv_folds_file,
                                   ids_to_floats=ids_to_floats)
     else:
-        cv_folds = 10
+        # set the number of folds for cross-validation
+        if num_cv_folds:
+            try:
+                cv_folds = int(num_cv_folds)
+            except ValueError:
+                raise ValueError("The value for cv_folds should be an integer. " +
+                                 "You specified {}".format(num_cv_folds))
+        else:
+            # default number of cross-validation folds
+            cv_folds = 10
+
+    # whether or not to do stratified cross validation
+    random_folds = config.get("Input", "random_folds")
+    if random_folds == 'True':
+        if cv_folds_file:
+            logger.warning('Specifying cv_folds_file '+
+                           'overrides random_folds')
+        do_stratified_folds = False
+    else:
+        do_stratified_folds = True
 
     train_file = config.get("Input", "train_file")
     test_file = config.get("Input", "test_file")
@@ -541,7 +568,7 @@ def _parse_config_file(config_path):
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objective, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count,
-            grid_search_jobs, grid_search_folds, cv_folds,
+            grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
             fixed_parameter_list, param_grid_list, featureset_names, learners,
             prediction_dir, log_path, train_path, test_path, ids_to_floats,
             class_map, custom_learner_path)
@@ -650,6 +677,7 @@ def _classify_featureset(args):
     grid_search_jobs = args.pop("grid_search_jobs")
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
+    stratified_folds = args.pop("do_stratified_folds")
     label_col = args.pop("label_col")
     id_col = args.pop("id_col")
     ids_to_floats = args.pop("ids_to_floats")
@@ -666,8 +694,8 @@ def _classify_featureset(args):
         # logging
         print("Task:", task, file=log_file)
         if task == 'cross_validate':
-            print(("Cross-validating on {}, feature " +
-                   "set {} ...").format(train_set_name, featureset),
+            print(("Cross-validating ({} folds) on {}, feature " +
+                   "set {} ...").format(cv_folds, train_set_name, featureset),
                   file=log_file)
         elif task == 'evaluate':
             print(("Training on {}, Test on {}, " +
@@ -756,6 +784,7 @@ def _classify_featureset(args):
                                     'grid_search_folds': grid_search_folds,
                                     'min_feature_count': min_feature_count,
                                     'cv_folds': cv_folds,
+                                    'stratified_folds': stratified_folds,
                                     'scikit_learn_version': SCIKIT_VERSION}
 
         # check if we're doing cross-validation, because we only load/save
@@ -764,7 +793,7 @@ def _classify_featureset(args):
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
             task_results, grid_scores = learner.cross_validate(
-                train_examples, shuffle=shuffle,
+                train_examples, shuffle=shuffle, stratified=stratified_folds,
                 prediction_prefix=prediction_prefix, grid_search=grid_search,
                 grid_search_folds=grid_search_folds, cv_folds=cv_folds,
                 grid_objective=grid_objective, param_grid=param_grid,
@@ -776,7 +805,6 @@ def _classify_featureset(args):
                        '{} model').format(learner_name),
                       file=log_file)
 
-                grid_search_folds = 3
                 if not isinstance(cv_folds, int):
                     grid_search_folds = cv_folds
 
@@ -1062,7 +1090,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
      featuresets, do_shuffle, model_path, do_grid_search, grid_objective,
      probability, results_path, pos_label_str, feature_scaling,
-     min_feature_count, grid_search_jobs, grid_search_folds, cv_folds,
+     min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats, class_map,
      custom_learner_path) = _parse_config_file(config_file)
@@ -1202,6 +1230,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["grid_search_jobs"] = grid_search_jobs
             job_args["grid_search_folds"] = grid_search_folds
             job_args["cv_folds"] = cv_folds
+            job_args["do_stratified_folds"] = do_stratified_folds
             job_args["label_col"] = label_col
             job_args["id_col"] = id_col
             job_args["ids_to_floats"] = ids_to_floats

@@ -131,7 +131,7 @@ def check_rescaling(name):
 
 def test_rescaling():
     for regressor_name in ['ElasticNet', 'Lasso', 'LinearRegression', 'Ridge',
-                           'SVR', 'SGDRegressor']:
+                           'LinearSVR', 'SVR', 'SGDRegressor']:
         yield check_rescaling, regressor_name
 
 
@@ -194,13 +194,68 @@ def test_linear_models():
     for (regressor_name,
          use_feature_hashing,
          use_rescaling) in product(['ElasticNet', 'Lasso', 'LinearRegression',
-                                    'Ridge', 'SVR', 'SGDRegressor'],
+                                    'Ridge', 'LinearSVR', 'SGDRegressor'],
                                    [False, True],
                                    [False, True]):
 
         yield (check_linear_models, regressor_name, use_feature_hashing,
                use_rescaling)
 
+
+# the utility function to run the non-linear tests
+def check_non_linear_models(name,
+                            use_feature_hashing=False,
+                            use_rescaling=False):
+
+    # create a FeatureSet object with the data we want to use
+    if use_feature_hashing:
+        train_fs, test_fs, weightdict = make_regression_data(num_examples=5000,
+                                                             num_features=10,
+                                                             use_feature_hashing=True,
+                                                             feature_bins=5)
+    else:
+        train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
+                                                             num_features=3)
+
+    # create the learner
+    if use_rescaling:
+        name = 'Rescaled' + name
+    learner = Learner(name)
+
+    # train it with the training feature set we created
+    # make sure to set the grid objective to pearson
+    learner.train(train_fs, grid_objective='pearson')
+
+    # Note that we cannot check the feature weights here
+    # since `model_params()` is not defined for non-linear
+    # kernels.
+
+    # now generate the predictions on the test FeatureSet
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated with pearson > 0.95
+    cor, _ = pearsonr(predictions, test_fs.labels)
+    expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
+    assert_greater(cor, expected_cor_range[0])
+    assert_less(cor, expected_cor_range[1])
+
+
+# the runner function for linear regression models
+def test_non_linear_models():
+
+    for (regressor_name,
+         use_feature_hashing,
+         use_rescaling) in product(['SVR'],
+                                   [False, True],
+                                   [False, True]):
+
+        yield (check_non_linear_models,
+               regressor_name,
+               use_feature_hashing,
+               use_rescaling)
 
 # the utility function to run the tree-based regression tests
 def check_tree_models(name,

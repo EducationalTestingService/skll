@@ -79,7 +79,7 @@ def fill_in_config_paths_for_parsing(config_template_path, values_to_fill_dict,
                   'Input': ['train_directory', 'train_file', 'test_directory',
                             'test_file', 'featuresets', 'featureset_names',
                             'feature_hasher', 'hasher_features', 'learners',
-                            'sampler', 'shuffle', 'feature_scaling'],
+                            'sampler', 'shuffle', 'feature_scaling', 'num_cv_folds'],
                   'Tuning': ['grid_search', 'objective'],
                   'Output': ['probability', 'results', 'log', 'models',
                              'predictions']}
@@ -647,3 +647,107 @@ def test_config_parsing_bad_task_paths():
 
         elif sub_prefix == 'train_with_test_file':
             test_fh2.close()
+
+@raises(ValueError)
+def test_config_parsing_bad_cv_folds():
+    """
+    Test to ensure config file parsing raises an error with an invalid cv_folds
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad value for cv_folds
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'num_cv_folds': 'random',
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_paths_for_parsing(config_template_path,
+                                                   values_to_fill_dict,
+                                                   'bad_cv_folds')
+
+    _parse_config_file(config_path)
+
+def test_default_number_of_cv_folds():
+    """
+    Test to ensure that the cv folds value is set correctly
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+    # make a simple config file that does not set cv_folds
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_paths_for_parsing(config_template_path,
+                                                   values_to_fill_dict,
+                                                   'default_cv_folds')
+
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+            feature_hasher, hasher_features, id_col, label_col, train_set_name,
+            test_set_name, suffix, featuresets, do_shuffle, model_path,
+            do_grid_search, grid_objective, probability, results_path,
+            pos_label_str, feature_scaling, min_feature_count,
+            grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+            fixed_parameter_list, param_grid_list, featureset_names, learners,
+            prediction_dir, log_path, train_path, test_path, ids_to_floats,
+            class_map, custom_learner_path) = _parse_config_file(config_path)
+
+    eq_(cv_folds, 10)
+
+def test_setting_number_of_cv_folds():
+    """
+    Test to ensure that the cv folds value is set correctly
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+    # make a simple config file that does not set cv_folds
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'num_cv_folds': "5",
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_paths_for_parsing(config_template_path,
+                                                   values_to_fill_dict,
+                                                   'default_cv_folds')
+
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+            feature_hasher, hasher_features, id_col, label_col, train_set_name,
+            test_set_name, suffix, featuresets, do_shuffle, model_path,
+            do_grid_search, grid_objective, probability, results_path,
+            pos_label_str, feature_scaling, min_feature_count,
+            grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+            fixed_parameter_list, param_grid_list, featureset_names, learners,
+            prediction_dir, log_path, train_path, test_path, ids_to_floats,
+            class_map, custom_learner_path) = _parse_config_file(config_path)
+
+    eq_(cv_folds, 5)

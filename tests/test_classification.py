@@ -276,7 +276,8 @@ def make_sparse_data(use_feature_hashing=False):
 def check_sparse_predict(use_feature_hashing=False):
     train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
 
-    # train a linear SVM on the training data and evalute on the testing data
+    # train a logistic regression classifier on the training
+    # data and evalute on the testing data
     learner = Learner('LogisticRegression')
     learner.train(train_fs, grid_search=False)
     test_score = learner.evaluate(test_fs)[1]
@@ -308,7 +309,7 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
     learner.train(train_fs, grid_search=False)
     test_score = learner.evaluate(test_fs)[1]
 
-    expected_score = 0.4 if use_feature_hashing else 0.48999999999999999
+    expected_score = 0.44 if use_feature_hashing else 0.48999999999999999
     assert_almost_equal(test_score, expected_score)
 
 

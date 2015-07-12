@@ -234,13 +234,11 @@ Regressors:
     *   **KNeighborsRegressor**: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
     *   **Lasso**: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
     *   **LinearRegression**: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
+    *   **LinearSVR**: `Support Vector Regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR>`__
     *   **RandomForestRegressor**: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
     *   **Ridge**: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
     *   **SGDRegressor**: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
-    *   **SVR**: `Support Vector Regression <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
-        with a linear kernel. Can use other kernels by specifying a ``kernel``
-        fixed parameter in the
-        :ref:`fixed_parameters <fixed_parameters>` list.
+    *   **SVR**: `Support Vector Regression using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
 
     For all regressors you can also prepend ``Rescaled`` to the
     beginning of the full name (e.g., ``RescaledSVR``) to get a version
@@ -382,6 +380,20 @@ example, if you wanted to collapse the labels ``beagle`` and ``dachsund`` into a
    {'dog': ['beagle', 'dachsund']}
 
 Any labels not included in the dictionary will be left untouched.
+
+.. _cv_folds:
+
+cv_folds *(Optional)*
+""""""""""""""""""""""
+
+The number of folds to use for cross-validation. Defaults to 10.
+
+.. _random_folds:
+
+random_folds *(Optional)*
+"""""""""""""""""""""""""
+
+Whether to use random folds for cross-validation. Defaults to ``False``.
 
 .. _cv_folds_file:
 
@@ -592,6 +604,13 @@ grid_search *(Optional)*
 
 Whether or not to perform grid search to find optimal parameters for
 classifier. Defaults to ``False``.
+
+.. _grid_search_folds:
+
+grid_search_folds *(Optional)*
+""""""""""""""""""""""""""""""
+
+The number of folds to use for grid search. Defaults to 3.
 
 .. _grid_search_jobs:
 
