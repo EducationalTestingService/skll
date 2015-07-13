@@ -305,7 +305,7 @@ def check_tree_models(name,
 
     feature_importances = learner.model.feature_importances_
     assert_allclose(feature_importances, expected_feature_importances,
-                    rtol=1e-2)
+                    atol=1e-2, rtol=0)
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
@@ -379,7 +379,7 @@ def check_ensemble_models(name,
 
     feature_importances = learner.model.feature_importances_
     assert_allclose(feature_importances, expected_feature_importances,
-                    rtol=1e-2)
+                    atol=1e-2, rtol=0)
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
