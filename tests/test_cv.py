@@ -25,8 +25,8 @@ from six import PY2
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 from sklearn.utils.testing import assert_greater, assert_less
+from skll.config import _load_cv_folds
 from skll.data import FeatureSet
-from skll.experiments import _load_cv_folds
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 

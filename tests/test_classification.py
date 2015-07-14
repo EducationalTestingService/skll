@@ -16,7 +16,6 @@ import glob
 import itertools
 import json
 import os
-import re
 from io import open
 from os.path import abspath, dirname, exists, join
 
@@ -26,12 +25,13 @@ from sklearn.base import RegressorMixin
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
-from skll.experiments import (_parse_config_file, _setup_config_parser,
-                              run_configuration)
+from skll.config import _parse_config_file
+from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import make_classification_data, make_regression_data, make_sparse_data
+from utils import (make_classification_data, make_regression_data,
+                   make_sparse_data, fill_in_config_paths_for_single_file)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -73,57 +73,7 @@ def tearDown():
         os.unlink(config_file)
 
 
-def fill_in_config_paths_for_single_file(config_template_path, train_file,
-                                         test_file, train_directory='',
-                                         test_directory=''):
-    """
-    Add paths to train and test files, and output directories to a given config
-    template file.
-    """
 
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
-    config = _setup_config_parser(config_template_path)
-
-    task = config.get("General", "task")
-
-    config.set("Input", "train_file", join(train_dir, train_file))
-    if task == 'predict' or task == 'evaluate':
-        config.set("Input", "test_file", join(test_dir, test_file))
-
-    if train_directory:
-        config.set("Input", "train_directory", join(train_dir, train_directory))
-
-    if test_directory:
-        config.set("Input", "test_directory", join(test_dir, test_directory))
-
-    to_fill_in = ['log', 'predictions']
-
-    if task != 'cross_validate':
-        to_fill_in.append('models')
-
-    if task == 'evaluate' or task == 'cross_validate':
-        to_fill_in.append('results')
-
-    for d in to_fill_in:
-        config.set("Output", d, join(output_dir))
-
-    if task == 'cross_validate':
-        cv_folds_file = config.get("Input", "cv_folds_file")
-        if cv_folds_file:
-            config.set("Input", "cv_folds_file",
-                       join(train_dir, cv_folds_file))
-
-    config_prefix = re.search(r'^(.*)\.template\.cfg',
-                              config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
-
-    with open(new_config_path, 'w') as new_config_file:
-        config.write(new_config_file)
-
-    return new_config_path
 
 
 def check_predict(model, use_feature_hashing=False):

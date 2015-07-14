@@ -16,7 +16,7 @@ from sklearn.datasets.samples_generator import (make_classification,
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
-from skll.experiments import _setup_config_parser
+from skll.config import _setup_config_parser
 
 _my_dir = abspath(dirname(__file__))
 
@@ -31,13 +31,13 @@ def fill_in_config_paths(config_template_path):
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    config = _setup_config_parser(config_template_path)
+    config = _setup_config_parser(config_template_path, validate=False)
 
     task = config.get("General", "task")
 
     config.set("Input", "train_directory", train_dir)
 
-    to_fill_in = ['log', 'vocabs', 'predictions']
+    to_fill_in = ['log', 'predictions']
 
     if task != 'cross_validate':
         to_fill_in.append('models')
@@ -61,6 +61,129 @@ def fill_in_config_paths(config_template_path):
     custom_learner_path = config.get("Input", "custom_learner_path")
     custom_learner_abs_path = join(_my_dir, custom_learner_path)
     config.set("Input", "custom_learner_path", custom_learner_abs_path)
+
+    config_prefix = re.search(r'^(.*)\.template\.cfg',
+                              config_template_path).groups()[0]
+    new_config_path = '{}.cfg'.format(config_prefix)
+
+    with open(new_config_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    return new_config_path
+
+
+def fill_in_config_paths_for_single_file(config_template_path, train_file,
+                                         test_file, train_directory='',
+                                         test_directory=''):
+    """
+    Add paths to train and test files, and output directories to a given config
+    template file.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    config = _setup_config_parser(config_template_path, validate=False)
+
+    task = config.get("General", "task")
+
+    config.set("Input", "train_file", join(train_dir, train_file))
+    if task == 'predict' or task == 'evaluate':
+        config.set("Input", "test_file", join(test_dir, test_file))
+
+    if train_directory:
+        config.set("Input", "train_directory", join(train_dir, train_directory))
+
+    if test_directory:
+        config.set("Input", "test_directory", join(test_dir, test_directory))
+
+    to_fill_in = ['log', 'predictions']
+
+    if task != 'cross_validate':
+        to_fill_in.append('models')
+
+    if task == 'evaluate' or task == 'cross_validate':
+        to_fill_in.append('results')
+
+    for d in to_fill_in:
+        config.set("Output", d, join(output_dir))
+
+    if task == 'cross_validate':
+        cv_folds_file = config.get("Input", "cv_folds_file")
+        if cv_folds_file:
+            config.set("Input", "cv_folds_file",
+                       join(train_dir, cv_folds_file))
+
+    config_prefix = re.search(r'^(.*)\.template\.cfg',
+                              config_template_path).groups()[0]
+    new_config_path = '{}.cfg'.format(config_prefix)
+
+    with open(new_config_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    return new_config_path
+
+
+def fill_in_config_options(config_template_path,
+                           values_to_fill_dict,
+                           sub_prefix):
+    """
+    Fill in values in the given config template
+    """
+
+    config = _setup_config_parser(config_template_path, validate=False)
+
+    # The dictionary that says which option to fill in where
+    # Note: (a) `bad_option` and `duplicate_option` are needed
+    # for test_config_parsing_invalid_option and
+    # test_config_parsing_duplicate_option() respectively.
+    # (b) `probability` is deliberately specified in the wrong
+    # section for test_config_parsing_option_in_wrong_section().
+    to_fill_in = {'General': ['experiment_name', 'task'],
+                  'Input': ['train_directory', 'train_file', 'test_directory',
+                            'test_file', 'featuresets', 'featureset_names',
+                            'feature_hasher', 'hasher_features', 'learners',
+                            'sampler', 'shuffle', 'feature_scaling', 'num_cv_folds',
+                            'bad_option', 'duplicate_option'],
+                  'Tuning': ['probability', 'grid_search', 'objective', 'duplicate_option'],
+                  'Output': ['results', 'log', 'models',
+                             'predictions']}
+
+    for section in to_fill_in:
+        for param_name in to_fill_in[section]:
+            if param_name in values_to_fill_dict:
+                config.set(section, param_name,
+                           values_to_fill_dict[param_name])
+
+    config_prefix = re.search(r'^(.*)\.template\.cfg',
+                              config_template_path).groups()[0]
+    new_config_path = '{}_{}.cfg'.format(config_prefix, sub_prefix)
+
+    with open(new_config_path, 'w') as new_config_file:
+        config.write(new_config_file)
+
+    return new_config_path
+
+
+def fill_in_config_paths_for_fancy_output(config_template_path):
+    """
+    Add paths to train, test, and output directories to a given config template
+    file.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    config = _setup_config_parser(config_template_path, validate=False)
+
+    config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
+    config.set("Input", "test_file", join(test_dir,
+                                              "fancy_test.jsonlines"))
+    config.set("Output", "results", output_dir)
+    config.set("Output", "log", output_dir)
+    config.set("Output", "predictions", output_dir)
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
@@ -189,6 +312,7 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
                          vectorizer=vectorizer)
 
     return (train_fs, test_fs, weightdict)
+
 
 def make_sparse_data(use_feature_hashing=False):
     """
