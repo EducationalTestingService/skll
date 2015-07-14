@@ -313,7 +313,6 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
 
     return (train_fs, test_fs, weightdict)
 
-
 def make_sparse_data(use_feature_hashing=False):
     """
     Function to create sparse data with two features always zero

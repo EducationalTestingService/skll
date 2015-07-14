@@ -77,6 +77,10 @@ def tearDown():
     if exists(config_file):
         os.unlink(config_file)
 
+    config_file = join(config_dir, 'test_int_labels_cv.cfg')
+    if exists(config_file):
+        os.unlink(config_file)
+
 
 # a utility function to check rescaling for linear models
 def check_rescaling(name):
@@ -279,29 +283,29 @@ def check_tree_models(name,
 
     # make sure that the feature importances are as expected.
     if name.endswith('DecisionTreeRegressor'):
-        expected_feature_importances = ([0.37331461,
-                                         0.08572699,
-                                         0.2543484,
-                                         0.1841172,
-                                         0.1024928] if use_feature_hashing else
-                                        [0.08931994,
-                                         0.15545093,
-                                         0.75522913])
+        expected_feature_importances = ([0.37483895,
+                                         0.08816508,
+                                         0.25379838,
+                                         0.18337128,
+                                         0.09982631] if use_feature_hashing else
+                                        [0.08926899,
+                                         0.15585068,
+                                         0.75488033])
         expected_cor_range = [0.5, 0.6] if use_feature_hashing else [0.9, 1.0]
     else:
-        if use_feature_hashing:
-            expected_feature_importances = [0.40195655,
-                                            0.06702161,
-                                            0.25814858,
-                                            0.18183947,
-                                            0.09103379]
-        else:
-            expected_feature_importances = [0.07975691, 0.16122862, 0.75901447]
+        expected_feature_importances = ([0.40195798,
+                                         0.06702903,
+                                         0.25816559,
+                                         0.18185518,
+                                         0.09099222] if use_feature_hashing else
+                                        [0.07974267,
+                                         0.16121895,
+                                         0.75903838])
         expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
 
     feature_importances = learner.model.feature_importances_
     assert_allclose(feature_importances, expected_feature_importances,
-                    rtol=1e-2)
+                    atol=1e-2, rtol=0)
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
@@ -356,11 +360,11 @@ def check_ensemble_models(name,
     # make sure that the feature importances are as expected.
     if name.endswith('AdaBoostRegressor'):
         if use_feature_hashing:
-            expected_feature_importances = [0.33260501,
-                                            0.07685393,
-                                            0.25858443,
-                                            0.19214259,
-                                            0.13981404]
+            expected_feature_importances = [0.33718443,
+                                            0.07810721,
+                                            0.25621769,
+                                            0.19489766,
+                                            0.13359301]
         else:
             expected_feature_importances = [0.10266744, 0.18681777, 0.71051479]
     else:
@@ -375,7 +379,7 @@ def check_ensemble_models(name,
 
     feature_importances = learner.model.feature_importances_
     assert_allclose(feature_importances, expected_feature_importances,
-                    rtol=1e-2)
+                    atol=1e-2, rtol=0)
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
@@ -494,3 +498,26 @@ def test_fancy_output():
         assert_almost_equal(pred_stats_from_file[stat_type],
                             pred_stats_from_api[stat_type],
                             places=4)
+
+def check_adaboost_regression(base_estimator):
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000,
+                                                sd_noise=4,
+                                                num_features=3)
+
+    # train an AdaBoostClassifier on the training data and evalute on the testing data
+    learner = Learner('AdaBoostRegressor', model_kwargs={'base_estimator': base_estimator})
+    learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated
+    cor, _ = pearsonr(predictions, test_fs.labels)
+    assert_greater(cor, 0.95)
+
+def test_adaboost_regression():
+    for base_estimator_name in ['DecisionTreeRegressor', 'SGDRegressor', 'SVR']:
+        yield check_adaboost_regression, base_estimator_name

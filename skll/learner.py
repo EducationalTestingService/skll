@@ -144,12 +144,7 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'lwk_off_by_one',
                                   'qwk_off_by_one'])
 
-_REQUIRES_DENSE = (AdaBoostClassifier, AdaBoostRegressor,
-                   DecisionTreeClassifier, DecisionTreeRegressor,
-                   GradientBoostingClassifier, GradientBoostingRegressor,
-                   KNeighborsClassifier, KNeighborsRegressor,
-                   MultinomialNB, RandomForestClassifier,
-                   RandomForestRegressor)
+_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
@@ -579,7 +574,8 @@ class Learner(object):
                        DecisionTreeClassifier, GradientBoostingClassifier,
                        GradientBoostingRegressor, DecisionTreeRegressor,
                        RandomForestRegressor, SGDClassifier, SGDRegressor,
-                       AdaBoostRegressor, AdaBoostClassifier)):
+                       AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
+                       Lasso, ElasticNet, SVC)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
@@ -594,6 +590,18 @@ class Learner(object):
             self.sampler = None
 
         if model_kwargs:
+            # if the model is an AdaBoost classifier or regressor, then we
+            # need to convert any specified `base_estimator` (a string)
+            # into an object before passing it in to the learner constructor.
+            # we also need to make sure that if the base estimator is
+            # anything other than MultinomialNB, we set the random state
+            # to a fixed seed such that results are replicable
+            if issubclass(self._model_type,
+                          (AdaBoostRegressor, AdaBoostClassifier)) and ('base_estimator' in model_kwargs):
+                base_estimator_name = model_kwargs['base_estimator']
+                base_estimator_kwargs = {} if base_estimator_name in ['MultinomialNB', 'SVR'] else {'random_state': 123456789}
+                base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
+                model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
 
     @classmethod
@@ -890,10 +898,6 @@ class Learner(object):
                  not doing grid search.
         :rtype: float
         """
-        # seed the random number generator so that randomized algorithms are
-        # replicable
-        rand_seed = 123456789
-        np.random.seed(rand_seed)
         logger = logging.getLogger(__name__)
 
         # if we are asked to do grid search, check that the grid objective
@@ -954,7 +958,7 @@ class Learner(object):
                                'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
-                                               random_state=rand_seed)
+                                               random_state=123456789)
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
@@ -1378,8 +1382,6 @@ class Learner(object):
         """
         # seed the random number generator so that randomized algorithms are
         # replicable
-        rand_seed = 123456789
-        np.random.seed(rand_seed)
         logger = logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -1393,7 +1395,7 @@ class Learner(object):
                                'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
-                                               random_state=rand_seed)
+                                               random_state=123456789)
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)

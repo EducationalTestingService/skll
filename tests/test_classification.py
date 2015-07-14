@@ -22,8 +22,6 @@ from os.path import abspath, dirname, exists, join
 import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
 from sklearn.base import RegressorMixin
-from sklearn.feature_extraction import FeatureHasher
-from sklearn.datasets.samples_generator import make_classification
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter

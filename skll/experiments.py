@@ -217,7 +217,6 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
               file=output_file)
         print('', file=output_file)
 
-
 def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
                      feature_hasher=False, num_features=None):
