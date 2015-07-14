@@ -1,4 +1,4 @@
-configparser
+configparser==3.5.0b2
 logutils
 mock
 scikit-learn==0.16.1
