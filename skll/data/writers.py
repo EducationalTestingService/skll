@@ -21,7 +21,7 @@ from io import open
 
 import numpy as np
 from six import iteritems, PY2, string_types, text_type
-from six.moves import map, zip
+from six.moves import map
 from sklearn.feature_extraction import FeatureHasher
 
 
