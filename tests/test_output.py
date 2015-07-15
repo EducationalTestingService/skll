@@ -36,11 +36,7 @@ def setup():
     """
     Create necessary directories for testing.
     """
-    dirs = ('train',
-            'test',
-            'output',
-            'evaluate')
-    for dir_name in dirs:
+    for dir_name in ('train', 'test', 'output', 'evaluate'):
         new_dir = join(_my_dir, dir_name)
         if not exists(new_dir):
             os.makedirs(new_dir)
@@ -88,11 +84,6 @@ def make_summary_data():
 
     # Write test feature set to a file
     test_path = join(_my_dir, 'test', 'test_summary.jsonlines')
-    writer = NDJWriter(test_path, test_fs)
-    writer.write()
-
-    # Evaluate output .report files
-    test_path = join(_my_dir, 'evaluate', 'test_summary_evaluate.jsonlines')
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
@@ -180,9 +171,9 @@ def check_summary_score(use_feature_hashing=False):
                              ("MultinomialNB", .5),
                              ("SVC", .7)):
         filename = "test_summary_test_summary_{}.results".format(report_name)
-        test_path = join(_my_dir, 'output', filename)
-        with open(test_path) as f:
-            report = f.read()
+        results_path = join(_my_dir, 'output', filename)
+        with open(results_path) as results_file:
+            report = results_file.read()
             expected_string = "Accuracy = {:.1f}".format(val)
             eq_(expected_string in report,  # approximate
                 True,
