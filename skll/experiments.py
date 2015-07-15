@@ -316,7 +316,7 @@ def _parse_config_file(config_path):
     # produce warnings if hasher_features is set but feature_hasher
     # is missing or set to False.
     if config.has_option("Input", "hasher_features"):
-        if not config.has_option("Input", "hasher_features"):
+        if not config.has_option("Input", "feature_hasher"):
             logger.warning("Ignoring hasher_features since feature_hasher" +
                            " is missing from the config file.")
         else:
