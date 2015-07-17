@@ -16,7 +16,9 @@ import itertools
 import logging
 import os
 from io import open
-from os.path import basename, exists
+from os.path import (abspath, basename,
+                     dirname, exists,
+                     isabs, join, normpath)
 
 import configparser  # Backported version from Python 3
 import yaml
@@ -193,6 +195,17 @@ class SKLLConfigParser(configparser.ConfigParser):
                                                   incorrectly_specified_options]))
 
 
+def _locate_file(file_path, config_path):
+    if not file_path:
+        return ''
+    path_to_check = file_path if isabs(file_path) else normpath(join(dirname(config_path), file_path))
+    ans = exists(path_to_check)
+    if not ans:
+        raise IOError(errno.ENOENT, "File does not exist",
+                      path_to_check)
+    else:
+        return path_to_check
+
 def _setup_config_parser(config_path, validate=True):
     """
     Returns a config parser at a given path. Only implemented as a separate
@@ -219,6 +232,9 @@ def _parse_config_file(config_path):
 
     # Initialize logger
     logger = logging.getLogger(__name__)
+
+    # compute the absolute path for the config file
+    config_path = abspath(config_path)
 
     # set up a config parser with the above default values
     config = _setup_config_parser(config_path)
@@ -324,9 +340,6 @@ def _parse_config_file(config_path):
         raise ValueError("Invalid value for feature_scaling parameter: {}"
                          .format(feature_scaling))
 
-    # get all the input paths and directories (without trailing slashes)
-    train_path = config.get("Input", "train_directory").rstrip('/')
-    test_path = config.get("Input", "test_directory").rstrip('/')
     suffix = config.get("Input", "suffix")
     label_col = config.get("Input", "label_col")
     id_col = config.get("Input", "id_col")
@@ -336,6 +349,7 @@ def _parse_config_file(config_path):
     cv_folds_file = config.get("Input", "cv_folds_file")
     num_cv_folds = config.get("Input", "num_cv_folds")
     if cv_folds_file:
+        cv_folds_file = _locate_file(cv_folds_file, config_path)
         cv_folds = _load_cv_folds(cv_folds_file,
                                   ids_to_floats=ids_to_floats)
     else:
@@ -359,6 +373,9 @@ def _parse_config_file(config_path):
     else:
         do_stratified_folds = True
 
+    # get all the input paths and directories (without trailing slashes)
+    train_path = config.get("Input", "train_directory").rstrip('/')
+    test_path = config.get("Input", "test_directory").rstrip('/')
     train_file = config.get("Input", "train_file")
     test_file = config.get("Input", "test_file")
 
@@ -402,55 +419,54 @@ def _parse_config_file(config_path):
         test_path = test_file
         featuresets[0][0] += '_test_{}'.format(basename(test_file))
 
+    # make sure all the specified paths/files exist
+    train_path = _locate_file(train_path, config_path)
+    test_path = _locate_file(test_path, config_path)
+    train_file = _locate_file(train_file, config_path)
+    test_file = _locate_file(test_file, config_path)
+
     # Get class mapping dictionary if specified
-    class_map = config.get("Input", "class_map")
-    if class_map:
-        orig_class_map = yaml.load(_fix_json(class_map))
+    class_map_string = config.get("Input", "class_map")
+    original_class_map = yaml.load(_fix_json(class_map_string))
+    if original_class_map:
         # Change class_map to map from originals to replacements instead of
         # from replacement to list of originals
         class_map = {}
-        for replacement, original_list in iteritems(orig_class_map):
+        for replacement, original_list in iteritems(original_class_map):
             for original in original_list:
                 class_map[original] = replacement
-        del orig_class_map
+        del original_class_map
     else:
         class_map = None
 
-    # Output
-    # get all the output files and directories
-    results_path = config.get("Output", "results")
-    log_path = config.get("Output", "log")
-    model_path = config.get("Output", "models")
+    # 3. Output
     probability = config.getboolean("Output", "probability")
 
     # do we want to keep the predictions?
     prediction_dir = config.get("Output", "predictions")
     if prediction_dir and not exists(prediction_dir):
+        prediction_dir = join(dirname(config_path), prediction_dir)
         os.makedirs(prediction_dir)
 
     # make sure log path exists
+    log_path = config.get("Output", "log")
     if log_path and not exists(log_path):
+        log_path = join(dirname(config_path), log_path)
         os.makedirs(log_path)
 
+    # make sure model path exists
+    model_path = config.get("Output", "models")
+    if model_path and not exists(model_path):
+        model_path = join(dirname(config_path), model_path)
+        os.makedirs(model_path)
+
     # make sure results path exists
+    results_path = config.get("Output", "results")
     if results_path and not exists(results_path):
+        results_path = join(dirname(config_path), results_path)
         os.makedirs(results_path)
 
-    # make sure all the specified paths exist
-    if train_path and not exists(train_path):
-        raise IOError(errno.ENOENT, ("The training path specified in the "
-                                     "config file does not exist"), train_path)
-    if test_path and not exists(test_path):
-        raise IOError(errno.ENOENT, ("The test path specified in the config "
-                                     "file does not exist"), test_path)
-    if train_file and not exists(train_file):
-        raise IOError(errno.ENOENT, ("The training file specified in the "
-                                     "config file does not exist"), train_file)
-    if test_file and not exists(test_file):
-        raise IOError(errno.ENOENT, ("The test file specified in the config "
-                                     "file does not exist"), test_file)
-
-    # 3. Tuning
+    # 4. Tuning
     # do we need to run a grid search for the hyperparameters or are we just
     # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
