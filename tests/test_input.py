@@ -126,7 +126,7 @@ def check_config_parsing_key_error(config_path):
     """
     _parse_config_file(config_path)
 
-@raises(FileNotFoundError)
+@raises(IOError)
 def check_config_parsing_file_not_found_error(config_path):
     """
     Assert that calling `_parse_config_file` on `config_path` raises FileNotFoundError
