@@ -258,6 +258,8 @@ def test_non_linear_models():
                use_rescaling)
 
 # the utility function to run the tree-based regression tests
+
+
 def check_tree_models(name,
                       use_feature_hashing=False,
                       use_rescaling=False):
@@ -499,13 +501,16 @@ def test_fancy_output():
                             pred_stats_from_api[stat_type],
                             places=4)
 
+
 def check_adaboost_regression(base_estimator):
     train_fs, test_fs, _ = make_regression_data(num_examples=2000,
                                                 sd_noise=4,
                                                 num_features=3)
 
-    # train an AdaBoostClassifier on the training data and evalute on the testing data
-    learner = Learner('AdaBoostRegressor', model_kwargs={'base_estimator': base_estimator})
+    # train an AdaBoostClassifier on the training data and evalute on the
+    # testing data
+    learner = Learner('AdaBoostRegressor', model_kwargs={'base_estimator':
+                                                         base_estimator})
     learner.train(train_fs, grid_search=False)
 
     # now generate the predictions on the test set
@@ -517,6 +522,7 @@ def check_adaboost_regression(base_estimator):
     # make sure that they are correlated
     cor, _ = pearsonr(predictions, test_fs.labels)
     assert_greater(cor, 0.95)
+
 
 def test_adaboost_regression():
     for base_estimator_name in ['DecisionTreeRegressor', 'SGDRegressor', 'SVR']:

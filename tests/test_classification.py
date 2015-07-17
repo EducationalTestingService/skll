@@ -73,9 +73,6 @@ def tearDown():
         os.unlink(config_file)
 
 
-
-
-
 def check_predict(model, use_feature_hashing=False):
     """
     This tests whether predict task runs and generates the same
@@ -162,7 +159,8 @@ def test_rare_class():
 
 
 def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False):
-    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_sparse_data(
+        use_feature_hashing=use_feature_hashing)
 
     # train a logistic regression classifier on the training
     # data and evalute on the testing data
@@ -303,10 +301,12 @@ def test_test_file_and_test_directory():
                                                        test_directory='foo')
     _parse_config_file(config_path)
 
+
 def check_adaboost_predict(base_estimator, algorithm, expected_score):
     train_fs, test_fs = make_sparse_data()
 
-    # train an AdaBoostClassifier on the training data and evalute on the testing data
+    # train an AdaBoostClassifier on the training data and evalute on the
+    # testing data
     learner = Learner('AdaBoostClassifier', model_kwargs={'base_estimator': base_estimator,
                                                           'algorithm': algorithm})
     learner.train(train_fs, grid_search=False)
@@ -319,7 +319,7 @@ def test_adaboost_predict():
                                                                'DecisionTreeClassifier',
                                                                'SGDClassifier',
                                                                'SVC'],
-                                                               ['SAMME.R', 'SAMME.R',
-                                                                'SAMME', 'SAMME'],
-                                                               [0.45, 0.5, 0.45, 0.43]):
+                                                              ['SAMME.R', 'SAMME.R',
+                                                               'SAMME', 'SAMME'],
+                                                              [0.45, 0.5, 0.45, 0.43]):
         yield check_adaboost_predict, base_estimator_name, algorithm, expected_score

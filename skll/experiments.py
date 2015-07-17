@@ -23,6 +23,7 @@ from io import open
 from itertools import combinations
 from os.path import basename, exists, isfile, join
 
+import yaml
 from prettytable import PrettyTable, ALL
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
@@ -34,7 +35,6 @@ from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
                           _import_custom_learner)
 from skll.version import __version__
 
-import yaml
 
 # Check if gridmap is available
 try:
@@ -51,6 +51,7 @@ _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
 
 
 class NumpyTypeEncoder(json.JSONEncoder):
+
     '''
     This class is used when serializing results, particularly the input label
     values if the input has int-valued labels.  Numpy int64 objects can't
@@ -59,6 +60,7 @@ class NumpyTypeEncoder(json.JSONEncoder):
     A related issue where this was adapted from:
     http://stackoverflow.com/questions/11561932/why-does-json-dumpslistnp-arange5-fail-while-json-dumpsnp-arange5-tolis
     '''
+
     def default(self, obj):
         if isinstance(obj, np.int64):
             return int(obj)
@@ -171,9 +173,9 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Task: {}'.format(lrd['task']), file=output_file)
     if lrd['task'] == 'cross_validate':
         print('Number of Folds: {}'.format(lrd['cv_folds']),
-          file=output_file)
+              file=output_file)
         print('Stratified Folds: {}'.format(lrd['stratified_folds']),
-          file=output_file)
+              file=output_file)
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
@@ -216,6 +218,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
         print('', file=output_file)
+
 
 def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
