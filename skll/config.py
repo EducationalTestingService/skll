@@ -19,16 +19,18 @@ from io import open
 from os.path import basename, exists
 
 import configparser  # Backported version from Python 3
+import yaml
 from six import string_types, iteritems  # Python 2/3
 from sklearn.metrics import SCORERS
 
-import yaml
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 
+
 class SKLLConfigParser(configparser.ConfigParser):
+
     """A custom configuration file parser for SKLL"""
 
     def __init__(self):
@@ -126,32 +128,35 @@ class SKLLConfigParser(configparser.ConfigParser):
         valid_options = list(self._defaults.keys()) + self._required_options
 
         # get a set of all of the specified options
-        specified_options = set(itertools.chain(*[self.options(section) for section in self.sections()]))
+        specified_options = set(itertools.chain(*[self.options(section)
+                                                  for section in self.sections()]))
 
         # find any invalid options and return
         invalid_options = set(specified_options).difference(valid_options)
         return invalid_options
 
     def _find_ill_specified_options(self):
+        """
+        Make sure that all the options are specified in the appropriate sections
+        and are not specified in multiple spaces. One way to do this is to
+        basically get the values for all the optional config options from each
+        of the sections and then look at the section that has a non-default
+        (specified) value and if that's not the right section as indicated by
+        our section mapping, then we need to raise an exception.
 
-        # Make sure that all the options are specified
-        # in the appropriate sections and are not specified
-        # in multiple spaces. One way to do this
-        # is to basically get the values for all the optional
-        # config options from each of the sections and
-        # then look at the section that has a non-default (specified)
-        # value and if that's not the right section as indicated
-        # by our section mapping, then we need to raise an exception.
-        # NOTE: this will NOT work if the user specifies the default
-        # value for the option but puts it in the wrong section. However,
-        # since specifying the default value for the option  does
-        # not result in running an experiment with unexpected settings,
-        # this is not really a major problem.
+        .. note::
 
+            This will NOT work if the user specifies the default value for the
+            option but puts it in the wrong section. However, since specifying
+            the default value for the option  does not result in running an
+            experiment with unexpected settings, this is not really a major
+            problem.
+        """
         incorrectly_specified_options = []
         multiply_specified_options = []
         for option_name, default_value in self._defaults.items():
-            used_sections = [section for section in self.sections() if self.get(section, option_name) != default_value]
+            used_sections = [section for section in self.sections()
+                             if self.get(section, option_name) != default_value]
             # skip options that are not specified in any sections
             if len(used_sections) == 0:
                 pass
@@ -160,7 +165,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                 multiply_specified_options.append((option_name, used_sections))
             # find all options that are specified in incorrect sections
             elif used_sections[0] != self._section_mapping[option_name]:
-                incorrectly_specified_options.append((option_name, used_sections[0]))
+                incorrectly_specified_options.append((option_name,
+                                                      used_sections[0]))
 
         return (incorrectly_specified_options, multiply_specified_options)
 
@@ -172,13 +178,20 @@ class SKLLConfigParser(configparser.ConfigParser):
         """
         invalid_options = self._find_invalid_options()
         if invalid_options:
-            raise KeyError('Configuration file contains the following unrecognized options: {}'.format(list(invalid_options)))
+            raise KeyError('Configuration file contains the following '
+                           'unrecognized options: {}'
+                           .format(list(invalid_options)))
 
         incorrectly_specified_options, multiply_specified_options = self._find_ill_specified_options()
         if multiply_specified_options:
-            raise KeyError('The following are defined in multiple sections: {}'.format([t[0] for t in multiply_specified_options]))
+            raise KeyError('The following are defined in multiple sections: '
+                           '{}'.format([t[0] for t in
+                                        multiply_specified_options]))
         if incorrectly_specified_options:
-            raise KeyError('The following are not defined in the appropriate sections: {}'.format([t[0] for t in incorrectly_specified_options]))
+            raise KeyError('The following are not defined in the appropriate '
+                           'sections: {}'.format([t[0] for t in
+                                                  incorrectly_specified_options]))
+
 
 def _setup_config_parser(config_path, validate=True):
     """
@@ -198,6 +211,7 @@ def _setup_config_parser(config_path, validate=True):
 
     return config
 
+
 def _parse_config_file(config_path):
     """
     Parses a SKLL experiment configuration file with the given path.
@@ -215,14 +229,14 @@ def _parse_config_file(config_path):
     if config.has_option("General", "experiment_name"):
         experiment_name = config.get("General", "experiment_name")
     else:
-        raise ValueError("Configuration file does not contain experiment_name " +
+        raise ValueError("Configuration file does not contain experiment_name "
                          "in the [Input] section.")
 
     if config.has_option("General", "task"):
         task = config.get("General", "task")
     else:
-        raise ValueError("Configuration file does not contain task " +
-                         "in the [Input] section.")
+        raise ValueError("Configuration file does not contain task in the "
+                         "[Input] section.")
     if task not in _VALID_TASKS:
         raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
                          ' {}'.format(task, ', '.join(_VALID_TASKS)))
@@ -240,33 +254,32 @@ def _parse_config_file(config_path):
     hasher_features = config.getint("Input", "hasher_features")
     if feature_hasher:
         if hasher_features <= 0:
-            raise ValueError("Configuration file must specify"
-                             " a non-zero value for the option"
-                             " hasher_features when feature_hasher"
-                             " is True.")
+            raise ValueError("Configuration file must specify a non-zero value "
+                             "for the option hasher_features when "
+                             "feature_hasher is True.")
 
     # produce warnings if hasher_features is set but feature_hasher
     # is not set correctly
     if hasher_features > 0:
-        logger.warning("Ignoring hasher_features since feature_hasher"
-                       " is either missing or set to False.")
+        logger.warning("Ignoring hasher_features since feature_hasher is either"
+                       " missing or set to False.")
 
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     else:
-        raise ValueError("Configuration file does not contain list of " +
-                         "learners in [Input] section.")
+        raise ValueError("Configuration file does not contain list of learners "
+                         "in [Input] section.")
     learners = yaml.load(_fix_json(learners_string))
 
     if len(learners) == 0:
-        raise ValueError("Configuration file contains an empty list of " +
-                         "learners in the [Input] section.")
+        raise ValueError("Configuration file contains an empty list of learners"
+                         " in the [Input] section.")
 
     elif len(set(learners)) < len(learners):
-        raise ValueError('Configuration file contains the same learner '
-                         'multiple times, which is not currently supported.  '
-                         'Please use param_grids with tuning to find the '
-                         'optimal settings for the learner.')
+        raise ValueError('Configuration file contains the same learner multiple'
+                         ' times, which is not currently supported.  Please use'
+                         ' param_grids with tuning to find the optimal settings'
+                         ' for the learner.')
     custom_learner_path = config.get("Input", "custom_learner_path")
 
     # get the featuresets
@@ -277,8 +290,9 @@ def _parse_config_file(config_path):
     # of features
     if not isinstance(featuresets, list) or not all(isinstance(fs, list) for fs
                                                     in featuresets):
-        raise ValueError("The featuresets parameter should be a list of features or a " +
-                         "list of lists of features. You specified: {}".format(featuresets))
+        raise ValueError("The featuresets parameter should be a list of "
+                         "features or a list of lists of features. You "
+                         "specified: {}".format(featuresets))
 
     featureset_names = yaml.load(_fix_json(config.get("Input",
                                                       "featureset_names")))
@@ -289,7 +303,8 @@ def _parse_config_file(config_path):
                 not all([isinstance(fs, string_types) for fs in
                          featureset_names])):
             raise ValueError("The featureset_names parameter should be a list "
-                             "of strings. You specified: {}".format(featureset_names))
+                             "of strings. You specified: {}"
+                             .format(featureset_names))
 
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
@@ -306,8 +321,8 @@ def _parse_config_file(config_path):
     # four available choices
     feature_scaling = config.get("Input", "feature_scaling")
     if feature_scaling not in ['with_std', 'with_mean', 'both', 'none']:
-        raise ValueError("Invalid value for feature_scaling parameter: " +
-                         "{}".format(feature_scaling))
+        raise ValueError("Invalid value for feature_scaling parameter: {}"
+                         .format(feature_scaling))
 
     # get all the input paths and directories (without trailing slashes)
     train_path = config.get("Input", "train_directory").rstrip('/')
@@ -329,7 +344,7 @@ def _parse_config_file(config_path):
             try:
                 cv_folds = int(num_cv_folds)
             except ValueError:
-                raise ValueError("The value for cv_folds should be an integer. " +
+                raise ValueError("The value for cv_folds should be an integer. "
                                  "You specified {}".format(num_cv_folds))
         else:
             # default number of cross-validation folds
@@ -339,8 +354,7 @@ def _parse_config_file(config_path):
     random_folds = config.getboolean("Input", "random_folds")
     if random_folds:
         if cv_folds_file:
-            logger.warning('Specifying cv_folds_file '+
-                           'overrides random_folds')
+            logger.warning('Specifying cv_folds_file overrides random_folds')
         do_stratified_folds = False
     else:
         do_stratified_folds = True
@@ -350,8 +364,10 @@ def _parse_config_file(config_path):
 
     # make sure that featuresets is not an empty list unless
     # train_file and test_file are specified
-    if not train_file and not test_file and isinstance(featuresets, list) and len(featuresets) == 0:
-        raise ValueError("The 'featuresets' parameters cannot be an empty list.")
+    if not train_file and not test_file and (isinstance(featuresets, list) and
+                                             len(featuresets) == 0):
+        raise ValueError(
+            "The 'featuresets' parameters cannot be an empty list.")
 
     # The user must specify either train_file or train_path, not both.
     if not train_file and not train_path:
@@ -453,8 +469,8 @@ def _parse_config_file(config_path):
     # what is the objective function for the grid search?
     grid_objective = config.get("Tuning", "objective")
     if grid_objective not in SCORERS:
-        raise ValueError('Invalid grid objective function: '
-                         '{}'.format(grid_objective))
+        raise ValueError('Invalid grid objective function: {}'
+                         .format(grid_objective))
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
@@ -535,9 +551,9 @@ def _load_cv_folds(cv_folds_file, ids_to_floats=False):
                 try:
                     row[0] = float(row[0])
                 except ValueError:
-                    raise ValueError(('You set ids_to_floats to true, but ' +
-                                      'ID {} could not be converted to ' +
-                                      'float').format(row[0]))
+                    raise ValueError('You set ids_to_floats to true, but ID {}'
+                                     ' could not be converted to float'
+                                     .format(row[0]))
             res[row[0]] = row[1]
 
     return res

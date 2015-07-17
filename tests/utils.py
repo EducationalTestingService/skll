@@ -144,9 +144,10 @@ def fill_in_config_options(config_template_path,
                   'Input': ['train_directory', 'train_file', 'test_directory',
                             'test_file', 'featuresets', 'featureset_names',
                             'feature_hasher', 'hasher_features', 'learners',
-                            'sampler', 'shuffle', 'feature_scaling', 'num_cv_folds',
-                            'bad_option', 'duplicate_option'],
-                  'Tuning': ['probability', 'grid_search', 'objective', 'duplicate_option'],
+                            'sampler', 'shuffle', 'feature_scaling',
+                            'num_cv_folds', 'bad_option', 'duplicate_option'],
+                  'Tuning': ['probability', 'grid_search', 'objective',
+                             'duplicate_option'],
                   'Output': ['results', 'log', 'models',
                              'predictions']}
 
@@ -180,7 +181,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
 
     config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
     config.set("Input", "test_file", join(test_dir,
-                                              "fancy_test.jsonlines"))
+                                          "fancy_test.jsonlines"))
     config.set("Output", "results", output_dir)
     config.set("Output", "log", output_dir)
     config.set("Output", "predictions", output_dir)
