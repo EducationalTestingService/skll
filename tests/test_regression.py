@@ -27,12 +27,12 @@ from scipy.stats import pearsonr
 from sklearn.utils.testing import assert_greater, assert_less
 
 from skll.data import NDJWriter
-from skll.experiments import _setup_config_parser, run_configuration
+from skll.config import _setup_config_parser
+from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import make_regression_data
-
+from utils import make_regression_data, fill_in_config_paths_for_fancy_output
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
@@ -258,6 +258,8 @@ def test_non_linear_models():
                use_rescaling)
 
 # the utility function to run the tree-based regression tests
+
+
 def check_tree_models(name,
                       use_feature_hashing=False,
                       use_rescaling=False):
@@ -408,35 +410,6 @@ def test_ensemble_models():
                use_rescaling)
 
 
-def fill_in_config_paths_for_fancy_output(config_template_path):
-    """
-    Add paths to train, test, and output directories to a given config template
-    file.
-    """
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
-    config = _setup_config_parser(config_template_path)
-
-    config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
-    config.set("Input", "test_file", join(test_dir,
-                                              "fancy_test.jsonlines"))
-    config.set("Output", "results", output_dir)
-    config.set("Output", "log", output_dir)
-    config.set("Output", "predictions", output_dir)
-
-    config_prefix = re.search(r'^(.*)\.template\.cfg',
-                              config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
-
-    with open(new_config_path, 'w') as new_config_file:
-        config.write(new_config_file)
-
-    return new_config_path
-
-
 def test_int_labels():
     """
     Testing that SKLL can take integer input.
@@ -449,7 +422,7 @@ def test_int_labels():
     config_path = join(_my_dir, 'configs', 'test_int_labels_cv.cfg')
     output_dir = join(_my_dir, 'output')
 
-    config = _setup_config_parser(config_template_path)
+    config = _setup_config_parser(config_template_path, validate=False)
     config.set("Input", "train_file",
                join(_my_dir, 'other', 'test_int_labels_cv.jsonlines'))
     config.set("Output", "results", output_dir)
@@ -528,13 +501,16 @@ def test_fancy_output():
                             pred_stats_from_api[stat_type],
                             places=4)
 
+
 def check_adaboost_regression(base_estimator):
     train_fs, test_fs, _ = make_regression_data(num_examples=2000,
                                                 sd_noise=4,
                                                 num_features=3)
 
-    # train an AdaBoostClassifier on the training data and evalute on the testing data
-    learner = Learner('AdaBoostRegressor', model_kwargs={'base_estimator': base_estimator})
+    # train an AdaBoostClassifier on the training data and evalute on the
+    # testing data
+    learner = Learner('AdaBoostRegressor', model_kwargs={'base_estimator':
+                                                         base_estimator})
     learner.train(train_fs, grid_search=False)
 
     # now generate the predictions on the test set
@@ -546,6 +522,7 @@ def check_adaboost_regression(base_estimator):
     # make sure that they are correlated
     cor, _ = pearsonr(predictions, test_fs.labels)
     assert_greater(cor, 0.95)
+
 
 def test_adaboost_regression():
     for base_estimator_name in ['DecisionTreeRegressor', 'SGDRegressor', 'SVR']:

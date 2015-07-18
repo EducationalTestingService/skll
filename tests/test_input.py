@@ -13,17 +13,17 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
-import re
 import tempfile
 from glob import glob
-from io import open
-from os.path import abspath, dirname, exists, join
+from os.path import abspath, dirname, exists, join, normpath
 
-from nose.tools import eq_, raises, assert_raises
+from nose.tools import eq_, raises
 
-from skll.experiments import (_load_featureset, _setup_config_parser,
-                              _parse_config_file)
+from skll.config import _parse_config_file
 from skll.data.readers import safe_float
+from skll.experiments import _load_featureset
+
+from utils import fill_in_config_options
 
 _my_dir = abspath(dirname(__file__))
 
@@ -64,40 +64,6 @@ def test_safe_float_conversion():
     for input_val, expected_val in zip(['1.234', 1.234, '3.0', '3', 3, 'foo'],
                                        [1.234, 1.234, 3.0, 3, 3, 'foo']):
         yield check_safe_float_conversion, safe_float(input_val), expected_val
-
-
-def fill_in_config_paths_for_parsing(config_template_path, values_to_fill_dict,
-                                     sub_prefix):
-    """
-    Add paths to train, test, and output directories to a given config template
-    file.
-    """
-
-    config = _setup_config_parser(config_template_path)
-
-    to_fill_in = {'General': ['experiment_name', 'task'],
-                  'Input': ['train_directory', 'train_file', 'test_directory',
-                            'test_file', 'featuresets', 'featureset_names',
-                            'feature_hasher', 'hasher_features', 'learners',
-                            'sampler', 'shuffle', 'feature_scaling', 'num_cv_folds'],
-                  'Tuning': ['grid_search', 'objective'],
-                  'Output': ['probability', 'results', 'log', 'models',
-                             'predictions']}
-
-    for section in to_fill_in:
-        for param_name in to_fill_in[section]:
-            if param_name in values_to_fill_dict:
-                config.set(section, param_name,
-                           values_to_fill_dict[param_name])
-
-    config_prefix = re.search(r'^(.*)\.template\.cfg',
-                              config_template_path).groups()[0]
-    new_config_path = '{}_{}.cfg'.format(config_prefix, sub_prefix)
-
-    with open(new_config_path, 'w') as new_config_file:
-        config.write(new_config_file)
-
-    return new_config_path
 
 
 @raises(ValueError)
@@ -146,8 +112,27 @@ def test_one_file_load_featureset():
     single_fs = _load_featureset(dirpath, featureset, suffix, quiet=True)
     eq_(single_file_fs, single_fs)
 
-
 @raises(ValueError)
+def check_config_parsing_value_error(config_path):
+    """
+    Assert that calling `_parse_config_file` on `config_path` raises ValueError
+    """
+    _parse_config_file(config_path)
+
+@raises(KeyError)
+def check_config_parsing_key_error(config_path):
+    """
+    Assert that calling `_parse_config_file` on `config_path` raises KeyError
+    """
+    _parse_config_file(config_path)
+
+@raises(IOError)
+def check_config_parsing_file_not_found_error(config_path):
+    """
+    Assert that calling `_parse_config_file` on `config_path` raises FileNotFoundError
+    """
+    _parse_config_file(config_path)
+
 def test_config_parsing_no_name():
     """
     Test to ensure config file parsing raises an error missing experiment name
@@ -169,11 +154,11 @@ def test_config_parsing_no_name():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'no_name')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'no_name')
 
-    _parse_config_file(config_path)
+    yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_task():
@@ -199,19 +184,11 @@ def test_config_parsing_bad_task():
             values_to_fill_dict['task'] = task_value
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                       values_to_fill_dict,
-                                                       sub_prefix)
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
 
         yield check_config_parsing_value_error, config_path
-
-
-@raises(ValueError)
-def check_config_parsing_value_error(config_path):
-    """
-    Assert that calling _parse_config_file on config_path raises ValueError
-    """
-    _parse_config_file(config_path)
 
 
 def test_config_parsing_bad_learner():
@@ -243,13 +220,12 @@ def test_config_parsing_bad_learner():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                       values_to_fill_dict,
-                                                       sub_prefix)
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
         yield check_config_parsing_value_error, config_path
 
 
-@raises(ValueError)
 def test_config_parsing_bad_sampler():
     """
     Test to ensure config file parsing raises an error with an invalid sampler
@@ -273,14 +249,13 @@ def test_config_parsing_bad_sampler():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'bad_sampler')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_sampler')
 
-    _parse_config_file(config_path)
+    yield check_config_parsing_value_error, config_path
 
 
-@raises(ValueError)
 def test_config_parsing_bad_hashing():
     """
     Test to ensure config file parsing raises an error when feature_hasher is specified but not hasher_features
@@ -304,11 +279,11 @@ def test_config_parsing_bad_hashing():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'bad_hashing')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_hashing')
 
-    _parse_config_file(config_path)
+    yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_featuresets():
@@ -338,9 +313,9 @@ def test_config_parsing_bad_featuresets():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                       values_to_fill_dict,
-                                                       sub_prefix)
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
         yield check_config_parsing_value_error, config_path
 
 
@@ -373,9 +348,9 @@ def test_config_parsing_bad_featurenames():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                       values_to_fill_dict,
-                                                       sub_prefix)
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
 
         yield check_config_parsing_value_error, config_path
 
@@ -408,9 +383,9 @@ def test_config_parsing_bad_scaling():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                       values_to_fill_dict,
-                                                       sub_prefix)
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
 
         yield check_config_parsing_value_error, config_path
 
@@ -456,9 +431,9 @@ def test_config_parsing_bad_train():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                       values_to_fill_dict,
-                                                       sub_prefix)
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
 
         yield check_config_parsing_value_error, config_path
 
@@ -506,9 +481,9 @@ def test_config_parsing_bad_test():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                       values_to_fill_dict,
-                                                       sub_prefix)
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
 
         yield check_config_parsing_value_error, config_path
 
@@ -516,7 +491,6 @@ def test_config_parsing_bad_test():
             test_fh.close()
 
 
-@raises(ValueError)
 def test_config_parsing_bad_objective():
     """
     Test to ensure config file parsing raises an error with an invalid grid objective
@@ -540,11 +514,11 @@ def test_config_parsing_bad_objective():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'bad_objective')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_objective')
 
-    _parse_config_file(config_path)
+    yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_task_paths():
@@ -636,9 +610,9 @@ def test_config_parsing_bad_task_paths():
 
         config_template_path = join(_my_dir, 'configs',
                                     'test_config_parsing.template.cfg')
-        config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                       values_to_fill_dict,
-                                                       sub_prefix)
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
 
         yield check_config_parsing_value_error, config_path
 
@@ -648,7 +622,7 @@ def test_config_parsing_bad_task_paths():
         elif sub_prefix == 'train_with_test_file':
             test_fh2.close()
 
-@raises(ValueError)
+
 def test_config_parsing_bad_cv_folds():
     """
     Test to ensure config file parsing raises an error with an invalid cv_folds
@@ -671,16 +645,151 @@ def test_config_parsing_bad_cv_folds():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'bad_cv_folds')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_cv_folds')
 
-    _parse_config_file(config_path)
+    yield check_config_parsing_value_error, config_path
+
+
+def test_config_parsing_invalid_option():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has an invalid option
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'bad_option': 'whatever',
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'invalid_option')
+
+    yield check_config_parsing_key_error, config_path
+
+
+def test_config_parsing_duplicate_option():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a duplicate option
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'duplicate_option': 'value',
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'duplicate_option')
+
+    yield check_config_parsing_key_error, config_path
+
+
+def test_config_parsing_option_in_wrong_section():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has an option in the wrong section
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'probability': 'true',
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'option_in_wrong_section')
+
+    yield check_config_parsing_key_error, config_path
+
+
+def test_config_parsing_mislocated_input_path():
+
+    train_dir = 'train'
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has an invalid option
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                                   values_to_fill_dict,
+                                                   'mislocated_input_file')
+
+    yield check_config_parsing_file_not_found_error, config_path
+
+
+def test_config_parsing_relative_input_path():
+
+    train_dir = join('..', 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has an invalid option
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                                   values_to_fill_dict,
+                                                   'mislocated_input_file')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
+
+    eq_(normpath(train_path), (join(_my_dir, 'train')))
 
 def test_default_number_of_cv_folds():
-    """
-    Test to ensure that the cv folds value is set correctly
-    """
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
@@ -697,27 +806,24 @@ def test_default_number_of_cv_folds():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'default_cv_folds')
-
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_cv_folds')
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
-            feature_hasher, hasher_features, id_col, label_col, train_set_name,
-            test_set_name, suffix, featuresets, do_shuffle, model_path,
-            do_grid_search, grid_objective, probability, results_path,
-            pos_label_str, feature_scaling, min_feature_count,
-            grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
-            fixed_parameter_list, param_grid_list, featureset_names, learners,
-            prediction_dir, log_path, train_path, test_path, ids_to_floats,
-            class_map, custom_learner_path) = _parse_config_file(config_path)
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
 
     eq_(cv_folds, 10)
 
+
 def test_setting_number_of_cv_folds():
-    """
-    Test to ensure that the cv folds value is set correctly
-    """
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
@@ -735,19 +841,18 @@ def test_setting_number_of_cv_folds():
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_paths_for_parsing(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'default_cv_folds')
-
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_cv_folds')
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
-            feature_hasher, hasher_features, id_col, label_col, train_set_name,
-            test_set_name, suffix, featuresets, do_shuffle, model_path,
-            do_grid_search, grid_objective, probability, results_path,
-            pos_label_str, feature_scaling, min_feature_count,
-            grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
-            fixed_parameter_list, param_grid_list, featureset_names, learners,
-            prediction_dir, log_path, train_path, test_path, ids_to_floats,
-            class_map, custom_learner_path) = _parse_config_file(config_path)
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
 
     eq_(cv_folds, 5)

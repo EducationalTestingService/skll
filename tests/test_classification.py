@@ -16,7 +16,6 @@ import glob
 import itertools
 import json
 import os
-import re
 from io import open
 from os.path import abspath, dirname, exists, join
 
@@ -26,12 +25,13 @@ from sklearn.base import RegressorMixin
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
-from skll.experiments import (_parse_config_file, _setup_config_parser,
-                              run_configuration)
+from skll.config import _parse_config_file
+from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import make_classification_data, make_regression_data, make_sparse_data
+from utils import (make_classification_data, make_regression_data,
+                   make_sparse_data, fill_in_config_paths_for_single_file)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -71,59 +71,6 @@ def tearDown():
     config_file = join(config_dir, 'test_single_file.cfg')
     if exists(config_file):
         os.unlink(config_file)
-
-
-def fill_in_config_paths_for_single_file(config_template_path, train_file,
-                                         test_file, train_directory='',
-                                         test_directory=''):
-    """
-    Add paths to train and test files, and output directories to a given config
-    template file.
-    """
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
-    config = _setup_config_parser(config_template_path)
-
-    task = config.get("General", "task")
-
-    config.set("Input", "train_file", join(train_dir, train_file))
-    if task == 'predict' or task == 'evaluate':
-        config.set("Input", "test_file", join(test_dir, test_file))
-
-    if train_directory:
-        config.set("Input", "train_directory", join(train_dir, train_directory))
-
-    if test_directory:
-        config.set("Input", "test_directory", join(test_dir, test_directory))
-
-    to_fill_in = ['log', 'predictions']
-
-    if task != 'cross_validate':
-        to_fill_in.append('models')
-
-    if task == 'evaluate' or task == 'cross_validate':
-        to_fill_in.append('results')
-
-    for d in to_fill_in:
-        config.set("Output", d, join(output_dir))
-
-    if task == 'cross_validate':
-        cv_folds_file = config.get("Input", "cv_folds_file")
-        if cv_folds_file:
-            config.set("Input", "cv_folds_file",
-                       join(train_dir, cv_folds_file))
-
-    config_prefix = re.search(r'^(.*)\.template\.cfg',
-                              config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
-
-    with open(new_config_path, 'w') as new_config_file:
-        config.write(new_config_file)
-
-    return new_config_path
 
 
 def check_predict(model, use_feature_hashing=False):
@@ -212,7 +159,8 @@ def test_rare_class():
 
 
 def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False):
-    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_sparse_data(
+        use_feature_hashing=use_feature_hashing)
 
     # train a logistic regression classifier on the training
     # data and evalute on the testing data
@@ -353,10 +301,12 @@ def test_test_file_and_test_directory():
                                                        test_directory='foo')
     _parse_config_file(config_path)
 
+
 def check_adaboost_predict(base_estimator, algorithm, expected_score):
     train_fs, test_fs = make_sparse_data()
 
-    # train an AdaBoostClassifier on the training data and evalute on the testing data
+    # train an AdaBoostClassifier on the training data and evalute on the
+    # testing data
     learner = Learner('AdaBoostClassifier', model_kwargs={'base_estimator': base_estimator,
                                                           'algorithm': algorithm})
     learner.train(train_fs, grid_search=False)
@@ -369,7 +319,7 @@ def test_adaboost_predict():
                                                                'DecisionTreeClassifier',
                                                                'SGDClassifier',
                                                                'SVC'],
-                                                               ['SAMME.R', 'SAMME.R',
-                                                                'SAMME', 'SAMME'],
-                                                               [0.45, 0.5, 0.45, 0.43]):
+                                                              ['SAMME.R', 'SAMME.R',
+                                                               'SAMME', 'SAMME'],
+                                                              [0.45, 0.5, 0.45, 0.43]):
         yield check_adaboost_predict, base_estimator_name, algorithm, expected_score
