@@ -757,7 +757,7 @@ def test_config_parsing_mislocated_input_path():
 
 def test_config_parsing_relative_input_path():
 
-    train_dir = '../train'
+    train_dir = join('..', 'train')
     output_dir = join(_my_dir, 'output')
 
     # make a simple config file that has an invalid option
