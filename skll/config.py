@@ -16,9 +16,8 @@ import itertools
 import logging
 import os
 from io import open
-from os.path import (abspath, basename,
-                     dirname, exists,
-                     isabs, join, normpath)
+from os.path import (basename, dirname, exists,
+                     isabs, join, normpath, realpath)
 
 import configparser  # Backported version from Python 3
 import yaml
@@ -234,7 +233,7 @@ def _parse_config_file(config_path):
     logger = logging.getLogger(__name__)
 
     # compute the absolute path for the config file
-    config_path = abspath(config_path)
+    config_path = realpath(config_path)
 
     # set up a config parser with the above default values
     config = _setup_config_parser(config_path)
@@ -374,8 +373,8 @@ def _parse_config_file(config_path):
         do_stratified_folds = True
 
     # get all the input paths and directories (without trailing slashes)
-    train_path = config.get("Input", "train_directory").rstrip('/')
-    test_path = config.get("Input", "test_directory").rstrip('/')
+    train_path = config.get("Input", "train_directory").rstrip(os.sep)
+    test_path = config.get("Input", "test_directory").rstrip(os.sep)
     train_file = config.get("Input", "train_file")
     test_file = config.get("Input", "test_file")
 
