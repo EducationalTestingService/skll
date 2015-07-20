@@ -41,7 +41,7 @@ requirements:
     - python
     - joblib
     - setuptools
-    - scikit-learn 0.15.2
+    - scikit-learn 0.16.1
     - six
     - prettytable
     - beautiful-soup
