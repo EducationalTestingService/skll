@@ -381,9 +381,9 @@ example, if you wanted to collapse the labels ``beagle`` and ``dachsund`` into a
 
 Any labels not included in the dictionary will be left untouched.
 
-.. _cv_folds:
+.. _num_cv_folds:
 
-cv_folds *(Optional)*
+num_cv_folds *(Optional)*
 """"""""""""""""""""""
 
 The number of folds to use for cross-validation. Defaults to 10.
