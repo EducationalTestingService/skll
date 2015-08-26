@@ -65,7 +65,7 @@ def main(argv=None):
         # subclass of LinearModel
         if '_intercept_' in intercept:
             # Some learners (e.g. LinearSVR) may return a list of intercepts
-            if type(intercept['_intercept_']) == np.ndarray:
+            if isinstance(intercept['_intercept_'], np.ndarray):
                 intercept_list = ["%.12f" % i for i in intercept['_intercept_']]
                 print("intercept = {}".format(intercept_list))
             else:
