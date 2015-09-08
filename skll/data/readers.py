@@ -183,7 +183,7 @@ class Reader(object):
         ids = []
         labels = []
         with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
-            for ex_num, (id_, class_, _) in enumerate(self._sub_read(f)):
+            for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
                 # Update lists of IDs, clases, and features
                 if self.ids_to_floats:
                     try:
@@ -201,7 +201,7 @@ class Reader(object):
             self._print_progress(ex_num)
 
         # Remember total number of examples for percentage progress meter
-        total = ex_num + 1
+        total = ex_num
 
         # Convert everything to numpy arrays
         ids = np.array(ids)
@@ -212,8 +212,7 @@ class Reader(object):
                 for ex_num, (_, _, feat_dict) in enumerate(self._sub_read(f)):
                     yield feat_dict
                     if ex_num % 100 == 0:
-                        self._print_progress('{:.8}%'.format(100 * ((ex_num +
-                                                                     1) /
+                        self._print_progress('{:.8}%'.format(100 * ((ex_num /
                                                                     total)))
                 self._print_progress("100%")
 
