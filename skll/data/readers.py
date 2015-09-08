@@ -201,7 +201,7 @@ class Reader(object):
             self._print_progress(ex_num)
 
         # Remember total number of examples for percentage progress meter
-        total = ex_num
+        total = ex_num + 1
 
         # Convert everything to numpy arrays
         ids = np.array(ids)
