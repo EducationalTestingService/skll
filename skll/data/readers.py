@@ -213,7 +213,7 @@ class Reader(object):
                     yield feat_dict
                     if ex_num % 100 == 0:
                         self._print_progress('{:.8}%'.format(100 * ((ex_num /
-                                                                    total)))
+                                                                    total))))
                 self._print_progress("100%")
 
         # Convert everything to numpy arrays
