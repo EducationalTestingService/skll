@@ -386,7 +386,7 @@ Any labels not included in the dictionary will be left untouched.
 num_cv_folds *(Optional)*
 """"""""""""""""""""""
 
-The number of folds to use for cross-validation. Defaults to 10.
+The number of folds to use for cross validation. Defaults to 10.
 
 .. _random_folds:
 
