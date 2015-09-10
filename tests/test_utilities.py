@@ -8,6 +8,7 @@ Module for running unit tests related to command line utilities.
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+import ast
 
 import copy
 import itertools
@@ -27,7 +28,7 @@ except ImportError:
     from mock import create_autospec, patch
 
 from nose.tools import eq_, assert_almost_equal, raises, assert_raises
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import assert_array_equal, assert_allclose, assert_array_almost_equal
 
 import skll
 import skll.utilities.compute_eval_from_predictions as cefp
@@ -377,8 +378,11 @@ def check_print_model_weights(task='classification'):
     if task == 'classification':
         learner = Learner('LogisticRegression')
         learner.train(train_fs)
-    else:
+    elif task == 'regression':
         learner = Learner('LinearRegression')
+        learner.train(train_fs, grid_objective='pearson')
+    else:
+        learner = Learner('LinearSVR')
         learner.train(train_fs, grid_objective='pearson')
 
     # now save the model to disk
@@ -414,7 +418,7 @@ def check_print_model_weights(task='classification'):
         feature_values = [t[1] for t in sorted(feature_values)]
         assert_almost_equal(intercept, learner.model.intercept_[0])
         assert_allclose(learner.model.coef_[0], feature_values)
-    else:
+    elif task == 'regression':
         lines_to_parse = [l for l in out.split('\n') if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
         feature_values = []
@@ -424,11 +428,28 @@ def check_print_model_weights(task='classification'):
         feature_values = [t[1] for t in sorted(feature_values)]
         assert_almost_equal(intercept, learner.model.intercept_)
         assert_allclose(learner.model.coef_, feature_values)
+    else:
+        lines_to_parse = [l for l in out.split('\n') if l]
+
+        intercept_list = ast.literal_eval(lines_to_parse[0].split('=')[1].strip())
+        intercept = []
+        for intercept_string in intercept_list:
+            intercept.append(safe_float(intercept_string))
+
+        feature_values = []
+        for ltp in lines_to_parse[1:]:
+            fields = ltp.split('\t')
+            feature_values.append((fields[1], safe_float(fields[0])))
+        feature_values = [t[1] for t in sorted(feature_values)]
+
+        assert_array_almost_equal(intercept, learner.model.intercept_)
+        assert_allclose(learner.model.coef_, feature_values)
 
 
 def test_print_model_weights():
     yield check_print_model_weights, 'classification'
     yield check_print_model_weights, 'regression'
+    yield check_print_model_weights, 'regression_linearSVR'
 
 
 def check_summarize_results_argparse(use_ablation=False):
