@@ -563,12 +563,16 @@ def _classify_featureset(args):
         task_results = None
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
-            task_results, grid_scores, skll_fold_ids = learner.cross_validate(
+            task_results, grid_scores, skll_fold_ids, models = learner.cross_validate(
                 train_examples, shuffle=shuffle, stratified=stratified_folds,
                 prediction_prefix=prediction_prefix, grid_search=grid_search,
                 grid_search_folds=grid_search_folds, cv_folds=cv_folds,
                 grid_objective=grid_objective, param_grid=param_grid,
                 grid_jobs=grid_search_jobs, save_cv_folds=save_cv_folds)
+            if model_path:
+                for index, m in enumerate(models):
+                    modelfile = join(model_path, '{}_fold{}.model'.format(job_name, index))
+                    m.save(modelfile)
         elif task == 'learning_curve':
             print('\tgenerating learning curve', file=log_file)
             (curve_train_scores,
@@ -577,6 +581,7 @@ def _classify_featureset(args):
                                                                   cv_folds=learning_curve_cv_folds,
                                                                   train_sizes=learning_curve_train_sizes,
                                                                   objective=grid_objective)
+                grid_jobs=grid_search_jobs)
         else:
             # if we have do not have a saved model, we need to train one.
             if not exists(modelfile) or overwrite:

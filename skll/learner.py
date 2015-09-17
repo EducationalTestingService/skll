@@ -1534,6 +1534,7 @@ class Learner(object):
         results = []
         grid_search_scores = []
         append_predictions = False
+        models = []
         for train_index, test_index in kfold.split(examples.features,
                                                    examples.labels,
                                                    cv_groups):
@@ -1555,6 +1556,7 @@ class Learner(object):
                                            shuffle=grid_search,
                                            create_label_dict=False)
             grid_search_scores.append(grid_search_score)
+            models.append(self)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
 
@@ -1571,7 +1573,7 @@ class Learner(object):
             append_predictions = True
 
         # return list of results for all folds
-        return results, grid_search_scores, skll_fold_ids
+        return results, grid_search_scores, skll_fold_ids, models
 
     def learning_curve(self,
                        examples,
@@ -1664,4 +1666,3 @@ class Learner(object):
         out = np.asarray(out).transpose((2, 1, 0))
 
         return list(out[0]), list(out[1]), list(train_sizes_abs)
-
