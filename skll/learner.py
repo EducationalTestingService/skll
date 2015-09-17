@@ -709,7 +709,9 @@ class Learner(object):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
 
-            intercept = dict(zip(label_list, self.model.intercept_))
+            if self.model.intercept_:
+                intercept = dict(zip(label_list, self.model.intercept_))
+
         else:
             # not supported
             raise ValueError(("{} is not supported by" +

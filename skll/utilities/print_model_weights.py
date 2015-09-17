@@ -14,6 +14,7 @@ import logging
 import sys
 
 from six import iteritems
+import numpy as np
 
 from skll import Learner
 from skll.version import __version__
@@ -63,7 +64,12 @@ def main(argv=None):
     if intercept is not None:
         # subclass of LinearModel
         if '_intercept_' in intercept:
-            print("intercept = {:.12f}".format(intercept['_intercept_']))
+            # Some learners (e.g. LinearSVR) may return a list of intercepts
+            if isinstance(intercept['_intercept_'], np.ndarray):
+                intercept_list = ["%.12f" % i for i in intercept['_intercept_']]
+                print("intercept = {}".format(intercept_list))
+            else:
+                print("intercept = {:.12f}".format(intercept['_intercept_']))
         else:
             print("== intercept values ==")
             for (label, val) in intercept.items():
