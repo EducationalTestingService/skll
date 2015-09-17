@@ -11,6 +11,7 @@ Provides easy-to-use wrapper around scikit-learn.
 # pylint: disable=F0401,W0622,E1002,E1101
 
 from __future__ import absolute_import, print_function, unicode_literals
+from copy import deepcopy
 
 import copy
 import inspect
@@ -1556,7 +1557,7 @@ class Learner(object):
                                            shuffle=grid_search,
                                            create_label_dict=False)
             grid_search_scores.append(grid_search_score)
-            models.append(self)
+            models.append(deepcopy(self))
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
 
