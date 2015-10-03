@@ -3,7 +3,7 @@ Quickstart
 
 Here is a quick run-down of how you accomplish common tasks.
 
-Load some a FeatureSet from a file::
+Load a FeatureSet from a file::
 
     from skll import Reader
 
