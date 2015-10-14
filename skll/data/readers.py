@@ -183,6 +183,7 @@ class Reader(object):
         ids = []
         labels = []
         with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
+            ex_num = 0
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
                 # Update lists of IDs, clases, and features
                 if self.ids_to_floats:
