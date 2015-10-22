@@ -70,6 +70,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'results': '',
                     'sampler': '',
                     'sampler_parameters': '[]',
+                    'save_cv_folds': 'False',
                     'shuffle': 'False',
                     'suffix': '',
                     'test_directory': '',
@@ -105,6 +106,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'results': 'Output',
                                    'sampler': 'Input',
                                    'sampler_parameters': 'Input',
+                                   'save_cv_folds': 'Input',
                                    'shuffle': 'Input',
                                    'suffix': 'Input',
                                    'test_directory': 'Input',
@@ -363,6 +365,9 @@ def _parse_config_file(config_path):
             # default number of cross-validation folds
             cv_folds = 10
 
+    # whether or not to save the cv fold ids
+    save_cv_folds = config.get("Input", "save_cv_folds")
+
     # whether or not to do stratified cross validation
     random_folds = config.getboolean("Input", "random_folds")
     if random_folds:
@@ -523,10 +528,10 @@ def _parse_config_file(config_path):
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objective, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count,
-            grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
-            fixed_parameter_list, param_grid_list, featureset_names, learners,
-            prediction_dir, log_path, train_path, test_path, ids_to_floats,
-            class_map, custom_learner_path)
+            grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+            do_stratified_folds, fixed_parameter_list, param_grid_list,
+            featureset_names, learners, prediction_dir, log_path, train_path,
+            test_path, ids_to_floats, class_map, custom_learner_path)
 
 
 def _munge_featureset_name(featureset):
