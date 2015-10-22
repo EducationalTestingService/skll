@@ -23,6 +23,7 @@ from glob import glob
 import numpy as np
 from nose.tools import eq_, raises
 from six import PY2
+import random
 
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
@@ -221,14 +222,21 @@ def test_retrieve_cv_folds():
     num_folds = 5
     cv_fs, custom_cv_folds = make_cv_folds_data(num_examples_per_fold=2, num_folds=num_folds)
 
-    expected_fold_ids = {'EXAMPLE_0': 0, 'EXAMPLE_1': 4, 'EXAMPLE_2': 3, 'EXAMPLE_3': 1,
-                         'EXAMPLE_4': 2, 'EXAMPLE_5': 2, 'EXAMPLE_6': 1, 'EXAMPLE_7': 0,
-                         'EXAMPLE_8': 4, 'EXAMPLE_9': 3}
+    # First test where learner.cross_validate makes the folds itself
+    expected_fold_ids = {'EXAMPLE_0': '0', 'EXAMPLE_1': '4', 'EXAMPLE_2': '3', 'EXAMPLE_3': '1',
+                         'EXAMPLE_4': '2', 'EXAMPLE_5': '2', 'EXAMPLE_6': '1', 'EXAMPLE_7': '0',
+                         'EXAMPLE_8': '4', 'EXAMPLE_9': '3'}
 
     _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=num_folds, save_cv_folds=True,
                                                  grid_search=True)
 
     assert_equal(skll_fold_ids, expected_fold_ids)
+
+    # Now test that if we pass in custom fold ids, those are also preserved
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=custom_cv_folds, save_cv_folds=True,
+                                                 grid_search=True)
+
+    assert_equal(skll_fold_ids, custom_cv_folds)
 
 
 def test_cross_validate_task():
