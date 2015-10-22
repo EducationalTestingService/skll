@@ -782,7 +782,7 @@ def test_config_parsing_relative_input_path():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)
@@ -815,7 +815,7 @@ def test_default_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)
@@ -850,7 +850,7 @@ def test_setting_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)
