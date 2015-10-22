@@ -106,7 +106,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'results': 'Output',
                                    'sampler': 'Input',
                                    'sampler_parameters': 'Input',
-                                   'save_cv_folds': 'Input',
+                                   'save_cv_folds': 'Output',
                                    'shuffle': 'Input',
                                    'suffix': 'Input',
                                    'test_directory': 'Input',
@@ -366,7 +366,7 @@ def _parse_config_file(config_path):
             cv_folds = 10
 
     # whether or not to save the cv fold ids
-    save_cv_folds = config.get("Input", "save_cv_folds")
+    save_cv_folds = config.get("Output", "save_cv_folds")
 
     # whether or not to do stratified cross validation
     random_folds = config.getboolean("Input", "random_folds")
