@@ -248,13 +248,13 @@ def _parse_config_file(config_path):
         experiment_name = config.get("General", "experiment_name")
     else:
         raise ValueError("Configuration file does not contain experiment_name "
-                         "in the [Input] section.")
+                         "in the [General] section.")
 
     if config.has_option("General", "task"):
         task = config.get("General", "task")
     else:
         raise ValueError("Configuration file does not contain task in the "
-                         "[Input] section.")
+                         "[General] section.")
     if task not in _VALID_TASKS:
         raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
                          ' {}'.format(task, ', '.join(_VALID_TASKS)))
@@ -262,9 +262,9 @@ def _parse_config_file(config_path):
     # 2. Input
     sampler = config.get("Input", "sampler")
     if sampler not in _VALID_SAMPLERS:
-        raise ValueError('An invalid sample was specified: {}.  Valid samplers'
-                         ' are: {}'.format(sampler,
-                                           ', '.join(_VALID_SAMPLERS)))
+        raise ValueError('An invalid sampler was specified: {}.  Valid '
+                         'samplers are: {}'.format(sampler,
+                                                   ', '.join(_VALID_SAMPLERS)))
 
     # produce warnings if feature_hasher is set but hasher_features
     # is less than or equal to zero.
