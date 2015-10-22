@@ -194,14 +194,14 @@ class SKLLConfigParser(configparser.ConfigParser):
                                                   incorrectly_specified_options]))
 
 
-def _locate_file(file_path, config_path):
+def _locate_file(file_path, config_dir):
     if not file_path:
         return ''
-    path_to_check = file_path if isabs(file_path) else normpath(join(dirname(config_path), file_path))
+    path_to_check = file_path if isabs(file_path) else normpath(join(config_dir,
+                                                                     file_path))
     ans = exists(path_to_check)
     if not ans:
-        raise IOError(errno.ENOENT, "File does not exist",
-                      path_to_check)
+        raise IOError(errno.ENOENT, "File does not exist", path_to_check)
     else:
         return path_to_check
 
@@ -234,6 +234,7 @@ def _parse_config_file(config_path):
 
     # compute the absolute path for the config file
     config_path = realpath(config_path)
+    config_dir = dirname(config_path)
 
     # set up a config parser with the above default values
     config = _setup_config_parser(config_path)
@@ -419,10 +420,10 @@ def _parse_config_file(config_path):
         featuresets[0][0] += '_test_{}'.format(basename(test_file))
 
     # make sure all the specified paths/files exist
-    train_path = _locate_file(train_path, config_path)
-    test_path = _locate_file(test_path, config_path)
-    train_file = _locate_file(train_file, config_path)
-    test_file = _locate_file(test_file, config_path)
+    train_path = _locate_file(train_path, config_dir)
+    test_path = _locate_file(test_path, config_dir)
+    train_file = _locate_file(train_file, config_dir)
+    test_file = _locate_file(test_file, config_dir)
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
@@ -443,27 +444,31 @@ def _parse_config_file(config_path):
 
     # do we want to keep the predictions?
     prediction_dir = config.get("Output", "predictions")
-    if prediction_dir and not exists(prediction_dir):
-        prediction_dir = join(dirname(config_path), prediction_dir)
-        os.makedirs(prediction_dir)
+    if prediction_dir:
+        prediction_dir = join(config_dir, prediction_dir)
+        if not exists(prediction_dir):
+            os.makedirs(prediction_dir)
 
     # make sure log path exists
     log_path = config.get("Output", "log")
-    if log_path and not exists(log_path):
-        log_path = join(dirname(config_path), log_path)
-        os.makedirs(log_path)
+    if log_path:
+        log_path = join(config_dir, log_path)
+        if not exists(log_path):
+            os.makedirs(log_path)
 
     # make sure model path exists
     model_path = config.get("Output", "models")
-    if model_path and not exists(model_path):
-        model_path = join(dirname(config_path), model_path)
-        os.makedirs(model_path)
+    if model_path:
+        model_path = join(config_dir, model_path)
+        if not exists(model_path):
+            os.makedirs(model_path)
 
     # make sure results path exists
     results_path = config.get("Output", "results")
-    if results_path and not exists(results_path):
-        results_path = join(dirname(config_path), results_path)
-        os.makedirs(results_path)
+    if results_path:
+        results_path = join(config_dir, results_path)
+        if not exists(results_path):
+            os.makedirs(results_path)
 
     # 4. Tuning
     # do we need to run a grid search for the hyperparameters or are we just
