@@ -1441,7 +1441,7 @@ class Learner(object):
             skll_fold_ids = {}
             for fold_num, (_, test_indices) in enumerate(kfold):
                 for index in test_indices:
-                    skll_fold_ids[examples.ids[index]] = fold_num
+                    skll_fold_ids[examples.ids[index]] = str(fold_num)
 
         # handle each fold separately and accumulate the predictions and the
         # numbers
