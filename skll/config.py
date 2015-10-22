@@ -349,22 +349,14 @@ def _parse_config_file(config_path):
 
     # get the cv folds file and make a dictionary from it, if it exists
     cv_folds_file = config.get("Input", "cv_folds_file")
-    num_cv_folds = config.get("Input", "num_cv_folds")
+    num_cv_folds = config.getint("Input", "num_cv_folds")
     if cv_folds_file:
         cv_folds_file = _locate_file(cv_folds_file, config_path)
         cv_folds = _load_cv_folds(cv_folds_file,
                                   ids_to_floats=ids_to_floats)
     else:
         # set the number of folds for cross-validation
-        if num_cv_folds:
-            try:
-                cv_folds = int(num_cv_folds)
-            except ValueError:
-                raise ValueError("The value for cv_folds should be an integer. "
-                                 "You specified {}".format(num_cv_folds))
-        else:
-            # default number of cross-validation folds
-            cv_folds = 10
+        cv_folds = num_cv_folds if num_cv_folds else 10
 
     # whether or not to do stratified cross validation
     random_folds = config.getboolean("Input", "random_folds")
