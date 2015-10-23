@@ -7,5 +7,5 @@ in one place. Based on the suggestion `here. <http://bit.ly/16LbuJF>`_
 :organization: ETS
 """
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 VERSION = tuple(int(x) for x in __version__.split('.'))
