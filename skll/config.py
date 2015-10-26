@@ -276,7 +276,7 @@ def _parse_config_file(config_path):
 
     # produce warnings if hasher_features is set but feature_hasher
     # is not set correctly
-    if not feature_hasher and hasher_features > 0:
+    elif hasher_features > 0:
         logger.warning("Ignoring hasher_features since feature_hasher is either"
                        " missing or set to False.")
 
