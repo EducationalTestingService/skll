@@ -1339,7 +1339,7 @@ class Learner(object):
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=3, grid_jobs=None,
                        grid_objective='f1_score_micro', prediction_prefix=None,
-                       param_grid=None, shuffle=False):
+                       param_grid=None, shuffle=False, save_cv_folds=False):
         """
         Cross-validates a given model on the training examples.
 
@@ -1376,11 +1376,15 @@ class Learner(object):
         :type prediction_prefix: str
         :param shuffle: Shuffle examples before splitting into folds for CV.
         :type shuffle: bool
+        :param save_cv_folds: Whether to save the cv fold ids or not
+        :type save_cv_folds: bool
 
         :return: The confusion matrix, overall accuracy, per-label PRFs, and
                  model parameters for each fold in one list, and another list
-                 with the grid search scores for each fold.
-        :rtype: (list of 4-tuples, list of float)
+                 with the grid search scores for each fold. Also return a
+                 dictionary containing the test-fold number for each id
+                 if save_cv_folds is True, otherwise None.
+        :rtype: (list of 4-tuples, list of float, dict)
         """
         # seed the random number generator so that randomized algorithms are
         # replicable
@@ -1430,6 +1434,15 @@ class Learner(object):
             kfold = FilteredLeaveOneLabelOut(fold_labels, cv_folds, examples)
             grid_search_folds = cv_folds
 
+        # Save the cross-validation fold information, if required
+        # The format is that the test-fold that each id appears in is stored
+        skll_fold_ids = None
+        if save_cv_folds:
+            skll_fold_ids = {}
+            for fold_num, (_, test_indices) in enumerate(kfold):
+                for index in test_indices:
+                    skll_fold_ids[examples.ids[index]] = str(fold_num)
+
         # handle each fold separately and accumulate the predictions and the
         # numbers
         results = []
@@ -1470,4 +1483,4 @@ class Learner(object):
             append_predictions = True
 
         # return list of results for all folds
-        return results, grid_search_scores
+        return results, grid_search_scores, skll_fold_ids

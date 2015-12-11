@@ -129,10 +129,10 @@ def check_summary_score(use_feature_hashing=False):
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 28 rows,
+            # the learner results dictionaries should have 29 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 28)
+            eq_(len(row), 29)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
