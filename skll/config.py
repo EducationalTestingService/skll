@@ -28,6 +28,8 @@ from sklearn.metrics import SCORERS
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
+_VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
+                                            'none'])
 
 
 class SKLLConfigParser(configparser.ConfigParser):
@@ -70,6 +72,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'results': '',
                     'sampler': '',
                     'sampler_parameters': '[]',
+                    'save_cv_folds': 'False',
                     'shuffle': 'False',
                     'suffix': '',
                     'test_directory': '',
@@ -105,6 +108,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'results': 'Output',
                                    'sampler': 'Input',
                                    'sampler_parameters': 'Input',
+                                   'save_cv_folds': 'Output',
                                    'shuffle': 'Input',
                                    'suffix': 'Input',
                                    'test_directory': 'Input',
@@ -246,13 +250,13 @@ def _parse_config_file(config_path):
         experiment_name = config.get("General", "experiment_name")
     else:
         raise ValueError("Configuration file does not contain experiment_name "
-                         "in the [Input] section.")
+                         "in the [General] section.")
 
     if config.has_option("General", "task"):
         task = config.get("General", "task")
     else:
         raise ValueError("Configuration file does not contain task in the "
-                         "[Input] section.")
+                         "[General] section.")
     if task not in _VALID_TASKS:
         raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
                          ' {}'.format(task, ', '.join(_VALID_TASKS)))
@@ -260,9 +264,9 @@ def _parse_config_file(config_path):
     # 2. Input
     sampler = config.get("Input", "sampler")
     if sampler not in _VALID_SAMPLERS:
-        raise ValueError('An invalid sample was specified: {}.  Valid samplers'
-                         ' are: {}'.format(sampler,
-                                           ', '.join(_VALID_SAMPLERS)))
+        raise ValueError('An invalid sampler was specified: {}.  Valid '
+                         'samplers are: {}'.format(sampler,
+                                                   ', '.join(_VALID_SAMPLERS)))
 
     # produce warnings if feature_hasher is set but hasher_features
     # is less than or equal to zero.
@@ -336,7 +340,7 @@ def _parse_config_file(config_path):
     # ensure that feature_scaling is specified only as one of the
     # four available choices
     feature_scaling = config.get("Input", "feature_scaling")
-    if feature_scaling not in ['with_std', 'with_mean', 'both', 'none']:
+    if feature_scaling not in _VALID_FEATURE_SCALING_OPTIONS:
         raise ValueError("Invalid value for feature_scaling parameter: {}"
                          .format(feature_scaling))
 
@@ -347,22 +351,17 @@ def _parse_config_file(config_path):
 
     # get the cv folds file and make a dictionary from it, if it exists
     cv_folds_file = config.get("Input", "cv_folds_file")
-    num_cv_folds = config.get("Input", "num_cv_folds")
+    num_cv_folds = config.getint("Input", "num_cv_folds")
     if cv_folds_file:
         cv_folds_file = _locate_file(cv_folds_file, config_path)
         cv_folds = _load_cv_folds(cv_folds_file,
                                   ids_to_floats=ids_to_floats)
     else:
         # set the number of folds for cross-validation
-        if num_cv_folds:
-            try:
-                cv_folds = int(num_cv_folds)
-            except ValueError:
-                raise ValueError("The value for cv_folds should be an integer. "
-                                 "You specified {}".format(num_cv_folds))
-        else:
-            # default number of cross-validation folds
-            cv_folds = 10
+        cv_folds = num_cv_folds if num_cv_folds else 10
+
+    # whether or not to save the cv fold ids
+    save_cv_folds = config.get("Output", "save_cv_folds")
 
     # whether or not to do stratified cross validation
     random_folds = config.getboolean("Input", "random_folds")
@@ -528,10 +527,10 @@ def _parse_config_file(config_path):
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objective, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count,
-            grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
-            fixed_parameter_list, param_grid_list, featureset_names, learners,
-            prediction_dir, log_path, train_path, test_path, ids_to_floats,
-            class_map, custom_learner_path)
+            grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+            do_stratified_folds, fixed_parameter_list, param_grid_list,
+            featureset_names, learners, prediction_dir, log_path, train_path,
+            test_path, ids_to_floats, class_map, custom_learner_path)
 
 
 def _munge_featureset_name(featureset):

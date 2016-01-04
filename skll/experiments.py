@@ -87,6 +87,23 @@ def _get_stat_float(label_result_dict, stat):
     else:
         return float('nan')
 
+def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
+    """
+    Function to take a dictionary of id:test-fold-number and
+    write it to a file
+
+    :param skll_fold_ids: the dictionary of id: test-fold-numbers
+    :param skll_fold_ids_file: the open file handle to write to
+    :return: None
+    """
+
+    f = csv.writer(skll_fold_ids_file)
+    f.writerow(['id', 'cv_test_fold'])
+    for example_id in skll_fold_ids:
+        f.writerow([example_id, skll_fold_ids[example_id]])
+
+    skll_fold_ids_file.flush()
+
 
 def _write_summary_file(result_json_paths, output_file, ablation=0):
     """
@@ -323,6 +340,7 @@ def _classify_featureset(args):
     grid_search_jobs = args.pop("grid_search_jobs")
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
+    save_cv_folds = args.pop("save_cv_folds")
     stratified_folds = args.pop("do_stratified_folds")
     label_col = args.pop("label_col")
     id_col = args.pop("id_col")
@@ -430,6 +448,7 @@ def _classify_featureset(args):
                                     'grid_search_folds': grid_search_folds,
                                     'min_feature_count': min_feature_count,
                                     'cv_folds': cv_folds,
+                                    'save_cv_folds': save_cv_folds,
                                     'stratified_folds': stratified_folds,
                                     'scikit_learn_version': SCIKIT_VERSION}
 
@@ -438,12 +457,12 @@ def _classify_featureset(args):
         task_results = None
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
-            task_results, grid_scores = learner.cross_validate(
+            task_results, grid_scores, skll_fold_ids = learner.cross_validate(
                 train_examples, shuffle=shuffle, stratified=stratified_folds,
                 prediction_prefix=prediction_prefix, grid_search=grid_search,
                 grid_search_folds=grid_search_folds, cv_folds=cv_folds,
                 grid_objective=grid_objective, param_grid=param_grid,
-                grid_jobs=grid_search_jobs)
+                grid_jobs=grid_search_jobs, save_cv_folds=save_cv_folds)
         else:
             # if we have do not have a saved model, we need to train one.
             if not exists(modelfile) or overwrite:
@@ -522,6 +541,14 @@ def _classify_featureset(args):
                 _print_fancy_output(res, output_file)
         else:
             res = [learner_result_dict_base]
+
+        # write out the cv folds if required
+        if task == 'cross_validate' and save_cv_folds:
+            skll_fold_ids_file = experiment_name + '_skll_fold_ids.csv'
+            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+            with open(join(results_path,skll_fold_ids_file),
+                      file_mode) as output_file:
+                _write_skll_folds(skll_fold_ids, output_file)
 
     return res
 
@@ -691,10 +718,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
      featuresets, do_shuffle, model_path, do_grid_search, grid_objective,
      probability, results_path, pos_label_str, feature_scaling,
-     min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats, class_map,
-     custom_learner_path) = _parse_config_file(config_file)
+     min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
+     learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -831,6 +858,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             job_args["grid_search_jobs"] = grid_search_jobs
             job_args["grid_search_folds"] = grid_search_folds
             job_args["cv_folds"] = cv_folds
+            job_args["save_cv_folds"] = save_cv_folds
             job_args["do_stratified_folds"] = do_stratified_folds
             job_args["label_col"] = label_col
             job_args["id_col"] = id_col
