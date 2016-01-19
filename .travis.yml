@@ -13,7 +13,7 @@ before_install:
   - hostname
   - cat /etc/hosts # optionally check the content *before*
   - sudo hostname "$(hostname | cut -c1-63)"
-  - sed -i -r "s/^(127.0.0.1.*)/\1 $(hostname | cut -c1-63)/" /etc/hosts
+  - sudo sed -i -r "s/^(127.0.0.1.*)/\1 $(hostname | cut -c1-63)/" /etc/hosts
   - hostname
   - cat /etc/hosts # optionally check the content *after*
   - if [ $GRIDMAP == "true" ]; then travis/install_sge.sh; fi
