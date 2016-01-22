@@ -5,6 +5,7 @@
 # Written by Dan Blanchard (dblanchard@ets.org), September 2013
 
 cd travis
+sudo sed -i -r "s/^(127.0.0.1\s+)(.*\s+)(.*)$/127.0.0.1 \3 \2 /"
 sudo apt-get update -qq
 echo "gridengine-master shared/gridenginemaster string localhost" | sudo debconf-set-selections
 echo "gridengine-master shared/gridenginecell string default" | sudo debconf-set-selections
