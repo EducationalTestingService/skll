@@ -5,8 +5,7 @@
 # Written by Dan Blanchard (dblanchard@ets.org), September 2013
 
 cd travis
-sudo sed -i -r "s/^(127.0.0.1\s+)(.*\s+)(.*)$/127.0.0.1 \3 \2 /" /etc/hosts
-cat /etc/hosts
+sudo sed -i -r "s/^(127.0.0.1\s)(localhost\.localdomain\slocalhost)/\1localhost localhost.localdomain $(hostname) /" /etc/hosts
 sudo apt-get update -qq
 echo "gridengine-master shared/gridenginemaster string localhost" | sudo debconf-set-selections
 echo "gridengine-master shared/gridenginecell string default" | sudo debconf-set-selections
@@ -18,15 +17,10 @@ export CORES=$(grep -c '^processor' /proc/cpuinfo)
 sed -i -r "s/template/$USER/" user_template
 sudo qconf -Auser user_template
 sudo qconf -au $USER arusers
-export HOSTNAME=`hostname`
-sudo qconf -as $HOSTNAME
-sed -i -r "s/template/$HOSTNAME/" host_template
+sudo qconf -as localhost
 export LOCALHOST_IN_SEL=$(qconf -sel | grep -c 'localhost')
 if [ $LOCALHOST_IN_SEL != "1" ]; then sudo qconf -Ae host_template; else sudo qconf -Me host_template; fi
-sed -i -r "s/template/$HOSTNAME/" queue_template
 sed -i -r "s/UNDEFINED/$CORES/" queue_template
-cat user_template
-cat queue_template
 sudo qconf -Ap smp_template
 sudo qconf -Aq queue_template
 echo "Printing queue info to verify that things are working correctly."
