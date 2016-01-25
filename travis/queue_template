@@ -1,5 +1,5 @@
 qname	all.q
-hostlist	localhost
+hostlist	template
 seq_no	0
 load_thresholds	np_load_avg=1.75
 suspend_thresholds	NONE
