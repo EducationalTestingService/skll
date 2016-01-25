@@ -41,7 +41,7 @@ install:
 
 # Run test
 script:
-  - nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG
+  - nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG tests/test_classification.py:test_train_file_test_file
 
 # Calculate coverage
 after_success:
