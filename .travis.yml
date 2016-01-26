@@ -6,6 +6,7 @@ env:
   - GRIDMAP=false
 notifications:
   email: false
+  slack: etsnlp:enaaoJ5hIyU9Zs7kRGT0ZSti
 
 # Install stuff
 before_install:
