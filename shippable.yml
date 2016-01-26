@@ -24,8 +24,8 @@ before_install:
   - conda config --add channels https://conda.binstar.org/dan_blanchard
   - conda update --yes conda
 install:
-  - conda install --yes pip python=$SHIPPABLE_PYTHON numpy scipy beautiful-soup six scikit-learn==0.16.1 joblib prettytable python-coveralls pyyaml
-  - if [ ${SHIPPABLE_PYTHON:0:1} == "2" ]; then conda install --yes configparser logutils mock; fi
+  - conda install --yes pip python=$SHIPPABLE_PYTHON_VERSION numpy scipy beautiful-soup six scikit-learn==0.16.1 joblib prettytable python-coveralls pyyaml
+  - if [ ${SHIPPABLE_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser logutils mock; fi
   - if [ $GRIDMAP == "true" ]; then conda install --yes drmaa gridmap; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
