@@ -3,7 +3,6 @@ python:
   - 2.7
   - 3.4
 env:
-  - GRIDMAP=true
   - GRIDMAP=false
 notifications:
   email: false
