@@ -10,7 +10,7 @@ notifications:
 
 # Install stuff
 before_install:
-  - if [ $GRIDMAP == "true" ]; then travis/install_sge.sh; fi
+  - if [ $GRIDMAP == "true" ]; then shippable/install_sge.sh; fi
   - export SGE_ROOT=/var/lib/gridengine
   - export SGE_CELL=default
   - export DRMAA_LIBRARY_PATH=/usr/lib/libdrmaa.so.1.0
@@ -20,12 +20,12 @@ before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda2/bin:$PATH
+  - export PATH=/home/shippable/miniconda2/bin:$PATH
   - conda config --add channels https://conda.binstar.org/dan_blanchard
   - conda update --yes conda
 install:
-  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION numpy scipy beautiful-soup six scikit-learn==0.16.1 joblib prettytable python-coveralls pyyaml
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser logutils mock; fi
+  - conda install --yes pip python=$SHIPPABLE_PYTHON numpy scipy beautiful-soup six scikit-learn==0.16.1 joblib prettytable python-coveralls pyyaml
+  - if [ ${SHIPPABLE_PYTHON:0:1} == "2" ]; then conda install --yes configparser logutils mock; fi
   - if [ $GRIDMAP == "true" ]; then conda install --yes drmaa gridmap; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
@@ -40,10 +40,10 @@ script:
 # Calculate coverage
 after_success:
   - coveralls --config_file .coveragerc
-  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.e*
-  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.o*
+  - tail -n 1000 /home/shippable/build/EducationalTestingService/skll/tests/output/*.e*
+  - tail -n 1000 /home/shippable/build/EducationalTestingService/skll/tests/output/*.o*
 
 # Print out scratch job info if failed
 after_failure:
-  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.e*
-  - tail -n 1000 /home/travis/build/EducationalTestingService/skll/tests/output/*.o*
+  - tail -n 1000 /home/shippable/build/EducationalTestingService/skll/tests/output/*.e*
+  - tail -n 1000 /home/shippable/build/EducationalTestingService/skll/tests/output/*.o*

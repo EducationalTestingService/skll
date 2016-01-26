@@ -1,10 +1,11 @@
 #!/bin/bash
 # This script installs and configures a Sun Grid Engine installation for use
-# on a Travis instance.
+# on a Shippable instance.
 #
 # Written by Dan Blanchard (dblanchard@ets.org), September 2013
+# Modified by Nitin Madnani (nmadnani@ets.org), January 2016
 
-cd travis
+cd shippable
 sudo sed -i -r "s/^(127.0.0.1\s)(localhost\.localdomain\slocalhost)/\1localhost localhost.localdomain $(hostname) /" /etc/hosts
 sudo apt-get update -qq
 echo "gridengine-master shared/gridenginemaster string localhost" | sudo debconf-set-selections
