@@ -1,9 +1,0 @@
-hostname	localhost
-load_scaling	NONE
-complex_values	NONE
-user_lists	arusers
-xuser_lists	NONE
-projects	NONE
-xprojects	NONE
-usage_scaling	NONE
-report_variables	NONE
