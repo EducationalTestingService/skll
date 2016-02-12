@@ -138,7 +138,8 @@ def test_invalid_grid_obj_func():
                   'ElasticNet', 'GradientBoostingRegressor',
                   'KNeighborsRegressor', 'Lasso',
                   'LinearRegression', 'RandomForestRegressor',
-                  'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor']:
+                  'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
+                  'RidgeCV']:
         for metric in ['accuracy',
                        'precision',
                        'recall',
