@@ -9,6 +9,7 @@ Classes related to storing/merging feature sets.
 from __future__ import absolute_import, print_function, unicode_literals
 
 from copy import deepcopy
+import logging
 
 import numpy as np
 import scipy.sparse as sp
@@ -18,6 +19,14 @@ from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
 
+try:
+    import pandas
+except ImportError:
+    _HAVE_PANDAS = False
+else:
+    _HAVE_PANDAS = True
+
+logger = logging.getLogger(__name__)
 
 class FeatureSet(object):
 
@@ -359,3 +368,36 @@ class FeatureSet(object):
             features = (self.vectorizer.inverse_transform(feats)[0] if
                         self.features is not None else {})
             return self.ids[value], label, features
+
+    @staticmethod
+    def from_data_frame(df, name, labels_column=None, vectorizer=None):
+        '''
+        Helper function to create a FeatureSet object from a `pandas.DataFrame`.
+        Will raise an Exception if pandas is not installed in your environment.
+        `FeatureSet` `ids` will be the index on `df`.
+
+        :param df: The pandas.DataFrame object you'd like to use as a feature set.
+        :type df: pandas.DataFrame
+        :param name: The name of this feature set.
+        :type name: str
+        :param labels_column: The name of the column containing the labels (data to predict).
+        :type labels_column: str or None
+        :param vectorizer: Vectorizer that created feature matrix.
+        :type vectorizer: DictVectorizer or FeatureHasher
+        '''
+
+        if not _HAVE_PANDAS:
+            logger.warning(('pandas not installed.  Please install pandas or '
+                            + 'create a FeatureSet object using some other means.'))
+            return None
+
+        if labels_column:
+            labels = list(df[labels_column])
+            features = [{col : row[col] for col in row.keys() if col != labels_column}
+                        for (i, row) in df.iterrows()]
+        else:
+            labels = None
+            features = [dict(row) for (i, row) in df.iterrows()]
+
+        return FeatureSet(name, list(df.index), labels=labels,
+                          features=features, vectorizer=vectorizer)
