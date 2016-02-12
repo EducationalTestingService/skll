@@ -870,13 +870,6 @@ def test_config_parsing_relative_input_paths():
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)
 
-    #for _path, _name in [(train_file, train_path),
-    #                     (test_file, test_path),
-    #                     (output_dir, 'output'),
-    #                     (custom_learner_path_input, 'other'),
-    #                     ()]:
-    #    eq_(normpath(_path), (join(_my_dir, _name)))
-
 def test_default_number_of_cv_folds():
 
     train_dir = join(_my_dir, 'train')
