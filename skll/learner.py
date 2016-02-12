@@ -42,7 +42,7 @@ from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
-                                  SGDRegressor)
+                                  SGDRegressor, RidgeCV)
 from sklearn.linear_model.base import LinearModel
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support, SCORERS)
@@ -107,7 +107,9 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
+                          'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        RidgeCV:
+                        [{'alphas': [(0.01, 0.1, 1.0, 10.0, 100.0)]}]}
 
 
 # list of valid grid objective functions for regression and classification
@@ -459,6 +461,11 @@ class RescaledLinearSVR(LinearSVR):
 
 @rescaled
 class RescaledSGDRegressor(SGDRegressor):
+    pass
+
+
+@rescaled
+class RescaledRidgeCV(RidgeCV):
     pass
 
 
