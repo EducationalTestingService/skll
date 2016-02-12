@@ -874,7 +874,7 @@ def test_default_number_of_cv_folds():
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
-    cv_folds_file = join(_my_dir)
+    
     # make a simple config file that does not set cv_folds
 
     values_to_fill_dict = {'experiment_name': 'config_parsing',
