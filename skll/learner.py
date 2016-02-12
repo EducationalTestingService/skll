@@ -576,7 +576,7 @@ class Learner(object):
                        GradientBoostingRegressor, DecisionTreeRegressor,
                        RandomForestRegressor, SGDClassifier, SGDRegressor,
                        AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
-                       Lasso, ElasticNet, SVC)):
+                       Lasso, Ridge, ElasticNet, SVC)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
