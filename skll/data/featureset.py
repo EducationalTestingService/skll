@@ -19,13 +19,6 @@ from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
 
-try:
-    import pandas
-except ImportError:
-    _HAVE_PANDAS = False
-else:
-    _HAVE_PANDAS = True
-
 logger = logging.getLogger(__name__)
 
 class FeatureSet(object):
@@ -385,11 +378,6 @@ class FeatureSet(object):
         :param vectorizer: Vectorizer that created feature matrix.
         :type vectorizer: DictVectorizer or FeatureHasher
         '''
-
-        if not _HAVE_PANDAS:
-            logger.warning(('pandas not installed.  Please install pandas or '
-                            + 'create a FeatureSet object using some other means.'))
-            return None
 
         if labels_column:
             labels = list(df[labels_column])

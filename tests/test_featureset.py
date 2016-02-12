@@ -20,6 +20,7 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import eq_, raises, assert_not_equal
+from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.datasets.samples_generator import make_classification
@@ -852,10 +853,7 @@ def featureset_creation_from_dataframe_helper(with_labels):
     Helper function for the two unit tests for FeatureSet.from_data_frame().
     Since labels are optional, run two tests, one with, one without.
     """
-    try:
-        import pandas
-    except ImportError:
-        assert True, "pandas not installed, skipping test..."
+    import pandas
 
     # First, setup the test data.
     # get a 100 instances with 4 features each
@@ -892,11 +890,13 @@ def featureset_creation_from_dataframe_helper(with_labels):
     return (expected, current)
 
 
+@attr('have_pandas')
 def test_featureset_creation_from_dataframe_with_labels():
     (expected, current) = featureset_creation_from_dataframe_helper(True)
     assert expected == current
 
 
+@attr('have_pandas')
 def test_featureset_creation_from_dataframe_without_labels():
     (expected, current) = featureset_creation_from_dataframe_helper(False)
     # Directly comparing FeatureSet objects fails here because both sets
