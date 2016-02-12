@@ -12,6 +12,7 @@ Provides easy-to-use wrapper around scikit-learn.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+import copy
 import inspect
 import logging
 import os
@@ -625,6 +626,18 @@ class Learner(object):
         elif skll_version >= (0, 9, 17):
             if not hasattr(learner, 'sampler'):
                 learner.sampler = None
+            # From v0.17.0 onwards, scikit-learn requires all scalers to have
+            # the `scale_` instead of the `std_` parameter. So, we need to
+            # make all old models adapt to this.
+            if hasattr(learner, 'scaler'):
+                new_scaler = copy.copy(learner.scaler)
+                # We need to use `__dict__` because the `std_` has been
+                # overridden to  just return the `scale_` value, and we
+                # need the original value of `std_`.
+                if (not hasattr(new_scaler, 'scale_') and
+                        'std_' in new_scaler.__dict__):
+                    new_scaler.scale_ =  new_scaler.__dict__['std_']
+                    learner.scaler = new_scaler
             return learner
         else:
             raise ValueError(("{} stored in pickle file {} was " +
