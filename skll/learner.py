@@ -785,7 +785,7 @@ class Learner(object):
         check that the examples are properly formatted.
         """
         # Make sure the labels for a regression task are not strings.
-        if self.model._estimator_type == 'regressor':
+        if self.model_type._estimator_type == 'regressor':
             for label in examples.labels:
                 if isinstance(label, string_types):
                     raise TypeError("You are doing regression with string "
@@ -819,7 +819,7 @@ class Learner(object):
         :type examples: FeatureSet
         """
         # We don't need to do this for regression models, so return.
-        if self.model._estimator_type == 'regressor':
+        if self.model_type._estimator_type == 'regressor':
             return
 
         # extract list of unique labels if we are doing classification
@@ -917,7 +917,7 @@ class Learner(object):
         # if we are asked to do grid search, check that the grid objective
         # function is valid for the selected learner
         if grid_search:
-            if self.model._estimator_type == 'regressor':
+            if self.model_type._estimator_type == 'regressor':
                 # types 2-4 are valid for all regression models
                 if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
                     raise ValueError("{} is not a valid grid objective "
@@ -1028,7 +1028,7 @@ class Learner(object):
 
         # use label dict transformed version of examples.labels if doing
         # classification
-        if self.model._estimator_type == 'classifier':
+        if self.model_type._estimator_type == 'classifier':
             labels = np.array([self.label_dict[label] for label in
                                examples.labels])
         else:
@@ -1069,7 +1069,7 @@ class Learner(object):
             # If we're using a correlation metric for doing binary
             # classification, override the estimator's predict function
             if (grid_objective in _CORRELATION_METRICS and
-                    self.model._estimator_type == 'classifier'):
+                    self.model_type._estimator_type == 'classifier'):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
 
@@ -1124,7 +1124,7 @@ class Learner(object):
                             append=append)
 
         # extract actual labels (transformed for classification tasks)
-        if self.model._estimator_type == 'classifier':
+        if self.model_type._estimator_type == 'classifier':
             ytest = np.array([self.label_dict[label] for label in
                               examples.labels])
         else:
@@ -1152,7 +1152,7 @@ class Learner(object):
             except ValueError:
                 grid_score = float('NaN')
 
-        if self.model._estimator_type == 'regressor':
+        if self.model_type._estimator_type == 'regressor':
             result_dict = {'descriptive': defaultdict(dict)}
             for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
                 result_dict['descriptive'][table_label]['min'] = min(y)
@@ -1309,7 +1309,7 @@ class Learner(object):
                                         [str(x) for x in class_probs]),
                               file=predictionfh)
                 else:
-                    if self.model._estimator_type == 'regressor':
+                    if self.model_type._estimator_type == 'regressor':
                         for example_id, pred in zip(example_ids, yhat):
                             print('{0}\t{1}'.format(example_id, pred),
                                   file=predictionfh)
@@ -1320,7 +1320,7 @@ class Learner(object):
                                   file=predictionfh)
 
         if (class_labels and
-                self.model._estimator_type == 'classifier'):
+                self.model_type._estimator_type == 'classifier'):
             yhat = np.array([self.label_list[int(pred)] for pred in yhat])
 
         return yhat
@@ -1333,7 +1333,7 @@ class Learner(object):
         assert isinstance(cv_folds, int)
 
         # For regression models, we can just return the current cv_folds
-        if self.model._estimator_type == 'regressor':
+        if self.model_type._estimator_type == 'regressor':
             return cv_folds
 
         min_examples_per_label = min(Counter(labels).values())
@@ -1428,7 +1428,7 @@ class Learner(object):
                 cv_folds, examples.labels)
 
             stratified = (stratified and
-                          self.model._estimator_type == 'classifier')
+                          self.model_type._estimator_type == 'classifier')
             kfold = (StratifiedKFold(examples.labels, n_folds=cv_folds) if
                      stratified else KFold(len(examples.labels),
                                            n_folds=cv_folds))
