@@ -168,7 +168,7 @@ def test_class_map():
     run_configuration(config_path, quiet=True)
 
     with open(join(_my_dir, 'output', ('test_class_map_test_class_map_Logistic'
-                                       'Regression.results.json'))) as f:
+                                       'Regression_accuracy.results.json'))) as f:
         outd = json.loads(f.read())
         # outstr = f.read()
         # logistic_result_score = float(
@@ -192,7 +192,7 @@ def test_class_map_feature_hasher():
     run_configuration(config_path, quiet=True)
 
     with open(join(_my_dir, 'output', ('test_class_map_test_class_map_'
-                                       'LogisticRegression.results.'
+                                       'LogisticRegression_accuracy.results.'
                                        'json'))) as f:
         # outstr = f.read()
         outd = json.loads(f.read())
