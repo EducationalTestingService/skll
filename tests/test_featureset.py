@@ -845,3 +845,69 @@ def test_convert_featureset():
                                                           '.csv', '.arff',
                                                           '.libsvm'], 2):
         yield check_convert_featureset, from_suffix, to_suffix
+
+
+def featureset_creation_from_dataframe_helper(with_labels):
+    """
+    Helper function for the two unit tests for FeatureSet.from_data_frame().
+    Since labels are optional, run two tests, one with, one without.
+    """
+    try:
+        import pandas
+    except ImportError:
+        assert True, "pandas not installed, skipping test..."
+
+    # First, setup the test data.
+    # get a 100 instances with 4 features each
+    X, y = make_classification(n_samples=100, n_features=4,
+                               n_informative=4, n_redundant=0,
+                               n_classes=3, random_state=1234567890)
+
+    # Not using 0 - 100 here because that would be pandas' default index names anyway.
+    # So let's make sure pandas is using the ids we supply.
+    ids = list(range(100, 200))
+
+    featureset_name = 'test'
+    
+    # convert the features into a list of dictionaries
+    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    # Now, create a FeatureSet object.
+    if with_labels:
+        expected = FeatureSet(featureset_name, ids, features=features, labels=y)
+    else:
+        expected = FeatureSet(featureset_name, ids, features=features)
+
+    # Also create a DataFrame and then create a FeatureSet from it.
+    df = pandas.DataFrame(features, index=ids)
+    if with_labels:
+        df['y'] = y
+        current = FeatureSet.from_data_frame(df, featureset_name, labels_column='y')
+    else:
+        current = FeatureSet.from_data_frame(df, featureset_name)
+
+    return (expected, current)
+
+
+def test_featureset_creation_from_dataframe_with_labels():
+    (expected, current) = featureset_creation_from_dataframe_helper(True)
+    assert expected == current
+
+
+def test_featureset_creation_from_dataframe_without_labels():
+    (expected, current) = featureset_creation_from_dataframe_helper(False)
+    # Directly comparing FeatureSet objects fails here because both sets
+    # of labels are all nan when labels isn't specified, and arrays of
+    # all nan are not equal to each other.
+    # Based off of FeatureSet.__eq__()
+    assert (expected.name == current.name and
+            (expected.ids == current.ids).all() and
+            expected.vectorizer == current.vectorizer and
+            np.allclose(expected.features.data,
+                        current.features.data,
+                        rtol=1e-6) and
+            np.all(np.isnan(expected.labels)) and
+            np.all(np.isnan(current.labels)))
