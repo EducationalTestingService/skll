@@ -477,15 +477,20 @@ def _parse_config_file(config_path):
     # Check `fixed_parameter_list`/`param_grid_list` if `do_grid_search`
     # is True
     if do_grid_search:
-        overlap_params = set(fixed_parameter_list).intersection(set(param_grid_list))
-        if overlap_params:
-            logger.warning('Both "fixed_parameters" and "param_grids" were '
-                           'specified or the default values were used, which '
-                           'resulted in the following overlapping '
-                           'parameter(s): {}. Values passed in via '
-                           '"param_grids" will take precedence in these cases.'
-                           .format(', '.join(overlap_params)))
-        if parameter_grid_list:
+        for learner, fixed_params, params in zip(fixed_parameter_list,
+                                                 param_grid_list,
+                                                 learners):
+            overlap_params = set(fixed_params).intersection(set(params))
+            if overlap_params:
+                logger.warning('Both "fixed_parameters" and "param_grids" were'
+                               'specified or the default values were used for '
+                               '{}, which resulted in conflicts between '
+                               'certain parameter(s): {}. Values passed in via'
+                               '"param_grids" will take precedence in these '
+                               'cases.'.format(learner,
+                                               ', '.join(overlap_params)))
+    else:
+        if param_grid_list or fixed_parameter_list:
             logger.warning('"param_grids" was specified despite the fact that '
                            '"grid_search" was specified as False.')
 
