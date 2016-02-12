@@ -1423,7 +1423,7 @@ class Learner(object):
             kfold = (StratifiedKFold(examples.labels, n_folds=cv_folds) if
                      stratified else KFold(len(examples.labels),
                                            n_folds=cv_folds,
-                                           random_state))
+                                           random_state=random_state))
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
