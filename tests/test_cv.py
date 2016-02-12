@@ -218,8 +218,8 @@ def test_retrieve_cv_folds():
 
     learner = Learner('LogisticRegression')
     num_folds = 5
-    cv_fs, custom_cv_folds = make_cv_folds_data(
-        num_examples_per_fold=2, num_folds=num_folds)
+    cv_fs, custom_cv_folds = make_cv_folds_data(num_examples_per_fold=2, 
+        num_folds=num_folds)
 
     # First test where learner.cross_validate makes the folds itself
     expected_fold_ids = {'EXAMPLE_0': '0', 'EXAMPLE_1': '4',

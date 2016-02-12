@@ -489,7 +489,6 @@ def _parse_config_file(config_path):
     grid_objectives_string = config.get("Tuning", "objectives")
     grid_objectives = yaml.load(_fix_json(grid_objectives_string))
     if not isinstance(grid_objectives, list):
-        print(grid_objectives)
         raise ValueError("grid_objectives should be the "
                          "list of objectives")
 
