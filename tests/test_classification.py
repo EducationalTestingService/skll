@@ -323,3 +323,72 @@ def test_adaboost_predict():
                                                                'SAMME', 'SAMME'],
                                                               [0.45, 0.5, 0.45, 0.43]):
         yield check_adaboost_predict, base_estimator_name, algorithm, expected_score
+
+
+def check_results_with_unseen_labels(res, n_labels, new_label_list):
+    (confusion_matrix,
+     score,
+     result_dict,
+     model_params,
+     grid_score) = res
+
+    # check that the new metric is included into the results
+    for output in [confusion_matrix, result_dict]:
+        eq_(len(output), n_labels)
+
+    # check that all metrics for new label are 0
+    for label in new_label_list:
+        for metric in ['Precision', 'Recall', 'F-measure']:
+            eq_(result_dict[label][metric], 0)
+
+
+def test_new_labels_in_test_set():
+    """
+    Test classification experiment with an unseen label in the test set.
+    """
+    train_fs, test_fs = make_classification_data(num_labels=3,
+                                                 train_test_ratio=0.8)
+    # add new labels to the test set
+    test_fs.labels[-3:] = 3
+    print(test_fs)
+
+    learner = Learner('SVC')
+    learner.train(train_fs, grid_search=False)
+    res = learner.evaluate(test_fs)
+    yield check_results_with_unseen_labels, res, 4, [3]
+    yield assert_almost_equal, res[1], 0.3
+
+
+def test_new_labels_in_test_set_change_order():
+    """
+    Test classification with an unseen label in the test set when the new label falls between the existing labels
+    """
+    train_fs, test_fs = make_classification_data(num_labels=3,
+                                                 train_test_ratio=0.8)
+    # change train labels to create a gap
+    train_fs.labels = train_fs.labels*10
+    # add new test labels
+    test_fs.labels = test_fs.labels*10
+    test_fs.labels[-3:] = 15
+
+    learner = Learner('SVC')
+    learner.train(train_fs, grid_search=False)
+    res = learner.evaluate(test_fs)
+    yield check_results_with_unseen_labels, res, 4, [15]
+    yield assert_almost_equal, res[1], 0.3
+
+
+def test_all_new_labels_in_test():
+    """
+    Test classification with all labes in test set unseen
+    """
+    train_fs, test_fs = make_classification_data(num_labels=3,
+                                                 train_test_ratio=0.8)
+    # change all test labels
+    test_fs.labels = test_fs.labels+3
+
+    learner = Learner('SVC')
+    learner.train(train_fs, grid_search=False)
+    res = learner.evaluate(test_fs)
+    yield check_results_with_unseen_labels, res, 6, [3, 4, 5]
+    yield assert_almost_equal, res[1], 0
