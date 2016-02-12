@@ -131,7 +131,8 @@ def check_rescaling(name):
 
 def test_rescaling():
     for regressor_name in ['ElasticNet', 'Lasso', 'LinearRegression', 'Ridge',
-                           'LinearSVR', 'SVR', 'SGDRegressor', 'RidgeCV']:
+                           'LinearSVR', 'SVR', 'SGDRegressor', 'RidgeCV',
+                           'BayesianRidge']:
         yield check_rescaling, regressor_name
 
 
@@ -183,6 +184,8 @@ def check_linear_models(name,
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
     cor, _ = pearsonr(predictions, test_fs.labels)
+    #print('correlation: ' + str(cor))
+    print ('ssss')
     expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
     assert_greater(cor, expected_cor_range[0])
     assert_less(cor, expected_cor_range[1])
@@ -195,9 +198,10 @@ def test_linear_models():
          use_feature_hashing,
          use_rescaling) in product(['ElasticNet', 'Lasso', 'LinearRegression',
                                     'Ridge', 'LinearSVR', 'SGDRegressor',
-                                    'RidgeCV'],
+                                    'RidgeCV', 'BayesianRidge'],
                                    [False, True],
                                    [False, True]):
+
 
         yield (check_linear_models, regressor_name, use_feature_hashing,
                use_rescaling)

@@ -40,9 +40,9 @@ from sklearn.grid_search import GridSearchCV
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
-from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
+from sklearn.linear_model import (ElasticNet, Lasso, Lars, LarsCV, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
-                                  SGDRegressor, RidgeCV)
+                                  SGDRegressor, BayesianRidge, RidgeCV)
 from sklearn.linear_model.base import LinearModel
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support, SCORERS)
@@ -81,6 +81,11 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                           'weights': ['uniform', 'distance']}],
                         Lasso:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        Lars:
+                        [{'n_nonzero_coefs': [5, 50, 500, 5000, 50000]}],  
+                        LarsCV:
+                        [{'max_iter': [5, 50, 500, 5000, 50000],
+                            'max_n_alphas': [10, 100, 1000, 10000, 100000]}],
                         LinearRegression:
                         [{}],
                         LinearSVC:
@@ -109,8 +114,12 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
                           'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         RidgeCV:
-                        [{'alphas': [(0.01, 0.1, 1.0, 10.0, 100.0)]}]}
-
+                        [{'alphas': [(0.01, 0.1, 1.0, 10.0, 100.0)]}],
+                        BayesianRidge:
+                        [{'alpha_1': [1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8],
+                          'alpha_2': [1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8],
+                          'lambda_1': [1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8],
+                          'lambda_2': [1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8]}]}
 
 # list of valid grid objective functions for regression and classification
 # models depending on type of labels
@@ -146,7 +155,10 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'lwk_off_by_one',
                                   'qwk_off_by_one'])
 
-_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor)
+
+_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor,
+                   BayesianRidge, Lars, LarsCV)
+
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
@@ -435,6 +447,16 @@ class RescaledLasso(Lasso):
 
 
 @rescaled
+class RescaledLars(Lars):
+    pass
+
+
+@rescaled
+class RescaledLarsCV(LarsCV):
+    pass
+
+
+@rescaled
 class RescaledLinearRegression(LinearRegression):
     pass
 
@@ -461,6 +483,10 @@ class RescaledLinearSVR(LinearSVR):
 
 @rescaled
 class RescaledSGDRegressor(SGDRegressor):
+    pass
+
+@rescaled
+class RescaledBayesianRidge(BayesianRidge):
     pass
 
 
