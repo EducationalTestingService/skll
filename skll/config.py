@@ -474,6 +474,21 @@ def _parse_config_file(config_path):
     # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
+    # Check `fixed_parameter_list`/`param_grid_list` if `do_grid_search`
+    # is True
+    if do_grid_search:
+        overlap_params = set(fixed_parameter_list).intersection(set(param_grid_list))
+        if overlap_params:
+            logger.warning('Both "fixed_parameters" and "param_grids" were '
+                           'specified or the default values were used, which '
+                           'resulted in the following overlapping '
+                           'parameter(s): {}. Values passed in via '
+                           '"param_grids" will take precedence in these cases.'
+                           .format(', '.join(overlap_params)))
+        if parameter_grid_list:
+            logger.warning('"param_grids" was specified despite the fact that '
+                           '"grid_search" was specified as False.')
+
     # minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")
 
