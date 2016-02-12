@@ -558,7 +558,7 @@ SVR
 
     .. code-block:: python
 
-       {'class_weight': 'auto'}
+       {'class_weight': 'balanced'}
 
     The second option allows you to assign an specific weight per each
     class. The default weight per class is 1. For example:
