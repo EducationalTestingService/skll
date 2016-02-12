@@ -42,7 +42,7 @@ from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
-                                  SGDRegressor)
+                                  SGDRegressor, BayesianRidge)
 from sklearn.linear_model.base import LinearModel
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support, SCORERS)
@@ -107,7 +107,12 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
+                          'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        BayesianRidge:
+                        [{'alpha_1': [1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8],
+                          'alpha_2': [1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8],
+                          'lambda_1': [1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8],
+                          'lambda_2': [1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8]}]}
 
 
 # list of valid grid objective functions for regression and classification
@@ -144,7 +149,8 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'lwk_off_by_one',
                                   'qwk_off_by_one'])
 
-_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor)
+_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor,
+                   BayesianRidge)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
@@ -459,6 +465,10 @@ class RescaledLinearSVR(LinearSVR):
 
 @rescaled
 class RescaledSGDRegressor(SGDRegressor):
+    pass
+
+@rescaled
+class RescaledBayesianRidge(BayesianRidge):
     pass
 
 
