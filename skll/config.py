@@ -63,7 +63,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'min_feature_count': '1',
                     'models': '',
                     'num_cv_folds': '10',
-                    'objective': 'f1_score_micro',
+                    'objectives': "['f1_score_micro']",
                     'param_grids': '[]',
                     'pos_label_str': '',
                     'predictions': '',
@@ -99,7 +99,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'min_feature_count': 'Tuning',
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
-                                   'objective': 'Tuning',
+                                   'objectives': 'Tuning',
                                    'param_grids': 'Tuning',
                                    'pos_label_str': 'Tuning',
                                    'predictions': 'Output',
@@ -485,11 +485,17 @@ def _parse_config_file(config_path):
     # how many folds should we run in parallel for grid search
     grid_search_folds = config.getint("Tuning", "grid_search_folds")
 
-    # what is the objective function for the grid search?
-    grid_objective = config.get("Tuning", "objective")
-    if grid_objective not in SCORERS:
-        raise ValueError('Invalid grid objective function: {}'
-                         .format(grid_objective))
+    # what are the objective functions for the grid search?
+    grid_objectives_string = config.get("Tuning", "objectives")
+    grid_objectives = yaml.load(_fix_json(grid_objectives_string))
+    if not isinstance(grid_objectives, list):
+        print(grid_objectives)
+        raise ValueError("grid_objectives should be the "
+                         "list of objectives")
+
+    if not set(grid_objectives).issubset(set(SCORERS.keys())):
+        raise ValueError('Invalid grid objective function/s: {}'
+                         .format(list(grid_objectives)))
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
@@ -525,7 +531,7 @@ def _parse_config_file(config_path):
     return (experiment_name, task, sampler, fixed_sampler_parameters,
             feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
-            do_grid_search, grid_objective, probability, results_path,
+            do_grid_search, grid_objectives, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             do_stratified_folds, fixed_parameter_list, param_grid_list,

@@ -112,12 +112,14 @@ def test_one_file_load_featureset():
     single_fs = _load_featureset(dirpath, featureset, suffix, quiet=True)
     eq_(single_file_fs, single_fs)
 
+
 @raises(ValueError)
 def check_config_parsing_value_error(config_path):
     """
     Assert that calling `_parse_config_file` on `config_path` raises ValueError
     """
     _parse_config_file(config_path)
+
 
 @raises(KeyError)
 def check_config_parsing_key_error(config_path):
@@ -126,12 +128,14 @@ def check_config_parsing_key_error(config_path):
     """
     _parse_config_file(config_path)
 
+
 @raises(IOError)
 def check_config_parsing_file_not_found_error(config_path):
     """
     Assert that calling `_parse_config_file` on `config_path` raises FileNotFoundError
     """
     _parse_config_file(config_path)
+
 
 def test_config_parsing_no_name():
     """
@@ -510,7 +514,7 @@ def test_config_parsing_bad_objective():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objective': 'foobar'}
+                           'objectives': "['foobar']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -749,8 +753,8 @@ def test_config_parsing_mislocated_input_path():
                                 'test_config_parsing.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'mislocated_input_file')
+                                         values_to_fill_dict,
+                                         'mislocated_input_file')
 
     yield check_config_parsing_file_not_found_error, config_path
 
@@ -774,20 +778,22 @@ def test_config_parsing_relative_input_path():
                                 'test_config_parsing.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'mislocated_input_file')
+                                         values_to_fill_dict,
+                                         'mislocated_input_file')
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     do_stratified_folds, fixed_parameter_list, param_grid_list,
+     featureset_names, learners, prediction_dir, log_path,
+     train_path, test_path, ids_to_floats, class_map,
+     custom_learner_path) = _parse_config_file(config_path)
 
     eq_(normpath(train_path), (join(_my_dir, 'train')))
+
 
 def test_default_number_of_cv_folds():
 
@@ -815,10 +821,11 @@ def test_default_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     do_stratified_folds, fixed_parameter_list, param_grid_list,
+     featureset_names, learners, prediction_dir, log_path, train_path,
+     test_path, ids_to_floats, class_map,
+     custom_learner_path) = _parse_config_file(config_path)
 
     eq_(cv_folds, 10)
 
@@ -850,9 +857,10 @@ def test_setting_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     do_stratified_folds, fixed_parameter_list, param_grid_list,
+     featureset_names, learners, prediction_dir, log_path,
+     train_path, test_path, ids_to_floats, class_map,
+     custom_learner_path) = _parse_config_file(config_path)
 
     eq_(cv_folds, 5)

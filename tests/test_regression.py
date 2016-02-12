@@ -209,13 +209,15 @@ def check_non_linear_models(name,
 
     # create a FeatureSet object with the data we want to use
     if use_feature_hashing:
-        train_fs, test_fs, weightdict = make_regression_data(num_examples=5000,
-                                                             num_features=10,
-                                                             use_feature_hashing=True,
-                                                             feature_bins=5)
+        (train_fs, test_fs,
+         weightdict) = make_regression_data(num_examples=5000,
+                                            num_features=10,
+                                            use_feature_hashing=True,
+                                            feature_bins=5)
     else:
-        train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
-                                                             num_features=3)
+        (train_fs, test_fs,
+            weightdict) = make_regression_data(num_examples=2000,
+                                               num_features=3)
 
     # create the learner
     if use_rescaling:
@@ -475,7 +477,7 @@ def test_fancy_output():
     pred_stats_from_file = {}
     with open(join(output_dir, ('regression_fancy_output_train_fancy_train.'
                                 'jsonlines_test_fancy_test.jsonlines'
-                                '_LinearRegression.results')),
+                                '_LinearRegression_pearson.results')),
               'r') as resultf:
 
         result_output = resultf.read().strip().split('\n')
@@ -525,5 +527,7 @@ def check_adaboost_regression(base_estimator):
 
 
 def test_adaboost_regression():
-    for base_estimator_name in ['DecisionTreeRegressor', 'SGDRegressor', 'SVR']:
+    for base_estimator_name in ['DecisionTreeRegressor',
+                                'SGDRegressor',
+                                'SVR']:
         yield check_adaboost_regression, base_estimator_name

@@ -107,19 +107,20 @@ def check_summary_score(use_feature_hashing=False):
     summprefix = ('test_summary_feature_hasher' if use_feature_hashing else
                   'test_summary')
 
-    with open(join(_my_dir, 'output', ('{}_LogisticRegression.results.'
-                                       'json'.format(outprefix)))) as f:
+    with open(join(_my_dir, 'output',
+                   ('{}_LogisticRegression_accuracy.results.'
+                    'json'.format(outprefix)))) as f:
         outd = json.loads(f.read())
         logistic_result_score = outd[0]['score']
 
     with open(join(_my_dir, 'output',
-                   '{}_SVC.results.json'.format(outprefix))) as f:
+                   '{}_SVC_accuracy.results.json'.format(outprefix))) as f:
         outd = json.loads(f.read())
         svm_result_score = outd[0]['score']
 
     # note that Naive Bayes doesn't work with feature hashing
     if not use_feature_hashing:
-        with open(join(_my_dir, 'output', ('{}_MultinomialNB.results.'
+        with open(join(_my_dir, 'output', ('{}_MultinomialNB_accuracy.results.'
                                            'json'.format(outprefix)))) as f:
             outd = json.loads(f.read())
             naivebayes_result_score = outd[0]['score']
@@ -170,7 +171,8 @@ def check_summary_score(use_feature_hashing=False):
     for report_name, val in (("LogisticRegression", .5),
                              ("MultinomialNB", .5),
                              ("SVC", .7)):
-        filename = "test_summary_test_summary_{}.results".format(report_name)
+        filename = "test_summary_test_summary_{}_accuracy.results".format(
+            report_name)
         results_path = join(_my_dir, 'output', filename)
         with open(results_path) as results_file:
             report = results_file.read()
