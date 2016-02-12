@@ -23,7 +23,8 @@ class FeatureSet(object):
 
     """
     Encapsulation of all of the features, values, and metadata about a given
-    set of data. Note that FeatureSets can only be equal if the order of
+    set of data.
+    WARNING: FeatureSets can only be equal if the order of
     the instances is identical because these are stored as lists/arrays.
 
     This replaces ``ExamplesTuple`` from older versions.
