@@ -514,7 +514,7 @@ def test_config_parsing_bad_objective():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objectives': "['foobar']"}
+                           'objective': "['foobar']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')

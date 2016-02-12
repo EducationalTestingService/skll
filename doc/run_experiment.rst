@@ -628,12 +628,12 @@ min_feature_count *(Optional)*
 The minimum number of examples for which the value of a feature must be nonzero
 to be included in the model. Defaults to 1.
 
-.. _objectives:
+.. _objective:
 
-objectives *(Optional)*
+objective *(Optional)*
 """"""""""""""""""""""
 
-Optional list of the objective functions to use for tuning. Valid options are:
+The objective functions to use for tuning. This can either be a list of objective functions or a single objective function as a string. Valid options are:
 
 .. _classification_obj:
 
@@ -692,7 +692,7 @@ Regression:
     *   **mean_squared_error**: `Mean squared error regression loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__
 
 
-Defaults to ``['f1_score_micro']``.
+Defaults to ``f1_score_micro``.
 
 .. _param_grids:
 
