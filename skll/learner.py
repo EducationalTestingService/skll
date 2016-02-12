@@ -466,6 +466,10 @@ class RescaledLinearSVR(LinearSVR):
 class RescaledSGDRegressor(SGDRegressor):
     pass
 
+@rescaled
+class RescaledBayesianRidge(BayesianRidge):
+    pass
+
 
 class Learner(object):
 
