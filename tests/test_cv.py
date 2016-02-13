@@ -218,30 +218,57 @@ def test_retrieve_cv_folds():
     Test to make sure that the fold ids get returned correctly after cross-validation
     """
 
+    # Setup
     learner = Learner('LogisticRegression')
     num_folds = 5
     cv_fs, custom_cv_folds = make_cv_folds_data(num_examples_per_fold=2, num_folds=num_folds)
 
-    # First test where learner.cross_validate() makes the folds itself.
-    expected_fold_ids = {'EXAMPLE_0': '0', 'EXAMPLE_1': '4', 'EXAMPLE_2': '3', 'EXAMPLE_3': '1',
-                         'EXAMPLE_4': '2', 'EXAMPLE_5': '2', 'EXAMPLE_6': '1', 'EXAMPLE_7': '0',
-                         'EXAMPLE_8': '4', 'EXAMPLE_9': '3'}
-
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=num_folds, save_cv_folds=True,
-                                                 grid_search=True)
+    # Test 1: learner.cross_validate() makes the folds itself.
+    expected_fold_ids = {'EXAMPLE_0': '0', 
+                         'EXAMPLE_1': '4', 
+                         'EXAMPLE_2': '3', 
+                         'EXAMPLE_3': '1',
+                         'EXAMPLE_4': '2', 
+                         'EXAMPLE_5': '2', 
+                         'EXAMPLE_6': '1', 
+                         'EXAMPLE_7': '0',
+                         'EXAMPLE_8': '4', 
+                         'EXAMPLE_9': '3'}
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs, 
+                                                 stratified=True,
+                                                 cv_folds=num_folds,
+                                                 grid_search=True, 
+                                                 shuffle=False,
+                                                 save_cv_folds=True)
     assert_equal(skll_fold_ids, expected_fold_ids)
 
-    # Now test that if we pass in custom fold ids, those are also preserved.
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=custom_cv_folds, save_cv_folds=True,
-                                                 grid_search=True)
+    # Test 2: if we pass in custom fold ids, those are also preserved.
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs, 
+                                                 stratified=True,
+                                                 cv_folds=custom_cv_folds, 
+                                                 grid_search=True,
+                                                 shuffle=False,
+                                                 save_cv_folds=True) 
     assert_equal(skll_fold_ids, custom_cv_folds)
-
-    # Test when learner.cross_validate() makes the folds but stratified=False and grid_search=False.
-    expected_fold_ids = {'EXAMPLE_0': '0', 'EXAMPLE_1': '0', 'EXAMPLE_2': '1', 'EXAMPLE_3': '1',
-                         'EXAMPLE_4': '2', 'EXAMPLE_5': '2', 'EXAMPLE_6': '3', 'EXAMPLE_7': '3',
-                         'EXAMPLE_8': '4', 'EXAMPLE_9': '4'}
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=custom_cv_folds, save_cv_folds=True,
-                                                 stratified=False, grid_search=False)
+ 
+    # Test 3: when learner.cross_validate() makes the folds but stratified=False
+    # and grid_search=False, so that KFold is used.
+    expected_fold_ids = {'EXAMPLE_0': '0', 
+                         'EXAMPLE_1': '0', 
+                         'EXAMPLE_2': '1', 
+                         'EXAMPLE_3': '1',
+                         'EXAMPLE_4': '2', 
+                         'EXAMPLE_5': '2', 
+                         'EXAMPLE_6': '3', 
+                         'EXAMPLE_7': '3',
+                         'EXAMPLE_8': '4', 
+                         'EXAMPLE_9': '4'} 
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs,  
+                                                 stratified=False,
+                                                 cv_folds=num_folds, 
+                                                 grid_search=False,
+                                                 shuffle=False,
+                                                 save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
 
 

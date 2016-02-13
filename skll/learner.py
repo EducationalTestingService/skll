@@ -1413,17 +1413,20 @@ class Learner(object):
         self._create_label_dict(examples)
         self._train_setup(examples)
 
-        # setup the cross-validation iterator
+        # Set up the cross-validation iterator.
         if isinstance(cv_folds, int):
             cv_folds = self._compute_num_folds_from_example_counts(
                 cv_folds, examples.labels)
 
             stratified = (stratified and
                           not issubclass(self._model_type, RegressorMixin))
-            kfold = (StratifiedKFold(examples.labels, n_folds=cv_folds) if
-                     stratified else KFold(len(examples.labels),
-                                           n_folds=cv_folds,
-                                           random_state=random_state))
+            if stratified:
+                kfold = StratifiedKFold(examples.labels, n_folds=cv_folds)   
+            else:
+                kfold = KFold(len(examples.labels),
+                              n_folds=cv_folds,
+                              random_state=random_state)
+        # Otherwise cv_volds is a dict
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
