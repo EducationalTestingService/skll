@@ -131,7 +131,7 @@ def check_rescaling(name):
 
 def test_rescaling():
 
-    for regressor_name in ['ElasticNet', 'Lasso', 'Lars', 'LarsCV', 'LinearRegression', 'Ridge',
+    for regressor_name in ['ElasticNet', 'Lasso', 'Lars', 'LinearRegression', 'Ridge',
                            'LinearSVR', 'SVR', 'SGDRegressor',
                            'BayesianRidge']:
 
@@ -199,7 +199,7 @@ def test_linear_models():
     for (regressor_name,
          use_feature_hashing,
 
-         use_rescaling) in product(['ElasticNet', 'Lasso', 'Lars', 'LarsCV', 'LinearRegression',
+         use_rescaling) in product(['ElasticNet', 'Lasso', 'Lars', 'LinearRegression',
                                     'Ridge', 'LinearSVR', 'SGDRegressor',
                                     'BayesianRidge'],
                                    [False, True],

@@ -40,7 +40,7 @@ from sklearn.grid_search import GridSearchCV
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
-from sklearn.linear_model import (ElasticNet, Lasso, Lars, LarsCV, LinearRegression,
+from sklearn.linear_model import (ElasticNet, Lasso, Lars, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor, BayesianRidge)
 from sklearn.linear_model.base import LinearModel
@@ -83,9 +83,6 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         Lars:
                         [{'n_nonzero_coefs': [5, 50, 500, 5000, 50000]}],  
-                        LarsCV:
-                        [{'max_iter': [5, 50, 500, 5000, 50000],
-                            'max_n_alphas': [10, 100, 1000, 10000, 100000]}],
                         LinearRegression:
                         [{}],
                         LinearSVC:
@@ -156,7 +153,7 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
 
 
 _REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor,
-                   BayesianRidge, Lars, LarsCV)
+                   BayesianRidge, Lars)
 
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
@@ -447,11 +444,6 @@ class RescaledLasso(Lasso):
 
 @rescaled
 class RescaledLars(Lars):
-    pass
-
-
-@rescaled
-class RescaledLarsCV(LarsCV):
     pass
 
 
