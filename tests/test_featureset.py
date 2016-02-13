@@ -748,7 +748,7 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
         labels.append(y)
         features.append(x)
     # Create vectorizers/maps for libsvm subset writing
-    feat_vectorizer = DictVectorizer()
+    feat_vectorizer = DictVectorizer(sort=False)
     feat_vectorizer.fit(features)
     label_map = {label: num for num, label in
                  enumerate(sorted({label for label in labels if

@@ -16,8 +16,6 @@ from six import iteritems
 from six.moves import zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
-from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
-
 
 class FeatureSet(object):
 
@@ -60,7 +58,7 @@ class FeatureSet(object):
         # Convert list of dicts to numpy array
         if isinstance(self.features, list):
             if self.vectorizer is None:
-                self.vectorizer = NewDictVectorizer(sparse=True)
+                self.vectorizer = DictVectorizer(sort=False, sparse=True)
             self.features = self.vectorizer.fit_transform(self.features)
         if self.features is not None:
             num_feats = self.features.shape[0]

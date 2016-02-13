@@ -23,11 +23,10 @@ from io import open, BytesIO, StringIO
 import numpy as np
 from bs4 import UnicodeDammit
 from six import iteritems, PY2, PY3, string_types, text_type
-from six.moves import map, zip
-from sklearn.feature_extraction import FeatureHasher
+from six.moves import zip
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 from skll.data import FeatureSet
-from skll.data.dict_vectorizer import DictVectorizer
 
 
 class Reader(object):
@@ -85,7 +84,7 @@ class Reader(object):
         if feature_hasher:
             self.vectorizer = FeatureHasher(n_features=num_features)
         else:
-            self.vectorizer = DictVectorizer(sparse=sparse)
+            self.vectorizer = DictVectorizer(sort=False, sparse=sparse)
 
     @classmethod
     def for_path(cls, path_or_list, **kwargs):

@@ -17,7 +17,7 @@ import sys
 from bs4 import UnicodeDammit
 from six import PY2
 
-from skll.data.dict_vectorizer import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import (ARFFWriter, DelimitedFileWriter, LibSVMWriter,
                                EXT_TO_WRITER)
@@ -122,7 +122,7 @@ def main(argv=None):
             label_map.update(_pair_to_dict_tuple(pair) for pair in
                              label_map_str
                              .strip().split())
-        feat_vectorizer = DictVectorizer()
+        feat_vectorizer = DictVectorizer(sort=False)
         feat_vectorizer.fit([{name: 1} for name in feat_map])
         feat_vectorizer.vocabulary_ = feat_map
     else:
