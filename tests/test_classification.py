@@ -21,7 +21,6 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
-from sklearn.base import RegressorMixin
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
@@ -82,7 +81,7 @@ def check_predict(model, use_feature_hashing=False):
     """
 
     # create the random data for the given model
-    if issubclass(model, RegressorMixin):
+    if model._estimator_type == 'regressor':
         train_fs, test_fs, _ = \
             make_regression_data(use_feature_hashing=use_feature_hashing,
                                  feature_bins=5)
