@@ -71,11 +71,11 @@ def test_locate_file_valid_paths1():
     Test that `config.locate_file` works with absolute paths.
     """
 
-    config_abs_path = join(_my_dir, 'test', 'test_config.cfg')
+    config_abs_path = join(_my_dir, 'configs',
+                           'test_config_parsing_relative_path1.cfg')
     open(config_abs_path, 'w').close()
     eq_(_locate_file(config_abs_path, _my_dir),
-        join(_my_dir, 'test', 'test_config.cfg'))
-    os.unlink(config_abs_path)
+        join(_my_dir, 'configs', 'test_config_parsing_relative_path1.cfg'))
 
 
 def test_locate_file_valid_paths2():
@@ -83,11 +83,11 @@ def test_locate_file_valid_paths2():
     Test that `config.locate_file` works with relative paths.
     """
 
-    config_abs_path = join(_my_dir, 'test', 'test_config.cfg')
-    config_rel_path = 'test/test_config.cfg'
+    config_abs_path = join(_my_dir, 'configs',
+                           'test_config_parsing_relative_path2.cfg')
+    config_rel_path = 'configs/test_config_parsing_relative_path2.cfg'
     open(config_abs_path, 'w').close()
     eq_(_locate_file(config_rel_path, _my_dir), config_abs_path)
-    os.unlink(config_abs_path)
 
 
 def test_locate_file_valid_paths3():
@@ -95,12 +95,12 @@ def test_locate_file_valid_paths3():
     Test that `config.locate_file` works with relative/absolute paths.
     """
 
-    config_abs_path = join(_my_dir, 'test', 'test_config.cfg')
-    config_rel_path = 'test/test_config.cfg'
+    config_abs_path = join(_my_dir, 'configs',
+                           'test_config_parsing_relative_path3.cfg')
+    config_rel_path = 'configs/test_config_parsing_relative_path3.cfg'
     open(config_abs_path, 'w').close()
     eq_(_locate_file(config_abs_path, _my_dir),
         _locate_file(config_rel_path, _my_dir))
-    os.unlink(config_abs_path)
 
 
 @raises(IOError)
