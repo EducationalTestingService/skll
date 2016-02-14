@@ -490,7 +490,7 @@ def _parse_config_file(config_path):
                                'cases.'.format(learner,
                                                ', '.join(overlap_params)))
     else:
-        if param_grid_list or fixed_parameter_list:
+        if param_grid_list:
             logger.warning('"param_grids" was specified despite the fact that '
                            '"grid_search" was specified as False.')
 
