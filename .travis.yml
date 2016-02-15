@@ -30,7 +30,7 @@ install:
 
 # Run test
 script:
-  - if [ ${WITH_PANDAS} == "true" ]; then nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG; else nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a '!have_pandas'; fi
+  - if [ ${WITH_PANDAS} == "true" ]; then nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a have_pandas; else nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a '!have_pandas'; fi
 
 # Calculate coverage
 after_success:
