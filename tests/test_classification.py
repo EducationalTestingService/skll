@@ -64,6 +64,9 @@ def tearDown():
     if exists(join(output_dir, 'rare_class.predictions')):
         os.unlink(join(output_dir, 'rare_class.predictions'))
 
+    if exists(join(output_dir, 'float_class.predictions')):
+        os.unlink(join(output_dir, 'float_class.predictions'))
+
     for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
         os.unlink(output_file)
 
