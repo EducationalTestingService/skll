@@ -16,6 +16,8 @@ from six import iteritems
 from six.moves import zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
+from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
+
 
 class FeatureSet(object):
 

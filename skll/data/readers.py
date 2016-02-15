@@ -24,9 +24,10 @@ import numpy as np
 from bs4 import UnicodeDammit
 from six import iteritems, PY2, PY3, string_types, text_type
 from six.moves import zip
-from sklearn.feature_extraction import DictVectorizer, FeatureHasher
+from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
+from skll.data.dict_vectorizer import DictVectorizer
 
 
 class Reader(object):
