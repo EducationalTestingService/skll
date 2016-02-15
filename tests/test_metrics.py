@@ -139,7 +139,8 @@ def test_invalid_grid_obj_func():
                   'KNeighborsRegressor', 'Lasso', 'Lars',
                   'LinearRegression', 'RandomForestRegressor',
                   'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
-                  'BayesianRidge']:
+                  'RidgeCV', 'BayesianRidge']:
+
         for metric in ['accuracy',
                        'precision',
                        'recall',
