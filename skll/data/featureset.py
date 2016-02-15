@@ -9,7 +9,6 @@ Classes related to storing/merging feature sets.
 from __future__ import absolute_import, print_function, unicode_literals
 
 from copy import deepcopy
-import logging
 
 import numpy as np
 import scipy.sparse as sp
@@ -19,7 +18,6 @@ from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
 
-logger = logging.getLogger(__name__)
 
 class FeatureSet(object):
 
