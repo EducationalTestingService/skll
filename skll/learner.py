@@ -1138,8 +1138,6 @@ class Learner(object):
             train_and_test_label_dict.update(unseen_label_dict)
             ytest = np.array([train_and_test_label_dict[label]
                               for label in examples.labels])
-            ytest = np.array([self.label_dict[label] for label in
-                              examples.labels])
         else:
             ytest = examples.labels
 

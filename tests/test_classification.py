@@ -352,7 +352,6 @@ def test_new_labels_in_test_set():
                                                  train_test_ratio=0.8)
     # add new labels to the test set
     test_fs.labels[-3:] = 3
-    print(test_fs)
 
     learner = Learner('SVC')
     learner.train(train_fs, grid_search=False)
