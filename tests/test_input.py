@@ -134,10 +134,10 @@ def check_config_parsing_file_not_found_error(config_path):
     _parse_config_file(config_path)
 
 
-@raises(ValueError)
+@raises(IOError)
 def test_empty_config_name_raises_file_not_found_error():
    """ 
-   Assert that calling _parse_config_file on an empty string raises ValueError
+   Assert that calling _parse_config_file on an empty string raises IOError
    """
    _parse_config_file("")
 
