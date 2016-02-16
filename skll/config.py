@@ -494,7 +494,7 @@ def _parse_config_file(config_path):
         raise ValueError("objective should be a string or "
                          "list of objectives")
 
-    if not all([(True if objective in SCORERS else False) for objective in grid_objectives]):
+    if not all([objective in SCORERS for objective in grid_objectives]):
         raise ValueError('Invalid grid objective function/s: {}'
                          .format(grid_objectives_string))
 

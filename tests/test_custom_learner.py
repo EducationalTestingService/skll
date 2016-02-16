@@ -119,7 +119,7 @@ def test_majority_class_custom_learner():
     outprefix = 'test_majority_class_custom_learner'
 
     preds = read_predictions(join(_my_dir, 'output',
-                                  ('{}_{}_MajorityClassLearner_accuracy.predictions'
+                                  ('{}_{}_MajorityClassLearner.predictions'
                                    .format(outprefix, outprefix))))
     expected = np.array([float(num_labels - 1) for x in preds])
     assert_array_equal(preds, expected)
@@ -157,12 +157,12 @@ def test_logistic_custom_learner():
 
     outprefix = 'test_logistic_custom_learner'
     preds = read_predictions(join(_my_dir, 'output',
-                                  ('{}_{}_CustomLogisticRegressionWrapper_accuracy'
+                                  ('{}_{}_CustomLogisticRegressionWrapper'
                                    '.predictions'.format(outprefix,
                                                          outprefix))))
 
     expected = read_predictions(join(_my_dir, 'output',
-                                     ('{}_{}_LogisticRegression_accuracy.predictions'
+                                     ('{}_{}_LogisticRegression.predictions'
                                       .format(outprefix, outprefix))))
 
     assert_array_equal(preds, expected)
@@ -203,7 +203,7 @@ def test_custom_learner_model_loading():
     # and delete the predictions file
     outprefix = 'test_model_custom_learner'
     pred_file = join(_my_dir, 'output',
-                     '{}_{}_CustomLogisticRegressionWrapper_accuracy'
+                     '{}_{}_CustomLogisticRegressionWrapper'
                      '.predictions'.format(outprefix,
                                            outprefix))
     preds1 = read_predictions(pred_file)

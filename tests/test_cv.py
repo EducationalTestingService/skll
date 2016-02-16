@@ -28,7 +28,7 @@ import random
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 from sklearn.utils.testing import assert_greater, assert_less, assert_equal, \
-    assert_almost_equal
+                                    assert_almost_equal
 from skll.config import _load_cv_folds
 from skll.data import FeatureSet
 from skll.learner import Learner
@@ -40,6 +40,8 @@ from skll.experiments import run_configuration
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
+
+
 
 
 def setup():
@@ -74,6 +76,7 @@ def tearDown():
                         glob(join(output_dir,
                                   'test_int_labels_cv_*'))):
         os.unlink(output_file)
+
 
 
 def make_cv_folds_data(num_examples_per_fold=100,
@@ -210,7 +213,6 @@ def test_load_cv_folds_non_float_ids():
     # now read the CSV file using _load_cv_folds, which should raise ValueError
     _load_cv_folds(fold_file_path, ids_to_floats=True)
 
-
 def test_retrieve_cv_folds():
     """
     Test to make sure that the fold ids get returned correctly after cross-validation
@@ -218,27 +220,20 @@ def test_retrieve_cv_folds():
 
     learner = Learner('LogisticRegression')
     num_folds = 5
-    cv_fs, custom_cv_folds = make_cv_folds_data(num_examples_per_fold=2, 
-        num_folds=num_folds)
+    cv_fs, custom_cv_folds = make_cv_folds_data(num_examples_per_fold=2, num_folds=num_folds)
 
     # First test where learner.cross_validate makes the folds itself
-    expected_fold_ids = {'EXAMPLE_0': '0', 'EXAMPLE_1': '4',
-                         'EXAMPLE_2': '3', 'EXAMPLE_3': '1',
-                         'EXAMPLE_4': '2', 'EXAMPLE_5': '2',
-                         'EXAMPLE_6': '1', 'EXAMPLE_7': '0',
+    expected_fold_ids = {'EXAMPLE_0': '0', 'EXAMPLE_1': '4', 'EXAMPLE_2': '3', 'EXAMPLE_3': '1',
+                         'EXAMPLE_4': '2', 'EXAMPLE_5': '2', 'EXAMPLE_6': '1', 'EXAMPLE_7': '0',
                          'EXAMPLE_8': '4', 'EXAMPLE_9': '3'}
 
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs,
-                                                 cv_folds=num_folds,
-                                                 save_cv_folds=True,
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=num_folds, save_cv_folds=True,
                                                  grid_search=True)
 
     assert_equal(skll_fold_ids, expected_fold_ids)
 
     # Now test that if we pass in custom fold ids, those are also preserved
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs,
-                                                 cv_folds=custom_cv_folds,
-                                                 save_cv_folds=True,
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=custom_cv_folds, save_cv_folds=True,
                                                  grid_search=True)
 
     assert_equal(skll_fold_ids, custom_cv_folds)
@@ -254,8 +249,7 @@ def test_cross_validate_task():
     suffix = '.jsonlines'
     train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
 
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
-                                                            "configs",
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
                                                             "test_save_cv_folds"
                                                             ".template.cfg"),
                                                        train_path,
@@ -264,8 +258,7 @@ def test_cross_validate_task():
 
     # Check final average results
     with open(join(_my_dir, 'output', 'test_save_cv_folds_train_f0.' +
-                                      'jsonlines_LogisticRegression' +
-                                      '_f1_score_micro.results.json')) as f:
+                                      'jsonlines_LogisticRegression.results.json')) as f:
         result_dict = json.load(f)[10]
 
     assert_almost_equal(result_dict['score'], 0.517)
@@ -279,17 +272,14 @@ def test_cross_validate_task():
             expected_skll_ids[examples.ids[index]] = fold_num
 
     skll_fold_ids = {}
-    with open(join(_my_dir,
-                   'output',
-                   'test_save_cv_folds_skll_fold_ids.csv')) as f:
+    with open(join(_my_dir, 'output', 'test_save_cv_folds_skll_fold_ids.csv')) as f:
         reader = csv.DictReader(f)
         for row in reader:
             skll_fold_ids[row['id']] = row['cv_test_fold']
 
     # convert the dictionary to strings (sorted by key) for quick comparison
-    skll_fold_ids_str = ''.join('{}{}'.format(key, val)
-                                for key, val in sorted(skll_fold_ids.items()))
-    expected_skll_ids_str = ''.join('{}{}'.format(key, val) 
-        for key, val in sorted(expected_skll_ids.items()))
+    skll_fold_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(skll_fold_ids.items()))
+    expected_skll_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(expected_skll_ids.items()))
 
     assert_equal(skll_fold_ids_str, expected_skll_ids_str)
+

@@ -796,8 +796,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
                 # for the individual job name, we need to add the feature set name
                 # and the learner name
-                job_name_components = [experiment_name, featureset_name,
+                if len(grid_objectives) == 1:
+                    job_name_components = [experiment_name, featureset_name,
+                                           learner_name]
+                else: 
+                    job_name_components = [experiment_name, featureset_name,
                                        learner_name, grid_objective]
+
                 job_name = '_'.join(job_name_components)
 
                 # change the prediction prefix to include the feature set

@@ -149,6 +149,4 @@ def test_invalid_grid_obj_func():
                        'f1_score_least_frequent',
                        'average_precision',
                        'roc_auc']:
-            yield (check_invalid_regr_grid_obj_func,
-                   model,
-                   metric)
+            yield check_invalid_regr_grid_obj_func, model, metric
