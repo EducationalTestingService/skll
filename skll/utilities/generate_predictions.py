@@ -15,8 +15,6 @@ import argparse
 import logging
 import os
 
-from sklearn.base import RegressorMixin
-
 from skll.data.readers import EXT_TO_READER
 from skll.learner import Learner
 from skll.version import __version__
@@ -69,7 +67,7 @@ class Predictor(object):
             else:
                 return [int(pred[self._pos_index] >= self.threshold)
                         for pred in preds]
-        elif issubclass(self._learner.model_type, RegressorMixin):
+        elif self._learner.model._estimator_type == 'regressor':
             return preds
         else:
             return [self._learner.label_list[pred if isinstance(pred, int) else
