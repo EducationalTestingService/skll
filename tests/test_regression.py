@@ -131,9 +131,9 @@ def check_rescaling(name):
 
 def test_rescaling():
 
-    for regressor_name in ['ElasticNet', 'Lasso', 'Lars', 'LinearRegression',
-                           'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
-                           'RidgeCV', 'BayesianRidge']:
+    for regressor_name in ['BayesianRidge', 'ElasticNet', 'Lasso', 'Lars',
+                           'LinearRegression', 'LinearSVR', 'Ridge', 'RidgeCV',
+                           'SVR', 'SGDRegressor']:
         yield check_rescaling, regressor_name
 
 
