@@ -40,9 +40,9 @@ from sklearn.grid_search import GridSearchCV
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
-from sklearn.linear_model import (ElasticNet, Lasso, Lars, LinearRegression,
-                                  LogisticRegression, Ridge, SGDClassifier,
-                                  SGDRegressor, BayesianRidge, RidgeCV)
+from sklearn.linear_model import (BayesianRidge, ElasticNet, Lasso, Lars,
+                                  LinearRegression, LogisticRegression, Ridge,
+                                  RidgeCV, SGDClassifier, SGDRegressor)
 from sklearn.linear_model.base import LinearModel
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              precision_recall_fscore_support, SCORERS)
