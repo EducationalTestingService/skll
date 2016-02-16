@@ -415,12 +415,14 @@ custom_learner_path *(Optional)*
 
 Path to a ``.py`` file that defines a custom learner.  This file will be
 imported dynamically.  This is only required if a custom learner in specified
-in the list of :ref:`learners`.  Custom learners must implement the ``fit`` and
-``predict`` methods and inherit from
-`sklearn.base.BaseEstimator <http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__.
-Custom regressors must also inherit from
-`sklearn.base.RegressorMixin <http://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
-Models that require dense matrices should implement a method ``requires_dense``
+in the list of :ref:`learners`.
+
+All Custom learners must implement the ``fit`` and
+``predict`` methods. Custom classifiers must either (a) inherit from an existing scikit-learn classifier, or (b) inherit from both `sklearn.base.BaseEstimator <http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <http://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
+
+Similarly, Custom regressors must either (a) inherit from an existing scikit-learn regressor, or (b) inherit from both `sklearn.base.BaseEstimator <http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <http://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
+
+Learners that require dense matrices should implement a method ``requires_dense``
 that returns ``True``.
 
 .. _sampler:
@@ -558,7 +560,7 @@ SVR
 
     .. code-block:: python
 
-       {'class_weight': 'auto'}
+       {'class_weight': 'balanced'}
 
     The second option allows you to assign an specific weight per each
     class. The default weight per class is 1. For example:
