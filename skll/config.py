@@ -482,13 +482,11 @@ def _parse_config_file(config_path):
                                                  learners):
             overlap_params = set(fixed_params).intersection(set(params))
             if overlap_params:
-                logger.warning('Both "fixed_parameters" and "param_grids" were'
-                               'specified or the default values were used for '
-                               '{}, which resulted in conflicts between '
-                               'certain parameter(s): {}. Values passed in via'
-                               '"param_grids" will take precedence in these '
-                               'cases.'.format(learner,
-                                               ', '.join(overlap_params)))
+                logger.warning('Conflict(s) between fixed parameters and '
+                               'parameters to be searched during grid search. '
+                               'Fixed parameters will be ignored in cases of'
+                               ' conflict.'
+                               .format(learner, ' '.join(overlap_params)))
     else:
         if param_grid_list:
             logger.warning('"param_grids" was specified despite the fact that '
