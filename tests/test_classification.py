@@ -332,7 +332,7 @@ def check_results_with_unseen_labels(res, n_labels, new_label_list):
      model_params,
      grid_score) = res
 
-    # check that the new metric is included into the results
+    # check that the new label is included into the results
     for output in [confusion_matrix, result_dict]:
         eq_(len(output), n_labels)
 
@@ -380,7 +380,7 @@ def test_new_labels_in_test_set_change_order():
 
 def test_all_new_labels_in_test():
     """
-    Test classification with all labes in test set unseen
+    Test classification with all labels in test set unseen
     """
     train_fs, test_fs = make_classification_data(num_labels=3,
                                                  train_test_ratio=0.8)
