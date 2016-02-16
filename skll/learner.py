@@ -153,8 +153,8 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'qwk_off_by_one'])
 
 
-_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor,
-                   BayesianRidge, Lars)
+_REQUIRES_DENSE = (BayesianRidge, GradientBoostingClassifier,
+                   GradientBoostingRegressor, Lars)
 
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
