@@ -15,7 +15,8 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda2/bin:$PATH
-  - conda config --add channels https://conda.binstar.org/dan_blanchard
+  - conda config --add channels dan_blanchard
+  - conda config --add channels desilinguist
   - conda update --yes conda
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION nomkl numpy scipy beautiful-soup six scikit-learn==0.17.0 joblib prettytable python-coveralls pyyaml
