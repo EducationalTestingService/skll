@@ -300,7 +300,8 @@ def _parse_config_file(config_path):
                          ' times, which is not currently supported.  Please use'
                          ' param_grids with tuning to find the optimal settings'
                          ' for the learner.')
-    custom_learner_path = config.get("Input", "custom_learner_path")
+    custom_learner_path = _locate_file(config.get("Input", "custom_learner_path"),
+                                       config_dir)
 
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
@@ -350,10 +351,10 @@ def _parse_config_file(config_path):
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
     # get the cv folds file and make a dictionary from it, if it exists
-    cv_folds_file = config.get("Input", "cv_folds_file")
+    cv_folds_file = _locate_file(config.get("Input", "cv_folds_file"),
+                                 config_dir)
     num_cv_folds = config.getint("Input", "num_cv_folds")
     if cv_folds_file:
-        cv_folds_file = _locate_file(cv_folds_file, config_path)
         cv_folds = _load_cv_folds(cv_folds_file,
                                   ids_to_floats=ids_to_floats)
     else:
@@ -442,28 +443,28 @@ def _parse_config_file(config_path):
     probability = config.getboolean("Output", "probability")
 
     # do we want to keep the predictions?
-    prediction_dir = config.get("Output", "predictions")
+    prediction_dir = _locate_file(config.get("Output", "predictions"),
+                                  config_dir)
     if prediction_dir:
-        prediction_dir = join(config_dir, prediction_dir)
         if not exists(prediction_dir):
             os.makedirs(prediction_dir)
 
     # make sure log path exists
-    log_path = config.get("Output", "log")
+    log_path = _locate_file(config.get("Output", "log"), config_dir)
     if log_path:
         log_path = join(config_dir, log_path)
         if not exists(log_path):
             os.makedirs(log_path)
 
     # make sure model path exists
-    model_path = config.get("Output", "models")
+    model_path = _locate_file(config.get("Output", "models"), config_dir)
     if model_path:
         model_path = join(config_dir, model_path)
         if not exists(model_path):
             os.makedirs(model_path)
 
     # make sure results path exists
-    results_path = config.get("Output", "results")
+    results_path = _locate_file(config.get("Output", "results"), config_dir)
     if results_path:
         results_path = join(config_dir, results_path)
         if not exists(results_path):
