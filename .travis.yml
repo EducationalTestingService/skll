@@ -12,11 +12,11 @@ notifications:
 sudo: required
 
 addons:
-  hostname: gridmap.travis-ci.org
+  hostname: skll.travis-ci.org
   hosts:
     - localhost
     - localhost.localdomain
-    - gridmap.travis-ci.org
+    - skll.travis-ci.org
 
 
 # Install stuff
