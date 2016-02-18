@@ -1,12 +1,25 @@
 language: python
+
 python:
   - 2.7
   - 3.4
+
 env:
   - GRIDMAP=true
   - GRIDMAP=false
+
 notifications:
   email: false
+  slack: etsnlp:enaaoJ5hIyU9Zs7kRGT0ZSti
+
+sudo: required
+
+addons:
+  hostname: gridmap.travis-ci.org
+   hosts:
+     - localhost
+     - localhost.localdomain
+     - gridmap.travis-ci.org
 
 # Install stuff
 before_install:
@@ -20,11 +33,12 @@ before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda config --add channels https://conda.binstar.org/dan_blanchard
+  - export PATH=/home/travis/miniconda2/bin:$PATH
+  - conda config --add channels dan_blanchard
+  - conda config --add channels desilinguist
   - conda update --yes conda
 install:
-  - conda install --yes pip python=$TRAVIS_PYTHON_VERSION numpy scipy beautiful-soup six scikit-learn==0.16.1 joblib prettytable python-coveralls pyyaml
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION nomkl numpy scipy beautiful-soup six scikit-learn==0.17.0 joblib prettytable python-coveralls pyyaml
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser logutils mock; fi
   - if [ $GRIDMAP == "true" ]; then conda install --yes drmaa gridmap; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
