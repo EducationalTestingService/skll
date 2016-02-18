@@ -1409,8 +1409,11 @@ class Learner(object):
                  if save_cv_folds is True, otherwise None.
         :rtype: (list of 4-tuples, list of float, dict)
         """
-        # seed the random number generator so that randomized algorithms are
-        # replicable
+        
+        # Seed the random number generator so that randomized algorithms are
+        # replicable.
+        random_state = np.random.RandomState(123456789)
+        # Set up logger.
         logger = logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -1424,7 +1427,7 @@ class Learner(object):
                                'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
-                                               random_state=123456789)
+                                               random_state=random_state)
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
@@ -1433,16 +1436,20 @@ class Learner(object):
         self._create_label_dict(examples)
         self._train_setup(examples)
 
-        # setup the cross-validation iterator
+        # Set up the cross-validation iterator.
         if isinstance(cv_folds, int):
             cv_folds = self._compute_num_folds_from_example_counts(
                 cv_folds, examples.labels)
 
             stratified = (stratified and
                           self.model_type._estimator_type == 'classifier')
-            kfold = (StratifiedKFold(examples.labels, n_folds=cv_folds) if
-                     stratified else KFold(len(examples.labels),
-                                           n_folds=cv_folds))
+            if stratified:
+                kfold = StratifiedKFold(examples.labels, n_folds=cv_folds)   
+            else:
+                kfold = KFold(len(examples.labels),
+                              n_folds=cv_folds,
+                              random_state=random_state)
+        # Otherwise cv_volds is a dict
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
