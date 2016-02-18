@@ -20,6 +20,7 @@ from os.path import abspath, dirname, exists, join
 
 from numpy.testing import assert_almost_equal
 from nose.tools import eq_
+from nose.plugins.attrib import attr
 from skll.data import NDJWriter, Reader
 from skll.experiments import run_configuration
 from skll.learner import Learner
@@ -180,7 +181,7 @@ def check_summary_score(use_feature_hashing=False):
                 msg="{} is not in {}".format(expected_string,
                                              report))
 
-
+@attr('gridmap')
 def test_summary():
     # test summary score without feature hashing
     yield check_summary_score

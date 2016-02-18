@@ -20,6 +20,7 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
+from nose.plugins.attrib import attr
 from nose.tools import eq_, assert_almost_equal, raises
 
 from skll.data import FeatureSet
@@ -236,7 +237,7 @@ def make_single_file_featureset_data():
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
-
+@attr('gridmap')
 def test_train_file_test_file():
     """
     Test that train_file and test_file experiments work
