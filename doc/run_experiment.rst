@@ -938,7 +938,8 @@ all share the following automatically generated prefix
 
 However, if ``objectives`` contains only one objective function, 
 the result, log, model, and prediction files will share the following prefix
-``EXPERIMENT_FEATURESET_LEARNER``
+``EXPERIMENT_FEATURESET_LEARNER``. The same case applies for ``objective=x`` for
+backward compatibility. 
 
 For every experiment you run, there will also be a result summary file
 generated that is a tab-delimited file summarizing the results for each
