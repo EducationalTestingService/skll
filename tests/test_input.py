@@ -610,7 +610,7 @@ def test_config_parsing_bad_objective_2():
     yield check_config_parsing_value_error, config_path
 
 
-def test_config_parsing_bad_objective_3():
+def test_config_parsing_bad_objectives():
     """
     Test to ensure config file parsing raises an error with a grid objectives given as a string
     """
