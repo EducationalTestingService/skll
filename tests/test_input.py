@@ -15,11 +15,11 @@ from __future__ import (absolute_import, division, print_function,
 import os
 import tempfile
 from glob import glob
-from os.path import abspath, dirname, exists, join, normpath
+from os.path import abspath, dirname, exists, join, normpath, realpath
 
 from nose.tools import eq_, raises
 
-from skll.config import _parse_config_file
+from skll.config import _parse_config_file, _locate_file
 from skll.data.readers import safe_float
 from skll.experiments import _load_featureset
 
@@ -64,6 +64,53 @@ def test_safe_float_conversion():
     for input_val, expected_val in zip(['1.234', 1.234, '3.0', '3', 3, 'foo'],
                                        [1.234, 1.234, 3.0, 3, 3, 'foo']):
         yield check_safe_float_conversion, safe_float(input_val), expected_val
+
+
+def test_locate_file_valid_paths1():
+    """
+    Test that `config.locate_file` works with absolute paths.
+    """
+
+    config_abs_path = join(_my_dir, 'configs',
+                           'test_config_parsing_relative_path1.cfg')
+    open(config_abs_path, 'w').close()
+    eq_(_locate_file(config_abs_path, _my_dir),
+        join(_my_dir, 'configs', 'test_config_parsing_relative_path1.cfg'))
+
+
+def test_locate_file_valid_paths2():
+    """
+    Test that `config.locate_file` works with relative paths.
+    """
+
+    config_abs_path = join(_my_dir, 'configs',
+                           'test_config_parsing_relative_path2.cfg')
+    config_rel_path = 'configs/test_config_parsing_relative_path2.cfg'
+    open(config_abs_path, 'w').close()
+    eq_(_locate_file(config_rel_path, _my_dir), config_abs_path)
+
+
+def test_locate_file_valid_paths3():
+    """
+    Test that `config.locate_file` works with relative/absolute paths.
+    """
+
+    config_abs_path = join(_my_dir, 'configs',
+                           'test_config_parsing_relative_path3.cfg')
+    config_rel_path = 'configs/test_config_parsing_relative_path3.cfg'
+    open(config_abs_path, 'w').close()
+    eq_(_locate_file(config_abs_path, _my_dir),
+        _locate_file(config_rel_path, _my_dir))
+
+
+@raises(IOError)
+def test_locate_file_invalid_path():
+    """
+    Test that `config.locate_file` raises an error for paths that do not
+    exist.
+    """
+
+    _locate_file('test/does_not_exist.cfg', _my_dir)
 
 
 @raises(ValueError)
@@ -132,6 +179,14 @@ def check_config_parsing_file_not_found_error(config_path):
     Assert that calling `_parse_config_file` on `config_path` raises FileNotFoundError
     """
     _parse_config_file(config_path)
+
+
+@raises(IOError)
+def test_empty_config_name_raises_file_not_found_error():
+   """ 
+   Assert that calling _parse_config_file on an empty string raises IOError
+   """
+   _parse_config_file("")
 
 def test_config_parsing_no_name():
     """
@@ -774,25 +829,60 @@ def test_config_parsing_relative_input_path():
                                 'test_config_parsing.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'mislocated_input_file')
+                                         values_to_fill_dict,
+                                         'mislocated_input_file')
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)
 
     eq_(normpath(train_path), (join(_my_dir, 'train')))
 
+def test_config_parsing_relative_input_paths():
+
+    train_dir = '../train'
+    train_file = join(train_dir, 'f0.jsonlines')
+    test_file = join(train_dir, 'f1.jsonlines')
+    output_dir = '../output'
+    custom_learner_path_input = join('other', 'majority_class_learner.py')
+
+    # make a simple config file that has relative paths
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_file': train_file,
+                           'test_file': test_file,
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_relative_paths.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'relative_paths')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
+
 def test_default_number_of_cv_folds():
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
+    
     # make a simple config file that does not set cv_folds
 
     values_to_fill_dict = {'experiment_name': 'config_parsing',
@@ -815,7 +905,7 @@ def test_default_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)
@@ -850,7 +940,7 @@ def test_setting_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)

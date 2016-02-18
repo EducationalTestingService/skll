@@ -370,14 +370,16 @@ def check_print_model_weights(task='classification'):
     # create some simple classification or regression data
     if task == 'classification':
         train_fs, _ = make_classification_data(train_test_ratio=0.8)
+    elif task == 'multiclass_classification':
+        train_fs, _ = make_classification_data(train_test_ratio=0.8, num_labels=3)
     else:
         train_fs, _, _ = make_regression_data(num_features=4,
                                               train_test_ratio=0.8)
 
     # now train the appropriate model
-    if task == 'classification':
+    if task == 'classification' or task == 'multiclass_classification':
         learner = Learner('LogisticRegression')
-        learner.train(train_fs)
+        learner.train(train_fs, grid_objective='f1_score_micro')
     elif task == 'regression':
         learner = Learner('LinearRegression')
         learner.train(train_fs, grid_objective='pearson')
@@ -418,6 +420,28 @@ def check_print_model_weights(task='classification'):
         feature_values = [t[1] for t in sorted(feature_values)]
         assert_almost_equal(intercept, learner.model.intercept_[0])
         assert_allclose(learner.model.coef_[0], feature_values)
+    elif task == 'multiclass_classification':
+        # for multiple classes we get an intercept for each class
+        # as well as a list of weights for each class
+
+        lines_to_parse = [l for l in out.split('\n')[1:] if l]
+        intercept = []
+        for intercept_string in lines_to_parse[0:3]:
+            intercept.append(safe_float(intercept_string.split('\t')[0]))
+
+        feature_values = [[], [], []]
+        for ltp in lines_to_parse[3:]:
+            fields = ltp.split('\t')
+            feature_values[int(fields[1])].append((fields[2], safe_float(fields[0])))
+
+        for index, weights in enumerate(feature_values):
+            feature_values[index] = [t[1] for t in sorted(weights)]
+
+        for index, weights in enumerate(learner.model.coef_):
+            assert_array_almost_equal(weights, feature_values[index])
+
+        assert_array_almost_equal(intercept, learner.model.intercept_)
+
     elif task == 'regression':
         lines_to_parse = [l for l in out.split('\n') if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
@@ -448,6 +472,7 @@ def check_print_model_weights(task='classification'):
 
 def test_print_model_weights():
     yield check_print_model_weights, 'classification'
+    yield check_print_model_weights, 'multiclass_classification'
     yield check_print_model_weights, 'regression'
     yield check_print_model_weights, 'regression_linearSVR'
 

@@ -12,6 +12,7 @@ Provides easy-to-use wrapper around scikit-learn.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+import copy
 import inspect
 import logging
 import os
@@ -28,7 +29,6 @@ from six import iteritems, itervalues
 from six import string_types
 from six.moves import xrange as range
 from six.moves import zip
-from sklearn.base import RegressorMixin
 from sklearn.cross_validation import KFold, LeaveOneLabelOut, StratifiedKFold
 from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
                               GradientBoostingClassifier,
@@ -293,7 +293,7 @@ def rescaled(cls):
     orig_fit = cls.fit
     orig_predict = cls.predict
 
-    if not issubclass(cls, RegressorMixin):
+    if cls._estimator_type == 'classifier':
         raise ValueError('Classifiers cannot be rescaled. ' +
                          'Only regressors can.')
 
@@ -575,7 +575,7 @@ class Learner(object):
                        GradientBoostingRegressor, DecisionTreeRegressor,
                        RandomForestRegressor, SGDClassifier, SGDRegressor,
                        AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
-                       Lasso, ElasticNet, SVC)):
+                       Lasso, Ridge, ElasticNet, SVC)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
@@ -625,6 +625,18 @@ class Learner(object):
         elif skll_version >= (0, 9, 17):
             if not hasattr(learner, 'sampler'):
                 learner.sampler = None
+            # From v0.17.0 onwards, scikit-learn requires all scalers to have
+            # the `scale_` instead of the `std_` parameter. So, we need to
+            # make all old models adapt to this.
+            if hasattr(learner, 'scaler'):
+                new_scaler = copy.copy(learner.scaler)
+                # We need to use `__dict__` because the `std_` has been
+                # overridden to  just return the `scale_` value, and we
+                # need the original value of `std_`.
+                if (not hasattr(new_scaler, 'scale_') and
+                        'std_' in new_scaler.__dict__):
+                    new_scaler.scale_ =  new_scaler.__dict__['std_']
+                    learner.scaler = new_scaler
             return learner
         else:
             raise ValueError(("{} stored in pickle file {} was " +
@@ -709,7 +721,7 @@ class Learner(object):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
 
-            if self.model.intercept_:
+            if self.model.intercept_.any():
                 intercept = dict(zip(label_list, self.model.intercept_))
 
         else:
@@ -773,7 +785,7 @@ class Learner(object):
         check that the examples are properly formatted.
         """
         # Make sure the labels for a regression task are not strings.
-        if issubclass(self._model_type, RegressorMixin):
+        if self.model_type._estimator_type == 'regressor':
             for label in examples.labels:
                 if isinstance(label, string_types):
                     raise TypeError("You are doing regression with string "
@@ -807,7 +819,7 @@ class Learner(object):
         :type examples: FeatureSet
         """
         # We don't need to do this for regression models, so return.
-        if issubclass(self._model_type, RegressorMixin):
+        if self.model_type._estimator_type == 'regressor':
             return
 
         # extract list of unique labels if we are doing classification
@@ -905,7 +917,7 @@ class Learner(object):
         # if we are asked to do grid search, check that the grid objective
         # function is valid for the selected learner
         if grid_search:
-            if issubclass(self.model_type, RegressorMixin):
+            if self.model_type._estimator_type == 'regressor':
                 # types 2-4 are valid for all regression models
                 if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
                     raise ValueError("{} is not a valid grid objective "
@@ -1016,7 +1028,7 @@ class Learner(object):
 
         # use label dict transformed version of examples.labels if doing
         # classification
-        if not issubclass(self._model_type, RegressorMixin):
+        if self.model_type._estimator_type == 'classifier':
             labels = np.array([self.label_dict[label] for label in
                                examples.labels])
         else:
@@ -1057,7 +1069,7 @@ class Learner(object):
             # If we're using a correlation metric for doing binary
             # classification, override the estimator's predict function
             if (grid_objective in _CORRELATION_METRICS and
-                    not issubclass(self._model_type, RegressorMixin)):
+                    self.model_type._estimator_type == 'classifier'):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
 
@@ -1112,7 +1124,7 @@ class Learner(object):
                             append=append)
 
         # extract actual labels (transformed for classification tasks)
-        if not issubclass(self._model_type, RegressorMixin):
+        if self.model_type._estimator_type == 'classifier':
             ytest = np.array([self.label_dict[label] for label in
                               examples.labels])
         else:
@@ -1140,7 +1152,7 @@ class Learner(object):
             except ValueError:
                 grid_score = float('NaN')
 
-        if issubclass(self._model_type, RegressorMixin):
+        if self.model_type._estimator_type == 'regressor':
             result_dict = {'descriptive': defaultdict(dict)}
             for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
                 result_dict['descriptive'][table_label]['min'] = min(y)
@@ -1297,7 +1309,7 @@ class Learner(object):
                                         [str(x) for x in class_probs]),
                               file=predictionfh)
                 else:
-                    if issubclass(self._model_type, RegressorMixin):
+                    if self.model_type._estimator_type == 'regressor':
                         for example_id, pred in zip(example_ids, yhat):
                             print('{0}\t{1}'.format(example_id, pred),
                                   file=predictionfh)
@@ -1307,8 +1319,8 @@ class Learner(object):
                                               self.label_list[int(pred)]),
                                   file=predictionfh)
 
-        if (class_labels and not
-                issubclass(self._model_type, RegressorMixin)):
+        if (class_labels and
+                self.model_type._estimator_type == 'classifier'):
             yhat = np.array([self.label_list[int(pred)] for pred in yhat])
 
         return yhat
@@ -1321,7 +1333,7 @@ class Learner(object):
         assert isinstance(cv_folds, int)
 
         # For regression models, we can just return the current cv_folds
-        if issubclass(self._model_type, RegressorMixin):
+        if self.model_type._estimator_type == 'regressor':
             return cv_folds
 
         min_examples_per_label = min(Counter(labels).values())
@@ -1339,7 +1351,7 @@ class Learner(object):
     def cross_validate(self, examples, stratified=True, cv_folds=10,
                        grid_search=False, grid_search_folds=3, grid_jobs=None,
                        grid_objective='f1_score_micro', prediction_prefix=None,
-                       param_grid=None, shuffle=False):
+                       param_grid=None, shuffle=False, save_cv_folds=False):
         """
         Cross-validates a given model on the training examples.
 
@@ -1376,14 +1388,21 @@ class Learner(object):
         :type prediction_prefix: str
         :param shuffle: Shuffle examples before splitting into folds for CV.
         :type shuffle: bool
+        :param save_cv_folds: Whether to save the cv fold ids or not
+        :type save_cv_folds: bool
 
         :return: The confusion matrix, overall accuracy, per-label PRFs, and
                  model parameters for each fold in one list, and another list
-                 with the grid search scores for each fold.
-        :rtype: (list of 4-tuples, list of float)
+                 with the grid search scores for each fold. Also return a
+                 dictionary containing the test-fold number for each id
+                 if save_cv_folds is True, otherwise None.
+        :rtype: (list of 4-tuples, list of float, dict)
         """
-        # seed the random number generator so that randomized algorithms are
-        # replicable
+        
+        # Seed the random number generator so that randomized algorithms are
+        # replicable.
+        random_state = np.random.RandomState(123456789)
+        # Set up logger.
         logger = logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -1397,7 +1416,7 @@ class Learner(object):
                                'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
-                                               random_state=123456789)
+                                               random_state=random_state)
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
@@ -1406,16 +1425,20 @@ class Learner(object):
         self._create_label_dict(examples)
         self._train_setup(examples)
 
-        # setup the cross-validation iterator
+        # Set up the cross-validation iterator.
         if isinstance(cv_folds, int):
             cv_folds = self._compute_num_folds_from_example_counts(
                 cv_folds, examples.labels)
 
             stratified = (stratified and
-                          not issubclass(self._model_type, RegressorMixin))
-            kfold = (StratifiedKFold(examples.labels, n_folds=cv_folds) if
-                     stratified else KFold(len(examples.labels),
-                                           n_folds=cv_folds))
+                          self.model_type._estimator_type == 'classifier')
+            if stratified:
+                kfold = StratifiedKFold(examples.labels, n_folds=cv_folds)   
+            else:
+                kfold = KFold(len(examples.labels),
+                              n_folds=cv_folds,
+                              random_state=random_state)
+        # Otherwise cv_volds is a dict
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
@@ -1429,6 +1452,15 @@ class Learner(object):
             # Only retain IDs within folds if they're in cv_folds
             kfold = FilteredLeaveOneLabelOut(fold_labels, cv_folds, examples)
             grid_search_folds = cv_folds
+
+        # Save the cross-validation fold information, if required
+        # The format is that the test-fold that each id appears in is stored
+        skll_fold_ids = None
+        if save_cv_folds:
+            skll_fold_ids = {}
+            for fold_num, (_, test_indices) in enumerate(kfold):
+                for index in test_indices:
+                    skll_fold_ids[examples.ids[index]] = str(fold_num)
 
         # handle each fold separately and accumulate the predictions and the
         # numbers
@@ -1470,4 +1502,4 @@ class Learner(object):
             append_predictions = True
 
         # return list of results for all folds
-        return results, grid_search_scores
+        return results, grid_search_scores, skll_fold_ids
