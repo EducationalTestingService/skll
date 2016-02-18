@@ -696,6 +696,8 @@ Regression:
 
 Defaults to ``['f1_score_micro']``.
 
+**Note**: For backward compatibility, ``objective=x`` instead of ``objectives=['x']`` is still supported.
+
 .. _param_grids:
 
 param_grids *(Optional)*
