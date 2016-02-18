@@ -63,7 +63,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'min_feature_count': '1',
                     'models': '',
                     'num_cv_folds': '10',
-                    'objective': 'f1_score_micro',
+                    'objectives': "['f1_score_micro']",
                     'param_grids': '[]',
                     'pos_label_str': '',
                     'predictions': '',
@@ -99,7 +99,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'min_feature_count': 'Tuning',
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
-                                   'objective': 'Tuning',
+                                   'objectives': 'Tuning',
                                    'param_grids': 'Tuning',
                                    'pos_label_str': 'Tuning',
                                    'predictions': 'Output',
@@ -181,6 +181,7 @@ class SKLLConfigParser(configparser.ConfigParser):
              (b) options are not specified in multiple sections
              (c) options are specified in the correct section
         """
+
         invalid_options = self._find_invalid_options()
         if invalid_options:
             raise KeyError('Configuration file contains the following '
@@ -209,6 +210,7 @@ def _locate_file(file_path, config_dir):
     else:
         return path_to_check
 
+
 def _setup_config_parser(config_path, validate=True):
     """
     Returns a config parser at a given path. Only implemented as a separate
@@ -222,6 +224,17 @@ def _setup_config_parser(config_path, validate=True):
         raise IOError(errno.ENOENT, "Configuration file does not exist",
                       config_path)
     config.read(config_path)
+
+    # normalize objective to objectives
+    if config.has_option('Tuning', 'objective'):
+        objective = config.get('Tuning', 'objective')
+        objective = yaml.load(_fix_json(objective))
+        if isinstance(objective, string_types):
+            config.set('Tuning', 'objectives', "['{}']".format(objective))
+            config.remove_option('Tuning', 'objective')
+        else:
+            raise ValueError("objective should be a string")
+
     if validate:
         config.validate()
 
@@ -486,17 +499,15 @@ def _parse_config_file(config_path):
     grid_search_folds = config.getint("Tuning", "grid_search_folds")
 
     # what are the objective functions for the grid search?
-    grid_objectives_string = config.get("Tuning", "objective")
-    grid_objectives = yaml.load(_fix_json(grid_objectives_string))
-    if isinstance(grid_objectives, string_types):
-        grid_objectives = [grid_objectives]
-    elif not isinstance(grid_objectives, list):
-        raise ValueError("objective should be a string or "
+    grid_objectives = config.get("Tuning", "objectives")
+    grid_objectives = yaml.load(_fix_json(grid_objectives))
+    if not isinstance(grid_objectives, list):
+        raise ValueError("objective should be a "
                          "list of objectives")
 
     if not all([objective in SCORERS for objective in grid_objectives]):
         raise ValueError('Invalid grid objective function/s: {}'
-                         .format(grid_objectives_string))
+                         .format(grid_objectives))
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
