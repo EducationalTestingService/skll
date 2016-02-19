@@ -388,7 +388,7 @@ class FeatureSet(object):
             labels = None
 
         features = df[feature_columns].to_dict(orient='records')
-        return FeatureSet('train',
+        return FeatureSet(name,
                           ids=df.index.tolist(),
                           labels=labels,
                           features=features,
