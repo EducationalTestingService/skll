@@ -1125,8 +1125,19 @@ class Learner(object):
 
         # extract actual labels (transformed for classification tasks)
         if self.model_type._estimator_type == 'classifier':
-            ytest = np.array([self.label_dict[label] for label in
-                              examples.labels])
+            test_label_list = np.unique(examples.labels).tolist()
+
+            # identify unseen test labels if any and add a new dictionary for these
+            # labels
+            unseen_test_label_list = [label for label in test_label_list
+                                      if not label in self.label_list]
+            unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
+                                                                    start=len(self.label_list))}
+            # combine the two dictionaries
+            train_and_test_label_dict = self.label_dict.copy()
+            train_and_test_label_dict.update(unseen_label_dict)
+            ytest = np.array([train_and_test_label_dict[label]
+                              for label in examples.labels])
         else:
             ytest = examples.labels
 
@@ -1164,7 +1175,7 @@ class Learner(object):
                    grid_score)
         else:
             # compute the confusion matrix
-            num_labels = len(self.label_list)
+            num_labels = len(train_and_test_label_dict)
             conf_mat = confusion_matrix(ytest, yhat,
                                         labels=list(range(num_labels)))
             # Calculate metrics
@@ -1174,8 +1185,8 @@ class Learner(object):
 
             # Store results
             result_dict = defaultdict(dict)
-            for actual_label in sorted(self.label_list):
-                col = self.label_dict[actual_label]
+            for actual_label in sorted(train_and_test_label_dict):
+                col = train_and_test_label_dict[actual_label]
                 result_dict[actual_label]["Precision"] = result_matrix[0][col]
                 result_dict[actual_label]["Recall"] = result_matrix[1][col]
                 result_dict[actual_label]["F-measure"] = result_matrix[2][col]
