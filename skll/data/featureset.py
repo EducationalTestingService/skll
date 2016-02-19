@@ -25,6 +25,10 @@ class FeatureSet(object):
     Encapsulation of all of the features, values, and metadata about a given
     set of data.
 
+    .. warning::
+        FeatureSets can only be equal if the order of the instances is
+        identical because these are stored as lists/arrays.
+
     This replaces ``ExamplesTuple`` from older versions.
 
     :param name: The name of this feature set.
