@@ -244,6 +244,10 @@ def _parse_config_file(config_path):
     # Initialize logger
     logger = logging.getLogger(__name__)
 
+    # check that config_path is not empty
+    if config_path == "":
+        raise IOError("The name of the configuration file is empty")
+
     # compute the absolute path for the config file
     config_path = realpath(config_path)
     config_dir = dirname(config_path)
