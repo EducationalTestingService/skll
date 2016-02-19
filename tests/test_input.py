@@ -629,7 +629,7 @@ def test_config_parsing_bad_objectives():
     # but everything else is correct
 
     config_template_path = join(_my_dir, 'configs',
-                                'test_objective_error.template.cfg')
+                                'test_objectives_error.template.cfg')
     values_to_fill_dict = {'train_directory': train_dir,
                            'log': output_dir,
                            'results': output_dir}
