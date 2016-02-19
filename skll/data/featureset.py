@@ -376,14 +376,16 @@ class FeatureSet(object):
         :param vectorizer: Vectorizer that created feature matrix.
         :type vectorizer: DictVectorizer or FeatureHasher
         '''
-
         if labels_column:
-            labels = list(df[labels_column])
-            features = [{col : row[col] for col in row.keys() if col != labels_column}
-                        for (i, row) in df.iterrows()]
+            feature_columns = [column for column in df.columns if column != labels_column]
+            labels = df[labels_column].tolist()
         else:
+            feature_columns = df.columns
             labels = None
-            features = [dict(row) for (i, row) in df.iterrows()]
 
-        return FeatureSet(name, list(df.index), labels=labels,
-                          features=features, vectorizer=vectorizer)
+        features = df[feature_columns].to_dict(orient='records')
+        return FeatureSet('train',
+                          ids=df.index.tolist(),
+                          labels=labels,
+                          features=features,
+                          vectorizer=vectorizer)
