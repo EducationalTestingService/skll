@@ -167,12 +167,14 @@ def check_config_parsing_value_error(config_path):
     """
     _parse_config_file(config_path)
 
+
 @raises(TypeError)
 def check_config_parsing_type_error(config_path):
     """
     Assert that calling `_parse_config_file` on `config_path` raises TypeError
     """
     _parse_config_file(config_path)
+
 
 @raises(KeyError)
 def check_config_parsing_key_error(config_path):
