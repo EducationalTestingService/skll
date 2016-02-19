@@ -574,10 +574,8 @@ def _parse_config_file(config_path):
             param_grid_list = \
                 [_find_default_param_grid(_LEARNER_NAMES_TO_CLASSES[learner_name])
                  for learner_name in learner_names]
-            for i, (learner,
-                    fixed_params,
-                    params_grids) in enumerate(zip(learners,
-                                                   fixed_parameter_list,
+            for i, (fixed_params,
+                    params_grids) in enumerate(zip(fixed_parameter_list,
                                                    param_grid_list)):
                 for j, params_grid in enumerate(param_grid_list[i]):
                     overlap_params = \
