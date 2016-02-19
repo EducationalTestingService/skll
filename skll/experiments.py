@@ -801,7 +801,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                            learner_name]
                 else: 
                     job_name_components = [experiment_name, featureset_name,
-                                       learner_name, grid_objective]
+                                           learner_name, grid_objective]
 
                 job_name = '_'.join(job_name_components)
 

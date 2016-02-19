@@ -167,6 +167,12 @@ def check_config_parsing_value_error(config_path):
     """
     _parse_config_file(config_path)
 
+@raises(TypeError)
+def check_config_parsing_type_error(config_path):
+    """
+    Assert that calling `_parse_config_file` on `config_path` raises TypeError
+    """
+    _parse_config_file(config_path)
 
 @raises(KeyError)
 def check_config_parsing_key_error(config_path):
@@ -607,7 +613,7 @@ def test_config_parsing_bad_objective_2():
                                          values_to_fill_dict,
                                          'bad_objective')
 
-    yield check_config_parsing_value_error, config_path
+    yield check_config_parsing_type_error, config_path
 
 
 def test_config_parsing_bad_objectives():
@@ -622,10 +628,15 @@ def test_config_parsing_bad_objectives():
     # make a simple config file that has a bad task
     # but everything else is correct
 
-    config_path = join(_my_dir, 'configs',
+    config_template_path = join(_my_dir, 'configs',
                                 'test_objective_error.template.cfg')
-
-    yield check_config_parsing_value_error, config_path
+    values_to_fill_dict = {'train_directory': train_dir,
+                           'log': output_dir,
+                           'results': output_dir}
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_objectives')
+    yield check_config_parsing_type_error, config_path
 
 
 def test_config_parsing_bad_task_paths():

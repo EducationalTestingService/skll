@@ -233,7 +233,7 @@ def _setup_config_parser(config_path, validate=True):
             config.set('Tuning', 'objectives', "['{}']".format(objective))
             config.remove_option('Tuning', 'objective')
         else:
-            raise ValueError("objective should be a string")
+            raise TypeError("objective should be a string")
 
     if validate:
         config.validate()
@@ -507,7 +507,7 @@ def _parse_config_file(config_path):
     grid_objectives = config.get("Tuning", "objectives")
     grid_objectives = yaml.load(_fix_json(grid_objectives))
     if not isinstance(grid_objectives, list):
-        raise ValueError("objectives should be a "
+        raise TypeError("objectives should be a "
                          "list of objectives")
 
     if not all([objective in SCORERS for objective in grid_objectives]):
