@@ -50,6 +50,8 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
     for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
         os.unlink(config_file)
+    for config_file in glob(join(config_dir, 'test_config_param_conflicts_*.cfg')):
+        os.unlink(config_file)
 
 
 def check_safe_float_conversion(converted_val, expected_val):
@@ -938,3 +940,138 @@ def test_setting_number_of_cv_folds():
      class_map, custom_learner_path) = _parse_config_file(config_path)
 
     eq_(cv_folds, 5)
+
+
+@raises(ValueError)
+def test_config_fixed_parameters_param_grids_conflict1():
+    """
+    Test the situation where there is a conflict between a fixed
+    parameter value and a parameter grids value in the configuration file,
+    which should result in an error since it is unclear what the user's
+    intention is.
+
+    The values are actually different in this case (i.e., it isn't that the
+    parameter grid value is simply a range of values, it is actually that the
+    parameter grid value's list of values contains only one value and that
+    value is not the same as the fixed parameter value.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+    # Make a configuration file that has both a `fixed_parameters` list and a
+    # `param_grids` list specified, between which there are conflicting
+    # parameter values
+    values_to_fill_dict = {'experiment_name':
+                               'config_fixed_parameters_param_grids_conflict1',
+                           'train_directory': train_dir,
+                           'log': output_dir,
+                           'results': output_dir,
+                           'fixed_parameters':
+                               "[{'random_state': 3692759340172, 'solver': "
+                               "'newton-cg', 'max_iter': 10}]",
+                           'param_grids':
+                               "[[{'C': [0.01, 0.1, 1.0, 10.0, 100.0], "
+                               "'max_iter': [5]}]]"}
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_param_conflicts.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'fixed_parameters_param_grids_conflict1')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
+
+
+@raises(ValueError)
+def test_config_fixed_parameters_param_grids_conflict2():
+    """
+    Test the situation where there is a conflict between a fixed
+    parameter value and a parameter grids value in the configuration file,
+    which should result in an error since it is unclear what the user's
+    intention is.
+
+    The number of values provided in the parameter grid for the particular
+    parameter that is conflicting is greater than 1 (i.e., a range of values as
+    opposed to a list containing just one value).
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+    # Make a configuration file that has both a `fixed_parameters` list and a
+    # `param_grids` list specified, between which there are conflicting
+    # parameter values
+    values_to_fill_dict = {'experiment_name':
+                               'config_fixed_parameters_param_grids_conflict2',
+                           'train_directory': train_dir,
+                           'log': output_dir,
+                           'results': output_dir,
+                           'fixed_parameters':
+                               "[{'random_state': 3692759340172, 'solver': "
+                               "'newton-cg', 'max_iter': 10}]",
+                           'param_grids':
+                               "[[{'C': [0.01, 0.1, 1.0, 10.0, 100.0], "
+                               "'max_iter': [5, 10, 15, 20]}]]"}
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_param_conflicts.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'fixed_parameters_param_grids_conflict2')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
+
+
+def test_config_fixed_parameters_param_grids_conflict3():
+    """
+    Test the situation where there is a conflict between a fixed
+    parameter value and a parameter grids value in the configuration file,
+    but the parameter grids value in question is only a list containing a
+    single value and that value is the same value as the fixed parameter value,
+    which should not raise an error.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+    # Make a configuration file that has both a `fixed_parameters` list and a
+    # `param_grids` list specified, between which there are conflicting
+    # parameter values
+    values_to_fill_dict = {'experiment_name':
+                               'config_fixed_parameters_param_grids_conflict3',
+                           'train_directory': train_dir,
+                           'log': output_dir,
+                           'results': output_dir,
+                           'fixed_parameters':
+                               "[{'random_state': 3692759340172, 'solver': "
+                               "'newton-cg', 'max_iter': 10}]",
+                           'param_grids':
+                               "[[{'C': [0.01, 0.1, 1.0, 10.0, 100.0], "
+                               "'max_iter': [10]}]]"}
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_param_conflicts.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'fixed_parameters_param_grids_conflict3')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)

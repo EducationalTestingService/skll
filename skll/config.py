@@ -24,6 +24,8 @@ import yaml
 from six import string_types, iteritems  # Python 2/3
 from sklearn.metrics import SCORERS
 
+from skll.learner import _find_default_param_grid
+
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
@@ -475,23 +477,101 @@ def _parse_config_file(config_path):
     # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
-    # Check `fixed_parameter_list`/`param_grid_list` if `do_grid_search`
-    # is True
-    if do_grid_search:
-        for learner, fixed_params, params in zip(fixed_parameter_list,
-                                                 param_grid_list,
-                                                 learners):
-            overlap_params = set(fixed_params).intersection(set(params))
-            if overlap_params:
-                logger.warning('Conflict(s) between fixed parameters and '
-                               'parameters to be searched during grid search. '
-                               'Fixed parameters will be ignored in cases of'
-                               ' conflict.'
-                               .format(learner, ' '.join(overlap_params)))
-    else:
+    # Check if `param_grids` is specified, but `grid_search` is False
+    if param_grid_list and not do_grid_search:
+        logger.warning('"param_grids" was specified despite the fact that '
+                       '"grid_search" was not specified or specified as '
+                       'False.')
+
+    # Check for conflicts between parameter values specified in
+    # `fixed_parameter_list` and values specified in `param_grid_list` (or
+    # values passed in by default) if `do_grid_search` is True
+    if do_grid_search and fixed_parameter_list:
+
+        # If parameter grids are specified (or at least some are), loop through
+        # the parameter grids and the corresponding fixed parameters and try to
+        # find and deal with conflicts
         if param_grid_list:
-            logger.warning('"param_grids" was specified despite the fact that '
-                           '"grid_search" was specified as False.')
+            for i, (learner,
+                    fixed_params,
+                    params_grids) in enumerate(zip(learners,
+                                                   fixed_parameter_list,
+                                                   param_grid_list)):
+
+                # If parameters were specified (i.e., not just an empty list),
+                # check for conflicts and raise an error if there are any
+                # (since it means that the user actually specified conflicting
+                # fixed values and parameter grid values)
+                if params_grids:
+                    for params_grid in params_grids:
+                        overlap_params = \
+                            set(fixed_params).intersection(set(params_grid))
+                        overlap_params = \
+                            [overlap for overlap in overlap_params
+                             if len(params_grid[overlap]) > 1 or
+                             fixed_params[overlap] != params_grid[overlap][0]]
+                        if overlap_params:
+                            raise ValueError('There are conflicting values '
+                                             'between "fixed_parameters" and '
+                                             '"param_grids" for the following '
+                                             'learner/parameters combination: '
+                                             '{}/{}. A parameter value cannot '
+                                             'be both a fixed value and a set '
+                                             'of values.'
+                                             .format(learner, overlap_params))
+
+                # Otherwise, get the default paramter grid values and check if
+                # there are any conflicts in that situation and, if there are,
+                # decide the conflicts in favor of the fixed parameters, but
+                # log a warning
+                else:
+                    param_grid_list[i] = _find_default_param_grid(learner)
+                    for j, params_grid in enumerate(param_grid_list[i]):
+                        overlap_params = \
+                            set(fixed_params).intersection(set(params_grid))
+                        overlap_params = \
+                            [overlap for overlap in overlap_params
+                             if len(params_grid[overlap]) > 1 or
+                             fixed_params[overlap] != params_grid[overlap][0]]
+                        if overlap_params:
+                            logger.warning('There are conflicts between values'
+                                           ' specified in "fixed_parameters" '
+                                           'and the default values values '
+                                           'supplied for doing grid search '
+                                           '(since "grid_search" was set to '
+                                           'True and no parameter grids were '
+                                           'specified). In this case, values '
+                                           'specified in "fixed_parameters" '
+                                           'will take precedence. To avoid '
+                                           'this situation in the future, '
+                                           'simply specify your own parameter '
+                                           'grid values via the "param_grids" '
+                                           'field in the configuration file.')
+                            for param in overlap_params:
+                                del param_grid_list[i][j][param]
+
+        # Otherwise, get the default parameter grids and check if there are any
+        # conflicts between them and the parameters specified in
+        # `fixed_parameter_list` and simply remove the conflicting values from
+        # the default parameter grids and use the modified defaults
+        else:
+            param_grid_list = [_find_default_param_grid(learner) for learner
+                               in learners]
+            for i, (learner,
+                    fixed_params,
+                    params_grids) in enumerate(zip(learners,
+                                                   fixed_parameter_list,
+                                                   param_grid_list)):
+                for j, params_grid in enumerate(param_grid_list[i]):
+                    overlap_params = \
+                        set(fixed_params).intersection(set(params_grid))
+                    overlap_params = \
+                            [overlap for overlap in overlap_params
+                             if len(params_grid[overlap]) > 1 or
+                             fixed_params[overlap] != params_grid[overlap][0]]
+                    for param in overlap_params:
+                        del param_grid_list[i][j][param]
+
 
     # minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")
