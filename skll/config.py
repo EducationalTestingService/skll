@@ -315,7 +315,7 @@ def _parse_config_file(config_path):
     custom_learner_path = _locate_file(config.get("Input", "custom_learner_path"),
                                        config_dir)
 
-    # Check that the learners are valid
+    # Check that the learners are valid learner types
     learner_names = [_transform_learner_name(learner) for learner in learners]
     unrecognized_learner_names = \
         set(learner_names).difference(_LEARNER_NAMES_TO_CLASSES)

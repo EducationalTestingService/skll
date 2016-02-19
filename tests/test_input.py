@@ -268,10 +268,14 @@ def test_config_parsing_bad_learner():
 
     for learners_list, sub_prefix in zip([None, '[]', 'LogisticRegression',
                                           "['LogisticRegression', "
-                                          "'LogisticRegression']"],
+                                          "'LogisticRegression']",
+                                          "['LogisticClassification']",
+                                          "['Logistic', 'RescaledSVRegression']"],
                                          ['no_learner', 'empty_learner',
                                           'not_list_learner',
-                                          'duplicate_learner']):
+                                          'duplicate_learner',
+                                          'unrecognized_learner',
+                                          'unrecognized_learners']):
         if learners_list is not None:
             values_to_fill_dict['learners'] = learners_list
 
