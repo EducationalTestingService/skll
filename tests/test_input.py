@@ -958,6 +958,7 @@ def test_config_fixed_parameters_param_grids_conflict1():
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
+
     # Make a configuration file that has both a `fixed_parameters` list and a
     # `param_grids` list specified, between which there are conflicting
     # parameter values
@@ -1004,6 +1005,7 @@ def test_config_fixed_parameters_param_grids_conflict2():
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
+
     # Make a configuration file that has both a `fixed_parameters` list and a
     # `param_grids` list specified, between which there are conflicting
     # parameter values
@@ -1046,9 +1048,11 @@ def test_config_fixed_parameters_param_grids_conflict3():
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
+
     # Make a configuration file that has both a `fixed_parameters` list and a
     # `param_grids` list specified, between which there are conflicting
-    # parameter values
+    # parameter values but in which case the values turn out to be the same
+    # and, thus, do not result in an exception
     values_to_fill_dict = {'experiment_name':
                                'config_fixed_parameters_param_grids_conflict3',
                            'train_directory': train_dir,
@@ -1075,3 +1079,51 @@ def test_config_fixed_parameters_param_grids_conflict3():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)
+
+
+def test_config_fixed_parameters_default_param_grids_conflict1():
+    """
+    Test the situation where there is a conflict between a fixed
+    parameter value specified in the configuration file and a default parameter
+    grids value supplied via an empty list in the configuration file (which is
+    equivalent to not specifying a parameter grid and using the
+    automatically-provided values).
+
+    In this case, the fixed parameter value will conflict with the
+    corresponding default value and the fixed value will take precedence.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # Make a configuration file that has both a `fixed_parameters` list and a
+    # `param_grids` list specified in which there is only an empty list (which
+    # will result in use of the default parameter grid). In this
+    values_to_fill_dict = \
+        {'experiment_name':
+             'config_fixed_parameters_default_param_grids_conflict1',
+         'train_directory': train_dir,
+         'log': output_dir,
+         'results': output_dir,
+         'fixed_parameters': "[{'C': 0.01}]",
+         'param_grids': "[[]]"}
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_param_conflicts.template.cfg')
+    config_path = \
+        fill_in_config_options(config_template_path,
+                               values_to_fill_dict,
+                               'fixed_parameters_default_param_grids_conflict1')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
+
+    # Check the values of `fixed_parameter_list` and `param_grid_list`
+    eq_(fixed_parameter_list[0]['C'], 0.01)
+    eq_(param_grid_list[0][0].get('C'), None)

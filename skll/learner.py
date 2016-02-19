@@ -59,6 +59,29 @@ from skll.version import VERSION
 
 
 # Constants #
+_LEARNER_NAMES_TO_CLASSES = {'AdaBoostClassifier': AdaBoostClassifier,
+                             'AdaBoostRegressor': AdaBoostRegressor,
+                             'GradientBoostingClassifier': GradientBoostingClassifier,
+                             'GradientBoostingRegressor': GradientBoostingRegressor,
+                             'RandomForestClassifier': RandomForestClassifier,
+                             'RandomForestRegressor': RandomForestRegressor,
+                             'ElasticNet': ElasticNet,
+                             'Lasso': Lasso,
+                             'LinearRegression': LinearRegression,
+                             'LogisticRegression': LogisticRegression,
+                             'Ridge': Ridge,
+                             'SGDClassifier': SGDClassifier,
+                             'SGDRegressor': SGDRegressor,
+                             'MultinomialNB': MultinomialNB,
+                             'KNeighborsClassifier': KNeighborsClassifier,
+                             'KNeighborsRegressor': KNeighborsRegressor,
+                             'LinearSVC': LinearSVC,
+                             'SVC': SVC,
+                             'LinearSVR': LinearSVR,
+                             'SVR': SVR,
+                             'DecisionTreeClassifier': DecisionTreeClassifier,
+                             'DecisionTreeRegressor': DecisionTreeRegressor}
+
 _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         AdaBoostRegressor:
