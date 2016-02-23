@@ -83,7 +83,7 @@ def tearDown():
 
 
 # a utility function to check rescaling for linear models
-def check_rescaling(name):
+def check_rescaling(name, grid_search=False):
 
     train_fs, test_fs, _ = make_regression_data(num_examples=2000,
                                                 sd_noise=4,
@@ -94,8 +94,13 @@ def check_rescaling(name):
     rescaled_learner = Learner('Rescaled' + name)
 
     # train both the regular regressor and the rescaled regressor
-    learner.train(train_fs, grid_objective='pearson')
-    rescaled_learner.train(train_fs, grid_objective='pearson')
+    # with and without using grid search
+    if grid_search:
+        learner.train(train_fs, grid_objective='pearson')
+        rescaled_learner.train(train_fs, grid_objective='pearson')
+    else:
+        learner.train(train_fs, grid_search=False)
+        rescaled_learner.train(train_fs, grid_search=False)
 
     # now generate both sets of predictions on the test feature set
     predictions = learner.predict(test_fs)
@@ -132,10 +137,11 @@ def check_rescaling(name):
 def test_rescaling():
     for regressor_name in ['ElasticNet', 'Lasso', 'LinearRegression', 'Ridge',
                            'LinearSVR', 'SVR', 'SGDRegressor']:
-        yield check_rescaling, regressor_name
+        for do_grid_search in [True, False]:
+            yield check_rescaling, regressor_name, do_grid_search
 
 
-# the utility function to run the linear regression tests
+# the utility function to run the linear regession tests
 def check_linear_models(name,
                         use_feature_hashing=False,
                         use_rescaling=False):
