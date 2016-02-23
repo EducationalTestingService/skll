@@ -414,7 +414,7 @@ custom_learner_path *(Optional)*
 """"""""""""""""""""""""""""""""
 
 Path to a ``.py`` file that defines a custom learner.  This file will be
-imported dynamically.  This is only required if a custom learner in specified
+imported dynamically.  This is only required if a custom learner is specified
 in the list of :ref:`learners`.
 
 All Custom learners must implement the ``fit`` and
@@ -562,7 +562,7 @@ SVR
 
        {'class_weight': 'balanced'}
 
-    The second option allows you to assign an specific weight per each
+    The second option allows you to assign a specific weight per each
     class. The default weight per class is 1. For example:
 
     .. code-block:: python
@@ -581,7 +581,7 @@ scale by mean, your data will automatically be converted to dense, so use
 caution when you have a very large dataset. Valid options are:
 
 none
-    perform no feature scaling at all.
+    Perform no feature scaling at all.
 
 with_std
     Scale feature values by their standard deviation.
@@ -590,7 +590,7 @@ with_mean
     Center features by subtracting their mean.
 
 both
-    perform both centering and scaling.
+    Perform both centering and scaling.
 
 Defaults to ``none``.
 
@@ -841,7 +841,7 @@ Using run_experiment
 --------------------
 .. program:: run_experiment
 
-Once you have create the :ref:`configuration file <create_config>` for your
+Once you have created the :ref:`configuration file <create_config>` for your
 experiment, you can usually just get your experiment started by running
 ``run_experiment CONFIGFILE``. That said, there are a few options that are
 specified via command-line arguments instead of in the configuration file:
