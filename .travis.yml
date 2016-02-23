@@ -19,7 +19,7 @@ before_install:
   - conda config --add channels desilinguist
   - conda update --yes conda
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION nomkl numpy scipy beautiful-soup six scikit-learn==0.17.0 joblib prettytable python-coveralls pyyaml
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION nomkl numpy scipy beautiful-soup six scikit-learn==0.17.1 joblib prettytable python-coveralls pyyaml
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser logutils mock; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
