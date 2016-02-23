@@ -631,17 +631,23 @@ def test_config_parsing_bad_objectives():
     # but everything else is correct
 
     config_template_path = join(_my_dir, 'configs',
-                                'test_objectives_error.template.cfg')
-    values_to_fill_dict = {'train_directory': train_dir,
+                                'test_config_parsing.template.cfg')
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
                            'log': output_dir,
-                           'results': output_dir}
+                           'results': output_dir,
+                           'objectives': "accuracy"}
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
                                          'bad_objectives')
     yield check_config_parsing_type_error, config_path
 
 
-@raises(ValueError)
+
 def test_config_parsing_bad_objective_and_objectives():
     """
     Test to ensure config file parsing raises an error with 
@@ -656,13 +662,16 @@ def test_config_parsing_bad_objective_and_objectives():
     # but everything else is correct
 
     config_template_path = join(_my_dir, 'configs',
-                                'test_objective_and_objectives_conflict_error.template.cfg')
+                                'test_config_parsing.template.cfg')
     values_to_fill_dict = {'train_directory': train_dir,
                            'log': output_dir,
-                           'results': output_dir}
-    fill_in_config_options(config_template_path,
+                           'results': output_dir,
+                           'objectives': "['accuracy']",
+                           'objective': "accuracy"}
+    config_path = fill_in_config_options(config_template_path,
                            values_to_fill_dict,
                            'bad_objective_and_objectives')
+    yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_task_paths():
