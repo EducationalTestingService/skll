@@ -64,6 +64,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'models': '',
                     'num_cv_folds': '10',
                     'objectives': "['f1_score_micro']",
+                    'objective': "f1_score_micro",
                     'param_grids': '[]',
                     'pos_label_str': '',
                     'predictions': '',
@@ -100,6 +101,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
                                    'objectives': 'Tuning',
+                                   'objective': 'Tuning',
                                    'param_grids': 'Tuning',
                                    'pos_label_str': 'Tuning',
                                    'predictions': 'Output',
@@ -226,14 +228,28 @@ def _setup_config_parser(config_path, validate=True):
     config.read(config_path)
 
     # normalize objective to objectives
-    if config.has_option('Tuning', 'objective'):
-        objective = config.get('Tuning', 'objective')
-        objective = yaml.load(_fix_json(objective))
-        if isinstance(objective, string_types):
-            config.set('Tuning', 'objectives', "['{}']".format(objective))
+    objective_value = config.get('Tuning', 'objective')
+    objectives_value = config.get('Tuning', 'objectives')
+    objective_default = config._defaults['objective']
+    objectives_default = config._defaults['objectives']
+
+    # if both of them are non default, raise error
+    if (objectives_value != objectives_default and objective_value != objective_default):
+        raise ValueError("Only one of the objective or "
+                         "objectives can be present in the config file")
+    else:
+        # if objective is default value, delete it
+        if objective_value == objective_default:
             config.remove_option('Tuning', 'objective')
         else:
-            raise TypeError("objective should be a string")
+            # else convert objective into objectives and delete objective
+            objective_value = yaml.load(_fix_json(objective_value))
+            if isinstance(objective_value, string_types):
+                config.set(
+                    'Tuning', 'objectives', "['{}']".format(objective_value))
+                config.remove_option('Tuning', 'objective')
+            else:
+                raise TypeError("objective should be a string")
 
     if validate:
         config.validate()
@@ -508,7 +524,7 @@ def _parse_config_file(config_path):
     grid_objectives = yaml.load(_fix_json(grid_objectives))
     if not isinstance(grid_objectives, list):
         raise TypeError("objectives should be a "
-                         "list of objectives")
+                        "list of objectives")
 
     if not all([objective in SCORERS for objective in grid_objectives]):
         raise ValueError('Invalid grid objective function/s: {}'

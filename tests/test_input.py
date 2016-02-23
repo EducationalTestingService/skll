@@ -641,6 +641,30 @@ def test_config_parsing_bad_objectives():
     yield check_config_parsing_type_error, config_path
 
 
+@raises(ValueError)
+def test_config_parsing_bad_objective_and_objectives():
+    """
+    Test to ensure config file parsing raises an error with 
+    a grid objectives and objective both given non default values
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_objective_and_objectives_conflict_error.template.cfg')
+    values_to_fill_dict = {'train_directory': train_dir,
+                           'log': output_dir,
+                           'results': output_dir}
+    fill_in_config_options(config_template_path,
+                           values_to_fill_dict,
+                           'bad_objective_and_objectives')
+
+
 def test_config_parsing_bad_task_paths():
     # Test to ensure config file parsing raises an error with various
     # incorrectly set path
@@ -926,7 +950,7 @@ def test_config_parsing_relative_input_paths():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objective': 'f1_score_macro'}
+                           'objective': 'f1_score_micro'}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_relative_paths.template.cfg')
