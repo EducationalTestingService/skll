@@ -87,6 +87,7 @@ def _get_stat_float(label_result_dict, stat):
     else:
         return float('nan')
 
+
 def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
     """
     Function to take a dictionary of id:test-fold-number and
@@ -546,7 +547,7 @@ def _classify_featureset(args):
         if task == 'cross_validate' and save_cv_folds:
             skll_fold_ids_file = experiment_name + '_skll_fold_ids.csv'
             file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(join(results_path,skll_fold_ids_file),
+            with open(join(results_path, skll_fold_ids_file),
                       file_mode) as output_file:
                 _write_skll_folds(skll_fold_ids, output_file)
 
@@ -716,7 +717,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Read configuration
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
      hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
-     featuresets, do_shuffle, model_path, do_grid_search, grid_objective,
+     featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
      probability, results_path, pos_label_str, feature_scaling,
      min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
@@ -791,89 +792,95 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Run each featureset-learner combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
         for learner_num, learner_name in enumerate(learners):
+            for grid_objective in grid_objectives:
 
-            # for the individual job name, we need to add the feature set name
-            # and the learner name
-            job_name_components = [experiment_name, featureset_name,
-                                   learner_name]
-            job_name = '_'.join(job_name_components)
+                # for the individual job name, we need to add the feature set name
+                # and the learner name
+                if len(grid_objectives) == 1:
+                    job_name_components = [experiment_name, featureset_name,
+                                           learner_name]
+                else: 
+                    job_name_components = [experiment_name, featureset_name,
+                                           learner_name, grid_objective]
 
-            # change the prediction prefix to include the feature set
-            prediction_prefix = join(prediction_dir, job_name)
+                job_name = '_'.join(job_name_components)
 
-            # the log file that stores the actual output of this script (e.g.,
-            # the tuned parameters, what kind of experiment was run, etc.)
-            temp_logfile = join(log_path, '{}.log'.format(job_name))
+                # change the prediction prefix to include the feature set
+                prediction_prefix = join(prediction_dir, job_name)
 
-            # Figure out result json file path
-            result_json_path = join(results_path,
-                                    '{}.results.json'.format(job_name))
+                # the log file that stores the actual output of this script (e.g.,
+                # the tuned parameters, what kind of experiment was run, etc.)
+                temp_logfile = join(log_path, '{}.log'.format(job_name))
 
-            # save the path to the results json file that will be written
-            result_json_paths.append(result_json_path)
+                # Figure out result json file path
+                result_json_path = join(results_path,
+                                        '{}.results.json'.format(job_name))
 
-            # If result file already exists and we're resuming, move on
-            if resume and (exists(result_json_path) and
-                           os.path.getsize(result_json_path)):
-                logger.info('Running in resume mode and %s exists, so skipping'
-                            ' job.', result_json_path)
-                continue
+                # save the path to the results json file that will be written
+                result_json_paths.append(result_json_path)
 
-            # create job if we're doing things on the grid
-            job_args = {}
-            job_args["experiment_name"] = experiment_name
-            job_args["task"] = task
-            job_args["sampler"] = sampler
-            job_args["feature_hasher"] = feature_hasher
-            job_args["hasher_features"] = hasher_features
-            job_args["job_name"] = job_name
-            job_args["featureset"] = featureset
-            job_args["featureset_name"] = featureset_name
-            job_args["learner_name"] = learner_name
-            job_args["train_path"] = train_path
-            job_args["test_path"] = test_path
-            job_args["train_set_name"] = train_set_name
-            job_args["test_set_name"] = test_set_name
-            job_args["shuffle"] = do_shuffle
-            job_args["model_path"] = model_path
-            job_args["prediction_prefix"] = prediction_prefix
-            job_args["grid_search"] = do_grid_search
-            job_args["grid_objective"] = grid_objective
-            job_args["suffix"] = suffix
-            job_args["log_path"] = temp_logfile
-            job_args["probability"] = probability
-            job_args["results_path"] = results_path
-            job_args["sampler_parameters"] = (fixed_sampler_parameters
-                                              if fixed_sampler_parameters
-                                              else dict())
-            job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
-                                            if fixed_parameter_list
-                                            else dict())
-            job_args["param_grid"] = (param_grid_list[learner_num]
-                                      if param_grid_list else None)
-            job_args["pos_label_str"] = pos_label_str
-            job_args["overwrite"] = overwrite
-            job_args["feature_scaling"] = feature_scaling
-            job_args["min_feature_count"] = min_feature_count
-            job_args["grid_search_jobs"] = grid_search_jobs
-            job_args["grid_search_folds"] = grid_search_folds
-            job_args["cv_folds"] = cv_folds
-            job_args["save_cv_folds"] = save_cv_folds
-            job_args["do_stratified_folds"] = do_stratified_folds
-            job_args["label_col"] = label_col
-            job_args["id_col"] = id_col
-            job_args["ids_to_floats"] = ids_to_floats
-            job_args["quiet"] = quiet
-            job_args["class_map"] = class_map
-            job_args["custom_learner_path"] = custom_learner_path
+                # If result file already exists and we're resuming, move on
+                if resume and (exists(result_json_path) and
+                               os.path.getsize(result_json_path)):
+                    logger.info('Running in resume mode and %s exists, '
+                                'so skipping job.', result_json_path)
+                    continue
 
-            if not local:
-                jobs.append(Job(_classify_featureset, [job_args],
-                                num_slots=(MAX_CONCURRENT_PROCESSES if
-                                           do_grid_search else 1),
-                                name=job_name, queue=queue))
-            else:
-                _classify_featureset(job_args)
+                # create job if we're doing things on the grid
+                job_args = {}
+                job_args["experiment_name"] = experiment_name
+                job_args["task"] = task
+                job_args["sampler"] = sampler
+                job_args["feature_hasher"] = feature_hasher
+                job_args["hasher_features"] = hasher_features
+                job_args["job_name"] = job_name
+                job_args["featureset"] = featureset
+                job_args["featureset_name"] = featureset_name
+                job_args["learner_name"] = learner_name
+                job_args["train_path"] = train_path
+                job_args["test_path"] = test_path
+                job_args["train_set_name"] = train_set_name
+                job_args["test_set_name"] = test_set_name
+                job_args["shuffle"] = do_shuffle
+                job_args["model_path"] = model_path
+                job_args["prediction_prefix"] = prediction_prefix
+                job_args["grid_search"] = do_grid_search
+                job_args["grid_objective"] = grid_objective
+                job_args["suffix"] = suffix
+                job_args["log_path"] = temp_logfile
+                job_args["probability"] = probability
+                job_args["results_path"] = results_path
+                job_args["sampler_parameters"] = (fixed_sampler_parameters
+                                                  if fixed_sampler_parameters
+                                                  else dict())
+                job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
+                                                if fixed_parameter_list
+                                                else dict())
+                job_args["param_grid"] = (param_grid_list[learner_num]
+                                          if param_grid_list else None)
+                job_args["pos_label_str"] = pos_label_str
+                job_args["overwrite"] = overwrite
+                job_args["feature_scaling"] = feature_scaling
+                job_args["min_feature_count"] = min_feature_count
+                job_args["grid_search_jobs"] = grid_search_jobs
+                job_args["grid_search_folds"] = grid_search_folds
+                job_args["cv_folds"] = cv_folds
+                job_args["save_cv_folds"] = save_cv_folds
+                job_args["do_stratified_folds"] = do_stratified_folds
+                job_args["label_col"] = label_col
+                job_args["id_col"] = id_col
+                job_args["ids_to_floats"] = ids_to_floats
+                job_args["quiet"] = quiet
+                job_args["class_map"] = class_map
+                job_args["custom_learner_path"] = custom_learner_path
+
+                if not local:
+                    jobs.append(Job(_classify_featureset, [job_args],
+                                    num_slots=(MAX_CONCURRENT_PROCESSES if
+                                               do_grid_search else 1),
+                                    name=job_name, queue=queue))
+                else:
+                    _classify_featureset(job_args)
     test_set_name = basename(test_path)
 
     # submit the jobs (if running on grid)

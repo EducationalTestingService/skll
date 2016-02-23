@@ -256,14 +256,23 @@ def test_train_file_test_file():
                                                             'jsonlines'))
     run_configuration(config_path, quiet=True)
 
-    # Check results
+    # Check results for objective functions ["accuracy", "f1"]
+
+    # objective function accuracy
     with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
                                        'single_file.jsonlines_test_test_single'
                                        '_file.jsonlines_RandomForestClassifier'
-                                       '.results.json'))) as f:
+                                       '_accuracy.results.json'))) as f:
         result_dict = json.load(f)[0]
-
     assert_almost_equal(result_dict['score'], 0.925)
+
+    # objective function f1
+    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
+                                       'single_file.jsonlines_test_test_single'
+                                       '_file.jsonlines_RandomForestClassifier'
+                                       '_f1.results.json'))) as f:
+        result_dict = json.load(f)[0]
+    assert_almost_equal(result_dict['score'], 0.928)
 
 
 @raises(ValueError)

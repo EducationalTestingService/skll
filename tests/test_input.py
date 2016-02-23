@@ -159,6 +159,7 @@ def test_one_file_load_featureset():
     single_fs = _load_featureset(dirpath, featureset, suffix, quiet=True)
     eq_(single_file_fs, single_fs)
 
+
 @raises(ValueError)
 def check_config_parsing_value_error(config_path):
     """
@@ -166,12 +167,22 @@ def check_config_parsing_value_error(config_path):
     """
     _parse_config_file(config_path)
 
+
+@raises(TypeError)
+def check_config_parsing_type_error(config_path):
+    """
+    Assert that calling `_parse_config_file` on `config_path` raises TypeError
+    """
+    _parse_config_file(config_path)
+
+
 @raises(KeyError)
 def check_config_parsing_key_error(config_path):
     """
     Assert that calling `_parse_config_file` on `config_path` raises KeyError
     """
     _parse_config_file(config_path)
+
 
 @raises(IOError)
 def check_config_parsing_file_not_found_error(config_path):
@@ -183,10 +194,11 @@ def check_config_parsing_file_not_found_error(config_path):
 
 @raises(IOError)
 def test_empty_config_name_raises_file_not_found_error():
-   """ 
-   Assert that calling _parse_config_file on an empty string raises IOError
-   """
-   _parse_config_file("")
+    """ 
+    Assert that calling _parse_config_file on an empty string raises IOError
+    """
+    _parse_config_file("")
+
 
 def test_config_parsing_no_name():
     """
@@ -576,6 +588,92 @@ def test_config_parsing_bad_objective():
     yield check_config_parsing_value_error, config_path
 
 
+def test_config_parsing_bad_objective_2():
+    """
+    Test to ensure config file parsing raises an error with a grid objective given as a list
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': "['accuracy']"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_objective')
+
+    yield check_config_parsing_type_error, config_path
+
+
+def test_config_parsing_bad_objectives():
+    """
+    Test to ensure config file parsing raises an error with a grid objectives given as a string
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objectives': "accuracy"}
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_objectives')
+    yield check_config_parsing_type_error, config_path
+
+
+
+def test_config_parsing_bad_objective_and_objectives():
+    """
+    Test to ensure config file parsing raises an error with 
+    a grid objectives and objective both given non default values
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    values_to_fill_dict = {'train_directory': train_dir,
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objectives': "['accuracy']",
+                           'objective': "accuracy"}
+    config_path = fill_in_config_options(config_template_path,
+                           values_to_fill_dict,
+                           'bad_objective_and_objectives')
+    yield check_config_parsing_value_error, config_path
+
+
 def test_config_parsing_bad_task_paths():
     # Test to ensure config file parsing raises an error with various
     # incorrectly set path
@@ -804,8 +902,8 @@ def test_config_parsing_mislocated_input_path():
                                 'test_config_parsing.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
-                                                   values_to_fill_dict,
-                                                   'mislocated_input_file')
+                                         values_to_fill_dict,
+                                         'mislocated_input_file')
 
     yield check_config_parsing_file_not_found_error, config_path
 
@@ -844,6 +942,7 @@ def test_config_parsing_relative_input_path():
 
     eq_(normpath(train_path), (join(_my_dir, 'train')))
 
+
 def test_config_parsing_relative_input_paths():
 
     train_dir = '../train'
@@ -860,7 +959,7 @@ def test_config_parsing_relative_input_paths():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objective': 'f1_score_macro'}
+                           'objective': 'f1_score_micro'}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_relative_paths.template.cfg')
@@ -878,11 +977,12 @@ def test_config_parsing_relative_input_paths():
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path) = _parse_config_file(config_path)
 
+
 def test_default_number_of_cv_folds():
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
-    
+
     # make a simple config file that does not set cv_folds
 
     values_to_fill_dict = {'experiment_name': 'config_parsing',
