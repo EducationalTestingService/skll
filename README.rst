@@ -62,7 +62,7 @@ like:
   # Should we tune parameters of all learners by searching provided parameter grids?
   grid_search = true
   # Function to maximize when performing grid search
-  objective = accuracy
+  objectives = ['accuracy']
   
   [Output]
   # again, these can/should be absolute paths

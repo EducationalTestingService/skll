@@ -148,7 +148,7 @@ def fill_in_config_options(config_template_path,
                             'num_cv_folds', 'bad_option', 'duplicate_option',
                             'fixed_parameters'],
                   'Tuning': ['probability', 'grid_search', 'objective',
-                             'duplicate_option', 'param_grids'],
+                             'duplicate_option', 'param_grids', 'objectives'],
                   'Output': ['results', 'log', 'models',
                              'predictions']}
 
