@@ -315,10 +315,12 @@ def _parse_config_file(config_path):
     custom_learner_path = _locate_file(config.get("Input", "custom_learner_path"),
                                        config_dir)
 
-    # Check that the learners are valid learner types
+    # Check that the learners are valid learner types (or that they are custom
+    # learners, i.e., ending in ".py")
     learner_names = [_transform_learner_name(learner) for learner in learners]
     unrecognized_learner_names = \
-        set(learner_names).difference(_LEARNER_NAMES_TO_CLASSES)
+        set([learner_name for learner_name in learner_names
+             if not learner_name.endswith('.py')]).difference(_LEARNER_NAMES_TO_CLASSES)
     if unrecognized_learner_names:
         raise ValueError('Configuration file contains unrecognized learner '
                          'types: {}'.format(unrecognized_learner_names))
@@ -524,6 +526,10 @@ def _parse_config_file(config_path):
                                                    fixed_parameter_list,
                                                    param_grid_list)):
 
+                # Skip if custom learner
+                if learner_name.endswith('.py'):
+                    continue
+
                 # If parameters were specified (i.e., not just an empty list),
                 # check for conflicts and raise an error if there are any
                 # (since it means that the user actually specified conflicting
@@ -572,11 +578,18 @@ def _parse_config_file(config_path):
         # warning
         else:
             param_grid_list = \
-                [_find_default_param_grid(_LEARNER_NAMES_TO_CLASSES[learner_name])
+                [_find_default_param_grid(_LEARNER_NAMES_TO_CLASSES.get(learner_name)
                  for learner_name in learner_names]
-            for i, (fixed_params,
-                    params_grids) in enumerate(zip(fixed_parameter_list,
+            for i, (learner_name,
+                    fixed_params,
+                    params_grids) in enumerate(zip(learner_names,
+                                                   fixed_parameter_list,
                                                    param_grid_list)):
+                
+                # Skip if custom learner
+                if learner_name.endswith('.py'):
+                    continue
+                
                 for j, params_grid in enumerate(param_grid_list[i]):
                     overlap_params = \
                         set(fixed_params).intersection(set(params_grid))
