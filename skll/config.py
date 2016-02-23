@@ -34,10 +34,17 @@ _VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
                                             'none'])
 
 
-def _transform_learner_name(learner):
-    if learner.startswith('Rescaled'):
-        return learner.replace('Rescaled', '')
-    return learner
+def _transform_learner_name(learner_name):
+    """Remove the `Rescaled` prefix from learner names if applicable.
+
+    :param learner_name: name of learner type
+    :type learner_name: str
+    :returns: str
+    """
+
+    if learner_name.startswith('Rescaled'):
+        return learner_name.replace('Rescaled', '')
+    return learner_name
 
 
 class SKLLConfigParser(configparser.ConfigParser):
@@ -318,12 +325,13 @@ def _parse_config_file(config_path):
     # Check that the learners are valid learner types (or that they are custom
     # learners, i.e., ending in ".py")
     learner_names = [_transform_learner_name(learner) for learner in learners]
-    unrecognized_learner_names = \
-        set([learner_name for learner_name in learner_names
-             if not learner_name.endswith('.py')]).difference(_LEARNER_NAMES_TO_CLASSES)
-    if unrecognized_learner_names:
-        raise ValueError('Configuration file contains unrecognized learner '
-                         'types: {}'.format(unrecognized_learner_names))
+    if not custom_learner_path:
+        unrecognized_learner_names = \
+            set([learner_name for learner_name
+                 in learner_names]).difference(_LEARNER_NAMES_TO_CLASSES)
+        if unrecognized_learner_names:
+            raise ValueError('Configuration file contains unrecognized learner '
+                             'types: {}'.format(unrecognized_learner_names))
 
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
@@ -526,10 +534,6 @@ def _parse_config_file(config_path):
                                                    fixed_parameter_list,
                                                    param_grid_list)):
 
-                # Skip if custom learner
-                if learner_name.endswith('.py'):
-                    continue
-
                 # If parameters were specified (i.e., not just an empty list),
                 # check for conflicts and raise an error if there are any
                 # (since it means that the user actually specified conflicting
@@ -557,8 +561,11 @@ def _parse_config_file(config_path):
                 # decide the conflicts in favor of the fixed parameters, but
                 # log a warning
                 else:
-                    param_grid_list[i] = _find_default_param_grid(
-                                             _LEARNER_NAMES_TO_CLASSES[learner_name])
+                    learner_class = _LEARNER_NAMES_TO_CLASSES.get(learner_name)
+                    params_grids = (_find_default_param_grid(learner_class)
+                                    if learner_class
+                                    else [])
+                    param_grid_list[i] = params_grids
                     for j, params_grid in enumerate(param_grid_list[i]):
                         overlap_params = \
                             set(fixed_params).intersection(set(params_grid))
@@ -578,18 +585,14 @@ def _parse_config_file(config_path):
         # warning
         else:
             param_grid_list = \
-                [_find_default_param_grid(_LEARNER_NAMES_TO_CLASSES.get(learner_name)
+                [_find_default_param_grid(_LEARNER_NAMES_TO_CLASSES.get(learner_name))
+                 if _LEARNER_NAMES_TO_CLASSES.get(learner_name) else []
                  for learner_name in learner_names]
             for i, (learner_name,
                     fixed_params,
                     params_grids) in enumerate(zip(learner_names,
                                                    fixed_parameter_list,
                                                    param_grid_list)):
-                
-                # Skip if custom learner
-                if learner_name.endswith('.py'):
-                    continue
-                
                 for j, params_grid in enumerate(param_grid_list[i]):
                     overlap_params = \
                         set(fixed_params).intersection(set(params_grid))
