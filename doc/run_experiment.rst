@@ -696,7 +696,7 @@ Regression:
 
 Defaults to ``['f1_score_micro']``.
 
-**Note**: For backward compatibility, ``objective=x`` instead of ``objectives=['x']`` is still supported.
+**Note**: Using ``objective=x`` instead of ``objectives=['x']`` is also acceptable, for backward-compatibility.
 
 .. _param_grids:
 
@@ -936,10 +936,9 @@ all share the automatically generated prefix
     ``OBJECTIVE``
         The objective function the current results/model/etc. was generated using.
 
-However, if ``objectives`` contains only one objective function, 
+However, if ``objectives`` contains only one objective function,
 the result, log, model, and prediction files will share the prefix
-``EXPERIMENT_FEATURESET_LEARNER``. The same case applies for ``objective=x`` for
-backward compatibility. 
+``EXPERIMENT_FEATURESET_LEARNER``. For backward-compatibility, the same applies when a single objective is specified using ``objective=x``.
 
 For every experiment you run, there will also be a result summary file
 generated that is a tab-delimited file summarizing the results for each

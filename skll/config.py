@@ -235,8 +235,9 @@ def _setup_config_parser(config_path, validate=True):
 
     # if both of them are non default, raise error
     if (objectives_value != objectives_default and objective_value != objective_default):
-        raise ValueError("Only one of the objective or "
-                         "objectives can be present in the config file")
+        raise ValueError("The configuration file can specify "
+                         "either 'objective' or 'objectives', "
+                         "not both")
     else:
         # if objective is default value, delete it
         if objective_value == objective_default:
