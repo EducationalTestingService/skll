@@ -91,7 +91,8 @@ The :ref:`Tuning` section defines how we want our model to be tuned.  Setting
 class, which is an implementation of the
 `standard, brute-force approach to hyperparameter optimization <http://en.wikipedia.org/wiki/Hyperparameter_optimization#Grid_search>`_.
 :ref:`objective <objective>` refers to the desired objective function; here,
-``accuracy`` will optimize for overall accuracy.  You can see a list of all the available objective functions :ref:`here <objective>`.
+``accuracy`` will optimize for overall accuracy.  You can see a list of all the
+available objective functions :ref:`here <objective>`.
 
 In the :ref:`Output` section, the arguments to each of these are directories
 where you'd like all of the relevant output from your experiment to go.
