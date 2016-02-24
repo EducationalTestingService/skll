@@ -21,7 +21,6 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
-from sklearn.base import RegressorMixin
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
@@ -65,6 +64,9 @@ def tearDown():
     if exists(join(output_dir, 'rare_class.predictions')):
         os.unlink(join(output_dir, 'rare_class.predictions'))
 
+    if exists(join(output_dir, 'float_class.predictions')):
+        os.unlink(join(output_dir, 'float_class.predictions'))
+
     for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
         os.unlink(output_file)
 
@@ -82,7 +84,7 @@ def check_predict(model, use_feature_hashing=False):
     """
 
     # create the random data for the given model
-    if issubclass(model, RegressorMixin):
+    if model._estimator_type == 'regressor':
         train_fs, test_fs, _ = \
             make_regression_data(use_feature_hashing=use_feature_hashing,
                                  feature_bins=5)
@@ -254,14 +256,23 @@ def test_train_file_test_file():
                                                             'jsonlines'))
     run_configuration(config_path, quiet=True)
 
-    # Check results
+    # Check results for objective functions ["accuracy", "f1"]
+
+    # objective function accuracy
     with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
                                        'single_file.jsonlines_test_test_single'
                                        '_file.jsonlines_RandomForestClassifier'
-                                       '.results.json'))) as f:
+                                       '_accuracy.results.json'))) as f:
         result_dict = json.load(f)[0]
-
     assert_almost_equal(result_dict['score'], 0.925)
+
+    # objective function f1
+    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
+                                       'single_file.jsonlines_test_test_single'
+                                       '_file.jsonlines_RandomForestClassifier'
+                                       '_f1.results.json'))) as f:
+        result_dict = json.load(f)[0]
+    assert_almost_equal(result_dict['score'], 0.928)
 
 
 @raises(ValueError)
@@ -323,3 +334,112 @@ def test_adaboost_predict():
                                                                'SAMME', 'SAMME'],
                                                               [0.45, 0.5, 0.45, 0.43]):
         yield check_adaboost_predict, base_estimator_name, algorithm, expected_score
+
+
+def check_results_with_unseen_labels(res, n_labels, new_label_list):
+    (confusion_matrix,
+     score,
+     result_dict,
+     model_params,
+     grid_score) = res
+
+    # check that the new label is included into the results
+    for output in [confusion_matrix, result_dict]:
+        eq_(len(output), n_labels)
+
+    # check that all metrics for new label are 0
+    for label in new_label_list:
+        for metric in ['Precision', 'Recall', 'F-measure']:
+            eq_(result_dict[label][metric], 0)
+
+
+def test_new_labels_in_test_set():
+    """
+    Test classification experiment with an unseen label in the test set.
+    """
+    train_fs, test_fs = make_classification_data(num_labels=3,
+                                                 train_test_ratio=0.8)
+    # add new labels to the test set
+    test_fs.labels[-3:] = 3
+
+    learner = Learner('SVC')
+    learner.train(train_fs, grid_search=False)
+    res = learner.evaluate(test_fs)
+    yield check_results_with_unseen_labels, res, 4, [3]
+    yield assert_almost_equal, res[1], 0.3
+
+
+def test_new_labels_in_test_set_change_order():
+    """
+    Test classification with an unseen label in the test set when the new label falls between the existing labels
+    """
+    train_fs, test_fs = make_classification_data(num_labels=3,
+                                                 train_test_ratio=0.8)
+    # change train labels to create a gap
+    train_fs.labels = train_fs.labels*10
+    # add new test labels
+    test_fs.labels = test_fs.labels*10
+    test_fs.labels[-3:] = 15
+
+    learner = Learner('SVC')
+    learner.train(train_fs, grid_search=False)
+    res = learner.evaluate(test_fs)
+    yield check_results_with_unseen_labels, res, 4, [15]
+    yield assert_almost_equal, res[1], 0.3
+
+
+def test_all_new_labels_in_test():
+    """
+    Test classification with all labels in test set unseen
+    """
+    train_fs, test_fs = make_classification_data(num_labels=3,
+                                                 train_test_ratio=0.8)
+    # change all test labels
+    test_fs.labels = test_fs.labels+3
+
+    learner = Learner('SVC')
+    learner.train(train_fs, grid_search=False)
+    res = learner.evaluate(test_fs)
+    yield check_results_with_unseen_labels, res, 6, [3, 4, 5]
+    yield assert_almost_equal, res[1], 0
+
+
+# the function to create data with labels that look like floats
+def make_float_class_data():
+    """
+    We want to create data that has labels that look like
+    floats to make sure they are preserved correctly
+    """
+
+    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 76)]
+    y = [1.2] * 25 + [1.5] * 25 + [1.8] * 25
+    X = np.vstack([np.identity(25), np.identity(25), np.identity(25)])
+    feature_names = ['f{}'.format(i) for i in range(1, 6)]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+
+    return FeatureSet('float-classes', ids, features=features, labels=y)
+
+
+def test_float_classes():
+    """
+    Test classification with labels that look like floats
+    Make sure that they have been converted to strings as expected
+    """
+
+    float_class_fs = make_float_class_data()
+    prediction_prefix = join(_my_dir, 'output', 'float_class')
+    learner = Learner('LogisticRegression')
+    learner.cross_validate(float_class_fs,
+                           grid_objective='accuracy',
+                           prediction_prefix=prediction_prefix)
+
+    with open(prediction_prefix + '.predictions', 'r') as f:
+        reader = csv.reader(f, dialect='excel-tab')
+        next(reader)
+        pred = [row[1] for row in reader]
+        for p in pred:
+            assert p in ['1.2', '1.5', '1.8']
+
+

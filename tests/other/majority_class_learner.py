@@ -8,10 +8,10 @@ A simple majority class classifier, an example of a custom classifier.
 from collections import Counter
 
 import numpy as np
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClassifierMixin
 
 
-class MajorityClassLearner(BaseEstimator):
+class MajorityClassLearner(BaseEstimator, ClassifierMixin):
     def __init__(self):
         self.majority_class = None
 
@@ -25,3 +25,4 @@ class MajorityClassLearner(BaseEstimator):
 
     def predict(self, X):
         return np.array([self.majority_class for x in range(X.shape[0])])
+
