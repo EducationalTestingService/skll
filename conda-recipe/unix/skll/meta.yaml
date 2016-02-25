@@ -1,0 +1,92 @@
+package:
+  name: skll
+  version: 1.2
+
+source:
+  path: ../../../../skll
+
+build:
+  number: 0
+  track_features:
+    - nomkl
+  script:
+    - cd $SRC_DIR
+    - $PYTHON setup.py install
+  entry_points:
+    - compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main
+    - filter_features = skll.utilities.filter_features:main
+    - generate_predictions = skll.utilities.generate_predictions:main
+    - join_features = skll.utilities.join_features:main
+    - print_model_weights = skll.utilities.print_model_weights:main
+    - run_experiment = skll.utilities.run_experiment:main
+    - skll_convert = skll.utilities.skll_convert:main
+    - summarize_results = skll.utilities.summarize_results:main
+    - compute_eval_from_predictions2 = skll.utilities.compute_eval_from_predictions:main [py2k]
+    - filter_features2 = skll.utilities.filter_features:main [py2k]
+    - generate_predictions2 = skll.utilities.generate_predictions:main [py2k]
+    - join_features2 = skll.utilities.join_features:main [py2k]
+    - print_model_weights2 = skll.utilities.print_model_weights:main [py2k]
+    - run_experiment2 = skll.utilities.run_experiment:main [py2k]
+    - skll_convert2 = skll.utilities.skll_convert:main [py2k]
+    - summarize_results2 = skll.utilities.summarize_results:main [py2k]
+    - compute_eval_from_predictions3 = skll.utilities.compute_eval_from_predictions:main [py3k]
+    - filter_features3 = skll.utilities.filter_features:main [py3k]
+    - generate_predictions3 = skll.utilities.generate_predictions:main [py3k]
+    - join_features3 = skll.utilities.join_features:main [py3k]
+    - print_model_weights3 = skll.utilities.print_model_weights:main [py3k]
+    - run_experiment3 = skll.utilities.run_experiment:main [py3k]
+    - skll_convert3 = skll.utilities.skll_convert:main [py3k]
+    - summarize_results3 = skll.utilities.summarize_results:main [py3k]
+
+requirements:
+  build:
+    - python
+    - nomkl
+    - joblib
+    - setuptools
+    - scikit-learn 0.17.1
+    - six
+    - prettytable
+    - beautiful-soup
+    - numpy
+    - scipy
+    - pyyaml
+    - configparser [py2k]
+    - futures [py2k]
+    - logutils [py2k]
+    - mock [py2k]
+
+  run:
+    - python
+    - nomkl
+    - joblib
+    - scikit-learn 0.17.1
+    - six
+    - prettytable
+    - beautiful-soup
+    - numpy
+    - scipy
+    - pyyaml
+    - configparser [py2k]
+    - futures [py2k]
+    - logutils [py2k]
+    - mock [py2k]
+
+test:
+  # Python imports
+  imports:
+    - skll
+
+  commands:
+    - compute_eval_from_predictions --help
+    - filter_features --help
+    - generate_predictions --help
+    - join_features --help
+    - print_model_weights --help
+    - run_experiment --help
+    - skll_convert --help
+    - summarize_results --help
+
+about:
+  home: http://github.com/EducationalTestingService/skll
+  license: BSD 3-clause
