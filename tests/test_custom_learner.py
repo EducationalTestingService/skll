@@ -19,6 +19,8 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
+
+from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
 from skll.data import NDJWriter
 from skll.experiments import run_configuration
@@ -84,7 +86,7 @@ def read_predictions(path):
         res = np.array([float(x[1]) for x in reader])
     return res
 
-
+@attr('gridmap')
 def test_majority_class_custom_learner():
     num_labels = 10
 

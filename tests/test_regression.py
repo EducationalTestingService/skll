@@ -19,6 +19,7 @@ from glob import glob
 from itertools import product
 from os.path import abspath, dirname, join, exists
 
+from nose.plugins.attrib import attr
 from nose.tools import eq_, assert_almost_equal
 
 import numpy as np
@@ -440,7 +441,7 @@ def test_int_labels():
 
     run_configuration(config_path, quiet=True)
 
-
+@attr('gridmap')
 def test_fancy_output():
     """
     Test the descriptive statistics output in the results file for a regressor
