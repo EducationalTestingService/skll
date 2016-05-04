@@ -581,7 +581,6 @@ def _classify_featureset(args):
                                                                   cv_folds=learning_curve_cv_folds,
                                                                   train_sizes=learning_curve_train_sizes,
                                                                   objective=grid_objective)
-                grid_jobs=grid_search_jobs)
         else:
             # if we have do not have a saved model, we need to train one.
             if not exists(modelfile) or overwrite:

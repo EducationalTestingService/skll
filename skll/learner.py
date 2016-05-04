@@ -1461,7 +1461,7 @@ class Learner(object):
                  with the grid search scores for each fold. Also return a
                  dictionary containing the test-fold number for each id
                  if save_cv_folds is True, otherwise None.
-        :rtype: (list of 4-tuples, list of float, dict)
+        :rtype: (list of 4-tuples, list of float, dict, list of Learner)
         """
 
         # Seed the random number generator so that randomized algorithms are
