@@ -1,0 +1,9 @@
+scikit-learn==0.17.1
+six
+PrettyTable
+beautifulsoup4
+numpy
+scipy
+joblib>=0.8
+PyYAML
+ruamel_yaml
