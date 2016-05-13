@@ -47,7 +47,7 @@ requirements:
     - beautiful-soup
     - numpy
     - scipy
-    - pyyaml
+    - ruamel_yaml
     - configparser [py2k]
     - futures [py2k]
     - logutils [py2k]
@@ -62,7 +62,7 @@ requirements:
     - beautiful-soup
     - numpy
     - scipy
-    - pyyaml
+    - ruamel_yaml
     - configparser [py2k]
     - futures [py2k]
     - logutils [py2k]
