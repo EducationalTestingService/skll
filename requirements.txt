@@ -6,3 +6,4 @@ numpy
 scipy
 joblib>=0.8
 PyYAML
+ruamel.yaml
