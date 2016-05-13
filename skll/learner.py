@@ -88,7 +88,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         LogisticRegression:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVC: [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                               'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                               'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         MultinomialNB:
                         [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
                         RandomForestClassifier:
@@ -107,7 +107,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}]}
+                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]}
 
 
 # list of valid grid objective functions for regression and classification
