@@ -3,15 +3,22 @@ Quickstart
 
 Here is a quick run-down of how you accomplish common tasks.
 
-Load some a FeatureSet from a file::
+Load a ``FeatureSet`` from a file::
 
     from skll import Reader
 
     example_reader = Reader.for_path('myexamples.megam')
     train_examples = example_reader.read()
 
+    
+Or, work with an existing ``pandas`` ``DataFrame``::
 
-Train a linear svm (assuming we have `train_examples`)::
+    from skll import FeatureSet
+
+    train_examples = FeatureSet.from_data_frame(my_data_frame, 'A Name for My Data', data_labels)
+
+
+Train a linear svm (assuming we have ``train_examples``)::
 
     from skll import Learner
 
