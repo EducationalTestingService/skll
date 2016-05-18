@@ -15,7 +15,7 @@ Or, work with an existing ``pandas`` ``DataFrame``::
 
     from skll import FeatureSet
 
-    train_examples = FeatureSet.from_data_frame(my_data_frame, 'A Name for My Data', data_labels)
+    train_examples = FeatureSet.from_data_frame(my_data_frame, 'A Name for My Data', labels_column='name of the column containing the data labels')
 
 
 Train a linear svm (assuming we have ``train_examples``)::
