@@ -41,7 +41,7 @@ class FeatureSet(object):
                      list of dictionaries or an array-like (if `vectorizer` is
                      also specified).
     :type features: list of dict or array-like
-    :param vectorizer: Vectorizer that created feature matrix.
+    :param vectorizer: Vectorizer which will be used to generate the feature matrix.
     :type vectorizer: DictVectorizer or FeatureHasher
 
     .. note::
@@ -363,3 +363,33 @@ class FeatureSet(object):
             features = (self.vectorizer.inverse_transform(feats)[0] if
                         self.features is not None else {})
             return self.ids[value], label, features
+
+    @staticmethod
+    def from_data_frame(df, name, labels_column=None, vectorizer=None):
+        '''
+        Helper function to create a FeatureSet object from a `pandas.DataFrame`.
+        Will raise an Exception if pandas is not installed in your environment.
+        `FeatureSet` `ids` will be the index on `df`.
+
+        :param df: The pandas.DataFrame object you'd like to use as a feature set.
+        :type df: pandas.DataFrame
+        :param name: The name of this feature set.
+        :type name: str
+        :param labels_column: The name of the column containing the labels (data to predict).
+        :type labels_column: str or None
+        :param vectorizer: Vectorizer which will be used to generate the feature matrix.
+        :type vectorizer: DictVectorizer or FeatureHasher
+        '''
+        if labels_column:
+            feature_columns = [column for column in df.columns if column != labels_column]
+            labels = df[labels_column].tolist()
+        else:
+            feature_columns = df.columns
+            labels = None
+
+        features = df[feature_columns].to_dict(orient='records')
+        return FeatureSet(name,
+                          ids=df.index.tolist(),
+                          labels=labels,
+                          features=features,
+                          vectorizer=vectorizer)
