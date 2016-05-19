@@ -194,7 +194,7 @@ def check_config_parsing_file_not_found_error(config_path):
 
 @raises(IOError)
 def test_empty_config_name_raises_file_not_found_error():
-    """ 
+    """
     Assert that calling _parse_config_file on an empty string raises IOError
     """
     _parse_config_file("")
@@ -650,7 +650,7 @@ def test_config_parsing_bad_objectives():
 
 def test_config_parsing_bad_objective_and_objectives():
     """
-    Test to ensure config file parsing raises an error with 
+    Test to ensure config file parsing raises an error with
     a grid objectives and objective both given non default values
     """
 
@@ -1046,3 +1046,89 @@ def test_setting_number_of_cv_folds():
      class_map, custom_learner_path) = _parse_config_file(config_path)
 
     eq_(cv_folds, 5)
+
+
+def test_setting_param_grids():
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that does not set cv_folds
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LinearSVC']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'param_grids')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
+
+    eq_(param_grid_list[0]['C'][0], 1e-6)
+    eq_(param_grid_list[0]['C'][1], 1e-3)
+    eq_(param_grid_list[0]['C'][2], 1)
+    eq_(param_grid_list[0]['C'][3], 10)
+    eq_(param_grid_list[0]['C'][4], 100)
+    eq_(param_grid_list[0]['C'][5], 1e5)
+
+
+def test_setting_fixed_parameters():
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that does not set cv_folds
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LinearSVC']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'fixed_parameters': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'fixed_parameters')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path) = _parse_config_file(config_path)
+
+    eq_(fixed_parameter_list[0]['C'][0], 1e-6)
+    eq_(fixed_parameter_list[0]['C'][1], 1e-3)
+    eq_(fixed_parameter_list[0]['C'][2], 1)
+    eq_(fixed_parameter_list[0]['C'][3], 10)
+    eq_(fixed_parameter_list[0]['C'][4], 100)
+    eq_(fixed_parameter_list[0]['C'][5], 1e5)
