@@ -23,7 +23,11 @@ from io import open
 from itertools import combinations
 from os.path import basename, exists, isfile, join
 
-import yaml
+try:
+    import ruamel_yaml as yaml # conda package
+except ImportError:
+    import ruamel.yaml as yaml # pypi package
+
 from prettytable import PrettyTable, ALL
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
@@ -799,7 +803,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 if len(grid_objectives) == 1:
                     job_name_components = [experiment_name, featureset_name,
                                            learner_name]
-                else: 
+                else:
                     job_name_components = [experiment_name, featureset_name,
                                            learner_name, grid_objective]
 

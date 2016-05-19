@@ -145,9 +145,10 @@ def fill_in_config_options(config_template_path,
                             'test_file', 'featuresets', 'featureset_names',
                             'feature_hasher', 'hasher_features', 'learners',
                             'sampler', 'shuffle', 'feature_scaling',
-                            'num_cv_folds', 'bad_option', 'duplicate_option'],
+                            'fixed_parameters', 'num_cv_folds',
+                            'bad_option', 'duplicate_option'],
                   'Tuning': ['probability', 'grid_search', 'objective',
-                             'objectives', 'duplicate_option'],
+                             'param_grids', 'objectives', 'duplicate_option'],
                   'Output': ['results', 'log', 'models',
                              'predictions']}
 
