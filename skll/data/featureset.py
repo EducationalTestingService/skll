@@ -41,7 +41,7 @@ class FeatureSet(object):
                      list of dictionaries or an array-like (if `vectorizer` is
                      also specified).
     :type features: list of dict or array-like
-    :param vectorizer: Vectorizer that created feature matrix.
+    :param vectorizer: Vectorizer which will be used to generate the feature matrix.
     :type vectorizer: DictVectorizer or FeatureHasher
 
     .. note::
@@ -377,7 +377,7 @@ class FeatureSet(object):
         :type name: str
         :param labels_column: The name of the column containing the labels (data to predict).
         :type labels_column: str or None
-        :param vectorizer: Vectorizer that created feature matrix.
+        :param vectorizer: Vectorizer which will be used to generate the feature matrix.
         :type vectorizer: DictVectorizer or FeatureHasher
         '''
         if labels_column:
