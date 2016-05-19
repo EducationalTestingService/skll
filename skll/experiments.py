@@ -23,10 +23,7 @@ from io import open
 from itertools import combinations
 from os.path import basename, exists, isfile, join
 
-try:
-    import ruamel_yaml as yaml # conda package
-except ImportError:
-    import ruamel.yaml as yaml # pypi package
+import ruamel.yaml as yaml
 
 from prettytable import PrettyTable, ALL
 from six import iterkeys, iteritems  # Python 2/3

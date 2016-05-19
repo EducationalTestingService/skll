@@ -20,11 +20,7 @@ from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 
 import configparser  # Backported version from Python 3
-
-try:
-    import ruamel_yaml as yaml # conda package
-except ImportError:
-    import ruamel.yaml as yaml # pypi package
+import ruamel.yaml as yaml
 
 from six import string_types, iteritems  # Python 2/3
 from sklearn.metrics import SCORERS
