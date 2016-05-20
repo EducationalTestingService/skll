@@ -124,7 +124,7 @@ Requirements
 -  `Grid Map <https://warehouse.python.org/project/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
 -  `joblib <https://warehouse.python.org/project/joblib>`__
--  `PyYAML <https://warehouse.python.org/project/PyYAML>`__
+-  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
 -  `configparser <https://warehouse.python.org/project/configparser>`__ (only required for
    Python 2.7)
 -  `logutils <https://warehouse.python.org/project/logutils>`__ (only required for Python 2.7)
