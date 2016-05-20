@@ -723,7 +723,9 @@ class Learner(object):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
 
-            if self.model.intercept_.any():
+            if isinstance(self.model.intercept_, float):
+                intercept = {'_intercept_': self.model.intercept_}
+            elif self.model.intercept_.any():
                 intercept = dict(zip(label_list, self.model.intercept_))
 
         else:
