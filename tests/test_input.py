@@ -1268,9 +1268,6 @@ def test_config_fixed_parameters_default_param_grids_conflict1():
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
 
-    # Make a configuration file that has both a `fixed_parameters` list and a
-    # `param_grids` list specified in which there is only an empty list (which
-    # will result in use of the default parameter grid). In this
     values_to_fill_dict = \
         {'experiment_name':
              'config_fixed_parameters_default_param_grids_conflict1',
@@ -1291,7 +1288,8 @@ def test_config_fixed_parameters_default_param_grids_conflict2():
     """
     Test the situation where there is a conflict between a fixed
     parameter value specified in the configuration file and a default parameter
-    grids value supplied due to the fact that no parameter grids were provided.
+    grids value supplied via not specifying a parameter grid and using the
+    automatically-provided values).
 
     In this case, the fixed parameter value will conflict with the
     corresponding default value and the fixed value will take precedence.
@@ -1300,9 +1298,6 @@ def test_config_fixed_parameters_default_param_grids_conflict2():
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
 
-    # Make a configuration file that has both a `fixed_parameters` list and a
-    # `param_grids` list specified in which there is only an empty list (which
-    # will result in use of the default parameter grid). In this
     values_to_fill_dict = \
         {'experiment_name':
              'config_fixed_parameters_default_param_grids_conflict2',
@@ -1316,3 +1311,31 @@ def test_config_fixed_parameters_default_param_grids_conflict2():
         fill_in_config_options(config_template_path,
                                values_to_fill_dict,
                                'fixed_parameters_default_param_grids_conflict2')
+
+
+def test_config_fixed_parameters_default_param_grids_conflict3():
+    """
+    Test the situation where there is a conflict between a fixed
+    parameter value specified in the configuration file and a default parameter
+    grids value supplied due to the fact that no parameter grids were provided.
+
+    In this case, the fixed parameter value will conflict with the
+    corresponding default value and the fixed value will take precedence.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = \
+        {'experiment_name':
+             'config_fixed_parameters_default_param_grids_conflict3',
+         'train_directory': train_dir,
+         'log': output_dir,
+         'results': output_dir,
+         'fixed_parameters': "[{'C': 0.01}]"}
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_param_conflicts.template.cfg')
+    config_path = \
+        fill_in_config_options(config_template_path,
+                               values_to_fill_dict,
+                               'fixed_parameters_default_param_grids_conflict3')
