@@ -1,6 +1,6 @@
 package:
   name: skll
-  version: 1.2
+  version: 1.2.1
 
 source:
   path: ../../../../skll
@@ -50,7 +50,7 @@ requirements:
     - beautiful-soup
     - numpy
     - scipy
-    - pyyaml
+    - ruamel.yaml
     - configparser [py2k]
     - futures [py2k]
     - logutils [py2k]
@@ -66,7 +66,7 @@ requirements:
     - beautiful-soup
     - numpy
     - scipy
-    - pyyaml
+    - ruamel.yaml
     - configparser [py2k]
     - futures [py2k]
     - logutils [py2k]

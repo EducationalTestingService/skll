@@ -5,4 +5,4 @@ beautifulsoup4
 numpy
 scipy
 joblib>=0.8
-ruamel.yaml
+ruamel_yaml

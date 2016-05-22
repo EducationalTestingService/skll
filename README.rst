@@ -33,7 +33,7 @@ Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The main utility we provide is called ``run_experiment`` and it can be used to
-easily run a series of learners on datasets specified in a configuration file 
+easily run a series of learners on datasets specified in a configuration file
 like:
 
 .. code:: ini
@@ -42,9 +42,9 @@ like:
   experiment_name = Titanic_Evaluate_Tuned
   # valid tasks: cross_validate, evaluate, predict, train
   task = evaluate
-  
+
   [Input]
-  # these directories could also be absolute paths 
+  # these directories could also be absolute paths
   # (and must be if you're not running things in local mode)
   train_directory = train
   test_directory = dev
@@ -57,13 +57,13 @@ like:
   label_col = Survived
   # Column in CSV containing instance IDs (if any)
   id_col = PassengerId
-  
+
   [Tuning]
   # Should we tune parameters of all learners by searching provided parameter grids?
   grid_search = true
   # Function to maximize when performing grid search
   objectives = ['accuracy']
-  
+
   [Output]
   # again, these can/should be absolute paths
   log = output
@@ -89,11 +89,12 @@ Python API
 ~~~~~~~~~~
 
 If you just want to avoid writing a lot of boilerplate learning code, you can
-also use our simple Python API. The main way you'll want to use the API is through
+also use our simple Python API which also supports pandas DataFrames.
+The main way you'll want to use the API is through
 the ``Learner`` and ``Reader`` classes. For more details on our API, see
 `the documentation <https://skll.readthedocs.org/en/latest/api.html>`__.
 
-While our API can be broadly useful, it should be noted that the command-line 
+While our API can be broadly useful, it should be noted that the command-line
 utilities are intended as the primary way of using SKLL.  The API is just a nice
 side-effect of our developing the utilities.
 
@@ -104,7 +105,7 @@ A Note on Pronunciation
 .. image:: doc/skll.png
    :alt: SKLL logo
    :align: right
-   
+
 .. container:: clear
 
   .. image:: doc/spacer.png
@@ -123,7 +124,7 @@ Requirements
 -  `Grid Map <https://warehouse.python.org/project/gridmap>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
 -  `joblib <https://warehouse.python.org/project/joblib>`__
--  `PyYAML <https://warehouse.python.org/project/PyYAML>`__
+-  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
 -  `configparser <https://warehouse.python.org/project/configparser>`__ (only required for
    Python 2.7)
 -  `logutils <https://warehouse.python.org/project/logutils>`__ (only required for Python 2.7)
