@@ -1289,7 +1289,7 @@ def test_config_fixed_parameters_default_param_grids_conflict1():
      min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
      learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,                          
-     class_map, custom_learner_path) = _parse_config_file(config_file)
+     class_map, custom_learner_path) = _parse_config_file(config_path)
 
     # The fixed parameter value that was specified should remain as is
     # while the conflicting default parameter value will be removed from
@@ -1338,7 +1338,7 @@ def test_config_fixed_parameters_default_param_grids_conflict2():
      min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
      learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,                          
-     class_map, custom_learner_path) = _parse_config_file(config_file)
+     class_map, custom_learner_path) = _parse_config_file(config_path)
 
     # The fixed parameter value that was specified should remain as is
     # while the conflicting default parameter value will be removed from
