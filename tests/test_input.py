@@ -1345,3 +1345,46 @@ def test_config_fixed_parameters_default_param_grids_conflict2():
     # the parameter grid
     assert fixed_parameter_list[0]['alpha'] == 0.01
     assert param_grid_list[0][0].get('alpha') == None
+
+
+def test_config_fixed_parameters_default_param_grids_conflict3():
+    """
+    Test the case where fixed parameters and parameter grids are both
+    specified (or defaults are used due to specifying an emtpy list) for
+    multiple learners (and "grid_search" is set to True)
+    and there is a conflict between one or more fixed and default
+    parameters. For example, "alpha" is specified as having a fixed value
+    of 0.01 and is also specified in the default parameter grid. Since the
+    user definitely intended to fix the value of that parameter, it can be
+    assumed that it takes precedence over any conflicting value specified
+    in the default parameter grid. A warning should be logged, but the
+    parsing of the configuration file should continue on without error
+    (after removing the conflicting parameter from the parameter grid).
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # Make a configuration file that has both a `fixed_parameters` list and a
+    # `param_grids` list specified, between which there are conflicting
+    # parameter values but in which case the values turn out to be the same
+    # and, thus, do not result in an exception
+    values_to_fill_dict = {'experiment_name':
+                               'fixed_parameters_default_param_grids_conflict3',
+                           'train_directory': train_dir,
+                           'log': output_dir,
+                           'results': output_dir,
+                           'learners': '[Ridge, SGDRegressor]',
+                           'grid_search': 'true',
+                           'fixed_parameters':
+                               "[{'alpha': 0.01}, {'alpha': 0.01}]",
+                           'param_grids':
+                               "[[{'max_iter': [500, 1000, 2000]}], []]"}
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_param_conflicts.template.cfg')
+    config_path = \
+        fill_in_config_options(config_template_path,
+                               values_to_fill_dict,
+                               'fixed_parameters_default_param_grids_conflict3')
+
+    _parse_config_file(config_path)
