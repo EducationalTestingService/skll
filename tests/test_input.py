@@ -1374,7 +1374,7 @@ def test_config_fixed_parameters_default_param_grids_conflict3():
                            'train_directory': train_dir,
                            'log': output_dir,
                            'results': output_dir,
-                           'learners': '[Ridge, SGDRegressor]',
+                           'learners': '[SGDRegressor, Ridge]',
                            'grid_search': 'true',
                            'fixed_parameters':
                                "[{'alpha': 0.01}, {'alpha': 0.01}]",
