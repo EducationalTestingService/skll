@@ -20,7 +20,8 @@ from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 
 import configparser  # Backported version from Python 3
-import yaml
+import ruamel.yaml as yaml
+
 from six import string_types, iteritems  # Python 2/3
 from sklearn.metrics import SCORERS
 
@@ -63,7 +64,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'min_feature_count': '1',
                     'models': '',
                     'num_cv_folds': '10',
-                    'objective': 'f1_score_micro',
+                    'objectives': "['f1_score_micro']",
+                    'objective': "f1_score_micro",
                     'param_grids': '[]',
                     'pos_label_str': '',
                     'predictions': '',
@@ -99,6 +101,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'min_feature_count': 'Tuning',
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
+                                   'objectives': 'Tuning',
                                    'objective': 'Tuning',
                                    'param_grids': 'Tuning',
                                    'pos_label_str': 'Tuning',
@@ -181,6 +184,7 @@ class SKLLConfigParser(configparser.ConfigParser):
              (b) options are not specified in multiple sections
              (c) options are specified in the correct section
         """
+
         invalid_options = self._find_invalid_options()
         if invalid_options:
             raise KeyError('Configuration file contains the following '
@@ -209,6 +213,7 @@ def _locate_file(file_path, config_dir):
     else:
         return path_to_check
 
+
 def _setup_config_parser(config_path, validate=True):
     """
     Returns a config parser at a given path. Only implemented as a separate
@@ -222,6 +227,32 @@ def _setup_config_parser(config_path, validate=True):
         raise IOError(errno.ENOENT, "Configuration file does not exist",
                       config_path)
     config.read(config_path)
+
+    # normalize objective to objectives
+    objective_value = config.get('Tuning', 'objective')
+    objectives_value = config.get('Tuning', 'objectives')
+    objective_default = config._defaults['objective']
+    objectives_default = config._defaults['objectives']
+
+    # if both of them are non default, raise error
+    if (objectives_value != objectives_default and objective_value != objective_default):
+        raise ValueError("The configuration file can specify "
+                         "either 'objective' or 'objectives', "
+                         "not both")
+    else:
+        # if objective is default value, delete it
+        if objective_value == objective_default:
+            config.remove_option('Tuning', 'objective')
+        else:
+            # else convert objective into objectives and delete objective
+            objective_value = yaml.load(_fix_json(objective_value))
+            if isinstance(objective_value, string_types):
+                config.set(
+                    'Tuning', 'objectives', "['{}']".format(objective_value))
+                config.remove_option('Tuning', 'objective')
+            else:
+                raise TypeError("objective should be a string")
+
     if validate:
         config.validate()
 
@@ -235,6 +266,10 @@ def _parse_config_file(config_path):
 
     # Initialize logger
     logger = logging.getLogger(__name__)
+
+    # check that config_path is not empty
+    if config_path == "":
+        raise IOError("The name of the configuration file is empty")
 
     # compute the absolute path for the config file
     config_path = realpath(config_path)
@@ -300,7 +335,8 @@ def _parse_config_file(config_path):
                          ' times, which is not currently supported.  Please use'
                          ' param_grids with tuning to find the optimal settings'
                          ' for the learner.')
-    custom_learner_path = config.get("Input", "custom_learner_path")
+    custom_learner_path = _locate_file(config.get("Input", "custom_learner_path"),
+                                       config_dir)
 
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
@@ -350,10 +386,10 @@ def _parse_config_file(config_path):
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
     # get the cv folds file and make a dictionary from it, if it exists
-    cv_folds_file = config.get("Input", "cv_folds_file")
+    cv_folds_file = _locate_file(config.get("Input", "cv_folds_file"),
+                                 config_dir)
     num_cv_folds = config.getint("Input", "num_cv_folds")
     if cv_folds_file:
-        cv_folds_file = _locate_file(cv_folds_file, config_path)
         cv_folds = _load_cv_folds(cv_folds_file,
                                   ids_to_floats=ids_to_floats)
     else:
@@ -442,28 +478,28 @@ def _parse_config_file(config_path):
     probability = config.getboolean("Output", "probability")
 
     # do we want to keep the predictions?
-    prediction_dir = config.get("Output", "predictions")
+    prediction_dir = _locate_file(config.get("Output", "predictions"),
+                                  config_dir)
     if prediction_dir:
-        prediction_dir = join(config_dir, prediction_dir)
         if not exists(prediction_dir):
             os.makedirs(prediction_dir)
 
     # make sure log path exists
-    log_path = config.get("Output", "log")
+    log_path = _locate_file(config.get("Output", "log"), config_dir)
     if log_path:
         log_path = join(config_dir, log_path)
         if not exists(log_path):
             os.makedirs(log_path)
 
     # make sure model path exists
-    model_path = config.get("Output", "models")
+    model_path = _locate_file(config.get("Output", "models"), config_dir)
     if model_path:
         model_path = join(config_dir, model_path)
         if not exists(model_path):
             os.makedirs(model_path)
 
     # make sure results path exists
-    results_path = config.get("Output", "results")
+    results_path = _locate_file(config.get("Output", "results"), config_dir)
     if results_path:
         results_path = join(config_dir, results_path)
         if not exists(results_path):
@@ -485,11 +521,16 @@ def _parse_config_file(config_path):
     # how many folds should we run in parallel for grid search
     grid_search_folds = config.getint("Tuning", "grid_search_folds")
 
-    # what is the objective function for the grid search?
-    grid_objective = config.get("Tuning", "objective")
-    if grid_objective not in SCORERS:
-        raise ValueError('Invalid grid objective function: {}'
-                         .format(grid_objective))
+    # what are the objective functions for the grid search?
+    grid_objectives = config.get("Tuning", "objectives")
+    grid_objectives = yaml.load(_fix_json(grid_objectives))
+    if not isinstance(grid_objectives, list):
+        raise TypeError("objectives should be a "
+                        "list of objectives")
+
+    if not all([objective in SCORERS for objective in grid_objectives]):
+        raise ValueError('Invalid grid objective function/s: {}'
+                         .format(grid_objectives))
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
@@ -525,7 +566,7 @@ def _parse_config_file(config_path):
     return (experiment_name, task, sampler, fixed_sampler_parameters,
             feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
-            do_grid_search, grid_objective, probability, results_path,
+            do_grid_search, grid_objectives, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             do_stratified_folds, fixed_parameter_list, param_grid_list,

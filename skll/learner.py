@@ -82,7 +82,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         Lasso:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         Lars:
-                        [{'n_nonzero_coefs': [5, 50, 500, 5000, 50000]}],  
+                        [{'n_nonzero_coefs': [5, 50, 500, 5000, 50000]}],
                         LinearRegression:
                         [{}],
                         LinearSVC:
@@ -90,7 +90,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         LogisticRegression:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVC: [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                               'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                               'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         MultinomialNB:
                         [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
                         RandomForestClassifier:
@@ -109,7 +109,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         RidgeCV:
                         [{'alphas': [(0.01, 0.1, 1.0, 10.0, 100.0)]}],
                         BayesianRidge:
@@ -215,7 +215,7 @@ def _import_custom_learner(custom_learner_path, custom_learner_name):
         raise ValueError('custom_learner_path must end in .py ({})'
                          .format(custom_learner_path))
 
-    custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
+    custom_learner_module_name = os.path.basename(custom_learner_path)[: -3]
     sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
     import_module(custom_learner_module_name)
     globals()[custom_learner_name] = \
@@ -331,6 +331,8 @@ def rescaled(cls):
             self.yhat_sd = np.std(y_hat)
             self.y_mean = np.mean(y)
             self.y_sd = np.std(y)
+
+        return self
 
     @wraps(cls.predict)
     def predict(self, X):
@@ -624,8 +626,10 @@ class Learner(object):
             if issubclass(self._model_type,
                           (AdaBoostRegressor, AdaBoostClassifier)) and ('base_estimator' in model_kwargs):
                 base_estimator_name = model_kwargs['base_estimator']
-                base_estimator_kwargs = {} if base_estimator_name in ['MultinomialNB', 'SVR'] else {'random_state': 123456789}
-                base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
+                base_estimator_kwargs = {} if base_estimator_name in [
+                    'MultinomialNB', 'SVR'] else {'random_state': 123456789}
+                base_estimator = globals()[base_estimator_name](
+                    **base_estimator_kwargs)
                 model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
 
@@ -660,7 +664,7 @@ class Learner(object):
                 # need the original value of `std_`.
                 if (not hasattr(new_scaler, 'scale_') and
                         'std_' in new_scaler.__dict__):
-                    new_scaler.scale_ =  new_scaler.__dict__['std_']
+                    new_scaler.scale_ = new_scaler.__dict__['std_']
                     learner.scaler = new_scaler
             return learner
         else:
@@ -746,7 +750,9 @@ class Learner(object):
                     if coef[idx]:
                         res['{}\t{}'.format(label, feat)] = coef[idx]
 
-            if self.model.intercept_.any():
+            if isinstance(self.model.intercept_, float):
+                intercept = {'_intercept_': self.model.intercept_}
+            elif self.model.intercept_.any():
                 intercept = dict(zip(label_list, self.model.intercept_))
 
         else:
@@ -1150,8 +1156,19 @@ class Learner(object):
 
         # extract actual labels (transformed for classification tasks)
         if self.model_type._estimator_type == 'classifier':
-            ytest = np.array([self.label_dict[label] for label in
-                              examples.labels])
+            test_label_list = np.unique(examples.labels).tolist()
+
+            # identify unseen test labels if any and add a new dictionary for these
+            # labels
+            unseen_test_label_list = [label for label in test_label_list
+                                      if not label in self.label_list]
+            unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
+                                                                    start=len(self.label_list))}
+            # combine the two dictionaries
+            train_and_test_label_dict = self.label_dict.copy()
+            train_and_test_label_dict.update(unseen_label_dict)
+            ytest = np.array([train_and_test_label_dict[label]
+                              for label in examples.labels])
         else:
             ytest = examples.labels
 
@@ -1166,51 +1183,51 @@ class Learner(object):
                     grid_score = float('NaN')
 
             yhat = np.array([max(range(len(row)),
-                                 key=lambda i: row[i])
+                                 key = lambda i: row[i])
                              for row in yhat])
 
         # calculate grid search objective function score, if specified
         if (grid_objective and (grid_objective not in _CORRELATION_METRICS or
                                 not self.probability)):
             try:
-                grid_score = use_score_func(grid_objective, ytest, yhat)
+                grid_score=use_score_func(grid_objective, ytest, yhat)
             except ValueError:
-                grid_score = float('NaN')
+                grid_score=float('NaN')
 
         if self.model_type._estimator_type == 'regressor':
-            result_dict = {'descriptive': defaultdict(dict)}
+            result_dict={'descriptive': defaultdict(dict)}
             for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
-                result_dict['descriptive'][table_label]['min'] = min(y)
-                result_dict['descriptive'][table_label]['max'] = max(y)
-                result_dict['descriptive'][table_label]['avg'] = np.mean(y)
-                result_dict['descriptive'][table_label]['std'] = np.std(y)
-            result_dict['pearson'] = use_score_func('pearson', ytest, yhat)
-            res = (None, None, result_dict, self._model.get_params(),
+                result_dict['descriptive'][table_label]['min']=min(y)
+                result_dict['descriptive'][table_label]['max']=max(y)
+                result_dict['descriptive'][table_label]['avg']=np.mean(y)
+                result_dict['descriptive'][table_label]['std']=np.std(y)
+            result_dict['pearson']=use_score_func('pearson', ytest, yhat)
+            res=(None, None, result_dict, self._model.get_params(),
                    grid_score)
         else:
             # compute the confusion matrix
-            num_labels = len(self.label_list)
-            conf_mat = confusion_matrix(ytest, yhat,
-                                        labels=list(range(num_labels)))
+            num_labels=len(train_and_test_label_dict)
+            conf_mat=confusion_matrix(ytest, yhat,
+                                        labels = list(range(num_labels)))
             # Calculate metrics
-            overall_accuracy = accuracy_score(ytest, yhat)
-            result_matrix = precision_recall_fscore_support(
-                ytest, yhat, labels=list(range(num_labels)), average=None)
+            overall_accuracy=accuracy_score(ytest, yhat)
+            result_matrix=precision_recall_fscore_support(
+                ytest, yhat, labels = list(range(num_labels)), average = None)
 
             # Store results
-            result_dict = defaultdict(dict)
-            for actual_label in sorted(self.label_list):
-                col = self.label_dict[actual_label]
-                result_dict[actual_label]["Precision"] = result_matrix[0][col]
-                result_dict[actual_label]["Recall"] = result_matrix[1][col]
-                result_dict[actual_label]["F-measure"] = result_matrix[2][col]
+            result_dict=defaultdict(dict)
+            for actual_label in sorted(train_and_test_label_dict):
+                col=train_and_test_label_dict[actual_label]
+                result_dict[actual_label]["Precision"]=result_matrix[0][col]
+                result_dict[actual_label]["Recall"]=result_matrix[1][col]
+                result_dict[actual_label]["F-measure"]=result_matrix[2][col]
 
-            res = (conf_mat.tolist(), overall_accuracy, result_dict,
+            res=(conf_mat.tolist(), overall_accuracy, result_dict,
                    self._model.get_params(), grid_score)
         return res
 
-    def predict(self, examples, prediction_prefix=None, append=False,
-                class_labels=False):
+    def predict(self, examples, prediction_prefix = None, append = False,
+                class_labels = False):
         """
         Uses a given model to generate predictions on a given data set
 
@@ -1231,8 +1248,8 @@ class Learner(object):
         :return: The predictions returned by the learner.
         :rtype: array
         """
-        logger = logging.getLogger(__name__)
-        example_ids = examples.ids
+        logger=logging.getLogger(__name__)
+        example_ids=examples.ids
 
         # Need to do some transformations so the features are in the right
         # columns for the test set. Obviously a bit hacky, but storing things
@@ -1243,19 +1260,19 @@ class Learner(object):
                 logger.warning("There is mismatch between the training model "
                                "features and the data passed to predict.")
 
-            self_feat_vec_tuple = (self.feat_vectorizer.dtype,
+            self_feat_vec_tuple=(self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
                                    self.feat_vectorizer.n_features,
                                    self.feat_vectorizer.non_negative)
-            example_feat_vec_tuple = (examples.vectorizer.dtype,
+            example_feat_vec_tuple=(examples.vectorizer.dtype,
                                       examples.vectorizer.input_type,
                                       examples.vectorizer.n_features,
                                       examples.vectorizer.non_negative)
 
             if self_feat_vec_tuple == example_feat_vec_tuple:
-                xtest = examples.features
+                xtest=examples.features
             else:
-                xtest = self.feat_vectorizer.transform(
+                xtest=self.feat_vectorizer.transform(
                     examples.vectorizer.inverse_transform(
                         examples.features))
         else:
@@ -1264,35 +1281,35 @@ class Learner(object):
                 logger.warning("There is mismatch between the training model "
                                "features and the data passed to predict.")
             if self.feat_vectorizer == examples.vectorizer:
-                xtest = examples.features
+                xtest=examples.features
             else:
 
-                xtest = self.feat_vectorizer.transform(
+                xtest=self.feat_vectorizer.transform(
                     examples.vectorizer.inverse_transform(
                         examples.features))
 
         # filter features based on those selected from training set
-        xtest = self.feat_selector.transform(xtest)
+        xtest=self.feat_selector.transform(xtest)
 
         # Sampler
         if self.sampler:
             logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
                 logger.warning('SkewedChi2Sampler uses a dense matrix')
-                xtest = self.sampler.fit_transform(xtest.todense())
+                xtest=self.sampler.fit_transform(xtest.todense())
             else:
-                xtest = self.sampler.fit_transform(xtest)
+                xtest=self.sampler.fit_transform(xtest)
 
         # Convert to dense if necessary
         if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
-                xtest = xtest.todense()
+                xtest=xtest.todense()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
-                    reason = ('{} does not support sparse ' +
+                    reason=('{} does not support sparse ' +
                               'matrices.').format(self._model_type)
                 else:
-                    reason = ('{} feature scaling requires a dense ' +
+                    reason=('{} feature scaling requires a dense ' +
                               'matrix.').format(self._feature_scaling)
                 raise MemoryError('Ran out of memory when converting test ' +
                                   'data to dense. This was required because ' +
@@ -1300,11 +1317,11 @@ class Learner(object):
 
         # Scale xtest if necessary
         if not issubclass(self._model_type, MultinomialNB):
-            xtest = self.scaler.transform(xtest)
+            xtest=self.scaler.transform(xtest)
 
         # make the prediction on the test data
         try:
-            yhat = (self._model.predict_proba(xtest)
+            yhat=(self._model.predict_proba(xtest)
                     if (self.probability and
                         not class_labels)
                     else self._model.predict(xtest))
@@ -1315,7 +1332,7 @@ class Learner(object):
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            prediction_file = '{}.predictions'.format(prediction_prefix)
+            prediction_file='{}.predictions'.format(prediction_prefix)
             with open(prediction_file,
                       "w" if not append else "a") as predictionfh:
                 # header
@@ -1324,29 +1341,29 @@ class Learner(object):
                     if self.probability:
                         print('\t'.join(["id"] +
                                         [str(x) for x in self.label_list]),
-                              file=predictionfh)
+                              file = predictionfh)
                     else:
-                        print('id\tprediction', file=predictionfh)
+                        print('id\tprediction', file = predictionfh)
 
                 if self.probability:
                     for example_id, class_probs in zip(example_ids, yhat):
                         print('\t'.join([str(example_id)] +
                                         [str(x) for x in class_probs]),
-                              file=predictionfh)
+                              file = predictionfh)
                 else:
                     if self.model_type._estimator_type == 'regressor':
                         for example_id, pred in zip(example_ids, yhat):
                             print('{0}\t{1}'.format(example_id, pred),
-                                  file=predictionfh)
+                                  file = predictionfh)
                     else:
                         for example_id, pred in zip(example_ids, yhat):
                             print('%s\t%s' % (example_id,
                                               self.label_list[int(pred)]),
-                                  file=predictionfh)
+                                  file = predictionfh)
 
         if (class_labels and
                 self.model_type._estimator_type == 'classifier'):
-            yhat = np.array([self.label_list[int(pred)] for pred in yhat])
+            yhat=np.array([self.label_list[int(pred)] for pred in yhat])
 
         return yhat
 
@@ -1361,22 +1378,22 @@ class Learner(object):
         if self.model_type._estimator_type == 'regressor':
             return cv_folds
 
-        min_examples_per_label = min(Counter(labels).values())
+        min_examples_per_label=min(Counter(labels).values())
         if min_examples_per_label <= 1:
             raise ValueError(('The training set has only {} example for a' +
                               ' label.').format(min_examples_per_label))
         if min_examples_per_label < cv_folds:
-            logger = logging.getLogger(__name__)
+            logger=logging.getLogger(__name__)
             logger.warning('The minimum number of examples per label was %s.  '
                            'Setting the number of cross-validation folds to '
                            'that value.', min_examples_per_label)
-            cv_folds = min_examples_per_label
+            cv_folds=min_examples_per_label
         return cv_folds
 
-    def cross_validate(self, examples, stratified=True, cv_folds=10,
-                       grid_search=False, grid_search_folds=3, grid_jobs=None,
-                       grid_objective='f1_score_micro', prediction_prefix=None,
-                       param_grid=None, shuffle=False, save_cv_folds=False):
+    def cross_validate(self, examples, stratified = True, cv_folds = 10,
+                       grid_search = False, grid_search_folds = 3, grid_jobs = None,
+                       grid_objective = 'f1_score_micro', prediction_prefix = None,
+                       param_grid = None, shuffle = False, save_cv_folds = False):
         """
         Cross-validates a given model on the training examples.
 
@@ -1423,9 +1440,12 @@ class Learner(object):
                  if save_cv_folds is True, otherwise None.
         :rtype: (list of 4-tuples, list of float, dict)
         """
-        # seed the random number generator so that randomized algorithms are
-        # replicable
-        logger = logging.getLogger(__name__)
+
+        # Seed the random number generator so that randomized algorithms are
+        # replicable.
+        random_state=np.random.RandomState(123456789)
+        # Set up logger.
+        logger=logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1436,27 +1456,31 @@ class Learner(object):
                 logger.warning('Training data will be shuffled to randomize '
                                'grid search folds. Shuffling may yield '
                                'different results compared to scikit-learn.')
-            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
+            ids, labels, features=sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
-                                               random_state=123456789)
-            examples = FeatureSet(examples.name, ids, labels=labels,
-                                  features=features,
-                                  vectorizer=examples.vectorizer)
+                                               random_state = random_state)
+            examples=FeatureSet(examples.name, ids, labels = labels,
+                                  features = features,
+                                  vectorizer = examples.vectorizer)
 
         # call train setup
         self._create_label_dict(examples)
         self._train_setup(examples)
 
-        # setup the cross-validation iterator
+        # Set up the cross-validation iterator.
         if isinstance(cv_folds, int):
-            cv_folds = self._compute_num_folds_from_example_counts(
+            cv_folds=self._compute_num_folds_from_example_counts(
                 cv_folds, examples.labels)
 
-            stratified = (stratified and
+            stratified=(stratified and
                           self.model_type._estimator_type == 'classifier')
-            kfold = (StratifiedKFold(examples.labels, n_folds=cv_folds) if
-                     stratified else KFold(len(examples.labels),
-                                           n_folds=cv_folds))
+            if stratified:
+                kfold=StratifiedKFold(examples.labels, n_folds = cv_folds)
+            else:
+                kfold=KFold(len(examples.labels),
+                              n_folds = cv_folds,
+                              random_state = random_state)
+        # Otherwise cv_volds is a dict
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
@@ -1464,60 +1488,60 @@ class Learner(object):
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
             # Only retain IDs within folds if they're in grid_search_folds
-            dummy_label = next(itervalues(cv_folds))
-            fold_labels = [cv_folds.get(curr_id, dummy_label) for curr_id in
+            dummy_label=next(itervalues(cv_folds))
+            fold_labels=[cv_folds.get(curr_id, dummy_label) for curr_id in
                            examples.ids]
             # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneLabelOut(fold_labels, cv_folds, examples)
-            grid_search_folds = cv_folds
+            kfold=FilteredLeaveOneLabelOut(fold_labels, cv_folds, examples)
+            grid_search_folds=cv_folds
 
         # Save the cross-validation fold information, if required
         # The format is that the test-fold that each id appears in is stored
-        skll_fold_ids = None
+        skll_fold_ids=None
         if save_cv_folds:
-            skll_fold_ids = {}
+            skll_fold_ids={}
             for fold_num, (_, test_indices) in enumerate(kfold):
                 for index in test_indices:
-                    skll_fold_ids[examples.ids[index]] = str(fold_num)
+                    skll_fold_ids[examples.ids[index]]=str(fold_num)
 
         # handle each fold separately and accumulate the predictions and the
         # numbers
-        results = []
-        grid_search_scores = []
-        append_predictions = False
+        results=[]
+        grid_search_scores=[]
+        append_predictions=False
         for train_index, test_index in kfold:
             # Train model
-            self._model = None  # prevent feature vectorizer from being reset.
-            train_set = FeatureSet(examples.name,
+            self._model=None  # prevent feature vectorizer from being reset.
+            train_set=FeatureSet(examples.name,
                                    examples.ids[train_index],
-                                   labels=examples.labels[train_index],
-                                   features=examples.features[train_index],
-                                   vectorizer=examples.vectorizer)
+                                   labels = examples.labels[train_index],
+                                   features = examples.features[train_index],
+                                   vectorizer = examples.vectorizer)
             # Set run_create_label_dict to False since we already created the
             # label dictionary for the whole dataset above.
-            grid_search_score = self.train(train_set,
-                                           grid_search_folds=grid_search_folds,
-                                           grid_search=grid_search,
-                                           grid_objective=grid_objective,
-                                           param_grid=param_grid,
-                                           grid_jobs=grid_jobs,
-                                           shuffle=grid_search,
-                                           create_label_dict=False)
+            grid_search_score=self.train(train_set,
+                                           grid_search_folds = grid_search_folds,
+                                           grid_search = grid_search,
+                                           grid_objective = grid_objective,
+                                           param_grid = param_grid,
+                                           grid_jobs = grid_jobs,
+                                           shuffle = grid_search,
+                                           create_label_dict = False)
             grid_search_scores.append(grid_search_score)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
 
             # Evaluate model
-            test_tuple = FeatureSet(examples.name,
+            test_tuple=FeatureSet(examples.name,
                                     examples.ids[test_index],
-                                    labels=examples.labels[test_index],
-                                    features=examples.features[test_index],
-                                    vectorizer=examples.vectorizer)
+                                    labels = examples.labels[test_index],
+                                    features = examples.features[test_index],
+                                    vectorizer = examples.vectorizer)
             results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
                                          append=append_predictions,
                                          grid_objective=grid_objective))
-            append_predictions = True
+            append_predictions=True
 
         # return list of results for all folds
         return results, grid_search_scores, skll_fold_ids
