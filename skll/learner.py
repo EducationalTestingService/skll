@@ -40,7 +40,7 @@ from sklearn.grid_search import GridSearchCV
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
-from sklearn.linear_model import (BayesianRidge, ElasticNet, Lasso, Lars,
+from sklearn.linear_model import (BayesianRidge, ElasticNet, Lasso, LassoLars, Lars,
                                   LinearRegression, LogisticRegression, Ridge,
                                   RidgeCV, SGDClassifier, SGDRegressor)
 from sklearn.linear_model.base import LinearModel
@@ -81,8 +81,12 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                           'weights': ['uniform', 'distance']}],
                         Lasso:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        LassoLars:
+                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         Lars:
                         [{'n_nonzero_coefs': [1, 50, 500, 5000, np.inf]}],
+                        #LarsCV:
+                        #[{'max_iter': [5, 50, 500, 5000, 10000]}],
                         LinearRegression:
                         [{}],
                         LinearSVC:
@@ -442,6 +446,11 @@ class RescaledKNeighborsRegressor(KNeighborsRegressor):
 
 @rescaled
 class RescaledLasso(Lasso):
+    pass
+
+
+@rescaled
+class RescaledLassoLars(LassoLars):
     pass
 
 
