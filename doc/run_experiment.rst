@@ -507,9 +507,9 @@ fixed_parameters *(Optional)*
 
 List of dicts containing parameters you want to have fixed for each
 learner in :ref:`learners` list. Any empty ones will be ignored
-(and the defaults will be used). If there is a conflict between parameters
-specified in :ref:`param_grids` and :ref:`fixed_parameters`, an exception
-will be raised (unless the conflicting values are the same). Furthermore,
+(and the defaults will be used). If values are assigned to the same
+parameters in :ref:`param_grids` and :ref:`fixed_parameters`, an exception
+will be raised (unless the values turn out to be the same). Furthermore,
 since default parameter grids can be used either by not specifying
 parameter grids at all or by specifying blank lists for specific
 parameter grids corresponding to different learners (i.e., in cases where
