@@ -136,10 +136,10 @@ def check_invalid_regr_grid_obj_func(learner_name, grid_objective_function):
 def test_invalid_grid_obj_func():
     for model in ['AdaBoostRegressor', 'DecisionTreeRegressor',
                   'ElasticNet', 'GradientBoostingRegressor',
-                  'KNeighborsRegressor', 'Lasso', 'LassoLars','Lars',
-                  'LinearRegression', 'RandomForestRegressor',
-                  'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
-                  'RidgeCV', 'BayesianRidge']:
+                  'KNeighborsRegressor', 'Lasso',
+                  'LassoLarsIC', 'Lars', 'LinearRegression',
+                  'RandomForestRegressor', 'Ridge', 'LinearSVR',
+                  'SVR', 'SGDRegressor', 'RidgeCV', 'BayesianRidge']:
 
         for metric in ['accuracy',
                        'precision',
