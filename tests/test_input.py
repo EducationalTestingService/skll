@@ -1295,7 +1295,7 @@ def test_config_fixed_parameters_default_param_grids_conflict1():
     # while the conflicting default parameter value will be removed from
     # the parameter grid
     assert fixed_parameter_list[0]['alpha'] == 0.01
-    assert param_grid_list[0][0].get('alpha') == None
+    assert param_grid_list[0][0].get('alpha') is None
 
 
 def test_config_fixed_parameters_default_param_grids_conflict2():
@@ -1344,7 +1344,7 @@ def test_config_fixed_parameters_default_param_grids_conflict2():
     # while the conflicting default parameter value will be removed from
     # the parameter grid
     assert fixed_parameter_list[0]['alpha'] == 0.01
-    assert param_grid_list[0][0].get('alpha') == None
+    assert param_grid_list[0][0].get('alpha') is None
 
 
 def test_config_fixed_parameters_default_param_grids_conflict3():
