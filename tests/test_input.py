@@ -260,45 +260,6 @@ def test_config_parsing_bad_task():
         yield check_config_parsing_value_error, config_path
 
 
-def test_config_parsing_bad_learner():
-    # Test to ensure config file parsing raises an error with missing, bad and
-    # duplicate learners
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
-    # make a simple config file that has a bad task
-    # but everything else is correct
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'log': output_dir,
-                           'results': output_dir}
-
-    for learners_list, sub_prefix in zip([None, '[]', 'LogisticRegression',
-                                          "['LogisticRegression', "
-                                          "'LogisticRegression']",
-                                          "['LogisticClassification']",
-                                          "['Logistic', 'RescaledSVRegression']"],
-                                         ['no_learner', 'empty_learner',
-                                          'not_list_learner',
-                                          'duplicate_learner',
-                                          'unrecognized_learner',
-                                          'unrecognized_learners']):
-        if learners_list is not None:
-            values_to_fill_dict['learners'] = learners_list
-
-        config_template_path = join(_my_dir, 'configs',
-                                    'test_config_parsing.template.cfg')
-        config_path = fill_in_config_options(config_template_path,
-                                             values_to_fill_dict,
-                                             sub_prefix)
-        yield check_config_parsing_value_error, config_path
-
-
 def test_config_parsing_bad_sampler():
     """
     Test to ensure config file parsing raises an error with an invalid sampler
