@@ -35,17 +35,16 @@ _VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
                                             'none'])
 
 
-def _transform_learner_name(learner_name):
-    """Remove the `Rescaled` prefix from learner names if applicable.
+def _normalize_learner_name(learner):
+    """
+    Remove the `Rescaled` prefix from learner names if applicable.
 
-    :param learner_name: name of learner type
-    :type learner_name: str
+    :param learner: name of learner type
+    :type learner: str
     :returns: str
     """
 
-    if learner_name.startswith('Rescaled'):
-        return learner_name.replace('Rescaled', '')
-    return learner_name
+    return learner.replace('Rescaled', '')
 
 
 class SKLLConfigParser(configparser.ConfigParser):
@@ -353,17 +352,6 @@ def _parse_config_file(config_path):
     custom_learner_path = _locate_file(config.get("Input", "custom_learner_path"),
                                        config_dir)
 
-    # Check that the learners are valid learner types (or that they are custom
-    # learners, i.e., ending in ".py")
-    learner_names = [_transform_learner_name(learner) for learner in learners]
-    if not custom_learner_path:
-        unrecognized_learner_names = \
-            set([learner_name for learner_name
-                 in learner_names]).difference(_LEARNER_NAMES_TO_CLASSES)
-        if unrecognized_learner_names:
-            raise ValueError('Configuration file contains unrecognized learner '
-                             'types: {}'.format(unrecognized_learner_names))
-
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
     featuresets = yaml.load(_fix_json(featuresets_string))
@@ -558,6 +546,7 @@ def _parse_config_file(config_path):
         # If parameter grids are specified (or at least one is), loop through
         # the parameter grids and the corresponding fixed parameters and try to
         # find and deal with conflicts
+        learner_names = [_normalize_learner_name(learner) for learner in learners]
         if param_grid_list and any(params_grids for params_grids in param_grid_list):
             for i, (learner_name,
                     fixed_params,
@@ -616,7 +605,7 @@ def _parse_config_file(config_path):
         # warning
         else:
             param_grid_list = \
-                [_find_default_param_grid(_LEARNER_NAMES_TO_CLASSES.get(learner_name))
+                [_find_default_param_grid(_LEARNER_NAMES_TO_CLASSES[learner_name])
                  if _LEARNER_NAMES_TO_CLASSES.get(learner_name) else []
                  for learner_name in learner_names]
             for i, (learner_name,
