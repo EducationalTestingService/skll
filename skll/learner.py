@@ -41,7 +41,8 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
 from sklearn.linear_model import (BayesianRidge, ElasticNet, Lasso,
-                                  LassoLarsIC, Lars, LinearRegression, LogisticRegression, Ridge,
+                                  LassoLarsIC, Lars, LinearRegression,
+                                  LogisticRegression, LogisticRegressionCV, Ridge,
                                   RidgeCV, SGDClassifier, SGDRegressor)
 from sklearn.linear_model.base import LinearModel
 from sklearn.metrics import (accuracy_score, confusion_matrix,
@@ -93,6 +94,8 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LogisticRegression:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        LogisticRegressionCV:
+                        [{'max_iter': [1, 10, 100, 1000, 10000]}],
                         SVC: [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
                                'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         MultinomialNB:
@@ -449,11 +452,6 @@ class RescaledLasso(Lasso):
     pass
 
 
-#@rescaled
-#class RescaledLassoLars(LassoLars):
-#    pass
-
-
 @rescaled
 class RescaledLassoLarsIC(LassoLarsIC):
     pass
@@ -612,10 +610,10 @@ class Learner(object):
 
         if issubclass(self._model_type,
                       (RandomForestClassifier, LinearSVC, LogisticRegression,
-                       DecisionTreeClassifier, GradientBoostingClassifier,
-                       GradientBoostingRegressor, DecisionTreeRegressor,
-                       RandomForestRegressor, SGDClassifier, SGDRegressor,
-                       AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
+                       LogisticRegressionCV, DecisionTreeClassifier,
+                       GradientBoostingClassifier, GradientBoostingRegressor,
+                       DecisionTreeRegressor, RandomForestRegressor, SGDClassifier,
+                       SGDRegressor, AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
                        Lasso, Ridge, ElasticNet, SVC)):
             self._model_kwargs['random_state'] = 123456789
 

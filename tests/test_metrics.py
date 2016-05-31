@@ -138,6 +138,7 @@ def test_invalid_grid_obj_func():
                   'ElasticNet', 'GradientBoostingRegressor',
                   'KNeighborsRegressor', 'Lasso',
                   'LassoLarsIC', 'Lars', 'LinearRegression',
+                  'LogisticRegression', 'LogisticRegressionCV',
                   'RandomForestRegressor', 'Ridge', 'LinearSVR',
                   'SVR', 'SGDRegressor', 'RidgeCV', 'BayesianRidge']:
 
