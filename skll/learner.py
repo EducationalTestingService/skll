@@ -87,7 +87,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         LassoLarsIC:
                         [{'max_iter': [5, 50, 500, 5000, 50000]}],
                         Lars:
-                        [{'n_nonzero_coefs': [1, 50, 500, 5000, np.inf]}],
+                        [{'n_nonzero_coefs': [50, 500, 5000, np.inf]}],
                         LinearRegression:
                         [{}],
                         LinearSVC:
