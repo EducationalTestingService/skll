@@ -135,10 +135,10 @@ def check_rescaling(name, grid_search=False):
 
 
 def test_rescaling():
-  for regressor_name in ['BayesianRidge', 'ElasticNet', 'Lars', 'Lasso',
-                         'LassoLarsIC',
-                         'LinearRegression', 'LinearSVR', 'Ridge', 'RidgeCV',
-                         'SGDRegressor', 'SVR']:
+  for regressor_name in ['BayesianRidge', 'ElasticNet', 'Lars', 'LarsCV',
+                         'Lasso', 'LassoCV', 'LassoLars', 'LassoLarsCV',
+                         'LassoLarsIC', 'LinearRegression', 'LinearSVR',
+                         'Ridge', 'RidgeCV', 'SGDRegressor', 'SVR']:
     for do_grid_search in [True, False]:
       yield check_rescaling, regressor_name, do_grid_search
 
@@ -191,8 +191,7 @@ def check_linear_models(name,
   # using make_regression_data. To do this, we just
   # make sure that they are correlated with pearson > 0.95
   cor, _ = pearsonr(predictions, test_fs.labels)
-  #print('correlation: ' + str(cor))
-  print('ssss')
+
   expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
   assert_greater(cor, expected_cor_range[0])
   assert_less(cor, expected_cor_range[1])
@@ -203,7 +202,8 @@ def test_linear_models():
 
   for (regressor_name,
        use_feature_hashing,
-       use_rescaling) in product(['BayesianRidge', 'ElasticNet', 'Lars', 'Lasso',
+       use_rescaling) in product(['BayesianRidge', 'ElasticNet', 'Lars', 'LarsCV',
+                                  'Lasso', 'LassoCV', 'LassoLars', 'LassoLarsCV',
                                   'LassoLarsIC', 'LinearRegression',
                                   'LinearSVR', 'Ridge', 'RidgeCV',
                                   'SGDRegressor'],
