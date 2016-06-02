@@ -40,8 +40,9 @@ from sklearn.grid_search import GridSearchCV
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
-from sklearn.linear_model import (BayesianRidge, ElasticNet, Lasso, LassoCV, LassoLars,
-                                  LassoLarsCV, LassoLarsIC, Lars, LarsCV, LinearRegression,
+from sklearn.linear_model import (BayesianRidge, ElasticNet, ElasticNetCV,
+                                  Lasso, LassoCV, LassoLars, LassoLarsCV,
+                                  LassoLarsIC, Lars, LarsCV, LinearRegression,
                                   LogisticRegression, LogisticRegressionCV, Ridge,
                                   RidgeCV, SGDClassifier, SGDRegressor)
 from sklearn.linear_model.base import LinearModel
@@ -70,6 +71,8 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'max_features': ["auto", None]}],
                         ElasticNet:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        ElasticNetCV:
+                        [{'eps': [0.0001, 0.001, 0.01, 0.1]}],
                         GradientBoostingClassifier:
                         [{'max_depth': [1, 3, 5]}],
                         GradientBoostingRegressor:
@@ -83,8 +86,10 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         Lasso:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LassoCV:
-                        [{'max_iter': [10, 100, 1000, 10000]}],
-
+                        [{'max_iter': [10, 100, 1000, 10000, 100000]}],
+                        #LassoLars:
+                        #[{'eps': [0.0001, 0.001, 0.01, 0.1],
+                        #'max_iter': [5, 50, 500, 5000, 50000]}],
                         LassoLarsCV:
                         [{'max_iter': [5, 50, 500, 5000, 50000]}],
                         LassoLarsIC:
@@ -444,6 +449,11 @@ class RescaledElasticNet(ElasticNet):
 
 
 @rescaled
+class RescaledElasticNetCV(ElasticNetCV):
+    pass
+
+
+@rescaled
 class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
     pass
 
@@ -640,7 +650,7 @@ class Learner(object):
                        GradientBoostingClassifier, GradientBoostingRegressor,
                        DecisionTreeRegressor, RandomForestRegressor, SGDClassifier,
                        SGDRegressor, AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
-                       Lasso, LassoCV, Ridge, ElasticNet, SVC)):
+                       Lasso, LassoCV, Ridge, ElasticNet, ElasticNetCV, SVC)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
