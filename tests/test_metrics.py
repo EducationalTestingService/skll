@@ -137,9 +137,8 @@ def test_invalid_grid_obj_func():
     for model in ['AdaBoostRegressor', 'DecisionTreeRegressor',
                   'ElasticNet', 'GradientBoostingRegressor',
                   'KNeighborsRegressor', 'Lasso', 'LassoCV',
-                  'LassoLars', 'LassoLarsCV',
-                  'LassoLarsIC', 'Lars', 'LinearRegression',
-                  'LogisticRegression', 'LogisticRegressionCV',
+                  'LassoLarsCV','LassoLarsIC', 'Lars', 'LarsCV',
+                  'LinearRegression', 'LogisticRegression', 'LogisticRegressionCV',
                   'RandomForestRegressor', 'Ridge', 'LinearSVR',
                   'SVR', 'SGDRegressor', 'RidgeCV', 'BayesianRidge']:
 

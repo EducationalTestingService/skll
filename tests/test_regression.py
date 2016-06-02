@@ -136,7 +136,7 @@ def check_rescaling(name, grid_search=False):
 
 def test_rescaling():
   for regressor_name in ['BayesianRidge', 'ElasticNet', 'Lars', 'LarsCV',
-                         'Lasso', 'LassoCV', 'LassoLars', 'LassoLarsCV',
+                         'Lasso', 'LassoCV', 'LassoLarsCV',
                          'LassoLarsIC', 'LinearRegression', 'LinearSVR',
                          'Ridge', 'RidgeCV', 'SGDRegressor', 'SVR']:
     for do_grid_search in [True, False]:
@@ -203,7 +203,7 @@ def test_linear_models():
   for (regressor_name,
        use_feature_hashing,
        use_rescaling) in product(['BayesianRidge', 'ElasticNet', 'Lars', 'LarsCV',
-                                  'Lasso', 'LassoCV', 'LassoLars', 'LassoLarsCV',
+                                  'Lasso', 'LassoCV', 'LassoLarsCV',
                                   'LassoLarsIC', 'LinearRegression',
                                   'LinearSVR', 'Ridge', 'RidgeCV',
                                   'SGDRegressor'],

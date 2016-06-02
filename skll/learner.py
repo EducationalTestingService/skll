@@ -83,9 +83,8 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         Lasso:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LassoCV:
-                        [{'max_iter': [10, 100, 1000, 10000, 100000]}],
-                        LassoLars:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        [{'max_iter': [10, 100, 1000, 10000]}],
+
                         LassoLarsCV:
                         [{'max_iter': [5, 50, 500, 5000, 50000]}],
                         LassoLarsIC:
@@ -464,9 +463,9 @@ class RescaledLassoCV(LassoCV):
     pass
 
 
-@rescaled
-class RescaledLassoLars(LassoLars):
-    pass
+#@rescaled
+#class RescaledLassoLars(LassoLars):
+#    pass
 
 
 @rescaled
