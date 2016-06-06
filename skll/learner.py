@@ -41,7 +41,7 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
                                           RBFSampler, SkewedChi2Sampler)
 from sklearn.linear_model import (BayesianRidge, ElasticNet, ElasticNetCV,
-                                  Lasso, LassoCV, LassoLars, LassoLarsCV,
+                                  Lasso, LassoCV, LassoLarsCV,
                                   LassoLarsIC, Lars, LarsCV, LinearRegression,
                                   LogisticRegression, LogisticRegressionCV, Ridge,
                                   RidgeCV, SGDClassifier, SGDRegressor)
@@ -87,8 +87,8 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LassoCV:
                         [{'max_iter': [10, 100, 1000, 10000, 100000]}],
-                        LassoLars:
-                        [{'eps': [100]}],
+                        #LassoLars:
+                        #[{'eps': [100]}],
                         #'max_iter': [5, 50, 500, 5000, 50000]}],
                         LassoLarsCV:
                         [{'max_iter': [5, 50, 500, 5000, 50000]}],
