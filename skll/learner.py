@@ -702,6 +702,7 @@ class Learner(object):
                 coef = coef.toarray()[0]
 
             # inverse transform to get indices for before feature selection
+            coef = coef.reshape(1, -1)
             coef = self.feat_selector.inverse_transform(coef)[0]
             for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                 if coef[idx]:
