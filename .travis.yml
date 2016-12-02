@@ -18,6 +18,7 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then export PATH=/home/travis/miniconda2/bin:$PATH; else export PATH=/home/travis/miniconda3/bin:$PATH; fi
+  - conda config --add channels dan_blanchard
   - conda config --add channels desilinguist
   - conda update --yes conda
 install:
