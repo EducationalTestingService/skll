@@ -139,7 +139,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
                 if ablation != 0 and '_minus_' in featureset_name:
                     parent_set = featureset_name.split('_minus_', 1)[0]
                     all_features[parent_set].update(
-                        yaml.load(obj[0]['featureset']))
+                        yaml.safe_load(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
 
     # Build and write header
@@ -158,7 +158,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
         if ablation != 0:
             parent_set = featureset_name.split('_minus_', 1)[0]
             ablated_features = all_features[parent_set].difference(
-                yaml.load(lrd['featureset']))
+                yaml.safe_load(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
                 lrd['ablated_features'] = json.dumps(sorted(ablated_features))
