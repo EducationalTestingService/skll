@@ -169,7 +169,7 @@ def check_summary_score(use_feature_hashing=False):
     # this line. See _print_fancy_output
     for report_name, val in (("LogisticRegression", .5),
                              ("MultinomialNB", .5),
-                             ("SVC", .7)):
+                             ("SVC", .6333)):
         filename = "test_summary_test_summary_{}.results".format(report_name)
         results_path = join(_my_dir, 'output', filename)
         with open(results_path) as results_file:
