@@ -29,23 +29,31 @@ from six import iteritems, itervalues
 from six import string_types
 from six.moves import xrange as range
 from six.moves import zip
-from sklearn.cross_validation import KFold, LeaveOneLabelOut, StratifiedKFold
-from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
+from sklearn.model_selection import (GridSearchCV,
+                                     KFold,
+                                     LeaveOneGroupOut,
+                                     StratifiedKFold)
+from sklearn.ensemble import (AdaBoostClassifier,
+                              AdaBoostRegressor,
                               GradientBoostingClassifier,
                               GradientBoostingRegressor,
-                              RandomForestClassifier, RandomForestRegressor)
+                              RandomForestClassifier,
+                              RandomForestRegressor)
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_selection import SelectKBest
-from sklearn.grid_search import GridSearchCV
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
-from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
-                                          RBFSampler, SkewedChi2Sampler)
+from sklearn.kernel_approximation import (AdditiveChi2Sampler,
+                                          Nystroem,
+                                          RBFSampler,
+                                          SkewedChi2Sampler)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor)
 from sklearn.linear_model.base import LinearModel
-from sklearn.metrics import (accuracy_score, confusion_matrix,
-                             precision_recall_fscore_support, SCORERS)
+from sklearn.metrics import (accuracy_score,
+                             confusion_matrix,
+                             precision_recall_fscore_support,
+                             SCORERS)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler
@@ -150,28 +158,28 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
 # pylint: disable=W0223,R0903
-class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
+class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
     """
-    Version of LeaveOneLabelOut cross-validation iterator that only outputs
+    Version of LeaveOneGroupOut cross-validation iterator that only outputs
     indices of instances with IDs in a prespecified set.
     """
 
-    def __init__(self, labels, keep, examples):
-        super(FilteredLeaveOneLabelOut, self).__init__(labels)
+    def __init__(self, keep, example_ids):
+        super(FilteredLeaveOneGroupOut, self).__init__()
         self.keep = keep
-        self.examples = examples
+        self.example_ids = example_ids
         self._warned = False
         self.logger = logging.getLogger(__name__)
 
-    def __iter__(self):
-        for train_index, test_index in super(FilteredLeaveOneLabelOut,
-                                             self).__iter__():
+    def split(self, X, y, groups):
+        for train_index, test_index in super(FilteredLeaveOneGroupOut,
+                                             self).split(X, y, groups):
             train_len = len(train_index)
             test_len = len(test_index)
-            train_index = [i for i in train_index if self.examples.ids[i] in
+            train_index = [i for i in train_index if self.example_ids[i] in
                            self.keep]
-            test_index = [i for i in test_index if self.examples.ids[i] in
+            test_index = [i for i in test_index if self.example_ids[i] in
                           self.keep]
             if not self._warned and (train_len != len(train_index) or
                                      test_len != len(test_index)):
@@ -1061,11 +1069,9 @@ class Learner(object):
                                     grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(itervalues(grid_search_folds))
-                fold_labels = [grid_search_folds.get(curr_id, dummy_label) for
+                fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
                                curr_id in examples.ids]
-                folds = FilteredLeaveOneLabelOut(fold_labels,
-                                                 grid_search_folds,
-                                                 examples)
+                folds = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids).split(examples.features, examples.labels, fold_groups)
 
             # Use default parameter grid if we weren't passed one
             if not param_grid:
@@ -1083,7 +1089,8 @@ class Learner(object):
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
 
             grid_searcher = GridSearchCV(estimator, param_grid,
-                                         scoring=grid_objective, cv=folds,
+                                         scoring=grid_objective,
+                                         cv=folds,
                                          n_jobs=grid_jobs,
                                          pre_dispatch=grid_jobs)
 
@@ -1449,11 +1456,11 @@ class Learner(object):
             stratified = (stratified and
                           self.model_type._estimator_type == 'classifier')
             if stratified:
-                kfold = StratifiedKFold(examples.labels, n_folds=cv_folds)
+                kfold = StratifiedKFold(n_splits=cv_folds)
+                cv_groups = None
             else:
-                kfold = KFold(len(examples.labels),
-                              n_folds=cv_folds,
-                              random_state=random_state)
+                kfold = KFold(n_splits=cv_folds, random_state=random_state)
+                cv_groups = None
         # Otherwise cv_volds is a dict
         else:
             # if we have a mapping from IDs to folds, use it for the overall
@@ -1463,10 +1470,11 @@ class Learner(object):
             # the outer cross-validation.
             # Only retain IDs within folds if they're in grid_search_folds
             dummy_label = next(itervalues(cv_folds))
-            fold_labels = [cv_folds.get(curr_id, dummy_label) for curr_id in
+            fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in
                            examples.ids]
             # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneLabelOut(fold_labels, cv_folds, examples)
+            kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
+            cv_groups = fold_groups
             grid_search_folds = cv_folds
 
         # Save the cross-validation fold information, if required
@@ -1474,7 +1482,9 @@ class Learner(object):
         skll_fold_ids = None
         if save_cv_folds:
             skll_fold_ids = {}
-            for fold_num, (_, test_indices) in enumerate(kfold):
+            for fold_num, (_, test_indices) in enumerate(kfold.split(examples.features,
+                                                                     examples.labels,
+                                                                     cv_groups)):
                 for index in test_indices:
                     skll_fold_ids[examples.ids[index]] = str(fold_num)
 
@@ -1483,7 +1493,9 @@ class Learner(object):
         results = []
         grid_search_scores = []
         append_predictions = False
-        for train_index, test_index in kfold:
+        for train_index, test_index in kfold.split(examples.features,
+                                                   examples.labels,
+                                                   cv_groups):
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
             train_set = FeatureSet(examples.name,
