@@ -245,7 +245,7 @@ def _setup_config_parser(config_path, validate=True):
             config.remove_option('Tuning', 'objective')
         else:
             # else convert objective into objectives and delete objective
-            objective_value = yaml.load(_fix_json(objective_value))
+            objective_value = yaml.safe_load(_fix_json(objective_value), )
             if isinstance(objective_value, string_types):
                 config.set(
                     'Tuning', 'objectives', "['{}']".format(objective_value))
@@ -324,7 +324,7 @@ def _parse_config_file(config_path):
     else:
         raise ValueError("Configuration file does not contain list of learners "
                          "in [Input] section.")
-    learners = yaml.load(_fix_json(learners_string))
+    learners = yaml.safe_load(_fix_json(learners_string))
 
     if len(learners) == 0:
         raise ValueError("Configuration file contains an empty list of learners"
@@ -340,7 +340,7 @@ def _parse_config_file(config_path):
 
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
-    featuresets = yaml.load(_fix_json(featuresets_string))
+    featuresets = yaml.safe_load(_fix_json(featuresets_string))
 
     # ensure that featuresets is either a list of features or a list of lists
     # of features
@@ -350,7 +350,7 @@ def _parse_config_file(config_path):
                          "features or a list of lists of features. You "
                          "specified: {}".format(featuresets))
 
-    featureset_names = yaml.load(_fix_json(config.get("Input",
+    featureset_names = yaml.safe_load(_fix_json(config.get("Input",
                                                       "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
@@ -365,12 +365,12 @@ def _parse_config_file(config_path):
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
 
-    fixed_parameter_list = yaml.load(_fix_json(config.get("Input",
+    fixed_parameter_list = yaml.safe_load(_fix_json(config.get("Input",
                                                           "fixed_parameters")))
     fixed_sampler_parameters = _fix_json(config.get("Input",
                                                     "sampler_parameters"))
-    fixed_sampler_parameters = yaml.load(fixed_sampler_parameters)
-    param_grid_list = yaml.load(_fix_json(config.get("Tuning", "param_grids")))
+    fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
+    param_grid_list = yaml.safe_load(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
 
     # ensure that feature_scaling is specified only as one of the
@@ -462,7 +462,7 @@ def _parse_config_file(config_path):
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
-    original_class_map = yaml.load(_fix_json(class_map_string))
+    original_class_map = yaml.safe_load(_fix_json(class_map_string))
     if original_class_map:
         # Change class_map to map from originals to replacements instead of
         # from replacement to list of originals
@@ -523,7 +523,7 @@ def _parse_config_file(config_path):
 
     # what are the objective functions for the grid search?
     grid_objectives = config.get("Tuning", "objectives")
-    grid_objectives = yaml.load(_fix_json(grid_objectives))
+    grid_objectives = yaml.safe_load(_fix_json(grid_objectives))
     if not isinstance(grid_objectives, list):
         raise TypeError("objectives should be a "
                         "list of objectives")
