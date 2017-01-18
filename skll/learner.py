@@ -32,6 +32,7 @@ from six.moves import zip
 from sklearn.model_selection import (GridSearchCV,
                                      KFold,
                                      LeaveOneGroupOut,
+                                     ShuffleSplit,
                                      StratifiedKFold)
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
@@ -64,7 +65,6 @@ from sklearn.utils import shuffle as sk_shuffle
 from skll.data import FeatureSet
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
-
 
 # Constants #
 _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
@@ -1531,3 +1531,113 @@ class Learner(object):
 
         # return list of results for all folds
         return results, grid_search_scores, skll_fold_ids
+
+    def _train_and_score(self,
+                         train_examples,
+                         test_examples,
+                         objective='f1_score_micro'):
+        _ = self.train(train_examples, grid_search=False, shuffle=False)
+        train_predictions = self.predict(train_examples)
+        train_score = use_score_func(objective, train_examples.labels, train_predictions)
+        test_predictions = self.predict(test_examples)
+        test_score = use_score_func(objective, test_examples.labels, test_predictions)
+        return train_score, test_score
+
+    def learning_curve(self,
+                       examples,
+                       cv_folds=10,
+                       n_jobs=None,
+                       train_sizes=np.linspace(0.1, 1.0, 5),
+                       objective='f1_score_micro'):
+        """
+        Generates learning curves for a given model on the training examples
+        via cross-validation. Adapted from the scikit-learn code for learning
+        curve generation (cf. ```sklearn.model_selection.learning_curve```).
+
+        :param examples: The data to generate the learning curve on.
+        :type examples: skll.data.FeatureSet
+        :param cv_folds: The number of folds to use for cross-validation with each training size
+        :type cv_folds: int
+        :param n_jobs: The number of jobs to run in parallel when computing
+                       the scores for the learning curve. If unspecified or 0,
+                       it is determined appropriately based on the number of
+                       CPU cores available and the maximum number of concurrent
+                       processes SKLL is allowed to run.
+        :param train_sizes : Relative or absolute numbers of training examples
+                             that will be used to generate the learning curve.
+                             If the type is float, it is regarded as a fraction
+                             of the maximum size of the training set (that is
+                             determined by the selected validation method),
+                             i.e. it has to be within (0, 1]. Otherwise it
+                             is interpreted as absolute sizes of the training
+                             sets. Note that for classification the number of
+                             samples usually have to be big enough to contain
+                             at least one sample from each class.
+                             (default: `np.linspace(0.1, 1.0, 5)`)
+        :type train_sizes: list of float or int
+        :param score_type: The name of the objective function to use
+                           when computing the train and test scores
+                           for the learning curve. (default: 'f1_score_micro')
+        :type score_type: string
+
+        :return: The numbers of training examples used to generate
+                  the curve, the scores on the training sets, and
+                  the scores on the test set.
+        :rtype: (list of int, list of float, list of float)
+        """
+
+        # Seed the random number generator so that randomized algorithms are
+        # replicable.
+        random_state = np.random.RandomState(123456789)
+
+        # Set up logger.
+        logger = logging.getLogger(__name__)
+
+        # Call train setup before since we need to train
+        # the learner eventually
+        self._create_label_dict(examples)
+        self._train_setup(examples)
+
+        # Set up the cross-validation iterator with 20% of the data
+        # always reserved for testing
+        cv = ShuffleSplit(n_splits=cv_folds,
+                          test_size=0.2,
+                          random_state=random_state)
+        cv_iter = list(cv.split(examples.features, examples.labels, None))
+        n_max_training_samples = len(cv_iter[0][0])
+
+        # Get the _translate_train_sizes() function from scikit-learn
+        # since we need it to get the right list of sizes after cross-validation
+        _module = import_module('sklearn.model_selection._validation')
+        _translate_train_sizes = getattr(_module, '_translate_train_sizes')
+        train_sizes_abs = _translate_train_sizes(train_sizes,
+                                                 n_max_training_samples)
+        n_unique_ticks = train_sizes_abs.shape[0]
+
+        # Create an iterator over train/test featuresets based on the
+        # cross-validation index iterator
+        featureset_iter = (FeatureSet.split_by_ids(examples, train, test) for train, test in cv_iter)
+
+        # If the number of parallel jobs is not specified, limit the
+        # number to be no higher than five or the number of cores
+        # for the machine, whichever is lower
+        if not n_jobs:
+            n_jobs = min(cpu_count, MAX_CONCURRENT_PROCESSES)
+
+        # Run jobs in parallel that train the model on each subset
+        # of the training data and compute train and test scores
+        parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
+        out = parallel(joblib.delayed(self._train_and_score)(train_fs[:n_train_samples],
+                                                             test_fs,
+                                                             objective)
+                       for train_fs, test_fs in featureset_iter
+                       for n_train_samples in train_sizes_abs)
+
+        # Reshape the outputs
+        out = np.array(out)
+        n_cv_folds = out.shape[0] // n_unique_ticks
+        out = out.reshape(n_cv_folds, n_unique_ticks, 2)
+        out = np.asarray(out).transpose((2, 1, 0))
+
+        return list(train_sizes_abs), list(out[0]), list(out[1])
+
