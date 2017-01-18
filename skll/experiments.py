@@ -372,6 +372,10 @@ def _classify_featureset(args):
             print("Training on {}, feature set {} ...".format(train_set_name,
                                                               featureset),
                   file=log_file)
+        elif task == 'learning_curve':
+            print(("Generating learning curve ({} 80/20 folds) on {}, feature " +
+                   "set {} ...").format(cv_folds, train_set_name, featureset),
+                  file=log_file)
         else:  # predict
             print(("Training on {}, Making predictions about {}, " +
                    "feature set {} ...").format(train_set_name, test_set_name,
@@ -507,7 +511,6 @@ def _classify_featureset(args):
 
             # run on test set or cross-validate on training data,
             # depending on what was asked for
-
             if task == 'evaluate':
                 print('\tevaluating predictions', file=log_file)
                 task_results = [learner.evaluate(

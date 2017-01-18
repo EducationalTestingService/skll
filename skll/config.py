@@ -26,7 +26,8 @@ from six import string_types, iteritems  # Python 2/3
 from sklearn.metrics import SCORERS
 
 
-_VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
+_VALID_TASKS = frozenset(['predict', 'train', 'evaluate',
+                          'cross_validate', 'learning_curve'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 _VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
@@ -536,20 +537,20 @@ def _parse_config_file(config_path):
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set must be set when task is evaluate or '
                          'predict.')
-    if (task == 'cross_validate' or task == 'train') and test_path:
+    if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
-                         'cross_validate or train.')
-    if (task == 'train' or task == 'predict') and results_path:
+                         '{}.'.format(task))
+    if task in ['learning_curve', 'train', 'predict'] and results_path:
         raise ValueError('The results path should not be set when task is '
-                         'predict or train.')
+                         '{}.'.format(task))
     if task == 'train' and not model_path:
         raise ValueError('The model path should be set when task is train.')
-    if task == 'train' and prediction_dir:
+    if task in ['learning_curve', 'train'] and prediction_dir:
         raise ValueError('The predictions path should not be set when task is '
-                         'train.')
-    if task == 'cross_validate' and model_path:
+                         '{}.'.format(task))
+    if task in ['cross_validate', 'learning_curve'] and model_path:
         raise ValueError('The models path should not be set when task is '
-                         'cross_validate.')
+                         '{}.'.format(task))
 
     # Create feature set names if unspecified
     if not featureset_names:
