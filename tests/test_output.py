@@ -312,7 +312,7 @@ def test_learning_curve_output():
     output_tsv_path = join(_my_dir, 'output', '{}_summary.tsv'.format(outprefix))
     ok_(exists(output_tsv_path))
     with open(output_tsv_path, 'r') as tsvf:
-        r = csv.reader(tsvf, delimiter='\t')
+        r = csv.reader(tsvf, dialect=csv.excel_tab)
         header = next(r)
         # make sure we have the expected number of columns
         eq_(len(header), 11)
