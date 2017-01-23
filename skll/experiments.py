@@ -1100,8 +1100,8 @@ def _generate_learning_curve_plots(experiment_name,
     # set up and draw the actual learning curve figures, one for
     # each of the featuresets
     for featureset_name, df_featureset in df2.groupby('featureset_name'):
-        fig = plt.figure()
-        fig.set_size_inches(2.5*num_learners, 2.5*num_objectives)
+        fig = plt.figure();
+        fig.set_size_inches(2.5*num_learners, 2.5*num_objectives);
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
             g = sns.FacetGrid(df2, row="objective", col="learner_name",
@@ -1145,4 +1145,4 @@ def _generate_learning_curve_plots(experiment_name,
                                       frameon=True)
             g.fig.tight_layout(w_pad=1)
             plt.savefig(join(output_dir,'{}_{}.png'.format(experiment_name,
-                                                           featureset_name)), dpi=300)
+                                                           featureset_name)), dpi=300);
