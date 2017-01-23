@@ -252,8 +252,7 @@ def test_backward_compatibility():
 
 def test_learning_curve_implementation():
     """
-    Test to ensure that the learning curve results match the scikit-learn
-    version.
+    Test to ensure that the learning curve results match scikit-learn
     """
 
     # This test is different from the other tests which just use regression data.
@@ -296,7 +295,7 @@ def test_learning_curve_implementation():
 
 def test_learning_curve_output():
     """
-    Test that the output of a learning curve experiment is as expected.
+    Test that the outputs of a learning curve experiment are as expected
     """
 
     # Test to validate learning curve output
