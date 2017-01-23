@@ -20,6 +20,7 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from numpy.testing import assert_almost_equal
+from nose.plugins.attrib import attr
 from nose.tools import eq_, ok_
 
 from sklearn.datasets import load_digits
@@ -295,7 +296,7 @@ def test_learning_curve_implementation():
 
 def test_learning_curve_output():
     """
-    Test that the outputs of a learning curve experiment are as expected
+    Test that the TSV output of a learning curve experiment is as expected
     """
 
     # Test to validate learning curve output
@@ -328,3 +329,26 @@ def test_learning_curve_output():
             ok_(exists(join(_my_dir,
                             'output',
                             '{}_{}.png'.format(outprefix, featureset_name))))
+
+
+@attr('have_pandas_and_seaborn')
+def test_learning_curve_plots():
+    """
+    Test that the plots of a learning curve experiment are generated as expected
+    """
+
+    # Test to validate learning curve output
+    make_learning_curve_data()
+
+    config_template_path = join(_my_dir, 'configs', 'test_learning_curve.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    # run the learning curve experiment
+    run_configuration(config_path, quiet=True)
+    outprefix = 'test_learning_curve'
+
+    # make sure that the two PNG files (one per featureset) are created
+    for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+        ok_(exists(join(_my_dir,
+                        'output',
+                        '{}_{}.png'.format(outprefix, featureset_name))))
