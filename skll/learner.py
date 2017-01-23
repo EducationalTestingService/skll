@@ -1536,17 +1536,39 @@ class Learner(object):
                          train_examples,
                          test_examples,
                          objective='f1_score_micro'):
+        """
+        A utility method to train a model on the given training examples,
+        generate predictions on the training set itself and also the given
+        test set,  and score those predictions using the given objective function.
+        The method returns the train and test scores.
+        """
         _ = self.train(train_examples, grid_search=False, shuffle=False)
         train_predictions = self.predict(train_examples)
-        train_score = use_score_func(objective, train_examples.labels, train_predictions)
         test_predictions = self.predict(test_examples)
-        test_score = use_score_func(objective, test_examples.labels, test_predictions)
+        if self.model_type._estimator_type == 'classifier':
+            test_label_list = np.unique(test_examples.labels).tolist()
+            unseen_test_label_list = [label for label in test_label_list
+                                      if not label in self.label_list]
+            unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
+                                                                    start=len(self.label_list))}
+            # combine the two dictionaries
+            train_and_test_label_dict = self.label_dict.copy()
+            train_and_test_label_dict.update(unseen_label_dict)
+            train_labels = np.array([train_and_test_label_dict[label]
+                                     for label in train_examples.labels])
+            test_labels = np.array([train_and_test_label_dict[label]
+                                     for label in test_examples.labels])
+        else:
+            train_labels = train_examples.labels
+            test_labels = test_examples.labels
+
+        train_score = use_score_func(objective, train_labels, train_predictions)
+        test_score = use_score_func(objective, test_labels, test_predictions)
         return train_score, test_score
 
     def learning_curve(self,
                        examples,
                        cv_folds=10,
-                       n_jobs=None,
                        train_sizes=np.linspace(0.1, 1.0, 5),
                        objective='f1_score_micro'):
         """
@@ -1575,15 +1597,15 @@ class Learner(object):
                              at least one sample from each class.
                              (default: `np.linspace(0.1, 1.0, 5)`)
         :type train_sizes: list of float or int
-        :param score_type: The name of the objective function to use
+        :param objective: The name of the objective function to use
                            when computing the train and test scores
                            for the learning curve. (default: 'f1_score_micro')
-        :type score_type: string
+        :type objective: string
 
-        :return: The numbers of training examples used to generate
-                  the curve, the scores on the training sets, and
-                  the scores on the test set.
-        :rtype: (list of int, list of float, list of float)
+        :return: The scores on the training sets, the scores on the test set,
+                 and the numbers of training examples used to generate
+                 the curve.
+        :rtype: (list of float, list of float, list of int)
         """
 
         # Seed the random number generator so that randomized algorithms are
@@ -1618,11 +1640,10 @@ class Learner(object):
         # cross-validation index iterator
         featureset_iter = (FeatureSet.split_by_ids(examples, train, test) for train, test in cv_iter)
 
-        # If the number of parallel jobs is not specified, limit the
-        # number to be no higher than five or the number of cores
+        # Limit the number of parallel jobs for this
+        # to be no higher than five or the number of cores
         # for the machine, whichever is lower
-        if not n_jobs:
-            n_jobs = min(cpu_count, MAX_CONCURRENT_PROCESSES)
+        n_jobs = min(cpu_count(), MAX_CONCURRENT_PROCESSES)
 
         # Run jobs in parallel that train the model on each subset
         # of the training data and compute train and test scores
@@ -1639,5 +1660,5 @@ class Learner(object):
         out = out.reshape(n_cv_folds, n_unique_ticks, 2)
         out = np.asarray(out).transpose((2, 1, 0))
 
-        return list(train_sizes_abs), list(out[0]), list(out[1])
+        return list(out[0]), list(out[1]), list(train_sizes_abs)
 

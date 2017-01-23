@@ -18,6 +18,8 @@ import math
 import numpy as np
 import os
 import sys
+import warnings
+
 from collections import defaultdict
 from io import open
 from itertools import combinations
@@ -36,7 +38,6 @@ from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
                           _import_custom_learner)
 from skll.version import __version__
 
-
 # Check if gridmap is available
 try:
     from gridmap import Job, process_jobs
@@ -45,6 +46,23 @@ except ImportError:
 else:
     _HAVE_GRIDMAP = True
 
+# Check if pandas is available
+try:
+    import pandas as pd
+except ImportError:
+    _HAVE_PANDAS = False
+else:
+    _HAVE_PANDAS = True
+
+# Check if seaborn (and matplotlib) are available
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+except ImportError:
+    _HAVE_SEABORN = False
+else:
+    _HAVE_SEABORN = True
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
@@ -65,6 +83,8 @@ class NumpyTypeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.int64):
             return int(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
 
@@ -165,6 +185,79 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
 
         # write out the new learner dict with the readable fields
         writer.writerow(lrd)
+
+    output_file.flush()
+
+
+def _write_learning_curve_file(result_json_paths, output_file):
+    """
+    Function to take a list of paths to individual learning curve
+    results json files and writes out a single TSV file with the
+    learning curve data.
+
+    :param result_json_paths: A list of paths to the
+                              individual result json files.
+    :type result_json_paths: list
+    :param output_file: The path to the output TSV file.
+    :type output_file: string
+    """
+
+    learner_result_dicts = []
+
+    # Map from feature set names to all features in them
+    logger = logging.getLogger(__name__)
+    for json_path in result_json_paths:
+        if not exists(json_path):
+            logger.error(('JSON results file %s not found. Skipping summary '
+                          'creation. You can manually create the summary file'
+                          ' after the fact by using the summarize_results '
+                          'script.'), json_path)
+            return
+        else:
+            with open(json_path, 'r') as json_file:
+                obj = json.load(json_file)
+                learner_result_dicts.extend(obj)
+
+    # Build and write header
+    header = ['featureset_name', 'learner_name', 'objective',
+              'train_set_name', 'training_set_size', 'train_score_mean',
+              'test_score_mean', 'train_score_std', 'test_score_std',
+              'scikit_learn_version', 'version']
+    writer = csv.DictWriter(output_file,
+                            header,
+                            extrasaction='ignore',
+                            dialect=csv.excel_tab)
+    writer.writeheader()
+
+    # write out the fields we need for the learning curve file
+    # specifically, we need to separate out the curve sizes
+    # and scores into individual entries.
+    for lrd in learner_result_dicts:
+        training_set_sizes = lrd['computed_curve_train_sizes']
+        train_scores_means_by_size = lrd['learning_curve_train_scores_means']
+        test_scores_means_by_size = lrd['learning_curve_test_scores_means']
+        train_scores_stds_by_size = lrd['learning_curve_train_scores_stds']
+        test_scores_stds_by_size = lrd['learning_curve_test_scores_stds']
+
+        # rename `grid_objective` to `objective` since that can be confusing
+        lrd['objective'] = lrd['grid_objective']
+
+        for (size,
+             train_score_mean,
+             test_score_mean,
+             train_score_std,
+             test_score_std) in zip(training_set_sizes,
+                                    train_scores_means_by_size,
+                                    test_scores_means_by_size,
+                                    train_scores_stds_by_size,
+                                    test_scores_stds_by_size):
+            lrd['training_set_size'] = size
+            lrd['train_score_mean'] = train_score_mean
+            lrd['test_score_mean'] = test_score_mean
+            lrd['train_score_std'] = train_score_std
+            lrd['test_score_std'] = test_score_std
+
+            writer.writerow(lrd)
 
     output_file.flush()
 
@@ -350,6 +443,8 @@ def _classify_featureset(args):
     class_map = args.pop("class_map")
     custom_learner_path = args.pop("custom_learner_path")
     quiet = args.pop('quiet', False)
+    learning_curve_cv_folds = args.pop("learning_curve_cv_folds")
+    learning_curve_train_sizes = args.pop("learning_curve_train_sizes")
 
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: "
@@ -373,8 +468,13 @@ def _classify_featureset(args):
                                                               featureset),
                   file=log_file)
         elif task == 'learning_curve':
-            print(("Generating learning curve ({} 80/20 folds) on {}, feature " +
-                   "set {} ...").format(cv_folds, train_set_name, featureset),
+            print(("Generating learning curve "
+                   "({} 80/20 folds, sizes={}, objective={}) on {}, "
+                   "feature set {} ...").format(learning_curve_cv_folds,
+                                                learning_curve_train_sizes,
+                                                grid_objective,
+                                                train_set_name,
+                                                featureset),
                   file=log_file)
         else:  # predict
             print(("Training on {}, Making predictions about {}, " +
@@ -385,8 +485,9 @@ def _classify_featureset(args):
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it and then use it on test data
         modelfile = join(model_path, '{}.model'.format(job_name))
-        if task == 'cross_validate' or (not exists(modelfile) or
-                                        overwrite):
+        if (task in ['cross_validate', 'learning_curve'] or
+            not exists(modelfile) or
+            overwrite):
             train_examples = _load_featureset(train_path, featureset, suffix,
                                               label_col=label_col,
                                               id_col=id_col,
@@ -469,6 +570,14 @@ def _classify_featureset(args):
                 grid_search_folds=grid_search_folds, cv_folds=cv_folds,
                 grid_objective=grid_objective, param_grid=param_grid,
                 grid_jobs=grid_search_jobs, save_cv_folds=save_cv_folds)
+        elif task == 'learning_curve':
+            print('\tgenerating learning curve', file=log_file)
+            (curve_train_scores,
+             curve_test_scores,
+             computed_curve_train_sizes) = learner.learning_curve(train_examples,
+                                                                  cv_folds=learning_curve_cv_folds,
+                                                                  train_sizes=learning_curve_train_sizes,
+                                                                  objective=grid_objective)
         else:
             # if we have do not have a saved model, we need to train one.
             if not exists(modelfile) or overwrite:
@@ -513,9 +622,9 @@ def _classify_featureset(args):
             # depending on what was asked for
             if task == 'evaluate':
                 print('\tevaluating predictions', file=log_file)
-                task_results = [learner.evaluate(
-                    test_examples, prediction_prefix=prediction_prefix,
-                    grid_objective=grid_objective)]
+                task_results = [learner.evaluate(test_examples,
+                                                 prediction_prefix=prediction_prefix,
+                                                 grid_objective=grid_objective)]
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
@@ -532,7 +641,8 @@ def _classify_featureset(args):
             results_json_path = join(results_path,
                                      '{}.results.json'.format(job_name))
 
-            res = _create_learner_result_dicts(task_results, grid_scores,
+            res = _create_learner_result_dicts(task_results,
+                                               grid_scores,
                                                learner_result_dict_base)
 
             # write out the result dictionary to a json file
@@ -544,6 +654,24 @@ def _classify_featureset(args):
                            '{}.results'.format(job_name)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
+        elif task == 'learning_curve':
+            results_json_path = join(results_path,
+                                     '{}.results.json'.format(job_name))
+
+            res = {}
+            res.update(learner_result_dict_base)
+            res.update({'learning_curve_cv_folds': learning_curve_cv_folds,
+                        'given_curve_train_sizes': learning_curve_train_sizes,
+                        'learning_curve_train_scores_means': np.mean(curve_train_scores, axis=1),
+                        'learning_curve_test_scores_means': np.mean(curve_test_scores, axis=1),
+                        'learning_curve_train_scores_stds': np.std(curve_train_scores, axis=1, ddof=1),
+                        'learning_curve_test_scores_stds': np.std(curve_test_scores, axis=1, ddof=1),
+                        'computed_curve_train_sizes': computed_curve_train_sizes})
+
+            # write out the result dictionary to a json file
+            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+            with open(results_json_path, file_mode) as json_file:
+                json.dump([res], json_file, cls=NumpyTypeEncoder)
         else:
             res = [learner_result_dict_base]
 
@@ -558,7 +686,8 @@ def _classify_featureset(args):
     return res
 
 
-def _create_learner_result_dicts(task_results, grid_scores,
+def _create_learner_result_dicts(task_results,
+                                 grid_scores,
                                  learner_result_dict_base):
     """
     Create the learner result dictionaries that are used to create JSON and
@@ -575,8 +704,12 @@ def _create_learner_result_dicts(task_results, grid_scores,
     f_sum_dict = defaultdict(float)
     result_table = None
 
-    for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
-             score), grid_score) in enumerate(zip(task_results, grid_scores),
+    for k, ((conf_matrix,
+             fold_accuracy,
+             result_dict,
+             model_params,
+             score), grid_score) in enumerate(zip(task_results,
+                                                  grid_scores),
                                               start=1):
 
         # create a new dict for this fold
@@ -726,7 +859,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
      learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_file)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -734,6 +868,17 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         logger.warning('gridmap 0.10.1+ not available. Forcing local '
                        'mode.  To run things on a DRMAA-compatible '
                        'cluster, install gridmap>=0.10.1 via pip.')
+
+    # No grid search or ablation for learning curve generation
+    if task == 'learning_curve':
+        if do_grid_search:
+            do_grid_search = False
+            logger.warning("Grid search is not supported during "
+                       "learning curve generation. Ignoring.")
+        if ablation is None or ablation > 0:
+            ablation = 0
+            logger.warning("Ablating features is not supported during "
+                           "learning curve generation. Ignoring.")
 
     # if performing ablation, expand featuresets to include combinations of
     # features within those sets
@@ -793,7 +938,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                           ' auto-generated name would be longer than the file '
                           'system can handle'.format(featureset_name))
 
-    # Run each featureset-learner combination
+    # Run each featureset-learner-objective combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
         for learner_num, learner_name in enumerate(learners):
             for grid_objective in grid_objectives:
@@ -877,11 +1022,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["quiet"] = quiet
                 job_args["class_map"] = class_map
                 job_args["custom_learner_path"] = custom_learner_path
+                job_args["learning_curve_cv_folds"] = learning_curve_cv_folds_list[learner_num]
+                job_args["learning_curve_train_sizes"] = learning_curve_train_sizes
 
                 if not local:
                     jobs.append(Job(_classify_featureset, [job_args],
                                     num_slots=(MAX_CONCURRENT_PROCESSES if
-                                               do_grid_search else 1),
+                                               (do_grid_search or
+                                                task == 'learning_curve') else 1),
                                     name=job_name, queue=queue))
                 else:
                     _classify_featureset(job_args)
@@ -902,8 +1050,21 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(join(results_path, summary_file_name),
                   file_mode) as output_file:
-            _write_summary_file(result_json_paths, output_file,
+            _write_summary_file(result_json_paths,
+                                output_file,
                                 ablation=ablation)
+    elif task == 'learning_curve':
+        output_file_name = experiment_name + '_summary.tsv'
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        output_file_path = join(results_path, output_file_name)
+        with open(output_file_path, file_mode) as output_file:
+            _write_learning_curve_file(result_json_paths, output_file)
+
+        # generate the actual plot if we have the requirements installed
+        if _HAVE_PANDAS and _HAVE_SEABORN:
+            _generate_learning_curve_plots(experiment_name,
+                                           results_path,
+                                           output_file_path)
 
     return result_json_paths
 
@@ -918,3 +1079,69 @@ def _check_job_results(job_results):
         if not result_dicts or 'task' not in result_dicts[0]:
             logger.error('There was an error running the experiment:\n%s',
                          result_dicts)
+
+
+def _generate_learning_curve_plots(experiment_name,
+                                   output_dir,
+                                   learning_curve_tsv_file):
+    """
+    Generate the learning curve plots given the TSV output
+    file from a learning curve experiment.
+    """
+
+    # use pandas to read in the TSV file into a data frame
+    # and massage it from wide to long format for plotting
+    df = pd.read_csv(learning_curve_tsv_file, sep='\t')
+    num_learners = len(df['learner_name'].unique())
+    num_objectives = len(df['objective'].unique())
+    df2 = pd.melt(df, id_vars=[c for c in df.columns if c not in ['train_score_mean', 'test_score_mean']])
+
+    # set up and draw the actual learning curve figures, one for
+    # each of the featuresets
+    for featureset_name, df_featureset in df2.groupby('featureset_name'):
+        fig = plt.figure()
+        fig.set_size_inches(2.5*num_learners, 2.5*num_objectives)
+        with sns.axes_style('whitegrid', {"grid.linestyle": ':',
+                                          "xtick.major.size": 3.0}):
+            g = sns.FacetGrid(df2, row="objective", col="learner_name",
+                              hue="variable", size=2.5, aspect=1, ylim=(0, 1.1),
+                              margin_titles=True, despine=True, sharex=False,
+                              legend_out=False, palette="Set1")
+            colors = train_color, test_color = sns.color_palette("Set1")[:2]
+            g = g.map_dataframe(sns.pointplot, "training_set_size", "value",
+                                scale=.5, ci=None)
+            for ax in g.axes.flat:
+                plt.setp(ax.texts, text="")
+            g = (g.set_titles(row_template='', col_template='{col_name}')
+                 .set_axis_labels('Training Examples', 'Score'))
+            for i, row_name in enumerate(g.row_names):
+                for j, col_name in enumerate(g.col_names):
+                    ax = g.axes[i][j]
+                    df_ax_train = df2[(df2['learner_name'] == col_name) &
+                                      (df2['objective'] == row_name) &
+                                      (df2['variable'] == 'train_score_mean')]
+                    df_ax_test = df2[(df2['learner_name'] == col_name) &
+                                      (df2['objective'] == row_name) &
+                                      (df2['variable'] == 'test_score_mean')]
+                    ax.fill_between(list(range(len(df_ax_train))),
+                                    df_ax_train['value'] - df_ax_train['train_score_std'],
+                                    df_ax_train['value'] + df_ax_train['train_score_std'],
+                                    alpha=0.1,
+                                    color=train_color)
+                    ax.fill_between(list(range(len(df_ax_test))),
+                                    df_ax_test['value'] - df_ax_test['test_score_std'],
+                                    df_ax_test['value'] + df_ax_test['test_score_std'],
+                                    alpha=0.1,
+                                    color=test_color)
+                    if j == 0:
+                        ax.set_ylabel(row_name)
+                        if i == 0:
+                            ax.legend(handles=[matplotlib.lines.Line2D([], [], color=c, label=l, linestyle='-') for c, l in zip(colors, ['Training', 'Cross-validation'])],
+                                      loc=4,
+                                      fancybox=True,
+                                      fontsize='x-small',
+                                      ncol=1,
+                                      frameon=True)
+            g.fig.tight_layout(w_pad=1)
+            plt.savefig(join(output_dir,'{}_{}.png'.format(experiment_name,
+                                                           featureset_name)), dpi=300)

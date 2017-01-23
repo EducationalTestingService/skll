@@ -20,6 +20,7 @@ from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 
 import configparser  # Backported version from Python 3
+import numpy as np
 import ruamel.yaml as yaml
 
 from six import string_types, iteritems  # Python 2/3
@@ -62,6 +63,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'ids_to_floats': 'False',
                     'label_col': 'y',
                     'log': '',
+                    'learning_curve_cv_folds_list': '[]',
+                    'learning_curve_train_sizes': '[]',
                     'min_feature_count': '1',
                     'models': '',
                     'num_cv_folds': '10',
@@ -99,6 +102,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'ids_to_floats': 'Input',
                                    'label_col': 'Input',
                                    'log': 'Output',
+                                   'learning_curve_cv_folds_list': 'Input',
+                                   'learning_curve_train_sizes': 'Input',
                                    'min_feature_count': 'Tuning',
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
@@ -363,6 +368,40 @@ def _parse_config_file(config_path):
                              "of strings. You specified: {}"
                              .format(featureset_names))
 
+    # get the value for learning_curve_cv_folds and ensure
+    # that it's a list of the same length as the value of
+    # learners. If it's not specified, then we just assume
+    # that we are using 10 folds for each learner.
+    learning_curve_cv_folds_list_string = config.get("Input",
+                                                     "learning_curve_cv_folds_list")
+    learning_curve_cv_folds_list = yaml.safe_load(_fix_json(learning_curve_cv_folds_list_string))
+    if len(learning_curve_cv_folds_list) == 0:
+        learning_curve_cv_folds_list = [10] * len(learners)
+    else:
+        if (not isinstance(learning_curve_cv_folds_list, list) or
+            not all([isinstance(fold, int) for fold in learning_curve_cv_folds_list]) or
+            not len(learning_curve_cv_folds_list) == len(learners)):
+            raise ValueError("The learning_curve_cv_folds parameter should "
+                             "be a list of integers of the same length as "
+                             "the number of learners. You specified: {}"
+                             .format(learning_curve_cv_folds_list))
+
+    # get the value for learning_curve_train_sizes and ensure
+    # that it's a list of either integers (sizes) or
+    # floats (proportions). If it's not specified, then we just
+    # assume that we are using np.linspace(0.1, 1.0, 5).
+    learning_curve_train_sizes_string = config.get("Input", "learning_curve_train_sizes")
+    learning_curve_train_sizes = yaml.safe_load(_fix_json(learning_curve_train_sizes_string))
+    if len(learning_curve_train_sizes) == 0:
+        learning_curve_train_sizes = np.linspace(0.1, 1.0, 5).tolist()
+    else:
+        if (not isinstance(learning_curve_train_sizes, list) or
+            not all([isinstance(size, int) or isinstance(size, float) for size in
+                         learning_curve_train_sizes])):
+            raise ValueError("The learning_curve_train_sizes parameter should "
+                             "be a list of integers or floats. You specified: {}"
+                             .format(learning_curve_train_sizes))
+
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
 
@@ -530,7 +569,7 @@ def _parse_config_file(config_path):
                         "list of objectives")
 
     if not all([objective in SCORERS for objective in grid_objectives]):
-        raise ValueError('Invalid grid objective function/s: {}'
+        raise ValueError('Invalid grid objective function(s): {}'
                          .format(grid_objectives))
 
     # check whether the right things are set for the given task
@@ -540,7 +579,7 @@ def _parse_config_file(config_path):
     if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
                          '{}.'.format(task))
-    if task in ['learning_curve', 'train', 'predict'] and results_path:
+    if task in ['train', 'predict'] and results_path:
         raise ValueError('The results path should not be set when task is '
                          '{}.'.format(task))
     if task == 'train' and not model_path:
@@ -572,7 +611,8 @@ def _parse_config_file(config_path):
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             do_stratified_folds, fixed_parameter_list, param_grid_list,
             featureset_names, learners, prediction_dir, log_path, train_path,
-            test_path, ids_to_floats, class_map, custom_learner_path)
+            test_path, ids_to_floats, class_map, custom_learner_path,
+            learning_curve_cv_folds_list, learning_curve_train_sizes)
 
 
 def _munge_featureset_name(featureset):
