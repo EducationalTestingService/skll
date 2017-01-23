@@ -57,11 +57,12 @@ else:
 # Check if seaborn (and matplotlib) are available
 try:
     import matplotlib
-    import matplotlib.pyplot as plt
     import seaborn as sns
 except ImportError:
     _HAVE_SEABORN = False
 else:
+    import matplotlib.pyplot as plt
+    plt.ioff()
     _HAVE_SEABORN = True
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
