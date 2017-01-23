@@ -219,6 +219,47 @@ def _import_custom_learner(custom_learner_path, custom_learner_name):
         getattr(sys.modules[custom_learner_module_name], custom_learner_name)
 
 
+def _train_and_score(learner,
+                     train_examples,
+                     test_examples,
+                     objective='f1_score_micro'):
+    """
+    A utility method to train a given learner instance on the given training examples,
+    generate predictions on the training set itself and also the given
+    test set, and score those predictions using the given objective function.
+    The method returns the train and test scores.
+
+    Note that this method needs to be a top-level function since it is
+    called from within joblib.Parallel() and, therefore, needs to be
+    picklable which it would not be as an instancemethod of the Learner
+    class.
+    """
+
+    _ = learner.train(train_examples, grid_search=False, shuffle=False)
+    train_predictions = learner.predict(train_examples)
+    test_predictions = learner.predict(test_examples)
+    if learner.model_type._estimator_type == 'classifier':
+        test_label_list = np.unique(test_examples.labels).tolist()
+        unseen_test_label_list = [label for label in test_label_list
+                                  if not label in learner.label_list]
+        unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
+                                                                start=len(learner.label_list))}
+        # combine the two dictionaries
+        train_and_test_label_dict = learner.label_dict.copy()
+        train_and_test_label_dict.update(unseen_label_dict)
+        train_labels = np.array([train_and_test_label_dict[label]
+                                 for label in train_examples.labels])
+        test_labels = np.array([train_and_test_label_dict[label]
+                                 for label in test_examples.labels])
+    else:
+        train_labels = train_examples.labels
+        test_labels = test_examples.labels
+
+    train_score = use_score_func(objective, train_labels, train_predictions)
+    test_score = use_score_func(objective, test_labels, test_predictions)
+    return train_score, test_score
+
+
 def _predict_binary(self, X):
     """
     Little helper function to allow us to use `GridSearchCV` with objective
@@ -1532,40 +1573,6 @@ class Learner(object):
         # return list of results for all folds
         return results, grid_search_scores, skll_fold_ids
 
-    def _train_and_score(self,
-                         train_examples,
-                         test_examples,
-                         objective='f1_score_micro'):
-        """
-        A utility method to train a model on the given training examples,
-        generate predictions on the training set itself and also the given
-        test set,  and score those predictions using the given objective function.
-        The method returns the train and test scores.
-        """
-        _ = self.train(train_examples, grid_search=False, shuffle=False)
-        train_predictions = self.predict(train_examples)
-        test_predictions = self.predict(test_examples)
-        if self.model_type._estimator_type == 'classifier':
-            test_label_list = np.unique(test_examples.labels).tolist()
-            unseen_test_label_list = [label for label in test_label_list
-                                      if not label in self.label_list]
-            unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
-                                                                    start=len(self.label_list))}
-            # combine the two dictionaries
-            train_and_test_label_dict = self.label_dict.copy()
-            train_and_test_label_dict.update(unseen_label_dict)
-            train_labels = np.array([train_and_test_label_dict[label]
-                                     for label in train_examples.labels])
-            test_labels = np.array([train_and_test_label_dict[label]
-                                     for label in test_examples.labels])
-        else:
-            train_labels = train_examples.labels
-            test_labels = test_examples.labels
-
-        train_score = use_score_func(objective, train_labels, train_predictions)
-        test_score = use_score_func(objective, test_labels, test_predictions)
-        return train_score, test_score
-
     def learning_curve(self,
                        examples,
                        cv_folds=10,
@@ -1648,9 +1655,10 @@ class Learner(object):
         # Run jobs in parallel that train the model on each subset
         # of the training data and compute train and test scores
         parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
-        out = parallel(joblib.delayed(self._train_and_score)(train_fs[:n_train_samples],
-                                                             test_fs,
-                                                             objective)
+        out = parallel(joblib.delayed(_train_and_score)(self,
+                                                        train_fs[:n_train_samples],
+                                                        test_fs,
+                                                        objective)
                        for train_fs, test_fs in featureset_iter
                        for n_train_samples in train_sizes_abs)
 
