@@ -37,12 +37,15 @@ def fill_in_config_paths(config_template_path):
 
     config.set("Input", "train_directory", train_dir)
 
-    to_fill_in = ['log', 'predictions']
+    to_fill_in = ['log']
 
-    if task != 'cross_validate':
+    if task != 'learning_curve':
+      to_fill_in.append('predictions')
+
+    if task not in ['cross_validate', 'learning_curve']:
         to_fill_in.append('models')
 
-    if task == 'evaluate' or task == 'cross_validate':
+    if task in ['cross_validate', 'evaluate', 'learning_curve']:
         to_fill_in.append('results')
 
     for d in to_fill_in:
@@ -145,8 +148,9 @@ def fill_in_config_options(config_template_path,
                             'test_file', 'featuresets', 'featureset_names',
                             'feature_hasher', 'hasher_features', 'learners',
                             'sampler', 'shuffle', 'feature_scaling',
-                            'fixed_parameters', 'num_cv_folds',
-                            'bad_option', 'duplicate_option'],
+                            'learning_curve_cv_folds_list',
+                            'learning_curve_train_sizes', 'fixed_parameters',
+                            'num_cv_folds', 'bad_option', 'duplicate_option'],
                   'Tuning': ['probability', 'grid_search', 'objective',
                              'param_grids', 'objectives', 'duplicate_option'],
                   'Output': ['results', 'log', 'models',

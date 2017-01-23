@@ -15,9 +15,10 @@ from __future__ import (absolute_import, division, print_function,
 import os
 import tempfile
 from glob import glob
-from os.path import abspath, dirname, exists, join, normpath, realpath
+from os.path import abspath, dirname, exists, join, normpath
+import numpy as np
 
-from nose.tools import eq_, raises
+from nose.tools import eq_, ok_, raises
 
 from skll.config import _parse_config_file, _locate_file
 from skll.data.readers import safe_float
@@ -938,7 +939,7 @@ def test_config_parsing_relative_input_path():
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
 
     eq_(normpath(train_path), (join(_my_dir, 'train')))
 
@@ -975,7 +976,7 @@ def test_config_parsing_relative_input_paths():
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
 
 
 def test_default_number_of_cv_folds():
@@ -1008,7 +1009,7 @@ def test_default_number_of_cv_folds():
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
 
     eq_(cv_folds, 10)
 
@@ -1043,7 +1044,7 @@ def test_setting_number_of_cv_folds():
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
 
     eq_(cv_folds, 5)
 
@@ -1081,7 +1082,7 @@ def test_setting_param_grids():
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
 
     eq_(param_grid_list[0]['C'][0], 1e-6)
     eq_(param_grid_list[0]['C'][1], 1e-3)
@@ -1124,7 +1125,7 @@ def test_setting_fixed_parameters():
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
 
     eq_(fixed_parameter_list[0]['C'][0], 1e-6)
     eq_(fixed_parameter_list[0]['C'][1], 1e-3)
@@ -1132,3 +1133,73 @@ def test_setting_fixed_parameters():
     eq_(fixed_parameter_list[0]['C'][3], 10)
     eq_(fixed_parameter_list[0]['C'][4], 100)
     eq_(fixed_parameter_list[0]['C'][5], 1e5)
+
+
+def test_default_learning_curve_options():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_learning_curve')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+
+    eq_(learning_curve_cv_folds_list, [10, 10])
+    ok_(np.all(learning_curve_train_sizes == np.linspace(0.1, 1.0, 5)))
+
+
+def test_setting_learning_curve_options():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'learning_curve_cv_folds_list': "[100, 10]",
+                           'learning_curve_train_sizes': "[10, 50, 100, 200, 500]",
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'setting_learning_curve')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+
+    eq_(learning_curve_cv_folds_list, [100, 10])
+    eq_(learning_curve_train_sizes, [10, 50, 100, 200, 500])

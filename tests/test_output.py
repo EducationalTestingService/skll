@@ -18,12 +18,17 @@ from glob import glob
 from io import open
 from os.path import abspath, dirname, exists, join
 
+import numpy as np
 from numpy.testing import assert_almost_equal
-from nose.tools import eq_
-from skll.data import NDJWriter, Reader
-from skll.experiments import run_configuration
-from skll.learner import Learner
-from skll.learner import _DEFAULT_PARAM_GRIDS
+from nose.tools import eq_, ok_
+
+from sklearn.datasets import load_digits
+from sklearn.model_selection import ShuffleSplit, learning_curve
+from sklearn.naive_bayes import MultinomialNB
+
+from skll.data import FeatureSet, NDJWriter, Reader
+from skll.experiments import _HAVE_PANDAS, _HAVE_SEABORN, run_configuration
+from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
 from utils import fill_in_config_paths, make_classification_data
 
@@ -51,22 +56,22 @@ def tearDown():
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
 
-    if exists(join(train_dir, 'test_summary.jsonlines')):
-        os.unlink(join(train_dir, 'test_summary.jsonlines'))
+    for suffix in ['learning_curve', 'summary']:
+        if exists(join(train_dir, 'test_{}.jsonlines'.format(suffix))):
+            os.unlink(join(train_dir, 'test_{}.jsonlines'.format(suffix)))
 
-    if exists(join(test_dir, 'test_summary.jsonlines')):
-        os.unlink(join(test_dir, 'test_summary.jsonlines'))
+        if exists(join(test_dir, 'test_{}.jsonlines'.format(suffix))):
+            os.unlink(join(test_dir, 'test_{}.jsonlines'.format(suffix)))
 
-    config_files = ['test_summary.cfg',
-                    'test_summary_feature_hasher.cfg']
-    for cf in config_files:
-        if exists(join(config_dir, cf)):
-            os.unlink(join(config_dir, cf))
+        config_files = ['test_{}.cfg'.format(suffix),
+                        'test_{}_feature_hasher.cfg'.format(suffix)]
+        for cf in config_files:
+            if exists(join(config_dir, cf)):
+                os.unlink(join(config_dir, cf))
 
-    for output_file in (glob(join(output_dir, 'test_summary_*')) +
-                        glob(join(output_dir,
-                                  'test_majority_class_custom_learner_*'))):
-        os.unlink(output_file)
+        for output_file in (glob(join(output_dir, 'test_{}_*'.format(suffix))) +
+                            glob(join(output_dir, 'test_majority_class_custom_learner_*'))):
+            os.unlink(output_file)
 
 
 # Generate and write out data for the test that checks summary scores
@@ -85,6 +90,38 @@ def make_summary_data():
     # Write test feature set to a file
     test_path = join(_my_dir, 'test', 'test_summary.jsonlines')
     writer = NDJWriter(test_path, test_fs)
+    writer.write()
+
+
+# Generate and write out data for the test that checks learning curve outputs
+def make_learning_curve_data():
+
+    # Load in the digits data set
+    digits = load_digits()
+    X, y = digits.data, digits.target
+
+    # create featureset with all features
+    feature_names = ['f{:02}'.format(n) for n in range(X.shape[1])]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+    fs1 = FeatureSet('train1', features=features, labels=y, ids=list(range(X.shape[0])))
+
+    # Write this feature set to file
+    train_path = join(_my_dir, 'train', 'test_learning_curve1.jsonlines')
+    writer = NDJWriter(train_path, fs1)
+    writer.write()
+
+    # create featureset with all except the last feature
+    feature_names = ['f{:02}'.format(n) for n in range(X.shape[1])]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names[:-1], row)))
+    fs2 = FeatureSet('train2', features=features, labels=y, ids=list(range(X.shape[0])))
+
+    # Write this feature set to file
+    train_path = join(_my_dir, 'train', 'test_learning_curve2.jsonlines')
+    writer = NDJWriter(train_path, fs2)
     writer.write()
 
 
@@ -163,8 +200,8 @@ def check_summary_score(use_feature_hashing=False):
                                      '{})').format(learner_name, result_score,
                                                    summary_score))
 
-    # We itereate over each model with an expected
-    # accuracy score. T est proves that the report
+    # We iterate over each model with an expected
+    # accuracy score. Test proves that the report
     # written out at least as a correct format for
     # this line. See _print_fancy_output
     for report_name, val in (("LogisticRegression", .5),
@@ -211,3 +248,84 @@ def test_backward_compatibility():
         old_predictions = [float(line.strip()) for
                            line in predict_file]
     assert_almost_equal(new_predictions, old_predictions)
+
+
+def test_learning_curve_implementation():
+    """
+    Test to ensure that the learning curve results match the scikit-learn
+    version.
+    """
+
+    # This test is different from the other tests which just use regression data.
+    # The reason is that we want this test to fail in case our implementation
+    # diverges from the scikit-learn implementation. This test essentially
+    # serves as a regression test as well.
+
+    # Load in the digits data set
+    digits = load_digits()
+    X, y = digits.data, digits.target
+
+    # get the learning curve results from scikit-learn for this data
+    cv_folds = 10
+    random_state = 123456789
+    cv = ShuffleSplit(n_splits=cv_folds, test_size=0.2, random_state=random_state)
+    estimator = MultinomialNB()
+    train_sizes=np.linspace(.1, 1.0, 5)
+    train_sizes1, train_scores1, test_scores1 = learning_curve(estimator, X, y, cv=cv,  train_sizes=train_sizes, scoring='accuracy')
+
+    # get the features from this data into a FeatureSet instance we can use
+    # with the SKLL API
+    feature_names = ['f{:02}'.format(n) for n in range(X.shape[1])]
+    features = []
+    for row in X:
+        features.append(dict(zip(feature_names, row)))
+    fs = FeatureSet('train', features=features, labels=y, ids=list(range(X.shape[0])))
+
+    # we don't want to filter out any features since scikit-learn
+    # does not do that either
+    l = Learner('MultinomialNB', min_feature_count=0)
+    train_scores2, test_scores2, train_sizes2 = l.learning_curve(fs,
+                                                                 cv_folds=cv_folds,
+                                                                 train_sizes=train_sizes,
+                                                                 objective='accuracy')
+
+    assert np.all(train_sizes1 == train_sizes2)
+    assert np.allclose(train_scores1, train_scores2)
+    assert np.allclose(test_scores1, test_scores2)
+
+
+def test_learning_curve_output():
+    """
+    Test that the output of a learning curve experiment is as expected.
+    """
+
+    # Test to validate learning curve output
+    make_learning_curve_data()
+
+    config_template_path = join(_my_dir, 'configs', 'test_learning_curve.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    # run the learning curve experiment
+    run_configuration(config_path, quiet=True)
+    outprefix = 'test_learning_curve'
+
+    # make sure that the TSV file is created with the right columns
+    output_tsv_path = join(_my_dir, 'output', '{}_summary.tsv'.format(outprefix))
+    ok_(exists(output_tsv_path))
+    with open(output_tsv_path, 'r') as tsvf:
+        r = csv.reader(tsvf, delimiter='\t')
+        header = next(r)
+        # make sure we have the expected number of columns
+        eq_(len(header), 11)
+        num_rows = len(list(r))
+        # we should have 2 featuresets x 3 learners x 2 objectives x 5 (default)
+        # training sizes = 60 rows
+        eq_(num_rows, 60)
+
+    # make sure that the two PNG files (one per featureset) are created
+    # if the requirements are satisfied
+    if _HAVE_PANDAS and _HAVE_SEABORN:
+        for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+            ok_(exists(join(_my_dir,
+                            'output',
+                            '{}_{}.png'.format(outprefix, featureset_name))))
