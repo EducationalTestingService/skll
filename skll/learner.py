@@ -1587,12 +1587,7 @@ class Learner(object):
         :type examples: skll.data.FeatureSet
         :param cv_folds: The number of folds to use for cross-validation with each training size
         :type cv_folds: int
-        :param n_jobs: The number of jobs to run in parallel when computing
-                       the scores for the learning curve. If unspecified or 0,
-                       it is determined appropriately based on the number of
-                       CPU cores available and the maximum number of concurrent
-                       processes SKLL is allowed to run.
-        :param train_sizes : Relative or absolute numbers of training examples
+        :param train_sizes: Relative or absolute numbers of training examples
                              that will be used to generate the learning curve.
                              If the type is float, it is regarded as a fraction
                              of the maximum size of the training set (that is
