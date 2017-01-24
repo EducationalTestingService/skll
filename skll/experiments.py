@@ -18,7 +18,6 @@ import math
 import numpy as np
 import os
 import sys
-import warnings
 
 from collections import defaultdict
 from io import open
@@ -1095,16 +1094,17 @@ def _generate_learning_curve_plots(experiment_name,
     df = pd.read_csv(learning_curve_tsv_file, sep='\t')
     num_learners = len(df['learner_name'].unique())
     num_objectives = len(df['objective'].unique())
-    df2 = pd.melt(df, id_vars=[c for c in df.columns if c not in ['train_score_mean', 'test_score_mean']])
+    df_melted = pd.melt(df, id_vars=[c for c in df.columns
+                                     if c not in ['train_score_mean', 'test_score_mean']])
 
     # set up and draw the actual learning curve figures, one for
     # each of the featuresets
-    for featureset_name, df_featureset in df2.groupby('featureset_name'):
+    for fs_name, df_fs in df_melted.groupby('featureset_name'):
         fig = plt.figure();
         fig.set_size_inches(2.5*num_learners, 2.5*num_objectives);
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
-            g = sns.FacetGrid(df2, row="objective", col="learner_name",
+            g = sns.FacetGrid(df_fs, row="objective", col="learner_name",
                               hue="variable", size=2.5, aspect=1, ylim=(0, 1.1),
                               margin_titles=True, despine=True, sharex=False,
                               legend_out=False, palette="Set1")
@@ -1118,12 +1118,12 @@ def _generate_learning_curve_plots(experiment_name,
             for i, row_name in enumerate(g.row_names):
                 for j, col_name in enumerate(g.col_names):
                     ax = g.axes[i][j]
-                    df_ax_train = df2[(df2['learner_name'] == col_name) &
-                                      (df2['objective'] == row_name) &
-                                      (df2['variable'] == 'train_score_mean')]
-                    df_ax_test = df2[(df2['learner_name'] == col_name) &
-                                      (df2['objective'] == row_name) &
-                                      (df2['variable'] == 'test_score_mean')]
+                    df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
+                                        (df_fs['objective'] == row_name) &
+                                        (df_fs['variable'] == 'train_score_mean')]
+                    df_ax_test = df_fs[(df_fs['learner_name'] == col_name) &
+                                       (df_fs['objective'] == row_name) &
+                                       (df_fs['variable'] == 'test_score_mean')]
                     ax.fill_between(list(range(len(df_ax_train))),
                                     df_ax_train['value'] - df_ax_train['train_score_std'],
                                     df_ax_train['value'] + df_ax_train['train_score_std'],
@@ -1144,5 +1144,4 @@ def _generate_learning_curve_plots(experiment_name,
                                       ncol=1,
                                       frameon=True)
             g.fig.tight_layout(w_pad=1)
-            plt.savefig(join(output_dir,'{}_{}.png'.format(experiment_name,
-                                                           featureset_name)), dpi=300);
+            plt.savefig(join(output_dir,'{}_{}.png'.format(experiment_name, fs_name)), dpi=300);
