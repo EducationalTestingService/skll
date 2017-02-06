@@ -1097,6 +1097,11 @@ def _generate_learning_curve_plots(experiment_name,
     df_melted = pd.melt(df, id_vars=[c for c in df.columns
                                      if c not in ['train_score_mean', 'test_score_mean']])
 
+    # if there are any training sizes greater than 1000,
+    # then we should probably rotate the tick labels
+    # since otherwise the labels are not clearly rendered
+    rotate_labels = np.any([size >= 1000 for size in df['training_set_size'].unique()])
+
     # set up and draw the actual learning curve figures, one for
     # each of the featuresets
     for fs_name, df_fs in df_melted.groupby('featureset_name'):
@@ -1115,6 +1120,9 @@ def _generate_learning_curve_plots(experiment_name,
                 plt.setp(ax.texts, text="")
             g = (g.set_titles(row_template='', col_template='{col_name}')
                  .set_axis_labels('Training Examples', 'Score'))
+            if rotate_labels:
+                g = g.set_xticklabels(rotation=60)
+
             for i, row_name in enumerate(g.row_names):
                 for j, col_name in enumerate(g.col_names):
                     ax = g.axes[i][j]
