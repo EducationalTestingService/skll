@@ -203,7 +203,7 @@ def check_summary_score(use_feature_hashing=False):
 
     # We iterate over each model with an expected
     # accuracy score. Test proves that the report
-    # written out at least as a correct format for
+    # written out at least has a correct format for
     # this line. See _print_fancy_output
     for report_name, val in (("LogisticRegression", .5),
                              ("MultinomialNB", .5),
