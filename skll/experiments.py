@@ -68,7 +68,6 @@ _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 
-
 class NumpyTypeEncoder(json.JSONEncoder):
 
     '''
@@ -1081,6 +1080,45 @@ def _check_job_results(job_results):
                          result_dicts)
 
 
+def _compute_ylimits_for_featureset(df, objectives):
+    """
+    Compute the y-limits for learning curve plots.
+    """
+
+    # set the y-limits of the curves depending on what kind
+    # of values the metric produces
+    ylimits = {}
+    for objective in objectives:
+        # r2 can be really negative if the SSE (sum of squared residuals)
+        # is very high beacuse of a very poor model fit. MSE can be a really
+        # large negative number for a bad model fit since scikit-learn treats
+        # it as negative-MSE for optimization.
+        if objective in ['r2', 'mean_squared_error']:
+            df_train = df[(df['variable'] == 'train_score_mean') & (df['objective'] == objective)]
+            df_test = df[(df['variable'] == 'test_score_mean') & (df['objective'] == objective)]
+            train_values = df_train['value'].values - df_train['train_score_std'].values
+            test_values = df_test['value'].values - df_test['test_score_std'].values
+            min_score = np.min(np.concatenate([train_values, test_values]))
+            lower_limit = -1.1 if min_score >= -1 else math.floor(min_score)
+            ylimits[objective] = (lower_limit, 1.1)
+        # these metrics are generally betweeen [-1, 1]
+        elif objective in ['unweighted_kappa',
+                           'linear_weighted_kappa',
+                           'quadratic_weighted_kappa',
+                           'uwk_off_by_one',
+                           'lwk_off_by_one',
+                           'qwk_off_by_one',
+                           'kendall_tau',
+                           'pearson',
+                           'spearman']:
+            ylimits[objective] = (-1.1, 1.1)
+        # and all the rest are in [0, 1]
+        else:
+            ylimits[objective] = (0, 1.1)
+
+    return ylimits
+
+
 def _generate_learning_curve_plots(experiment_name,
                                    output_dir,
                                    learning_curve_tsv_file):
@@ -1107,15 +1145,18 @@ def _generate_learning_curve_plots(experiment_name,
     for fs_name, df_fs in df_melted.groupby('featureset_name'):
         fig = plt.figure();
         fig.set_size_inches(2.5*num_learners, 2.5*num_objectives);
+
+        # compute ylimits for this feature set for each objective
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
             g = sns.FacetGrid(df_fs, row="objective", col="learner_name",
-                              hue="variable", size=2.5, aspect=1, ylim=(0, 1.1),
+                              hue="variable", size=2.5, aspect=1,
                               margin_titles=True, despine=True, sharex=False,
-                              legend_out=False, palette="Set1")
+                              sharey=False, legend_out=False, palette="Set1")
             colors = train_color, test_color = sns.color_palette("Set1")[:2]
             g = g.map_dataframe(sns.pointplot, "training_set_size", "value",
                                 scale=.5, ci=None)
+            ylimits = _compute_ylimits_for_featureset(df_fs, g.row_names)
             for ax in g.axes.flat:
                 plt.setp(ax.texts, text="")
             g = (g.set_titles(row_template='', col_template='{col_name}')
@@ -1126,6 +1167,7 @@ def _generate_learning_curve_plots(experiment_name,
             for i, row_name in enumerate(g.row_names):
                 for j, col_name in enumerate(g.col_names):
                     ax = g.axes[i][j]
+                    ax.set(ylim=ylimits[row_name])
                     df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
                                         (df_fs['objective'] == row_name) &
                                         (df_fs['variable'] == 'train_score_mean')]
