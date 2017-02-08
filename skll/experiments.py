@@ -68,7 +68,6 @@ _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 
-
 class NumpyTypeEncoder(json.JSONEncoder):
 
     '''
@@ -1081,6 +1080,43 @@ def _check_job_results(job_results):
                          result_dicts)
 
 
+def _compute_ylimits_for_featureset(df, objectives):
+    """
+    Compute the y-limits for learning curve plots.
+    """
+
+    # set the y-limits of the curves depending on what kind
+    # of values the metric produces
+    ylimits = {}
+    for objective in objectives:
+        # get the real min and max for the values that will be plotted
+        df_train = df[(df['variable'] == 'train_score_mean') & (df['objective'] == objective)]
+        df_test = df[(df['variable'] == 'test_score_mean') & (df['objective'] == objective)]
+        train_values_lower = df_train['value'].values - df_train['train_score_std'].values
+        test_values_lower = df_test['value'].values - df_test['test_score_std'].values
+        min_score = np.min(np.concatenate([train_values_lower,
+                                           test_values_lower]))
+        train_values_upper = df_train['value'].values + df_train['train_score_std'].values
+        test_values_upper = df_test['value'].values + df_test['test_score_std'].values
+        max_score = np.max(np.concatenate([train_values_upper,
+                                           test_values_upper]))
+
+        # squeeze the limits to hide unnecessary parts of the graph
+        if min_score < 0:
+            lower_limit = -1.1 if min_score >= -1 else math.floor(min_score)
+        else:
+            lower_limit = 0
+
+        if max_score > 0:
+            upper_limit = 1.1 if max_score <= 1 else math.ceil(max_score)
+        else:
+            upper_limit = 0
+
+        ylimits[objective] = (lower_limit, upper_limit)
+
+    return ylimits
+
+
 def _generate_learning_curve_plots(experiment_name,
                                    output_dir,
                                    learning_curve_tsv_file):
@@ -1097,27 +1133,39 @@ def _generate_learning_curve_plots(experiment_name,
     df_melted = pd.melt(df, id_vars=[c for c in df.columns
                                      if c not in ['train_score_mean', 'test_score_mean']])
 
+    # if there are any training sizes greater than 1000,
+    # then we should probably rotate the tick labels
+    # since otherwise the labels are not clearly rendered
+    rotate_labels = np.any([size >= 1000 for size in df['training_set_size'].unique()])
+
     # set up and draw the actual learning curve figures, one for
     # each of the featuresets
     for fs_name, df_fs in df_melted.groupby('featureset_name'):
         fig = plt.figure();
         fig.set_size_inches(2.5*num_learners, 2.5*num_objectives);
+
+        # compute ylimits for this feature set for each objective
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
             g = sns.FacetGrid(df_fs, row="objective", col="learner_name",
-                              hue="variable", size=2.5, aspect=1, ylim=(0, 1.1),
+                              hue="variable", size=2.5, aspect=1,
                               margin_titles=True, despine=True, sharex=False,
-                              legend_out=False, palette="Set1")
+                              sharey=False, legend_out=False, palette="Set1")
             colors = train_color, test_color = sns.color_palette("Set1")[:2]
             g = g.map_dataframe(sns.pointplot, "training_set_size", "value",
                                 scale=.5, ci=None)
+            ylimits = _compute_ylimits_for_featureset(df_fs, g.row_names)
             for ax in g.axes.flat:
                 plt.setp(ax.texts, text="")
             g = (g.set_titles(row_template='', col_template='{col_name}')
                  .set_axis_labels('Training Examples', 'Score'))
+            if rotate_labels:
+                g = g.set_xticklabels(rotation=60)
+
             for i, row_name in enumerate(g.row_names):
                 for j, col_name in enumerate(g.col_names):
                     ax = g.axes[i][j]
+                    ax.set(ylim=ylimits[row_name])
                     df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
                                         (df_fs['objective'] == row_name) &
                                         (df_fs['variable'] == 'train_score_mean')]
