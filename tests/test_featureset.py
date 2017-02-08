@@ -15,7 +15,6 @@ from __future__ import (absolute_import, division, print_function,
 import itertools
 import os
 from collections import OrderedDict
-from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
@@ -871,7 +870,7 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
     feature_bins = 4
     vectorizer = (FeatureHasher(n_features=feature_bins)
                   if use_feature_hasher else None)
-    
+
     # convert the features into a list of dictionaries
     feature_names = ['f{}'.format(n) for n in range(1, 5)]
     features = []
@@ -898,13 +897,13 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
     return (expected, current)
 
 
-@attr('have_pandas')
+@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_labels():
     (expected, current) = featureset_creation_from_dataframe_helper(True, False)
     assert expected == current
 
 
-@attr('have_pandas')
+@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_without_labels():
     (expected, current) = featureset_creation_from_dataframe_helper(False, False)
     # Directly comparing FeatureSet objects fails here because both sets
@@ -921,13 +920,13 @@ def test_featureset_creation_from_dataframe_without_labels():
             np.all(np.isnan(current.labels)))
 
 
-@attr('have_pandas')
+@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_labels_and_vectorizer():
     (expected, current) = featureset_creation_from_dataframe_helper(True, True)
     assert expected == current
 
 
-@attr('have_pandas')
+@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
     (expected, current) = featureset_creation_from_dataframe_helper(False, True)
     # Directly comparing FeatureSet objects fails here because both sets
