@@ -370,5 +370,5 @@ def test_learning_curve_ylimits():
     ylimits_dict = _compute_ylimits_for_featureset(df_test, ['r2', 'mean_squared_error'])
 
     eq_(len(ylimits_dict), 2)
-    eq_(ylimits_dict['mean_squared_error'], (-4, 1.1))
-    eq_(ylimits_dict['r2'], (-1.1, 1.1))
+    eq_(ylimits_dict['mean_squared_error'], (-4, 0))
+    eq_(ylimits_dict['r2'], (0, 1.1))

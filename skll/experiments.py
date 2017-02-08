@@ -1089,32 +1089,30 @@ def _compute_ylimits_for_featureset(df, objectives):
     # of values the metric produces
     ylimits = {}
     for objective in objectives:
-        # r2 can be really negative if the SSE (sum of squared residuals)
-        # is very high beacuse of a very poor model fit. MSE can be a really
-        # large negative number for a bad model fit since scikit-learn treats
-        # it as negative-MSE for optimization.
-        if objective in ['r2', 'mean_squared_error']:
-            df_train = df[(df['variable'] == 'train_score_mean') & (df['objective'] == objective)]
-            df_test = df[(df['variable'] == 'test_score_mean') & (df['objective'] == objective)]
-            train_values = df_train['value'].values - df_train['train_score_std'].values
-            test_values = df_test['value'].values - df_test['test_score_std'].values
-            min_score = np.min(np.concatenate([train_values, test_values]))
+        # get the real min and max for the values that will be plotted
+        df_train = df[(df['variable'] == 'train_score_mean') & (df['objective'] == objective)]
+        df_test = df[(df['variable'] == 'test_score_mean') & (df['objective'] == objective)]
+        train_values_lower = df_train['value'].values - df_train['train_score_std'].values
+        test_values_lower = df_test['value'].values - df_test['test_score_std'].values
+        min_score = np.min(np.concatenate([train_values_lower,
+                                           test_values_lower]))
+        train_values_upper = df_train['value'].values + df_train['train_score_std'].values
+        test_values_upper = df_test['value'].values + df_test['test_score_std'].values
+        max_score = np.max(np.concatenate([train_values_upper,
+                                           test_values_upper]))
+
+        # squeeze the limits to hide unnecessary parts of the graph
+        if min_score < 0:
             lower_limit = -1.1 if min_score >= -1 else math.floor(min_score)
-            ylimits[objective] = (lower_limit, 1.1)
-        # these metrics are generally betweeen [-1, 1]
-        elif objective in ['unweighted_kappa',
-                           'linear_weighted_kappa',
-                           'quadratic_weighted_kappa',
-                           'uwk_off_by_one',
-                           'lwk_off_by_one',
-                           'qwk_off_by_one',
-                           'kendall_tau',
-                           'pearson',
-                           'spearman']:
-            ylimits[objective] = (-1.1, 1.1)
-        # and all the rest are in [0, 1]
         else:
-            ylimits[objective] = (0, 1.1)
+            lower_limit = 0
+
+        if max_score > 0:
+            upper_limit = 1.1 if max_score <= 1 else math.ceil(max_score)
+        else:
+            upper_limit = 0
+
+        ylimits[objective] = (lower_limit, upper_limit)
 
     return ylimits
 
