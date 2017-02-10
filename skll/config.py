@@ -20,6 +20,7 @@ from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 
 import configparser  # Backported version from Python 3
+import numpy as np
 import ruamel.yaml as yaml
 
 from six import string_types, iteritems  # Python 2/3
@@ -28,7 +29,8 @@ from sklearn.metrics import SCORERS
 from skll.learner import _find_default_param_grid, _LEARNER_NAMES_TO_CLASSES
 
 
-_VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
+_VALID_TASKS = frozenset(['predict', 'train', 'evaluate',
+                          'cross_validate', 'learning_curve'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 _VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
@@ -75,6 +77,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'ids_to_floats': 'False',
                     'label_col': 'y',
                     'log': '',
+                    'learning_curve_cv_folds_list': '[]',
+                    'learning_curve_train_sizes': '[]',
                     'min_feature_count': '1',
                     'models': '',
                     'num_cv_folds': '10',
@@ -112,6 +116,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'ids_to_floats': 'Input',
                                    'label_col': 'Input',
                                    'log': 'Output',
+                                   'learning_curve_cv_folds_list': 'Input',
+                                   'learning_curve_train_sizes': 'Input',
                                    'min_feature_count': 'Tuning',
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
@@ -259,7 +265,7 @@ def _setup_config_parser(config_path, validate=True):
             config.remove_option('Tuning', 'objective')
         else:
             # else convert objective into objectives and delete objective
-            objective_value = yaml.load(_fix_json(objective_value))
+            objective_value = yaml.safe_load(_fix_json(objective_value), )
             if isinstance(objective_value, string_types):
                 config.set(
                     'Tuning', 'objectives', "['{}']".format(objective_value))
@@ -338,7 +344,7 @@ def _parse_config_file(config_path):
     else:
         raise ValueError("Configuration file does not contain list of learners "
                          "in [Input] section.")
-    learners = yaml.load(_fix_json(learners_string))
+    learners = yaml.safe_load(_fix_json(learners_string))
 
     if len(learners) == 0:
         raise ValueError("Configuration file contains an empty list of learners"
@@ -354,7 +360,7 @@ def _parse_config_file(config_path):
 
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
-    featuresets = yaml.load(_fix_json(featuresets_string))
+    featuresets = yaml.safe_load(_fix_json(featuresets_string))
 
     # ensure that featuresets is either a list of features or a list of lists
     # of features
@@ -364,7 +370,7 @@ def _parse_config_file(config_path):
                          "features or a list of lists of features. You "
                          "specified: {}".format(featuresets))
 
-    featureset_names = yaml.load(_fix_json(config.get("Input",
+    featureset_names = yaml.safe_load(_fix_json(config.get("Input",
                                                       "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
@@ -376,15 +382,49 @@ def _parse_config_file(config_path):
                              "of strings. You specified: {}"
                              .format(featureset_names))
 
+    # get the value for learning_curve_cv_folds and ensure
+    # that it's a list of the same length as the value of
+    # learners. If it's not specified, then we just assume
+    # that we are using 10 folds for each learner.
+    learning_curve_cv_folds_list_string = config.get("Input",
+                                                     "learning_curve_cv_folds_list")
+    learning_curve_cv_folds_list = yaml.safe_load(_fix_json(learning_curve_cv_folds_list_string))
+    if len(learning_curve_cv_folds_list) == 0:
+        learning_curve_cv_folds_list = [10] * len(learners)
+    else:
+        if (not isinstance(learning_curve_cv_folds_list, list) or
+            not all([isinstance(fold, int) for fold in learning_curve_cv_folds_list]) or
+            not len(learning_curve_cv_folds_list) == len(learners)):
+            raise ValueError("The learning_curve_cv_folds parameter should "
+                             "be a list of integers of the same length as "
+                             "the number of learners. You specified: {}"
+                             .format(learning_curve_cv_folds_list))
+
+    # get the value for learning_curve_train_sizes and ensure
+    # that it's a list of either integers (sizes) or
+    # floats (proportions). If it's not specified, then we just
+    # assume that we are using np.linspace(0.1, 1.0, 5).
+    learning_curve_train_sizes_string = config.get("Input", "learning_curve_train_sizes")
+    learning_curve_train_sizes = yaml.safe_load(_fix_json(learning_curve_train_sizes_string))
+    if len(learning_curve_train_sizes) == 0:
+        learning_curve_train_sizes = np.linspace(0.1, 1.0, 5).tolist()
+    else:
+        if (not isinstance(learning_curve_train_sizes, list) or
+            not all([isinstance(size, int) or isinstance(size, float) for size in
+                         learning_curve_train_sizes])):
+            raise ValueError("The learning_curve_train_sizes parameter should "
+                             "be a list of integers or floats. You specified: {}"
+                             .format(learning_curve_train_sizes))
+
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
 
-    fixed_parameter_list = yaml.load(_fix_json(config.get("Input",
+    fixed_parameter_list = yaml.safe_load(_fix_json(config.get("Input",
                                                           "fixed_parameters")))
     fixed_sampler_parameters = _fix_json(config.get("Input",
                                                     "sampler_parameters"))
-    fixed_sampler_parameters = yaml.load(fixed_sampler_parameters)
-    param_grid_list = yaml.load(_fix_json(config.get("Tuning", "param_grids")))
+    fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
+    param_grid_list = yaml.safe_load(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
 
     # ensure that feature_scaling is specified only as one of the
@@ -476,7 +516,7 @@ def _parse_config_file(config_path):
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
-    original_class_map = yaml.load(_fix_json(class_map_string))
+    original_class_map = yaml.safe_load(_fix_json(class_map_string))
     if original_class_map:
         # Change class_map to map from originals to replacements instead of
         # from replacement to list of originals
@@ -638,33 +678,33 @@ def _parse_config_file(config_path):
 
     # what are the objective functions for the grid search?
     grid_objectives = config.get("Tuning", "objectives")
-    grid_objectives = yaml.load(_fix_json(grid_objectives))
+    grid_objectives = yaml.safe_load(_fix_json(grid_objectives))
     if not isinstance(grid_objectives, list):
         raise TypeError("objectives should be a "
                         "list of objectives")
 
     if not all([objective in SCORERS for objective in grid_objectives]):
-        raise ValueError('Invalid grid objective function/s: {}'
+        raise ValueError('Invalid grid objective function(s): {}'
                          .format(grid_objectives))
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set must be set when task is evaluate or '
                          'predict.')
-    if (task == 'cross_validate' or task == 'train') and test_path:
+    if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
-                         'cross_validate or train.')
-    if (task == 'train' or task == 'predict') and results_path:
+                         '{}.'.format(task))
+    if task in ['train', 'predict'] and results_path:
         raise ValueError('The results path should not be set when task is '
-                         'predict or train.')
+                         '{}.'.format(task))
     if task == 'train' and not model_path:
         raise ValueError('The model path should be set when task is train.')
-    if task == 'train' and prediction_dir:
+    if task in ['learning_curve', 'train'] and prediction_dir:
         raise ValueError('The predictions path should not be set when task is '
-                         'train.')
-    if task == 'cross_validate' and model_path:
+                         '{}.'.format(task))
+    if task in ['cross_validate', 'learning_curve'] and model_path:
         raise ValueError('The models path should not be set when task is '
-                         'cross_validate.')
+                         '{}.'.format(task))
 
     # Create feature set names if unspecified
     if not featureset_names:
@@ -686,7 +726,8 @@ def _parse_config_file(config_path):
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             do_stratified_folds, fixed_parameter_list, param_grid_list,
             featureset_names, learners, prediction_dir, log_path, train_path,
-            test_path, ids_to_floats, class_map, custom_learner_path)
+            test_path, ids_to_floats, class_map, custom_learner_path,
+            learning_curve_cv_folds_list, learning_curve_train_sizes)
 
 
 def _munge_featureset_name(featureset):

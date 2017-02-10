@@ -6,32 +6,32 @@ notifications:
   email: false
   slack: etsnlp:enaaoJ5hIyU9Zs7kRGT0ZSti
 env:
-  - WITH_PANDAS=true
-  - WITH_PANDAS=false
+  - WITH_PANDAS_AND_SEABORN=true
+  - WITH_PANDAS_AND_SEABORN=false
 
 # run on the new Travis infrastructure
 sudo: false
 
 # Install stuff
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda2/bin:$PATH
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then export PATH=/home/travis/miniconda2/bin:$PATH; else export PATH=/home/travis/miniconda3/bin:$PATH; fi
   - conda config --add channels dan_blanchard
   - conda config --add channels desilinguist
   - conda update --yes conda
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION nomkl numpy scipy beautiful-soup six scikit-learn==0.17.1 joblib prettytable python-coveralls pyyaml
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy beautiful-soup six scikit-learn==0.18.1 joblib prettytable python-coveralls pyyaml
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser logutils mock; fi
-  - if [ ${WITH_PANDAS} == "true" ]; then conda install --yes pandas; fi
+  - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then conda install --yes pandas seaborn; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
   - python setup.py install
 
 # Run test
 script:
-  - if [ ${WITH_PANDAS} == "true" ]; then nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a have_pandas; else nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a '!have_pandas'; fi
+  - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a have_pandas_and_seaborn; else nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a '!have_pandas_and_seaborn'; fi
 
 # Calculate coverage
 after_success:

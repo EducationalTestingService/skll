@@ -29,23 +29,32 @@ from six import iteritems, itervalues
 from six import string_types
 from six.moves import xrange as range
 from six.moves import zip
-from sklearn.cross_validation import KFold, LeaveOneLabelOut, StratifiedKFold
-from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
+from sklearn.model_selection import (GridSearchCV,
+                                     KFold,
+                                     LeaveOneGroupOut,
+                                     ShuffleSplit,
+                                     StratifiedKFold)
+from sklearn.ensemble import (AdaBoostClassifier,
+                              AdaBoostRegressor,
                               GradientBoostingClassifier,
                               GradientBoostingRegressor,
-                              RandomForestClassifier, RandomForestRegressor)
+                              RandomForestClassifier,
+                              RandomForestRegressor)
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_selection import SelectKBest
-from sklearn.grid_search import GridSearchCV
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
-from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem,
-                                          RBFSampler, SkewedChi2Sampler)
+from sklearn.kernel_approximation import (AdditiveChi2Sampler,
+                                          Nystroem,
+                                          RBFSampler,
+                                          SkewedChi2Sampler)
 from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
                                   LogisticRegression, Ridge, SGDClassifier,
                                   SGDRegressor)
 from sklearn.linear_model.base import LinearModel
-from sklearn.metrics import (accuracy_score, confusion_matrix,
-                             precision_recall_fscore_support, SCORERS)
+from sklearn.metrics import (accuracy_score,
+                             confusion_matrix,
+                             precision_recall_fscore_support,
+                             SCORERS)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler
@@ -56,7 +65,6 @@ from sklearn.utils import shuffle as sk_shuffle
 from skll.data import FeatureSet
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
-
 
 # Constants #
 _LEARNER_NAMES_TO_CLASSES = {'AdaBoostClassifier': AdaBoostClassifier,
@@ -173,28 +181,28 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 
 # pylint: disable=W0223,R0903
-class FilteredLeaveOneLabelOut(LeaveOneLabelOut):
+class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
     """
-    Version of LeaveOneLabelOut cross-validation iterator that only outputs
+    Version of LeaveOneGroupOut cross-validation iterator that only outputs
     indices of instances with IDs in a prespecified set.
     """
 
-    def __init__(self, labels, keep, examples):
-        super(FilteredLeaveOneLabelOut, self).__init__(labels)
+    def __init__(self, keep, example_ids):
+        super(FilteredLeaveOneGroupOut, self).__init__()
         self.keep = keep
-        self.examples = examples
+        self.example_ids = example_ids
         self._warned = False
         self.logger = logging.getLogger(__name__)
 
-    def __iter__(self):
-        for train_index, test_index in super(FilteredLeaveOneLabelOut,
-                                             self).__iter__():
+    def split(self, X, y, groups):
+        for train_index, test_index in super(FilteredLeaveOneGroupOut,
+                                             self).split(X, y, groups):
             train_len = len(train_index)
             test_len = len(test_index)
-            train_index = [i for i in train_index if self.examples.ids[i] in
+            train_index = [i for i in train_index if self.example_ids[i] in
                            self.keep]
-            test_index = [i for i in test_index if self.examples.ids[i] in
+            test_index = [i for i in test_index if self.example_ids[i] in
                           self.keep]
             if not self._warned and (train_len != len(train_index) or
                                      test_len != len(test_index)):
@@ -232,6 +240,47 @@ def _import_custom_learner(custom_learner_path, custom_learner_name):
     import_module(custom_learner_module_name)
     globals()[custom_learner_name] = \
         getattr(sys.modules[custom_learner_module_name], custom_learner_name)
+
+
+def _train_and_score(learner,
+                     train_examples,
+                     test_examples,
+                     objective='f1_score_micro'):
+    """
+    A utility method to train a given learner instance on the given training examples,
+    generate predictions on the training set itself and also the given
+    test set, and score those predictions using the given objective function.
+    The method returns the train and test scores.
+
+    Note that this method needs to be a top-level function since it is
+    called from within joblib.Parallel() and, therefore, needs to be
+    picklable which it would not be as an instancemethod of the Learner
+    class.
+    """
+
+    _ = learner.train(train_examples, grid_search=False, shuffle=False)
+    train_predictions = learner.predict(train_examples)
+    test_predictions = learner.predict(test_examples)
+    if learner.model_type._estimator_type == 'classifier':
+        test_label_list = np.unique(test_examples.labels).tolist()
+        unseen_test_label_list = [label for label in test_label_list
+                                  if not label in learner.label_list]
+        unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
+                                                                start=len(learner.label_list))}
+        # combine the two dictionaries
+        train_and_test_label_dict = learner.label_dict.copy()
+        train_and_test_label_dict.update(unseen_label_dict)
+        train_labels = np.array([train_and_test_label_dict[label]
+                                 for label in train_examples.labels])
+        test_labels = np.array([train_and_test_label_dict[label]
+                                 for label in test_examples.labels])
+    else:
+        train_labels = train_examples.labels
+        test_labels = test_examples.labels
+
+    train_score = use_score_func(objective, train_labels, train_predictions)
+    test_score = use_score_func(objective, test_labels, test_predictions)
+    return train_score, test_score
 
 
 def _predict_binary(self, X):
@@ -725,6 +774,7 @@ class Learner(object):
                 coef = coef.toarray()[0]
 
             # inverse transform to get indices for before feature selection
+            coef = coef.reshape(1, -1)
             coef = self.feat_selector.inverse_transform(coef)[0]
             for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                 if coef[idx]:
@@ -1083,11 +1133,9 @@ class Learner(object):
                                     grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(itervalues(grid_search_folds))
-                fold_labels = [grid_search_folds.get(curr_id, dummy_label) for
+                fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
                                curr_id in examples.ids]
-                folds = FilteredLeaveOneLabelOut(fold_labels,
-                                                 grid_search_folds,
-                                                 examples)
+                folds = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids).split(examples.features, examples.labels, fold_groups)
 
             # Use default parameter grid if we weren't passed one
             if not param_grid:
@@ -1105,7 +1153,8 @@ class Learner(object):
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
 
             grid_searcher = GridSearchCV(estimator, param_grid,
-                                         scoring=grid_objective, cv=folds,
+                                         scoring=grid_objective,
+                                         cv=folds,
                                          n_jobs=grid_jobs,
                                          pre_dispatch=grid_jobs)
 
@@ -1471,11 +1520,11 @@ class Learner(object):
             stratified = (stratified and
                           self.model_type._estimator_type == 'classifier')
             if stratified:
-                kfold = StratifiedKFold(examples.labels, n_folds=cv_folds)
+                kfold = StratifiedKFold(n_splits=cv_folds)
+                cv_groups = None
             else:
-                kfold = KFold(len(examples.labels),
-                              n_folds=cv_folds,
-                              random_state=random_state)
+                kfold = KFold(n_splits=cv_folds, random_state=random_state)
+                cv_groups = None
         # Otherwise cv_volds is a dict
         else:
             # if we have a mapping from IDs to folds, use it for the overall
@@ -1485,10 +1534,11 @@ class Learner(object):
             # the outer cross-validation.
             # Only retain IDs within folds if they're in grid_search_folds
             dummy_label = next(itervalues(cv_folds))
-            fold_labels = [cv_folds.get(curr_id, dummy_label) for curr_id in
+            fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in
                            examples.ids]
             # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneLabelOut(fold_labels, cv_folds, examples)
+            kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
+            cv_groups = fold_groups
             grid_search_folds = cv_folds
 
         # Save the cross-validation fold information, if required
@@ -1496,7 +1546,9 @@ class Learner(object):
         skll_fold_ids = None
         if save_cv_folds:
             skll_fold_ids = {}
-            for fold_num, (_, test_indices) in enumerate(kfold):
+            for fold_num, (_, test_indices) in enumerate(kfold.split(examples.features,
+                                                                     examples.labels,
+                                                                     cv_groups)):
                 for index in test_indices:
                     skll_fold_ids[examples.ids[index]] = str(fold_num)
 
@@ -1505,7 +1557,9 @@ class Learner(object):
         results = []
         grid_search_scores = []
         append_predictions = False
-        for train_index, test_index in kfold:
+        for train_index, test_index in kfold.split(examples.features,
+                                                   examples.labels,
+                                                   cv_groups):
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
             train_set = FeatureSet(examples.name,
@@ -1541,3 +1595,96 @@ class Learner(object):
 
         # return list of results for all folds
         return results, grid_search_scores, skll_fold_ids
+
+    def learning_curve(self,
+                       examples,
+                       cv_folds=10,
+                       train_sizes=np.linspace(0.1, 1.0, 5),
+                       objective='f1_score_micro'):
+        """
+        Generates learning curves for a given model on the training examples
+        via cross-validation. Adapted from the scikit-learn code for learning
+        curve generation (cf. ```sklearn.model_selection.learning_curve```).
+
+        :param examples: The data to generate the learning curve on.
+        :type examples: skll.data.FeatureSet
+        :param cv_folds: The number of folds to use for cross-validation with each training size
+        :type cv_folds: int
+        :param train_sizes: Relative or absolute numbers of training examples
+                             that will be used to generate the learning curve.
+                             If the type is float, it is regarded as a fraction
+                             of the maximum size of the training set (that is
+                             determined by the selected validation method),
+                             i.e. it has to be within (0, 1]. Otherwise it
+                             is interpreted as absolute sizes of the training
+                             sets. Note that for classification the number of
+                             samples usually have to be big enough to contain
+                             at least one sample from each class.
+                             (default: `np.linspace(0.1, 1.0, 5)`)
+        :type train_sizes: list of float or int
+        :param objective: The name of the objective function to use
+                           when computing the train and test scores
+                           for the learning curve. (default: 'f1_score_micro')
+        :type objective: string
+
+        :return: The scores on the training sets, the scores on the test set,
+                 and the numbers of training examples used to generate
+                 the curve.
+        :rtype: (list of float, list of float, list of int)
+        """
+
+        # Seed the random number generator so that randomized algorithms are
+        # replicable.
+        random_state = np.random.RandomState(123456789)
+
+        # Set up logger.
+        logger = logging.getLogger(__name__)
+
+        # Call train setup before since we need to train
+        # the learner eventually
+        self._create_label_dict(examples)
+        self._train_setup(examples)
+
+        # Set up the cross-validation iterator with 20% of the data
+        # always reserved for testing
+        cv = ShuffleSplit(n_splits=cv_folds,
+                          test_size=0.2,
+                          random_state=random_state)
+        cv_iter = list(cv.split(examples.features, examples.labels, None))
+        n_max_training_samples = len(cv_iter[0][0])
+
+        # Get the _translate_train_sizes() function from scikit-learn
+        # since we need it to get the right list of sizes after cross-validation
+        _module = import_module('sklearn.model_selection._validation')
+        _translate_train_sizes = getattr(_module, '_translate_train_sizes')
+        train_sizes_abs = _translate_train_sizes(train_sizes,
+                                                 n_max_training_samples)
+        n_unique_ticks = train_sizes_abs.shape[0]
+
+        # Create an iterator over train/test featuresets based on the
+        # cross-validation index iterator
+        featureset_iter = (FeatureSet.split_by_ids(examples, train, test) for train, test in cv_iter)
+
+        # Limit the number of parallel jobs for this
+        # to be no higher than five or the number of cores
+        # for the machine, whichever is lower
+        n_jobs = min(cpu_count(), MAX_CONCURRENT_PROCESSES)
+
+        # Run jobs in parallel that train the model on each subset
+        # of the training data and compute train and test scores
+        parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
+        out = parallel(joblib.delayed(_train_and_score)(self,
+                                                        train_fs[:n_train_samples],
+                                                        test_fs,
+                                                        objective)
+                       for train_fs, test_fs in featureset_iter
+                       for n_train_samples in train_sizes_abs)
+
+        # Reshape the outputs
+        out = np.array(out)
+        n_cv_folds = out.shape[0] // n_unique_ticks
+        out = out.reshape(n_cv_folds, n_unique_ticks, 2)
+        out = np.asarray(out).transpose((2, 1, 0))
+
+        return list(out[0]), list(out[1]), list(train_sizes_abs)
+
