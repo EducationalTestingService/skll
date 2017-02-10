@@ -1102,68 +1102,6 @@ def test_setting_fixed_parameters():
     eq_(fixed_parameter_list[0]['C'][5], 1e5)
 
 
-def test_default_learning_curve_options():
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objective': 'f1_score_macro'}
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'default_learning_curve')
-
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objective, probability, results_path,
-     pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
-
-    eq_(learning_curve_cv_folds_list, [10, 10])
-    ok_(np.all(learning_curve_train_sizes == np.linspace(0.1, 1.0, 5)))
-
-
-def test_setting_learning_curve_options():
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'learning_curve_cv_folds_list': "[100, 10]",
-                           'learning_curve_train_sizes': "[10, 50, 100, 200, 500]",
-                           'objective': 'f1_score_macro'}
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'setting_learning_curve')
-
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objective, probability, results_path,
-     pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
-
-    eq_(learning_curve_cv_folds_list, [100, 10])
-    eq_(learning_curve_train_sizes, [10, 50, 100, 200, 500])
-
-
 def test_config_fixed_parameters_param_grids_conflict1():
     """
     Test the case where fixed parameters and parameter grids are both
@@ -1175,12 +1113,11 @@ def test_config_fixed_parameters_param_grids_conflict1():
     exception should be raised.
     """
 
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-
     # Make a configuration file that has both a `fixed_parameters` list and a
     # `param_grids` list specified, between which there are conflicting
     # parameter values
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
     values_to_fill_dict = {'experiment_name':
                                'config_fixed_parameters_param_grids_conflict1',
                            'train_directory': train_dir,
@@ -1306,14 +1243,16 @@ def test_config_fixed_parameters_default_param_grids_conflict1():
                                values_to_fill_dict,
                                'fixed_parameters_default_param_grids_conflict1')
 
-    (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
-     hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
-     featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
-     probability, results_path, pos_label_str, feature_scaling,
-     min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
-     learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,                          
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes) = _parse_config_file(config_path)
 
     # The fixed parameter value that was specified should remain as is
     # while the conflicting default parameter value will be removed from
@@ -1355,14 +1294,16 @@ def test_config_fixed_parameters_default_param_grids_conflict2():
                                values_to_fill_dict,
                                'fixed_parameters_default_param_grids_conflict2')
 
-    (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
-     hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
-     featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
-     probability, results_path, pos_label_str, feature_scaling,
-     min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
-     learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,                          
-     class_map, custom_learner_path) = _parse_config_file(config_path)
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes) = _parse_config_file(config_path)
 
     # The fixed parameter value that was specified should remain as is
     # while the conflicting default parameter value will be removed from
@@ -1412,3 +1353,73 @@ def test_config_fixed_parameters_default_param_grids_conflict3():
                                'fixed_parameters_default_param_grids_conflict3')
 
     _parse_config_file(config_path)
+
+
+def test_default_learning_curve_options():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_learning_curve')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+
+    eq_(learning_curve_cv_folds_list, [10, 10])
+    ok_(np.all(learning_curve_train_sizes == np.linspace(0.1, 1.0, 5)))
+
+
+def test_setting_learning_curve_options():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'learning_curve_cv_folds_list': "[100, 10]",
+                           'learning_curve_train_sizes': "[10, 50, 100, 200, 500]",
+                           'objective': 'f1_score_macro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'setting_learning_curve')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+
+    eq_(learning_curve_cv_folds_list, [100, 10])
+    eq_(learning_curve_train_sizes, [10, 50, 100, 200, 500])
