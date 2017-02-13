@@ -1065,9 +1065,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                            results_path,
                                            output_file_path)
         else:
-            logger.info("Raw data for the learning curve saved in "
-                        "{}. No plots were generated since pandas and "
-                        "seaborn are not installed. ")
+            logger.warning("Raw data for the learning curve saved in "
+                           "{}. No plots were generated since pandas and "
+                           "seaborn are not installed. ")
 
     return result_json_paths
 
