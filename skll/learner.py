@@ -132,7 +132,7 @@ _BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                      'spearman'])
 
 _REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
-                                        'mean_squared_error'])
+                                        'neg_mean_squared_error'])
 
 _CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
                                             'precision',

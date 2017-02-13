@@ -730,7 +730,7 @@ Regression or classification with binary labels:
 Regression:
 
     *   **r2**: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
-    *   **mean_squared_error**: `Mean squared error regression loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__
+    *   **neg_mean_squared_error**: The negative of the `mean squared error <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <https://github.com/scikit-learn/scikit-learn/blob/2f7f5a1a50c2a2022d42160fce9d0596ecac2ada/sklearn/metrics/scorer.py#L355>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
 
 
 Defaults to ``['f1_score_micro']``.

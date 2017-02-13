@@ -568,6 +568,14 @@ def _parse_config_file(config_path):
         raise TypeError("objectives should be a "
                         "list of objectives")
 
+    # `mean_squared_error` should be replaced with `neg_mean_squared_error`
+    if 'mean_squared_error' in grid_objectives:
+        logger.warning("The objective function \"mean_squared_error\" "
+                       "is deprecated and will be removed in the next "
+                       "release, please use the function "
+                       "\"neg_mean_squared_error\" instead.")
+        grid_objectives[grid_objectives.index('mean_squared_error')] = 'neg_mean_squared_error'
+
     if not all([objective in SCORERS for objective in grid_objectives]):
         raise ValueError('Invalid grid objective function(s): {}'
                          .format(grid_objectives))
