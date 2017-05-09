@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 from functools import wraps
 from importlib import import_module
 from multiprocessing import cpu_count
+import random
 
 import joblib
 import numpy as np
@@ -257,8 +258,8 @@ def _train_and_score(learner,
 
     train_score = use_score_func(objective, train_labels, train_predictions)
     test_score = use_score_func(objective, test_labels, test_predictions)
-    return train_score, test_score
-
+    #return train_score, test_score
+    return train_score, test_score, train_predictions, test_predictions
 
 def _predict_binary(self, X):
     """
@@ -1658,10 +1659,127 @@ class Learner(object):
                        for n_train_samples in train_sizes_abs)
 
         # Reshape the outputs
-        out = np.array(out)
+        print(out)
+        predictions = np.array([test_predictions for (_, _, _, test_predictions) in out])
+        print(predictions.shape)
+
+        scores = [(train_score, test_score) for (train_score, test_score, _, _) in out]
+        out = np.array(scores)
+
         n_cv_folds = out.shape[0] // n_unique_ticks
         out = out.reshape(n_cv_folds, n_unique_ticks, 2)
         out = np.asarray(out).transpose((2, 1, 0))
 
         return list(out[0]), list(out[1]), list(train_sizes_abs)
 
+
+    def bootstrap_predictions(self,
+                              examples,
+                              cv_folds=10,
+                              num_iterations=20,
+                              objective='f1_score_micro'):
+        """
+        Generates multiple predictions for a dataset using bootstrapping.
+
+        For each fold of the data:
+            repeat num_iterations times:
+                select X% of the remaining data to train a model
+                generate predictions for the fold
+
+        Adapted from the scikit-learn code for learning
+        curve generation (cf. ```sklearn.model_selection.learning_curve```).
+
+        :param examples: The data to generate the learning curve on.
+        :type examples: skll.data.FeatureSet
+        :param cv_folds: The number of folds to use for cross-validation
+        :type cv_folds: int
+        :param train_size:  Relative or absolute number of training examples
+                             that will be used to train each model.
+                             If the type is float, it is regarded as a fraction
+                             of the maximum size of the training set (that is
+                             determined by the selected validation method),
+                             i.e. it has to be within (0, 1]. Otherwise it
+                             is interpreted as the absolute size of the training
+                             set. Note that for classification the number of
+                             samples usually has to be big enough to contain
+                             at least one sample from each class.
+                             (default: `1.0`)
+        :type train_sizes: float or int
+        :param objective: The name of the objective function to use
+                           when computing the train and test scores
+                           for each run. (default: 'f1_score_micro')
+        :type objective: string
+
+        :return: the cross validation predictions on the data set for B runs
+        :rtype: (list of list)
+        """
+
+        # Seed the random number generator so that randomized algorithms are
+        # replicable.
+        random_state = np.random.RandomState(123456789)
+        import pandas as pd
+
+        # Set up logger.
+        logger = logging.getLogger(__name__)
+
+        # Call train setup before since we need to train
+        # the learner eventually
+        self._create_label_dict(examples)
+        self._train_setup(examples)
+
+        # Set up the cross-validation iterator
+        cv = KFold(n_splits=cv_folds, random_state=random_state)
+        cv_iter = list(cv.split(examples.features, examples.labels, None))
+        n_max_training_samples = len(cv_iter[0][0])
+
+        all_results = {}
+
+        for fold_id, (train_fold, test_fold) in enumerate(cv_iter):
+            # randomly sample the train_fold multiple times
+
+            fold_results = []
+            for iter_index in range(1, num_iterations):
+                #randomly sample 90% of the training data
+                train_fold = list(train_fold)
+                num_samples = round(len(train_fold) * 0.9)
+                train_sample = random.sample(train_fold, num_samples)
+
+                train_fs, test_fs = FeatureSet.split_by_ids(examples, train_sample, test_fold)
+
+                # Limit the number of parallel jobs for this
+                # to be no higher than five or the number of cores
+                # for the machine, whichever is lower
+                n_jobs = min(cpu_count(), MAX_CONCURRENT_PROCESSES)
+
+                # Run jobs in parallel that train the model on each subset
+                # of the training data and compute train and test scores
+                parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
+
+                _, test_score, _, test_predictions = _train_and_score(self, train_fs, test_fs, objective)
+
+                fold_results.append(test_predictions)
+
+            all_results[fold_id] = fold_results
+
+        ids = []
+        for _, test_fold in cv_iter:
+            for index in test_fold:
+                ids.append(examples.ids[index])
+        bootstrap_dict = {'id':ids}
+
+        # set up the list of lists that will contain the predictions
+        runs = []
+        for index in range(1,num_iterations):
+            runs.append([])
+
+        # restructure the data such that the predictions for the entire dataset
+        # are in one array
+        for fold_id in all_results:
+            for pred_index, fold_predictions in enumerate(all_results[fold_id]):
+                runs[pred_index].extend(fold_predictions)
+
+        for index, r in enumerate(runs):
+            bootstrap_dict['run_{}'.format(index)] = r
+
+        bootstrap_df = pd.DataFrame(bootstrap_dict)
+        return bootstrap_df

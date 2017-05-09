@@ -28,7 +28,7 @@ from sklearn.metrics import SCORERS
 
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate',
-                          'cross_validate', 'learning_curve'])
+                          'cross_validate', 'learning_curve', 'bootstrap'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 _VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
@@ -65,6 +65,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'log': '',
                     'learning_curve_cv_folds_list': '[]',
                     'learning_curve_train_sizes': '[]',
+                    'bootstrap_cv_folds': '10',
+                    'bootstrap_num_iterations': '20',
                     'min_feature_count': '1',
                     'models': '',
                     'num_cv_folds': '10',
@@ -104,6 +106,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'log': 'Output',
                                    'learning_curve_cv_folds_list': 'Input',
                                    'learning_curve_train_sizes': 'Input',
+                                   'bootstrap_cv_folds': 'Input',
+                                   'bootstrap_num_iterations': 'Input',
                                    'min_feature_count': 'Tuning',
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
@@ -402,6 +406,10 @@ def _parse_config_file(config_path):
                              "be a list of integers or floats. You specified: {}"
                              .format(learning_curve_train_sizes))
 
+    # Get the bootstrap inputs (TODO: validate)
+    bootstrap_cv_folds = int(config.get("Input", "bootstrap_cv_folds"))
+    bootstrap_num_iterations = int(config.get("Input", "bootstrap_num_iterations"))
+
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
 
@@ -620,7 +628,8 @@ def _parse_config_file(config_path):
             do_stratified_folds, fixed_parameter_list, param_grid_list,
             featureset_names, learners, prediction_dir, log_path, train_path,
             test_path, ids_to_floats, class_map, custom_learner_path,
-            learning_curve_cv_folds_list, learning_curve_train_sizes)
+            learning_curve_cv_folds_list, learning_curve_train_sizes,
+            bootstrap_cv_folds, bootstrap_num_iterations)
 
 
 def _munge_featureset_name(featureset):

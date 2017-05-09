@@ -444,6 +444,8 @@ def _classify_featureset(args):
     quiet = args.pop('quiet', False)
     learning_curve_cv_folds = args.pop("learning_curve_cv_folds")
     learning_curve_train_sizes = args.pop("learning_curve_train_sizes")
+    bootstrap_cv_folds = args.pop("bootstrap_cv_folds")
+    bootstrap_num_iterations = args.pop("bootstrap_num_iterations")
 
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: "
@@ -577,6 +579,12 @@ def _classify_featureset(args):
                                                                   cv_folds=learning_curve_cv_folds,
                                                                   train_sizes=learning_curve_train_sizes,
                                                                   objective=grid_objective)
+        elif task == 'bootstrap':
+            print('\tbootstrapping predictions', file=log_file)
+            bootstrap_predictions_df = learner.bootstrap_predictions(train_examples,
+                                                                  cv_folds=bootstrap_cv_folds,
+                                                                  num_iterations=bootstrap_num_iterations,
+                                                                  objective=grid_objective)
         else:
             # if we have do not have a saved model, we need to train one.
             if not exists(modelfile) or overwrite:
@@ -671,6 +679,12 @@ def _classify_featureset(args):
             file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
             with open(results_json_path, file_mode) as json_file:
                 json.dump([res], json_file, cls=NumpyTypeEncoder)
+        elif task == 'bootstrap':
+            output_file = join(results_path, 'bootstrap_predictions.csv')
+            
+            # write out the csv file with all of the generated predictions
+            bootstrap_predictions_df.to_csv(output_file, index=False)
+            res = {}
         else:
             res = [learner_result_dict_base]
 
@@ -859,7 +873,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
      learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes) = _parse_config_file(config_file)
+     learning_curve_train_sizes, bootstrap_cv_folds, bootstrap_num_iterations) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -1023,6 +1037,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["custom_learner_path"] = custom_learner_path
                 job_args["learning_curve_cv_folds"] = learning_curve_cv_folds_list[learner_num]
                 job_args["learning_curve_train_sizes"] = learning_curve_train_sizes
+                job_args["bootstrap_cv_folds"] = bootstrap_cv_folds
+                job_args["bootstrap_num_iterations"] = bootstrap_num_iterations
 
                 if not local:
                     jobs.append(Job(_classify_featureset, [job_args],
