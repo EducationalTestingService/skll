@@ -112,7 +112,7 @@ def test_compute_eval_from_predictions():
     """
 
     pred_path = join(_my_dir, 'other',
-                     'test_compute_eval_from_predictions.predictions')
+                     'test_compute_eval_from_predictions_predictions.tsv')
     input_path = join(_my_dir, 'other',
                       'test_compute_eval_from_predictions.jsonlines')
 

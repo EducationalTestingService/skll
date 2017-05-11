@@ -1155,7 +1155,7 @@ class Learner(object):
         :type examples: FeatureSet
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
-                                  It will be followed by ".predictions"
+                                  It will be followed by "_predictions.tsv"
         :type prediction_prefix: str
         :param append: Should we append the current predictions to the file if
                        it exists?
@@ -1258,7 +1258,7 @@ class Learner(object):
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the
                                   filename. It will be followed by
-                                  ".predictions"
+                                  "_predictions.tsv"
         :type prediction_prefix: str
         :param append: Should we append the current predictions to the file if
                        it exists?
@@ -1354,7 +1354,7 @@ class Learner(object):
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            prediction_file = '{}.predictions'.format(prediction_prefix)
+            prediction_file = '{}_predictions.tsv'.format(prediction_prefix)
             with open(prediction_file,
                       "w" if not append else "a") as predictionfh:
                 # header
@@ -1448,7 +1448,7 @@ class Learner(object):
                           lists of parameter values
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
-                                  It will be followed by ".predictions"
+                                  It will be followed by "_predictions.tsv"
         :type prediction_prefix: str
         :param shuffle: Shuffle examples before splitting into folds for CV.
         :type shuffle: bool
