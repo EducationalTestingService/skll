@@ -61,11 +61,11 @@ def tearDown():
     if exists(join(test_dir, 'test_single_file.jsonlines')):
         os.unlink(join(test_dir, 'test_single_file.jsonlines'))
 
-    if exists(join(output_dir, 'rare_class.predictions')):
-        os.unlink(join(output_dir, 'rare_class.predictions'))
+    if exists(join(output_dir, 'rare_class_predictions.tsv')):
+        os.unlink(join(output_dir, 'rare_class_predictions.tsv'))
 
-    if exists(join(output_dir, 'float_class.predictions')):
-        os.unlink(join(output_dir, 'float_class.predictions'))
+    if exists(join(output_dir, 'float_class_predictions.tsv')):
+        os.unlink(join(output_dir, 'float_class_predictions.tsv'))
 
     for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
         os.unlink(output_file)
@@ -152,7 +152,7 @@ def test_rare_class():
                            grid_objective='unweighted_kappa',
                            prediction_prefix=prediction_prefix)
 
-    with open(prediction_prefix + '.predictions', 'r') as f:
+    with open(prediction_prefix + '_predictions.tsv', 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
@@ -435,7 +435,7 @@ def test_float_classes():
                            grid_objective='accuracy',
                            prediction_prefix=prediction_prefix)
 
-    with open(prediction_prefix + '.predictions', 'r') as f:
+    with open(prediction_prefix + '_predictions.tsv', 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
