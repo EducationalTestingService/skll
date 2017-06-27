@@ -118,6 +118,9 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                           'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]}
 
 
+LEARNERS_NOT_SUPPORTING_SAMPLE_WEIGHTS = frozenset([ElasticNet,
+                                                    Lasso,
+                                                    KNeighborsRegressor])
 # list of valid grid objective functions for regression and classification
 # models depending on type of labels
 
@@ -967,6 +970,11 @@ class Learner(object):
         :rtype: float
         """
         logger = logging.getLogger(__name__)
+        if any([issubclass(self._model_type, cls) for
+                cls in LEARNERS_NOT_SUPPORTING_SAMPLE_WEIGHTS]):
+            if examples.weights is not None:
+                raise ValueError("{} does not support sample_weights."
+                                 .format(self._model_type))
 
         # if we are asked to do grid search, check that the grid objective
         # function is valid for the selected learner
@@ -1024,12 +1032,25 @@ class Learner(object):
                 logger.warning('Training data will be shuffled to randomize '
                                'grid search folds.  Shuffling may yield '
                                'different results compared to scikit-learn.')
-            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
-                                               examples.features,
-                                               random_state=123456789)
-            examples = FeatureSet(examples.name, ids, labels=labels,
-                                  features=features,
-                                  vectorizer=examples.vectorizer)
+
+            if examples.weights is not None:
+                ids, labels, features, weights = sk_shuffle(examples.ids,
+                                                            examples.labels,
+                                                            examples.features,
+                                                            examples.weights,
+                                                            random_state=123456789)
+                examples = FeatureSet(examples.name, ids, labels=labels,
+                                      features=features,
+                                      vectorizer=examples.vectorizer,
+                                      weights=weights)
+            else:
+                ids, labels, features = sk_shuffle(examples.ids,
+                                                            examples.labels,
+                                                            examples.features,
+                                                            random_state=123456789)
+                examples = FeatureSet(examples.name, ids, labels=labels,
+                                      features=features,
+                                      vectorizer=examples.vectorizer)
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
@@ -1129,18 +1150,29 @@ class Learner(object):
             # number of cores for the machine, whichever is lower
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
 
-            grid_searcher = GridSearchCV(estimator, param_grid,
-                                         scoring=grid_objective,
-                                         cv=folds,
-                                         n_jobs=grid_jobs,
-                                         pre_dispatch=grid_jobs)
-
+            if examples.weights is not None:
+                grid_searcher = GridSearchCV(estimator, param_grid,
+                                             scoring=grid_objective,
+                                             cv=folds,
+                                             n_jobs=grid_jobs,
+                                             pre_dispatch=grid_jobs,
+                                             fit_params={'sample_weight': examples.weights})
+            else:
+                grid_searcher = GridSearchCV(estimator, param_grid,
+                                             scoring=grid_objective,
+                                             cv=folds,
+                                             n_jobs=grid_jobs,
+                                             pre_dispatch=grid_jobs)
             # run the grid search for hyperparameters
             grid_searcher.fit(xtrain, labels)
             self._model = grid_searcher.best_estimator_
             grid_score = grid_searcher.best_score_
         else:
-            self._model = estimator.fit(xtrain, labels)
+            if examples.weights is not None:
+                self._model = estimator.fit(xtrain, labels,
+                                            sample_weight=examples.weights)
+            else:
+                self._model = estimator.fit(xtrain, labels)
             grid_score = 0.0
 
         return grid_score
@@ -1478,12 +1510,23 @@ class Learner(object):
                 logger.warning('Training data will be shuffled to randomize '
                                'grid search folds. Shuffling may yield '
                                'different results compared to scikit-learn.')
-            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
-                                               examples.features,
-                                               random_state=random_state)
-            examples = FeatureSet(examples.name, ids, labels=labels,
-                                  features=features,
-                                  vectorizer=examples.vectorizer)
+
+            if examples.weights is not None:
+                ids, labels, features, weights = sk_shuffle(examples.ids, examples.labels,
+                                                            examples.features,
+                                                            examples.weights,
+                                                            random_state=random_state)
+                examples = FeatureSet(examples.name, ids, labels=labels,
+                                      features=features,
+                                      vectorizer=examples.vectorizer,
+                                      weights=weights)
+            else:
+                ids, labels, features = sk_shuffle(examples.ids, examples.labels,
+                                                   examples.features,
+                                                   random_state=random_state)
+                examples = FeatureSet(examples.name, ids, labels=labels,
+                                      features=features,
+                                      vectorizer=examples.vectorizer)
 
         # call train setup
         self._create_label_dict(examples)
@@ -1539,11 +1582,16 @@ class Learner(object):
                                                    cv_groups):
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
+            if examples.weights is not None:
+                weights = examples.weights[train_index]
+            else:
+                weights = None
             train_set = FeatureSet(examples.name,
                                    examples.ids[train_index],
                                    labels=examples.labels[train_index],
                                    features=examples.features[train_index],
-                                   vectorizer=examples.vectorizer)
+                                   vectorizer=examples.vectorizer,
+                                   weights=weights)
             # Set run_create_label_dict to False since we already created the
             # label dictionary for the whole dataset above.
             grid_search_score = self.train(train_set,

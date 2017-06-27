@@ -411,6 +411,7 @@ def _classify_featureset(args):
     featureset = args.pop("featureset")
     featureset_name = args.pop("featureset_name")
     learner_name = args.pop("learner_name")
+    train_weights = args.pop("train_weights")
     train_path = args.pop("train_path")
     test_path = args.pop("test_path")
     train_set_name = args.pop("train_set_name")
@@ -494,6 +495,10 @@ def _classify_featureset(args):
                                               quiet=quiet, class_map=class_map,
                                               feature_hasher=feature_hasher,
                                               num_features=hasher_features)
+            if train_weights != {}:
+                train_examples.load_weights(train_weights)
+            else:
+                train_examples.weights = None
 
             train_set_size = len(train_examples.ids)
             if not train_examples.has_labels:
@@ -857,7 +862,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      probability, results_path, pos_label_str, feature_scaling,
      min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
-     learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     learners, prediction_dir, log_path, train_weights,
+     train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes) = _parse_config_file(config_file)
 
@@ -985,6 +991,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["featureset"] = featureset
                 job_args["featureset_name"] = featureset_name
                 job_args["learner_name"] = learner_name
+                job_args["train_weights"] = train_weights
                 job_args["train_path"] = train_path
                 job_args["test_path"] = test_path
                 job_args["train_set_name"] = train_set_name

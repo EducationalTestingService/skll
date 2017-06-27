@@ -50,7 +50,7 @@ class FeatureSet(object):
     """
 
     def __init__(self, name, ids, labels=None, features=None,
-                 vectorizer=None):
+                 vectorizer=None, weights=None):
         super(FeatureSet, self).__init__()
         self.name = name
         if isinstance(ids, list):
@@ -60,6 +60,7 @@ class FeatureSet(object):
             labels = np.array(labels)
         self.labels = labels
         self.features = features
+        self.weights = weights
         self.vectorizer = vectorizer
         # Convert list of dicts to numpy array
         if isinstance(self.features, list):
@@ -83,6 +84,12 @@ class FeatureSet(object):
                 raise ValueError(('Number of labels (%s) does not equal '
                                   'number of feature rows (%s)') % (num_labels,
                                                                     num_feats))
+
+    def load_weights(self, weights):
+        weights_ordered_by_id = []
+        for id in self.ids:
+            weights_ordered_by_id.append(weights[id])
+        self.weights = np.array(weights_ordered_by_id).astype(np.float)
 
     def __contains__(self, value):
         """

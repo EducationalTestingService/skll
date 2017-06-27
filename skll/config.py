@@ -84,7 +84,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'test_directory': '',
                     'test_file': '',
                     'train_directory': '',
-                    'train_file': ''}
+                    'train_file': '',
+                    'train_weights_file': ''}
 
         correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
@@ -123,7 +124,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'test_directory': 'Input',
                                    'test_file': 'Input',
                                    'train_directory': 'Input',
-                                   'train_file': 'Input'}
+                                   'train_file': 'Input',
+                                   'train_weights_file': 'Input'}
 
         # make sure that the defaults dictionary and the
         # section mapping dictionary have the same keys
@@ -500,6 +502,15 @@ def _parse_config_file(config_path):
     train_file = _locate_file(train_file, config_dir)
     test_file = _locate_file(test_file, config_dir)
 
+    train_weights_file = _locate_file(config.get("Input",
+                                                 "train_weights_file"),
+                                      config_dir)
+    if train_weights_file:
+        train_weights = _load_train_weights(train_weights_file,
+                                            ids_to_floats=ids_to_floats)
+    else:
+        train_weights = {}
+
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
     original_class_map = yaml.safe_load(_fix_json(class_map_string))
@@ -618,7 +629,8 @@ def _parse_config_file(config_path):
             pos_label_str, feature_scaling, min_feature_count,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             do_stratified_folds, fixed_parameter_list, param_grid_list,
-            featureset_names, learners, prediction_dir, log_path, train_path,
+            featureset_names, learners, prediction_dir, log_path,
+            train_weights, train_path,
             test_path, ids_to_floats, class_map, custom_learner_path,
             learning_curve_cv_folds_list, learning_curve_train_sizes)
 
@@ -666,3 +678,7 @@ def _load_cv_folds(cv_folds_file, ids_to_floats=False):
             res[row[0]] = row[1]
 
     return res
+
+
+def _load_train_weights(weights_file, ids_to_floats=False):
+    return _load_cv_folds(weights_file, ids_to_floats=ids_to_floats)
