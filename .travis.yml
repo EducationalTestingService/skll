@@ -5,8 +5,7 @@ python:
 notifications:
   email: false
   slack:
-    rooms:
-      - secure: HB11XwbKna5uf2H7mYjyowijhtbty2TPn9rxMAQSpb2T2UIHIZikn5cCLEB2hTo+BC9pJFAab90IriR7IREvLWUEHqYwABQK77iw0gIJhoPLxsT33zIqFN+HejhWIgmfSh0KVbLM7mHnAIQUe5Vsfi4D9Iex9aSz3oTq6OsqFIk=
+    secure: d+NSaR+cfRkcJfX/uEVwdyQDlayZO6c8QV96grl1stmWxG3XOXvXg1tM6v7EBeb9VRw5T4VglnnJGNJA62j1ReEJ0XyWr5XtaNWiF6Lc4UOty/TTG36IQdkWS1vQA8v2Hre73YbvOhtBb6biNneVAk+rrfRSgomEa+ec22cjgUo=
 env:
   - WITH_PANDAS_AND_SEABORN=true
   - WITH_PANDAS_AND_SEABORN=false
