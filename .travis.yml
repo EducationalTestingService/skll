@@ -4,7 +4,8 @@ python:
   - 3.4
 notifications:
   email: false
-  slack: etsnlp:enaaoJ5hIyU9Zs7kRGT0ZSti
+  slack:
+    secure: d+NSaR+cfRkcJfX/uEVwdyQDlayZO6c8QV96grl1stmWxG3XOXvXg1tM6v7EBeb9VRw5T4VglnnJGNJA62j1ReEJ0XyWr5XtaNWiF6Lc4UOty/TTG36IQdkWS1vQA8v2Hre73YbvOhtBb6biNneVAk+rrfRSgomEa+ec22cjgUo=
 env:
   - WITH_PANDAS_AND_SEABORN=true
   - WITH_PANDAS_AND_SEABORN=false
