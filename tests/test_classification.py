@@ -213,7 +213,7 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
 def test_dummy_classifier_predict():
     # hard-code dataset
     train_fs = FeatureSet('classification_train',
-                          ['TestExample{}'.format(i) for i in range(20)],
+                          ['TrainExample{}'.format(i) for i in range(20)],
                           labels=([0] * 14) + ([1] * 6),
                           features=[{"feature": i} for i in range(20)])
 
