@@ -20,7 +20,7 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import eq_, assert_almost_equal, raises
+from nose.tools import eq_, assert_almost_equal, raises, assert_equal
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
@@ -208,6 +208,38 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
 
     expected_score = 0.48 if use_feature_hashing else 0.45
     assert_almost_equal(test_score, expected_score)
+
+
+def test_dummy_classifier_predict():
+    # hard-code dataset
+    train_fs = FeatureSet('classification_train',
+                          ['TestExample{}'.format(i) for i in range(20)],
+                          labels=([0] * 14) + ([1] * 6),
+                          features=[{"feature": i} for i in range(20)])
+
+    test_fs = FeatureSet('classification_test',
+                         ['TestExample{}'.format(i) for i in range(10)],
+                         features=[{"feature": i} for i in range(20, 30)])
+
+    toy_data = (
+        [{"strategy": "stratified", "random_state": 12345},
+         np.array([1, 0, 0, 0, 0, 0, 1, 0, 1, 0])],
+        [{"strategy": "most_frequent"},
+         np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])],
+        [{"strategy": "constant", "constant": 1},
+         np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])]
+    )
+
+    # Ensure predictions are correct for all strategies.
+    correct = []
+    for model_args, expected_output in toy_data:
+        learner = Learner('DummyClassifier', model_kwargs=model_args)
+        learner.train(train_fs)
+        predictions = learner.predict(test_fs)
+        correct.append(np.array_equal(expected_output, predictions))
+    assert_equal(correct, [True, True, True])
+
+
 
 
 def test_sparse_predict_sampler():
