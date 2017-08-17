@@ -34,6 +34,7 @@ from sklearn.model_selection import (GridSearchCV,
                                      LeaveOneGroupOut,
                                      ShuffleSplit,
                                      StratifiedKFold)
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
                               GradientBoostingClassifier,
@@ -75,6 +76,8 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'max_features': ["auto", None]}],
                         DecisionTreeRegressor:
                         [{'max_features': ["auto", None]}],
+                        DummyClassifier:
+                        [{}],
                         ElasticNet:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         GradientBoostingClassifier:
