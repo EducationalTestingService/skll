@@ -6,7 +6,7 @@ notifications:
   email: false
   slack:
     rooms:
-      secure: HB11XwbKna5uf2H7mYjyowijhtbty2TPn9rxMAQSpb2T2UIHIZikn5cCLEB2hTo+BC9pJFAab90IriR7IREvLWUEHqYwABQK77iw0gIJhoPLxsT33zIqFN+HejhWIgmfSh0KVbLM7mHnAIQUe5Vsfi4D9Iex9aSz3oTq6OsqFIk=
+      - secure: HB11XwbKna5uf2H7mYjyowijhtbty2TPn9rxMAQSpb2T2UIHIZikn5cCLEB2hTo+BC9pJFAab90IriR7IREvLWUEHqYwABQK77iw0gIJhoPLxsT33zIqFN+HejhWIgmfSh0KVbLM7mHnAIQUe5Vsfi4D9Iex9aSz3oTq6OsqFIk=
 env:
   - WITH_PANDAS_AND_SEABORN=true
   - WITH_PANDAS_AND_SEABORN=false
