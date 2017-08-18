@@ -20,7 +20,7 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import eq_, assert_almost_equal, raises, assert_equal
+from nose.tools import eq_, assert_almost_equal, raises
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
@@ -237,7 +237,7 @@ def test_dummy_classifier_predict():
         learner.train(train_fs)
         predictions = learner.predict(test_fs)
         correct.append(np.array_equal(expected_output, predictions))
-    assert_equal(correct, [True, True, True])
+    eq_(correct, [True, True, True])
 
 
 
