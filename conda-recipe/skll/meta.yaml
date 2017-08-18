@@ -44,13 +44,12 @@ requirements:
     - scikit-learn 0.18.1
     - six
     - prettytable
-    - beautiful-soup
+    - beautifulsoup4
     - numpy
     - scipy
     - ruamel.yaml
     - configparser [py2k]
     - futures [py2k]
-    - logutils [py2k]
     - mock [py2k]
 
   run:
@@ -59,13 +58,12 @@ requirements:
     - scikit-learn 0.18.1
     - six
     - prettytable
-    - beautiful-soup
+    - beautifulsoup4
     - numpy
     - scipy
     - ruamel.yaml
     - configparser [py2k]
     - futures [py2k]
-    - logutils [py2k]
     - mock [py2k]
 
 test:
