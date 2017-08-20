@@ -221,6 +221,7 @@ below.  Custom learners can also be specified. See
 Classifiers:
 
     *   **AdaBoostClassifier**: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__.  Note that the default base estimator is a ``DecisionTreeClassifier``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``MultinomialNB``, ``SGDClassifier``, and ``SVC``. Note that the last two base require setting an additional ``algorithm`` fixed parameter with the value ``'SAMME'``.
+    *   **DummyClassifier**: `Dummy Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html>`__
     *   **DecisionTreeClassifier**: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
     *   **GradientBoostingClassifier**: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
     *   **KNeighborsClassifier**: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
