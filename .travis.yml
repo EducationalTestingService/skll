@@ -1,7 +1,7 @@
 language: python
 python:
   - 2.7
-  - 3.4
+  - 3.6
 notifications:
   email: false
   slack:
@@ -19,13 +19,11 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then export PATH=/home/travis/miniconda2/bin:$PATH; else export PATH=/home/travis/miniconda3/bin:$PATH; fi
-  - conda config --add channels dan_blanchard
-  - conda config --add channels desilinguist
   - conda update --yes conda
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy beautiful-soup six scikit-learn==0.18.1 joblib prettytable python-coveralls pyyaml
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes configparser logutils mock; fi
-  - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then conda install --yes pandas seaborn; fi
+  - conda install --yes --channel defaults --channel conda-forge python=$TRAVIS_PYTHON_VERSION numpy scipy beautifulsoup4 six scikit-learn==0.18.1 joblib prettytable python-coveralls ruamel.yaml
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes --channel defaults configparser mock; fi
+  - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then conda install --yes --channel defaults pandas seaborn; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
   - python setup.py install
