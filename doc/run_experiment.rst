@@ -144,9 +144,9 @@ possible settings for each section is provided below, but to summarize:
 
     .. note::
 
-        Note that when using classifiation, SKLL will automatically reduce the
-        number of cross-validation folds to be the same as the minimum number of
-        examples for any of the classes in the training data.
+        When using classifiers, SKLL will automatically reduce the
+        number of cross-validation folds to be the same as the minimum
+        number of examples for any of the classes in the training data.
 
 
 .. _evaluate:
