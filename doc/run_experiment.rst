@@ -583,7 +583,7 @@ GradientBoostingClassifier and GradientBoostingRegressor
 SVR
     .. code-block:: python
 
-       {'cache_size': 1000, 'kernel': b'linear'}
+       {'cache_size': 1000, 'kernel': 'rbf'}
 
 .. _imbalanced_data:
 
