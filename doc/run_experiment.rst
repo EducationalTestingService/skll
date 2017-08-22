@@ -142,6 +142,13 @@ possible settings for each section is provided below, but to summarize:
     You also can optionally use predetermined folds with the
     :ref:`cv_folds_file <cv_folds_file>` setting.
 
+    .. note::
+
+        Note that when using classifiation, SKLL will automatically reduce the
+        number of cross-validation folds to be the same as the minimum number of
+        examples for any of the classes in the training data.
+
+
 .. _evaluate:
 
 *   If you want to **train a model and evaluate it** on some data, specify a
@@ -162,9 +169,9 @@ possible settings for each section is provided below, but to summarize:
 
 *   If you want to **generate a learning curve** for your data, specify a training location and set :ref:`task` to ``learning_curve``. The learning curve is generated using essentially the same underlying process as in `scikit-learn <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html#sklearn.model_selection.learning_curve>`__ except that the SKLL feature pre-processing pipline is used while training the various models and computing the scores.
 
-.. note::
+    .. note::
 
-     Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
+        Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
 
 .. _learners_required:
 
