@@ -142,6 +142,13 @@ possible settings for each section is provided below, but to summarize:
     You also can optionally use predetermined folds with the
     :ref:`cv_folds_file <cv_folds_file>` setting.
 
+    .. note::
+
+        When using classifiers, SKLL will automatically reduce the
+        number of cross-validation folds to be the same as the minimum
+        number of examples for any of the classes in the training data.
+
+
 .. _evaluate:
 
 *   If you want to **train a model and evaluate it** on some data, specify a
@@ -162,9 +169,9 @@ possible settings for each section is provided below, but to summarize:
 
 *   If you want to **generate a learning curve** for your data, specify a training location and set :ref:`task` to ``learning_curve``. The learning curve is generated using essentially the same underlying process as in `scikit-learn <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html#sklearn.model_selection.learning_curve>`__ except that the SKLL feature pre-processing pipline is used while training the various models and computing the scores.
 
-.. note::
+    .. note::
 
-     Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
+        Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
 
 .. _learners_required:
 
@@ -583,7 +590,7 @@ GradientBoostingClassifier and GradientBoostingRegressor
 SVR
     .. code-block:: python
 
-       {'cache_size': 1000, 'kernel': b'linear'}
+       {'cache_size': 1000, 'kernel': 'rbf'}
 
 .. _imbalanced_data:
 
@@ -883,7 +890,7 @@ Using run_experiment
 
 Once you have created the :ref:`configuration file <create_config>` for your
 experiment, you can usually just get your experiment started by running
-``run_experiment CONFIGFILE``. That said, there are a few options that are
+``run_experiment CONFIGFILE``. [#]_ That said, there are a few options that are
 specified via command-line arguments instead of in the configuration file:
 
 .. option:: -a <num_features>, --ablation <num_features>
@@ -1004,4 +1011,7 @@ functions on rows and learners on columns. Here's an example of such a plot.
    future, but we have not added this functionality yet.
 .. [#] K-1 folds will be used for grid search within CV, so there should be at
    least 3 fold IDs.
+.. [#] If you installed SKLL via pip on macOS, you might get an error when
+   using ``run_experiment`` to generate learning curves. To get around this,
+   add ``MPLBACKEND=Agg`` before the ``run_experiment`` command and re-run.
 .. [#] This will happen automatically if GridMap cannot be imported.
