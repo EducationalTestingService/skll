@@ -890,7 +890,7 @@ Using run_experiment
 
 Once you have created the :ref:`configuration file <create_config>` for your
 experiment, you can usually just get your experiment started by running
-``run_experiment CONFIGFILE``. That said, there are a few options that are
+``run_experiment CONFIGFILE``. [#]_ That said, there are a few options that are
 specified via command-line arguments instead of in the configuration file:
 
 .. option:: -a <num_features>, --ablation <num_features>
@@ -1011,4 +1011,7 @@ functions on rows and learners on columns. Here's an example of such a plot.
    future, but we have not added this functionality yet.
 .. [#] K-1 folds will be used for grid search within CV, so there should be at
    least 3 fold IDs.
+.. [#] If you installed SKLL via pip on macOS, you might get an error when
+   using ``run_experiment`` to generate learning curves. To get around this,
+   add ``MPLBACKEND=Agg`` before the ``run_experiment`` command and re-run.
 .. [#] This will happen automatically if GridMap cannot be imported.
