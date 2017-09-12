@@ -454,8 +454,12 @@ def _classify_featureset(args):
         # logging
         print("Task:", task, file=log_file)
         if task == 'cross_validate':
+            if isinstance(cv_folds, int):
+                num_folds = cv_folds
+            else:  # cv_folds_file was used, so count the unique fold ids.
+                num_folds = len(set(cv_folds.values()))
             print(("Cross-validating ({} folds) on {}, feature " +
-                   "set {} ...").format(cv_folds, train_set_name, featureset),
+                   "set {} ...").format(num_folds, train_set_name, featureset),
                   file=log_file)
         elif task == 'evaluate':
             print(("Training on {}, Test on {}, " +
