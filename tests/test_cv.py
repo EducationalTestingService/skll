@@ -286,7 +286,7 @@ def test_cv_folds_file_logging():
     run_configuration(config_path, quiet=True)
 
     # Check log output
-    with open(join(_my_dir, 'output', 'test_save_cv_folds_train_f0.' +
+    with open(join(_my_dir, 'output', 'test_cv_folds_file_logging_train_f0.' +
             'jsonlines_LogisticRegression.log')) as f:
         cv_folds_pattern = re.compile("Task: cross_validate\nCross-validating \([0-9]+ folds\)")
         matches = re.findall(cv_folds_pattern, f.read())
