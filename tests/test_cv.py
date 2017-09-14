@@ -19,6 +19,7 @@ import os
 from os.path import abspath, dirname, join, exists
 import json
 from glob import glob
+import re
 
 import numpy as np
 from nose.tools import eq_, raises
@@ -266,6 +267,30 @@ def test_retrieve_cv_folds():
                                                  shuffle=False,
                                                  save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
+
+
+def test_cv_folds_file_logging():
+    """
+    Test that, when `cv_folds_file` is used, the log prints the number of folds,
+     instead of the entire cv_folds data.
+    """
+    # Run experiment
+    suffix = '.jsonlines'
+    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_cv_folds_file"
+                                                            ".template.cfg"),
+                                                       train_path,
+                                                       None)
+    run_configuration(config_path, quiet=True)
+
+    # Check log output
+    with open(join(_my_dir, 'output', 'test_cv_folds_file_logging_train_f0.' +
+            'jsonlines_LogisticRegression.log')) as f:
+        cv_folds_pattern = re.compile("Task: cross_validate\nCross-validating \([0-9]+ folds\)")
+        matches = re.findall(cv_folds_pattern, f.read())
+        assert_equal(len(matches), 1)
 
 
 def test_cross_validate_task():
