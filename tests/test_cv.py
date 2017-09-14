@@ -279,7 +279,7 @@ def test_cv_folds_file_logging():
     train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
 
     config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
-                                                            "test_save_cv_folds"
+                                                            "test_cv_folds_file"
                                                             ".template.cfg"),
                                                        train_path,
                                                        None)
