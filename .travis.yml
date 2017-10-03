@@ -21,7 +21,7 @@ before_install:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then export PATH=/home/travis/miniconda2/bin:$PATH; else export PATH=/home/travis/miniconda3/bin:$PATH; fi
   - conda update --yes conda
 install:
-  - conda install --yes --channel defaults --channel conda-forge python=$TRAVIS_PYTHON_VERSION numpy scipy beautifulsoup4 six scikit-learn==0.18.1 joblib prettytable python-coveralls ruamel.yaml
+  - conda install --yes --channel defaults --channel conda-forge python=$TRAVIS_PYTHON_VERSION numpy scipy beautifulsoup4 six scikit-learn==0.19.0 joblib prettytable python-coveralls ruamel.yaml
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes --channel defaults configparser mock; fi
   - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then conda install --yes --channel defaults pandas seaborn; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
