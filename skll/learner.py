@@ -771,6 +771,7 @@ class Learner(object):
 
             for i, label in enumerate(label_list):
                 coef = self.model.coef_[i]
+                coef = coef.reshape(1, -1)
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                     if coef[idx]:
