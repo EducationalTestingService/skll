@@ -157,7 +157,7 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
 
 _REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor)
 
-MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
+MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
 
 # pylint: disable=W0223,R0903
@@ -1108,10 +1108,9 @@ class Learner(object):
             else:
                 # use the number of unique fold IDs as the number of grid jobs
                 if not grid_jobs:
-                    grid_jobs = len(np.unique(grid_search_folds))
+                    grid_jobs = len(set(grid_search_folds.values()))
                 else:
-                    grid_jobs = min(len(np.unique(grid_search_folds)),
-                                    grid_jobs)
+                    grid_jobs = min(len(set(grid_search_folds.values())), grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(itervalues(grid_search_folds))
                 fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
@@ -1515,8 +1514,7 @@ class Learner(object):
             # the outer cross-validation.
             # Only retain IDs within folds if they're in grid_search_folds
             dummy_label = next(itervalues(cv_folds))
-            fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in
-                           examples.ids]
+            fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
             # Only retain IDs within folds if they're in cv_folds
             kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
             cv_groups = fold_groups
