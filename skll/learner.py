@@ -1097,8 +1097,7 @@ class Learner(object):
             # set up grid search folds
             if isinstance(grid_search_folds, int):
                 grid_search_folds = \
-                    self._compute_num_folds_from_example_counts(
-                        grid_search_folds, labels)
+                    self._compute_num_folds_from_example_counts(grid_search_folds, labels)
 
                 if not grid_jobs:
                     grid_jobs = grid_search_folds
@@ -1107,15 +1106,17 @@ class Learner(object):
                 folds = grid_search_folds
             else:
                 # use the number of unique fold IDs as the number of grid jobs
+                num_specified_folds = len(set(grid_search_folds.values()))
                 if not grid_jobs:
-                    grid_jobs = len(set(grid_search_folds.values()))
+                    grid_jobs = num_specified_folds
                 else:
-                    grid_jobs = min(len(set(grid_search_folds.values())), grid_jobs)
+                    grid_jobs = min(num_specified_folds, grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(itervalues(grid_search_folds))
                 fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
                                curr_id in examples.ids]
-                folds = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids).split(examples.features, examples.labels, fold_groups)
+                kfold = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids)
+                folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # Use default parameter grid if we weren't passed one
             if not param_grid:
@@ -1415,10 +1416,18 @@ class Learner(object):
             cv_folds = min_examples_per_label
         return cv_folds
 
-    def cross_validate(self, examples, stratified=True, cv_folds=10,
-                       grid_search=False, grid_search_folds=3, grid_jobs=None,
-                       grid_objective='f1_score_micro', prediction_prefix=None,
-                       param_grid=None, shuffle=False, save_cv_folds=False):
+    def cross_validate(self,
+                       examples,
+                       stratified=True,
+                       cv_folds=10,
+                       grid_search=False,
+                       grid_search_folds=3,
+                       grid_jobs=None,
+                       grid_objective='f1_score_micro',
+                       prediction_prefix=None,
+                       param_grid=None,
+                       shuffle=False,
+                       save_cv_folds=False):
         """
         Cross-validates a given model on the training examples.
 
@@ -1434,9 +1443,9 @@ class Learner(object):
                             Note: This will make this take *much* longer.
         :type grid_search: bool
         :param grid_search_folds: The number of folds to use when doing the
-                                  grid search (ignored if cv_folds is set to
-                                  a dictionary mapping examples to folds).
-        :type grid_search_folds: int
+                                  grid search, or a mapping from
+                                  example IDs to folds.
+        :type grid_search_folds: int or dict
         :param grid_jobs: The number of jobs to run in parallel when doing the
                           grid search. If unspecified or 0, the number of
                           grid search folds will be used.
@@ -1512,13 +1521,11 @@ class Learner(object):
             # training fold.  Note that this means that the grid search
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
-            # Only retain IDs within folds if they're in grid_search_folds
             dummy_label = next(itervalues(cv_folds))
             fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
             # Only retain IDs within folds if they're in cv_folds
             kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
             cv_groups = fold_groups
-            grid_search_folds = cv_folds
 
         # Save the cross-validation fold information, if required
         # The format is that the test-fold that each id appears in is stored
