@@ -91,6 +91,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
                                    'folds_file': 'Input',
+                                   'cv_folds_file': 'Input',
                                    'feature_hasher': 'Input',
                                    'feature_scaling': 'Input',
                                    'featuresets': 'Input',
