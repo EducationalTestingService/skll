@@ -51,9 +51,9 @@ def tearDown():
     """
     Clean up after tests.
     """
-    # config_dir = join(_my_dir, 'configs')
-    # for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
-    #     os.unlink(config_file)
+    config_dir = join(_my_dir, 'configs')
+    for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
+        os.unlink(config_file)
 
 
 def check_safe_float_conversion(converted_val, expected_val):
@@ -1068,8 +1068,8 @@ def test_cv_folds_and_grid_search_folds():
     # ('cross_validate', 'train/cv_folds_file_test.csv', 7, True) ->  (fold_mapping, fold_mapping)
     # ('cross_validate', 'train/cv_folds_file_test.csv', 7, False) ->  (fold_mapping, 7)
 
-    # read in the folds file into a dictionary since we'll need to use it here
-    fold_mapping = _load_cv_folds(join(_my_dir, 'train/cv_folds_file_test.csv'), ids_to_floats=False)
+    # note that we are passing the string 'fold_mapping' instead of passing in the
+    # actual fold mapping dictionary since we don't want it printed in the test log
 
     for ((task,
           cv_folds_or_file,
@@ -1084,18 +1084,18 @@ def test_cv_folds_and_grid_search_folds():
                                              (None, 7), (None, 7), (None, 7),
                                              (None, 3), (None, 3), (None, 3),
                                              (None, 7), (None, 7), (None, 7),
-                                             (None, fold_mapping), (None, fold_mapping),
-                                             (None, fold_mapping), (None, fold_mapping),
-                                             (None, fold_mapping), (None, fold_mapping),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
                                              (10, 3), (10, 3), (10, 3), (10, 7),
                                              (10, 7), (10, 7), (5, 3), (5, 3),
                                              (5, 3), (5, 7), (5, 7), (5, 7),
-                                             (fold_mapping, fold_mapping),
-                                             (fold_mapping, fold_mapping),
-                                             (fold_mapping, 3),
-                                             (fold_mapping, fold_mapping),
-                                             (fold_mapping, fold_mapping),
-                                             (fold_mapping, 7)]):
+                                             ('fold_mapping', 'fold_mapping'),
+                                             ('fold_mapping', 'fold_mapping'),
+                                             ('fold_mapping', 3),
+                                             ('fold_mapping', 'fold_mapping'),
+                                             ('fold_mapping', 'fold_mapping'),
+                                             ('fold_mapping', 7)]):
 
          yield check_cv_folds_and_grid_search_folds, task, cv_folds_or_file, \
                     grid_search_folds, use_folds_file_for_grid_search, \
@@ -1111,6 +1111,15 @@ def check_cv_folds_and_grid_search_folds(task,
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
+
+
+    # read in the folds file into a dictionary and replace the string
+    # 'fold_mapping' with this dictionary.
+    fold_mapping = _load_cv_folds(join(_my_dir, 'train/cv_folds_file_test.csv'), ids_to_floats=False)
+    if chosen_grid_search_folds == 'fold_mapping':
+        chosen_grid_search_folds = fold_mapping
+    if chosen_cv_folds == 'fold_mapping':
+        chosen_cv_folds = fold_mapping
 
     # make a simple config file
     values_to_fill_dict = {'experiment_name': 'config_parsing',
