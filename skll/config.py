@@ -427,6 +427,14 @@ def _parse_config_file(config_path):
     id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
+    # if cv_folds_file is specified, raise a deprecation warning
+    if config.has_option("Input", "cv_folds_file"):
+        logger.warning("The parameter \"cv_folds_file\" "
+                       "is deprecated and will be removed in the next "
+                       "release, please use \"folds_file\" instead.")
+        value = config.get("Input", "cv_folds_file")
+        config.set("Input", "folds_file", value)
+
     # if an external folds file is specified, then read it into a dictionary
     folds_file = _locate_file(config.get("Input", "folds_file"), config_dir)
     num_cv_folds = config.getint("Input", "num_cv_folds")
