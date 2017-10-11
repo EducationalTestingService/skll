@@ -626,16 +626,23 @@ def _parse_config_file(config_path):
     #       grid-search loop as well.
     cv_folds = None
     if task == 'train' and specified_folds_mapping:
-        logger.warning("Specifying \"folds_file\" overrides both explicit and default \"grid_search_folds\".")
         grid_search_folds = specified_folds_mapping
+        # only print out the warning if the user actually wants to do grid search
+        if do_grid_search:
+            logger.warning("Specifying \"folds_file\" overrides both "
+                           "explicit and default \"grid_search_folds\".")
     if task == 'cross_validate':
-        logger.warning("Specifying \"folds_file\" overrides both explicit and default \"num_cv_folds\".")
+        logger.warning("Specifying \"folds_file\" overrides both "
+                       "explicit and default \"num_cv_folds\".")
         cv_folds = specified_folds_mapping if specified_folds_mapping else specified_num_folds
         if specified_folds_mapping:
             if use_folds_file_for_grid_search:
                 grid_search_folds = cv_folds
             else:
-                logger.warning("The specified \"folds_file\" will not be used for inner grid search.")
+                # only print out the warning if the user wants to do grid search
+                if do_grid_search:
+                    logger.warning("The specified \"folds_file\" will "
+                                   "not be used for inner grid search.")
 
     # Create feature set names if unspecified
     if not featureset_names:
