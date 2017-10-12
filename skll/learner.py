@@ -1465,11 +1465,13 @@ class Learner(object):
         :type prediction_prefix: str
         :param shuffle: Shuffle examples before splitting into folds for CV.
         :type shuffle: bool
-        :param save_cv_folds: Whether to save the cv fold ids or not
+        :param save_cv_folds: Whether to save the cv fold ids or not?
         :type save_cv_folds: bool
-        :param use_custom_folds_for_grid_search: If ```cv_folds``` is a custom dictionary,
-                                                 should the same custom dictionary be used
-                                                 for the inner grid-search cross-validation.
+        :param use_custom_folds_for_grid_search: If ``cv_folds`` is a custom dictionary, but
+                                                 ``grid_search_folds`` is not, perhaps due to user
+                                                 oversight, should the same custom dictionary
+                                                 automatically be used for the inner grid-search
+                                                 cross-validation?
         :type use_custom_folds_for_grid_search: bool
 
         :return: The confusion matrix, overall accuracy, per-label PRFs, and
