@@ -1427,7 +1427,8 @@ class Learner(object):
                        prediction_prefix=None,
                        param_grid=None,
                        shuffle=False,
-                       save_cv_folds=False):
+                       save_cv_folds=False,
+                       use_custom_folds_for_grid_search=True):
         """
         Cross-validates a given model on the training examples.
 
@@ -1466,6 +1467,10 @@ class Learner(object):
         :type shuffle: bool
         :param save_cv_folds: Whether to save the cv fold ids or not
         :type save_cv_folds: bool
+        :param use_custom_folds_for_grid_search: If ```cv_folds``` is a custom dictionary,
+                                                 should the same custom dictionary be used
+                                                 for the inner grid-search cross-validation.
+        :type use_custom_folds_for_grid_search: bool
 
         :return: The confusion matrix, overall accuracy, per-label PRFs, and
                  model parameters for each fold in one list, and another list
@@ -1503,8 +1508,8 @@ class Learner(object):
 
         # Set up the cross-validation iterator.
         if isinstance(cv_folds, int):
-            cv_folds = self._compute_num_folds_from_example_counts(
-                cv_folds, examples.labels)
+            cv_folds = self._compute_num_folds_from_example_counts(cv_folds,
+                                                                   examples.labels)
 
             stratified = (stratified and
                           self.model_type._estimator_type == 'classifier')
@@ -1526,6 +1531,14 @@ class Learner(object):
             # Only retain IDs within folds if they're in cv_folds
             kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
             cv_groups = fold_groups
+
+            # set the grid search folds to be the same as the custom cv folds
+            # unless a flag is set that explicitly tells us not to. Note that
+            # this should only happen when we are using the API; otherwise
+            # the configparser should take care of this even before this
+            # method is called
+            if cv_folds != grid_search_folds and use_custom_folds_for_grid_search:
+                grid_search_folds = cv_folds
 
         # Save the cross-validation fold information, if required
         # The format is that the test-fold that each id appears in is stored
