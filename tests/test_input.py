@@ -1043,12 +1043,12 @@ def test_cv_folds_and_grid_search_folds():
     # ('train', 5, 7, None) ->  (None, 7)
     # ('train', 5, 7, True) ->  (None, 7)
     # ('train', 5, 7, False) ->  (None, 7)
-    # ('train', 'train/cv_folds_file_test.csv', None, None) ->  (None, fold_mapping)
-    # ('train', 'train/cv_folds_file_test.csv', None, True) ->  (None, fold_mapping)
-    # ('train', 'train/cv_folds_file_test.csv', None, False) ->  (None, fold_mapping)
-    # ('train', 'train/cv_folds_file_test.csv', 7, None) ->  (None, fold_mapping)
-    # ('train', 'train/cv_folds_file_test.csv', 7, True) ->  (None, fold_mapping)
-    # ('train', 'train/cv_folds_file_test.csv', 7, False) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', None, None) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', None, True) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', None, False) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', 7, None) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', 7, True) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', 7, False) ->  (None, fold_mapping)
     # ('cross_validate', None, None, None) ->  (10, 3)
     # ('cross_validate', None, None, True) ->  (10, 3)
     # ('cross_validate', None, None, False) ->  (10, 3)
@@ -1061,12 +1061,12 @@ def test_cv_folds_and_grid_search_folds():
     # ('cross_validate', 5, 7, None) ->  (5, 7)
     # ('cross_validate', 5, 7, True) ->  (5, 7)
     # ('cross_validate', 5, 7, False) ->  (5, 7)
-    # ('cross_validate', 'train/cv_folds_file_test.csv', None, None) ->  (fold_mapping, fold_mapping)
-    # ('cross_validate', 'train/cv_folds_file_test.csv', None, True) ->  (fold_mapping, fold_mapping)
-    # ('cross_validate', 'train/cv_folds_file_test.csv', None, False) ->  (fold_mapping, 3)
-    # ('cross_validate', 'train/cv_folds_file_test.csv', 7, None) ->  (fold_mapping, fold_mapping)
-    # ('cross_validate', 'train/cv_folds_file_test.csv', 7, True) ->  (fold_mapping, fold_mapping)
-    # ('cross_validate', 'train/cv_folds_file_test.csv', 7, False) ->  (fold_mapping, 7)
+    # ('cross_validate', 'train/folds_file_test.csv', None, None) ->  (fold_mapping, fold_mapping)
+    # ('cross_validate', 'train/folds_file_test.csv', None, True) ->  (fold_mapping, fold_mapping)
+    # ('cross_validate', 'train/folds_file_test.csv', None, False) ->  (fold_mapping, 3)
+    # ('cross_validate', 'train/folds_file_test.csv', 7, None) ->  (fold_mapping, fold_mapping)
+    # ('cross_validate', 'train/folds_file_test.csv', 7, True) ->  (fold_mapping, fold_mapping)
+    # ('cross_validate', 'train/folds_file_test.csv', 7, False) ->  (fold_mapping, 7)
 
     # note that we are passing the string 'fold_mapping' instead of passing in the
     # actual fold mapping dictionary since we don't want it printed in the test log
@@ -1077,7 +1077,7 @@ def test_cv_folds_and_grid_search_folds():
           use_folds_file_for_grid_search),
          (chosen_cv_folds,
           chosen_grid_search_folds)) in zip(product(['train', 'cross_validate'],
-                                                  [None, 5, join(_my_dir, 'train/cv_folds_file_test.csv')],
+                                                  [None, 5, join(_my_dir, 'train/folds_file_test.csv')],
                                                   [None, 7],
                                                   [None, True, False]),
                                             [(None, 3),  (None, 3), (None, 3),
@@ -1115,7 +1115,7 @@ def check_cv_folds_and_grid_search_folds(task,
 
     # read in the folds file into a dictionary and replace the string
     # 'fold_mapping' with this dictionary.
-    fold_mapping = _load_cv_folds(join(_my_dir, 'train/cv_folds_file_test.csv'), ids_to_floats=False)
+    fold_mapping = _load_cv_folds(join(_my_dir, 'train/folds_file_test.csv'), ids_to_floats=False)
     if chosen_grid_search_folds == 'fold_mapping':
         chosen_grid_search_folds = fold_mapping
     if chosen_cv_folds == 'fold_mapping':
