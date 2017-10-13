@@ -455,7 +455,7 @@ def _parse_config_file(config_path):
     random_folds = config.getboolean("Input", "random_folds")
     if random_folds:
         if folds_file:
-            logger.warning('Specifying \"folds_file\" overrides \"random_folds\".')
+            logger.warning('Specifying "folds_file" overrides "random_folds".')
         do_stratified_folds = False
     else:
         do_stratified_folds = True
