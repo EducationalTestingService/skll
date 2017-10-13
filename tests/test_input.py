@@ -1038,7 +1038,7 @@ def test_cv_folds_and_grid_search_folds():
     # ('train', None, 7, True) ->  (None, 7)
     # ('train', None, 7, False) ->  (None, 7)
     # ('train', 5, None, None) ->  (None, 3)
-    # ('train', 5, None, True) ->  (None. 3)
+    # ('train', 5, None, True) ->  (None, 3)
     # ('train', 5, None, False) ->   (None, 3)
     # ('train', 5, 7, None) ->  (None, 7)
     # ('train', 5, 7, True) ->  (None, 7)
