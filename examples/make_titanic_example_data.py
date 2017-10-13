@@ -60,30 +60,30 @@ def main():
     num_train_dev = len(train_fs)
     num_train = int((num_train_dev / 5) * 4)
     writer = Writer.for_path('titanic/train/.csv',
-                                       train_fs[:num_train],
-                                       id_col='PassengerId',
-                                       label_col='Survived',
-                                       quiet=False,
-                                       subsets=subset_dict)
+                             train_fs[:num_train],
+                             id_col='PassengerId',
+                             label_col='Survived',
+                             quiet=False,
+                             subsets=subset_dict)
     writer.write()
 
     # Write train+dev set for training model to use to generate predictions on
     # test
     writer = Writer.for_path('titanic/train+dev/.csv',
-                                       train_fs,
-                                       label_col='Survived',
-                                       id_col='PassengerId',
-                                       quiet=False,
-                                       subsets=subset_dict)
+                             train_fs,
+                             label_col='Survived',
+                             id_col='PassengerId',
+                             quiet=False,
+                             subsets=subset_dict)
     writer.write()
 
     # Write dev FeatureSet
     writer = Writer.for_path('titanic/dev/.csv',
-                                       train_fs[num_train:],
-                                       label_col='Survived',
-                                       id_col='PassengerId',
-                                       quiet=False,
-                                       subsets=subset_dict)
+                             train_fs[num_train:],
+                             label_col='Survived',
+                             id_col='PassengerId',
+                             quiet=False,
+                             subsets=subset_dict)
     writer.write()
 
     # Read and write test FeatureSet
