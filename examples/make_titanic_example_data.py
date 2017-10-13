@@ -53,9 +53,12 @@ def main():
         os.makedirs('titanic/test')
 
     # Read and write training FeatureSet
-    train_fs = Reader.for_path('train.csv', label_col='Survived',
-                               id_col='PassengerId', quiet=False,
+    train_fs = Reader.for_path('train.csv',
+                               label_col='Survived',
+                               id_col='PassengerId',
+                               quiet=False,
                                sparse=False).read()
+
     train_fs.filter(features=features_to_keep)
     num_train_dev = len(train_fs)
     num_train = int((num_train_dev / 5) * 4)
@@ -87,17 +90,20 @@ def main():
     writer.write()
 
     # Read and write test FeatureSet
-    test_fs = Reader.for_path('test.csv', label_col='Survived', quiet=False,
+    test_fs = Reader.for_path('test.csv',
+                              label_col='Survived',
+                              quiet=False,
                               sparse=False).read()
+
     test_fs.filter(features=features_to_keep)
     num_test = len(test_fs)
     test_fs.ids = list(range(num_train_dev + 1, num_test + num_train_dev + 1))
     writer = Writer.for_path('titanic/test/.csv',
-                                       test_fs,
-                                       label_col='Survived',
-                                       id_col='PassengerId',
-                                       quiet=False,
-                                       subsets=subset_dict)
+                             test_fs,
+                             label_col='Survived',
+                             id_col='PassengerId',
+                             quiet=False,
+                             subsets=subset_dict)
     writer.write()
 
 
