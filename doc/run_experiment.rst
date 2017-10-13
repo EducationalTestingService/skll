@@ -418,12 +418,13 @@ folds_file *(Optional)*
 
 Path to a csv file specifying the mapping of instances in the training data
 to folds. This can be specified when the :ref:`task` is either ``train`` or
-``cross_validate``. For the ``train`` task, if :ref:`grid_search` is ``True``,
-this file will be used to define the cross-validation used for the grid search
-(leave one fold ID out at a time). Otherwise, it will be ignored.
+``cross_validate``. For the ``train`` task, if :ref:`grid_search <grid_search>`
+is ``True``, this file, if specified, will be used to define the
+cross-validation used for the grid search (leave one fold ID out at a time).
+Otherwise, it will be ignored.
 
 For the ``cross_validate`` task, this file will be used to define the outer
-cross-validation loop and, if :ref:`grid_search` is ``True``, also for the
+cross-validation loop and, if :ref:`grid_search <grid_search>` is ``True``, also for the
 inner grid-search cross-validation loop. If the goal of specifiying the folds
 file is to ensure that the model does not learn to differentiate based on a confound:
 e.g. the data from the same person is always in the same fold, it makes sense to
@@ -433,11 +434,12 @@ However, sometimes the goal of specifying the folds file is simply for the
 purposes of comparison to another existing experiment or another context
 in which maintaining the constitution of the folds in the inner
 grid-search loop is not required. In this case, users may set the parameter
-:ref:`use_folds_file_for_grid_search` to ``False`` which will then direct the
-inner grid-search cross-validation loop to simply use the number specified
-via :ref:`grid_search_folds` instead of using the folds file. This will likely
-lead to shorter execution times as well depending on how many folds are in the
-folds file and the value of :ref:`grid_search_folds`.
+:ref:`use_folds_file_for_grid_search <use_folds_file_for_grid_search>`
+to ``False`` which will then direct the inner grid-search cross-validation loop
+to simply use the number specified via :ref:`grid_search_folds <grid_search_folds>`
+instead of using the folds file. This will likely lead to shorter execution times as
+well depending on how many folds are in the folds file and the value
+of :ref:`grid_search_folds <grid_search_folds>`.
 
 The format of this file must be as follows: the first row must be a header.
 This header row is ignored, so it doesn't matter what the header row contains,
@@ -696,9 +698,15 @@ number of grid search folds.
 use_folds_file_for_grid_search *(Optional)*
 """""""""""""""""""""""""""""""""""""""""""
 
-Whether to use the specified :ref:`folds_file` for the inner grid-search
-cross-validation loop when :ref:`task` is set to ``cross_validate``. Ignored
-for all other tasks. Defaults to ``True``.
+Whether to use the specified :ref:`folds_file <folds_file>` for the inner grid-search
+cross-validation loop when :ref:`task` is set to ``cross_validate``.
+Defaults to ``True``.
+
+.. note::
+
+    This flag is ignored for all other tasks, including the
+    ``train`` task where a specified :ref:`folds_file <folds_file>` is
+    *always* used for the grid search.
 
 .. _min_feature_count:
 
