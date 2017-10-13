@@ -927,9 +927,9 @@ predictions.
 save_cv_folds *(Optional)*
 """"""""""""""""""""""""""
 
-Whether or not to save the folds that were used for a cross-validation
-experiment to a CSV file named ``EXPERIMENT_skll_fold_ids.csv`` in the
-:ref:`results` directory, where ``EXPERIMENT`` refers to the :ref:`experiment_name`.
+Whether to save the folds that were used for a cross-validation experiment
+to a CSV file named ``EXPERIMENT_skll_fold_ids.csv`` in the :ref:`results`
+directory, where ``EXPERIMENT`` refers to the :ref:`experiment_name`.
 Defaults to ``False``.
 
 .. _run_experiment:
