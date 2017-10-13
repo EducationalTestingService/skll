@@ -127,13 +127,15 @@ class FeatureSet(object):
                 raise ValueError('FeatureSets can only be iterated through if '
                                  'they use a DictVectorizer for their feature '
                                  'vectorizer.')
-            for id_, label_, feats in zip(self.ids, self.labels,
-                                          self.features):
+            for id_, label_, feats in zip(self.ids, self.labels, self.features):
+
+                # convert feats to a 2D array since that's required
+                feats = feats.reshape(1, -1)
+
                 # When calling inverse_transform we have to add [0] to get the
                 # results for the current instance because it always returns a
                 # 2D array
-                yield (id_, label_,
-                       self.vectorizer.inverse_transform(feats)[0])
+                yield (id_, label_, self.vectorizer.inverse_transform(feats)[0])
         else:
             return
 
@@ -300,6 +302,8 @@ class FeatureSet(object):
             # Skip instances with labels not in filter
             if labels is not None and (label_ in labels) == inverse:
                 continue
+            # reshape the feature 1D array to make it 2D
+            feats = feats.reshape(1, -1)
             feat_dict = self.vectorizer.inverse_transform(feats)[0]
             if features is not None:
                 feat_dict = {name: value for name, value in
