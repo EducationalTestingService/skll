@@ -584,7 +584,7 @@ def _classify_featureset(args):
                                                      param_grid=param_grid,
                                                      grid_jobs=grid_search_jobs,
                                                      save_cv_folds=save_cv_folds,
-                                                     use_folds_file_for_grid_search=use_folds_file_for_grid_search)
+                                                     use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
         elif task == 'learning_curve':
             print('\tgenerating learning curve', file=log_file)
             (curve_train_scores,
