@@ -1521,7 +1521,7 @@ class Learner(object):
             else:
                 kfold = KFold(n_splits=cv_folds, random_state=random_state)
                 cv_groups = None
-        # Otherwise cv_volds is a dict
+        # Otherwise cv_folds is a dict
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
