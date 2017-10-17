@@ -294,10 +294,11 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
-    print('Grid Search Folds: {}'.format(lrd['grid_search_folds']),
-          file=output_file)
-    print('Grid Objective Function: {}'.format(lrd['grid_objective']),
-          file=output_file)
+    if lrd['grid_search']:
+        print('Grid Search Folds: {}'.format(lrd['grid_search_folds']),
+              file=output_file)
+        print('Grid Objective Function: {}'.format(lrd['grid_objective']),
+              file=output_file)
     if (lrd['task'] == 'cross_validate' and
         lrd['grid_search'] and
         lrd['cv_folds'].endswith('fold file')):
