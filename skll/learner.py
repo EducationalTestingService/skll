@@ -1539,7 +1539,9 @@ class Learner(object):
             # this should only happen when we are using the API; otherwise
             # the configparser should take care of this even before this
             # method is called
-            if cv_folds != grid_search_folds and use_custom_folds_for_grid_search:
+            if use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
+                logger.warning("The specified custom folds will be used for "
+                               "the inner grid search.")
                 grid_search_folds = cv_folds
 
         # Save the cross-validation fold information, if required
