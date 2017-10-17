@@ -170,7 +170,7 @@ def check_summary_score(use_feature_hashing=False):
             # the learner results dictionaries should have 29 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 30)
+            eq_(len(row), 32)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
