@@ -1534,12 +1534,12 @@ class Learner(object):
             kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
             cv_groups = fold_groups
 
-            # set the grid search folds to be the same as the custom cv folds
-            # unless a flag is set that explicitly tells us not to. Note that
-            # this should only happen when we are using the API; otherwise
-            # the configparser should take care of this even before this
-            # method is called
-            if use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
+            # If we are planning to do grid search, set the grid search folds
+            # to be the same as the custom cv folds unless a flag is set that
+            # explicitly tells us not to. Note that this should only happen
+            # when we are using the API; otherwise the configparser should
+            # take care of this even before this method is called
+            if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
                 logger.warning("The specified custom folds will be used for "
                                "the inner grid search.")
                 grid_search_folds = cv_folds
