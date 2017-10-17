@@ -16,7 +16,7 @@ things work, do the following from the command prompt:
 .. code-block:: bash
 
     $ cd examples
-    $ python make_example_iris_data.py          # download a simple dataset
+    $ python make_iris_example_data.py          # download a simple dataset
     $ cd iris
     $ run_experiment --local evaluate.cfg        # run an experiment
 
