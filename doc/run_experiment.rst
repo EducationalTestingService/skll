@@ -431,7 +431,7 @@ e.g. the data from the same person is always in the same fold, it makes sense to
 keep the same folds for both the outer and the inner cross-validation loops.
 
 However, sometimes the goal of specifying the folds file is simply for the
-purposes of comparison to another existing experiment or another context
+purpose of comparison to another existing experiment or another context
 in which maintaining the constitution of the folds in the inner
 grid-search loop is not required. In this case, users may set the parameter
 :ref:`use_folds_file_for_grid_search <use_folds_file_for_grid_search>`
