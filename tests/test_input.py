@@ -15,12 +15,15 @@ from __future__ import (absolute_import, division, print_function,
 import os
 import tempfile
 from glob import glob
+from itertools import product
 from os.path import abspath, dirname, exists, join, normpath
 import numpy as np
 
 from nose.tools import eq_, ok_, raises
 
-from skll.config import _parse_config_file, _locate_file
+from six import string_types
+
+from skll.config import _parse_config_file, _load_cv_folds, _locate_file
 from skll.data.readers import safe_float
 from skll.experiments import _load_featureset
 
@@ -936,7 +939,8 @@ def test_config_parsing_mse_to_neg_mse():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
@@ -971,7 +975,8 @@ def test_config_parsing_relative_input_path():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
@@ -985,7 +990,6 @@ def test_config_parsing_relative_input_paths():
     train_file = join(train_dir, 'f0.jsonlines')
     test_file = join(train_dir, 'f1.jsonlines')
     output_dir = '../output'
-    custom_learner_path_input = join('other', 'majority_class_learner.py')
 
     # make a simple config file that has relative paths
     values_to_fill_dict = {'experiment_name': 'config_parsing',
@@ -1008,10 +1012,165 @@ def test_config_parsing_relative_input_paths():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+
+
+def test_cv_folds_and_grid_search_folds():
+
+    # we want to test all possible combinations of the following variables:
+    #  task = train, cross_validate
+    #  cv_folds/folds_file = not specified, number, csv file
+    #  grid_search_folds = not specified, number
+    #  use_folds_file_for_grid_search = not specified, True, False
+
+    # below is a table of what we expect for each of the combinations
+    # note: `fold_mapping` refers to the dictionary version of the folds file
+
+    # task, cv_folds/folds_file, grid_search_folds, use_folds_file_for_grid_search -> cv_folds, grid_search_folds
+    # ('train', None, None, None) ->  (None, 3)
+    # ('train', None, None, True) ->  (None, 3)
+    # ('train', None, None, False) ->  (None, 3)
+    # ('train', None, 7, None) ->  (None, 7)
+    # ('train', None, 7, True) ->  (None, 7)
+    # ('train', None, 7, False) ->  (None, 7)
+    # ('train', 5, None, None) ->  (None, 3)
+    # ('train', 5, None, True) ->  (None, 3)
+    # ('train', 5, None, False) ->   (None, 3)
+    # ('train', 5, 7, None) ->  (None, 7)
+    # ('train', 5, 7, True) ->  (None, 7)
+    # ('train', 5, 7, False) ->  (None, 7)
+    # ('train', 'train/folds_file_test.csv', None, None) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', None, True) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', None, False) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', 7, None) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', 7, True) ->  (None, fold_mapping)
+    # ('train', 'train/folds_file_test.csv', 7, False) ->  (None, fold_mapping)
+    # ('cross_validate', None, None, None) ->  (10, 3)
+    # ('cross_validate', None, None, True) ->  (10, 3)
+    # ('cross_validate', None, None, False) ->  (10, 3)
+    # ('cross_validate', None, 7, None) ->  (10, 7)
+    # ('cross_validate', None, 7, True) ->  (10, 7)
+    # ('cross_validate', None, 7, False) ->  (10, 7)
+    # ('cross_validate', 5, None, None) ->  (5, 3)
+    # ('cross_validate', 5, None, True) ->  (5, 3)
+    # ('cross_validate', 5, None, False) ->  (5, 3)
+    # ('cross_validate', 5, 7, None) ->  (5, 7)
+    # ('cross_validate', 5, 7, True) ->  (5, 7)
+    # ('cross_validate', 5, 7, False) ->  (5, 7)
+    # ('cross_validate', 'train/folds_file_test.csv', None, None) ->  (fold_mapping, fold_mapping)
+    # ('cross_validate', 'train/folds_file_test.csv', None, True) ->  (fold_mapping, fold_mapping)
+    # ('cross_validate', 'train/folds_file_test.csv', None, False) ->  (fold_mapping, 3)
+    # ('cross_validate', 'train/folds_file_test.csv', 7, None) ->  (fold_mapping, fold_mapping)
+    # ('cross_validate', 'train/folds_file_test.csv', 7, True) ->  (fold_mapping, fold_mapping)
+    # ('cross_validate', 'train/folds_file_test.csv', 7, False) ->  (fold_mapping, 7)
+
+    # note that we are passing the string 'fold_mapping' instead of passing in the
+    # actual fold mapping dictionary since we don't want it printed in the test log
+
+    for ((task,
+          cv_folds_or_file,
+          grid_search_folds,
+          use_folds_file_for_grid_search),
+         (chosen_cv_folds,
+          chosen_grid_search_folds)) in zip(product(['train', 'cross_validate'],
+                                                  [None, 5, join(_my_dir, 'train/folds_file_test.csv')],
+                                                  [None, 7],
+                                                  [None, True, False]),
+                                            [(None, 3),  (None, 3), (None, 3),
+                                             (None, 7), (None, 7), (None, 7),
+                                             (None, 3), (None, 3), (None, 3),
+                                             (None, 7), (None, 7), (None, 7),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (10, 3), (10, 3), (10, 3), (10, 7),
+                                             (10, 7), (10, 7), (5, 3), (5, 3),
+                                             (5, 3), (5, 7), (5, 7), (5, 7),
+                                             ('fold_mapping', 'fold_mapping'),
+                                             ('fold_mapping', 'fold_mapping'),
+                                             ('fold_mapping', 3),
+                                             ('fold_mapping', 'fold_mapping'),
+                                             ('fold_mapping', 'fold_mapping'),
+                                             ('fold_mapping', 7)]):
+
+         yield check_cv_folds_and_grid_search_folds, task, cv_folds_or_file, \
+                    grid_search_folds, use_folds_file_for_grid_search, \
+                    chosen_cv_folds, chosen_grid_search_folds
+
+
+def check_cv_folds_and_grid_search_folds(task,
+                                         cv_folds_or_file,
+                                         grid_search_folds,
+                                         use_folds_file_for_grid_search,
+                                         chosen_cv_folds,
+                                         chosen_grid_search_folds):
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+
+    # read in the folds file into a dictionary and replace the string
+    # 'fold_mapping' with this dictionary.
+    fold_mapping = _load_cv_folds(join(_my_dir, 'train/folds_file_test.csv'), ids_to_floats=False)
+    if chosen_grid_search_folds == 'fold_mapping':
+        chosen_grid_search_folds = fold_mapping
+    if chosen_cv_folds == 'fold_mapping':
+        chosen_cv_folds = fold_mapping
+
+    # make a simple config file
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': task,
+                           'grid_search': 'true',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'objective': 'f1_score_macro'}
+
+    # we need the models field when training but the results field
+    # when cross-validating
+    if task == 'train':
+        values_to_fill_dict['models'] = output_dir
+    elif task == 'cross_validate':
+        values_to_fill_dict['results'] = output_dir
+
+    # now add the various fields that are passed in
+    if isinstance(cv_folds_or_file, int):
+        values_to_fill_dict['num_cv_folds'] = str(cv_folds_or_file)
+    elif isinstance(cv_folds_or_file, string_types):
+        values_to_fill_dict['folds_file'] = cv_folds_or_file
+
+    if isinstance(grid_search_folds, int):
+        values_to_fill_dict['grid_search_folds'] = str(grid_search_folds)
+
+    if isinstance(use_folds_file_for_grid_search, bool):
+        values_to_fill_dict['use_folds_file_for_grid_search'] = \
+                                str(use_folds_file_for_grid_search).lower()
+
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'test_cv_and_grid_search_folds')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+
+    eq_(cv_folds, chosen_cv_folds)
+    eq_(grid_search_folds, chosen_grid_search_folds)
 
 
 def test_default_number_of_cv_folds():
@@ -1041,7 +1200,8 @@ def test_default_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
@@ -1053,8 +1213,8 @@ def test_setting_number_of_cv_folds():
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
-    # make a simple config file that does not set cv_folds
 
+    # make a simple config file that does not set cv_folds
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'cross_validate',
                            'train_directory': train_dir,
@@ -1076,7 +1236,8 @@ def test_setting_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
@@ -1114,7 +1275,8 @@ def test_setting_param_grids():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
@@ -1157,7 +1319,8 @@ def test_setting_fixed_parameters():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
@@ -1195,7 +1358,8 @@ def test_default_learning_curve_options():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
@@ -1231,7 +1395,8 @@ def test_setting_learning_curve_options():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objective, probability, results_path,
      pos_label_str, feature_scaling, min_feature_count,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds, do_stratified_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)

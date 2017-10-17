@@ -399,9 +399,11 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
 
 def _classify_featureset(args):
     """ Classification job to be submitted to grid """
+
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
     # required keyword arguments.)
+
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
     sampler = args.pop("sampler")
@@ -435,6 +437,7 @@ def _classify_featureset(args):
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
     save_cv_folds = args.pop("save_cv_folds")
+    use_folds_file_for_grid_search = args.pop("use_folds_file_for_grid_search")
     stratified_folds = args.pop("do_stratified_folds")
     label_col = args.pop("label_col")
     id_col = args.pop("id_col")
@@ -559,6 +562,7 @@ def _classify_featureset(args):
                                     'min_feature_count': min_feature_count,
                                     'cv_folds': cv_folds,
                                     'save_cv_folds': save_cv_folds,
+                                    'use_folds_file_for_grid_search': use_folds_file_for_grid_search,
                                     'stratified_folds': stratified_folds,
                                     'scikit_learn_version': SCIKIT_VERSION}
 
@@ -567,12 +571,20 @@ def _classify_featureset(args):
         task_results = None
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
-            task_results, grid_scores, skll_fold_ids = learner.cross_validate(
-                train_examples, shuffle=shuffle, stratified=stratified_folds,
-                prediction_prefix=prediction_prefix, grid_search=grid_search,
-                grid_search_folds=grid_search_folds, cv_folds=cv_folds,
-                grid_objective=grid_objective, param_grid=param_grid,
-                grid_jobs=grid_search_jobs, save_cv_folds=save_cv_folds)
+            (task_results,
+             grid_scores,
+             skll_fold_ids) = learner.cross_validate(train_examples,
+                                                     shuffle=shuffle,
+                                                     stratified=stratified_folds,
+                                                     prediction_prefix=prediction_prefix,
+                                                     grid_search=grid_search,
+                                                     grid_search_folds=grid_search_folds,
+                                                     cv_folds=cv_folds,
+                                                     grid_objective=grid_objective,
+                                                     param_grid=param_grid,
+                                                     grid_jobs=grid_search_jobs,
+                                                     save_cv_folds=save_cv_folds,
+                                                     use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
         elif task == 'learning_curve':
             print('\tgenerating learning curve', file=log_file)
             (curve_train_scores,
@@ -587,9 +599,6 @@ def _classify_featureset(args):
                 print(('\tfeaturizing and training new ' +
                        '{} model').format(learner_name),
                       file=log_file)
-
-                if not isinstance(cv_folds, int):
-                    grid_search_folds = cv_folds
 
                 best_score = learner.train(train_examples,
                                            shuffle=shuffle,
@@ -860,9 +869,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
      probability, results_path, pos_label_str, feature_scaling,
      min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
-     learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
+     param_grid_list, featureset_names, learners, prediction_dir, log_path, train_path,
+     test_path, ids_to_floats, class_map, custom_learner_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes) = _parse_config_file(config_file)
 
     # Check if we have gridmap
@@ -877,7 +886,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         if do_grid_search:
             do_grid_search = False
             logger.warning("Grid search is not supported during "
-                       "learning curve generation. Ignoring.")
+                           "learning curve generation. Ignoring.")
         if ablation is None or ablation > 0:
             ablation = 0
             logger.warning("Ablating features is not supported during "
@@ -1018,6 +1027,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["grid_search_folds"] = grid_search_folds
                 job_args["cv_folds"] = cv_folds
                 job_args["save_cv_folds"] = save_cv_folds
+                job_args["use_folds_file_for_grid_search"] = use_folds_file_for_grid_search
                 job_args["do_stratified_folds"] = do_stratified_folds
                 job_args["label_col"] = label_col
                 job_args["id_col"] = id_col
