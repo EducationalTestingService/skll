@@ -301,7 +301,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
               file=output_file)
     if (lrd['task'] == 'cross_validate' and
         lrd['grid_search'] and
-        lrd['cv_folds'].endswith('fold file')):
+        lrd['cv_folds'].endswith('folds file')):
         print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
               file=output_file)
     print('Scikit-learn Version: {}'.format(lrd['scikit_learn_version']),
