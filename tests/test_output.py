@@ -247,8 +247,9 @@ def check_xval_fancy_results_file(do_grid_search,
                            'predictions': output_dir,
                            'results': output_dir}
 
+    folds_file_path = join(_my_dir, 'train', 'folds_file_test.csv')
     if use_folds_file:
-        values_to_fill_dict['folds_file'] = join(_my_dir, 'train', 'folds_file_test.csv')
+        values_to_fill_dict['folds_file'] = folds_file_path
     values_to_fill_dict['grid_search'] = str(do_grid_search)
     values_to_fill_dict['use_folds_file_for_grid_search'] = str(use_folds_file_for_grid_search)
 
@@ -289,6 +290,7 @@ def check_xval_fancy_results_file(do_grid_search,
     if use_folds_file:
         eq_(results_dict['Number of Folds'], '5 via folds file')
         ok_('Stratified Folds' not in results_dict)
+        eq_(results_dict['Specified Folds File'], folds_file_path)
         if do_grid_search:
             if use_folds_file_for_grid_search:
                 eq_(results_dict['Grid Search Folds'], '5 via folds file')
@@ -300,6 +302,7 @@ def check_xval_fancy_results_file(do_grid_search,
         eq_(results_dict['Number of Folds'], '6')
         eq_(results_dict['Stratified Folds'], 'True')
         ok_('Using Folds File for Grid Search' not in results_dict)
+        ok_('Specified Folds File' not in results_dict)
         if do_grid_search:
             eq_(results_dict['Grid Search Folds'], '4')
 
