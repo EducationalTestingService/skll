@@ -168,7 +168,7 @@ def check_summary_score(use_feature_hashing=False):
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 29 rows,
+            # the learner results dictionaries should have 32 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
             eq_(len(row), 32)
