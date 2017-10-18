@@ -282,20 +282,28 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
     print('Learner: {}'.format(lrd['learner_name']), file=output_file)
     print('Task: {}'.format(lrd['task']), file=output_file)
+    if lrd['folds_file']:
+        print('Specified Folds File: {}'.format(lrd['folds_file']),
+              file=output_file)
     if lrd['task'] == 'cross_validate':
         print('Number of Folds: {}'.format(lrd['cv_folds']),
               file=output_file)
-        print('Stratified Folds: {}'.format(lrd['stratified_folds']),
-              file=output_file)
+        if not lrd['cv_folds'].endswith('folds file'):
+            print('Stratified Folds: {}'.format(lrd['stratified_folds']),
+                  file=output_file)
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
-    print('Grid Search Folds: {}'.format(lrd['grid_search_folds']),
-          file=output_file)
-    print('Grid Objective Function: {}'.format(lrd['grid_objective']),
-          file=output_file)
-    print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
-          file=output_file)
+    if lrd['grid_search']:
+        print('Grid Search Folds: {}'.format(lrd['grid_search_folds']),
+              file=output_file)
+        print('Grid Objective Function: {}'.format(lrd['grid_objective']),
+              file=output_file)
+    if (lrd['task'] == 'cross_validate' and
+        lrd['grid_search'] and
+        lrd['cv_folds'].endswith('folds file')):
+        print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
+              file=output_file)
     print('Scikit-learn Version: {}'.format(lrd['scikit_learn_version']),
           file=output_file)
     print('Start Timestamp: {}'.format(
@@ -433,6 +441,7 @@ def _classify_featureset(args):
     overwrite = args.pop("overwrite")
     feature_scaling = args.pop("feature_scaling")
     min_feature_count = args.pop("min_feature_count")
+    folds_file = args.pop("folds_file")
     grid_search_jobs = args.pop("grid_search_jobs")
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
@@ -540,6 +549,19 @@ def _classify_featureset(args):
         else:
             test_set_size = 'n/a'
 
+        # compute information about xval and grid folds that can be put in results
+        # in readable form
+        if isinstance(cv_folds, dict):
+            cv_folds_to_print = '{} via folds file'.format(len(set(cv_folds.values())))
+        else:
+            cv_folds_to_print = str(cv_folds)
+
+        if isinstance(grid_search_folds, dict):
+            grid_search_folds_to_print = '{} via folds file'.format(len(set(grid_search_folds.values())))
+        else:
+            grid_search_folds_to_print = str(grid_search_folds)
+
+
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
                                     'train_set_name': train_set_name,
@@ -556,11 +578,14 @@ def _classify_featureset(args):
                                                              '%S.%f'),
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
+                                    'folds_file': folds_file,
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective,
-                                    'grid_search_folds': grid_search_folds,
+                                    'grid_search_folds': grid_search_folds_to_print,
                                     'min_feature_count': min_feature_count,
-                                    'cv_folds': cv_folds,
+                                    'cv_folds': cv_folds_to_print,
+                                    'using_folds_file': isinstance(cv_folds, dict) \
+                                                         or isinstance(grid_search_folds, dict),
                                     'save_cv_folds': save_cv_folds,
                                     'use_folds_file_for_grid_search': use_folds_file_for_grid_search,
                                     'stratified_folds': stratified_folds,
@@ -867,8 +892,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
      hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
      featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
-     probability, results_path, pos_label_str, feature_scaling,
-     min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     probability, results_path, pos_label_str, feature_scaling, min_feature_count,
+     folds_file, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
      param_grid_list, featureset_names, learners, prediction_dir, log_path, train_path,
      test_path, ids_to_floats, class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1025,6 +1050,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["min_feature_count"] = min_feature_count
                 job_args["grid_search_jobs"] = grid_search_jobs
                 job_args["grid_search_folds"] = grid_search_folds
+                job_args["folds_file"] = folds_file
                 job_args["cv_folds"] = cv_folds
                 job_args["save_cv_folds"] = save_cv_folds
                 job_args["use_folds_file_for_grid_search"] = use_folds_file_for_grid_search

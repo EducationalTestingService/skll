@@ -1478,7 +1478,7 @@ class Learner(object):
                  model parameters for each fold in one list, and another list
                  with the grid search scores for each fold. Also return a
                  dictionary containing the test-fold number for each id
-                 if save_cv_folds is True, otherwise None.
+                 if ``save_cv_folds`` is ``True``, otherwise ``None``.
         :rtype: (list of 4-tuples, list of float, dict)
         """
 

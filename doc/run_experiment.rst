@@ -896,7 +896,7 @@ directory is used.
 log *(Optional)*
 """"""""""""""""
 
-Directory to store result files in. If omitted, the current working
+Directory to store log files in. If omitted, the current working
 directory is used.
 
 .. _models:

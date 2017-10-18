@@ -16,6 +16,7 @@ import os
 import sys
 from glob import glob
 from io import open
+from itertools import product
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
@@ -31,7 +32,7 @@ from skll.data import FeatureSet, NDJWriter, Reader
 from skll.experiments import _HAVE_PANDAS, _HAVE_SEABORN, run_configuration, _compute_ylimits_for_featureset
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
-from utils import fill_in_config_paths, make_classification_data
+from utils import fill_in_config_options, fill_in_config_paths, make_classification_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -57,7 +58,7 @@ def tearDown():
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
 
-    for suffix in ['learning_curve', 'summary']:
+    for suffix in ['learning_curve', 'summary', 'fancy_xval']:
         if exists(join(train_dir, 'test_{}.jsonlines'.format(suffix))):
             os.unlink(join(train_dir, 'test_{}.jsonlines'.format(suffix)))
 
@@ -167,10 +168,10 @@ def check_summary_score(use_feature_hashing=False):
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 29 rows,
+            # the learner results dictionaries should have 32 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 30)
+            eq_(len(row), 32)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -225,6 +226,97 @@ def test_summary():
 
     # test summary score with feature hashing
     yield check_summary_score, True
+
+
+def check_xval_fancy_results_file(do_grid_search,
+                                  use_folds_file,
+                                  use_folds_file_for_grid_search):
+
+    train_path = join(_my_dir, 'train', 'f0.jsonlines')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file for cross-validation
+    values_to_fill_dict = {'experiment_name': 'test_fancy_xval',
+                           'train_file': train_path,
+                           'task': 'cross_validate',
+                           'featureset_names': '["f0"]',
+                           'num_cv_folds': '6',
+                           'grid_search_folds': '4',
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'predictions': output_dir,
+                           'results': output_dir}
+
+    folds_file_path = join(_my_dir, 'train', 'folds_file_test.csv')
+    if use_folds_file:
+        values_to_fill_dict['folds_file'] = folds_file_path
+    values_to_fill_dict['grid_search'] = str(do_grid_search)
+    values_to_fill_dict['use_folds_file_for_grid_search'] = str(use_folds_file_for_grid_search)
+
+    config_template_path = join(_my_dir,
+                               'configs',
+                               'test_fancy.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'xval')
+
+    # run the experiment
+    run_configuration(config_path, quiet=True)
+
+    # now make sure that the results file was produced
+    results_file_path = join(_my_dir, 'output', 'test_fancy_xval_f0_LogisticRegression.results')
+    ok_(exists(results_file_path))
+
+    # read in all the lines and look at the lines up to where we print the "Total Time"
+    with open(results_file_path, 'r') as resultsf:
+        results_lines = resultsf.readlines()
+        end_idx = [results_lines.index(l) for l in results_lines if l.startswith('Total Time:')][0]
+        results_lines = results_lines[:end_idx+1]
+
+        # read in the "keys" and "values" separated by colons into a dictionary
+        results_dict = dict([rl.strip().split(': ') for rl in results_lines])
+
+    # check that the fields we expect in the results file are there
+    # and the ones that we do not expect aren't
+    if do_grid_search:
+        eq_(results_dict['Grid Search'], 'True')
+        eq_(results_dict['Grid Objective Function'], 'f1_score_micro')
+    else:
+        eq_(results_dict['Grid Search'], 'False')
+        ok_('Grid Search Folds' not in results_dict)
+        ok_('Grid Objective Function' not in results_dict)
+
+    if use_folds_file:
+        eq_(results_dict['Number of Folds'], '5 via folds file')
+        ok_('Stratified Folds' not in results_dict)
+        eq_(results_dict['Specified Folds File'], folds_file_path)
+        if do_grid_search:
+            if use_folds_file_for_grid_search:
+                eq_(results_dict['Grid Search Folds'], '5 via folds file')
+                eq_(results_dict['Using Folds File for Grid Search'], 'True')
+            else:
+                eq_(results_dict['Grid Search Folds'], '4')
+                eq_(results_dict['Using Folds File for Grid Search'], 'False')
+    else:
+        eq_(results_dict['Number of Folds'], '6')
+        eq_(results_dict['Stratified Folds'], 'True')
+        ok_('Using Folds File for Grid Search' not in results_dict)
+        ok_('Specified Folds File' not in results_dict)
+        if do_grid_search:
+            eq_(results_dict['Grid Search Folds'], '4')
+
+
+def test_xval_fancy_results_file():
+
+    for (do_grid_search,
+         use_folds_file,
+         use_folds_file_for_grid_search) in product([True, False],
+                                                    [True, False],
+                                                    [True, False]):
+
+        yield check_xval_fancy_results_file, do_grid_search, \
+                use_folds_file, use_folds_file_for_grid_search
 
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.
@@ -296,7 +388,7 @@ def test_learning_curve_implementation():
 
 def test_learning_curve_output():
     """
-    Test that the TSV output of a learning curve experiment is as expected
+    Test that the output of a learning curve experiment is as expected
     """
 
     # Test to validate learning curve output
