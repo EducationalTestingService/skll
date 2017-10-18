@@ -90,9 +90,10 @@ The :ref:`Tuning` section defines how we want our model to be tuned.  Setting
 `GridSearchCV <http://scikit-learn.org/stable/modules/generated/sklearn.grid_search.GridSearchCV.html#sklearn.grid_search.GridSearchCV>`_
 class, which is an implementation of the
 `standard, brute-force approach to hyperparameter optimization <http://en.wikipedia.org/wiki/Hyperparameter_optimization#Grid_search>`_.
-:ref:`objective <objective>` refers to the desired objective function; here,
-``accuracy`` will optimize for overall accuracy.  You can see a list of all of
-all the available objective functions :ref:`here <objective>`.
+
+:ref:`objectives <objectives>` refers to the desired objective functions; here,
+``accuracy`` will optimize for overall accuracy.  You can see a list of all the 
+available objective functions :ref:`here <objectives>`.
 
 In the :ref:`Output` section, the arguments to each of these are directories
 where you'd like all of the relevant output from your experiment to go.
@@ -156,9 +157,9 @@ That should produce output like::
 We could squelch the warnings about shuffling by setting
 :ref:`shuffle <shuffle>` to ``True`` in the :ref:`Input` section.
 
-The reason we see the loading messages repeated is that we are running the 
+The reason we see the loading messages repeated is that we are running the
 different learners sequentially, whereas SKLL is designed to take advantage
-of a cluster to execute everything in parallel via GridMap. 
+of a cluster to execute everything in parallel via GridMap.
 
 
 Examine the results
@@ -255,7 +256,7 @@ Training and testing directories
 """"""""""""""""""""""""""""""""
 
 At minimum you will probably want to work with a training set and a testing
-set.  If you have multiple feature files that you would SKLL to join together
+set.  If you have multiple feature files that you would like SKLL to join together
 for you automatically, you will need to create feature files with the exact
 same names and store them in training and testing directories.  You can
 specifiy these directories in your config file using

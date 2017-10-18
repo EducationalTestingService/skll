@@ -43,14 +43,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'SciKit-Learn Laboratory'
-copyright = u'2012-2014, Educational Testing Service'
+copyright = u'2012-2017, Educational Testing Service'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = skll.__version__
+version = skll.version.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 

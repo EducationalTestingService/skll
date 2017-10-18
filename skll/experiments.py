@@ -18,12 +18,14 @@ import math
 import numpy as np
 import os
 import sys
+
 from collections import defaultdict
 from io import open
 from itertools import combinations
 from os.path import basename, exists, isfile, join
 
-import yaml
+import ruamel.yaml as yaml
+
 from prettytable import PrettyTable, ALL
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
@@ -35,7 +37,6 @@ from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
                           _import_custom_learner)
 from skll.version import __version__
 
-
 # Check if gridmap is available
 try:
     from gridmap import Job, process_jobs
@@ -44,11 +45,28 @@ except ImportError:
 else:
     _HAVE_GRIDMAP = True
 
+# Check if pandas is available
+try:
+    import pandas as pd
+except ImportError:
+    _HAVE_PANDAS = False
+else:
+    _HAVE_PANDAS = True
+
+# Check if seaborn (and matplotlib) are available
+try:
+    import matplotlib
+    import seaborn as sns
+except ImportError:
+    _HAVE_SEABORN = False
+else:
+    import matplotlib.pyplot as plt
+    plt.ioff()
+    _HAVE_SEABORN = True
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
-
 
 class NumpyTypeEncoder(json.JSONEncoder):
 
@@ -64,6 +82,8 @@ class NumpyTypeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.int64):
             return int(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
 
@@ -86,6 +106,7 @@ def _get_stat_float(label_result_dict, stat):
         return label_result_dict[stat]
     else:
         return float('nan')
+
 
 def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
     """
@@ -137,7 +158,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
                 if ablation != 0 and '_minus_' in featureset_name:
                     parent_set = featureset_name.split('_minus_', 1)[0]
                     all_features[parent_set].update(
-                        yaml.load(obj[0]['featureset']))
+                        yaml.safe_load(obj[0]['featureset']))
                 learner_result_dicts.extend(obj)
 
     # Build and write header
@@ -156,13 +177,86 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
         if ablation != 0:
             parent_set = featureset_name.split('_minus_', 1)[0]
             ablated_features = all_features[parent_set].difference(
-                yaml.load(lrd['featureset']))
+                yaml.safe_load(lrd['featureset']))
             lrd['ablated_features'] = ''
             if ablated_features:
                 lrd['ablated_features'] = json.dumps(sorted(ablated_features))
 
         # write out the new learner dict with the readable fields
         writer.writerow(lrd)
+
+    output_file.flush()
+
+
+def _write_learning_curve_file(result_json_paths, output_file):
+    """
+    Function to take a list of paths to individual learning curve
+    results json files and writes out a single TSV file with the
+    learning curve data.
+
+    :param result_json_paths: A list of paths to the
+                              individual result json files.
+    :type result_json_paths: list
+    :param output_file: The path to the output TSV file.
+    :type output_file: string
+    """
+
+    learner_result_dicts = []
+
+    # Map from feature set names to all features in them
+    logger = logging.getLogger(__name__)
+    for json_path in result_json_paths:
+        if not exists(json_path):
+            logger.error(('JSON results file %s not found. Skipping summary '
+                          'creation. You can manually create the summary file'
+                          ' after the fact by using the summarize_results '
+                          'script.'), json_path)
+            return
+        else:
+            with open(json_path, 'r') as json_file:
+                obj = json.load(json_file)
+                learner_result_dicts.extend(obj)
+
+    # Build and write header
+    header = ['featureset_name', 'learner_name', 'objective',
+              'train_set_name', 'training_set_size', 'train_score_mean',
+              'test_score_mean', 'train_score_std', 'test_score_std',
+              'scikit_learn_version', 'version']
+    writer = csv.DictWriter(output_file,
+                            header,
+                            extrasaction='ignore',
+                            dialect=csv.excel_tab)
+    writer.writeheader()
+
+    # write out the fields we need for the learning curve file
+    # specifically, we need to separate out the curve sizes
+    # and scores into individual entries.
+    for lrd in learner_result_dicts:
+        training_set_sizes = lrd['computed_curve_train_sizes']
+        train_scores_means_by_size = lrd['learning_curve_train_scores_means']
+        test_scores_means_by_size = lrd['learning_curve_test_scores_means']
+        train_scores_stds_by_size = lrd['learning_curve_train_scores_stds']
+        test_scores_stds_by_size = lrd['learning_curve_test_scores_stds']
+
+        # rename `grid_objective` to `objective` since that can be confusing
+        lrd['objective'] = lrd['grid_objective']
+
+        for (size,
+             train_score_mean,
+             test_score_mean,
+             train_score_std,
+             test_score_std) in zip(training_set_sizes,
+                                    train_scores_means_by_size,
+                                    test_scores_means_by_size,
+                                    train_scores_stds_by_size,
+                                    test_scores_stds_by_size):
+            lrd['training_set_size'] = size
+            lrd['train_score_mean'] = train_score_mean
+            lrd['test_score_mean'] = test_score_mean
+            lrd['train_score_std'] = train_score_std
+            lrd['test_score_std'] = test_score_std
+
+            writer.writerow(lrd)
 
     output_file.flush()
 
@@ -188,20 +282,28 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
     print('Learner: {}'.format(lrd['learner_name']), file=output_file)
     print('Task: {}'.format(lrd['task']), file=output_file)
+    if lrd['folds_file']:
+        print('Specified Folds File: {}'.format(lrd['folds_file']),
+              file=output_file)
     if lrd['task'] == 'cross_validate':
         print('Number of Folds: {}'.format(lrd['cv_folds']),
               file=output_file)
-        print('Stratified Folds: {}'.format(lrd['stratified_folds']),
-              file=output_file)
+        if not lrd['cv_folds'].endswith('folds file'):
+            print('Stratified Folds: {}'.format(lrd['stratified_folds']),
+                  file=output_file)
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
-    print('Grid Search Folds: {}'.format(lrd['grid_search_folds']),
-          file=output_file)
-    print('Grid Objective Function: {}'.format(lrd['grid_objective']),
-          file=output_file)
-    print('Using Folds File: {}'.format(isinstance(lrd['cv_folds'], dict)),
-          file=output_file)
+    if lrd['grid_search']:
+        print('Grid Search Folds: {}'.format(lrd['grid_search_folds']),
+              file=output_file)
+        print('Grid Objective Function: {}'.format(lrd['grid_objective']),
+              file=output_file)
+    if (lrd['task'] == 'cross_validate' and
+        lrd['grid_search'] and
+        lrd['cv_folds'].endswith('folds file')):
+        print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
+              file=output_file)
     print('Scikit-learn Version: {}'.format(lrd['scikit_learn_version']),
           file=output_file)
     print('Start Timestamp: {}'.format(
@@ -305,9 +407,11 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
 
 def _classify_featureset(args):
     """ Classification job to be submitted to grid """
+
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
     # required keyword arguments.)
+
     experiment_name = args.pop("experiment_name")
     task = args.pop("task")
     sampler = args.pop("sampler")
@@ -337,10 +441,12 @@ def _classify_featureset(args):
     overwrite = args.pop("overwrite")
     feature_scaling = args.pop("feature_scaling")
     min_feature_count = args.pop("min_feature_count")
+    folds_file = args.pop("folds_file")
     grid_search_jobs = args.pop("grid_search_jobs")
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
     save_cv_folds = args.pop("save_cv_folds")
+    use_folds_file_for_grid_search = args.pop("use_folds_file_for_grid_search")
     stratified_folds = args.pop("do_stratified_folds")
     label_col = args.pop("label_col")
     id_col = args.pop("id_col")
@@ -348,6 +454,8 @@ def _classify_featureset(args):
     class_map = args.pop("class_map")
     custom_learner_path = args.pop("custom_learner_path")
     quiet = args.pop('quiet', False)
+    learning_curve_cv_folds = args.pop("learning_curve_cv_folds")
+    learning_curve_train_sizes = args.pop("learning_curve_train_sizes")
 
     if args:
         raise ValueError(("Extra arguments passed to _classify_featureset: "
@@ -358,8 +466,12 @@ def _classify_featureset(args):
         # logging
         print("Task:", task, file=log_file)
         if task == 'cross_validate':
+            if isinstance(cv_folds, int):
+                num_folds = cv_folds
+            else:  # cv_folds_file was used, so count the unique fold ids.
+                num_folds = len(set(cv_folds.values()))
             print(("Cross-validating ({} folds) on {}, feature " +
-                   "set {} ...").format(cv_folds, train_set_name, featureset),
+                   "set {} ...").format(num_folds, train_set_name, featureset),
                   file=log_file)
         elif task == 'evaluate':
             print(("Training on {}, Test on {}, " +
@@ -370,6 +482,15 @@ def _classify_featureset(args):
             print("Training on {}, feature set {} ...".format(train_set_name,
                                                               featureset),
                   file=log_file)
+        elif task == 'learning_curve':
+            print(("Generating learning curve "
+                   "({} 80/20 folds, sizes={}, objective={}) on {}, "
+                   "feature set {} ...").format(learning_curve_cv_folds,
+                                                learning_curve_train_sizes,
+                                                grid_objective,
+                                                train_set_name,
+                                                featureset),
+                  file=log_file)
         else:  # predict
             print(("Training on {}, Making predictions about {}, " +
                    "feature set {} ...").format(train_set_name, test_set_name,
@@ -379,8 +500,9 @@ def _classify_featureset(args):
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it and then use it on test data
         modelfile = join(model_path, '{}.model'.format(job_name))
-        if task == 'cross_validate' or (not exists(modelfile) or
-                                        overwrite):
+        if (task in ['cross_validate', 'learning_curve'] or
+            not exists(modelfile) or
+            overwrite):
             train_examples = _load_featureset(train_path, featureset, suffix,
                                               label_col=label_col,
                                               id_col=id_col,
@@ -427,6 +549,19 @@ def _classify_featureset(args):
         else:
             test_set_size = 'n/a'
 
+        # compute information about xval and grid folds that can be put in results
+        # in readable form
+        if isinstance(cv_folds, dict):
+            cv_folds_to_print = '{} via folds file'.format(len(set(cv_folds.values())))
+        else:
+            cv_folds_to_print = str(cv_folds)
+
+        if isinstance(grid_search_folds, dict):
+            grid_search_folds_to_print = '{} via folds file'.format(len(set(grid_search_folds.values())))
+        else:
+            grid_search_folds_to_print = str(grid_search_folds)
+
+
         # create a list of dictionaries of the results information
         learner_result_dict_base = {'experiment_name': experiment_name,
                                     'train_set_name': train_set_name,
@@ -443,12 +578,16 @@ def _classify_featureset(args):
                                                              '%S.%f'),
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
+                                    'folds_file': folds_file,
                                     'grid_search': grid_search,
                                     'grid_objective': grid_objective,
-                                    'grid_search_folds': grid_search_folds,
+                                    'grid_search_folds': grid_search_folds_to_print,
                                     'min_feature_count': min_feature_count,
-                                    'cv_folds': cv_folds,
+                                    'cv_folds': cv_folds_to_print,
+                                    'using_folds_file': isinstance(cv_folds, dict) \
+                                                         or isinstance(grid_search_folds, dict),
                                     'save_cv_folds': save_cv_folds,
+                                    'use_folds_file_for_grid_search': use_folds_file_for_grid_search,
                                     'stratified_folds': stratified_folds,
                                     'scikit_learn_version': SCIKIT_VERSION}
 
@@ -457,21 +596,34 @@ def _classify_featureset(args):
         task_results = None
         if task == 'cross_validate':
             print('\tcross-validating', file=log_file)
-            task_results, grid_scores, skll_fold_ids = learner.cross_validate(
-                train_examples, shuffle=shuffle, stratified=stratified_folds,
-                prediction_prefix=prediction_prefix, grid_search=grid_search,
-                grid_search_folds=grid_search_folds, cv_folds=cv_folds,
-                grid_objective=grid_objective, param_grid=param_grid,
-                grid_jobs=grid_search_jobs, save_cv_folds=save_cv_folds)
+            (task_results,
+             grid_scores,
+             skll_fold_ids) = learner.cross_validate(train_examples,
+                                                     shuffle=shuffle,
+                                                     stratified=stratified_folds,
+                                                     prediction_prefix=prediction_prefix,
+                                                     grid_search=grid_search,
+                                                     grid_search_folds=grid_search_folds,
+                                                     cv_folds=cv_folds,
+                                                     grid_objective=grid_objective,
+                                                     param_grid=param_grid,
+                                                     grid_jobs=grid_search_jobs,
+                                                     save_cv_folds=save_cv_folds,
+                                                     use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
+        elif task == 'learning_curve':
+            print('\tgenerating learning curve', file=log_file)
+            (curve_train_scores,
+             curve_test_scores,
+             computed_curve_train_sizes) = learner.learning_curve(train_examples,
+                                                                  cv_folds=learning_curve_cv_folds,
+                                                                  train_sizes=learning_curve_train_sizes,
+                                                                  objective=grid_objective)
         else:
             # if we have do not have a saved model, we need to train one.
             if not exists(modelfile) or overwrite:
                 print(('\tfeaturizing and training new ' +
                        '{} model').format(learner_name),
                       file=log_file)
-
-                if not isinstance(cv_folds, int):
-                    grid_search_folds = cv_folds
 
                 best_score = learner.train(train_examples,
                                            shuffle=shuffle,
@@ -505,12 +657,11 @@ def _classify_featureset(args):
 
             # run on test set or cross-validate on training data,
             # depending on what was asked for
-
             if task == 'evaluate':
                 print('\tevaluating predictions', file=log_file)
-                task_results = [learner.evaluate(
-                    test_examples, prediction_prefix=prediction_prefix,
-                    grid_objective=grid_objective)]
+                task_results = [learner.evaluate(test_examples,
+                                                 prediction_prefix=prediction_prefix,
+                                                 grid_objective=grid_objective)]
             elif task == 'predict':
                 print('\twriting predictions', file=log_file)
                 learner.predict(test_examples,
@@ -527,7 +678,8 @@ def _classify_featureset(args):
             results_json_path = join(results_path,
                                      '{}.results.json'.format(job_name))
 
-            res = _create_learner_result_dicts(task_results, grid_scores,
+            res = _create_learner_result_dicts(task_results,
+                                               grid_scores,
                                                learner_result_dict_base)
 
             # write out the result dictionary to a json file
@@ -539,6 +691,24 @@ def _classify_featureset(args):
                            '{}.results'.format(job_name)),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
+        elif task == 'learning_curve':
+            results_json_path = join(results_path,
+                                     '{}.results.json'.format(job_name))
+
+            res = {}
+            res.update(learner_result_dict_base)
+            res.update({'learning_curve_cv_folds': learning_curve_cv_folds,
+                        'given_curve_train_sizes': learning_curve_train_sizes,
+                        'learning_curve_train_scores_means': np.mean(curve_train_scores, axis=1),
+                        'learning_curve_test_scores_means': np.mean(curve_test_scores, axis=1),
+                        'learning_curve_train_scores_stds': np.std(curve_train_scores, axis=1, ddof=1),
+                        'learning_curve_test_scores_stds': np.std(curve_test_scores, axis=1, ddof=1),
+                        'computed_curve_train_sizes': computed_curve_train_sizes})
+
+            # write out the result dictionary to a json file
+            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+            with open(results_json_path, file_mode) as json_file:
+                json.dump([res], json_file, cls=NumpyTypeEncoder)
         else:
             res = [learner_result_dict_base]
 
@@ -546,14 +716,15 @@ def _classify_featureset(args):
         if task == 'cross_validate' and save_cv_folds:
             skll_fold_ids_file = experiment_name + '_skll_fold_ids.csv'
             file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(join(results_path,skll_fold_ids_file),
+            with open(join(results_path, skll_fold_ids_file),
                       file_mode) as output_file:
                 _write_skll_folds(skll_fold_ids, output_file)
 
     return res
 
 
-def _create_learner_result_dicts(task_results, grid_scores,
+def _create_learner_result_dicts(task_results,
+                                 grid_scores,
                                  learner_result_dict_base):
     """
     Create the learner result dictionaries that are used to create JSON and
@@ -570,8 +741,12 @@ def _create_learner_result_dicts(task_results, grid_scores,
     f_sum_dict = defaultdict(float)
     result_table = None
 
-    for k, ((conf_matrix, fold_accuracy, result_dict, model_params,
-             score), grid_score) in enumerate(zip(task_results, grid_scores),
+    for k, ((conf_matrix,
+             fold_accuracy,
+             result_dict,
+             model_params,
+             score), grid_score) in enumerate(zip(task_results,
+                                                  grid_scores),
                                               start=1):
 
         # create a new dict for this fold
@@ -716,12 +891,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # Read configuration
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
      hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
-     featuresets, do_shuffle, model_path, do_grid_search, grid_objective,
-     probability, results_path, pos_label_str, feature_scaling,
-     min_feature_count, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
-     learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path) = _parse_config_file(config_file)
+     featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
+     probability, results_path, pos_label_str, feature_scaling, min_feature_count,
+     folds_file, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
+     param_grid_list, featureset_names, learners, prediction_dir, log_path, train_path,
+     test_path, ids_to_floats, class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes) = _parse_config_file(config_file)
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -729,6 +905,17 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         logger.warning('gridmap 0.10.1+ not available. Forcing local '
                        'mode.  To run things on a DRMAA-compatible '
                        'cluster, install gridmap>=0.10.1 via pip.')
+
+    # No grid search or ablation for learning curve generation
+    if task == 'learning_curve':
+        if do_grid_search:
+            do_grid_search = False
+            logger.warning("Grid search is not supported during "
+                           "learning curve generation. Ignoring.")
+        if ablation is None or ablation > 0:
+            ablation = 0
+            logger.warning("Ablating features is not supported during "
+                           "learning curve generation. Ignoring.")
 
     # if performing ablation, expand featuresets to include combinations of
     # features within those sets
@@ -788,92 +975,103 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                           ' auto-generated name would be longer than the file '
                           'system can handle'.format(featureset_name))
 
-    # Run each featureset-learner combination
+    # Run each featureset-learner-objective combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
         for learner_num, learner_name in enumerate(learners):
+            for grid_objective in grid_objectives:
 
-            # for the individual job name, we need to add the feature set name
-            # and the learner name
-            job_name_components = [experiment_name, featureset_name,
-                                   learner_name]
-            job_name = '_'.join(job_name_components)
+                # for the individual job name, we need to add the feature set name
+                # and the learner name
+                if len(grid_objectives) == 1:
+                    job_name_components = [experiment_name, featureset_name,
+                                           learner_name]
+                else:
+                    job_name_components = [experiment_name, featureset_name,
+                                           learner_name, grid_objective]
 
-            # change the prediction prefix to include the feature set
-            prediction_prefix = join(prediction_dir, job_name)
+                job_name = '_'.join(job_name_components)
 
-            # the log file that stores the actual output of this script (e.g.,
-            # the tuned parameters, what kind of experiment was run, etc.)
-            temp_logfile = join(log_path, '{}.log'.format(job_name))
+                # change the prediction prefix to include the feature set
+                prediction_prefix = join(prediction_dir, job_name)
 
-            # Figure out result json file path
-            result_json_path = join(results_path,
-                                    '{}.results.json'.format(job_name))
+                # the log file that stores the actual output of this script (e.g.,
+                # the tuned parameters, what kind of experiment was run, etc.)
+                temp_logfile = join(log_path, '{}.log'.format(job_name))
 
-            # save the path to the results json file that will be written
-            result_json_paths.append(result_json_path)
+                # Figure out result json file path
+                result_json_path = join(results_path,
+                                        '{}.results.json'.format(job_name))
 
-            # If result file already exists and we're resuming, move on
-            if resume and (exists(result_json_path) and
-                           os.path.getsize(result_json_path)):
-                logger.info('Running in resume mode and %s exists, so skipping'
-                            ' job.', result_json_path)
-                continue
+                # save the path to the results json file that will be written
+                result_json_paths.append(result_json_path)
 
-            # create job if we're doing things on the grid
-            job_args = {}
-            job_args["experiment_name"] = experiment_name
-            job_args["task"] = task
-            job_args["sampler"] = sampler
-            job_args["feature_hasher"] = feature_hasher
-            job_args["hasher_features"] = hasher_features
-            job_args["job_name"] = job_name
-            job_args["featureset"] = featureset
-            job_args["featureset_name"] = featureset_name
-            job_args["learner_name"] = learner_name
-            job_args["train_path"] = train_path
-            job_args["test_path"] = test_path
-            job_args["train_set_name"] = train_set_name
-            job_args["test_set_name"] = test_set_name
-            job_args["shuffle"] = do_shuffle
-            job_args["model_path"] = model_path
-            job_args["prediction_prefix"] = prediction_prefix
-            job_args["grid_search"] = do_grid_search
-            job_args["grid_objective"] = grid_objective
-            job_args["suffix"] = suffix
-            job_args["log_path"] = temp_logfile
-            job_args["probability"] = probability
-            job_args["results_path"] = results_path
-            job_args["sampler_parameters"] = (fixed_sampler_parameters
-                                              if fixed_sampler_parameters
-                                              else dict())
-            job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
-                                            if fixed_parameter_list
-                                            else dict())
-            job_args["param_grid"] = (param_grid_list[learner_num]
-                                      if param_grid_list else None)
-            job_args["pos_label_str"] = pos_label_str
-            job_args["overwrite"] = overwrite
-            job_args["feature_scaling"] = feature_scaling
-            job_args["min_feature_count"] = min_feature_count
-            job_args["grid_search_jobs"] = grid_search_jobs
-            job_args["grid_search_folds"] = grid_search_folds
-            job_args["cv_folds"] = cv_folds
-            job_args["save_cv_folds"] = save_cv_folds
-            job_args["do_stratified_folds"] = do_stratified_folds
-            job_args["label_col"] = label_col
-            job_args["id_col"] = id_col
-            job_args["ids_to_floats"] = ids_to_floats
-            job_args["quiet"] = quiet
-            job_args["class_map"] = class_map
-            job_args["custom_learner_path"] = custom_learner_path
+                # If result file already exists and we're resuming, move on
+                if resume and (exists(result_json_path) and
+                               os.path.getsize(result_json_path)):
+                    logger.info('Running in resume mode and %s exists, '
+                                'so skipping job.', result_json_path)
+                    continue
 
-            if not local:
-                jobs.append(Job(_classify_featureset, [job_args],
-                                num_slots=(MAX_CONCURRENT_PROCESSES if
-                                           do_grid_search else 1),
-                                name=job_name, queue=queue))
-            else:
-                _classify_featureset(job_args)
+                # create job if we're doing things on the grid
+                job_args = {}
+                job_args["experiment_name"] = experiment_name
+                job_args["task"] = task
+                job_args["sampler"] = sampler
+                job_args["feature_hasher"] = feature_hasher
+                job_args["hasher_features"] = hasher_features
+                job_args["job_name"] = job_name
+                job_args["featureset"] = featureset
+                job_args["featureset_name"] = featureset_name
+                job_args["learner_name"] = learner_name
+                job_args["train_path"] = train_path
+                job_args["test_path"] = test_path
+                job_args["train_set_name"] = train_set_name
+                job_args["test_set_name"] = test_set_name
+                job_args["shuffle"] = do_shuffle
+                job_args["model_path"] = model_path
+                job_args["prediction_prefix"] = prediction_prefix
+                job_args["grid_search"] = do_grid_search
+                job_args["grid_objective"] = grid_objective
+                job_args["suffix"] = suffix
+                job_args["log_path"] = temp_logfile
+                job_args["probability"] = probability
+                job_args["results_path"] = results_path
+                job_args["sampler_parameters"] = (fixed_sampler_parameters
+                                                  if fixed_sampler_parameters
+                                                  else dict())
+                job_args["fixed_parameters"] = (fixed_parameter_list[learner_num]
+                                                if fixed_parameter_list
+                                                else dict())
+                job_args["param_grid"] = (param_grid_list[learner_num]
+                                          if param_grid_list else None)
+                job_args["pos_label_str"] = pos_label_str
+                job_args["overwrite"] = overwrite
+                job_args["feature_scaling"] = feature_scaling
+                job_args["min_feature_count"] = min_feature_count
+                job_args["grid_search_jobs"] = grid_search_jobs
+                job_args["grid_search_folds"] = grid_search_folds
+                job_args["folds_file"] = folds_file
+                job_args["cv_folds"] = cv_folds
+                job_args["save_cv_folds"] = save_cv_folds
+                job_args["use_folds_file_for_grid_search"] = use_folds_file_for_grid_search
+                job_args["do_stratified_folds"] = do_stratified_folds
+                job_args["label_col"] = label_col
+                job_args["id_col"] = id_col
+                job_args["ids_to_floats"] = ids_to_floats
+                job_args["quiet"] = quiet
+                job_args["class_map"] = class_map
+                job_args["custom_learner_path"] = custom_learner_path
+                job_args["learning_curve_cv_folds"] = learning_curve_cv_folds_list[learner_num]
+                job_args["learning_curve_train_sizes"] = learning_curve_train_sizes
+
+                if not local:
+                    jobs.append(Job(_classify_featureset, [job_args],
+                                    num_slots=(MAX_CONCURRENT_PROCESSES if
+                                               (do_grid_search or
+                                                task == 'learning_curve') else 1),
+                                    name=job_name, queue=queue))
+                else:
+                    _classify_featureset(job_args)
     test_set_name = basename(test_path)
 
     # submit the jobs (if running on grid)
@@ -891,8 +1089,25 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(join(results_path, summary_file_name),
                   file_mode) as output_file:
-            _write_summary_file(result_json_paths, output_file,
+            _write_summary_file(result_json_paths,
+                                output_file,
                                 ablation=ablation)
+    elif task == 'learning_curve':
+        output_file_name = experiment_name + '_summary.tsv'
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        output_file_path = join(results_path, output_file_name)
+        with open(output_file_path, file_mode) as output_file:
+            _write_learning_curve_file(result_json_paths, output_file)
+
+        # generate the actual plot if we have the requirements installed
+        if _HAVE_PANDAS and _HAVE_SEABORN:
+            _generate_learning_curve_plots(experiment_name,
+                                           results_path,
+                                           output_file_path)
+        else:
+            logger.warning("Raw data for the learning curve saved in "
+                           "{}. No plots were generated since pandas and "
+                           "seaborn are not installed. ".format(output_file_path))
 
     return result_json_paths
 
@@ -907,3 +1122,118 @@ def _check_job_results(job_results):
         if not result_dicts or 'task' not in result_dicts[0]:
             logger.error('There was an error running the experiment:\n%s',
                          result_dicts)
+
+
+def _compute_ylimits_for_featureset(df, objectives):
+    """
+    Compute the y-limits for learning curve plots.
+    """
+
+    # set the y-limits of the curves depending on what kind
+    # of values the metric produces
+    ylimits = {}
+    for objective in objectives:
+        # get the real min and max for the values that will be plotted
+        df_train = df[(df['variable'] == 'train_score_mean') & (df['objective'] == objective)]
+        df_test = df[(df['variable'] == 'test_score_mean') & (df['objective'] == objective)]
+        train_values_lower = df_train['value'].values - df_train['train_score_std'].values
+        test_values_lower = df_test['value'].values - df_test['test_score_std'].values
+        min_score = np.min(np.concatenate([train_values_lower,
+                                           test_values_lower]))
+        train_values_upper = df_train['value'].values + df_train['train_score_std'].values
+        test_values_upper = df_test['value'].values + df_test['test_score_std'].values
+        max_score = np.max(np.concatenate([train_values_upper,
+                                           test_values_upper]))
+
+        # squeeze the limits to hide unnecessary parts of the graph
+        if min_score < 0:
+            lower_limit = -1.1 if min_score >= -1 else math.floor(min_score)
+        else:
+            lower_limit = 0
+
+        if max_score > 0:
+            upper_limit = 1.1 if max_score <= 1 else math.ceil(max_score)
+        else:
+            upper_limit = 0
+
+        ylimits[objective] = (lower_limit, upper_limit)
+
+    return ylimits
+
+
+def _generate_learning_curve_plots(experiment_name,
+                                   output_dir,
+                                   learning_curve_tsv_file):
+    """
+    Generate the learning curve plots given the TSV output
+    file from a learning curve experiment.
+    """
+
+    # use pandas to read in the TSV file into a data frame
+    # and massage it from wide to long format for plotting
+    df = pd.read_csv(learning_curve_tsv_file, sep='\t')
+    num_learners = len(df['learner_name'].unique())
+    num_objectives = len(df['objective'].unique())
+    df_melted = pd.melt(df, id_vars=[c for c in df.columns
+                                     if c not in ['train_score_mean', 'test_score_mean']])
+
+    # if there are any training sizes greater than 1000,
+    # then we should probably rotate the tick labels
+    # since otherwise the labels are not clearly rendered
+    rotate_labels = np.any([size >= 1000 for size in df['training_set_size'].unique()])
+
+    # set up and draw the actual learning curve figures, one for
+    # each of the featuresets
+    for fs_name, df_fs in df_melted.groupby('featureset_name'):
+        fig = plt.figure();
+        fig.set_size_inches(2.5*num_learners, 2.5*num_objectives);
+
+        # compute ylimits for this feature set for each objective
+        with sns.axes_style('whitegrid', {"grid.linestyle": ':',
+                                          "xtick.major.size": 3.0}):
+            g = sns.FacetGrid(df_fs, row="objective", col="learner_name",
+                              hue="variable", size=2.5, aspect=1,
+                              margin_titles=True, despine=True, sharex=False,
+                              sharey=False, legend_out=False, palette="Set1")
+            colors = train_color, test_color = sns.color_palette("Set1")[:2]
+            g = g.map_dataframe(sns.pointplot, "training_set_size", "value",
+                                scale=.5, ci=None)
+            ylimits = _compute_ylimits_for_featureset(df_fs, g.row_names)
+            for ax in g.axes.flat:
+                plt.setp(ax.texts, text="")
+            g = (g.set_titles(row_template='', col_template='{col_name}')
+                 .set_axis_labels('Training Examples', 'Score'))
+            if rotate_labels:
+                g = g.set_xticklabels(rotation=60)
+
+            for i, row_name in enumerate(g.row_names):
+                for j, col_name in enumerate(g.col_names):
+                    ax = g.axes[i][j]
+                    ax.set(ylim=ylimits[row_name])
+                    df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
+                                        (df_fs['objective'] == row_name) &
+                                        (df_fs['variable'] == 'train_score_mean')]
+                    df_ax_test = df_fs[(df_fs['learner_name'] == col_name) &
+                                       (df_fs['objective'] == row_name) &
+                                       (df_fs['variable'] == 'test_score_mean')]
+                    ax.fill_between(list(range(len(df_ax_train))),
+                                    df_ax_train['value'] - df_ax_train['train_score_std'],
+                                    df_ax_train['value'] + df_ax_train['train_score_std'],
+                                    alpha=0.1,
+                                    color=train_color)
+                    ax.fill_between(list(range(len(df_ax_test))),
+                                    df_ax_test['value'] - df_ax_test['test_score_std'],
+                                    df_ax_test['value'] + df_ax_test['test_score_std'],
+                                    alpha=0.1,
+                                    color=test_color)
+                    if j == 0:
+                        ax.set_ylabel(row_name)
+                        if i == 0:
+                            ax.legend(handles=[matplotlib.lines.Line2D([], [], color=c, label=l, linestyle='-') for c, l in zip(colors, ['Training', 'Cross-validation'])],
+                                      loc=4,
+                                      fancybox=True,
+                                      fontsize='x-small',
+                                      ncol=1,
+                                      frameon=True)
+            g.fig.tight_layout(w_pad=1)
+            plt.savefig(join(output_dir,'{}_{}.png'.format(experiment_name, fs_name)), dpi=300);

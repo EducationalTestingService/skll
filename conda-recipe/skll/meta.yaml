@@ -1,14 +1,14 @@
 package:
   name: skll
-  version: {{ environ.get('GIT_DESCRIBE_TAG', '').replace('v', '') }}
+  version: 1.3
 
 source:
-  git_url: ./
+  path: ../../../skll
 
 build:
-  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  number: 0
   script:
-    - cd $RECIPE_DIR
+    - cd $SRC_DIR
     - $PYTHON setup.py install
   entry_points:
     - compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main
@@ -41,31 +41,29 @@ requirements:
     - python
     - joblib
     - setuptools
-    - scikit-learn 0.16.1
+    - scikit-learn 0.18.1
     - six
     - prettytable
-    - beautiful-soup
+    - beautifulsoup4
     - numpy
     - scipy
-    - pyyaml
+    - ruamel.yaml
     - configparser [py2k]
     - futures [py2k]
-    - logutils [py2k]
     - mock [py2k]
 
   run:
     - python
     - joblib
-    - scikit-learn 0.16.1
+    - scikit-learn 0.18.1
     - six
     - prettytable
-    - beautiful-soup
+    - beautifulsoup4
     - numpy
     - scipy
-    - pyyaml
+    - ruamel.yaml
     - configparser [py2k]
     - futures [py2k]
-    - logutils [py2k]
     - mock [py2k]
 
 test:

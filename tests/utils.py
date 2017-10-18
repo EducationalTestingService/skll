@@ -37,22 +37,24 @@ def fill_in_config_paths(config_template_path):
 
     config.set("Input", "train_directory", train_dir)
 
-    to_fill_in = ['log', 'predictions']
+    to_fill_in = ['log']
 
-    if task != 'cross_validate':
+    if task != 'learning_curve':
+      to_fill_in.append('predictions')
+
+    if task not in ['cross_validate', 'learning_curve']:
         to_fill_in.append('models')
 
-    if task == 'evaluate' or task == 'cross_validate':
+    if task in ['cross_validate', 'evaluate', 'learning_curve']:
         to_fill_in.append('results')
 
     for d in to_fill_in:
         config.set("Output", d, join(output_dir))
 
     if task == 'cross_validate':
-        cv_folds_file = config.get("Input", "cv_folds_file")
-        if cv_folds_file:
-            config.set("Input", "cv_folds_file",
-                       join(train_dir, cv_folds_file))
+        folds_file = config.get("Input", "folds_file")
+        if folds_file:
+            config.set("Input", "folds_file", join(train_dir, folds_file))
 
     if task == 'predict' or task == 'evaluate':
         config.set("Input", "test_directory", test_dir)
@@ -145,9 +147,12 @@ def fill_in_config_options(config_template_path,
                             'test_file', 'featuresets', 'featureset_names',
                             'feature_hasher', 'hasher_features', 'learners',
                             'sampler', 'shuffle', 'feature_scaling',
+                            'learning_curve_cv_folds_list', 'folds_file',
+                            'learning_curve_train_sizes', 'fixed_parameters',
                             'num_cv_folds', 'bad_option', 'duplicate_option'],
                   'Tuning': ['probability', 'grid_search', 'objective',
-                             'duplicate_option'],
+                             'use_folds_file_for_grid_search', 'grid_search_folds',
+                             'param_grids', 'objectives', 'duplicate_option'],
                   'Output': ['results', 'log', 'models',
                              'predictions']}
 

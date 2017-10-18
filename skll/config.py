@@ -20,12 +20,15 @@ from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 
 import configparser  # Backported version from Python 3
-import yaml
+import numpy as np
+import ruamel.yaml as yaml
+
 from six import string_types, iteritems  # Python 2/3
 from sklearn.metrics import SCORERS
 
 
-_VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
+_VALID_TASKS = frozenset(['predict', 'train', 'evaluate',
+                          'cross_validate', 'learning_curve'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 _VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
@@ -47,6 +50,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         defaults = {'class_map': '{}',
                     'custom_learner_path': '',
                     'cv_folds_file': '',
+                    'folds_file': '',
                     'feature_hasher': 'False',
                     'feature_scaling': 'none',
                     'featuresets': '[]',
@@ -60,10 +64,13 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'ids_to_floats': 'False',
                     'label_col': 'y',
                     'log': '',
+                    'learning_curve_cv_folds_list': '[]',
+                    'learning_curve_train_sizes': '[]',
                     'min_feature_count': '1',
                     'models': '',
                     'num_cv_folds': '10',
-                    'objective': 'f1_score_micro',
+                    'objectives': "['f1_score_micro']",
+                    'objective': "f1_score_micro",
                     'param_grids': '[]',
                     'pos_label_str': '',
                     'predictions': '',
@@ -78,10 +85,12 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'test_directory': '',
                     'test_file': '',
                     'train_directory': '',
-                    'train_file': ''}
+                    'train_file': '',
+                    'use_folds_file_for_grid_search': 'True'}
 
         correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
+                                   'folds_file': 'Input',
                                    'cv_folds_file': 'Input',
                                    'feature_hasher': 'Input',
                                    'feature_scaling': 'Input',
@@ -96,9 +105,12 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'ids_to_floats': 'Input',
                                    'label_col': 'Input',
                                    'log': 'Output',
+                                   'learning_curve_cv_folds_list': 'Input',
+                                   'learning_curve_train_sizes': 'Input',
                                    'min_feature_count': 'Tuning',
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
+                                   'objectives': 'Tuning',
                                    'objective': 'Tuning',
                                    'param_grids': 'Tuning',
                                    'pos_label_str': 'Tuning',
@@ -114,7 +126,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'test_directory': 'Input',
                                    'test_file': 'Input',
                                    'train_directory': 'Input',
-                                   'train_file': 'Input'}
+                                   'train_file': 'Input',
+                                   'use_folds_file_for_grid_search': 'Tuning'}
 
         # make sure that the defaults dictionary and the
         # section mapping dictionary have the same keys
@@ -181,6 +194,7 @@ class SKLLConfigParser(configparser.ConfigParser):
              (b) options are not specified in multiple sections
              (c) options are specified in the correct section
         """
+
         invalid_options = self._find_invalid_options()
         if invalid_options:
             raise KeyError('Configuration file contains the following '
@@ -209,6 +223,7 @@ def _locate_file(file_path, config_dir):
     else:
         return path_to_check
 
+
 def _setup_config_parser(config_path, validate=True):
     """
     Returns a config parser at a given path. Only implemented as a separate
@@ -222,6 +237,32 @@ def _setup_config_parser(config_path, validate=True):
         raise IOError(errno.ENOENT, "Configuration file does not exist",
                       config_path)
     config.read(config_path)
+
+    # normalize objective to objectives
+    objective_value = config.get('Tuning', 'objective')
+    objectives_value = config.get('Tuning', 'objectives')
+    objective_default = config._defaults['objective']
+    objectives_default = config._defaults['objectives']
+
+    # if both of them are non default, raise error
+    if (objectives_value != objectives_default and objective_value != objective_default):
+        raise ValueError("The configuration file can specify "
+                         "either 'objective' or 'objectives', "
+                         "not both")
+    else:
+        # if objective is default value, delete it
+        if objective_value == objective_default:
+            config.remove_option('Tuning', 'objective')
+        else:
+            # else convert objective into objectives and delete objective
+            objective_value = yaml.safe_load(_fix_json(objective_value), )
+            if isinstance(objective_value, string_types):
+                config.set(
+                    'Tuning', 'objectives', "['{}']".format(objective_value))
+                config.remove_option('Tuning', 'objective')
+            else:
+                raise TypeError("objective should be a string")
+
     if validate:
         config.validate()
 
@@ -235,6 +276,10 @@ def _parse_config_file(config_path):
 
     # Initialize logger
     logger = logging.getLogger(__name__)
+
+    # check that config_path is not empty
+    if config_path == "":
+        raise IOError("The name of the configuration file is empty")
 
     # compute the absolute path for the config file
     config_path = realpath(config_path)
@@ -289,7 +334,7 @@ def _parse_config_file(config_path):
     else:
         raise ValueError("Configuration file does not contain list of learners "
                          "in [Input] section.")
-    learners = yaml.load(_fix_json(learners_string))
+    learners = yaml.safe_load(_fix_json(learners_string))
 
     if len(learners) == 0:
         raise ValueError("Configuration file contains an empty list of learners"
@@ -300,11 +345,12 @@ def _parse_config_file(config_path):
                          ' times, which is not currently supported.  Please use'
                          ' param_grids with tuning to find the optimal settings'
                          ' for the learner.')
-    custom_learner_path = config.get("Input", "custom_learner_path")
+    custom_learner_path = _locate_file(config.get("Input", "custom_learner_path"),
+                                       config_dir)
 
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
-    featuresets = yaml.load(_fix_json(featuresets_string))
+    featuresets = yaml.safe_load(_fix_json(featuresets_string))
 
     # ensure that featuresets is either a list of features or a list of lists
     # of features
@@ -314,7 +360,7 @@ def _parse_config_file(config_path):
                          "features or a list of lists of features. You "
                          "specified: {}".format(featuresets))
 
-    featureset_names = yaml.load(_fix_json(config.get("Input",
+    featureset_names = yaml.safe_load(_fix_json(config.get("Input",
                                                       "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
@@ -326,15 +372,49 @@ def _parse_config_file(config_path):
                              "of strings. You specified: {}"
                              .format(featureset_names))
 
+    # get the value for learning_curve_cv_folds and ensure
+    # that it's a list of the same length as the value of
+    # learners. If it's not specified, then we just assume
+    # that we are using 10 folds for each learner.
+    learning_curve_cv_folds_list_string = config.get("Input",
+                                                     "learning_curve_cv_folds_list")
+    learning_curve_cv_folds_list = yaml.safe_load(_fix_json(learning_curve_cv_folds_list_string))
+    if len(learning_curve_cv_folds_list) == 0:
+        learning_curve_cv_folds_list = [10] * len(learners)
+    else:
+        if (not isinstance(learning_curve_cv_folds_list, list) or
+            not all([isinstance(fold, int) for fold in learning_curve_cv_folds_list]) or
+            not len(learning_curve_cv_folds_list) == len(learners)):
+            raise ValueError("The learning_curve_cv_folds parameter should "
+                             "be a list of integers of the same length as "
+                             "the number of learners. You specified: {}"
+                             .format(learning_curve_cv_folds_list))
+
+    # get the value for learning_curve_train_sizes and ensure
+    # that it's a list of either integers (sizes) or
+    # floats (proportions). If it's not specified, then we just
+    # assume that we are using np.linspace(0.1, 1.0, 5).
+    learning_curve_train_sizes_string = config.get("Input", "learning_curve_train_sizes")
+    learning_curve_train_sizes = yaml.safe_load(_fix_json(learning_curve_train_sizes_string))
+    if len(learning_curve_train_sizes) == 0:
+        learning_curve_train_sizes = np.linspace(0.1, 1.0, 5).tolist()
+    else:
+        if (not isinstance(learning_curve_train_sizes, list) or
+            not all([isinstance(size, int) or isinstance(size, float) for size in
+                         learning_curve_train_sizes])):
+            raise ValueError("The learning_curve_train_sizes parameter should "
+                             "be a list of integers or floats. You specified: {}"
+                             .format(learning_curve_train_sizes))
+
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
 
-    fixed_parameter_list = yaml.load(_fix_json(config.get("Input",
+    fixed_parameter_list = yaml.safe_load(_fix_json(config.get("Input",
                                                           "fixed_parameters")))
     fixed_sampler_parameters = _fix_json(config.get("Input",
                                                     "sampler_parameters"))
-    fixed_sampler_parameters = yaml.load(fixed_sampler_parameters)
-    param_grid_list = yaml.load(_fix_json(config.get("Tuning", "param_grids")))
+    fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
+    param_grid_list = yaml.safe_load(_fix_json(config.get("Tuning", "param_grids")))
     pos_label_str = config.get("Tuning", "pos_label_str")
 
     # ensure that feature_scaling is specified only as one of the
@@ -349,16 +429,24 @@ def _parse_config_file(config_path):
     id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
-    # get the cv folds file and make a dictionary from it, if it exists
-    cv_folds_file = config.get("Input", "cv_folds_file")
+    # if cv_folds_file is specified, raise a deprecation warning
+    cv_folds_file_value = config.get("Input", "cv_folds_file")
+    if cv_folds_file_value:
+        logger.warning("The parameter \"cv_folds_file\" "
+                       "is deprecated and will be removed in the next "
+                       "release, please use \"folds_file\" instead.")
+        config.set("Input", "folds_file", cv_folds_file_value)
+
+    # if an external folds file is specified, then read it into a dictionary
+    folds_file = _locate_file(config.get("Input", "folds_file"), config_dir)
     num_cv_folds = config.getint("Input", "num_cv_folds")
-    if cv_folds_file:
-        cv_folds_file = _locate_file(cv_folds_file, config_path)
-        cv_folds = _load_cv_folds(cv_folds_file,
-                                  ids_to_floats=ids_to_floats)
+    specified_folds_mapping = None
+    specified_num_folds = None
+    if folds_file:
+        specified_folds_mapping = _load_cv_folds(folds_file, ids_to_floats=ids_to_floats)
     else:
-        # set the number of folds for cross-validation
-        cv_folds = num_cv_folds if num_cv_folds else 10
+        # if no file is specified, then set the number of folds for cross-validation
+        specified_num_folds = num_cv_folds if num_cv_folds else 10
 
     # whether or not to save the cv fold ids
     save_cv_folds = config.get("Output", "save_cv_folds")
@@ -366,8 +454,8 @@ def _parse_config_file(config_path):
     # whether or not to do stratified cross validation
     random_folds = config.getboolean("Input", "random_folds")
     if random_folds:
-        if cv_folds_file:
-            logger.warning('Specifying cv_folds_file overrides random_folds')
+        if folds_file:
+            logger.warning('Specifying "folds_file" overrides "random_folds".')
         do_stratified_folds = False
     else:
         do_stratified_folds = True
@@ -426,7 +514,7 @@ def _parse_config_file(config_path):
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
-    original_class_map = yaml.load(_fix_json(class_map_string))
+    original_class_map = yaml.safe_load(_fix_json(class_map_string))
     if original_class_map:
         # Change class_map to map from originals to replacements instead of
         # from replacement to list of originals
@@ -442,28 +530,28 @@ def _parse_config_file(config_path):
     probability = config.getboolean("Output", "probability")
 
     # do we want to keep the predictions?
-    prediction_dir = config.get("Output", "predictions")
+    prediction_dir = _locate_file(config.get("Output", "predictions"),
+                                  config_dir)
     if prediction_dir:
-        prediction_dir = join(config_dir, prediction_dir)
         if not exists(prediction_dir):
             os.makedirs(prediction_dir)
 
     # make sure log path exists
-    log_path = config.get("Output", "log")
+    log_path = _locate_file(config.get("Output", "log"), config_dir)
     if log_path:
         log_path = join(config_dir, log_path)
         if not exists(log_path):
             os.makedirs(log_path)
 
     # make sure model path exists
-    model_path = config.get("Output", "models")
+    model_path = _locate_file(config.get("Output", "models"), config_dir)
     if model_path:
         model_path = join(config_dir, model_path)
         if not exists(model_path):
             os.makedirs(model_path)
 
     # make sure results path exists
-    results_path = config.get("Output", "results")
+    results_path = _locate_file(config.get("Output", "results"), config_dir)
     if results_path:
         results_path = join(config_dir, results_path)
         if not exists(results_path):
@@ -477,6 +565,11 @@ def _parse_config_file(config_path):
     # minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")
 
+    # if an external folds file was specified do we use the same folds file
+    # for the inner grid-search in cross-validate as well?
+    use_folds_file_for_grid_search = config.getboolean("Tuning",
+                                                       "use_folds_file_for_grid_search")
+
     # how many jobs should we run in parallel for grid search
     grid_search_jobs = config.getint("Tuning", "grid_search_jobs")
     if not grid_search_jobs:
@@ -485,30 +578,71 @@ def _parse_config_file(config_path):
     # how many folds should we run in parallel for grid search
     grid_search_folds = config.getint("Tuning", "grid_search_folds")
 
-    # what is the objective function for the grid search?
-    grid_objective = config.get("Tuning", "objective")
-    if grid_objective not in SCORERS:
-        raise ValueError('Invalid grid objective function: {}'
-                         .format(grid_objective))
+    # what are the objective functions for the grid search?
+    grid_objectives = config.get("Tuning", "objectives")
+    grid_objectives = yaml.safe_load(_fix_json(grid_objectives))
+    if not isinstance(grid_objectives, list):
+        raise TypeError("objectives should be a "
+                        "list of objectives")
+
+    # `mean_squared_error` should be replaced with `neg_mean_squared_error`
+    if 'mean_squared_error' in grid_objectives:
+        logger.warning("The objective function \"mean_squared_error\" "
+                       "is deprecated and will be removed in the next "
+                       "release, please use the function "
+                       "\"neg_mean_squared_error\" instead.")
+        grid_objectives[grid_objectives.index('mean_squared_error')] = 'neg_mean_squared_error'
+
+    if not all([objective in SCORERS for objective in grid_objectives]):
+        raise ValueError('Invalid grid objective function(s): {}'
+                         .format(grid_objectives))
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set must be set when task is evaluate or '
                          'predict.')
-    if (task == 'cross_validate' or task == 'train') and test_path:
+    if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
-                         'cross_validate or train.')
-    if (task == 'train' or task == 'predict') and results_path:
+                         '{}.'.format(task))
+    if task in ['train', 'predict'] and results_path:
         raise ValueError('The results path should not be set when task is '
-                         'predict or train.')
+                         '{}.'.format(task))
     if task == 'train' and not model_path:
         raise ValueError('The model path should be set when task is train.')
-    if task == 'train' and prediction_dir:
+    if task in ['learning_curve', 'train'] and prediction_dir:
         raise ValueError('The predictions path should not be set when task is '
-                         'train.')
-    if task == 'cross_validate' and model_path:
+                         '{}.'.format(task))
+    if task in ['cross_validate', 'learning_curve'] and model_path:
         raise ValueError('The models path should not be set when task is '
-                         'cross_validate.')
+                         '{}.'.format(task))
+
+    # set the folds appropriately based on the task:
+    #  (a) if the task is `train` and if an external fold mapping is specified
+    #      then use that mapping for grid search instead of the value
+    #      contained in `grid_search_folds`.
+    #  (b) if the task is `cross_validate` and an external fold mapping is specified
+    #      then use that mapping for the outer CV loop. Depending on the value of
+    #      `use_folds_file_for_grid_search`, use the fold mapping for the inner
+    #       grid-search loop as well.
+    cv_folds = None
+    if task == 'train' and specified_folds_mapping:
+        grid_search_folds = specified_folds_mapping
+        # only print out the warning if the user actually wants to do grid search
+        if do_grid_search:
+            logger.warning("Specifying \"folds_file\" overrides both "
+                           "explicit and default \"grid_search_folds\".")
+    if task == 'cross_validate':
+        logger.warning("Specifying \"folds_file\" overrides both "
+                       "explicit and default \"num_cv_folds\".")
+        cv_folds = specified_folds_mapping if specified_folds_mapping else specified_num_folds
+        if specified_folds_mapping:
+            if use_folds_file_for_grid_search:
+                grid_search_folds = cv_folds
+            else:
+                # only print out the warning if the user wants to do grid search
+                if do_grid_search:
+                    logger.warning("The specified \"folds_file\" will "
+                                   "not be used for inner grid search.")
 
     # Create feature set names if unspecified
     if not featureset_names:
@@ -525,12 +659,14 @@ def _parse_config_file(config_path):
     return (experiment_name, task, sampler, fixed_sampler_parameters,
             feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
-            do_grid_search, grid_objective, probability, results_path,
-            pos_label_str, feature_scaling, min_feature_count,
+            do_grid_search, grid_objectives, probability, results_path,
+            pos_label_str, feature_scaling, min_feature_count, folds_file,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-            do_stratified_folds, fixed_parameter_list, param_grid_list,
-            featureset_names, learners, prediction_dir, log_path, train_path,
-            test_path, ids_to_floats, class_map, custom_learner_path)
+            use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
+            param_grid_list, featureset_names, learners, prediction_dir,
+            log_path, train_path, test_path, ids_to_floats, class_map,
+            custom_learner_path, learning_curve_cv_folds_list,
+            learning_curve_train_sizes)
 
 
 def _munge_featureset_name(featureset):
@@ -556,12 +692,12 @@ def _fix_json(json_string):
     return json_string
 
 
-def _load_cv_folds(cv_folds_file, ids_to_floats=False):
+def _load_cv_folds(folds_file, ids_to_floats=False):
     """
     Loads CV folds from a CSV file with columns for example ID and fold ID (and
     a header).
     """
-    with open(cv_folds_file, 'r') as f:
+    with open(folds_file, 'r') as f:
         reader = csv.reader(f)
         next(reader)  # discard the header
         res = {}

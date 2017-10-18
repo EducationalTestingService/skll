@@ -25,6 +25,10 @@ class FeatureSet(object):
     Encapsulation of all of the features, values, and metadata about a given
     set of data.
 
+    .. warning::
+        FeatureSets can only be equal if the order of the instances is
+        identical because these are stored as lists/arrays.
+
     This replaces ``ExamplesTuple`` from older versions.
 
     :param name: The name of this feature set.
@@ -37,7 +41,7 @@ class FeatureSet(object):
                      list of dictionaries or an array-like (if `vectorizer` is
                      also specified).
     :type features: list of dict or array-like
-    :param vectorizer: Vectorizer that created feature matrix.
+    :param vectorizer: Vectorizer which will be used to generate the feature matrix.
     :type vectorizer: DictVectorizer or FeatureHasher
 
     .. note::
@@ -123,13 +127,16 @@ class FeatureSet(object):
                 raise ValueError('FeatureSets can only be iterated through if '
                                  'they use a DictVectorizer for their feature '
                                  'vectorizer.')
-            for id_, label_, feats in zip(self.ids, self.labels,
-                                          self.features):
+            for id_, label_, feats in zip(self.ids, self.labels, self.features):
+
+                # reshape to a 2D matrix if we are not using a sparse matrix
+                # to store the features
+                feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
+
                 # When calling inverse_transform we have to add [0] to get the
                 # results for the current instance because it always returns a
                 # 2D array
-                yield (id_, label_,
-                       self.vectorizer.inverse_transform(feats)[0])
+                yield (id_, label_, self.vectorizer.inverse_transform(feats)[0])
         else:
             return
 
@@ -296,6 +303,10 @@ class FeatureSet(object):
             # Skip instances with labels not in filter
             if labels is not None and (label_ in labels) == inverse:
                 continue
+
+            # reshape to a 2D matrix if we are not using a sparse matrix
+            # to store the features
+            feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
             feat_dict = self.vectorizer.inverse_transform(feats)[0]
             if features is not None:
                 feat_dict = {name: value for name, value in
@@ -359,3 +370,86 @@ class FeatureSet(object):
             features = (self.vectorizer.inverse_transform(feats)[0] if
                         self.features is not None else {})
             return self.ids[value], label, features
+
+    @staticmethod
+    def split_by_ids(fs, ids_for_split1, ids_for_split2=None):
+        """
+        Split the given FeatureSet into two new FeatureSet instances based on
+        the given IDs for the two splits.
+
+        :param fs: The FeatureSet instance to split.
+        :type fs: FeatureSet
+        :param ids_for_split1: A list of example IDs which will be split out into
+                               the first FeatureSet instance. Note that the
+                               FeatureSet instance will respect the order of the
+                               specified IDs.
+        :type ids_for_split1: list of int
+        :param ids_for_split2: An optional ist of example IDs which will be
+                               split out into the second FeatureSet instance.
+                               Note that the FeatureSet instance will respect
+                               the order of the specified IDs. If this is
+                               not specified, then the second FeatureSet
+                               instance will contain the complement of the
+                               first set of IDs sorted in ascending order.
+        :type ids_for_split2: list of int, optional
+        """
+
+        # Note: an alternative way to implement this is to make copies
+        # of the given FeatureSet instance and then use the `filter()`
+        # method but that wastes too much memory since it requires making
+        # two copies of the original FeatureSet which may be huge. With
+        # the current implementation, we are creating new objects but
+        # they should be much smaller than the original FeatureSet.
+        ids1 = fs.ids[ids_for_split1]
+        labels1 = fs.labels[ids_for_split1]
+        features1 = fs.features[ids_for_split1]
+        if ids_for_split2 is None:
+            ids2 = fs.ids[~np.in1d(fs.ids, ids_for_split1)]
+            labels2 = fs.labels[~np.in1d(fs.ids, ids_for_split1)]
+            features2 = fs.features[~np.in1d(fs.ids, ids_for_split1)]
+        else:
+            ids2 = fs.ids[ids_for_split2]
+            labels2 = fs.labels[ids_for_split2]
+            features2 = fs.features[ids_for_split2]
+
+        fs1 = FeatureSet('{}_1'.format(fs.name),
+                         ids1,
+                         labels=labels1,
+                         features=features1,
+                         vectorizer=fs.vectorizer)
+        fs2 = FeatureSet('{}_2'.format(fs.name),
+                         ids2,
+                         labels=labels2,
+                         features=features2,
+                         vectorizer=fs.vectorizer)
+        return fs1, fs2
+
+    @staticmethod
+    def from_data_frame(df, name, labels_column=None, vectorizer=None):
+        """
+        Helper function to create a FeatureSet object from a `pandas.DataFrame`.
+        Will raise an Exception if pandas is not installed in your environment.
+        `FeatureSet` `ids` will be the index on `df`.
+
+        :param df: The pandas.DataFrame object you'd like to use as a feature set.
+        :type df: pandas.DataFrame
+        :param name: The name of this feature set.
+        :type name: str
+        :param labels_column: The name of the column containing the labels (data to predict).
+        :type labels_column: str or None
+        :param vectorizer: Vectorizer which will be used to generate the feature matrix.
+        :type vectorizer: DictVectorizer or FeatureHasher
+        """
+        if labels_column:
+            feature_columns = [column for column in df.columns if column != labels_column]
+            labels = df[labels_column].tolist()
+        else:
+            feature_columns = df.columns
+            labels = None
+
+        features = df[feature_columns].to_dict(orient='records')
+        return FeatureSet(name,
+                          ids=df.index.tolist(),
+                          labels=labels,
+                          features=features,
+                          vectorizer=vectorizer)

@@ -19,11 +19,11 @@ import os
 from os.path import abspath, dirname, join, exists
 import json
 from glob import glob
+import re
 
 import numpy as np
 from nose.tools import eq_, raises
 from six import PY2
-import random
 
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
@@ -34,14 +34,12 @@ from skll.data import FeatureSet
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.experiments import _load_featureset
-from sklearn.cross_validation import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from utils import fill_in_config_paths_for_single_file
 from skll.experiments import run_configuration
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
-
-
 
 
 def setup():
@@ -64,7 +62,6 @@ def tearDown():
     if exists(fold_file_path):
         os.unlink(fold_file_path)
 
-    train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
 
@@ -147,10 +144,10 @@ def test_specified_cv_folds():
     # The fourth is the same as the second but uses an RBFSampler.
 
     for test_value, assert_func, grid_size, use_hashing, use_sampler in \
-            [(0.55, assert_less, 3, False, False),
+            [(0.58, assert_less, 3, False, False),
              (0.1, assert_greater, 10, True, False),
-             (0.53, assert_less, 3, False, True),
-             (0.7, assert_greater, 10, True, True)]:
+             (0.57, assert_less, 3, False, True),
+             (0.69, assert_greater, 10, True, True)]:
 
         sampler = 'RBFSampler' if use_sampler else None
         learner = Learner('LogisticRegression', sampler=sampler)
@@ -218,25 +215,82 @@ def test_retrieve_cv_folds():
     Test to make sure that the fold ids get returned correctly after cross-validation
     """
 
+    # Setup
     learner = Learner('LogisticRegression')
     num_folds = 5
     cv_fs, custom_cv_folds = make_cv_folds_data(num_examples_per_fold=2, num_folds=num_folds)
 
-    # First test where learner.cross_validate makes the folds itself
-    expected_fold_ids = {'EXAMPLE_0': '0', 'EXAMPLE_1': '4', 'EXAMPLE_2': '3', 'EXAMPLE_3': '1',
-                         'EXAMPLE_4': '2', 'EXAMPLE_5': '2', 'EXAMPLE_6': '1', 'EXAMPLE_7': '0',
-                         'EXAMPLE_8': '4', 'EXAMPLE_9': '3'}
-
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=num_folds, save_cv_folds=True,
-                                                 grid_search=True)
-
+    # Test 1: learner.cross_validate() makes the folds itself.
+    expected_fold_ids = {'EXAMPLE_0': '0',
+                         'EXAMPLE_1': '4',
+                         'EXAMPLE_2': '3',
+                         'EXAMPLE_3': '1',
+                         'EXAMPLE_4': '2',
+                         'EXAMPLE_5': '2',
+                         'EXAMPLE_6': '1',
+                         'EXAMPLE_7': '0',
+                         'EXAMPLE_8': '4',
+                         'EXAMPLE_9': '3'}
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs,
+                                                 stratified=True,
+                                                 cv_folds=num_folds,
+                                                 grid_search=True,
+                                                 shuffle=False,
+                                                 save_cv_folds=True)
     assert_equal(skll_fold_ids, expected_fold_ids)
 
-    # Now test that if we pass in custom fold ids, those are also preserved
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs, cv_folds=custom_cv_folds, save_cv_folds=True,
-                                                 grid_search=True)
-
+    # Test 2: if we pass in custom fold ids, those are also preserved.
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs,
+                                                 stratified=True,
+                                                 cv_folds=custom_cv_folds,
+                                                 grid_search=True,
+                                                 shuffle=False,
+                                                 save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
+
+    # Test 3: when learner.cross_validate() makes the folds but stratified=False
+    # and grid_search=False, so that KFold is used.
+    expected_fold_ids = {'EXAMPLE_0': '0',
+                         'EXAMPLE_1': '0',
+                         'EXAMPLE_2': '1',
+                         'EXAMPLE_3': '1',
+                         'EXAMPLE_4': '2',
+                         'EXAMPLE_5': '2',
+                         'EXAMPLE_6': '3',
+                         'EXAMPLE_7': '3',
+                         'EXAMPLE_8': '4',
+                         'EXAMPLE_9': '4'}
+    _, _, skll_fold_ids = learner.cross_validate(cv_fs,
+                                                 stratified=False,
+                                                 cv_folds=num_folds,
+                                                 grid_search=False,
+                                                 shuffle=False,
+                                                 save_cv_folds=True)
+    assert_equal(skll_fold_ids, custom_cv_folds)
+
+
+def test_folds_file_logging():
+    """
+    Test that, when `folds_file` is used, the log prints the number of folds,
+     instead of the entire cv_folds data.
+    """
+    # Run experiment
+    suffix = '.jsonlines'
+    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_folds_file"
+                                                            ".template.cfg"),
+                                                       train_path,
+                                                       None)
+    run_configuration(config_path, quiet=True)
+
+    # Check log output
+    with open(join(_my_dir, 'output', 'test_folds_file_logging_train_f0.' +
+            'jsonlines_LogisticRegression.log')) as f:
+        cv_folds_pattern = re.compile("Task: cross_validate\nCross-validating \([0-9]+ folds\)")
+        matches = re.findall(cv_folds_pattern, f.read())
+        assert_equal(len(matches), 1)
 
 
 def test_cross_validate_task():
@@ -266,8 +320,8 @@ def test_cross_validate_task():
     # Check that the fold ids were saved correctly
     expected_skll_ids = {}
     examples = _load_featureset(train_path, '', suffix, quiet=True)
-    kfold = StratifiedKFold(examples.labels, n_folds=10)
-    for fold_num, (_, test_indices) in enumerate(kfold):
+    kfold = StratifiedKFold(n_splits=10)
+    for fold_num, (_, test_indices) in enumerate(kfold.split(examples.features, examples.labels)):
         for index in test_indices:
             expected_skll_ids[examples.ids[index]] = fold_num
 
