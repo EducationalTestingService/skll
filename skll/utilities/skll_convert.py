@@ -122,7 +122,7 @@ def main(argv=None):
             label_map.update(_pair_to_dict_tuple(pair) for pair in
                              label_map_str
                              .strip().split())
-        feat_vectorizer = DictVectorizer(sort=False)
+        feat_vectorizer = DictVectorizer()
         feat_vectorizer.fit([{name: 1} for name in feat_map])
         feat_vectorizer.vocabulary_ = feat_map
     else:
