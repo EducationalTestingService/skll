@@ -1,19 +1,12 @@
 """
-This module is just here until a version of scikit-learn is released with the
-changes present here.  It has already been merged in scikit-learn master via
-https://github.com/scikit-learn/scikit-learn/pull/3683.
+This module is here because the scikit-learn version of ``DictVectorizer``
+does not contain an ``__eq__`` method for vectorizer equality which we need
+for SKLL.
+
+:author: Dan Blanchard (dblanchard@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
+:organization: ETS
 """
-
-# Authors: Lars Buitinck <L.J.Buitinck@uva.nl>
-#          Dan Blanchard <dblanchard@ets.org>
-# License: BSD 3 clause
-
-from array import array
-from collections import Mapping
-
-import numpy as np
-import scipy.sparse as sp
-import six
 
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 
@@ -31,22 +24,29 @@ class DictVectorizer(OldDictVectorizer):
     a feature "f" that can take on the values "ham" and "spam" will become two
     features in the output, one signifying "f=ham", the other "f=spam".
 
+    However, note that this transformer will only do a binary one-hot encoding
+    when feature values are of type string. If categorical features are
+    represented as numeric values such as int, the DictVectorizer can be
+    followed by OneHotEncoder to complete binary one-hot encoding.
+
     Features that do not occur in a sample (mapping) will have a zero value
     in the resulting array/matrix.
+
+    Read more in the :ref:`User Guide <dict_feature_extraction>`.
 
     Parameters
     ----------
     dtype : callable, optional
         The type of feature values. Passed to Numpy array/scipy.sparse matrix
         constructors as the dtype argument.
-    separator: string, optional
+    separator : string, optional
         Separator string used when constructing new features for one-hot
         coding.
-    sparse: boolean, optional.
+    sparse : boolean, optional.
         Whether transform should produce scipy.sparse matrices.
         True by default.
-    sort: boolean, optional.
-        Whether feature_names_ and vocabulary_ should be sorted when fitting.
+    sort : boolean, optional.
+        Whether ``feature_names_`` and ``vocabulary_`` should be sorted when fitting.
         True by default.
 
     Attributes
