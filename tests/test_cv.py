@@ -147,7 +147,7 @@ def test_specified_cv_folds():
     for test_value, assert_func, expected_folds, use_hashing, use_sampler in \
             [(0.58, assert_less, 3, False, False),
              (0.1, assert_greater, 10, True, False),
-             (0.60, assert_less, 3, False, True),
+             (0.57, assert_less, 3, False, True),
              (0.69, assert_greater, 10, True, True)]:
 
         sampler = 'RBFSampler' if use_sampler else None
