@@ -144,7 +144,7 @@ def test_specified_cv_folds():
 
     # The fourth is the same as the second but uses an RBFSampler.
 
-    for test_value, assert_func, grid_size, use_hashing, use_sampler in \
+    for test_value, assert_func, expected_folds, use_hashing, use_sampler in \
             [(0.58, assert_less, 3, False, False),
              (0.1, assert_greater, 10, True, False),
              (0.60, assert_less, 3, False, True),
@@ -164,7 +164,7 @@ def test_specified_cv_folds():
 
         assert_func(overall_score, test_value)
 
-        eq_(len(fold_test_scores), grid_size)
+        eq_(len(fold_test_scores), expected_folds)
         for fold_score in fold_test_scores:
             assert_func(fold_score, test_value)
 
