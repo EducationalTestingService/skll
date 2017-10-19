@@ -122,9 +122,10 @@ def test_string_feature():
     eq_(fs.features.shape, (100, 9))
 
     # confirm the feature names
-    eq_(fs.vectorizer.feature_names_, ['f01', 'f02', 'f03',
-                                       'f04=a', 'f04=b', 'f04=c',
-                                       'f04=d', 'f04=e', 'f04=f'])
+    eq_(sorted(fs.vectorizer.feature_names_),
+        ['f01', 'f02', 'f03',
+         'f04=a', 'f04=b', 'f04=c',
+         'f04=d', 'f04=e', 'f04=f'])
 
     # confirm that the final six features are binary
     assert_array_equal(fs.features[:, [3, 4, 5, 6, 7, 8]].data, 1)
