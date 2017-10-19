@@ -185,7 +185,7 @@ def test_ablation_cv_all_combos():
 
 def test_ablation_cv_feature_hasher():
     """
-    Test if ablation works with cross-validate and feature_hasher
+    Test if ablation works with cross-validate and feature hashing
     """
     make_ablation_data()
 
@@ -213,7 +213,7 @@ def test_ablation_cv_feature_hasher():
 
 def test_ablation_cv_feature_hasher_all_combos():
     """
-    Test if ablation all-combos works with cross-validate and feature_hasher
+    Test if ablation all-combos works with cross-validate and feature hashing
     """
 
     make_ablation_data()
@@ -269,7 +269,8 @@ def test_ablation_cv_sampler():
 
 def test_ablation_cv_all_combos_sampler():
     """
-    Test to validate whether ablation works with cross-validate
+    Test to validate whether ablation all-combos works with cross-validate
+    and samplers
     """
     make_ablation_data()
 
@@ -296,8 +297,8 @@ def test_ablation_cv_all_combos_sampler():
 
 def test_ablation_cv_feature_hasher_sampler():
     """
-    Test to validate whether ablation works with cross-validate
-    and feature_hasher
+    Test to validate whether ablation works with cross-validate,
+    feature hashing, and samplers
     """
     make_ablation_data()
 
@@ -326,8 +327,8 @@ def test_ablation_cv_feature_hasher_sampler():
 
 def test_ablation_cv_feature_hasher_all_combos_sampler():
     """
-    Test to validate whether ablation works with cross-validate
-    and feature_hasher
+    Test to validate whether ablation all-combos works with cross-validate,
+    feature hashing, and samplers
     """
     make_ablation_data()
 
