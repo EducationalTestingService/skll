@@ -66,7 +66,8 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
 
     cfg_file = join(config_dir, 'test_save_cv_folds.cfg')
-    os.unlink(cfg_file)
+    if exists(cfg_file):
+        os.unlink(cfg_file)
 
     for output_file in (glob(join(output_dir,
                                   'test_save_cv_folds_*')) +
