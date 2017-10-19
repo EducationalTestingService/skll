@@ -85,7 +85,7 @@ class Reader(object):
         if feature_hasher:
             self.vectorizer = FeatureHasher(n_features=num_features)
         else:
-            self.vectorizer = DictVectorizer(sort=False, sparse=sparse)
+            self.vectorizer = DictVectorizer(sparse=sparse)
 
     @classmethod
     def for_path(cls, path_or_list, **kwargs):
