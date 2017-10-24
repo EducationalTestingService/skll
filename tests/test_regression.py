@@ -29,7 +29,7 @@ from sklearn.utils.testing import (assert_greater,
                                    assert_less,
                                    assert_less_equal)
 
-from skll.data import NDJWriter
+from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
 from skll.experiments import run_configuration
 from skll.learner import Learner
@@ -593,3 +593,44 @@ def test_ransac_regression():
                                                      [0.95, 0.45, 0.75, 0.65]):
         yield check_ransac_regression, base_estimator_name, pearson_value
 
+
+def check_dummy_regressor_predict(model_args, expected_output):
+
+    # create hard-coded featuresets with known labels
+    prng = np.random.RandomState(123456789)
+    train_labels = prng.random_sample(20)
+    train_fs = FeatureSet('regression_train',
+                          ['TrainExample{}'.format(i) for i in range(20)],
+                          labels=train_labels,
+                          features=[{"feature": i} for i in range(20)])
+
+    test_fs = FeatureSet('regression_test',
+                         ['TestExample{}'.format(i) for i in range(10)],
+                         features=[{"feature": i} for i in range(20, 30)])
+
+    # Ensure predictions are as expectedfor the given strategy
+    learner = Learner('DummyRegressor', model_kwargs=model_args)
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(np.array_equal(expected_output, predictions), True)
+
+
+def test_dummy_regressor_predict():
+
+    # create a hard-coded set of labels
+    prng = np.random.RandomState(123456789)
+    train_labels = prng.random_sample(20)
+
+    for (model_args, expected_output) in zip([{"strategy": "mean"},
+                                              {"strategy": "median"},
+                                              {"strategy": "quantile", "quantile": 0.5},
+                                              {"strategy": "quantile", "quantile": 0.0},
+                                              {"strategy": "quantile", "quantile": 1.0},
+                                              {"strategy": "constant", "constant": 1}],
+                                             [np.ones(10)*np.mean(train_labels),
+                                              np.ones(10)*np.median(train_labels),
+                                              np.ones(10)*np.median(train_labels),
+                                              np.ones(10)*np.min(train_labels),
+                                              np.ones(10)*np.max(train_labels),
+                                              np.ones(10)]):
+        yield check_dummy_regressor_predict, model_args, expected_output
