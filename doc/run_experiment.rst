@@ -227,18 +227,18 @@ below.  Custom learners can also be specified. See
 
 Classifiers:
 
-    *   **AdaBoostClassifier**: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__.  Note that the default base estimator is a ``DecisionTreeClassifier``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``MultinomialNB``, ``SGDClassifier``, and ``SVC``. Note that the last two base require setting an additional ``algorithm`` fixed parameter with the value ``'SAMME'``.
-    *   **DummyClassifier**: `Dummy Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html>`__
-    *   **DecisionTreeClassifier**: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
-    *   **GradientBoostingClassifier**: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
-    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
-    *   **LinearSVC**: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
-    *   **LogisticRegression**: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
-    *   **MultinomialNB**: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
-    *   **RandomForestClassifier**: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
-    *   **RidgeClassifier**: `Classifier using Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
-    *   **SGDClassifier**: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
-    *   **SVC**: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
+    *   **AdaBoostClassifier**: `AdaBoost Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__.  Note that the default base estimator is a ``DecisionTreeClassifier``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``MultinomialNB``, ``SGDClassifier``, and ``SVC``. Note that the last two base require setting an additional ``algorithm`` fixed parameter with the value ``'SAMME'``.
+    *   **DummyClassifier**: `Simple rule-based Classification <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier>`__
+    *   **DecisionTreeClassifier**: `Decision Tree Classification <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
+    *   **GradientBoostingClassifier**: `Gradient Boosting Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
+    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classification <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
+    *   **LinearSVC**: `Support Vector Classification using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
+    *   **LogisticRegression**: `Logistic Regression Classification using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
+    *   **MultinomialNB**: `Multinomial Naive Bayes Classification <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
+    *   **RandomForestClassifier**: `Random Forest Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
+    *   **RidgeClassifier**: `Classification using Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
+    *   **SGDClassifier**: `Stochastic Gradient Descent Classification <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
+    *   **SVC**: `Support Vector Classification using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
 
 .. _regressors:
 
@@ -247,6 +247,7 @@ Regressors:
     *   **AdaBoostRegressor**: `AdaBoost Regression <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__. Note that the default base estimator is a ``DecisionTreeRegressor``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``SGDRegressor``, and ``SVR``.
     *   **BayesianRidge**: `Bayesian Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge>`__
     *   **DecisionTreeRegressor**: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
+    *   **DummyRegressor**: `Simple Rule-based Regression <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyRegressor.html#sklearn.dummy.DummyRegressor>`__
     *   **ElasticNet**: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
     *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
     *   **HuberRegressor**: `Huber Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.HuberRegressor.html#sklearn.linear_model.HuberRegressor>`__
