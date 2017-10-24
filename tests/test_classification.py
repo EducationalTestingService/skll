@@ -178,10 +178,12 @@ def test_sparse_predict():
                                               'RandomForestClassifier',
                                               'AdaBoostClassifier',
                                               'MultinomialNB',
-                                              'KNeighborsClassifier'],
+                                              'KNeighborsClassifier',
+                                              'RidgeClassifier'],
                                              [(0.45, 0.52), (0.52, 0.5),
                                               (0.48, 0.5), (0.49, 0.5),
-                                              (0.43, 0), (0.53, 0.57)]):
+                                              (0.43, 0), (0.53, 0.57),
+                                              (0.49, 0.49)]):
         yield check_sparse_predict, learner_name, expected_scores[0], False
         if learner_name != 'MultinomialNB':
             yield check_sparse_predict, learner_name, expected_scores[1], True
@@ -238,8 +240,6 @@ def test_dummy_classifier_predict():
         predictions = learner.predict(test_fs)
         correct.append(np.array_equal(expected_output, predictions))
     eq_(correct, [True, True, True])
-
-
 
 
 def test_sparse_predict_sampler():
