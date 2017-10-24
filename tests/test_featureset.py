@@ -103,8 +103,7 @@ def test_length():
 
 def test_string_feature():
     """
-    Test to make sure that string-valued features are properly
-    encoded as binary features
+    Test that string-valued features are properly encoded as binary features
     """
     # create a featureset that is derived from an original
     # set of features containing 3 numeric features and
