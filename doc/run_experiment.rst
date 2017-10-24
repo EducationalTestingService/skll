@@ -631,6 +631,11 @@ RANSACRegressor
 
        {'loss': 'squared_loss', 'random_state': 123456789}
 
+Ridge and RidgeClassifier
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
 SVC and SVR
     .. code-block:: python
 
@@ -642,11 +647,6 @@ SGDClassifier
        {'loss': 'log', 'random_state': 123456789}
 
 SGDRegressor
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-Ridge and RidgeClassfier
     .. code-block:: python
 
        {'random_state': 123456789}
@@ -855,7 +855,7 @@ DecisionTreeClassifier and DecisionTreeRegressor
 
        [{'max_features': ["auto", None]}]
 
-ElasticNet, Lasso, and Ridge
+ElasticNet
     .. code-block:: python
 
        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
@@ -877,6 +877,11 @@ KNeighborsClassifier and KNeighborsRegressor
         [{'n_neighbors': [1, 5, 10, 100],
           'weights': ['uniform', 'distance']}]
 
+Lasso
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
 LinearSVC
     .. code-block:: python
 
@@ -896,6 +901,11 @@ RandomForestClassifier and RandomForestRegressor
     .. code-block:: python
 
        [{'max_depth': [1, 5, 10, None]}]
+
+Ridge and RidgeClassifier
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
 SGDClassifier and SGDRegressor
     .. code-block:: python
