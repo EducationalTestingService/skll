@@ -212,34 +212,36 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
     assert_almost_equal(test_score, expected_score)
 
 
-def test_dummy_classifier_predict():
-    # hard-code dataset
+def check_dummy_classifier_predict(model_args, train_labels, expected_output):
+
+    # create hard-coded featuresets based with known labels
     train_fs = FeatureSet('classification_train',
                           ['TrainExample{}'.format(i) for i in range(20)],
-                          labels=([0] * 14) + ([1] * 6),
+                          labels=train_labels,
                           features=[{"feature": i} for i in range(20)])
 
     test_fs = FeatureSet('classification_test',
                          ['TestExample{}'.format(i) for i in range(10)],
                          features=[{"feature": i} for i in range(20, 30)])
 
-    toy_data = (
-        [{"strategy": "stratified", "random_state": 12345},
-         np.array([1, 0, 0, 0, 0, 0, 1, 0, 1, 0])],
-        [{"strategy": "most_frequent"},
-         np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])],
-        [{"strategy": "constant", "constant": 1},
-         np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])]
-    )
+    # Ensure predictions are as expectedfor the given strategy
+    learner = Learner('DummyClassifier', model_kwargs=model_args)
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(np.array_equal(expected_output, predictions), True)
 
-    # Ensure predictions are correct for all strategies.
-    correct = []
-    for model_args, expected_output in toy_data:
-        learner = Learner('DummyClassifier', model_kwargs=model_args)
-        learner.train(train_fs)
-        predictions = learner.predict(test_fs)
-        correct.append(np.array_equal(expected_output, predictions))
-    eq_(correct, [True, True, True])
+
+def test_dummy_classifier_predict():
+
+    # create a known set of labels
+    train_labels = ([0] * 14) + ([1] * 6)
+    for (model_args, expected_output) in zip([{"strategy": "stratified"},
+                                              {"strategy": "most_frequent"},
+                                              {"strategy": "constant", "constant": 1}],
+                                             [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]),
+                                              np.zeros(10),
+                                              np.ones(10)*1]):
+        yield check_dummy_classifier_predict, model_args, train_labels, expected_output
 
 
 def test_sparse_predict_sampler():
