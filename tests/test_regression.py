@@ -594,11 +594,9 @@ def test_ransac_regression():
         yield check_ransac_regression, base_estimator_name, pearson_value
 
 
-def check_dummy_regressor_predict(model_args, expected_output):
+def check_dummy_regressor_predict(model_args, train_labels, expected_output):
 
-    # create hard-coded featuresets with known labels
-    prng = np.random.RandomState(123456789)
-    train_labels = prng.random_sample(20)
+    # create hard-coded featuresets with the given labels
     train_fs = FeatureSet('regression_train',
                           ['TrainExample{}'.format(i) for i in range(20)],
                           labels=train_labels,
@@ -633,4 +631,4 @@ def test_dummy_regressor_predict():
                                               np.ones(10)*np.min(train_labels),
                                               np.ones(10)*np.max(train_labels),
                                               np.ones(10)]):
-        yield check_dummy_regressor_predict, model_args, expected_output
+        yield check_dummy_regressor_predict, model_args, train_labels, expected_output
