@@ -66,7 +66,8 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
 
     cfg_file = join(config_dir, 'test_save_cv_folds.cfg')
-    os.unlink(cfg_file)
+    if exists(cfg_file):
+        os.unlink(cfg_file)
 
     for output_file in (glob(join(output_dir,
                                   'test_save_cv_folds_*')) +
@@ -143,7 +144,7 @@ def test_specified_cv_folds():
 
     # The fourth is the same as the second but uses an RBFSampler.
 
-    for test_value, assert_func, grid_size, use_hashing, use_sampler in \
+    for test_value, assert_func, expected_folds, use_hashing, use_sampler in \
             [(0.58, assert_less, 3, False, False),
              (0.1, assert_greater, 10, True, False),
              (0.57, assert_less, 3, False, True),
@@ -163,7 +164,7 @@ def test_specified_cv_folds():
 
         assert_func(overall_score, test_value)
 
-        eq_(len(fold_test_scores), grid_size)
+        eq_(len(fold_test_scores), expected_folds)
         for fold_score in fold_test_scores:
             assert_func(fold_score, test_value)
 

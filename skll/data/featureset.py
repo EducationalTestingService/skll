@@ -27,7 +27,12 @@ class FeatureSet(object):
 
     .. warning::
         FeatureSets can only be equal if the order of the instances is
-        identical because these are stored as lists/arrays.
+        identical because these are stored as lists/arrays. Since scikit-learn's
+        ``DictVectorizer`` automatically sorts the underlying feature matrix
+        if it is sparse, we do not do any sorting before checking for equality.
+        This is not a problem because we _always_ use sparse matrices with
+        ``DictVectorizer`` when creating FeatureSets.
+
 
     This replaces ``ExamplesTuple`` from older versions.
 
@@ -98,14 +103,6 @@ class FeatureSet(object):
            We consider feature values to be equal if any differences are in the
            sixth decimal place or higher.
         """
-
-        # We need to sort the indices for the underlying
-        # feature sparse matrix in case we haven't done
-        # so already.
-        if not self.features.has_sorted_indices:
-            self.features.sort_indices()
-        if not other.features.has_sorted_indices:
-            other.features.sort_indices()
 
         return (self.ids.shape == other.ids.shape and
                 self.labels.shape == other.labels.shape and
