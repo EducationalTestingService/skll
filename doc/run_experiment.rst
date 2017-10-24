@@ -597,6 +597,11 @@ DecisionTreeClassifier and DecisionTreeRegressor
 
        {'random_state': 123456789}
 
+DummyClassifier
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
 ElasticNet
     .. code-block:: python
 
