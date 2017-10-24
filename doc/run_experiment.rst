@@ -667,10 +667,12 @@ TheilSenRegressor
 
 .. note::
     This option allows us to deal with imbalanced data sets by using
-    the parameter ``class_weight`` for the classifiers: ``SVC``,
-    ``LogisticRegression``, ``LinearSVC`` and ``SGDClassifier``.
+    the parameter ``class_weight`` for the classifiers:
+    ``DecisionTreeClassifier``, ``LogisticRegression``,  ``LinearSVC``,
+    ``RandomForestClassifier``, ``RidgeClassifier``, ``SGDClassifier``,
+    and ``SVC``.
 
-    Two possible options are available. The first one is ``auto``,
+    Two possible options are available. The first one is ``balanced``,
     which automatically adjust weights inversely proportional to class
     frequencies, as shown in the following code:
 
