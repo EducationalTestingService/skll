@@ -681,13 +681,15 @@ class Learner(object):
             self._model_kwargs['loss'] = 'squared_loss'
 
         if issubclass(self._model_type,
-                      (RandomForestClassifier, LinearSVC, LogisticRegression,
-                       DecisionTreeClassifier, GradientBoostingClassifier,
-                       GradientBoostingRegressor, DecisionTreeRegressor,
-                       RandomForestRegressor, SGDClassifier, SGDRegressor,
-                       AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
-                       TheilSenRegressor, Lasso, Ridge, RANSACRegressor,
-                       RidgeClassifier, ElasticNet, SVC)):
+                      (AdaBoostClassifier, AdaBoostRegressor,
+                        DecisionTreeClassifier, DecisionTreeRegressor,
+                        DummyClassifier, ElasticNet,
+                        GradientBoostingClassifier,
+                        GradientBoostingRegressor, Lasso, LinearSVC,
+                        LinearSVR, LogisticRegression, RandomForestClassifier,
+                        RandomForestRegressor, RANSACRegressor, Ridge,
+                        RidgeClassifier, SGDClassifier, SGDRegressor,
+                        SVC, TheilSenRegressor)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
