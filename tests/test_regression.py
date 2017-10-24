@@ -24,7 +24,10 @@ from nose.tools import eq_, assert_almost_equal
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
-from sklearn.utils.testing import assert_greater, assert_less
+from sklearn.utils.testing import (assert_greater,
+                                   assert_greater_equal,
+                                   assert_less,
+                                   assert_less_equal)
 
 from skll.data import NDJWriter
 from skll.config import _setup_config_parser
@@ -113,7 +116,8 @@ def check_rescaling(name, grid_search=False):
     # make sure that both sets of correlations are close to perfectly
     # correlated, since the only thing different is that one set has been
     # rescaled
-    assert_almost_equal(pearsonr(predictions, rescaled_predictions)[0], 1.0,
+    assert_almost_equal(pearsonr(predictions, rescaled_predictions)[0],
+                        1.0,
                         places=3)
 
     # make sure that the standard deviation of the rescaled test set
@@ -130,13 +134,23 @@ def check_rescaling(name, grid_search=False):
     train_y_std = np.std(train_fs.labels)
     train_p_std = np.std(train_predictions)
     rescaled_train_p_std = np.std(rescaled_train_predictions)
-    assert_less(abs(rescaled_train_p_std - train_y_std), abs(train_p_std -
-                                                             train_y_std))
+    assert_less(abs(rescaled_train_p_std - train_y_std),
+                      abs(train_p_std - train_y_std))
 
 
 def test_rescaling():
-    for regressor_name in ['ElasticNet', 'Lasso', 'LinearRegression', 'Ridge',
-                           'LinearSVR', 'SVR', 'SGDRegressor']:
+    for regressor_name in ['BayesianRidge',
+                           'ElasticNet',
+                           'HuberRegressor',
+                           'Lars',
+                           'Lasso',
+                           'LinearRegression',
+                           'LinearSVR',
+                           'RANSACRegressor',
+                           'Ridge',
+                           'SGDRegressor',
+                           'SVR',
+                           'TheilSenRegressor']:
         for do_grid_search in [True, False]:
             yield check_rescaling, regressor_name, do_grid_search
 
@@ -148,9 +162,12 @@ def check_linear_models(name,
 
     # create a FeatureSet object with the data we want to use
     if use_feature_hashing:
-        train_fs, test_fs, weightdict = make_regression_data(
-            num_examples=5000, num_features=10, use_feature_hashing=True,
-            feature_bins=5)
+        (train_fs,
+         test_fs,
+         weightdict) = make_regression_data(num_examples=5000,
+                                            num_features=10,
+                                            use_feature_hashing=True,
+                                            feature_bins=5)
     else:
         train_fs, test_fs, weightdict = make_regression_data(num_examples=2000,
                                                              num_features=3)
@@ -166,7 +183,7 @@ def check_linear_models(name,
 
     # make sure that the weights are close to the weights
     # that we got from make_regression_data. Take the
-    # ceiling before  comparing since just comparing
+    # ceiling before comparing since just comparing
     # the ceilings should be enough to make sure nothing
     # catastrophic happened. Note though that we cannot
     # test feature weights if we are using feature hashing
@@ -199,12 +216,22 @@ def test_linear_models():
 
     for (regressor_name,
          use_feature_hashing,
-         use_rescaling) in product(['ElasticNet', 'Lasso', 'LinearRegression',
-                                    'Ridge', 'LinearSVR', 'SGDRegressor'],
+         use_rescaling) in product(['BayesianRidge',
+                                    'ElasticNet',
+                                    'HuberRegressor',
+                                    'Lars',
+                                    'Lasso',
+                                    'LinearRegression',
+                                    'Ridge',
+                                    'LinearSVR',
+                                    'SGDRegressor',
+                                    'TheilSenRegressor'],
                                    [False, True],
                                    [False, True]):
 
-        yield (check_linear_models, regressor_name, use_feature_hashing,
+        yield (check_linear_models,
+               regressor_name,
+               use_feature_hashing,
                use_rescaling)
 
 
@@ -533,3 +560,36 @@ def check_adaboost_regression(base_estimator):
 def test_adaboost_regression():
     for base_estimator_name in ['DecisionTreeRegressor', 'SGDRegressor', 'SVR']:
         yield check_adaboost_regression, base_estimator_name
+
+
+def check_ransac_regression(base_estimator, pearson_value):
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000,
+                                                sd_noise=4,
+                                                num_features=3)
+
+    # train a RANSACRegressor on the training data and evalute on the
+    # testing data
+    model_kwargs = {'base_estimator': base_estimator} if base_estimator else {}
+    learner = Learner('RANSACRegressor', model_kwargs=model_kwargs)
+    learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated and the value
+    # of the correlation is as expected
+    cor, _ = pearsonr(predictions, test_fs.labels)
+    assert_greater(cor, pearson_value)
+
+
+def test_ransac_regression():
+    for (base_estimator_name, pearson_value) in zip([None,
+                                                     'SGDRegressor',
+                                                     'DecisionTreeRegressor',
+                                                     'SVR'],
+                                                     [0.95, 0.45, 0.75, 0.65]):
+        yield check_ransac_regression, base_estimator_name, pearson_value
+
