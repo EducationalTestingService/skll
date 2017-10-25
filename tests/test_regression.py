@@ -540,7 +540,7 @@ def check_adaboost_regression(base_estimator):
                                                 sd_noise=4,
                                                 num_features=3)
 
-    # train an AdaBoostClassifier on the training data and evalute on the
+    # train an AdaBoostRegressor on the training data and evalute on the
     # testing data
     learner = Learner('AdaBoostRegressor', model_kwargs={'base_estimator':
                                                          base_estimator})
