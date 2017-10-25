@@ -166,7 +166,10 @@ def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False
 
     # train a logistic regression classifier on the training
     # data and evalute on the testing data
-    learner = Learner(learner_name)
+    if learner_name == 'MLPClassifier':
+        learner = Learner(learner_name, model_kwargs={'solver': 'lbfgs'})
+    else:
+        learner = Learner(learner_name)
     learner.train(train_fs, grid_search=False)
     test_score = learner.evaluate(test_fs)[1]
     assert_almost_equal(test_score, expected_score)
@@ -179,11 +182,12 @@ def test_sparse_predict():
                                               'AdaBoostClassifier',
                                               'MultinomialNB',
                                               'KNeighborsClassifier',
-                                              'RidgeClassifier'],
+                                              'RidgeClassifier',
+                                              'MLPClassifier'],
                                              [(0.45, 0.52), (0.52, 0.5),
                                               (0.48, 0.5), (0.49, 0.5),
                                               (0.43, 0), (0.53, 0.57),
-                                              (0.49, 0.49)]):
+                                              (0.49, 0.49), (0.49, 0.5)]):
         yield check_sparse_predict, learner_name, expected_scores[0], False
         if learner_name != 'MultinomialNB':
             yield check_sparse_predict, learner_name, expected_scores[1], True
