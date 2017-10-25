@@ -234,6 +234,7 @@ Classifiers:
     *   **KNeighborsClassifier**: `K-Nearest Neighbors Classification <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
     *   **LinearSVC**: `Support Vector Classification using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
     *   **LogisticRegression**: `Logistic Regression Classification using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
+    *   **MLPClassifier**: `Multi-layer Perceptron Classification <http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier>`__
     *   **MultinomialNB**: `Multinomial Naive Bayes Classification <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
     *   **RandomForestClassifier**: `Random Forest Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
     *   **RidgeClassifier**: `Classification using Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
@@ -256,6 +257,7 @@ Regressors:
     *   **Lasso**: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
     *   **LinearRegression**: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
     *   **LinearSVR**: `Support Vector Regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR>`__
+    *   **MLPRegressor**: `Multi-layer Perceptron Regression <http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html#sklearn.neural_network.MLPRegressor>`__
     *   **RandomForestRegressor**: `Random Forest Regression <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
     *   **RANSACRegressor**: `RANdom SAmple Consensus Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RANSACRegressor.html#sklearn.linear_model.RANSACRegressor>`__. Note that the default base estimator is a ``LinearRegression``. A different base regressor can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list.
     *   **Ridge**: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
@@ -899,6 +901,13 @@ LogisticRegression
     .. code-block:: python
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+MLPClassifier and MLPRegressor:
+    .. code-block:: python
+
+       [{'activation': ['logistic', 'tanh', 'relu'],
+         'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000],
+         'learning_rate_init': [0.001, 0.01, 0.1]}],
 
 MultinomialNB
     .. code-block:: python

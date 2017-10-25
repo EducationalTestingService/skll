@@ -66,6 +66,7 @@ from sklearn.metrics import (accuracy_score,
                              precision_recall_fscore_support)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, LinearSVR, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -108,6 +109,14 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         KNeighborsRegressor:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
+                        MLPClassifier:
+                        [{'activation': ['logistic', 'tanh', 'relu'],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000],
+                          'learning_rate_init': [0.001, 0.01, 0.1]}],
+                        MLPRegressor:
+                        [{'activation': ['logistic', 'tanh', 'relu'],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000],
+                          'learning_rate_init': [0.001, 0.01, 0.1]}],
                         MultinomialNB:
                         [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
                         Lars:
@@ -120,8 +129,9 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LogisticRegression:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SVC: [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                               'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        SVC:
+                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         RandomForestClassifier:
                         [{'max_depth': [1, 5, 10, None]}],
                         RandomForestRegressor:
@@ -542,6 +552,11 @@ class RescaledLinearSVR(LinearSVR):
 
 
 @rescaled
+class RescaledMLPRegressor(MLPRegressor):
+    pass
+
+
+@rescaled
 class RescaledRandomForestRegressor(RandomForestRegressor):
     pass
 
@@ -686,7 +701,8 @@ class Learner(object):
                         DummyClassifier, ElasticNet,
                         GradientBoostingClassifier,
                         GradientBoostingRegressor, Lasso, LinearSVC,
-                        LinearSVR, LogisticRegression, RandomForestClassifier,
+                        LinearSVR, LogisticRegression, MLPClassifier,
+                        MLPRegressor, RandomForestClassifier,
                         RandomForestRegressor, RANSACRegressor, Ridge,
                         RidgeClassifier, SGDClassifier, SGDRegressor,
                         SVC, TheilSenRegressor)):
