@@ -28,6 +28,7 @@ from skll.config import _parse_config_file
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
+from sklearn.metrics import accuracy_score
 
 from utils import (make_classification_data, make_regression_data,
                    make_sparse_data, fill_in_config_paths_for_single_file)
@@ -187,10 +188,32 @@ def test_sparse_predict():
                                              [(0.45, 0.52), (0.52, 0.5),
                                               (0.48, 0.5), (0.49, 0.5),
                                               (0.43, 0), (0.53, 0.57),
-                                              (0.49, 0.49), (0.49, 0.5)]):
+                                              (0.49, 0.49), (0.48, 0.5)]):
         yield check_sparse_predict, learner_name, expected_scores[0], False
         if learner_name != 'MultinomialNB':
             yield check_sparse_predict, learner_name, expected_scores[1], True
+
+
+def test_mlp_classification():
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_labels=3,
+                                                 num_features=5)
+
+    # train an AdaBoostRegressor on the training data and evalute on the
+    # testing data
+    learner = Learner('MLPClassifier', model_kwargs={'solver': 'lbfgs'})
+    learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated
+    accuracy = accuracy_score(predictions, test_fs.labels)
+    assert_almost_equal(accuracy, 0.85)
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
