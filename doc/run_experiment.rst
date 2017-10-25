@@ -902,13 +902,6 @@ LogisticRegression
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-MLPClassifier and MLPRegressor:
-    .. code-block:: python
-
-       [{'activation': ['logistic', 'tanh', 'relu'],
-         'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000],
-         'learning_rate_init': [0.001, 0.01, 0.1]}],
-
 MultinomialNB
     .. code-block:: python
 
