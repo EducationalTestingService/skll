@@ -594,6 +594,33 @@ def test_ransac_regression():
         yield check_ransac_regression, base_estimator_name, pearson_value
 
 
+def check_mlp_regression(use_rescaling=False):
+    train_fs, test_fs, _ = make_regression_data(num_examples=1000,
+                                                sd_noise=4,
+                                                num_features=10)
+
+    # train an AdaBoostRegressor on the training data and evalute on the
+    # testing data
+    name = 'MLPRegressor' if use_rescaling else 'RescaledMLPRegressor'
+    learner = Learner(name, model_kwargs={'solver': 'lbfgs'})
+    learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated
+    cor, _ = pearsonr(predictions, test_fs.labels)
+    assert_greater(cor, 0.99)
+
+
+def test_mlp_regression():
+    yield check_mlp_regression, False
+    yield check_mlp_regression, True
+
+
 def check_dummy_regressor_predict(model_args, train_labels, expected_output):
 
     # create hard-coded featuresets with the given labels
