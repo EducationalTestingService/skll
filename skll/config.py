@@ -64,6 +64,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         defaults = {'class_map': '{}',
                     'custom_learner_path': '',
                     'cv_folds_file': '',
+                    'folds_file': '',
                     'feature_hasher': 'False',
                     'feature_scaling': 'none',
                     'featuresets': '[]',
@@ -98,10 +99,12 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'test_directory': '',
                     'test_file': '',
                     'train_directory': '',
-                    'train_file': ''}
+                    'train_file': '',
+                    'use_folds_file_for_grid_search': 'True'}
 
         correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
+                                   'folds_file': 'Input',
                                    'cv_folds_file': 'Input',
                                    'feature_hasher': 'Input',
                                    'feature_scaling': 'Input',
@@ -137,7 +140,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'test_directory': 'Input',
                                    'test_file': 'Input',
                                    'train_directory': 'Input',
-                                   'train_file': 'Input'}
+                                   'train_file': 'Input',
+                                   'use_folds_file_for_grid_search': 'Tuning'}
 
         # make sure that the defaults dictionary and the
         # section mapping dictionary have the same keys
@@ -439,16 +443,24 @@ def _parse_config_file(config_path):
     id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
-    # get the cv folds file and make a dictionary from it, if it exists
-    cv_folds_file = _locate_file(config.get("Input", "cv_folds_file"),
-                                 config_dir)
+    # if cv_folds_file is specified, raise a deprecation warning
+    cv_folds_file_value = config.get("Input", "cv_folds_file")
+    if cv_folds_file_value:
+        logger.warning("The parameter \"cv_folds_file\" "
+                       "is deprecated and will be removed in the next "
+                       "release, please use \"folds_file\" instead.")
+        config.set("Input", "folds_file", cv_folds_file_value)
+
+    # if an external folds file is specified, then read it into a dictionary
+    folds_file = _locate_file(config.get("Input", "folds_file"), config_dir)
     num_cv_folds = config.getint("Input", "num_cv_folds")
-    if cv_folds_file:
-        cv_folds = _load_cv_folds(cv_folds_file,
-                                  ids_to_floats=ids_to_floats)
+    specified_folds_mapping = None
+    specified_num_folds = None
+    if folds_file:
+        specified_folds_mapping = _load_cv_folds(folds_file, ids_to_floats=ids_to_floats)
     else:
-        # set the number of folds for cross-validation
-        cv_folds = num_cv_folds if num_cv_folds else 10
+        # if no file is specified, then set the number of folds for cross-validation
+        specified_num_folds = num_cv_folds if num_cv_folds else 10
 
     # whether or not to save the cv fold ids
     save_cv_folds = config.get("Output", "save_cv_folds")
@@ -456,8 +468,8 @@ def _parse_config_file(config_path):
     # whether or not to do stratified cross validation
     random_folds = config.getboolean("Input", "random_folds")
     if random_folds:
-        if cv_folds_file:
-            logger.warning('Specifying cv_folds_file overrides random_folds')
+        if folds_file:
+            logger.warning('Specifying "folds_file" overrides "random_folds".')
         do_stratified_folds = False
     else:
         do_stratified_folds = True
@@ -668,6 +680,11 @@ def _parse_config_file(config_path):
     # minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")
 
+    # if an external folds file was specified do we use the same folds file
+    # for the inner grid-search in cross-validate as well?
+    use_folds_file_for_grid_search = config.getboolean("Tuning",
+                                                       "use_folds_file_for_grid_search")
+
     # how many jobs should we run in parallel for grid search
     grid_search_jobs = config.getint("Tuning", "grid_search_jobs")
     if not grid_search_jobs:
@@ -682,6 +699,14 @@ def _parse_config_file(config_path):
     if not isinstance(grid_objectives, list):
         raise TypeError("objectives should be a "
                         "list of objectives")
+
+    # `mean_squared_error` should be replaced with `neg_mean_squared_error`
+    if 'mean_squared_error' in grid_objectives:
+        logger.warning("The objective function \"mean_squared_error\" "
+                       "is deprecated and will be removed in the next "
+                       "release, please use the function "
+                       "\"neg_mean_squared_error\" instead.")
+        grid_objectives[grid_objectives.index('mean_squared_error')] = 'neg_mean_squared_error'
 
     if not all([objective in SCORERS for objective in grid_objectives]):
         raise ValueError('Invalid grid objective function(s): {}'
@@ -706,6 +731,34 @@ def _parse_config_file(config_path):
         raise ValueError('The models path should not be set when task is '
                          '{}.'.format(task))
 
+    # set the folds appropriately based on the task:
+    #  (a) if the task is `train` and if an external fold mapping is specified
+    #      then use that mapping for grid search instead of the value
+    #      contained in `grid_search_folds`.
+    #  (b) if the task is `cross_validate` and an external fold mapping is specified
+    #      then use that mapping for the outer CV loop. Depending on the value of
+    #      `use_folds_file_for_grid_search`, use the fold mapping for the inner
+    #       grid-search loop as well.
+    cv_folds = None
+    if task == 'train' and specified_folds_mapping:
+        grid_search_folds = specified_folds_mapping
+        # only print out the warning if the user actually wants to do grid search
+        if do_grid_search:
+            logger.warning("Specifying \"folds_file\" overrides both "
+                           "explicit and default \"grid_search_folds\".")
+    if task == 'cross_validate':
+        logger.warning("Specifying \"folds_file\" overrides both "
+                       "explicit and default \"num_cv_folds\".")
+        cv_folds = specified_folds_mapping if specified_folds_mapping else specified_num_folds
+        if specified_folds_mapping:
+            if use_folds_file_for_grid_search:
+                grid_search_folds = cv_folds
+            else:
+                # only print out the warning if the user wants to do grid search
+                if do_grid_search:
+                    logger.warning("The specified \"folds_file\" will "
+                                   "not be used for inner grid search.")
+
     # Create feature set names if unspecified
     if not featureset_names:
         featureset_names = [_munge_featureset_name(x) for x in featuresets]
@@ -722,12 +775,13 @@ def _parse_config_file(config_path):
             feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objectives, probability, results_path,
-            pos_label_str, feature_scaling, min_feature_count,
+            pos_label_str, feature_scaling, min_feature_count, folds_file,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-            do_stratified_folds, fixed_parameter_list, param_grid_list,
-            featureset_names, learners, prediction_dir, log_path, train_path,
-            test_path, ids_to_floats, class_map, custom_learner_path,
-            learning_curve_cv_folds_list, learning_curve_train_sizes)
+            use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
+            param_grid_list, featureset_names, learners, prediction_dir,
+            log_path, train_path, test_path, ids_to_floats, class_map,
+            custom_learner_path, learning_curve_cv_folds_list,
+            learning_curve_train_sizes)
 
 
 def _munge_featureset_name(featureset):
@@ -753,12 +807,12 @@ def _fix_json(json_string):
     return json_string
 
 
-def _load_cv_folds(cv_folds_file, ids_to_floats=False):
+def _load_cv_folds(folds_file, ids_to_floats=False):
     """
     Loads CV folds from a CSV file with columns for example ID and fold ID (and
     a header).
     """
-    with open(cv_folds_file, 'r') as f:
+    with open(folds_file, 'r') as f:
         reader = csv.reader(f)
         next(reader)  # discard the header
         res = {}

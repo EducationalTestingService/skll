@@ -16,7 +16,7 @@ things work, do the following from the command prompt:
 .. code-block:: bash
 
     $ cd examples
-    $ python make_example_iris_data.py          # download a simple dataset
+    $ python make_iris_example_data.py          # download a simple dataset
     $ cd iris
     $ run_experiment --local evaluate.cfg        # run an experiment
 
@@ -140,7 +140,14 @@ possible settings for each section is provided below, but to summarize:
     cross-validation currently uses
     `StratifiedKFold <http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedKFold.html>`__.
     You also can optionally use predetermined folds with the
-    :ref:`cv_folds_file <cv_folds_file>` setting.
+    :ref:`folds_file <folds_file>` setting.
+
+    .. note::
+
+        When using classifiers, SKLL will automatically reduce the
+        number of cross-validation folds to be the same as the minimum
+        number of examples for any of the classes in the training data.
+
 
 .. _evaluate:
 
@@ -162,9 +169,9 @@ possible settings for each section is provided below, but to summarize:
 
 *   If you want to **generate a learning curve** for your data, specify a training location and set :ref:`task` to ``learning_curve``. The learning curve is generated using essentially the same underlying process as in `scikit-learn <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html#sklearn.model_selection.learning_curve>`__ except that the SKLL feature pre-processing pipline is used while training the various models and computing the scores.
 
-.. note::
+    .. note::
 
-     Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
+        Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
 
 .. _learners_required:
 
@@ -221,6 +228,7 @@ below.  Custom learners can also be specified. See
 Classifiers:
 
     *   **AdaBoostClassifier**: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__.  Note that the default base estimator is a ``DecisionTreeClassifier``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``MultinomialNB``, ``SGDClassifier``, and ``SVC``. Note that the last two base require setting an additional ``algorithm`` fixed parameter with the value ``'SAMME'``.
+    *   **DummyClassifier**: `Dummy Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html>`__
     *   **DecisionTreeClassifier**: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
     *   **GradientBoostingClassifier**: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
     *   **KNeighborsClassifier**: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
@@ -403,18 +411,42 @@ random_folds *(Optional)*
 
 Whether to use random folds for cross-validation. Defaults to ``False``.
 
-.. _cv_folds_file:
+.. _folds_file:
 
-cv_folds_file *(Optional)*
+folds_file *(Optional)*
 """"""""""""""""""""""""""""""
 
-Path to a csv file specifying folds for cross-validation. The first row must be
-a header. This header row is ignored, so it doesn't matter what the header row
-contains, but it must be there. If there is no header row, whatever row is in
-its place will be ignored. The first column should consist of training set IDs
-and the second should be a string for the fold ID (e.g., 1 through 5, A through
-D, etc.).  If specified, the CV and grid search will leave one fold ID out at a
-time. [#]_
+Path to a csv file specifying the mapping of instances in the training data
+to folds. This can be specified when the :ref:`task` is either ``train`` or
+``cross_validate``. For the ``train`` task, if :ref:`grid_search <grid_search>`
+is ``True``, this file, if specified, will be used to define the
+cross-validation used for the grid search (leave one fold ID out at a time).
+Otherwise, it will be ignored.
+
+For the ``cross_validate`` task, this file will be used to define the outer
+cross-validation loop and, if :ref:`grid_search <grid_search>` is ``True``, also for the
+inner grid-search cross-validation loop. If the goal of specifiying the folds
+file is to ensure that the model does not learn to differentiate based on a confound:
+e.g. the data from the same person is always in the same fold, it makes sense to
+keep the same folds for both the outer and the inner cross-validation loops.
+
+However, sometimes the goal of specifying the folds file is simply for the
+purpose of comparison to another existing experiment or another context
+in which maintaining the constitution of the folds in the inner
+grid-search loop is not required. In this case, users may set the parameter
+:ref:`use_folds_file_for_grid_search <use_folds_file_for_grid_search>`
+to ``False`` which will then direct the inner grid-search cross-validation loop
+to simply use the number specified via :ref:`grid_search_folds <grid_search_folds>`
+instead of using the folds file. This will likely lead to shorter execution times as
+well depending on how many folds are in the folds file and the value
+of :ref:`grid_search_folds <grid_search_folds>`.
+
+The format of this file must be as follows: the first row must be a header.
+This header row is ignored, so it doesn't matter what the header row contains,
+but it must be there. If there is no header row, whatever row is in its place
+will be ignored. The first column should consist of training set IDs and the
+second should be a string for the fold ID (e.g., 1 through 5, A through D, etc.).
+If specified, the CV and grid search will leave one fold ID out at a time. [#]_
 
 .. _learning_curve_cv_folds_list:
 
@@ -592,7 +624,7 @@ GradientBoostingClassifier and GradientBoostingRegressor
 SVR
     .. code-block:: python
 
-       {'cache_size': 1000, 'kernel': b'linear'}
+       {'cache_size': 1000, 'kernel': 'rbf'}
 
 .. _imbalanced_data:
 
@@ -671,6 +703,21 @@ grid_search_jobs *(Optional)*
 Number of folds to run in parallel when using grid search. Defaults to
 number of grid search folds.
 
+.. _use_folds_file_for_grid_search:
+
+use_folds_file_for_grid_search *(Optional)*
+"""""""""""""""""""""""""""""""""""""""""""
+
+Whether to use the specified :ref:`folds_file <folds_file>` for the inner grid-search
+cross-validation loop when :ref:`task` is set to ``cross_validate``.
+Defaults to ``True``.
+
+.. note::
+
+    This flag is ignored for all other tasks, including the
+    ``train`` task where a specified :ref:`folds_file <folds_file>` is
+    *always* used for the grid search.
+
 .. _min_feature_count:
 
 min_feature_count *(Optional)*
@@ -740,7 +787,7 @@ Regression or classification with binary labels:
 Regression:
 
     *   **r2**: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
-    *   **mean_squared_error**: `Mean squared error regression loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__
+    *   **neg_mean_squared_error**: The negative of the `mean squared error <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <https://github.com/scikit-learn/scikit-learn/blob/2f7f5a1a50c2a2022d42160fce9d0596ecac2ada/sklearn/metrics/scorer.py#L355>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
 
 
 Defaults to ``['f1_score_micro']``.
@@ -815,7 +862,7 @@ SVC
     .. code-block:: python
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-         'gamma': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+         'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]
 
 SVR
     .. code-block:: python
@@ -859,7 +906,7 @@ directory is used.
 log *(Optional)*
 """"""""""""""""
 
-Directory to store result files in. If omitted, the current working
+Directory to store log files in. If omitted, the current working
 directory is used.
 
 .. _models:
@@ -884,6 +931,17 @@ predictions.
     :ref:`log <log>`, :ref:`models <models>`, and
     :ref:`predictions <predictions>`.
 
+
+.. _save_cv_folds:
+
+save_cv_folds *(Optional)*
+""""""""""""""""""""""""""
+
+Whether to save the folds that were used for a cross-validation experiment
+to a CSV file named ``EXPERIMENT_skll_fold_ids.csv`` in the :ref:`results`
+directory, where ``EXPERIMENT`` refers to the :ref:`experiment_name`.
+Defaults to ``False``.
+
 .. _run_experiment:
 
 Using run_experiment
@@ -892,7 +950,7 @@ Using run_experiment
 
 Once you have created the :ref:`configuration file <create_config>` for your
 experiment, you can usually just get your experiment started by running
-``run_experiment CONFIGFILE``. That said, there are a few options that are
+``run_experiment CONFIGFILE``. [#]_ That said, there are a few options that are
 specified via command-line arguments instead of in the configuration file:
 
 .. option:: -a <num_features>, --ablation <num_features>
@@ -1013,4 +1071,7 @@ functions on rows and learners on columns. Here's an example of such a plot.
    future, but we have not added this functionality yet.
 .. [#] K-1 folds will be used for grid search within CV, so there should be at
    least 3 fold IDs.
+.. [#] If you installed SKLL via pip on macOS, you might get an error when
+   using ``run_experiment`` to generate learning curves. To get around this,
+   add ``MPLBACKEND=Agg`` before the ``run_experiment`` command and re-run.
 .. [#] This will happen automatically if GridMap cannot be imported.

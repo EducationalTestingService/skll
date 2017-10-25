@@ -23,7 +23,7 @@ from io import open, BytesIO, StringIO
 import numpy as np
 from bs4 import UnicodeDammit
 from six import iteritems, PY2, PY3, string_types, text_type
-from six.moves import map, zip
+from six.moves import zip
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet

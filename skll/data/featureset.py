@@ -27,7 +27,12 @@ class FeatureSet(object):
 
     .. warning::
         FeatureSets can only be equal if the order of the instances is
-        identical because these are stored as lists/arrays.
+        identical because these are stored as lists/arrays. Since scikit-learn's
+        ``DictVectorizer`` automatically sorts the underlying feature matrix
+        if it is sparse, we do not do any sorting before checking for equality.
+        This is not a problem because we _always_ use sparse matrices with
+        ``DictVectorizer`` when creating FeatureSets.
+
 
     This replaces ``ExamplesTuple`` from older versions.
 
@@ -99,14 +104,6 @@ class FeatureSet(object):
            sixth decimal place or higher.
         """
 
-        # We need to sort the indices for the underlying
-        # feature sparse matrix in case we haven't done
-        # so already.
-        if not self.features.has_sorted_indices:
-            self.features.sort_indices()
-        if not other.features.has_sorted_indices:
-            other.features.sort_indices()
-
         return (self.ids.shape == other.ids.shape and
                 self.labels.shape == other.labels.shape and
                 self.features.shape == other.features.shape and
@@ -127,13 +124,16 @@ class FeatureSet(object):
                 raise ValueError('FeatureSets can only be iterated through if '
                                  'they use a DictVectorizer for their feature '
                                  'vectorizer.')
-            for id_, label_, feats in zip(self.ids, self.labels,
-                                          self.features):
+            for id_, label_, feats in zip(self.ids, self.labels, self.features):
+
+                # reshape to a 2D matrix if we are not using a sparse matrix
+                # to store the features
+                feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
+
                 # When calling inverse_transform we have to add [0] to get the
                 # results for the current instance because it always returns a
                 # 2D array
-                yield (id_, label_,
-                       self.vectorizer.inverse_transform(feats)[0])
+                yield (id_, label_, self.vectorizer.inverse_transform(feats)[0])
         else:
             return
 
@@ -300,6 +300,10 @@ class FeatureSet(object):
             # Skip instances with labels not in filter
             if labels is not None and (label_ in labels) == inverse:
                 continue
+
+            # reshape to a 2D matrix if we are not using a sparse matrix
+            # to store the features
+            feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
             feat_dict = self.vectorizer.inverse_transform(feats)[0]
             if features is not None:
                 feat_dict = {name: value for name, value in

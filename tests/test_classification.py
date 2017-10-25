@@ -61,11 +61,11 @@ def tearDown():
     if exists(join(test_dir, 'test_single_file.jsonlines')):
         os.unlink(join(test_dir, 'test_single_file.jsonlines'))
 
-    if exists(join(output_dir, 'rare_class.predictions')):
-        os.unlink(join(output_dir, 'rare_class.predictions'))
+    if exists(join(output_dir, 'rare_class_predictions.tsv')):
+        os.unlink(join(output_dir, 'rare_class_predictions.tsv'))
 
-    if exists(join(output_dir, 'float_class.predictions')):
-        os.unlink(join(output_dir, 'float_class.predictions'))
+    if exists(join(output_dir, 'float_class_predictions.tsv')):
+        os.unlink(join(output_dir, 'float_class_predictions.tsv'))
 
     for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
         os.unlink(output_file)
@@ -152,7 +152,7 @@ def test_rare_class():
                            grid_objective='unweighted_kappa',
                            prediction_prefix=prediction_prefix)
 
-    with open(prediction_prefix + '.predictions', 'r') as f:
+    with open(prediction_prefix + '_predictions.tsv', 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
@@ -208,6 +208,38 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
 
     expected_score = 0.48 if use_feature_hashing else 0.45
     assert_almost_equal(test_score, expected_score)
+
+
+def test_dummy_classifier_predict():
+    # hard-code dataset
+    train_fs = FeatureSet('classification_train',
+                          ['TrainExample{}'.format(i) for i in range(20)],
+                          labels=([0] * 14) + ([1] * 6),
+                          features=[{"feature": i} for i in range(20)])
+
+    test_fs = FeatureSet('classification_test',
+                         ['TestExample{}'.format(i) for i in range(10)],
+                         features=[{"feature": i} for i in range(20, 30)])
+
+    toy_data = (
+        [{"strategy": "stratified", "random_state": 12345},
+         np.array([1, 0, 0, 0, 0, 0, 1, 0, 1, 0])],
+        [{"strategy": "most_frequent"},
+         np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])],
+        [{"strategy": "constant", "constant": 1},
+         np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])]
+    )
+
+    # Ensure predictions are correct for all strategies.
+    correct = []
+    for model_args, expected_output in toy_data:
+        learner = Learner('DummyClassifier', model_kwargs=model_args)
+        learner.train(train_fs)
+        predictions = learner.predict(test_fs)
+        correct.append(np.array_equal(expected_output, predictions))
+    eq_(correct, [True, True, True])
+
+
 
 
 def test_sparse_predict_sampler():
@@ -435,7 +467,7 @@ def test_float_classes():
                            grid_objective='accuracy',
                            prediction_prefix=prediction_prefix)
 
-    with open(prediction_prefix + '.predictions', 'r') as f:
+    with open(prediction_prefix + '_predictions.tsv', 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]

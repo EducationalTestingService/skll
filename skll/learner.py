@@ -34,6 +34,7 @@ from sklearn.model_selection import (GridSearchCV,
                                      LeaveOneGroupOut,
                                      ShuffleSplit,
                                      StratifiedKFold)
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
                               GradientBoostingClassifier,
@@ -98,6 +99,8 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'max_features': ["auto", None]}],
                         DecisionTreeRegressor:
                         [{'max_features': ["auto", None]}],
+                        DummyClassifier:
+                        [{}],
                         ElasticNet:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         GradientBoostingClassifier:
@@ -155,7 +158,7 @@ _BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                      'spearman'])
 
 _REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
-                                        'mean_squared_error'])
+                                        'neg_mean_squared_error'])
 
 _CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
                                             'precision',
@@ -177,7 +180,7 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
 
 _REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor)
 
-MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
+MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
 
 # pylint: disable=W0223,R0903
@@ -791,6 +794,7 @@ class Learner(object):
 
             for i, label in enumerate(label_list):
                 coef = self.model.coef_[i]
+                coef = coef.reshape(1, -1)
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
                     if coef[idx]:
@@ -1116,8 +1120,7 @@ class Learner(object):
             # set up grid search folds
             if isinstance(grid_search_folds, int):
                 grid_search_folds = \
-                    self._compute_num_folds_from_example_counts(
-                        grid_search_folds, labels)
+                    self._compute_num_folds_from_example_counts(grid_search_folds, labels)
 
                 if not grid_jobs:
                     grid_jobs = grid_search_folds
@@ -1126,16 +1129,17 @@ class Learner(object):
                 folds = grid_search_folds
             else:
                 # use the number of unique fold IDs as the number of grid jobs
+                num_specified_folds = len(set(grid_search_folds.values()))
                 if not grid_jobs:
-                    grid_jobs = len(np.unique(grid_search_folds))
+                    grid_jobs = num_specified_folds
                 else:
-                    grid_jobs = min(len(np.unique(grid_search_folds)),
-                                    grid_jobs)
+                    grid_jobs = min(num_specified_folds, grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(itervalues(grid_search_folds))
                 fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
                                curr_id in examples.ids]
-                folds = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids).split(examples.features, examples.labels, fold_groups)
+                kfold = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids)
+                folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # Use default parameter grid if we weren't passed one
             if not param_grid:
@@ -1178,7 +1182,7 @@ class Learner(object):
         :type examples: FeatureSet
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
-                                  It will be followed by ".predictions"
+                                  It will be followed by "_predictions.tsv"
         :type prediction_prefix: str
         :param append: Should we append the current predictions to the file if
                        it exists?
@@ -1281,7 +1285,7 @@ class Learner(object):
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the
                                   filename. It will be followed by
-                                  ".predictions"
+                                  "_predictions.tsv"
         :type prediction_prefix: str
         :param append: Should we append the current predictions to the file if
                        it exists?
@@ -1377,7 +1381,7 @@ class Learner(object):
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            prediction_file = '{}.predictions'.format(prediction_prefix)
+            prediction_file = '{}_predictions.tsv'.format(prediction_prefix)
             with open(prediction_file,
                       "w" if not append else "a") as predictionfh:
                 # header
@@ -1435,10 +1439,19 @@ class Learner(object):
             cv_folds = min_examples_per_label
         return cv_folds
 
-    def cross_validate(self, examples, stratified=True, cv_folds=10,
-                       grid_search=False, grid_search_folds=3, grid_jobs=None,
-                       grid_objective='f1_score_micro', prediction_prefix=None,
-                       param_grid=None, shuffle=False, save_cv_folds=False):
+    def cross_validate(self,
+                       examples,
+                       stratified=True,
+                       cv_folds=10,
+                       grid_search=False,
+                       grid_search_folds=3,
+                       grid_jobs=None,
+                       grid_objective='f1_score_micro',
+                       prediction_prefix=None,
+                       param_grid=None,
+                       shuffle=False,
+                       save_cv_folds=False,
+                       use_custom_folds_for_grid_search=True):
         """
         Cross-validates a given model on the training examples.
 
@@ -1454,9 +1467,9 @@ class Learner(object):
                             Note: This will make this take *much* longer.
         :type grid_search: bool
         :param grid_search_folds: The number of folds to use when doing the
-                                  grid search (ignored if cv_folds is set to
-                                  a dictionary mapping examples to folds).
-        :type grid_search_folds: int
+                                  grid search, or a mapping from
+                                  example IDs to folds.
+        :type grid_search_folds: int or dict
         :param grid_jobs: The number of jobs to run in parallel when doing the
                           grid search. If unspecified or 0, the number of
                           grid search folds will be used.
@@ -1471,18 +1484,24 @@ class Learner(object):
                           lists of parameter values
         :param prediction_prefix: If saving the predictions, this is the
                                   prefix that will be used for the filename.
-                                  It will be followed by ".predictions"
+                                  It will be followed by "_predictions.tsv"
         :type prediction_prefix: str
         :param shuffle: Shuffle examples before splitting into folds for CV.
         :type shuffle: bool
-        :param save_cv_folds: Whether to save the cv fold ids or not
+        :param save_cv_folds: Whether to save the cv fold ids or not?
         :type save_cv_folds: bool
+        :param use_custom_folds_for_grid_search: If ``cv_folds`` is a custom dictionary, but
+                                                 ``grid_search_folds`` is not, perhaps due to user
+                                                 oversight, should the same custom dictionary
+                                                 automatically be used for the inner grid-search
+                                                 cross-validation?
+        :type use_custom_folds_for_grid_search: bool
 
         :return: The confusion matrix, overall accuracy, per-label PRFs, and
                  model parameters for each fold in one list, and another list
                  with the grid search scores for each fold. Also return a
                  dictionary containing the test-fold number for each id
-                 if save_cv_folds is True, otherwise None.
+                 if ``save_cv_folds`` is ``True``, otherwise ``None``.
         :rtype: (list of 4-tuples, list of float, dict)
         """
 
@@ -1514,8 +1533,8 @@ class Learner(object):
 
         # Set up the cross-validation iterator.
         if isinstance(cv_folds, int):
-            cv_folds = self._compute_num_folds_from_example_counts(
-                cv_folds, examples.labels)
+            cv_folds = self._compute_num_folds_from_example_counts(cv_folds,
+                                                                   examples.labels)
 
             stratified = (stratified and
                           self.model_type._estimator_type == 'classifier')
@@ -1525,21 +1544,28 @@ class Learner(object):
             else:
                 kfold = KFold(n_splits=cv_folds, random_state=random_state)
                 cv_groups = None
-        # Otherwise cv_volds is a dict
+        # Otherwise cv_folds is a dict
         else:
             # if we have a mapping from IDs to folds, use it for the overall
             # cross-validation as well as the grid search within each
             # training fold.  Note that this means that the grid search
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
-            # Only retain IDs within folds if they're in grid_search_folds
             dummy_label = next(itervalues(cv_folds))
-            fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in
-                           examples.ids]
+            fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
             # Only retain IDs within folds if they're in cv_folds
             kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
             cv_groups = fold_groups
-            grid_search_folds = cv_folds
+
+            # If we are planning to do grid search, set the grid search folds
+            # to be the same as the custom cv folds unless a flag is set that
+            # explicitly tells us not to. Note that this should only happen
+            # when we are using the API; otherwise the configparser should
+            # take care of this even before this method is called
+            if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
+                logger.warning("The specified custom folds will be used for "
+                               "the inner grid search.")
+                grid_search_folds = cv_folds
 
         # Save the cross-validation fold information, if required
         # The format is that the test-fold that each id appears in is stored
