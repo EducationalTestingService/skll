@@ -935,6 +935,14 @@ SVR
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
 
+.. note::
+    Note that learners not listed here do not have any default
+    parameter grids in SKLL either because there are no hyper-parameters
+    to be tuned or because there are too many and decisions about
+    which ones to tune and how depend on the data being used for the
+    experiment and are best left up to the user.
+
+
 .. _pos_label_str:
 
 pos_label_str *(Optional)*
