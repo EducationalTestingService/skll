@@ -200,7 +200,7 @@ def test_mlp_classification():
                                                  num_labels=3,
                                                  num_features=5)
 
-    # train an AdaBoostRegressor on the training data and evalute on the
+    # train an MLPCLassifier on the training data and evalute on the
     # testing data
     learner = Learner('MLPClassifier', model_kwargs={'solver': 'lbfgs'})
     learner.train(train_fs, grid_search=False)
