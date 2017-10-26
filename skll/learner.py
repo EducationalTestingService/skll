@@ -1165,9 +1165,6 @@ class Learner(object):
             else:
                 xtrain = self.sampler.fit_transform(xtrain)
 
-        # Instantiate an estimator and get the default parameter grid to search
-        estimator, default_param_grid = self._create_estimator()
-
         # use label dict transformed version of examples.labels if doing
         # classification
         if self.model_type._estimator_type == 'classifier':
@@ -1175,6 +1172,23 @@ class Learner(object):
                                examples.labels])
         else:
             labels = examples.labels
+
+        # Instantiate an estimator and get the default parameter grid to search
+        estimator, default_param_grid = self._create_estimator()
+
+        # Use default parameter grid if we weren't passed one
+        # In case the default parameter grid is also empty
+        # then there's no point doing the grid search at all
+        if not param_grid:
+            if default_param_grid == [{}]:
+                logger.warning("SKLL has no default parameter grid "
+                               "available for the {} learner and no "
+                               "parameter grids were supplied. Using "
+                               "default values instead of grid "
+                               "search.".format(self._model_type.__name__))
+                grid_search = False
+            else:
+                param_grid = default_param_grid
 
         # set up a grid searcher if we are asked to
         if grid_search:
