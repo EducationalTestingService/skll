@@ -27,10 +27,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.utils.testing import (assert_greater,
-                                   assert_greater_equal,
-                                   assert_less,
-                                   assert_less_equal)
+from sklearn.utils.testing import assert_greater, assert_less
 
 from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
