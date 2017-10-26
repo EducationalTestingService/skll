@@ -629,6 +629,11 @@ LogisticRegression
 
        {'random_state': 123456789}
 
+MLPClassifier and MLPRegressor:
+    .. code-block:: python
+
+       {'learning_rate': 'invscaling', max_iter': 500}
+
 RandomForestClassifier and RandomForestRegressor
     .. code-block:: python
 
@@ -901,6 +906,13 @@ LogisticRegression
     .. code-block:: python
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+MLPClassifier and MLPRegressor:
+    .. code-block:: python
+
+       [{'activation': ['logistic', 'tanh', 'relu'],
+         'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+         'learning_rate_init': [0.001, 0.01, 0.1]}],
 
 MultinomialNB
     .. code-block:: python

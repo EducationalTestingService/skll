@@ -110,9 +110,13 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
                         MLPClassifier:
-                        [{}],
+                        [{'activation': ['logistic', 'tanh', 'relu'],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'learning_rate_init': [0.001, 0.01, 0.1]}],
                         MLPRegressor:
-                        [{}],
+                        [{'activation': ['logistic', 'tanh', 'relu'],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'learning_rate_init': [0.001, 0.01, 0.1]}],
                         MultinomialNB:
                         [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
                         Lars:
@@ -690,6 +694,10 @@ class Learner(object):
             self._model_kwargs['loss'] = 'log'
         elif issubclass(self._model_type, RANSACRegressor):
             self._model_kwargs['loss'] = 'squared_loss'
+        elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
+            self._model_kwargs['learning_rate'] = 'invscaling'
+            self._model_kwargs['max_iter'] = 500
+
 
         if issubclass(self._model_type,
                       (AdaBoostClassifier, AdaBoostRegressor,
