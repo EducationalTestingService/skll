@@ -1179,7 +1179,7 @@ class Learner(object):
         # Use default parameter grid if we weren't passed one
         # In case the default parameter grid is also empty
         # then there's no point doing the grid search at all
-        if not param_grid:
+        if grid_search and not param_grid:
             if default_param_grid == [{}]:
                 logger.warning("SKLL has no default parameter grid "
                                "available for the {} learner and no "
