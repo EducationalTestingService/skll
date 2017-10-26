@@ -15,6 +15,8 @@ from __future__ import (absolute_import, division, print_function,
 import math
 import os
 import re
+import warnings
+
 from glob import glob
 from itertools import product
 from os.path import abspath, dirname, join, exists
@@ -24,6 +26,7 @@ from nose.tools import eq_, assert_almost_equal
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.utils.testing import (assert_greater,
                                    assert_greater_equal,
                                    assert_less,
@@ -536,9 +539,9 @@ def test_fancy_output():
 
 
 def check_adaboost_regression(base_estimator):
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000,
+    train_fs, test_fs, _ = make_regression_data(num_examples=1000,
                                                 sd_noise=4,
-                                                num_features=3)
+                                                num_features=5)
 
     # train an AdaBoostRegressor on the training data and evalute on the
     # testing data
@@ -595,15 +598,18 @@ def test_ransac_regression():
 
 
 def check_mlp_regression(use_rescaling=False):
-    train_fs, test_fs, _ = make_regression_data(num_examples=1000,
+    train_fs, test_fs, _ = make_regression_data(num_examples=500,
                                                 sd_noise=4,
-                                                num_features=10)
+                                                num_features=5)
 
-    # train an AdaBoostRegressor on the training data and evalute on the
+    # train an MLPRegressor on the training data and evalute on the
     # testing data
     name = 'MLPRegressor' if use_rescaling else 'RescaledMLPRegressor'
-    learner = Learner(name, model_kwargs={'solver': 'lbfgs'})
-    learner.train(train_fs, grid_search=False)
+    learner = Learner(name)
+    # we don't want to see any convergence warnings during the grid search
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=ConvergenceWarning)
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # now generate the predictions on the test set
     predictions = learner.predict(test_fs)
@@ -613,7 +619,7 @@ def check_mlp_regression(use_rescaling=False):
     # using make_regression_data. To do this, we just
     # make sure that they are correlated
     cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.99)
+    assert_greater(cor, 0.98)
 
 
 def test_mlp_regression():

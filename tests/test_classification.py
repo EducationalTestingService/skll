@@ -16,11 +16,16 @@ import glob
 import itertools
 import json
 import os
+import warnings
+
 from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
+
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.metrics import accuracy_score
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
@@ -28,7 +33,6 @@ from skll.config import _parse_config_file
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
-from sklearn.metrics import accuracy_score
 
 from utils import (make_classification_data, make_regression_data,
                    make_sparse_data, fill_in_config_paths_for_single_file)
@@ -202,8 +206,10 @@ def test_mlp_classification():
 
     # train an MLPCLassifier on the training data and evalute on the
     # testing data
-    learner = Learner('MLPClassifier', model_kwargs={'solver': 'lbfgs'})
-    learner.train(train_fs, grid_search=False)
+    learner = Learner('MLPClassifier')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=ConvergenceWarning)
+        learner.train(train_fs, grid_search=True)
 
     # now generate the predictions on the test set
     predictions = learner.predict(test_fs)
@@ -213,7 +219,7 @@ def test_mlp_classification():
     # using make_regression_data. To do this, we just
     # make sure that they are correlated
     accuracy = accuracy_score(predictions, test_fs.labels)
-    assert_almost_equal(accuracy, 0.85)
+    assert_almost_equal(accuracy, 0.825)
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
