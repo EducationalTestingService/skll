@@ -996,7 +996,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
                 # the log file that stores the actual output of this script (e.g.,
                 # the tuned parameters, what kind of experiment was run, etc.)
-                temp_logfile = join(log_path, '{}.log'.format(job_name))
+                logfile = join(log_path, '{}.log'.format(job_name))
 
                 # Figure out result json file path
                 result_json_path = join(results_path,
@@ -1033,7 +1033,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["grid_search"] = do_grid_search
                 job_args["grid_objective"] = grid_objective
                 job_args["suffix"] = suffix
-                job_args["log_path"] = temp_logfile
+                job_args["log_path"] = logfile
                 job_args["probability"] = probability
                 job_args["results_path"] = results_path
                 job_args["sampler_parameters"] = (fixed_sampler_parameters
