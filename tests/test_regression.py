@@ -539,9 +539,9 @@ def test_fancy_output():
 
 
 def check_adaboost_regression(base_estimator):
-    train_fs, test_fs, _ = make_regression_data(num_examples=1000,
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000,
                                                 sd_noise=4,
-                                                num_features=5)
+                                                num_features=3)
 
     # train an AdaBoostRegressor on the training data and evalute on the
     # testing data
