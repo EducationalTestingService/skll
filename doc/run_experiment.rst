@@ -227,34 +227,43 @@ below.  Custom learners can also be specified. See
 
 Classifiers:
 
-    *   **AdaBoostClassifier**: `AdaBoost Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__.  Note that the default base estimator is a ``DecisionTreeClassifier``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``MultinomialNB``, ``SGDClassifier``, and ``SVC``. Note that the last two base require setting an additional ``algorithm`` fixed parameter with the value ``'SAMME'``.
-    *   **DummyClassifier**: `Dummy Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html>`__
-    *   **DecisionTreeClassifier**: `Decision Tree Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
-    *   **GradientBoostingClassifier**: `Gradient Boosting Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
-    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
-    *   **LinearSVC**: `SVM using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
-    *   **LogisticRegression**: `Logistic regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
-    *   **MultinomialNB**: `Multinomial Naive Bayes <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
-    *   **RandomForestClassifier**: `Random Forest Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
-    *   **SGDClassifier**: `Stochastic Gradient Descent Classifier <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
-    *   **SVC**: `SVM using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
+    *   **AdaBoostClassifier**: `AdaBoost Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__.  Note that the default base estimator is a ``DecisionTreeClassifier``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``MultinomialNB``, ``SGDClassifier``, and ``SVC``. Note that the last two base require setting an additional ``algorithm`` fixed parameter with the value ``'SAMME'``.
+    *   **DummyClassifier**: `Simple rule-based Classification <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier>`__
+    *   **DecisionTreeClassifier**: `Decision Tree Classification <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
+    *   **GradientBoostingClassifier**: `Gradient Boosting Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
+    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classification <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
+    *   **LinearSVC**: `Support Vector Classification using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
+    *   **LogisticRegression**: `Logistic Regression Classification using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
+    *   **MLPClassifier**: `Multi-layer Perceptron Classification <http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier>`__
+    *   **MultinomialNB**: `Multinomial Naive Bayes Classification <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
+    *   **RandomForestClassifier**: `Random Forest Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
+    *   **RidgeClassifier**: `Classification using Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
+    *   **SGDClassifier**: `Stochastic Gradient Descent Classification <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
+    *   **SVC**: `Support Vector Classification using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
 
 .. _regressors:
 
 Regressors:
 
-    *   **AdaBoostRegressor**: `AdaBoost Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__. Note that the default base estimator is a ``DecisionTreeRegressor``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``SGDRegressor``, and ``SVR``.
+    *   **AdaBoostRegressor**: `AdaBoost Regression <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__. Note that the default base estimator is a ``DecisionTreeRegressor``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``SGDRegressor``, and ``SVR``.
+    *   **BayesianRidge**: `Bayesian Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge>`__
     *   **DecisionTreeRegressor**: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
+    *   **DummyRegressor**: `Simple Rule-based Regression <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyRegressor.html#sklearn.dummy.DummyRegressor>`__
     *   **ElasticNet**: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
     *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
-    *   **KNeighborsRegressor**: `K-Nearest Neighbors Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
+    *   **HuberRegressor**: `Huber Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.HuberRegressor.html#sklearn.linear_model.HuberRegressor>`__
+    *   **KNeighborsRegressor**: `K-Nearest Neighbors Regression <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
+    *   **Lars**: `Least Angle Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lars.html#sklearn.linear_model.Lars>`__
     *   **Lasso**: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
     *   **LinearRegression**: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
     *   **LinearSVR**: `Support Vector Regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR>`__
-    *   **RandomForestRegressor**: `Random Forest Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
+    *   **MLPRegressor**: `Multi-layer Perceptron Regression <http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html#sklearn.neural_network.MLPRegressor>`__
+    *   **RandomForestRegressor**: `Random Forest Regression <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
+    *   **RANSACRegressor**: `RANdom SAmple Consensus Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RANSACRegressor.html#sklearn.linear_model.RANSACRegressor>`__. Note that the default base estimator is a ``LinearRegression``. A different base regressor can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list.
     *   **Ridge**: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
-    *   **SGDRegressor**: `Stochastic Gradient Descent Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
+    *   **SGDRegressor**: `Stochastic Gradient Descent Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
     *   **SVR**: `Support Vector Regression using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
+    *   **TheilSenRegressor**: `Theil-Sen Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__
 
     For all regressors you can also prepend ``Rescaled`` to the
     beginning of the full name (e.g., ``RescaledSVR``) to get a version
@@ -580,50 +589,97 @@ classifier in :ref:`learners` list. Any empty ones will be ignored
 
 The default fixed parameters (beyond those that scikit-learn sets) are:
 
-LogisticRegression
+AdaBoostClassifier and AdaBoostRegressor
     .. code-block:: python
 
-       {'random_state': 123456789}
-
-LinearSVC
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-SVC
-    .. code-block:: python
-
-       {'cache_size': 1000}
+       {'n_estimators': 500, 'random_state': 123456789}
 
 DecisionTreeClassifier and DecisionTreeRegressor
     .. code-block:: python
 
        {'random_state': 123456789}
 
-RandomForestClassifier and RandomForestRegressor
+DummyClassifier
     .. code-block:: python
 
-       {'n_estimators': 500, 'random_state': 123456789}
+       {'random_state': 123456789}
 
+ElasticNet
+    .. code-block:: python
+
+       {'random_state': 123456789}
 
 GradientBoostingClassifier and GradientBoostingRegressor
     .. code-block:: python
 
        {'n_estimators': 500, 'random_state': 123456789}
 
-SVR
+Lasso:
     .. code-block:: python
 
-       {'cache_size': 1000, 'kernel': 'rbf'}
+       {'random_state': 123456789}
+
+LinearSVC and LinearSVR
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+LogisticRegression
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+MLPClassifier and MLPRegressor:
+    .. code-block:: python
+
+       {'learning_rate': 'invscaling', max_iter': 500}
+
+RandomForestClassifier and RandomForestRegressor
+    .. code-block:: python
+
+       {'n_estimators': 500, 'random_state': 123456789}
+
+RANSACRegressor
+    .. code-block:: python
+
+       {'loss': 'squared_loss', 'random_state': 123456789}
+
+Ridge and RidgeClassifier
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+SVC and SVR
+    .. code-block:: python
+
+       {'cache_size': 1000}
+
+SGDClassifier
+    .. code-block:: python
+
+       {'loss': 'log', 'random_state': 123456789}
+
+SGDRegressor
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+TheilSenRegressor
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
 
 .. _imbalanced_data:
 
 .. note::
     This option allows us to deal with imbalanced data sets by using
-    the parameter ``class_weight`` for the classifiers: ``SVC``,
-    ``LogisticRegression``, ``LinearSVC`` and ``SGDClassifier``.
+    the parameter ``class_weight`` for the classifiers:
+    ``DecisionTreeClassifier``, ``LogisticRegression``,  ``LinearSVC``,
+    ``RandomForestClassifier``, ``RidgeClassifier``, ``SGDClassifier``,
+    and ``SVC``.
 
-    Two possible options are available. The first one is ``auto``,
+    Two possible options are available. The first one is ``balanced``,
     which automatically adjust weights inversely proportional to class
     frequencies, as shown in the following code:
 
@@ -801,12 +857,20 @@ AdaBoostClassifier and AdaBoostRegressor
 
         [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
+BayesianRidge
+    .. code-block:: python
+
+        [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
+          'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
+          'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
+          'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}]
+
 DecisionTreeClassifier and DecisionTreeRegressor
     .. code-block:: python
 
        [{'max_features': ["auto", None]}]
 
-ElasticNet, Lasso, and Ridge
+ElasticNet
     .. code-block:: python
 
        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
@@ -816,11 +880,22 @@ GradientBoostingClassifier and GradientBoostingRegressor
 
        [{'max_depth': [1, 3, 5]}]
 
+HuberRegressor
+    .. code-block:: python
+
+        [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
+          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}]
+
 KNeighborsClassifier and KNeighborsRegressor
     .. code-block:: python
 
         [{'n_neighbors': [1, 5, 10, 100],
           'weights': ['uniform', 'distance']}]
+
+Lasso
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
 LinearSVC
     .. code-block:: python
@@ -832,6 +907,13 @@ LogisticRegression
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
+MLPClassifier and MLPRegressor:
+    .. code-block:: python
+
+       [{'activation': ['logistic', 'tanh', 'relu'],
+         'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+         'learning_rate_init': [0.001, 0.01, 0.1]}],
+
 MultinomialNB
     .. code-block:: python
 
@@ -841,6 +923,11 @@ RandomForestClassifier and RandomForestRegressor
     .. code-block:: python
 
        [{'max_depth': [1, 5, 10, None]}]
+
+Ridge and RidgeClassifier
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
 SGDClassifier and SGDRegressor
     .. code-block:: python
@@ -858,6 +945,14 @@ SVR
     .. code-block:: python
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+
+.. note::
+    Note that learners not listed here do not have any default
+    parameter grids in SKLL either because there are no hyper-parameters
+    to be tuned or because there are too many and decisions about
+    which ones to tune and how depend on the data being used for the
+    experiment and are best left up to the user.
 
 
 .. _pos_label_str:

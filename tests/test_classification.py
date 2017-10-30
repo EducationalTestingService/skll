@@ -16,11 +16,17 @@ import glob
 import itertools
 import json
 import os
+import warnings
+
 from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
+
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.metrics import accuracy_score
+from sklearn.utils.testing import assert_greater
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
@@ -164,7 +170,7 @@ def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False
     train_fs, test_fs = make_sparse_data(
         use_feature_hashing=use_feature_hashing)
 
-    # train a logistic regression classifier on the training
+    # train the given classifier on the training
     # data and evalute on the testing data
     learner = Learner(learner_name)
     learner.train(train_fs, grid_search=False)
@@ -178,13 +184,40 @@ def test_sparse_predict():
                                               'RandomForestClassifier',
                                               'AdaBoostClassifier',
                                               'MultinomialNB',
-                                              'KNeighborsClassifier'],
+                                              'KNeighborsClassifier',
+                                              'RidgeClassifier',
+                                              'MLPClassifier'],
                                              [(0.45, 0.52), (0.52, 0.5),
                                               (0.48, 0.5), (0.49, 0.5),
-                                              (0.43, 0), (0.53, 0.57)]):
+                                              (0.43, 0), (0.53, 0.57),
+                                              (0.49, 0.49), (0.48, 0.5)]):
         yield check_sparse_predict, learner_name, expected_scores[0], False
         if learner_name != 'MultinomialNB':
             yield check_sparse_predict, learner_name, expected_scores[1], True
+
+
+def test_mlp_classification():
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_labels=3,
+                                                 num_features=5)
+
+    # train an MLPCLassifier on the training data and evalute on the
+    # testing data
+    learner = Learner('MLPClassifier')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=ConvergenceWarning)
+        learner.train(train_fs, grid_search=True)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated
+    accuracy = accuracy_score(predictions, test_fs.labels)
+    assert_almost_equal(accuracy, 0.825)
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
@@ -210,36 +243,36 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
     assert_almost_equal(test_score, expected_score)
 
 
-def test_dummy_classifier_predict():
-    # hard-code dataset
+def check_dummy_classifier_predict(model_args, train_labels, expected_output):
+
+    # create hard-coded featuresets based with known labels
     train_fs = FeatureSet('classification_train',
                           ['TrainExample{}'.format(i) for i in range(20)],
-                          labels=([0] * 14) + ([1] * 6),
+                          labels=train_labels,
                           features=[{"feature": i} for i in range(20)])
 
     test_fs = FeatureSet('classification_test',
                          ['TestExample{}'.format(i) for i in range(10)],
                          features=[{"feature": i} for i in range(20, 30)])
 
-    toy_data = (
-        [{"strategy": "stratified", "random_state": 12345},
-         np.array([1, 0, 0, 0, 0, 0, 1, 0, 1, 0])],
-        [{"strategy": "most_frequent"},
-         np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])],
-        [{"strategy": "constant", "constant": 1},
-         np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])]
-    )
-
-    # Ensure predictions are correct for all strategies.
-    correct = []
-    for model_args, expected_output in toy_data:
-        learner = Learner('DummyClassifier', model_kwargs=model_args)
-        learner.train(train_fs)
-        predictions = learner.predict(test_fs)
-        correct.append(np.array_equal(expected_output, predictions))
-    eq_(correct, [True, True, True])
+    # Ensure predictions are as expectedfor the given strategy
+    learner = Learner('DummyClassifier', model_kwargs=model_args)
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(np.array_equal(expected_output, predictions), True)
 
 
+def test_dummy_classifier_predict():
+
+    # create a known set of labels
+    train_labels = ([0] * 14) + ([1] * 6)
+    for (model_args, expected_output) in zip([{"strategy": "stratified"},
+                                              {"strategy": "most_frequent"},
+                                              {"strategy": "constant", "constant": 1}],
+                                             [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]),
+                                              np.zeros(10),
+                                              np.ones(10)*1]):
+        yield check_dummy_classifier_predict, model_args, train_labels, expected_output
 
 
 def test_sparse_predict_sampler():

@@ -34,7 +34,7 @@ from sklearn.model_selection import (GridSearchCV,
                                      LeaveOneGroupOut,
                                      ShuffleSplit,
                                      StratifiedKFold)
-from sklearn.dummy import DummyClassifier
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
                               GradientBoostingClassifier,
@@ -44,20 +44,29 @@ from sklearn.ensemble import (AdaBoostClassifier,
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_selection import SelectKBest
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
-from sklearn.kernel_approximation import (AdditiveChi2Sampler,
-                                          Nystroem,
+from sklearn.kernel_approximation import (Nystroem,
                                           RBFSampler,
                                           SkewedChi2Sampler)
-from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
-                                  LogisticRegression, Ridge, SGDClassifier,
-                                  SGDRegressor)
+from sklearn.linear_model import (BayesianRidge,
+                                  ElasticNet,
+                                  HuberRegressor,
+                                  Lars,
+                                  Lasso,
+                                  LinearRegression,
+                                  LogisticRegression,
+                                  RANSACRegressor,
+                                  Ridge,
+                                  RidgeClassifier,
+                                  SGDClassifier,
+                                  SGDRegressor,
+                                  TheilSenRegressor)
 from sklearn.linear_model.base import LinearModel
 from sklearn.metrics import (accuracy_score,
                              confusion_matrix,
-                             precision_recall_fscore_support,
-                             SCORERS)
+                             precision_recall_fscore_support)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, LinearSVR, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -72,11 +81,18 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         AdaBoostRegressor:
                         [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        BayesianRidge:
+                        [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
+                          'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
+                          'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
+                          'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}],
                         DecisionTreeClassifier:
                         [{'max_features': ["auto", None]}],
                         DecisionTreeRegressor:
                         [{'max_features': ["auto", None]}],
                         DummyClassifier:
+                        [{}],
+                        DummyRegressor:
                         [{}],
                         ElasticNet:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
@@ -84,12 +100,27 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'max_depth': [1, 3, 5]}],
                         GradientBoostingRegressor:
                         [{'max_depth': [1, 3, 5]}],
+                        HuberRegressor:
+                        [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}],
                         KNeighborsClassifier:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
                         KNeighborsRegressor:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
+                        MLPClassifier:
+                        [{'activation': ['logistic', 'tanh', 'relu'],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'learning_rate_init': [0.001, 0.01, 0.1]}],
+                        MLPRegressor:
+                        [{'activation': ['logistic', 'tanh', 'relu'],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'learning_rate_init': [0.001, 0.01, 0.1]}],
+                        MultinomialNB:
+                        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
+                        Lars:
+                        [{}],
                         Lasso:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LinearRegression:
@@ -98,15 +129,18 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LogisticRegression:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SVC: [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                               'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        MultinomialNB:
-                        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
+                        SVC:
+                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         RandomForestClassifier:
                         [{'max_depth': [1, 5, 10, None]}],
                         RandomForestRegressor:
                         [{'max_depth': [1, 5, 10, None]}],
+                        RANSACRegressor:
+                        [{}],
                         Ridge:
+                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        RidgeClassifier:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SGDClassifier:
                         [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
@@ -118,7 +152,9 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]}
+                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        TheilSenRegressor:
+                        [{}]}
 
 
 # list of valid grid objective functions for regression and classification
@@ -155,7 +191,11 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'lwk_off_by_one',
                                   'qwk_off_by_one'])
 
-_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor)
+_REQUIRES_DENSE = (BayesianRidge,
+                   GradientBoostingClassifier,
+                   GradientBoostingRegressor,
+                   Lars,
+                   TheilSenRegressor)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
@@ -457,6 +497,11 @@ def rescaled(cls):
 
 # Rescaled regressors
 @rescaled
+class RescaledBayesianRidge(BayesianRidge):
+    pass
+
+
+@rescaled
 class RescaledAdaBoostRegressor(AdaBoostRegressor):
     pass
 
@@ -477,7 +522,17 @@ class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
 
 
 @rescaled
+class RescaledHuberRegressor(HuberRegressor):
+    pass
+
+
+@rescaled
 class RescaledKNeighborsRegressor(KNeighborsRegressor):
+    pass
+
+
+@rescaled
+class RescaledLars(Lars):
     pass
 
 
@@ -492,7 +547,22 @@ class RescaledLinearRegression(LinearRegression):
 
 
 @rescaled
+class RescaledLinearSVR(LinearSVR):
+    pass
+
+
+@rescaled
+class RescaledMLPRegressor(MLPRegressor):
+    pass
+
+
+@rescaled
 class RescaledRandomForestRegressor(RandomForestRegressor):
+    pass
+
+
+@rescaled
+class RescaledRANSACRegressor(RANSACRegressor):
     pass
 
 
@@ -502,17 +572,17 @@ class RescaledRidge(Ridge):
 
 
 @rescaled
+class RescaledSGDRegressor(SGDRegressor):
+    pass
+
+
+@rescaled
 class RescaledSVR(SVR):
     pass
 
 
 @rescaled
-class RescaledLinearSVR(LinearSVR):
-    pass
-
-
-@rescaled
-class RescaledSGDRegressor(SGDRegressor):
+class RescaledTheilSenRegressor(TheilSenRegressor):
     pass
 
 
@@ -622,14 +692,24 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
+        elif issubclass(self._model_type, RANSACRegressor):
+            self._model_kwargs['loss'] = 'squared_loss'
+        elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
+            self._model_kwargs['learning_rate'] = 'invscaling'
+            self._model_kwargs['max_iter'] = 500
+
 
         if issubclass(self._model_type,
-                      (RandomForestClassifier, LinearSVC, LogisticRegression,
-                       DecisionTreeClassifier, GradientBoostingClassifier,
-                       GradientBoostingRegressor, DecisionTreeRegressor,
-                       RandomForestRegressor, SGDClassifier, SGDRegressor,
-                       AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
-                       Lasso, Ridge, ElasticNet, SVC)):
+                      (AdaBoostClassifier, AdaBoostRegressor,
+                        DecisionTreeClassifier, DecisionTreeRegressor,
+                        DummyClassifier, ElasticNet,
+                        GradientBoostingClassifier,
+                        GradientBoostingRegressor, Lasso, LinearSVC,
+                        LinearSVR, LogisticRegression, MLPClassifier,
+                        MLPRegressor, RandomForestClassifier,
+                        RandomForestRegressor, RANSACRegressor, Ridge,
+                        RidgeClassifier, SGDClassifier, SGDRegressor,
+                        SVC, TheilSenRegressor)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
@@ -644,16 +724,20 @@ class Learner(object):
             self.sampler = None
 
         if model_kwargs:
-            # if the model is an AdaBoost classifier or regressor, then we
-            # need to convert any specified `base_estimator` (a string)
-            # into an object before passing it in to the learner constructor.
-            # we also need to make sure that if the base estimator is
-            # anything other than MultinomialNB, we set the random state
-            # to a fixed seed such that results are replicable
+            # if the model is an AdaBoost classifier or regressor or
+            # a RANSAC regressor, then we need to convert any specified
+            # `base_estimator` (a string) into an object before passing
+            # it in to the learner constructor. We also need to make sure
+            # where appropriate, we set the random state to a fixed seed
+            # such that results are replicable
             if issubclass(self._model_type,
-                          (AdaBoostRegressor, AdaBoostClassifier)) and ('base_estimator' in model_kwargs):
+                          (AdaBoostRegressor,
+                           AdaBoostClassifier,
+                           RANSACRegressor)) and ('base_estimator' in model_kwargs):
                 base_estimator_name = model_kwargs['base_estimator']
-                base_estimator_kwargs = {} if base_estimator_name in ['MultinomialNB', 'SVR'] else {'random_state': 123456789}
+                base_estimator_kwargs = {} if base_estimator_name in ['LinearRegression',
+                                                                      'MultinomialNB',
+                                                                      'SVR'] else {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
                 model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
