@@ -870,7 +870,7 @@ class Learner(object):
             # not supported
             raise ValueError(("{} is not supported by" +
                               " model_params with its current settings."
-                              ).format(self._model_type))
+                              ).format(self._model_type.__name__))
 
         return res, intercept
 
@@ -916,7 +916,7 @@ class Learner(object):
         default_param_grid = _find_default_param_grid(self._model_type)
         if default_param_grid is None:
             raise ValueError("%s is not a valid learner type." %
-                             (self._model_type,))
+                             (self._model_type.__name__,))
 
         estimator = self._model_type(**self._model_kwargs)
 
@@ -1065,7 +1065,7 @@ class Learner(object):
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner"
                                      .format(grid_objective,
-                                             self._model_type))
+                                             self._model_type.__name__))
             elif grid_objective not in _CLASSIFICATION_ONLY_OBJ_FUNCS:
                 # This is a classifier. Valid objective functions depend on
                 # type of label (int, string, binary)
@@ -1077,7 +1077,7 @@ class Learner(object):
                                          "function for the {} learner with "
                                          "integer labels"
                                          .format(grid_objective,
-                                                 self._model_type))
+                                                 self._model_type.__name__))
 
                 elif issubclass(examples.labels.dtype.type, str):
                     # if all of the labels are strings, only class 1 objectives
@@ -1085,7 +1085,7 @@ class Learner(object):
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner with string "
                                      "labels".format(grid_objective,
-                                                     self._model_type))
+                                                     self._model_type.__name__))
 
                 elif len(set(examples.labels)) == 2:
                     # If there are two labels, class 3 objectives are valid for
@@ -1095,13 +1095,13 @@ class Learner(object):
                                          "function for the {} learner with "
                                          "binary labels"
                                          .format(grid_objective,
-                                                 self._model_type))
+                                                 self._model_type.__name__))
                 elif grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
                     # simple backoff check for mixed-type labels
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner"
                                      .format(grid_objective,
-                                             self._model_type))
+                                             self._model_type.__name__))
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1135,7 +1135,7 @@ class Learner(object):
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = ('{} does not support sparse ' +
-                              'matrices.').format(self._model_type)
+                              'matrices.').format(self._model_type.__name__)
                 else:
                     reason = ('{} feature scaling requires a dense ' +
                               'matrix.').format(self._feature_scaling)
@@ -1165,9 +1165,6 @@ class Learner(object):
             else:
                 xtrain = self.sampler.fit_transform(xtrain)
 
-        # Instantiate an estimator and get the default parameter grid to search
-        estimator, default_param_grid = self._create_estimator()
-
         # use label dict transformed version of examples.labels if doing
         # classification
         if self.model_type._estimator_type == 'classifier':
@@ -1175,6 +1172,23 @@ class Learner(object):
                                examples.labels])
         else:
             labels = examples.labels
+
+        # Instantiate an estimator and get the default parameter grid to search
+        estimator, default_param_grid = self._create_estimator()
+
+        # Use default parameter grid if we weren't passed one
+        # In case the default parameter grid is also empty
+        # then there's no point doing the grid search at all
+        if grid_search and not param_grid:
+            if default_param_grid == [{}]:
+                logger.warning("SKLL has no default parameter grid "
+                               "available for the {} learner and no "
+                               "parameter grids were supplied. Using "
+                               "default values instead of grid "
+                               "search.".format(self._model_type.__name__))
+                grid_search = False
+            else:
+                param_grid = default_param_grid
 
         # set up a grid searcher if we are asked to
         if grid_search:
@@ -1201,10 +1215,6 @@ class Learner(object):
                                curr_id in examples.ids]
                 kfold = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids)
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
-
-            # Use default parameter grid if we weren't passed one
-            if not param_grid:
-                param_grid = default_param_grid
 
             # If we're using a correlation metric for doing binary
             # classification, override the estimator's predict function
@@ -1417,7 +1427,7 @@ class Learner(object):
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = ('{} does not support sparse ' +
-                              'matrices.').format(self._model_type)
+                              'matrices.').format(self._model_type.__name__)
                 else:
                     reason = ('{} feature scaling requires a dense ' +
                               'matrix.').format(self._feature_scaling)
@@ -1437,7 +1447,7 @@ class Learner(object):
                     else self._model.predict(xtest))
         except NotImplementedError as e:
             logger.error("Model type: %s\nModel: %s\nProbability: %s\n",
-                         self._model_type, self._model, self.probability)
+                         self._model_type.__name__, self._model, self.probability)
             raise e
 
         # write out the predictions if we are asked to
