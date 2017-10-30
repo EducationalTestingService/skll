@@ -28,61 +28,72 @@ def main(argv=None):
     :type argv: list of str
     """
     # Get command line arguments
-    parser = argparse.ArgumentParser(
-        description="Runs the scikit-learn experiments in a given config file.\
-                     If Grid Map is installed, jobs will automatically be \
-                     created and run on a DRMAA-compatible cluster.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        conflict_handler='resolve')
+    parser = argparse.ArgumentParser(description='Runs the scikit-learn '
+                                                 'experiments in a given config file. '
+                                                 'If Grid Map is installed, jobs will '
+                                                 'automatically be created and run on '
+                                                 'a DRMAA-compatible cluster.',
+                                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                                 conflict_handler='resolve')
     parser.add_argument('config_file',
-                        help='Configuration file describing the sklearn task\
-                              to run.',
+                        help='Configuration file describing the task to run.',
                         nargs='+')
-    parser.add_argument('-a', '--ablation',
-                        help='Runs an ablation study where repeated \
-                              experiments are conducted where the specified \
-                              number of features in each featureset in the \
-                              configuration file are held out.',
-                        type=int, default=0,
+    parser.add_argument('-a',
+                        '--ablation',
+                        help='Runs an ablation study where repeated '
+                             'experiments are conducted where the specified '
+                             'number of features in each featureset in the '
+                             'configuration file are held out.',
+                        type=int,
+                        default=0,
                         metavar='NUM_FEATURES')
-    parser.add_argument('-A', '--ablation_all',
-                        help='Runs an ablation study where repeated \
-                              experiments are conducted with all combinations \
-                              of features in each featureset in the \
-                              configuration file. Overrides --ablation \
-                              setting.',
+    parser.add_argument('-A',
+                        '--ablation_all',
+                        help='Runs an ablation study where repeated '
+                             'experiments are conducted with all combinations '
+                             'of features in each featureset in the '
+                             'configuration file. Overrides --ablation '
+                             'setting.',
                         action='store_true')
-    parser.add_argument('-k', '--keep_models',
-                        help='If trained models already exists, re-use them\
-                              instead of overwriting them.',
+    parser.add_argument('-k',
+                        '--keep_models',
+                        help='If trained models already exists, re-use them '
+                             'instead of overwriting them.',
                         action='store_true')
-    parser.add_argument('-l', '--local',
-                        help='Do not use the Grid Engine for running jobs and\
-                              just run everything sequentially on the local \
-                              machine. This is for debugging.',
+    parser.add_argument('-l',
+                        '--local',
+                        help='Do not use the Grid Engine for running jobs and '
+                             'just run everything sequentially on the local '
+                             'machine. ',
                         action='store_true')
-    parser.add_argument('-m', '--machines',
-                        help="comma-separated list of machines to add to\
-                              gridmap's whitelist (if not specified, all\
-                              available machines are used). Note that full \
-                              names must be specified, e.g., \
-                              \"nlp.research.ets.org\"",
+    parser.add_argument('-m',
+                        '--machines',
+                        help='comma-separated list of machines to add to '
+                             'the gridmap whitelist (if not specified, all '
+                             'available machines are used). Note that full '
+                             'names must be specified, e.g., '
+                             '"nlp.research.ets.org"',
                         default=None)
-    parser.add_argument('-q', '--queue',
+    parser.add_argument('-q',
+                        '--queue',
                         help="Use this queue for gridmap.",
                         default='all.q')
-    parser.add_argument('-r', '--resume',
-                        help='If result files already exist for an experiment, \
-                              do not overwrite them. This is very useful when \
-                              doing a large ablation experiment and part of it \
-                              crashes.',
+    parser.add_argument('-r',
+                        '--resume',
+                        help='If result files already exist for an experiment '
+                             'do not overwrite them. This is very useful when '
+                             'doing a large ablation experiment and part of it '
+                             'crashes.',
                         action='store_true')
-    parser.add_argument('-v', '--verbose',
-                        help='Print more status information. For every ' +
-                             'additional time this flag is specified, ' +
+    parser.add_argument('-v',
+                        '--verbose',
+                        help='Include debug information. For every '
+                             'additional time this flag is specified, '
                              'output gets more verbose.',
-                        default=0, action='count')
-    parser.add_argument('--version', action='version',
+                        default=0,
+                        action='count')
+    parser.add_argument('--version',
+                        action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args(argv)
 
