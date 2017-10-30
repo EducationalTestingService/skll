@@ -902,7 +902,9 @@ class Learner(object):
         learner_dir = os.path.dirname(learner_path)
         if not os.path.exists(learner_dir):
             os.makedirs(learner_dir)
-        # write out the files
+        # write out the files but loggers can't be pickled
+        # so delete the logger instance before pickling
+        del self.logger
         joblib.dump((VERSION, self), learner_path)
 
     def _create_estimator(self):
