@@ -949,9 +949,9 @@ SVR
 
 .. note::
     Note that learners not listed here do not have any default
-    parameter grids in SKLL either because there are no hyper-parameters
-    to be tuned or because there are too many and decisions about
-    which ones to tune and how depend on the data being used for the
+    parameter grids in SKLL either because either there are no
+    hyper-parameters to tune or decisions about which parameters
+    to tune (and how) depend on the data being used for the
     experiment and are best left up to the user.
 
 
