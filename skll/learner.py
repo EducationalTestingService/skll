@@ -891,6 +891,15 @@ class Learner(object):
                                 "a predict_proba() method.".format(self.model_type.__name__))
             self._probability = False
 
+    def __getstate__(self):
+        """
+        Return the attributes that should be pickled. We need this
+        because we cannot pickle loggers.
+        """
+        attribute_dict = dict(self.__dict__)
+        del attribute_dict['logger']
+        return attribute_dict
+
     def save(self, learner_path):
         """
         Save the learner to a file.
@@ -902,9 +911,7 @@ class Learner(object):
         learner_dir = os.path.dirname(learner_path)
         if not os.path.exists(learner_dir):
             os.makedirs(learner_dir)
-        # write out the files but loggers can't be pickled
-        # so delete the logger instance before pickling
-        del self.logger
+        # write out the learner to disk
         joblib.dump((VERSION, self), learner_path)
 
     def _create_estimator(self):
