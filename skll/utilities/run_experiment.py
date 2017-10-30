@@ -87,18 +87,17 @@ def main(argv=None):
                         action='store_true')
     parser.add_argument('-v',
                         '--verbose',
-                        help='Include debug information. For every '
-                             'additional time this flag is specified, '
-                             'output gets more verbose.',
-                        default=0,
-                        action='count')
+                        help='Include debug information in the logging output.',
+                        default=False,
+                        action='store_true')
     parser.add_argument('--version',
                         action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args(argv)
 
-    # Logging levels are really integer multiples of 10, so convert verbose flag
-    log_level = max(logging.WARNING - (args.verbose * 10), logging.DEBUG)
+    # Default logging level is INFO unless we are being verbose
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
@@ -114,9 +113,14 @@ def main(argv=None):
 
     # Run each config file sequentially
     for config_file in args.config_file:
-        run_configuration(config_file, local=args.local, overwrite=not
-                          args.keep_models, queue=args.queue, hosts=machines,
-                          ablation=ablation, resume=args.resume)
+        run_configuration(config_file,
+                          local=args.local,
+                          overwrite=not args.keep_models,
+                          queue=args.queue,
+                          hosts=machines,
+                          ablation=ablation,
+                          resume=args.resume,
+                          log_level=log_level)
 
 
 if __name__ == '__main__':
