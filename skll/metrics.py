@@ -11,8 +11,6 @@ evaluate the performance of learners.
 
 from __future__ import print_function, unicode_literals
 
-import logging
-
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from six import string_types
@@ -63,7 +61,6 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                              for when building the weights matrix.
     :type allow_off_by_one: bool
     """
-    logger = logging.getLogger(__name__)
 
     # Ensure that the lists are both the same length
     assert(len(y_true) == len(y_pred))
@@ -80,8 +77,8 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
         y_true = [int(np.round(float(y))) for y in y_true]
         y_pred = [int(np.round(float(y))) for y in y_pred]
     except ValueError as e:
-        logger.error("For kappa, the labels should be integers or strings "
-                     "that can be converted to ints (E.g., '4.0' or '3').")
+        raise ValueError("For kappa, the labels should be integers or strings "
+                         "that can be converted to ints (E.g., '4.0' or '3').")
         raise e
 
     # Figure out normalized expected values
