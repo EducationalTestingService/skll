@@ -555,13 +555,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         if not exists(prediction_dir):
             os.makedirs(prediction_dir)
 
-    # make sure log path exists
-    log_path = _locate_file(config.get("Output", "log"), config_dir)
-    if log_path:
-        log_path = join(config_dir, log_path)
-        if not exists(log_path):
-            os.makedirs(log_path)
-
     # make sure model path exists
     model_path = _locate_file(config.get("Output", "models"), config_dir)
     if model_path:
