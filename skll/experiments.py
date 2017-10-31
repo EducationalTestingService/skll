@@ -556,8 +556,8 @@ def _classify_featureset(args):
             _import_custom_learner(custom_learner_path, learner_name)
         train_set_size = 'unknown'
         if exists(modelfile) and not overwrite:
-            logger.info("\tloading pre-existing {} model: {}".format(learner_name,
-                                                                     modelfile))
+            logger.info("Loading pre-existing {} model: {}".format(learner_name,
+                                                                   modelfile))
         learner = Learner.from_file(modelfile)
 
         # attach the job logger to this learner
@@ -622,7 +622,7 @@ def _classify_featureset(args):
     # models when we're not.
     task_results = None
     if task == 'cross_validate':
-        logger.info("\tcross-validating")
+        logger.info("Cross-validating")
         (task_results,
          grid_scores,
          skll_fold_ids) = learner.cross_validate(train_examples,
@@ -638,7 +638,7 @@ def _classify_featureset(args):
                                                  save_cv_folds=save_cv_folds,
                                                  use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
     elif task == 'learning_curve':
-        logger.info("\tgenerating learning curve")
+        logger.info("Generating learning curve(s)")
         (curve_train_scores,
          curve_test_scores,
          computed_curve_train_sizes) = learner.learning_curve(train_examples,
@@ -648,7 +648,7 @@ def _classify_featureset(args):
     else:
         # if we have do not have a saved model, we need to train one.
         if not exists(modelfile) or overwrite:
-            logger.info("\tfeaturizing and training new {} model".format(learner_name))
+            logger.info("Featurizing and training new {} model".format(learner_name))
 
             best_score = learner.train(train_examples,
                                        shuffle=shuffle,
@@ -667,8 +667,8 @@ def _classify_featureset(args):
                 # note: bankers' rounding is used in python 3,
                 # so these scores may be different between runs in
                 # python 2 and 3 at the final decimal place.
-                logger.info("\tbest {} grid search score: {}".format(grid_objective,
-                                                                     round(best_score, 3)))
+                logger.info("Best {} grid search score: {}".format(grid_objective,
+                                                                   round(best_score, 3)))
         else:
             grid_scores = [None]
 
@@ -676,17 +676,17 @@ def _classify_featureset(args):
         param_out = ('{}: {}'.format(param_name, param_value)
                      for param_name, param_value in
                      iteritems(learner.model.get_params()))
-        logger.info("\thyperparameters: {}".format(', '.join(param_out)))
+        logger.info("Hyperparameters: {}".format(', '.join(param_out)))
 
         # run on test set or cross-validate on training data,
         # depending on what was asked for
         if task == 'evaluate':
-            logger.info("\tevaluating predictions")
+            logger.info("Evaluating predictions")
             task_results = [learner.evaluate(test_examples,
                                              prediction_prefix=prediction_prefix,
                                              grid_objective=grid_objective)]
         elif task == 'predict':
-            logger.info("\twriting predictions")
+            logger.info("Writing predictions")
             learner.predict(test_examples,
                             prediction_prefix=prediction_prefix)
         # do nothing here for train
