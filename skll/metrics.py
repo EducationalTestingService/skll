@@ -76,10 +76,9 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     try:
         y_true = [int(np.round(float(y))) for y in y_true]
         y_pred = [int(np.round(float(y))) for y in y_pred]
-    except ValueError as e:
+    except ValueError:
         raise ValueError("For kappa, the labels should be integers or strings "
                          "that can be converted to ints (E.g., '4.0' or '3').")
-        raise e
 
     # Figure out normalized expected values
     min_rating = min(min(y_true), min(y_pred))
