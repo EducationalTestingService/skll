@@ -1138,7 +1138,7 @@ In addition to the above log files that are specific to each "job"
 in the configuration file), SKLL also produces a single, top level "experiment"
 log file with only ``EXPERIMENT`` as the prefix. While the job-level log files
 contain messages that pertain to the specific characteristics of the job, the
-experiment-level log file will contains logging messages that pertain to the
+experiment-level log file will contain logging messages that pertain to the
 overall experiment and configuration file. The messages in the log files are
 in the following format:
 
@@ -1146,7 +1146,7 @@ in the following format:
 
     TIMESTAMP - LEVEL - MSG
 
-where ``TIMESTAMP`` refers to the exact time when the messages was logged,
+where ``TIMESTAMP`` refers to the exact time when the message was logged,
 ``LEVEL`` refers to the level of the logging message (e.g., ``INFO``, ``WARNING``,
 etc.), and ``MSG`` is the actual content of the message. All of the messages
 are also printed to the console in addition to being saved in the job-level log
