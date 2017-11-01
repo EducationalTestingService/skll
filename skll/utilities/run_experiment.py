@@ -12,8 +12,9 @@ config file.
 
 from __future__ import print_function, unicode_literals
 
-import argparse
 import logging
+
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 from skll.experiments import run_configuration
 from skll.version import __version__
@@ -28,13 +29,13 @@ def main(argv=None):
     :type argv: list of str
     """
     # Get command line arguments
-    parser = argparse.ArgumentParser(description='Runs the scikit-learn '
-                                                 'experiments in a given config file. '
-                                                 'If Grid Map is installed, jobs will '
-                                                 'automatically be created and run on '
-                                                 'a DRMAA-compatible cluster.',
-                                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                                 conflict_handler='resolve')
+    parser = ArgumentParser(description='Runs the scikit-learn '
+                                        'experiments in a given config file. '
+                                        'If Grid Map is installed, jobs will '
+                                        'automatically be created and run on '
+                                        'a DRMAA-compatible cluster.',
+                            formatter_class=ArgumentDefaultsHelpFormatter,
+                            conflict_handler='resolve')
     parser.add_argument('config_file',
                         help='Configuration file describing the task to run.',
                         nargs='+')
