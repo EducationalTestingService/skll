@@ -696,9 +696,9 @@ def safe_float(text, replace_dict=None, logger=None):
                          floats. Anything not in the mapping will be kept the
                          same.
     :type replace_dict: dict from str to str
-    :param text: The Logger instance to use to log messages. Used instead of
+    :param logger: The Logger instance to use to log messages. Used instead of
                  creating a new Logger instance by default.
-    :type text: logging.Logger
+    :type logger: logging.Logger
     """
 
     # convert to text to be "Safe"!
