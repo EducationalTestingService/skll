@@ -153,7 +153,7 @@ def fill_in_config_options(config_template_path,
                   'Tuning': ['probability', 'grid_search', 'objective',
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'param_grids', 'objectives', 'duplicate_option'],
-                  'Output': ['results', 'log', 'models',
+                  'Output': ['results', 'log', 'models', 'metrics',
                              'predictions']}
 
     for section in to_fill_in:
