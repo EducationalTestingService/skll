@@ -630,6 +630,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                            "starting with the next release; please "
                            "use the \"metrics\" option in the [Output] "
                            "section instead.")
+            output_metrics = grid_objectives
+            grid_objectives = []
         elif len(grid_objectives) == 0 and len(output_metrics) == 0:
             raise ValueError('The "metrics" option must be set when '
                              'the task is "learning_curve".')
