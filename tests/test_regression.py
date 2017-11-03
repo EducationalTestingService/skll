@@ -468,6 +468,27 @@ def test_int_labels():
     run_configuration(config_path, quiet=True)
 
 
+def test_additional_metrics():
+    """
+    Test additional metrics in the results file for a regressor
+    """
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000,
+                                                num_features=3)
+
+    # train a regression model using the train feature set
+    learner = Learner('LinearRegression')
+    learner.train(train_fs, grid_objective='pearson')
+
+    # evaluate the trained model using the test feature set
+    results = learner.evaluate(test_fs, output_metrics=['spearman',
+                                                        'kendall_tau'])
+
+    # check that the values for the additional metrics are as expected
+    additional_scores_dict = results[-1]
+    assert_almost_equal(additional_scores_dict['spearman'], 0.9996, places=4)
+    assert_almost_equal(additional_scores_dict['kendall_tau'], 0.9846, places=4)
+
+
 def test_fancy_output():
     """
     Test the descriptive statistics output in the results file for a regressor
