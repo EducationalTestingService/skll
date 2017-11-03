@@ -339,6 +339,14 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                   file=output_file)
         print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
+
+        # now print the additional metrics, if there were any
+        if lrd['additional_scores']:
+            print('', file=output_file)
+            print('Additional Evaluation Metrics (Test):', file=output_file)
+            for metric, score in lrd['additional_scores'].items():
+                score = '' if np.isnan(score) else score
+                print(' {} = {}'.format(metric, score), file=output_file)
         print('', file=output_file)
 
 
@@ -444,6 +452,7 @@ def _classify_featureset(args):
     prediction_prefix = args.pop("prediction_prefix")
     grid_search = args.pop("grid_search")
     grid_objective = args.pop("grid_objective")
+    output_metrics = args.pop("output_metrics")
     suffix = args.pop("suffix")
     job_log_file = args.pop("log_file")
     job_log_level = args.pop("log_level")
@@ -565,11 +574,14 @@ def _classify_featureset(args):
 
     # Load test set if there is one
     if task == 'evaluate' or task == 'predict':
-        test_examples = _load_featureset(test_path, featureset, suffix,
+        test_examples = _load_featureset(test_path,
+                                         featureset,
+                                         suffix,
                                          label_col=label_col,
                                          id_col=id_col,
                                          ids_to_floats=ids_to_floats,
-                                         quiet=quiet, class_map=class_map,
+                                         quiet=quiet,
+                                         class_map=class_map,
                                          feature_hasher=feature_hasher,
                                          num_features=hasher_features)
         test_set_size = len(test_examples.ids)
@@ -633,6 +645,7 @@ def _classify_featureset(args):
                                                  grid_search_folds=grid_search_folds,
                                                  cv_folds=cv_folds,
                                                  grid_objective=grid_objective,
+                                                 output_metrics=output_metrics,
                                                  param_grid=param_grid,
                                                  grid_jobs=grid_search_jobs,
                                                  save_cv_folds=save_cv_folds,
@@ -644,7 +657,7 @@ def _classify_featureset(args):
          computed_curve_train_sizes) = learner.learning_curve(train_examples,
                                                               cv_folds=learning_curve_cv_folds,
                                                               train_sizes=learning_curve_train_sizes,
-                                                              objective=grid_objective)
+                                                              metric=grid_objective)
     else:
         # if we have do not have a saved model, we need to train one.
         if not exists(modelfile) or overwrite:
@@ -684,7 +697,8 @@ def _classify_featureset(args):
             logger.info("Evaluating predictions")
             task_results = [learner.evaluate(test_examples,
                                              prediction_prefix=prediction_prefix,
-                                             grid_objective=grid_objective)]
+                                             grid_objective=grid_objective,
+                                             output_metrics=output_metrics)]
         elif task == 'predict':
             logger.info("Writing predictions")
             learner.predict(test_examples,
@@ -758,6 +772,7 @@ def _create_learner_result_dicts(task_results,
     num_folds = len(task_results)
     accuracy_sum = 0.0
     pearson_sum = 0.0
+    additional_metric_score_sums = {}
     score_sum = None
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
@@ -768,9 +783,10 @@ def _create_learner_result_dicts(task_results,
              fold_accuracy,
              result_dict,
              model_params,
-             score), grid_score) in enumerate(zip(task_results,
-                                                  grid_scores),
-                                              start=1):
+             score,
+             additional_scores), grid_score) in enumerate(zip(task_results,
+                                                              grid_scores),
+                                                          start=1):
 
         # create a new dict for this fold
         learner_result_dict = {}
@@ -828,12 +844,18 @@ def _create_learner_result_dicts(task_results,
             learner_result_dict.update(result_dict)
             pearson_sum += float(learner_result_dict['pearson'])
 
+        # get the scores for all the metrics and compute the sums
         if score is not None:
             if score_sum is None:
                 score_sum = score
             else:
                 score_sum += score
             learner_result_dict['score'] = score
+        learner_result_dict['additional_scores'] = additional_scores
+        for metric, score in additional_scores.items():
+            if score is not None:
+                additional_metric_score_sums[metric] = \
+                    additional_metric_score_sums.get(metric, 0) + score
         res.append(learner_result_dict)
 
     if num_folds > 1:
@@ -864,6 +886,10 @@ def _create_learner_result_dicts(task_results,
 
         if score_sum is not None:
             learner_result_dict['score'] = score_sum / num_folds
+        scoredict = {}
+        for metric, score_sum in additional_metric_score_sums.items():
+            scoredict[metric] = score_sum / num_folds
+        learner_result_dict['additional_scores'] = scoredict
         res.append(learner_result_dict)
     return res
 
@@ -920,7 +946,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
      param_grid_list, featureset_names, learners, prediction_dir, log_path, train_path,
      test_path, ids_to_floats, class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes) = _parse_config_file(config_file, log_level=log_level)
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_file,
+                                                                          log_level=log_level)
 
     # get the main experiment logger that will already have been
     # created by the configuration parser so we don't need anything
@@ -1003,7 +1030,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                           ' auto-generated name would be longer than the file '
                           'system can handle'.format(featureset_name))
 
-
+    # if the task is learning curve, and ``metrics`` was specified, then
+    # assign the value of ``metrics`` to ``grid_objectives`` - this lets
+    # us piggyback on the parallelization of the objectives that is already
+    # set up for us to use
+    if task == 'learning_curve' and len(output_metrics) > 0:
+        grid_objectives = output_metrics
 
     # Run each featureset-learner-objective combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
@@ -1062,6 +1094,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["prediction_prefix"] = prediction_prefix
                 job_args["grid_search"] = do_grid_search
                 job_args["grid_objective"] = grid_objective
+                job_args['output_metrics'] = output_metrics
                 job_args["suffix"] = suffix
                 job_args["log_file"] = logfile
                 job_args["log_level"] = log_level
