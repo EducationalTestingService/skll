@@ -20,7 +20,7 @@ import numpy as np
 
 from nose.tools import eq_, ok_, raises
 
-from six import string_types
+from six import string_types, PY2
 
 from skll.config import _parse_config_file, _load_cv_folds, _locate_file
 from skll.data.readers import safe_float
@@ -50,9 +50,9 @@ def tearDown():
     """
     Clean up after tests.
     """
-    config_dir = join(_my_dir, 'configs')
-    for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
-        os.unlink(config_file)
+    # config_dir = join(_my_dir, 'configs')
+    # for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
+    #     os.unlink(config_file)
 
 
 def check_safe_float_conversion(converted_val, expected_val):
@@ -1137,6 +1137,8 @@ def test_config_parsing_metrics_and_objectives_overlap():
                                              [["f1_score_micro", "unweighted_kappa"],
                                               ["accuracy", "unweighted_kappa"]],
                                              [[], ["accuracy"]]):
+        metrics = [str(m) for m in metrics] if PY2 else metrics
+        objectives = [str(o) for o in objectives] if PY2 else objectives
         yield check_config_parsing_metrics_and_objectives_overlap, \
                 task, metrics, objectives
 
