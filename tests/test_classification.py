@@ -405,11 +405,15 @@ def check_results_with_unseen_labels(res, n_labels, new_label_list):
      score,
      result_dict,
      model_params,
-     grid_score) = res
+     grid_score,
+     additional_scores) = res
 
     # check that the new label is included into the results
     for output in [confusion_matrix, result_dict]:
         eq_(len(output), n_labels)
+
+    # check that any additional metrics are zero
+    eq_(additional_scores, {})
 
     # check that all metrics for new label are 0
     for label in new_label_list:
