@@ -14,6 +14,8 @@ import csv
 import json
 import os
 import sys
+
+from ast import literal_eval
 from glob import glob
 from io import open
 from itertools import product
@@ -66,7 +68,9 @@ def tearDown():
             os.unlink(join(test_dir, 'test_{}.jsonlines'.format(suffix)))
 
         config_files = ['test_{}.cfg'.format(suffix),
-                        'test_{}_feature_hasher.cfg'.format(suffix)]
+                        'test_{}_with_metrics.cfg'.format(suffix),
+                        'test_{}_feature_hasher.cfg'.format(suffix),
+                        'test_{}_feature_hasher_with_metrics.cfg'.format(suffix)]
         for cf in config_files:
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
@@ -129,32 +133,49 @@ def make_learning_curve_data():
 
 # Function that checks to make sure that the summary files
 # contain the right results
-def check_summary_score(use_feature_hashing=False):
+def check_summary_score(use_feature_hashing,
+                        use_additional_metrics):
 
     # Test to validate summary file scores
     make_summary_data()
 
-    cfgfile = ('test_summary_feature_hasher.template.cfg' if
-               use_feature_hashing else 'test_summary.template.cfg')
+    if use_feature_hashing:
+        cfgfile = ('test_summary_feature_hasher_with_metrics.template.cfg' if
+                    use_additional_metrics else 'test_summary_feature_hasher.template.cfg')
+        outprefix = ('test_summary_feature_hasher_with_metrics_test_summary' if
+                     use_additional_metrics else 'test_summary_feature_hasher_test_summary')
+        summprefix = ('test_summary_feature_hasher_with_metrics' if
+                      use_additional_metrics else 'test_summary_feature_hasher')
+    else:
+        cfgfile = ('test_summary_with_metrics.template.cfg' if
+                    use_additional_metrics else 'test_summary.template.cfg')
+        outprefix = ('test_summary_with_metrics_test_summary' if
+                     use_additional_metrics else 'test_summary_test_summary')
+        summprefix = ('test_summary_with_metrics' if
+                      use_additional_metrics else 'test_summary')
+
     config_template_path = join(_my_dir, 'configs', cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    outprefix = ('test_summary_feature_hasher_test_summary' if
-                 use_feature_hashing else 'test_summary_test_summary')
-    summprefix = ('test_summary_feature_hasher' if use_feature_hashing else
-                  'test_summary')
-
     with open(join(_my_dir, 'output', ('{}_LogisticRegression.results.'
                                        'json'.format(outprefix)))) as f:
         outd = json.loads(f.read())
         logistic_result_score = outd[0]['score']
+        if use_additional_metrics:
+            results_metrics_dict = outd[0]['additional_scores']
+            logistic_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
+            logistic_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
     with open(join(_my_dir, 'output',
                    '{}_SVC.results.json'.format(outprefix))) as f:
         outd = json.loads(f.read())
         svm_result_score = outd[0]['score']
+        if use_additional_metrics:
+            results_metrics_dict = outd[0]['additional_scores']
+            svm_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
+            svm_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
     # note that Naive Bayes doesn't work with feature hashing
     if not use_feature_hashing:
@@ -162,26 +183,44 @@ def check_summary_score(use_feature_hashing=False):
                                            'json'.format(outprefix)))) as f:
             outd = json.loads(f.read())
             naivebayes_result_score = outd[0]['score']
+            if use_additional_metrics:
+                results_metrics_dict = outd[0]['additional_scores']
+                nb_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
+                nb_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
     with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)),
               'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 32 rows,
+            # the learner results dictionaries should have 33 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 32)
+            eq_(len(row), 33)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
+            if use_additional_metrics:
+                assert row['additional_scores']
 
             if row['learner_name'] == 'LogisticRegression':
                 logistic_summary_score = float(row['score'])
+                if use_additional_metrics:
+                    summary_metrics_dict = literal_eval(row['additional_scores'])
+                    logistic_summary_additional_score1 = float(summary_metrics_dict['unweighted_kappa'])
+                    logistic_summary_additional_score2 = float(summary_metrics_dict['f1_score_micro'])
             elif row['learner_name'] == 'MultinomialNB':
                 naivebayes_summary_score = float(row['score'])
+                if use_additional_metrics:
+                    summary_metrics_dict = literal_eval(row['additional_scores'])
+                    nb_summary_additional_score1 = float(summary_metrics_dict['unweighted_kappa'])
+                    nb_summary_additional_score2 = float(summary_metrics_dict['f1_score_micro'])
             elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
+                if use_additional_metrics:
+                    summary_metrics_dict = literal_eval(row['additional_scores'])
+                    svm_summary_additional_score1 = float(summary_metrics_dict['unweighted_kappa'])
+                    svm_summary_additional_score2 = float(summary_metrics_dict['f1_score_micro'])
 
     test_tuples = [(logistic_result_score,
                     logistic_summary_score,
@@ -190,10 +229,31 @@ def check_summary_score(use_feature_hashing=False):
                     svm_summary_score,
                     'SVC')]
 
+    if use_additional_metrics:
+        test_tuples.extend([(logistic_result_additional_metric1,
+                             logistic_summary_additional_score1,
+                             'LogisticRegression'),
+                            (logistic_result_additional_metric2,
+                             logistic_summary_additional_score2,
+                             'LogisticRegression'),
+                            (svm_result_additional_metric1,
+                             svm_summary_additional_score1,
+                             'SVC'),
+                            (svm_result_additional_metric2,
+                             svm_summary_additional_score2,
+                             'SVC')])
+
     if not use_feature_hashing:
         test_tuples.append((naivebayes_result_score,
-                            naivebayes_summary_score,
+                             naivebayes_summary_score,
                             'MultinomialNB'))
+        if use_additional_metrics:
+            test_tuples.extend([(nb_result_additional_metric1,
+                                 nb_summary_additional_score1,
+                                 'MultinomialNB'),
+                                (nb_result_additional_metric2,
+                                 nb_summary_additional_score2,
+                                 'MultinomialNB')])
 
     for result_score, summary_score, learner_name in test_tuples:
         assert_almost_equal(result_score, summary_score,
@@ -206,31 +266,32 @@ def check_summary_score(use_feature_hashing=False):
     # accuracy score. Test proves that the report
     # written out at least has a correct format for
     # this line. See _print_fancy_output
-    for report_name, val in (("LogisticRegression", .5),
-                             ("MultinomialNB", .5),
-                             ("SVC", .6333)):
-        filename = "test_summary_test_summary_{}.results".format(report_name)
-        results_path = join(_my_dir, 'output', filename)
-        with open(results_path) as results_file:
-            report = results_file.read()
-            expected_string = "Accuracy = {:.1f}".format(val)
-            eq_(expected_string in report,  # approximate
-                True,
-                msg="{} is not in {}".format(expected_string,
-                                             report))
+    if not use_feature_hashing:
+        for report_name, val in (("LogisticRegression", .5),
+                                 ("MultinomialNB", .5),
+                                 ("SVC", .6333)):
+            filename = "test_summary_test_summary_{}.results".format(report_name)
+            results_path = join(_my_dir, 'output', filename)
+            with open(results_path) as results_file:
+                report = results_file.read()
+                expected_string = "Accuracy = {:.1f}".format(val)
+                eq_(expected_string in report,  # approximate
+                    True,
+                    msg="{} is not in {}".format(expected_string,
+                                                 report))
 
 
 def test_summary():
-    # test summary score without feature hashing
-    yield check_summary_score
 
-    # test summary score with feature hashing
-    yield check_summary_score, True
+    for (use_feature_hashing,
+         use_additional_metrics) in product([True, False], [True, False]):
+        yield check_summary_score, use_feature_hashing, use_additional_metrics
 
 
 def check_xval_fancy_results_file(do_grid_search,
                                   use_folds_file,
-                                  use_folds_file_for_grid_search):
+                                  use_folds_file_for_grid_search,
+                                  use_additional_metrics):
 
     train_path = join(_my_dir, 'train', 'f0.jsonlines')
     output_dir = join(_my_dir, 'output')
@@ -252,6 +313,9 @@ def check_xval_fancy_results_file(do_grid_search,
         values_to_fill_dict['folds_file'] = folds_file_path
     values_to_fill_dict['grid_search'] = str(do_grid_search)
     values_to_fill_dict['use_folds_file_for_grid_search'] = str(use_folds_file_for_grid_search)
+
+    if use_additional_metrics:
+        values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
 
     config_template_path = join(_my_dir,
                                'configs',
@@ -306,17 +370,24 @@ def check_xval_fancy_results_file(do_grid_search,
         if do_grid_search:
             eq_(results_dict['Grid Search Folds'], '4')
 
+    if use_additional_metrics:
+        eq_(results_dict['Additional Evaluation Metrics'],
+            str(["accuracy", "unweighted_kappa"]))
+
 
 def test_xval_fancy_results_file():
 
     for (do_grid_search,
          use_folds_file,
-         use_folds_file_for_grid_search) in product([True, False],
-                                                    [True, False],
-                                                    [True, False]):
+         use_folds_file_for_grid_search,
+         use_additional_metrics) in product([True, False],
+                                            [True, False],
+                                            [True, False],
+                                            [True, False]):
 
         yield check_xval_fancy_results_file, do_grid_search, \
-                use_folds_file, use_folds_file_for_grid_search
+                use_folds_file, use_folds_file_for_grid_search, \
+                use_additional_metrics
 
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.
@@ -388,7 +459,7 @@ def test_learning_curve_implementation():
 
 def test_learning_curve_output():
     """
-    Test that the output of a learning curve experiment is as expected
+    Test learning output for experiment with metrics option
     """
 
     # Test to validate learning curve output
@@ -423,10 +494,49 @@ def test_learning_curve_output():
                             '{}_{}.png'.format(outprefix, featureset_name))))
 
 
+def test_learning_curve_output_with_objectives():
+    """
+    Test learning output for experiment with objectives option
+    """
+
+    # Test to validate learning curve output
+    make_learning_curve_data()
+
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_learning_curve_with_objectives.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    # run the learning curve experiment
+    run_configuration(config_path, quiet=True)
+    outprefix = 'test_learning_curve'
+
+    # make sure that the TSV file is created with the right columns
+    output_tsv_path = join(_my_dir, 'output', '{}_summary.tsv'.format(outprefix))
+    ok_(exists(output_tsv_path))
+    with open(output_tsv_path, 'r') as tsvf:
+        r = csv.reader(tsvf, dialect=csv.excel_tab)
+        header = next(r)
+        # make sure we have the expected number of columns
+        eq_(len(header), 11)
+        num_rows = len(list(r))
+        # we should have 2 featuresets x 3 learners x 2 objectives x 5 (default)
+        # training sizes = 60 rows
+        eq_(num_rows, 60)
+
+    # make sure that the two PNG files (one per featureset) are created
+    # if the requirements are satisfied
+    if _HAVE_PANDAS and _HAVE_SEABORN:
+        for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+            ok_(exists(join(_my_dir,
+                            'output',
+                            '{}_{}.png'.format(outprefix, featureset_name))))
+
+
 @attr('have_pandas_and_seaborn')
 def test_learning_curve_plots():
     """
-    Test that the plots of a learning curve experiment are generated as expected
+    Test learning curve plots for experiment with metrics option
     """
 
     # Test to validate learning curve output
@@ -445,6 +555,30 @@ def test_learning_curve_plots():
                         'output',
                         '{}_{}.png'.format(outprefix, featureset_name))))
 
+
+@attr('have_pandas_and_seaborn')
+def test_learning_curve_plots_with_objectives():
+    """
+    Test learning curve plots for experiment with objectives option
+    """
+
+    # Test to validate learning curve output
+    make_learning_curve_data()
+
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_learning_curve_with_objectives.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    # run the learning curve experiment
+    run_configuration(config_path, quiet=True)
+    outprefix = 'test_learning_curve'
+
+    # make sure that the two PNG files (one per featureset) are created
+    for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+        ok_(exists(join(_my_dir,
+                        'output',
+                        '{}_{}.png'.format(outprefix, featureset_name))))
 
 @attr('have_pandas_and_seaborn')
 def test_learning_curve_ylimits():
