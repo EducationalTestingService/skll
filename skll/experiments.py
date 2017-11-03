@@ -768,13 +768,29 @@ def _create_learner_result_dicts(task_results,
         if grid_score is not None:
             learner_result_dict['grid_score'] = grid_score
 
+        # If there is a confusion matrix, we are doing classification.
         if conf_matrix:
+            
+            # Get labels
             labels = sorted(iterkeys(task_results[0][2]))
-            result_table = PrettyTable([""] + labels + ["Precision", "Recall",
-                                                        "F-measure"],
-                                       header=True, hrules=ALL)
+
+            # Build basic confusion matrix.
+            result_table = _pretty_print_basic_confusion_matrix(labels, conf_matrix)
+
+            # Now add columns for precision, recall, f-score.
+            additional_column_names = ["Precision", "Recall", "F-measure"]
+            for column in additional_column_names:
+                scores = []
+                for i, actual_label in enumerate(labels):
+                    sc = _get_stat_float(result_dict[actual_label], column)
+                    scores.append(sc)
+                result_table.add_column(column, scores)
+
+            # Add table formatting.
             result_table.align = 'r'
             result_table.float_format = '.3'
+
+            # Get precision, recall, f-scores for computing means later.
             for i, actual_label in enumerate(labels):
                 conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
                 label_prec = _get_stat_float(result_dict[actual_label],
@@ -789,18 +805,20 @@ def _create_learner_result_dicts(task_results,
                     recall_sum_dict[actual_label] += float(label_recall)
                 if not math.isnan(label_f):
                     f_sum_dict[actual_label] += float(label_f)
-                result_row = ([actual_label] + conf_matrix[i] +
-                              [label_prec, label_recall, label_f])
-                result_table.add_row(result_row)
 
+            # Convert the table to a string and add a key.
             result_table_str = '{}'.format(result_table)
             result_table_str += '\n(row = reference; column = predicted)'
+
+            # Add the table to the learner_result_dict.           
             learner_result_dict['result_table'] = result_table_str
+            
+            # Accuracy statistics.
             learner_result_dict['accuracy'] = fold_accuracy
             accuracy_sum += fold_accuracy
 
-        # if there is no confusion matrix, then we must be dealing
-        # with a regression model
+        # If there is no confusion matrix, then we must be doing 
+        # regression.
         else:
             learner_result_dict.update(result_dict)
             pearson_sum += float(learner_result_dict['pearson'])
@@ -811,6 +829,7 @@ def _create_learner_result_dicts(task_results,
             else:
                 score_sum += score
             learner_result_dict['score'] = score
+
         res.append(learner_result_dict)
 
     if num_folds > 1:
@@ -819,6 +838,7 @@ def _create_learner_result_dicts(task_results,
 
         learner_result_dict['fold'] = 'average'
 
+        # If there is a result_table, then we are doing classification.
         if result_table:
             result_table = PrettyTable(["Label", "Precision", "Recall",
                                         "F-measure"],
@@ -836,14 +856,45 @@ def _create_learner_result_dicts(task_results,
 
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = accuracy_sum / num_folds
+        # Otherwise we are doing regression.
         else:
             learner_result_dict['pearson'] = pearson_sum / num_folds
 
         if score_sum is not None:
             learner_result_dict['score'] = score_sum / num_folds
+
         res.append(learner_result_dict)
+    
     return res
 
+def _pretty_print_basic_confusion_matrix(labels, conf_matrix):
+    '''
+    Builds a basic confusion matrix with labels using prettyprint. 
+    Rows are actual (reference); columns are predicted. Example:
+
+    +---+------+------+
+    |   |    0 |    1 |
+    +---+------+------+
+    | 0 | [53] |    6 |
+    +---+------+------+
+    | 1 |    3 | [58] |
+    +---+------+------+
+
+    :param labels: labels in data
+    :type labels: list
+    :param conf_matrix: scikit-learn confusion matrix
+    :type conf_matrix: scikit-learn confusion matrix
+
+    :returns prettyprint table object with labels and cells filled in
+    :rtype: prettyprint table object
+    '''
+    header = [""] + labels
+    result_table = PrettyTable(header, header=True, hrules=ALL)
+    for i, actual_label in enumerate(labels):
+        conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
+        result_row = ([actual_label] + conf_matrix[i])
+        result_table.add_row(result_row)
+    return result_table
 
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                       hosts=None, write_summary=True, quiet=False,
