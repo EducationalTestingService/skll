@@ -221,7 +221,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
                 learner_result_dicts.extend(obj)
 
     # Build and write header
-    header = ['featureset_name', 'learner_name', 'objective',
+    header = ['featureset_name', 'learner_name', 'metric',
               'train_set_name', 'training_set_size', 'train_score_mean',
               'test_score_mean', 'train_score_std', 'test_score_std',
               'scikit_learn_version', 'version']
@@ -242,7 +242,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
         test_scores_stds_by_size = lrd['learning_curve_test_scores_stds']
 
         # rename `grid_objective` to `objective` since that can be confusing
-        lrd['objective'] = lrd['grid_objective']
+        lrd['metric'] = lrd['grid_objective']
 
         for (size,
              train_score_mean,
@@ -1189,7 +1189,7 @@ def _check_job_results(job_results):
                          result_dicts)
 
 
-def _compute_ylimits_for_featureset(df, objectives):
+def _compute_ylimits_for_featureset(df, metrics):
     """
     Compute the y-limits for learning curve plots.
     """
@@ -1197,10 +1197,10 @@ def _compute_ylimits_for_featureset(df, objectives):
     # set the y-limits of the curves depending on what kind
     # of values the metric produces
     ylimits = {}
-    for objective in objectives:
+    for metric in metrics:
         # get the real min and max for the values that will be plotted
-        df_train = df[(df['variable'] == 'train_score_mean') & (df['objective'] == objective)]
-        df_test = df[(df['variable'] == 'test_score_mean') & (df['objective'] == objective)]
+        df_train = df[(df['variable'] == 'train_score_mean') & (df['metric'] == metric)]
+        df_test = df[(df['variable'] == 'test_score_mean') & (df['metric'] == metric)]
         train_values_lower = df_train['value'].values - df_train['train_score_std'].values
         test_values_lower = df_test['value'].values - df_test['test_score_std'].values
         min_score = np.min(np.concatenate([train_values_lower,
@@ -1221,7 +1221,7 @@ def _compute_ylimits_for_featureset(df, objectives):
         else:
             upper_limit = 0
 
-        ylimits[objective] = (lower_limit, upper_limit)
+        ylimits[metric] = (lower_limit, upper_limit)
 
     return ylimits
 
@@ -1238,7 +1238,7 @@ def _generate_learning_curve_plots(experiment_name,
     # and massage it from wide to long format for plotting
     df = pd.read_csv(learning_curve_tsv_file, sep='\t')
     num_learners = len(df['learner_name'].unique())
-    num_objectives = len(df['objective'].unique())
+    num_metrics = len(df['metric'].unique())
     df_melted = pd.melt(df, id_vars=[c for c in df.columns
                                      if c not in ['train_score_mean', 'test_score_mean']])
 
@@ -1251,12 +1251,12 @@ def _generate_learning_curve_plots(experiment_name,
     # each of the featuresets
     for fs_name, df_fs in df_melted.groupby('featureset_name'):
         fig = plt.figure();
-        fig.set_size_inches(2.5*num_learners, 2.5*num_objectives);
+        fig.set_size_inches(2.5*num_learners, 2.5*num_metrics);
 
         # compute ylimits for this feature set for each objective
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
-            g = sns.FacetGrid(df_fs, row="objective", col="learner_name",
+            g = sns.FacetGrid(df_fs, row="metric", col="learner_name",
                               hue="variable", size=2.5, aspect=1,
                               margin_titles=True, despine=True, sharex=False,
                               sharey=False, legend_out=False, palette="Set1")
@@ -1276,10 +1276,10 @@ def _generate_learning_curve_plots(experiment_name,
                     ax = g.axes[i][j]
                     ax.set(ylim=ylimits[row_name])
                     df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
-                                        (df_fs['objective'] == row_name) &
+                                        (df_fs['metric'] == row_name) &
                                         (df_fs['variable'] == 'train_score_mean')]
                     df_ax_test = df_fs[(df_fs['learner_name'] == col_name) &
-                                       (df_fs['objective'] == row_name) &
+                                       (df_fs['metric'] == row_name) &
                                        (df_fs['variable'] == 'test_score_mean')]
                     ax.fill_between(list(range(len(df_ax_train))),
                                     df_ax_train['value'] - df_ax_train['train_score_std'],
