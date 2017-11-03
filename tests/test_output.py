@@ -266,7 +266,7 @@ def check_summary_score(use_feature_hashing,
     # accuracy score. Test proves that the report
     # written out at least has a correct format for
     # this line. See _print_fancy_output
-    if not use_feature_hashing:
+    if not use_feature_hashing and not use_additional_metrics:
         for report_name, val in (("LogisticRegression", .5),
                                  ("MultinomialNB", .5),
                                  ("SVC", .6333)):
@@ -434,7 +434,12 @@ def test_learning_curve_implementation():
     cv = ShuffleSplit(n_splits=cv_folds, test_size=0.2, random_state=random_state)
     estimator = MultinomialNB()
     train_sizes=np.linspace(.1, 1.0, 5)
-    train_sizes1, train_scores1, test_scores1 = learning_curve(estimator, X, y, cv=cv,  train_sizes=train_sizes, scoring='accuracy')
+    train_sizes1, train_scores1, test_scores1 = learning_curve(estimator,
+                                                               X,
+                                                               y,
+                                                               cv=cv,
+                                                               train_sizes=train_sizes,
+                                                               scoring='accuracy')
 
     # get the features from this data into a FeatureSet instance we can use
     # with the SKLL API
@@ -450,7 +455,7 @@ def test_learning_curve_implementation():
     train_scores2, test_scores2, train_sizes2 = l.learning_curve(fs,
                                                                  cv_folds=cv_folds,
                                                                  train_sizes=train_sizes,
-                                                                 objective='accuracy')
+                                                                 metric='accuracy')
 
     assert np.all(train_sizes1 == train_sizes2)
     assert np.allclose(train_scores1, train_scores2)
@@ -590,7 +595,7 @@ def test_learning_curve_ylimits():
         import pandas as pd
 
     # create a test data frame
-    df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694, 1: 0.18556201422712379, 2: 0.15002727816517414, 3: 0.15301923832338646, 4: 0.15589815327205431, 5: 0.68205316443171948, 6: 0.77441075727706354, 7: 0.83838056331276678, 8: 0.84770116657005623, 9: 0.8708014559726478}, 'value': {0: 0.4092496971394447, 1: 0.2820507715115001, 2: 0.24533811547921261, 3: 0.21808651942296109, 4: 0.19767367891431534, 5: -2.3540980769230773, 6: -3.1312445327182394, 7: -3.2956790939674137, 8: -3.4843050005436713, 9: -3.6357879085645455}, 'train_score_std': {0: 0.15950199460682787, 1: 0.090992452273091703, 2: 0.068488654201949981, 3: 0.055223120652733763, 4: 0.03172452509259388, 5: 1.0561586240460523, 6: 0.53955995320300709, 7: 0.40477740983901211, 8: 0.34148185048394258, 9: 0.20791478156554272}, 'variable': {0: 'train_score_mean', 1: 'train_score_mean', 2: 'train_score_mean', 3: 'train_score_mean', 4: 'train_score_mean', 5: 'train_score_mean', 6: 'train_score_mean', 7: 'train_score_mean', 8: 'train_score_mean', 9: 'train_score_mean'}, 'objective': {0: 'r2', 1: 'r2', 2: 'r2', 3: 'r2', 4: 'r2', 5: 'neg_mean_squared_error', 6: 'neg_mean_squared_error', 7: 'neg_mean_squared_error', 8: 'neg_mean_squared_error', 9: 'neg_mean_squared_error'}})
+    df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694, 1: 0.18556201422712379, 2: 0.15002727816517414, 3: 0.15301923832338646, 4: 0.15589815327205431, 5: 0.68205316443171948, 6: 0.77441075727706354, 7: 0.83838056331276678, 8: 0.84770116657005623, 9: 0.8708014559726478}, 'value': {0: 0.4092496971394447, 1: 0.2820507715115001, 2: 0.24533811547921261, 3: 0.21808651942296109, 4: 0.19767367891431534, 5: -2.3540980769230773, 6: -3.1312445327182394, 7: -3.2956790939674137, 8: -3.4843050005436713, 9: -3.6357879085645455}, 'train_score_std': {0: 0.15950199460682787, 1: 0.090992452273091703, 2: 0.068488654201949981, 3: 0.055223120652733763, 4: 0.03172452509259388, 5: 1.0561586240460523, 6: 0.53955995320300709, 7: 0.40477740983901211, 8: 0.34148185048394258, 9: 0.20791478156554272}, 'variable': {0: 'train_score_mean', 1: 'train_score_mean', 2: 'train_score_mean', 3: 'train_score_mean', 4: 'train_score_mean', 5: 'train_score_mean', 6: 'train_score_mean', 7: 'train_score_mean', 8: 'train_score_mean', 9: 'train_score_mean'}, 'metric': {0: 'r2', 1: 'r2', 2: 'r2', 3: 'r2', 4: 'r2', 5: 'neg_mean_squared_error', 6: 'neg_mean_squared_error', 7: 'neg_mean_squared_error', 8: 'neg_mean_squared_error', 9: 'neg_mean_squared_error'}})
 
     # compute the y-limits
     ylimits_dict = _compute_ylimits_for_featureset(df_test, ['r2', 'neg_mean_squared_error'])

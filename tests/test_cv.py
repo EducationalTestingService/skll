@@ -161,7 +161,7 @@ def test_specified_cv_folds():
         cv_output = learner.cross_validate(cv_fs,
                                            cv_folds=folds,
                                            grid_search=True)
-        fold_test_scores = [t[-1] for t in cv_output[0]]
+        fold_test_scores = [t[-2] for t in cv_output[0]]
 
         overall_score = np.mean(fold_test_scores)
 
