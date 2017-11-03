@@ -1331,9 +1331,13 @@ class Learner(object):
                     metric_scores[metric] = float('NaN')
 
         # now separate out the grid objective score from the additional metric scores
-        objective_score = metric_scores[grid_objective]
+        # if a grid objective was actually passed in. If no objective was passed in
+        # then that score should just be none.
+        objective_score = None
         additional_scores = metric_scores.copy()
-        del additional_scores[grid_objective]
+        if grid_objective:
+            objective_score = metric_scores[grid_objective]
+            del additional_scores[grid_objective]
 
         if self.model_type._estimator_type == 'regressor':
             result_dict = {'descriptive': defaultdict(dict)}
