@@ -26,7 +26,6 @@ from nose.tools import eq_, assert_almost_equal, raises
 
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import accuracy_score
-from sklearn.utils.testing import assert_greater
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
