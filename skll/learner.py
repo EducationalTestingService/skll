@@ -1278,7 +1278,8 @@ class Learner(object):
         metric_scores = {metric: None for metric in output_metrics}
 
         # make the prediction on the test data
-        yhat = self.predict(examples, prediction_prefix=prediction_prefix,
+        yhat = self.predict(examples,
+                            prediction_prefix=prediction_prefix,
                             append=append)
 
         # make a single list of metrics including the grid objective
@@ -1303,7 +1304,9 @@ class Learner(object):
         else:
             ytest = examples.labels
 
-        # compute all of the metrics that we need to
+        # compute all of the metrics that we need to but save the original
+        # predictions since we will need to use those for each metric
+        original_yhat = yhat
         for metric in metrics_to_compute:
 
             # if run in probability mode, convert yhat to list of labels predicted
@@ -1317,7 +1320,7 @@ class Learner(object):
 
                 yhat = np.array([max(range(len(row)),
                                      key=lambda i: row[i])
-                                 for row in yhat])
+                                 for row in original_yhat])
 
             # calculate grid search objective function score, if specified
             if (metric and (metric not in _CORRELATION_METRICS or
