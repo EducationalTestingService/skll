@@ -34,6 +34,8 @@ from skll.data import FeatureSet, NDJWriter, Reader
 from skll.experiments import _HAVE_PANDAS, _HAVE_SEABORN, run_configuration, _compute_ylimits_for_featureset
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
+from six import PY2
+
 from utils import fill_in_config_options, fill_in_config_paths, make_classification_data
 
 
@@ -315,7 +317,10 @@ def check_xval_fancy_results_file(do_grid_search,
     values_to_fill_dict['use_folds_file_for_grid_search'] = str(use_folds_file_for_grid_search)
 
     if use_additional_metrics:
-        values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
+        if PY2:
+            values_to_fill_dict['metrics'] = str([b"accuracy", b"unweighted_kappa"])
+        else:
+            values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
 
     config_template_path = join(_my_dir,
                                'configs',
@@ -371,8 +376,10 @@ def check_xval_fancy_results_file(do_grid_search,
             eq_(results_dict['Grid Search Folds'], '4')
 
     if use_additional_metrics:
-        eq_(results_dict['Additional Evaluation Metrics'],
-            str(["accuracy", "unweighted_kappa"]))
+        expected_metrics = [b"accuracy", b"unweighted_kappa"] if PY2 else ["accuracy", "unweighted_kappa"]
+
+        eq_(sorted(literal_eval(results_dict['Additional Evaluation Metrics'])),
+            sorted(expected_metrics))
 
 
 def test_xval_fancy_results_file():
