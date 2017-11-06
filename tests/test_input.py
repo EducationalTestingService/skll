@@ -50,9 +50,9 @@ def tearDown():
     """
     Clean up after tests.
     """
-    # config_dir = join(_my_dir, 'configs')
-    # for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
-    #     os.unlink(config_file)
+    config_dir = join(_my_dir, 'configs')
+    for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
+        os.unlink(config_file)
 
 
 def check_safe_float_conversion(converted_val, expected_val):
