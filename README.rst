@@ -65,7 +65,9 @@ like:
   objectives = ['accuracy']
 
   [Output]
-  # again, these can/should be absolute paths
+  # Also compute the area under the ROC curve as an additional metric
+  metrics = ['roc_auc']
+  # The following can/should be absolute paths
   log = output
   results = output
   predictions = output
