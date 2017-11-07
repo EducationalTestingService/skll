@@ -838,7 +838,9 @@ Regression:
 
 Defaults to ``['f1_score_micro']``.
 
-**Note**: Using ``objective=x`` instead of ``objectives=['x']`` is also acceptable, for backward-compatibility.
+.. note::
+    1. Using ``objective=x`` instead of ``objectives=['x']`` is also acceptable, for backward-compatibility.
+    2. Also see the :ref:`metrics <metrics>` option below.
 
 .. _param_grids:
 
@@ -985,6 +987,26 @@ results *(Optional)*
 
 Directory to store result files in. If omitted, the current working
 directory is used.
+
+.. _metrics:
+
+metrics *(Optional)*
+""""""""""""""""""""
+For the ``evaluate`` and ``cross_validate`` tasks, this is a list of
+additional metrics that will be computed *in addition to* the tuning
+objectives and added to the results files. For the ``learning_curve`` task,
+this will be the list of metrics for which the learning curves
+will be plotted. Can take all of the same functions as those
+available for the :ref:`tuning objectives <objectives>`.
+
+.. note::
+
+    1. For learning curves, ``metrics`` can be specified instead of
+       ``objectives`` since both serve the same purpose. If both are
+       specified, ``objectives`` will be ignored.
+    2. For the ``evaluate`` and ``cross_validate`` tasks,  any functions
+       that are specified in both ``metrics`` and  ``objectives``
+       are assumed to be the latter.
 
 .. _log:
 
