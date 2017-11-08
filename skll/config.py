@@ -627,7 +627,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             logger.warning("The \"objectives\" option "
                            "is deprecated for the learning_curve "
                            "task and will not be supported "
-                           "starting with the next release; please "
+                           "after the next release; please "
                            "use the \"metrics\" option in the [Output] "
                            "section instead.")
             output_metrics = grid_objectives
@@ -641,7 +641,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             grid_objectives = []
     elif task in ['evaluate', 'cross_validate']:
         # for other appropriate tasks, if metrics and objectives have
-        # some overlaps - we will assume that the user meant to include
+        # some overlaps - we will assume that the user meant to
         # use the metric for tuning _and_ evaluation, not just evaluation
         if (len(grid_objectives) > 0 and
             len(output_metrics) > 0):
