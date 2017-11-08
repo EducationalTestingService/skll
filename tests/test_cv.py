@@ -65,9 +65,12 @@ def tearDown():
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
 
-    cfg_file = join(config_dir, 'test_save_cv_folds.cfg')
-    if exists(cfg_file):
-        os.unlink(cfg_file)
+    cfg_files = [join(config_dir, 'test_save_cv_folds.cfg'),
+                 join(config_dir, 'test_folds_file.cfg'),
+                 join(config_dir, 'test_folds_file_grid.cfg')]
+    for cfg_file in cfg_files:
+        if exists(cfg_file):
+            os.unlink(cfg_file)
 
     for output_file in (glob(join(output_dir,
                                   'test_save_cv_folds_*')) +
@@ -270,27 +273,65 @@ def test_retrieve_cv_folds():
     assert_equal(skll_fold_ids, custom_cv_folds)
 
 
-def test_folds_file_logging():
+def test_folds_file_logging_num_folds():
     """
     Test that, when `folds_file` is used, the log prints the number of folds,
-     instead of the entire cv_folds data.
+     instead of the entire cv_folds data. And that the folds file warning shows up
+     in the log file.
     """
     # Run experiment
     suffix = '.jsonlines'
     train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
 
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
+                                                            "configs",
                                                             "test_folds_file"
                                                             ".template.cfg"),
                                                        train_path,
                                                        None)
     run_configuration(config_path, quiet=True)
 
-    # Check log output
-    with open(join(_my_dir, 'output', 'test_folds_file_logging_train_f0.' +
-            'jsonlines_LogisticRegression.log')) as f:
-        cv_folds_pattern = re.compile("Task: cross_validate\nCross-validating \([0-9]+ folds\)")
+    # Check experiment log output
+    with open(join(_my_dir,
+                   'output',
+                   'test_folds_file_logging.log')) as f:
+        cv_file_pattern = re.compile('Specifying "folds_file" overrides both explicit and default "num_cv_folds".')
+        matches = re.findall(cv_file_pattern, f.read())
+        assert_equal(len(matches), 1)
+
+    # Check job log output
+    with open(join(_my_dir,
+                   'output',
+                   'test_folds_file_logging_train_f0.'
+                   'jsonlines_LogisticRegression.log')) as f:
+        cv_folds_pattern = re.compile("(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds\))")
         matches = re.findall(cv_folds_pattern, f.read())
+        assert_equal(len(matches), 1)
+
+
+def test_folds_file_logging_grid_search():
+    """
+    Test that, when `folds_file` is used but `use_folds_file` for grid search
+    is specified, that we get an appropriate message in the log.
+    """
+    # Run experiment
+    suffix = '.jsonlines'
+    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
+                                                            "configs",
+                                                            "test_folds_file_grid"
+                                                            ".template.cfg"),
+                                                       train_path,
+                                                       None)
+    run_configuration(config_path, quiet=True)
+
+    # Check experiment log output
+    with open(join(_my_dir,
+                   'output',
+                   'test_folds_file_logging.log')) as f:
+        cv_file_pattern = re.compile('Specifying "folds_file" overrides both explicit and default "num_cv_folds".\n(.+)The specified "folds_file" will not be used for inner grid search.')
+        matches = re.findall(cv_file_pattern, f.read())
         assert_equal(len(matches), 1)
 
 

@@ -24,6 +24,7 @@ import numpy as np
 import ruamel.yaml as yaml
 
 from six import string_types, iteritems  # Python 2/3
+from skll import get_skll_logger
 from sklearn.metrics import SCORERS
 
 
@@ -269,13 +270,11 @@ def _setup_config_parser(config_path, validate=True):
     return config
 
 
-def _parse_config_file(config_path):
+def _parse_config_file(config_path, log_level=logging.INFO):
     """
     Parses a SKLL experiment configuration file with the given path.
+    Log messages with the given log level (default: INFO).
     """
-
-    # Initialize logger
-    logger = logging.getLogger(__name__)
 
     # check that config_path is not empty
     if config_path == "":
@@ -296,6 +295,26 @@ def _parse_config_file(config_path):
     else:
         raise ValueError("Configuration file does not contain experiment_name "
                          "in the [General] section.")
+
+    # next, get the log path before anything else since we need to
+    # save all logging messages to a log file in addition to displaying
+    # them on the console
+    log_path = _locate_file(config.get("Output", "log"), config_dir)
+    if log_path:
+        log_path = join(config_dir, log_path)
+        if not exists(log_path):
+            os.makedirs(log_path)
+
+    # Create a top-level log file under the log path
+    main_log_file =join(log_path, '{}.log'.format(experiment_name))
+
+    # Now create a SKLL logger that will log to this file as well
+    # as to the console. Use the log level provided - note that
+    # we only have to do this the first time we call `get_skll_logger()`
+    # with a given name.
+    logger = get_skll_logger('experiment',
+                             filepath=main_log_file,
+                             log_level=log_level)
 
     if config.has_option("General", "task"):
         task = config.get("General", "task")
@@ -535,13 +554,6 @@ def _parse_config_file(config_path):
     if prediction_dir:
         if not exists(prediction_dir):
             os.makedirs(prediction_dir)
-
-    # make sure log path exists
-    log_path = _locate_file(config.get("Output", "log"), config_dir)
-    if log_path:
-        log_path = join(config_dir, log_path)
-        if not exists(log_path):
-            os.makedirs(log_path)
 
     # make sure model path exists
     model_path = _locate_file(config.get("Output", "models"), config_dir)

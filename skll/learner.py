@@ -213,7 +213,6 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         self.keep = keep
         self.example_ids = example_ids
         self._warned = False
-        self.logger = logging.getLogger(__name__)
 
     def split(self, X, y, groups):
         for train_index, test_index in super(FilteredLeaveOneGroupOut,
@@ -629,7 +628,8 @@ class Learner(object):
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
                  model_kwargs=None, pos_label_str=None, min_feature_count=1,
-                 sampler=None, sampler_kwargs=None, custom_learner_path=None):
+                 sampler=None, sampler_kwargs=None, custom_learner_path=None,
+                 logger=None):
         """
         Initializes a learner object with the specified settings.
         """
@@ -646,6 +646,7 @@ class Learner(object):
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
         self._sampler_kwargs = {}
+        self.logger = logger if logger else logging.getLogger(__name__)
 
         if model_type not in globals():
             # here, we need to import the custom model and add it
@@ -678,11 +679,10 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
             if self.probability:
-                logger = logging.getLogger(__name__)
-                logger.warning('Because LibSVM does an internal ' +
-                               'cross-validation to produce probabilities, ' +
-                               'results will not be exactly replicable when ' +
-                               'using SVC and probability mode.')
+                self.logger.warning('Because LibSVM does an internal '
+                                    'cross-validation to produce probabilities, '
+                                    'results will not be exactly replicable when '
+                                    'using SVC and probability mode.')
         elif issubclass(self._model_type,
                         (RandomForestClassifier, RandomForestRegressor,
                          GradientBoostingClassifier, GradientBoostingRegressor,
@@ -887,11 +887,18 @@ class Learner(object):
         # LinearSVC doesn't support predict_proba
         self._probability = value
         if not hasattr(self.model_type, "predict_proba") and value:
-            logger = logging.getLogger(__name__)
-            logger.warning(("probability was set to True, but {} does not have"
-                            " a predict_proba() method.")
-                           .format(self.model_type))
+            self.logger.warning("Probability was set to True, but {} does not have "
+                                "a predict_proba() method.".format(self.model_type.__name__))
             self._probability = False
+
+    def __getstate__(self):
+        """
+        Return the attributes that should be pickled. We need this
+        because we cannot pickle loggers.
+        """
+        attribute_dict = dict(self.__dict__)
+        del attribute_dict['logger']
+        return attribute_dict
 
     def save(self, learner_path):
         """
@@ -904,7 +911,7 @@ class Learner(object):
         learner_dir = os.path.dirname(learner_path)
         if not os.path.exists(learner_dir):
             os.makedirs(learner_dir)
-        # write out the files
+        # write out the learner to disk
         joblib.dump((VERSION, self), learner_path)
 
     def _create_estimator(self):
@@ -940,18 +947,16 @@ class Learner(object):
                 raise TypeError("You have feature values that are strings.  "
                                 "Convert them to floats.")
 
-    @staticmethod
-    def _check_max_feature_value(feat_array):
+    def _check_max_feature_value(self, feat_array):
         """
         Check if the the maximum absolute value of any feature is too large
         """
         max_feat_abs = np.max(np.abs(feat_array.data))
         if max_feat_abs > 1000.0:
-            logger = logging.getLogger(__name__)
-            logger.warning(("You have a feature with a very large absolute " +
-                            "value (%s).  That may cause the learning " +
-                            "algorithm to crash or perform " +
-                            "poorly."), max_feat_abs)
+            self.logger.warning("You have a feature with a very large absolute "
+                                "value ({}).  That may cause the learning "
+                                "algorithm to crash or perform "
+                                "poorly.".format(max_feat_abs))
 
     def _create_label_dict(self, examples):
         """
@@ -1054,7 +1059,6 @@ class Learner(object):
                  not doing grid search.
         :rtype: float
         """
-        logger = logging.getLogger(__name__)
 
         # if we are asked to do grid search, check that the grid objective
         # function is valid for the selected learner
@@ -1109,9 +1113,9 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                logger.warning('Training data will be shuffled to randomize '
-                               'grid search folds.  Shuffling may yield '
-                               'different results compared to scikit-learn.')
+                self.logger.warning('Training data will be shuffled to randomize '
+                                    'grid search folds.  Shuffling may yield '
+                                    'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
                                                random_state=123456789)
@@ -1158,9 +1162,9 @@ class Learner(object):
 
         # Sampler
         if self.sampler:
-            logger.warning('Sampler converts sparse matrix to dense')
+            self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
-                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 xtrain = self.sampler.fit_transform(xtrain.todense())
             else:
                 xtrain = self.sampler.fit_transform(xtrain)
@@ -1181,11 +1185,11 @@ class Learner(object):
         # then there's no point doing the grid search at all
         if grid_search and not param_grid:
             if default_param_grid == [{}]:
-                logger.warning("SKLL has no default parameter grid "
-                               "available for the {} learner and no "
-                               "parameter grids were supplied. Using "
-                               "default values instead of grid "
-                               "search.".format(self._model_type.__name__))
+                self.logger.warning("SKLL has no default parameter grid "
+                                    "available for the {} learner and no "
+                                    "parameter grids were supplied. Using "
+                                    "default values instead of grid "
+                                    "search.".format(self._model_type.__name__))
                 grid_search = False
             else:
                 param_grid = default_param_grid
@@ -1368,7 +1372,6 @@ class Learner(object):
         :return: The predictions returned by the learner.
         :rtype: array
         """
-        logger = logging.getLogger(__name__)
         example_ids = examples.ids
 
         # Need to do some transformations so the features are in the right
@@ -1377,8 +1380,8 @@ class Learner(object):
         if isinstance(self.feat_vectorizer, FeatureHasher):
             if (self.feat_vectorizer.n_features !=
                     examples.vectorizer.n_features):
-                logger.warning("There is mismatch between the training model "
-                               "features and the data passed to predict.")
+                self.logger.warning("There is mismatch between the training model "
+                                    "features and the data passed to predict.")
 
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
@@ -1398,8 +1401,8 @@ class Learner(object):
         else:
             if (set(self.feat_vectorizer.feature_names_) !=
                     set(examples.vectorizer.feature_names_)):
-                logger.warning("There is mismatch between the training model "
-                               "features and the data passed to predict.")
+                self.logger.warning("There is mismatch between the training model "
+                                    "features and the data passed to predict.")
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
@@ -1413,9 +1416,9 @@ class Learner(object):
 
         # Sampler
         if self.sampler:
-            logger.warning('Sampler converts sparse matrix to dense')
+            self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
-                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 xtest = self.sampler.fit_transform(xtest.todense())
             else:
                 xtest = self.sampler.fit_transform(xtest)
@@ -1446,8 +1449,11 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logger.error("Model type: %s\nModel: %s\nProbability: %s\n",
-                         self._model_type.__name__, self._model, self.probability)
+            self.logger.error("Model type: {}\n"
+                              "Model: {}\n"
+                              "Probability: {}\n".format(self._model_type.__name__,
+                                                         self._model,
+                                                         self.probability))
             raise e
 
         # write out the predictions if we are asked to
@@ -1503,10 +1509,9 @@ class Learner(object):
             raise ValueError(('The training set has only {} example for a' +
                               ' label.').format(min_examples_per_label))
         if min_examples_per_label < cv_folds:
-            logger = logging.getLogger(__name__)
-            logger.warning('The minimum number of examples per label was %s.  '
-                           'Setting the number of cross-validation folds to '
-                           'that value.', min_examples_per_label)
+            self.logger.warning('The minimum number of examples per label was {}. '
+                                'Setting the number of cross-validation folds to '
+                                'that value.'.format(min_examples_per_label))
             cv_folds = min_examples_per_label
         return cv_folds
 
@@ -1579,8 +1584,6 @@ class Learner(object):
         # Seed the random number generator so that randomized algorithms are
         # replicable.
         random_state = np.random.RandomState(123456789)
-        # Set up logger.
-        logger = logging.getLogger(__name__)
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1588,9 +1591,9 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                logger.warning('Training data will be shuffled to randomize '
-                               'grid search folds. Shuffling may yield '
-                               'different results compared to scikit-learn.')
+                self.logger.warning('Training data will be shuffled to randomize '
+                                    'grid search folds. Shuffling may yield '
+                                    'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
                                                random_state=random_state)
@@ -1634,8 +1637,8 @@ class Learner(object):
             # when we are using the API; otherwise the configparser should
             # take care of this even before this method is called
             if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
-                logger.warning("The specified custom folds will be used for "
-                               "the inner grid search.")
+                self.logger.warning("The specified custom folds will be used for "
+                                    "the inner grid search.")
                 grid_search_folds = cv_folds
 
         # Save the cross-validation fold information, if required
@@ -1733,9 +1736,6 @@ class Learner(object):
         # Seed the random number generator so that randomized algorithms are
         # replicable.
         random_state = np.random.RandomState(123456789)
-
-        # Set up logger.
-        logger = logging.getLogger(__name__)
 
         # Call train setup before since we need to train
         # the learner eventually

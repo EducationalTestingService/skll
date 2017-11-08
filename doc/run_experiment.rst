@@ -1133,6 +1133,25 @@ the result, log, model, and prediction files will share the prefix
 ``EXPERIMENT_FEATURESET_LEARNER``. For backward-compatibility, the same
 applies when a single objective is specified using ``objective=x``.
 
+In addition to the above log files that are specific to each "job"
+(a specific combination of featuresets, learners, and objectives specified
+in the configuration file), SKLL also produces a single, top level "experiment"
+log file with only ``EXPERIMENT`` as the prefix. While the job-level log files
+contain messages that pertain to the specific characteristics of the job, the
+experiment-level log file will contain logging messages that pertain to the
+overall experiment and configuration file. The messages in the log files are
+in the following format:
+
+.. code-block:: bash
+
+    TIMESTAMP - LEVEL - MSG
+
+where ``TIMESTAMP`` refers to the exact time when the message was logged,
+``LEVEL`` refers to the level of the logging message (e.g., ``INFO``, ``WARNING``,
+etc.), and ``MSG`` is the actual content of the message. All of the messages
+are also printed to the console in addition to being saved in the job-level log
+files and the experiment-level log file.
+
 For every experiment you run, there will also be a result summary file
 generated that is a tab-delimited file summarizing the results for each
 learner-featureset combination you have in your configuration file. It is named

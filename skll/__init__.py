@@ -12,7 +12,7 @@ common scikit-learn experiments with pre-generated features.
 from __future__ import absolute_import, print_function, unicode_literals
 
 from sklearn.metrics import f1_score, make_scorer, SCORERS
-
+from .logutils import get_skll_logger
 from .data import FeatureSet, Reader, Writer
 from .experiments import run_configuration
 from .learner import Learner
@@ -22,7 +22,7 @@ from .metrics import (kappa, kendall_tau, spearman, pearson,
 
 __all__ = ['FeatureSet', 'Learner', 'Reader', 'kappa', 'kendall_tau',
            'spearman', 'pearson', 'f1_score_least_frequent',
-           'run_configuration', 'Writer']
+           'get_skll_logger', 'run_configuration', 'Writer']
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll

@@ -57,6 +57,9 @@ class Writer(object):
                     enumerate all of these boolean feature names in your
                     mapping.
     :type subsets: dict (str to list of str)
+    :param logger: A logger instance to use to log messages instead of creating
+                   a new one by default.
+    :type logger: logging.Logger
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -66,6 +69,9 @@ class Writer(object):
         self.path = path
         self.feat_set = feature_set
         self.subsets = kwargs.pop('subsets', None)
+        logger = kwargs.pop('logger', None)
+        self.logger = logger if logger else logging.getLogger(__name__)
+
         # Get prefix & extension for checking file types & writing subset files
         # TODO: Determine if we purposefully used this instead of os.path.split
         self.root, self.ext = re.search(r'^(.*)(\.[^.]*)$', path).groups()
@@ -104,9 +110,6 @@ class Writer(object):
         Writes out this Writer's FeatureSet to a file in its
         format.
         """
-        # Setup logger
-        logger = logging.getLogger(__name__)
-
         if isinstance(self.feat_set.vectorizer, FeatureHasher):
             raise ValueError('Writer cannot write sets that use'
                              'FeatureHasher for vectorization.')
@@ -117,8 +120,8 @@ class Writer(object):
         # Otherwise write one feature file per subset
         else:
             for subset_name, filter_features in iteritems(self.subsets):
-                logger.debug('Subset (%s) features: %s', subset_name,
-                             filter_features)
+                self.logger.debug('Subset ({}) features: {}'.format(subset_name,
+                                                                    filter_features))
                 sub_path = os.path.join(self.root, '{}{}'.format(subset_name,
                                                                  self.ext))
                 self._write_subset(sub_path, set(filter_features))
@@ -134,12 +137,9 @@ class Writer(object):
                                 file.
         :type filter_features: set of str
         """
-        # Setup logger
-        logger = logging.getLogger(__name__)
-
-        logger.debug('sub_path: %s', sub_path)
-        logger.debug('feature_set: %s', self.feat_set.name)
-        logger.debug('filter_features: %s', filter_features)
+        self.logger.debug('sub_path: %s', sub_path)
+        self.logger.debug('feature_set: %s', self.feat_set.name)
+        self.logger.debug('filter_features: %s', filter_features)
 
         if not self.quiet:
             self._progress_msg = "Writing {}...".format(sub_path)
