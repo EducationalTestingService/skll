@@ -71,6 +71,7 @@ def tearDown():
 
         config_files = ['test_{}.cfg'.format(suffix),
                         'test_{}_with_metrics.cfg'.format(suffix),
+                        'test_{}_with_objectives.cfg'.format(suffix),
                         'test_{}_feature_hasher.cfg'.format(suffix),
                         'test_{}_feature_hasher_with_metrics.cfg'.format(suffix)]
         for cf in config_files:
