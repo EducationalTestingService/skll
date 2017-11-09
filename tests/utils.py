@@ -5,8 +5,11 @@ Utilities functions to make SKLL testing simpler
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import os
 import re
 
+from collections import OrderedDict
+from glob import glob
 from os.path import abspath, dirname, join
 
 import numpy as np
@@ -15,7 +18,7 @@ from sklearn.datasets.samples_generator import (make_classification,
                                                 make_regression)
 from sklearn.feature_extraction import FeatureHasher
 
-from skll.data import FeatureSet
+from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
 
 _my_dir = abspath(dirname(__file__))
@@ -199,6 +202,39 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
         config.write(new_config_file)
 
     return new_config_path
+
+
+def create_jsonlines_feature_files():
+    num_examples = 1000
+
+    np.random.seed(1234567890)
+
+    # Create lists we will write files from
+    ids = []
+    features = []
+    labels = []
+    for j in range(num_examples):
+        y = "dog" if j % 2 == 0 else "cat"
+        ex_id = "{}{}".format(y, j)
+        x = {"f{}".format(feat_num): np.random.randint(0, 4) for feat_num in
+             range(5)}
+        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+        ids.append(ex_id)
+        labels.append(y)
+        features.append(x)
+
+    for i in range(5):
+        train_path = join(_my_dir, 'train', 'f{}.jsonlines'.format(i))
+        sub_features = []
+        for example_num in range(num_examples):
+            feat_num = i
+            x = {"f{}".format(feat_num):
+                 features[example_num]["f{}".format(feat_num)]}
+            sub_features.append(x)
+        train_fs = FeatureSet('ablation_cv', ids, features=sub_features,
+                              labels=labels)
+        writer = NDJWriter(train_path, train_fs)
+        writer.write()
 
 
 def make_classification_data(num_examples=100, train_test_ratio=0.5,

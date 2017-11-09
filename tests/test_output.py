@@ -31,12 +31,18 @@ from sklearn.model_selection import ShuffleSplit, learning_curve
 from sklearn.naive_bayes import MultinomialNB
 
 from skll.data import FeatureSet, NDJWriter, Reader
-from skll.experiments import _HAVE_PANDAS, _HAVE_SEABORN, run_configuration, _compute_ylimits_for_featureset
+from skll.experiments import (_HAVE_PANDAS,
+                              _HAVE_SEABORN,
+                              _compute_ylimits_for_featureset,
+                              run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
 from six import PY2
 
-from utils import fill_in_config_options, fill_in_config_paths, make_classification_data
+from utils import (create_jsonlines_feature_files,
+                   fill_in_config_options,
+                   fill_in_config_paths,
+                   make_classification_data)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -51,6 +57,11 @@ def setup():
         new_dir = join(_my_dir, dir_name)
         if not exists(new_dir):
             os.makedirs(new_dir)
+
+    # create jsonlines feature files if they don't already exist
+    feature_files = [join(_my_dir, 'train', 'f{}.jsonlines'.format(i)) for i in range(5)]
+    if not all([exists(ff) for ff in feature_files]):
+        create_jsonlines_feature_files()
 
 
 def tearDown():

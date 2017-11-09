@@ -12,20 +12,20 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import csv
-import glob
 import json
 import os
-from collections import OrderedDict
+
+from glob import glob
 from io import open
 from os.path import abspath, dirname, exists, join
 
-import numpy as np
 from nose.tools import eq_
-from skll.data import FeatureSet, NDJWriter
+from skll.data import FeatureSet
 from skll.experiments import run_configuration
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import fill_in_config_paths
+from utils import (create_jsonlines_feature_files,
+                   fill_in_config_paths)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -46,6 +46,16 @@ def setup():
     if not exists(output_dir):
         os.makedirs(output_dir)
 
+    # Remove old CV data
+    for old_file in glob(join(_my_dir, 'output',
+                              'ablation_cv_*.results')):
+        os.unlink(old_file)
+
+    # create jsonlines feature files if they don't already exist
+    feature_files = [join(_my_dir, 'train', 'f{}.jsonlines'.format(i)) for i in range(5)]
+    if not all([exists(ff) for ff in feature_files]):
+        create_jsonlines_feature_files()
+
 
 def tearDown():
     """
@@ -64,44 +74,6 @@ def tearDown():
     for cf in config_files:
         if exists(join(config_dir, cf)):
             os.unlink(join(config_dir, cf))
-
-
-def make_ablation_data():
-    # Remove old CV data
-    for old_file in glob.glob(join(_my_dir, 'output',
-                                   'ablation_cv_*.results')):
-        os.remove(old_file)
-
-    num_examples = 1000
-
-    np.random.seed(1234567890)
-
-    # Create lists we will write files from
-    ids = []
-    features = []
-    labels = []
-    for j in range(num_examples):
-        y = "dog" if j % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, j)
-        x = {"f{}".format(feat_num): np.random.randint(0, 4) for feat_num in
-             range(5)}
-        x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
-        ids.append(ex_id)
-        labels.append(y)
-        features.append(x)
-
-    for i in range(5):
-        train_path = join(_my_dir, 'train', 'f{}.jsonlines'.format(i))
-        sub_features = []
-        for example_num in range(num_examples):
-            feat_num = i
-            x = {"f{}".format(feat_num):
-                 features[example_num]["f{}".format(feat_num)]}
-            sub_features.append(x)
-        train_fs = FeatureSet('ablation_cv', ids, features=sub_features,
-                              labels=labels)
-        writer = NDJWriter(train_path, train_fs)
-        writer.write()
 
 
 def check_ablation_rows(reader):
@@ -133,8 +105,6 @@ def test_ablation_cv():
     Test ablation + cross-validation
     """
 
-    make_ablation_data()
-
     config_template_path = join(_my_dir, 'configs',
                                 'test_ablation.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
@@ -159,8 +129,6 @@ def test_ablation_cv_all_combos():
     """
     Test ablation all-combos + cross-validation
     """
-
-    make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_ablation.template.cfg')
@@ -187,7 +155,6 @@ def test_ablation_cv_feature_hasher():
     """
     Test ablation + cross-validation + feature hashing
     """
-    make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_ablation_feature_hasher.template.cfg')
@@ -216,8 +183,6 @@ def test_ablation_cv_feature_hasher_all_combos():
     Test ablation all-combos + cross-validation + feature hashing
     """
 
-    make_ablation_data()
-
     config_template_path = join(_my_dir, 'configs',
                                 'test_ablation_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
@@ -245,7 +210,6 @@ def test_ablation_cv_sampler():
     """
     Test ablation + cross-validation + samplers
     """
-    make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_ablation_sampler.template.cfg')
@@ -271,7 +235,6 @@ def test_ablation_cv_all_combos_sampler():
     """
     Test ablation all-combos + cross-validation + samplers
     """
-    make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_ablation_sampler.template.cfg')
@@ -298,7 +261,6 @@ def test_ablation_cv_feature_hasher_sampler():
     """
     Test ablation + cross-validation + feature hashing + samplers
     """
-    make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs', ('test_ablation_feature_'
                                                      'hasher_sampler.template'
@@ -327,7 +289,6 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
     """
     Test ablation all-combos + cross-validation + feature hashing + samplers
     """
-    make_ablation_data()
 
     config_template_path = join(_my_dir, 'configs', ('test_ablation_feature_'
                                                      'hasher_sampler.template'

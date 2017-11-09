@@ -22,11 +22,14 @@ from nose.tools import eq_, ok_, raises
 
 from six import string_types, PY2
 
-from skll.config import _parse_config_file, _load_cv_folds, _locate_file
+from skll.config import (_parse_config_file,
+                         _load_cv_folds,
+                         _locate_file)
 from skll.data.readers import safe_float
 from skll.experiments import _load_featureset
 
-from utils import fill_in_config_options
+from utils import (create_jsonlines_feature_files,
+                   fill_in_config_options)
 
 _my_dir = abspath(dirname(__file__))
 
@@ -44,6 +47,11 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+
+    # create jsonlines feature files if they don't already exist
+    feature_files = [join(_my_dir, 'train', 'f{}.jsonlines'.format(i)) for i in range(5)]
+    if not all([exists(ff) for ff in feature_files]):
+        create_jsonlines_feature_files()
 
 
 def tearDown():
