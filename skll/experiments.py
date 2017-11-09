@@ -221,7 +221,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
                 learner_result_dicts.extend(obj)
 
     # Build and write header
-    header = ['featureset_name', 'learner_name', 'objective',
+    header = ['featureset_name', 'learner_name', 'metric',
               'train_set_name', 'training_set_size', 'train_score_mean',
               'test_score_mean', 'train_score_std', 'test_score_std',
               'scikit_learn_version', 'version']
@@ -242,7 +242,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
         test_scores_stds_by_size = lrd['learning_curve_test_scores_stds']
 
         # rename `grid_objective` to `objective` since that can be confusing
-        lrd['objective'] = lrd['grid_objective']
+        lrd['metric'] = lrd['grid_objective']
 
         for (size,
              train_score_mean,
@@ -307,6 +307,9 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         lrd['cv_folds'].endswith('folds file')):
         print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
               file=output_file)
+    if lrd['task'] in ['evaluate', 'cross_validate'] and lrd['additional_scores']:
+        print('Additional Evaluation Metrics: {}'.format(list(lrd['additional_scores'].keys())),
+              file=output_file)
     print('Scikit-learn Version: {}'.format(lrd['scikit_learn_version']),
           file=output_file)
     print('Start Timestamp: {}'.format(
@@ -339,6 +342,14 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                   file=output_file)
         print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
+
+        # now print the additional metrics, if there were any
+        if lrd['additional_scores']:
+            print('', file=output_file)
+            print('Additional Evaluation Metrics (Test):', file=output_file)
+            for metric, score in lrd['additional_scores'].items():
+                score = '' if np.isnan(score) else score
+                print(' {} = {}'.format(metric, score), file=output_file)
         print('', file=output_file)
 
 
@@ -444,6 +455,7 @@ def _classify_featureset(args):
     prediction_prefix = args.pop("prediction_prefix")
     grid_search = args.pop("grid_search")
     grid_objective = args.pop("grid_objective")
+    output_metrics = args.pop("output_metrics")
     suffix = args.pop("suffix")
     job_log_file = args.pop("log_file")
     job_log_level = args.pop("log_level")
@@ -565,11 +577,14 @@ def _classify_featureset(args):
 
     # Load test set if there is one
     if task == 'evaluate' or task == 'predict':
-        test_examples = _load_featureset(test_path, featureset, suffix,
+        test_examples = _load_featureset(test_path,
+                                         featureset,
+                                         suffix,
                                          label_col=label_col,
                                          id_col=id_col,
                                          ids_to_floats=ids_to_floats,
-                                         quiet=quiet, class_map=class_map,
+                                         quiet=quiet,
+                                         class_map=class_map,
                                          feature_hasher=feature_hasher,
                                          num_features=hasher_features)
         test_set_size = len(test_examples.ids)
@@ -633,6 +648,7 @@ def _classify_featureset(args):
                                                  grid_search_folds=grid_search_folds,
                                                  cv_folds=cv_folds,
                                                  grid_objective=grid_objective,
+                                                 output_metrics=output_metrics,
                                                  param_grid=param_grid,
                                                  grid_jobs=grid_search_jobs,
                                                  save_cv_folds=save_cv_folds,
@@ -644,7 +660,7 @@ def _classify_featureset(args):
          computed_curve_train_sizes) = learner.learning_curve(train_examples,
                                                               cv_folds=learning_curve_cv_folds,
                                                               train_sizes=learning_curve_train_sizes,
-                                                              objective=grid_objective)
+                                                              metric=grid_objective)
     else:
         # if we have do not have a saved model, we need to train one.
         if not exists(modelfile) or overwrite:
@@ -684,7 +700,8 @@ def _classify_featureset(args):
             logger.info("Evaluating predictions")
             task_results = [learner.evaluate(test_examples,
                                              prediction_prefix=prediction_prefix,
-                                             grid_objective=grid_objective)]
+                                             grid_objective=grid_objective,
+                                             output_metrics=output_metrics)]
         elif task == 'predict':
             logger.info("Writing predictions")
             learner.predict(test_examples,
@@ -758,6 +775,7 @@ def _create_learner_result_dicts(task_results,
     num_folds = len(task_results)
     accuracy_sum = 0.0
     pearson_sum = 0.0
+    additional_metric_score_sums = {}
     score_sum = None
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
@@ -768,9 +786,10 @@ def _create_learner_result_dicts(task_results,
              fold_accuracy,
              result_dict,
              model_params,
-             score), grid_score) in enumerate(zip(task_results,
-                                                  grid_scores),
-                                              start=1):
+             score,
+             additional_scores), grid_score) in enumerate(zip(task_results,
+                                                              grid_scores),
+                                                          start=1):
 
         # create a new dict for this fold
         learner_result_dict = {}
@@ -828,12 +847,18 @@ def _create_learner_result_dicts(task_results,
             learner_result_dict.update(result_dict)
             pearson_sum += float(learner_result_dict['pearson'])
 
+        # get the scores for all the metrics and compute the sums
         if score is not None:
             if score_sum is None:
                 score_sum = score
             else:
                 score_sum += score
             learner_result_dict['score'] = score
+        learner_result_dict['additional_scores'] = additional_scores
+        for metric, score in additional_scores.items():
+            if score is not None:
+                additional_metric_score_sums[metric] = \
+                    additional_metric_score_sums.get(metric, 0) + score
         res.append(learner_result_dict)
 
     if num_folds > 1:
@@ -864,6 +889,10 @@ def _create_learner_result_dicts(task_results,
 
         if score_sum is not None:
             learner_result_dict['score'] = score_sum / num_folds
+        scoredict = {}
+        for metric, score_sum in additional_metric_score_sums.items():
+            scoredict[metric] = score_sum / num_folds
+        learner_result_dict['additional_scores'] = scoredict
         res.append(learner_result_dict)
     return res
 
@@ -920,7 +949,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
      param_grid_list, featureset_names, learners, prediction_dir, log_path, train_path,
      test_path, ids_to_floats, class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes) = _parse_config_file(config_file, log_level=log_level)
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_file,
+                                                                          log_level=log_level)
 
     # get the main experiment logger that will already have been
     # created by the configuration parser so we don't need anything
@@ -1003,7 +1033,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                           ' auto-generated name would be longer than the file '
                           'system can handle'.format(featureset_name))
 
-
+    # if the task is learning curve, and ``metrics`` was specified, then
+    # assign the value of ``metrics`` to ``grid_objectives`` - this lets
+    # us piggyback on the parallelization of the objectives that is already
+    # set up for us to use
+    if task == 'learning_curve' and len(output_metrics) > 0:
+        grid_objectives = output_metrics
 
     # Run each featureset-learner-objective combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
@@ -1062,6 +1097,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["prediction_prefix"] = prediction_prefix
                 job_args["grid_search"] = do_grid_search
                 job_args["grid_objective"] = grid_objective
+                job_args['output_metrics'] = output_metrics
                 job_args["suffix"] = suffix
                 job_args["log_file"] = logfile
                 job_args["log_level"] = log_level
@@ -1156,7 +1192,7 @@ def _check_job_results(job_results):
                          result_dicts)
 
 
-def _compute_ylimits_for_featureset(df, objectives):
+def _compute_ylimits_for_featureset(df, metrics):
     """
     Compute the y-limits for learning curve plots.
     """
@@ -1164,10 +1200,10 @@ def _compute_ylimits_for_featureset(df, objectives):
     # set the y-limits of the curves depending on what kind
     # of values the metric produces
     ylimits = {}
-    for objective in objectives:
+    for metric in metrics:
         # get the real min and max for the values that will be plotted
-        df_train = df[(df['variable'] == 'train_score_mean') & (df['objective'] == objective)]
-        df_test = df[(df['variable'] == 'test_score_mean') & (df['objective'] == objective)]
+        df_train = df[(df['variable'] == 'train_score_mean') & (df['metric'] == metric)]
+        df_test = df[(df['variable'] == 'test_score_mean') & (df['metric'] == metric)]
         train_values_lower = df_train['value'].values - df_train['train_score_std'].values
         test_values_lower = df_test['value'].values - df_test['test_score_std'].values
         min_score = np.min(np.concatenate([train_values_lower,
@@ -1188,7 +1224,7 @@ def _compute_ylimits_for_featureset(df, objectives):
         else:
             upper_limit = 0
 
-        ylimits[objective] = (lower_limit, upper_limit)
+        ylimits[metric] = (lower_limit, upper_limit)
 
     return ylimits
 
@@ -1205,7 +1241,7 @@ def _generate_learning_curve_plots(experiment_name,
     # and massage it from wide to long format for plotting
     df = pd.read_csv(learning_curve_tsv_file, sep='\t')
     num_learners = len(df['learner_name'].unique())
-    num_objectives = len(df['objective'].unique())
+    num_metrics = len(df['metric'].unique())
     df_melted = pd.melt(df, id_vars=[c for c in df.columns
                                      if c not in ['train_score_mean', 'test_score_mean']])
 
@@ -1218,12 +1254,12 @@ def _generate_learning_curve_plots(experiment_name,
     # each of the featuresets
     for fs_name, df_fs in df_melted.groupby('featureset_name'):
         fig = plt.figure();
-        fig.set_size_inches(2.5*num_learners, 2.5*num_objectives);
+        fig.set_size_inches(2.5*num_learners, 2.5*num_metrics);
 
         # compute ylimits for this feature set for each objective
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
-            g = sns.FacetGrid(df_fs, row="objective", col="learner_name",
+            g = sns.FacetGrid(df_fs, row="metric", col="learner_name",
                               hue="variable", size=2.5, aspect=1,
                               margin_titles=True, despine=True, sharex=False,
                               sharey=False, legend_out=False, palette="Set1")
@@ -1243,10 +1279,10 @@ def _generate_learning_curve_plots(experiment_name,
                     ax = g.axes[i][j]
                     ax.set(ylim=ylimits[row_name])
                     df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
-                                        (df_fs['objective'] == row_name) &
+                                        (df_fs['metric'] == row_name) &
                                         (df_fs['variable'] == 'train_score_mean')]
                     df_ax_test = df_fs[(df_fs['learner_name'] == col_name) &
-                                       (df_fs['objective'] == row_name) &
+                                       (df_fs['metric'] == row_name) &
                                        (df_fs['variable'] == 'test_score_mean')]
                     ax.fill_between(list(range(len(df_ax_train))),
                                     df_ax_train['value'] - df_ax_train['train_score_std'],

@@ -1037,9 +1037,9 @@ class Learner(object):
         :type grid_search_folds: int or dict
         :param grid_search: Should we do grid search?
         :type grid_search: bool
-        :param grid_objective: The objective function to use when doing the
-                               grid search.
-        :type grid_objective: function
+        :param grid_objective: The name of the objective function to use when
+                               doing the grid search.
+        :type grid_objective: str
         :param grid_jobs: The number of jobs to run in parallel when doing the
                           grid search. If unspecified or 0, the number of
                           grid search folds will be used.
@@ -1248,9 +1248,9 @@ class Learner(object):
         return grid_score
 
     def evaluate(self, examples, prediction_prefix=None, append=False,
-                 grid_objective=None):
+                 grid_objective=None, output_metrics=[]):
         """
-        Evaluates a given model on a given dev or test example set.
+        Evaluates a given model on a given dev or test example set
 
         :param examples: The examples to evaluate the performance of the model
                          on.
@@ -1265,18 +1265,26 @@ class Learner(object):
         :param grid_objective: The objective function that was used when doing
                                the grid search.
         :type grid_objective: function
+        :param output_metrics: List of additional metric names to compute in
+                                   addition to grid objective. Empty by default.
+        :type output_metrics: list of str
 
         :return: The confusion matrix, the overall accuracy, the per-label
                  PRFs, the model parameters, and the grid search objective
                  function score.
         :rtype: 5-tuple
         """
-        # initialize grid score
-        grid_score = None
+        # initialize a dictionary that will hold all of the metric scores
+        metric_scores = {metric: None for metric in output_metrics}
 
         # make the prediction on the test data
-        yhat = self.predict(examples, prediction_prefix=prediction_prefix,
+        yhat = self.predict(examples,
+                            prediction_prefix=prediction_prefix,
                             append=append)
+
+        # make a single list of metrics including the grid objective
+        # since it's easier to compute everything together
+        metrics_to_compute = [grid_objective] + output_metrics
 
         # extract actual labels (transformed for classification tasks)
         if self.model_type._estimator_type == 'classifier':
@@ -1296,27 +1304,40 @@ class Learner(object):
         else:
             ytest = examples.labels
 
-        # if run in probability mode, convert yhat to list of labels predicted
-        if self.probability:
-            # if we're using a correlation grid objective, calculate it here
-            if grid_objective and grid_objective in _CORRELATION_METRICS:
+        # compute all of the metrics that we need to but save the original
+        # predictions since we will need to use those for each metric
+        original_yhat = yhat
+        for metric in metrics_to_compute:
+
+            # if run in probability mode, convert yhat to list of labels predicted
+            if self.probability:
+                # if we're using a correlation grid objective, calculate it here
+                if metric and metric in _CORRELATION_METRICS:
+                    try:
+                        metric_scores[metric] = use_score_func(metric, ytest, yhat[:, 1])
+                    except ValueError:
+                        metric_scores[metric] = float('NaN')
+
+                yhat = np.array([max(range(len(row)),
+                                     key=lambda i: row[i])
+                                 for row in original_yhat])
+
+            # calculate grid search objective function score, if specified
+            if (metric and (metric not in _CORRELATION_METRICS or
+                                   not self.probability)):
                 try:
-                    grid_score = use_score_func(grid_objective, ytest,
-                                                yhat[:, 1])
+                    metric_scores[metric] = use_score_func(metric, ytest, yhat)
                 except ValueError:
-                    grid_score = float('NaN')
+                    metric_scores[metric] = float('NaN')
 
-            yhat = np.array([max(range(len(row)),
-                                 key=lambda i: row[i])
-                             for row in yhat])
-
-        # calculate grid search objective function score, if specified
-        if (grid_objective and (grid_objective not in _CORRELATION_METRICS or
-                                not self.probability)):
-            try:
-                grid_score = use_score_func(grid_objective, ytest, yhat)
-            except ValueError:
-                grid_score = float('NaN')
+        # now separate out the grid objective score from the additional metric scores
+        # if a grid objective was actually passed in. If no objective was passed in
+        # then that score should just be none.
+        objective_score = None
+        additional_scores = metric_scores.copy()
+        if grid_objective:
+            objective_score = metric_scores[grid_objective]
+            del additional_scores[grid_objective]
 
         if self.model_type._estimator_type == 'regressor':
             result_dict = {'descriptive': defaultdict(dict)}
@@ -1326,8 +1347,8 @@ class Learner(object):
                 result_dict['descriptive'][table_label]['avg'] = np.mean(y)
                 result_dict['descriptive'][table_label]['std'] = np.std(y)
             result_dict['pearson'] = use_score_func('pearson', ytest, yhat)
-            res = (None, None, result_dict, self._model.get_params(),
-                   grid_score)
+            res = (None, None, result_dict, self._model.get_params(), objective_score,
+                   additional_scores)
         else:
             # compute the confusion matrix
             num_labels = len(train_and_test_label_dict)
@@ -1347,7 +1368,8 @@ class Learner(object):
                 result_dict[actual_label]["F-measure"] = result_matrix[2][col]
 
             res = (conf_mat.tolist(), overall_accuracy, result_dict,
-                   self._model.get_params(), grid_score)
+                   self._model.get_params(), objective_score,
+                   additional_scores)
         return res
 
     def predict(self, examples, prediction_prefix=None, append=False,
@@ -1523,6 +1545,7 @@ class Learner(object):
                        grid_search_folds=3,
                        grid_jobs=None,
                        grid_objective='f1_score_micro',
+                       output_metrics=[],
                        prediction_prefix=None,
                        param_grid=None,
                        shuffle=False,
@@ -1550,9 +1573,13 @@ class Learner(object):
                           grid search. If unspecified or 0, the number of
                           grid search folds will be used.
         :type grid_jobs: int
-        :param grid_objective: The objective function to use when doing the
-                               grid search.
-        :type grid_objective: function
+        :param grid_objective: The name of the objective function to use when
+                               doing the grid search.
+        :type grid_objective: str
+        :param output_metrics: List of additional metric names to compute in
+                                   addition to the metric used for grid search. Empty
+                                   by default.
+        :type output_metrics: list of str
         :param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter
                            grid will be used.
@@ -1690,7 +1717,8 @@ class Learner(object):
             results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
                                          append=append_predictions,
-                                         grid_objective=grid_objective))
+                                         grid_objective=grid_objective,
+                                         output_metrics=output_metrics))
             append_predictions = True
 
         # return list of results for all folds
@@ -1700,7 +1728,7 @@ class Learner(object):
                        examples,
                        cv_folds=10,
                        train_sizes=np.linspace(0.1, 1.0, 5),
-                       objective='f1_score_micro'):
+                       metric='f1_score_micro'):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
@@ -1722,10 +1750,10 @@ class Learner(object):
                              at least one sample from each class.
                              (default: `np.linspace(0.1, 1.0, 5)`)
         :type train_sizes: list of float or int
-        :param objective: The name of the objective function to use
+        :param metric: The name of the metric function to use
                            when computing the train and test scores
                            for the learning curve. (default: 'f1_score_micro')
-        :type objective: string
+        :type metric: string
 
         :return: The scores on the training sets, the scores on the test set,
                  and the numbers of training examples used to generate
@@ -1773,7 +1801,7 @@ class Learner(object):
         out = parallel(joblib.delayed(_train_and_score)(self,
                                                         train_fs[:n_train_samples],
                                                         test_fs,
-                                                        objective)
+                                                        metric)
                        for train_fs, test_fs in featureset_iter
                        for n_train_samples in train_sizes_abs)
 

@@ -14,6 +14,8 @@ import csv
 import json
 import os
 import sys
+
+from ast import literal_eval
 from glob import glob
 from io import open
 from itertools import product
@@ -31,6 +33,8 @@ from sklearn.naive_bayes import MultinomialNB
 from skll.data import FeatureSet, NDJWriter, Reader
 from skll.experiments import _HAVE_PANDAS, _HAVE_SEABORN, run_configuration, _compute_ylimits_for_featureset
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
+
+from six import PY2
 
 from utils import fill_in_config_options, fill_in_config_paths, make_classification_data
 
@@ -66,7 +70,10 @@ def tearDown():
             os.unlink(join(test_dir, 'test_{}.jsonlines'.format(suffix)))
 
         config_files = ['test_{}.cfg'.format(suffix),
-                        'test_{}_feature_hasher.cfg'.format(suffix)]
+                        'test_{}_with_metrics.cfg'.format(suffix),
+                        'test_{}_with_objectives.cfg'.format(suffix),
+                        'test_{}_feature_hasher.cfg'.format(suffix),
+                        'test_{}_feature_hasher_with_metrics.cfg'.format(suffix)]
         for cf in config_files:
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
@@ -129,32 +136,49 @@ def make_learning_curve_data():
 
 # Function that checks to make sure that the summary files
 # contain the right results
-def check_summary_score(use_feature_hashing=False):
+def check_summary_score(use_feature_hashing,
+                        use_additional_metrics):
 
     # Test to validate summary file scores
     make_summary_data()
 
-    cfgfile = ('test_summary_feature_hasher.template.cfg' if
-               use_feature_hashing else 'test_summary.template.cfg')
+    if use_feature_hashing:
+        cfgfile = ('test_summary_feature_hasher_with_metrics.template.cfg' if
+                    use_additional_metrics else 'test_summary_feature_hasher.template.cfg')
+        outprefix = ('test_summary_feature_hasher_with_metrics_test_summary' if
+                     use_additional_metrics else 'test_summary_feature_hasher_test_summary')
+        summprefix = ('test_summary_feature_hasher_with_metrics' if
+                      use_additional_metrics else 'test_summary_feature_hasher')
+    else:
+        cfgfile = ('test_summary_with_metrics.template.cfg' if
+                    use_additional_metrics else 'test_summary.template.cfg')
+        outprefix = ('test_summary_with_metrics_test_summary' if
+                     use_additional_metrics else 'test_summary_test_summary')
+        summprefix = ('test_summary_with_metrics' if
+                      use_additional_metrics else 'test_summary')
+
     config_template_path = join(_my_dir, 'configs', cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    outprefix = ('test_summary_feature_hasher_test_summary' if
-                 use_feature_hashing else 'test_summary_test_summary')
-    summprefix = ('test_summary_feature_hasher' if use_feature_hashing else
-                  'test_summary')
-
     with open(join(_my_dir, 'output', ('{}_LogisticRegression.results.'
                                        'json'.format(outprefix)))) as f:
         outd = json.loads(f.read())
         logistic_result_score = outd[0]['score']
+        if use_additional_metrics:
+            results_metrics_dict = outd[0]['additional_scores']
+            logistic_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
+            logistic_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
     with open(join(_my_dir, 'output',
                    '{}_SVC.results.json'.format(outprefix))) as f:
         outd = json.loads(f.read())
         svm_result_score = outd[0]['score']
+        if use_additional_metrics:
+            results_metrics_dict = outd[0]['additional_scores']
+            svm_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
+            svm_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
     # note that Naive Bayes doesn't work with feature hashing
     if not use_feature_hashing:
@@ -162,26 +186,44 @@ def check_summary_score(use_feature_hashing=False):
                                            'json'.format(outprefix)))) as f:
             outd = json.loads(f.read())
             naivebayes_result_score = outd[0]['score']
+            if use_additional_metrics:
+                results_metrics_dict = outd[0]['additional_scores']
+                nb_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
+                nb_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
     with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)),
               'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 32 rows,
+            # the learner results dictionaries should have 33 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 32)
+            eq_(len(row), 33)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
+            if use_additional_metrics:
+                assert row['additional_scores']
 
             if row['learner_name'] == 'LogisticRegression':
                 logistic_summary_score = float(row['score'])
+                if use_additional_metrics:
+                    summary_metrics_dict = literal_eval(row['additional_scores'])
+                    logistic_summary_additional_score1 = float(summary_metrics_dict['unweighted_kappa'])
+                    logistic_summary_additional_score2 = float(summary_metrics_dict['f1_score_micro'])
             elif row['learner_name'] == 'MultinomialNB':
                 naivebayes_summary_score = float(row['score'])
+                if use_additional_metrics:
+                    summary_metrics_dict = literal_eval(row['additional_scores'])
+                    nb_summary_additional_score1 = float(summary_metrics_dict['unweighted_kappa'])
+                    nb_summary_additional_score2 = float(summary_metrics_dict['f1_score_micro'])
             elif row['learner_name'] == 'SVC':
                 svm_summary_score = float(row['score'])
+                if use_additional_metrics:
+                    summary_metrics_dict = literal_eval(row['additional_scores'])
+                    svm_summary_additional_score1 = float(summary_metrics_dict['unweighted_kappa'])
+                    svm_summary_additional_score2 = float(summary_metrics_dict['f1_score_micro'])
 
     test_tuples = [(logistic_result_score,
                     logistic_summary_score,
@@ -190,10 +232,31 @@ def check_summary_score(use_feature_hashing=False):
                     svm_summary_score,
                     'SVC')]
 
+    if use_additional_metrics:
+        test_tuples.extend([(logistic_result_additional_metric1,
+                             logistic_summary_additional_score1,
+                             'LogisticRegression'),
+                            (logistic_result_additional_metric2,
+                             logistic_summary_additional_score2,
+                             'LogisticRegression'),
+                            (svm_result_additional_metric1,
+                             svm_summary_additional_score1,
+                             'SVC'),
+                            (svm_result_additional_metric2,
+                             svm_summary_additional_score2,
+                             'SVC')])
+
     if not use_feature_hashing:
         test_tuples.append((naivebayes_result_score,
-                            naivebayes_summary_score,
+                             naivebayes_summary_score,
                             'MultinomialNB'))
+        if use_additional_metrics:
+            test_tuples.extend([(nb_result_additional_metric1,
+                                 nb_summary_additional_score1,
+                                 'MultinomialNB'),
+                                (nb_result_additional_metric2,
+                                 nb_summary_additional_score2,
+                                 'MultinomialNB')])
 
     for result_score, summary_score, learner_name in test_tuples:
         assert_almost_equal(result_score, summary_score,
@@ -206,31 +269,32 @@ def check_summary_score(use_feature_hashing=False):
     # accuracy score. Test proves that the report
     # written out at least has a correct format for
     # this line. See _print_fancy_output
-    for report_name, val in (("LogisticRegression", .5),
-                             ("MultinomialNB", .5),
-                             ("SVC", .6333)):
-        filename = "test_summary_test_summary_{}.results".format(report_name)
-        results_path = join(_my_dir, 'output', filename)
-        with open(results_path) as results_file:
-            report = results_file.read()
-            expected_string = "Accuracy = {:.1f}".format(val)
-            eq_(expected_string in report,  # approximate
-                True,
-                msg="{} is not in {}".format(expected_string,
-                                             report))
+    if not use_feature_hashing and not use_additional_metrics:
+        for report_name, val in (("LogisticRegression", .5),
+                                 ("MultinomialNB", .5),
+                                 ("SVC", .6333)):
+            filename = "test_summary_test_summary_{}.results".format(report_name)
+            results_path = join(_my_dir, 'output', filename)
+            with open(results_path) as results_file:
+                report = results_file.read()
+                expected_string = "Accuracy = {:.1f}".format(val)
+                eq_(expected_string in report,  # approximate
+                    True,
+                    msg="{} is not in {}".format(expected_string,
+                                                 report))
 
 
 def test_summary():
-    # test summary score without feature hashing
-    yield check_summary_score
 
-    # test summary score with feature hashing
-    yield check_summary_score, True
+    for (use_feature_hashing,
+         use_additional_metrics) in product([True, False], [True, False]):
+        yield check_summary_score, use_feature_hashing, use_additional_metrics
 
 
 def check_xval_fancy_results_file(do_grid_search,
                                   use_folds_file,
-                                  use_folds_file_for_grid_search):
+                                  use_folds_file_for_grid_search,
+                                  use_additional_metrics):
 
     train_path = join(_my_dir, 'train', 'f0.jsonlines')
     output_dir = join(_my_dir, 'output')
@@ -252,6 +316,12 @@ def check_xval_fancy_results_file(do_grid_search,
         values_to_fill_dict['folds_file'] = folds_file_path
     values_to_fill_dict['grid_search'] = str(do_grid_search)
     values_to_fill_dict['use_folds_file_for_grid_search'] = str(use_folds_file_for_grid_search)
+
+    if use_additional_metrics:
+        if PY2:
+            values_to_fill_dict['metrics'] = str([b"accuracy", b"unweighted_kappa"])
+        else:
+            values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
 
     config_template_path = join(_my_dir,
                                'configs',
@@ -306,17 +376,26 @@ def check_xval_fancy_results_file(do_grid_search,
         if do_grid_search:
             eq_(results_dict['Grid Search Folds'], '4')
 
+    if use_additional_metrics:
+        expected_metrics = [b"accuracy", b"unweighted_kappa"] if PY2 else ["accuracy", "unweighted_kappa"]
+
+        eq_(sorted(literal_eval(results_dict['Additional Evaluation Metrics'])),
+            sorted(expected_metrics))
+
 
 def test_xval_fancy_results_file():
 
     for (do_grid_search,
          use_folds_file,
-         use_folds_file_for_grid_search) in product([True, False],
-                                                    [True, False],
-                                                    [True, False]):
+         use_folds_file_for_grid_search,
+         use_additional_metrics) in product([True, False],
+                                            [True, False],
+                                            [True, False],
+                                            [True, False]):
 
         yield check_xval_fancy_results_file, do_grid_search, \
-                use_folds_file, use_folds_file_for_grid_search
+                use_folds_file, use_folds_file_for_grid_search, \
+                use_additional_metrics
 
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.
@@ -363,7 +442,12 @@ def test_learning_curve_implementation():
     cv = ShuffleSplit(n_splits=cv_folds, test_size=0.2, random_state=random_state)
     estimator = MultinomialNB()
     train_sizes=np.linspace(.1, 1.0, 5)
-    train_sizes1, train_scores1, test_scores1 = learning_curve(estimator, X, y, cv=cv,  train_sizes=train_sizes, scoring='accuracy')
+    train_sizes1, train_scores1, test_scores1 = learning_curve(estimator,
+                                                               X,
+                                                               y,
+                                                               cv=cv,
+                                                               train_sizes=train_sizes,
+                                                               scoring='accuracy')
 
     # get the features from this data into a FeatureSet instance we can use
     # with the SKLL API
@@ -379,7 +463,7 @@ def test_learning_curve_implementation():
     train_scores2, test_scores2, train_sizes2 = l.learning_curve(fs,
                                                                  cv_folds=cv_folds,
                                                                  train_sizes=train_sizes,
-                                                                 objective='accuracy')
+                                                                 metric='accuracy')
 
     assert np.all(train_sizes1 == train_sizes2)
     assert np.allclose(train_scores1, train_scores2)
@@ -388,7 +472,7 @@ def test_learning_curve_implementation():
 
 def test_learning_curve_output():
     """
-    Test that the output of a learning curve experiment is as expected
+    Test learning output for experiment with metrics option
     """
 
     # Test to validate learning curve output
@@ -423,10 +507,49 @@ def test_learning_curve_output():
                             '{}_{}.png'.format(outprefix, featureset_name))))
 
 
+def test_learning_curve_output_with_objectives():
+    """
+    Test learning output for experiment with objectives option
+    """
+
+    # Test to validate learning curve output
+    make_learning_curve_data()
+
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_learning_curve_with_objectives.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    # run the learning curve experiment
+    run_configuration(config_path, quiet=True)
+    outprefix = 'test_learning_curve'
+
+    # make sure that the TSV file is created with the right columns
+    output_tsv_path = join(_my_dir, 'output', '{}_summary.tsv'.format(outprefix))
+    ok_(exists(output_tsv_path))
+    with open(output_tsv_path, 'r') as tsvf:
+        r = csv.reader(tsvf, dialect=csv.excel_tab)
+        header = next(r)
+        # make sure we have the expected number of columns
+        eq_(len(header), 11)
+        num_rows = len(list(r))
+        # we should have 2 featuresets x 3 learners x 2 objectives x 5 (default)
+        # training sizes = 60 rows
+        eq_(num_rows, 60)
+
+    # make sure that the two PNG files (one per featureset) are created
+    # if the requirements are satisfied
+    if _HAVE_PANDAS and _HAVE_SEABORN:
+        for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+            ok_(exists(join(_my_dir,
+                            'output',
+                            '{}_{}.png'.format(outprefix, featureset_name))))
+
+
 @attr('have_pandas_and_seaborn')
 def test_learning_curve_plots():
     """
-    Test that the plots of a learning curve experiment are generated as expected
+    Test learning curve plots for experiment with metrics option
     """
 
     # Test to validate learning curve output
@@ -447,6 +570,30 @@ def test_learning_curve_plots():
 
 
 @attr('have_pandas_and_seaborn')
+def test_learning_curve_plots_with_objectives():
+    """
+    Test learning curve plots for experiment with objectives option
+    """
+
+    # Test to validate learning curve output
+    make_learning_curve_data()
+
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_learning_curve_with_objectives.template.cfg')
+    config_path = fill_in_config_paths(config_template_path)
+
+    # run the learning curve experiment
+    run_configuration(config_path, quiet=True)
+    outprefix = 'test_learning_curve'
+
+    # make sure that the two PNG files (one per featureset) are created
+    for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+        ok_(exists(join(_my_dir,
+                        'output',
+                        '{}_{}.png'.format(outprefix, featureset_name))))
+
+@attr('have_pandas_and_seaborn')
 def test_learning_curve_ylimits():
     """
     Test that the ylimits for learning curves are generated as expected.
@@ -456,7 +603,7 @@ def test_learning_curve_ylimits():
         import pandas as pd
 
     # create a test data frame
-    df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694, 1: 0.18556201422712379, 2: 0.15002727816517414, 3: 0.15301923832338646, 4: 0.15589815327205431, 5: 0.68205316443171948, 6: 0.77441075727706354, 7: 0.83838056331276678, 8: 0.84770116657005623, 9: 0.8708014559726478}, 'value': {0: 0.4092496971394447, 1: 0.2820507715115001, 2: 0.24533811547921261, 3: 0.21808651942296109, 4: 0.19767367891431534, 5: -2.3540980769230773, 6: -3.1312445327182394, 7: -3.2956790939674137, 8: -3.4843050005436713, 9: -3.6357879085645455}, 'train_score_std': {0: 0.15950199460682787, 1: 0.090992452273091703, 2: 0.068488654201949981, 3: 0.055223120652733763, 4: 0.03172452509259388, 5: 1.0561586240460523, 6: 0.53955995320300709, 7: 0.40477740983901211, 8: 0.34148185048394258, 9: 0.20791478156554272}, 'variable': {0: 'train_score_mean', 1: 'train_score_mean', 2: 'train_score_mean', 3: 'train_score_mean', 4: 'train_score_mean', 5: 'train_score_mean', 6: 'train_score_mean', 7: 'train_score_mean', 8: 'train_score_mean', 9: 'train_score_mean'}, 'objective': {0: 'r2', 1: 'r2', 2: 'r2', 3: 'r2', 4: 'r2', 5: 'neg_mean_squared_error', 6: 'neg_mean_squared_error', 7: 'neg_mean_squared_error', 8: 'neg_mean_squared_error', 9: 'neg_mean_squared_error'}})
+    df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694, 1: 0.18556201422712379, 2: 0.15002727816517414, 3: 0.15301923832338646, 4: 0.15589815327205431, 5: 0.68205316443171948, 6: 0.77441075727706354, 7: 0.83838056331276678, 8: 0.84770116657005623, 9: 0.8708014559726478}, 'value': {0: 0.4092496971394447, 1: 0.2820507715115001, 2: 0.24533811547921261, 3: 0.21808651942296109, 4: 0.19767367891431534, 5: -2.3540980769230773, 6: -3.1312445327182394, 7: -3.2956790939674137, 8: -3.4843050005436713, 9: -3.6357879085645455}, 'train_score_std': {0: 0.15950199460682787, 1: 0.090992452273091703, 2: 0.068488654201949981, 3: 0.055223120652733763, 4: 0.03172452509259388, 5: 1.0561586240460523, 6: 0.53955995320300709, 7: 0.40477740983901211, 8: 0.34148185048394258, 9: 0.20791478156554272}, 'variable': {0: 'train_score_mean', 1: 'train_score_mean', 2: 'train_score_mean', 3: 'train_score_mean', 4: 'train_score_mean', 5: 'train_score_mean', 6: 'train_score_mean', 7: 'train_score_mean', 8: 'train_score_mean', 9: 'train_score_mean'}, 'metric': {0: 'r2', 1: 'r2', 2: 'r2', 3: 'r2', 4: 'r2', 5: 'neg_mean_squared_error', 6: 'neg_mean_squared_error', 7: 'neg_mean_squared_error', 8: 'neg_mean_squared_error', 9: 'neg_mean_squared_error'}})
 
     # compute the y-limits
     ylimits_dict = _compute_ylimits_for_featureset(df_test, ['r2', 'neg_mean_squared_error'])

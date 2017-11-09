@@ -70,6 +70,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'min_feature_count': '1',
                     'models': '',
                     'num_cv_folds': '10',
+                    'metrics': "[]",
                     'objectives': "['f1_score_micro']",
                     'objective': "f1_score_micro",
                     'param_grids': '[]',
@@ -109,6 +110,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'learning_curve_cv_folds_list': 'Input',
                                    'learning_curve_train_sizes': 'Input',
                                    'min_feature_count': 'Tuning',
+                                   'metrics': 'Output',
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
                                    'objectives': 'Tuning',
@@ -380,7 +382,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                          "specified: {}".format(featuresets))
 
     featureset_names = yaml.safe_load(_fix_json(config.get("Input",
-                                                      "featureset_names")))
+                                                           "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
     if featureset_names:
@@ -569,6 +571,12 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         if not exists(results_path):
             os.makedirs(results_path)
 
+    # what are the output metrics?
+    output_metrics = config.get("Output", "metrics")
+    output_metrics = _parse_and_validate_metrics(output_metrics,
+                                                     'metrics',
+                                                     logger=logger)
+
     # 4. Tuning
     # do we need to run a grid search for the hyperparameters or are we just
     # using the defaults?
@@ -592,22 +600,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # what are the objective functions for the grid search?
     grid_objectives = config.get("Tuning", "objectives")
-    grid_objectives = yaml.safe_load(_fix_json(grid_objectives))
-    if not isinstance(grid_objectives, list):
-        raise TypeError("objectives should be a "
-                        "list of objectives")
-
-    # `mean_squared_error` should be replaced with `neg_mean_squared_error`
-    if 'mean_squared_error' in grid_objectives:
-        logger.warning("The objective function \"mean_squared_error\" "
-                       "is deprecated and will be removed in the next "
-                       "release, please use the function "
-                       "\"neg_mean_squared_error\" instead.")
-        grid_objectives[grid_objectives.index('mean_squared_error')] = 'neg_mean_squared_error'
-
-    if not all([objective in SCORERS for objective in grid_objectives]):
-        raise ValueError('Invalid grid objective function(s): {}'
-                         .format(grid_objectives))
+    grid_objectives = _parse_and_validate_metrics(grid_objectives,
+                                                  'objectives',
+                                                  logger=logger)
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
@@ -627,6 +622,37 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if task in ['cross_validate', 'learning_curve'] and model_path:
         raise ValueError('The models path should not be set when task is '
                          '{}.'.format(task))
+    if task == 'learning_curve':
+        if len(grid_objectives) > 0 and len(output_metrics) == 0:
+            logger.warning("The \"objectives\" option "
+                           "is deprecated for the learning_curve "
+                           "task and will not be supported "
+                           "after the next release; please "
+                           "use the \"metrics\" option in the [Output] "
+                           "section instead.")
+            output_metrics = grid_objectives
+            grid_objectives = []
+        elif len(grid_objectives) == 0 and len(output_metrics) == 0:
+            raise ValueError('The "metrics" option must be set when '
+                             'the task is "learning_curve".')
+        elif len(grid_objectives) > 0 and len(output_metrics) > 0:
+            logger.warning("Ignoring \"objectives\" for the learning_curve "
+                           "task since \"metrics\" is already specified.")
+            grid_objectives = []
+    elif task in ['evaluate', 'cross_validate']:
+        # for other appropriate tasks, if metrics and objectives have
+        # some overlaps - we will assume that the user meant to
+        # use the metric for tuning _and_ evaluation, not just evaluation
+        if (len(grid_objectives) > 0 and
+            len(output_metrics) > 0):
+            common_metrics_and_objectives = set(grid_objectives).intersection(output_metrics)
+            if common_metrics_and_objectives:
+                logger.warning('The following are specified both as '
+                               'objective functions and evaluation metrics: {}. '
+                               'They will be used as the '
+                               'former.'.format(common_metrics_and_objectives))
+                output_metrics = [metric for metric in output_metrics
+                                  if metric not in common_metrics_and_objectives]
 
     # set the folds appropriately based on the task:
     #  (a) if the task is `train` and if an external fold mapping is specified
@@ -678,7 +704,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             param_grid_list, featureset_names, learners, prediction_dir,
             log_path, train_path, test_path, ids_to_floats, class_map,
             custom_learner_path, learning_curve_cv_folds_list,
-            learning_curve_train_sizes)
+            learning_curve_train_sizes, output_metrics)
 
 
 def _munge_featureset_name(featureset):
@@ -702,6 +728,37 @@ def _fix_json(json_string):
     json_string = json_string.replace('False', 'false')
     json_string = json_string.replace("'", '"')
     return json_string
+
+
+def _parse_and_validate_metrics(metrics, option_name, logger=None):
+    """
+    Given a string containing a list of metrics, this function parses
+    that string into a list and validates the given list.
+    """
+
+    # create a logger if one was not passed in
+    if not logger:
+        logger = logging.getLogger(__name__)
+
+    # what are the objective functions for the grid search?
+    metrics = yaml.safe_load(_fix_json(metrics))
+    if not isinstance(metrics, list):
+        raise TypeError("{} should be a list".format(option_name))
+
+    # `mean_squared_error` should be replaced with `neg_mean_squared_error`
+    if 'mean_squared_error' in metrics:
+        logger.warning("The metric \"mean_squared_error\" "
+                       "is deprecated and will be removed in the next "
+                       "release, please use the metric "
+                       "\"neg_mean_squared_error\" instead.")
+        metrics[metrics.index('mean_squared_error')] = 'neg_mean_squared_error'
+
+    invalid_metrics = [metric for metric in metrics if metric not in SCORERS]
+    if invalid_metrics:
+        raise ValueError('Invalid metric(s) {} '
+                         'specified for {}'.format(invalid_metrics, option_name))
+
+    return metrics
 
 
 def _load_cv_folds(folds_file, ids_to_floats=False):
