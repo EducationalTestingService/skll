@@ -7,15 +7,11 @@ notifications:
   slack:
     secure: d+NSaR+cfRkcJfX/uEVwdyQDlayZO6c8QV96grl1stmWxG3XOXvXg1tM6v7EBeb9VRw5T4VglnnJGNJA62j1ReEJ0XyWr5XtaNWiF6Lc4UOty/TTG36IQdkWS1vQA8v2Hre73YbvOhtBb6biNneVAk+rrfRSgomEa+ec22cjgUo=
 env:
-  - WITH_PANDAS_AND_SEABORN=true
-  - WITH_PANDAS_AND_SEABORN=false
-  - TESTFILES="tests/test_regression.py"
-  - TESTFILES="tests/test_featureset.py"
-  - TESTFILES="tests/test_output.py tests/test_input.py tests/test_preprocessing.py tests/test_cv.py tests/test_metrics.py tests/test_ablation.py tests/test_classification.py tests/test_custom_learner.py tests/test_utilities.py"
-matrix:
-  exclude:
-    - WITH_PANDAS_AND_SEABORN=true
-      TESTFILES="tests/test_regression.py"
+  - WITH_PANDAS_AND_SEABORN=true TESTFILES="tests/test_featureset.py"
+  - WITH_PANDAS_AND_SEABORN=true TESTFILES="tests/test_output.py"
+  - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_regression.py"
+  - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_featureset.py"
+  - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_output.py tests/test_input.py tests/test_preprocessing.py tests/test_cv.py tests/test_metrics.py tests/test_ablation.py tests/test_classification.py tests/test_custom_learner.py tests/test_utilities.py"
 
 # run on the new Travis infrastructure
 sudo: false
