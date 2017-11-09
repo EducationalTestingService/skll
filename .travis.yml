@@ -9,6 +9,13 @@ notifications:
 env:
   - WITH_PANDAS_AND_SEABORN=true
   - WITH_PANDAS_AND_SEABORN=false
+  - TESTFILES="tests/test_regression.py"
+  - TESTFILES="tests/test_featureset.py"
+  - TESTFILES="tests/test_output.py tests/test_input.py tests/test_preprocessing.py tests/test_cv.py tests/test_metrics.py tests/test_ablation.py tests/test_classification.py tests/test_custom_learner.py tests/test_utilities.py"
+matrix:
+  exclude:
+    - WITH_PANDAS_AND_SEABORN=true
+      TESTFILES="tests/test_regression.py"
 
 # run on the new Travis infrastructure
 sudo: false
@@ -30,7 +37,7 @@ install:
 
 # Run test
 script:
-  - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a have_pandas_and_seaborn; else nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a '!have_pandas_and_seaborn'; fi
+  - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a have_pandas_and_seaborn ${TESTFILES}; else nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a '!have_pandas_and_seaborn' ${TESTFILES}; fi
 
 # Calculate coverage
 after_success:
