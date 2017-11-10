@@ -1217,13 +1217,15 @@ def _compute_ylimits_for_featureset(df, metrics):
                                            test_values_upper]))
 
         # squeeze the limits to hide unnecessary parts of the graph
+        # set the limits with a little buffer on either side but not too much
         if min_score < 0:
-            lower_limit = -1.1 if min_score >= -1 else math.floor(min_score)
+            lower_limit = max(min_score - 0.1, math.floor(min_score))
         else:
             lower_limit = 0
 
         if max_score > 0:
-            upper_limit = 1.1 if max_score <= 1 else math.ceil(max_score)
+            upper_limit = min(max_score + 0.1, math.ceil(max_score))
+            # upper_limit = 1.1 if max_score >= 1 else math.ceil(max_score)
         else:
             upper_limit = 0
 
