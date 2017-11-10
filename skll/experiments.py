@@ -1225,7 +1225,6 @@ def _compute_ylimits_for_featureset(df, metrics):
 
         if max_score > 0:
             upper_limit = min(max_score + 0.1, math.ceil(max_score) + 0.05)
-            # upper_limit = 1.1 if max_score >= 1 else math.ceil(max_score)
         else:
             upper_limit = 0
 
