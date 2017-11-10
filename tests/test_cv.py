@@ -27,15 +27,18 @@ from six import PY2
 
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
-from sklearn.utils.testing import assert_greater, assert_less, assert_equal, \
-                                    assert_almost_equal
+from sklearn.utils.testing import (assert_greater,
+                                   assert_less,
+                                   assert_equal,
+                                   assert_almost_equal)
 from skll.config import _load_cv_folds
 from skll.data import FeatureSet
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.experiments import _load_featureset
 from sklearn.model_selection import StratifiedKFold
-from utils import fill_in_config_paths_for_single_file
+from utils import (create_jsonlines_feature_files,
+                   fill_in_config_paths_for_single_file)
 from skll.experiments import run_configuration
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -52,6 +55,10 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+
+    # create jsonlines feature files
+    train_path = join(_my_dir, 'train')
+    create_jsonlines_feature_files(train_path)
 
 
 def tearDown():
