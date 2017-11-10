@@ -58,10 +58,9 @@ def setup():
         if not exists(new_dir):
             os.makedirs(new_dir)
 
-    # create jsonlines feature files if they don't already exist
-    feature_files = [join(_my_dir, 'train', 'f{}.jsonlines'.format(i)) for i in range(5)]
-    if not all([exists(ff) for ff in feature_files]):
-        create_jsonlines_feature_files()
+    # create jsonlines feature files
+    train_path = join(_my_dir, 'train')
+    create_jsonlines_feature_files(train_path)
 
 
 def tearDown():
