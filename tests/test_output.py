@@ -483,7 +483,7 @@ def test_learning_curve_implementation():
 
 def test_learning_curve_output():
     """
-    Test learning output for experiment with metrics option
+    Test learning curve output for experiment with metrics option
     """
 
     # Test to validate learning curve output
@@ -520,7 +520,7 @@ def test_learning_curve_output():
 
 def test_learning_curve_output_with_objectives():
     """
-    Test learning output for experiment with objectives option
+    Test learning curve output for experiment with objectives option
     """
 
     # Test to validate learning curve output
@@ -620,5 +620,7 @@ def test_learning_curve_ylimits():
     ylimits_dict = _compute_ylimits_for_featureset(df_test, ['r2', 'neg_mean_squared_error'])
 
     eq_(len(ylimits_dict), 2)
-    eq_(ylimits_dict['neg_mean_squared_error'], (-4, 0))
-    eq_(ylimits_dict['r2'], (0, 1.1))
+    assert_almost_equal(ylimits_dict['neg_mean_squared_error'][0], -3.94, decimal=2)
+    eq_(ylimits_dict['neg_mean_squared_error'][1], 0)
+    eq_(ylimits_dict['r2'][0], 0)
+    assert_almost_equal(ylimits_dict['r2'][1], 0.67, decimal=2)
