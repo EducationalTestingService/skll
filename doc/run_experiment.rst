@@ -1009,7 +1009,7 @@ available for the :ref:`tuning objectives <objectives>`.
     2. For the ``evaluate`` and ``cross_validate`` tasks,  any functions
        that are specified in both ``metrics`` and  ``objectives``
        are assumed to be the latter.
-    3. If you just want to use `neg_log_loss`` as an additional metric,
+    3. If you just want to use ``neg_log_loss`` as an additional metric,
        you do not need to set :ref:`probability <probability>` to ``True``.
        That's only neeeded for ``neg_log_loss`` to be used as a tuning
        objective.
