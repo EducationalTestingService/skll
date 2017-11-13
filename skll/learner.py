@@ -169,7 +169,8 @@ _BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                      'qwk_off_by_one',
                                      'kendall_tau',
                                      'pearson',
-                                     'spearman'])
+                                     'spearman',
+                                     'neg_log_loss'])
 
 _REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
                                         'neg_mean_squared_error'])
@@ -183,14 +184,16 @@ _CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
                                             'f1_score_weighted',
                                             'f1_score_least_frequent',
                                             'average_precision',
-                                            'roc_auc'])
+                                            'roc_auc',
+                                            'neg_log_loss'])
 
 _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'linear_weighted_kappa',
                                   'quadratic_weighted_kappa',
                                   'uwk_off_by_one',
                                   'lwk_off_by_one',
-                                  'qwk_off_by_one'])
+                                  'qwk_off_by_one',
+                                  'neg_log_loss'])
 
 _REQUIRES_DENSE = (BayesianRidge,
                    GradientBoostingClassifier,

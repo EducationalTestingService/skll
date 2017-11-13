@@ -654,6 +654,12 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                 output_metrics = [metric for metric in output_metrics
                                   if metric not in common_metrics_and_objectives]
 
+    # if the grid objectives contains `neg_log_loss`, then probability
+    # must be specified as true since that' needed to compute the loss
+    if 'neg_log_loss' in grid_objectives and not probability:
+        raise ValueError("The 'probability' option must be true in order "
+                         "to use `neg_log_loss` as the objective.")
+
     # set the folds appropriately based on the task:
     #  (a) if the task is `train` and if an external fold mapping is specified
     #      then use that mapping for grid search instead of the value
