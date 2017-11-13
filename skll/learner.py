@@ -43,6 +43,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
                               RandomForestRegressor)
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_selection import SelectKBest
+from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (Nystroem,
                                           RBFSampler,
@@ -1611,6 +1612,16 @@ class Learner(object):
         # Seed the random number generator so that randomized algorithms are
         # replicable.
         random_state = np.random.RandomState(123456789)
+
+        # We need to check whether the labels in the featureset are labels
+        # or continuous values. If it's the latter, we need to raise an
+        # an exception since the stratified splitting in sklearn does not
+        # work with continuous labels. Note that although using random folds
+        # _will_ work, we want to raise an error in general since it's better
+        # to encode the labels as strings anyway.
+        if (self.model_type._estimator_type == 'classifier' and
+            type_of_target(examples.labels) not in ['binary', 'multiclass']):
+            raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
