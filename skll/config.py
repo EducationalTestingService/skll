@@ -655,7 +655,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                                   if metric not in common_metrics_and_objectives]
 
     # if the grid objectives contains `neg_log_loss`, then probability
-    # must be specified as true since that' needed to compute the loss
+    # must be specified as true since that's needed to compute the loss
     if 'neg_log_loss' in grid_objectives and not probability:
         raise ValueError("The 'probability' option must be true in order "
                          "to use `neg_log_loss` as the objective.")
