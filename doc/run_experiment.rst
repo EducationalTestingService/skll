@@ -794,6 +794,7 @@ Classification:
     *   **f1_score_least_frequent**: F:\ :sub:`1` score of the least frequent
         class. The least frequent class may vary from fold to fold for certain
         data distributions.
+    * **neg_log_loss**: The negative of the classification `log loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <http://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this as the objective, :ref:`probability <probability>` must be set to ``True``.
     *   **average_precision**: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
         (for binary classification)
     *   **roc_auc**: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__
@@ -833,7 +834,7 @@ Regression or classification with binary labels:
 Regression:
 
     *   **r2**: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
-    *   **neg_mean_squared_error**: The negative of the `mean squared error <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <https://github.com/scikit-learn/scikit-learn/blob/2f7f5a1a50c2a2022d42160fce9d0596ecac2ada/sklearn/metrics/scorer.py#L355>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
+    *   **neg_mean_squared_error**: The negative of the `mean squared error <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <http://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
 
 
 Defaults to ``['f1_score_micro']``.
