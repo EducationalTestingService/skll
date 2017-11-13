@@ -16,6 +16,7 @@ import glob
 import itertools
 import json
 import os
+import re
 import warnings
 
 from io import open
@@ -337,6 +338,35 @@ def test_train_file_test_file():
                                        '_f1.results.json'))) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['score'], 0.9491525423728813)
+
+
+def test_train_file_test_file_ablation():
+    """
+    Test that specifying ablation with train and test file is ignored
+    """
+    # Create data files
+    make_single_file_featureset_data()
+
+    # Run experiment
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file"
+                                                            ".template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file'
+                                                            '.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.'
+                                                            'jsonlines'))
+    run_configuration(config_path, quiet=True, ablation=None)
+
+    # check that we see the message that ablation was ignored in the experiment log
+    # Check experiment log output
+    with open(join(_my_dir,
+                   'output',
+                   'train_test_single_file.log')) as f:
+        cv_file_pattern = re.compile('Not enough featuresets for ablation. Ignoring.')
+        matches = re.findall(cv_file_pattern, f.read())
+        eq_(len(matches), 1)
 
 
 @raises(ValueError)
