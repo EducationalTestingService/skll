@@ -745,10 +745,13 @@ def _classify_featureset(args):
                     'learning_curve_test_scores_stds': np.std(curve_test_scores, axis=1, ddof=1),
                     'computed_curve_train_sizes': computed_curve_train_sizes})
 
+        # we need to return and write out a list of dictionaries
+        res = [res]
+
         # write out the result dictionary to a json file
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(results_json_path, file_mode) as json_file:
-            json.dump([res], json_file, cls=NumpyTypeEncoder)
+            json.dump(res, json_file, cls=NumpyTypeEncoder)
     else:
         res = [learner_result_dict_base]
 
@@ -1214,13 +1217,14 @@ def _compute_ylimits_for_featureset(df, metrics):
                                            test_values_upper]))
 
         # squeeze the limits to hide unnecessary parts of the graph
+        # set the limits with a little buffer on either side but not too much
         if min_score < 0:
-            lower_limit = -1.1 if min_score >= -1 else math.floor(min_score)
+            lower_limit = max(min_score - 0.1, math.floor(min_score) - 0.05)
         else:
             lower_limit = 0
 
         if max_score > 0:
-            upper_limit = 1.1 if max_score <= 1 else math.ceil(max_score)
+            upper_limit = min(max_score + 0.1, math.ceil(max_score) + 0.05)
         else:
             upper_limit = 0
 
