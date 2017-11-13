@@ -1080,6 +1080,12 @@ specified via command-line arguments instead of in the configuration file:
     If you would like to try all possible combinations of feature files, you
     can use the :option:`run_experiment --ablation_all` option instead.
 
+    .. warning::
+
+        Ablation will *not* work if you specify a :ref:`train_file <train_file>`
+        and :ref:`test_file <test_file>` since no featuresets are defined in
+        that scenario.
+
 .. option:: -A, --ablation_all
 
     Runs an ablation study where repeated experiments are conducted with all
