@@ -16,6 +16,7 @@ from skll.data import Reader, safe_float
 from skll.metrics import use_score_func
 from skll.version import __version__
 
+
 def get_prediction_from_probabilities(classes, probs, prediction_method):
     """
     Convert a list of class-probabilities into a class prediction. This function assumes
@@ -23,6 +24,7 @@ def get_prediction_from_probabilities(classes, probs, prediction_method):
 
     :param classes: list of classes (str, but can be convertable to int).
     :param probs: list of floats.
+    :param prediction_method: str
     :return: name of predicted class as str.
 
     """
@@ -32,7 +34,7 @@ def get_prediction_from_probabilities(classes, probs, prediction_method):
         else:
             return classes[probs.index(max(probs))]
     elif prediction_method == 'expected_value':
-        exp_val = sum([classes[i] * prob for i, prob in enumerate(classes)])
+        exp_val = sum([classes[i] * prob for i, prob in enumerate(probs)])
         return int(round(exp_val))
 
 
@@ -68,14 +70,15 @@ def compute_eval_from_predictions(examples_file, predictions_file,
         if probabilities:  # prediction file contains probabilities, not predictions.
             classes = header[1:]
             if prediction_method == 'expected_value':
-                if not all(c.isdigit() for c in classes):
+                if any(not c.isdigit() for c in classes):
                     raise ValueError("Cannot calculate expected value with non-integer "
                                      "classes.")
                 else:
                     classes = [int(c) for c in classes]
 
             for row in reader:
-                prediction = get_prediction_from_probabilities(classes, row[1:],
+                probs = [safe_float(p) for p in row[1:]]
+                prediction = get_prediction_from_probabilities(classes, probs,
                                                                prediction_method)
                 pred[row[0]] = safe_float(prediction)
 
@@ -87,6 +90,7 @@ def compute_eval_from_predictions(examples_file, predictions_file,
     if set(gold.keys()) != set(pred.keys()):
         raise ValueError('The example and prediction IDs do not match.')
     example_ids = sorted(gold.keys())
+    #import pdb;pdb.set_trace()
 
     res = {}
     for metric_name in metric_names:
