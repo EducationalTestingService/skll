@@ -794,6 +794,7 @@ Classification:
     *   **f1_score_least_frequent**: F:\ :sub:`1` score of the least frequent
         class. The least frequent class may vary from fold to fold for certain
         data distributions.
+    * **neg_log_loss**: The negative of the classification `log loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <http://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this as the objective, :ref:`probability <probability>` must be set to ``True``.
     *   **average_precision**: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
         (for binary classification)
     *   **roc_auc**: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__
@@ -833,7 +834,7 @@ Regression or classification with binary labels:
 Regression:
 
     *   **r2**: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
-    *   **neg_mean_squared_error**: The negative of the `mean squared error <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <https://github.com/scikit-learn/scikit-learn/blob/2f7f5a1a50c2a2022d42160fce9d0596ecac2ada/sklearn/metrics/scorer.py#L355>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
+    *   **neg_mean_squared_error**: The negative of the `mean squared error <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <http://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
 
 
 Defaults to ``['f1_score_micro']``.
@@ -978,7 +979,8 @@ probability *(Optional)*
 
 Whether or not to output probabilities for each class instead of the
 most probable class for each instance. Only really makes a difference
-when storing predictions. Defaults to ``False``.
+when storing predictions. Defaults to ``False``. Note that this also
+applies to the tuning objective.
 
 .. _results:
 
@@ -1007,6 +1009,10 @@ available for the :ref:`tuning objectives <objectives>`.
     2. For the ``evaluate`` and ``cross_validate`` tasks,  any functions
        that are specified in both ``metrics`` and  ``objectives``
        are assumed to be the latter.
+    3. If you just want to use ``neg_log_loss`` as an additional metric,
+       you do not need to set :ref:`probability <probability>` to ``True``.
+       That's only neeeded for ``neg_log_loss`` to be used as a tuning
+       objective.
 
 .. _log:
 
@@ -1073,6 +1079,12 @@ specified via command-line arguments instead of in the configuration file:
 
     If you would like to try all possible combinations of feature files, you
     can use the :option:`run_experiment --ablation_all` option instead.
+
+    .. warning::
+
+        Ablation will *not* work if you specify a :ref:`train_file <train_file>`
+        and :ref:`test_file <test_file>` since no featuresets are defined in
+        that scenario.
 
 .. option:: -A, --ablation_all
 

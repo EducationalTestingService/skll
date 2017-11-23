@@ -183,6 +183,7 @@ class Reader(object):
         # Get labels and IDs
         ids = []
         labels = []
+        ex_num = 0
         with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
                 # Update lists of IDs, clases, and features
@@ -203,6 +204,9 @@ class Reader(object):
 
         # Remember total number of examples for percentage progress meter
         total = ex_num
+        if total == 0:
+            raise ValueError("No features found in possibly "
+                             "empty file '{}'.".format(self.path_or_list))
 
         # Convert everything to numpy arrays
         ids = np.array(ids)
