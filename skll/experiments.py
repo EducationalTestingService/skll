@@ -31,6 +31,7 @@ from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn import __version__ as SCIKIT_VERSION
 
+from skll import get_skll_logger
 from skll.config import _munge_featureset_name, _parse_config_file
 from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
@@ -143,7 +144,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     learner_result_dicts = []
     # Map from feature set names to all features in them
     all_features = defaultdict(set)
-    logger = logging.getLogger(__name__)
+    logger = get_skll_logger('experiment')
     for json_path in result_json_paths:
         if not exists(json_path):
             logger.error(('JSON results file %s not found. Skipping summary '
@@ -167,7 +168,9 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     if ablation != 0:
         header.add('ablated_features')
     header = sorted(header)
-    writer = csv.DictWriter(output_file, header, extrasaction='ignore',
+    writer = csv.DictWriter(output_file,
+                            header,
+                            extrasaction='ignore',
                             dialect=csv.excel_tab)
     writer.writeheader()
 
@@ -204,7 +207,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
     learner_result_dicts = []
 
     # Map from feature set names to all features in them
-    logger = logging.getLogger(__name__)
+    logger = get_skll_logger('experiment')
     for json_path in result_json_paths:
         if not exists(json_path):
             logger.error(('JSON results file %s not found. Skipping summary '
@@ -218,7 +221,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
                 learner_result_dicts.extend(obj)
 
     # Build and write header
-    header = ['featureset_name', 'learner_name', 'objective',
+    header = ['featureset_name', 'learner_name', 'metric',
               'train_set_name', 'training_set_size', 'train_score_mean',
               'test_score_mean', 'train_score_std', 'test_score_std',
               'scikit_learn_version', 'version']
@@ -239,7 +242,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
         test_scores_stds_by_size = lrd['learning_curve_test_scores_stds']
 
         # rename `grid_objective` to `objective` since that can be confusing
-        lrd['objective'] = lrd['grid_objective']
+        lrd['metric'] = lrd['grid_objective']
 
         for (size,
              train_score_mean,
@@ -304,6 +307,9 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         lrd['cv_folds'].endswith('folds file')):
         print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
               file=output_file)
+    if lrd['task'] in ['evaluate', 'cross_validate'] and lrd['additional_scores']:
+        print('Additional Evaluation Metrics: {}'.format(list(lrd['additional_scores'].keys())),
+              file=output_file)
     print('Scikit-learn Version: {}'.format(lrd['scikit_learn_version']),
           file=output_file)
     print('Start Timestamp: {}'.format(
@@ -336,12 +342,20 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                   file=output_file)
         print('Objective Function Score (Test) = {}'.format(lrd['score']),
               file=output_file)
+
+        # now print the additional metrics, if there were any
+        if lrd['additional_scores']:
+            print('', file=output_file)
+            print('Additional Evaluation Metrics (Test):', file=output_file)
+            for metric, score in lrd['additional_scores'].items():
+                score = '' if np.isnan(score) else score
+                print(' {} = {}'.format(metric, score), file=output_file)
         print('', file=output_file)
 
 
 def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                      ids_to_floats=False, quiet=False, class_map=None,
-                     feature_hasher=False, num_features=None):
+                     feature_hasher=False, num_features=None, logger=None):
     """
     Load a list of feature files and merge them.
 
@@ -376,6 +390,9 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                          This should always be set to the power of 2 greater
                          than the actual number of features you're using.
     :type num_features: int
+    :param logger: A logger instance to use to log messages instead of creating
+                   a new one by default.
+    :type logger: logging.Logger
 
     :returns: The labels, IDs, features, and feature vectorizer representing
               the given featureset.
@@ -384,20 +401,28 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
     if isfile(dir_path):
-        return Reader.for_path(dir_path, label_col=label_col, id_col=id_col,
-                               ids_to_floats=ids_to_floats, quiet=quiet,
+        return Reader.for_path(dir_path,
+                               label_col=label_col,
+                               id_col=id_col,
+                               ids_to_floats=ids_to_floats,
+                               quiet=quiet,
                                class_map=class_map,
                                feature_hasher=feature_hasher,
-                               num_features=num_features).read()
+                               num_features=num_features,
+                               logger=logger).read()
     else:
         merged_set = None
         for file_name in sorted(join(dir_path, featfile + suffix) for
                                 featfile in feat_files):
-            fs = Reader.for_path(file_name, label_col=label_col, id_col=id_col,
-                                 ids_to_floats=ids_to_floats, quiet=quiet,
+            fs = Reader.for_path(file_name,
+                                 label_col=label_col,
+                                 id_col=id_col,
+                                 ids_to_floats=ids_to_floats,
+                                 quiet=quiet,
                                  class_map=class_map,
                                  feature_hasher=feature_hasher,
-                                 num_features=num_features).read()
+                                 num_features=num_features,
+                                 logger=logger).read()
             if merged_set is None:
                 merged_set = fs
             else:
@@ -430,8 +455,10 @@ def _classify_featureset(args):
     prediction_prefix = args.pop("prediction_prefix")
     grid_search = args.pop("grid_search")
     grid_objective = args.pop("grid_objective")
+    output_metrics = args.pop("output_metrics")
     suffix = args.pop("suffix")
-    log_path = args.pop("log_path")
+    job_log_file = args.pop("log_file")
+    job_log_level = args.pop("log_level")
     probability = args.pop("probability")
     results_path = args.pop("results_path")
     fixed_parameters = args.pop("fixed_parameters")
@@ -462,263 +489,279 @@ def _classify_featureset(args):
                           "{}").format(args.keys()))
     start_timestamp = datetime.datetime.now()
 
-    with open(log_path, 'w') as log_file:
-        # logging
-        print("Task:", task, file=log_file)
-        if task == 'cross_validate':
-            if isinstance(cv_folds, int):
-                num_folds = cv_folds
-            else:  # cv_folds_file was used, so count the unique fold ids.
-                num_folds = len(set(cv_folds.values()))
-            print(("Cross-validating ({} folds) on {}, feature " +
-                   "set {} ...").format(num_folds, train_set_name, featureset),
-                  file=log_file)
-        elif task == 'evaluate':
-            print(("Training on {}, Test on {}, " +
-                   "feature set {} ...").format(train_set_name, test_set_name,
-                                                featureset),
-                  file=log_file)
-        elif task == 'train':
-            print("Training on {}, feature set {} ...".format(train_set_name,
-                                                              featureset),
-                  file=log_file)
-        elif task == 'learning_curve':
-            print(("Generating learning curve "
-                   "({} 80/20 folds, sizes={}, objective={}) on {}, "
-                   "feature set {} ...").format(learning_curve_cv_folds,
+    # create a new SKLL logger for this specific job and
+    # use the given log level
+    logger = get_skll_logger(job_name,
+                             job_log_file,
+                             log_level=job_log_level)
+
+    # log messages
+    logger.info("Task: {}".format(task))
+    if task == 'cross_validate':
+        if isinstance(cv_folds, int):
+            num_folds = cv_folds
+        else:  # cv_folds_file was used, so count the unique fold ids.
+            num_folds = len(set(cv_folds.values()))
+        logger.info("Cross-validating ({} folds) on {}, feature "
+                    "set {} ...".format(num_folds,
+                                        train_set_name,
+                                        featureset))
+    elif task == 'evaluate':
+        logger.info("Training on {}, Test on {}, "
+                    "feature set {} ...".format(train_set_name,
+                                                test_set_name,
+                                                featureset))
+    elif task == 'train':
+        logger.info("Training on {}, feature set {} ...".format(train_set_name,
+                                                                featureset))
+    elif task == 'learning_curve':
+        logger.info("Generating learning curve "
+                    "({} 80/20 folds, sizes={}, objective={}) on {}, "
+                    "feature set {} ...".format(learning_curve_cv_folds,
                                                 learning_curve_train_sizes,
                                                 grid_objective,
                                                 train_set_name,
-                                                featureset),
-                  file=log_file)
-        else:  # predict
-            print(("Training on {}, Making predictions about {}, " +
-                   "feature set {} ...").format(train_set_name, test_set_name,
-                                                featureset),
-                  file=log_file)
+                                                featureset))
+    else:  # predict
+        logger.info("Training on {}, Making predictions about {}, "
+                    "feature set {} ...".format(train_set_name,
+                                                test_set_name,
+                                                featureset))
 
-        # check whether a trained model on the same data with the same
-        # featureset already exists if so, load it and then use it on test data
-        modelfile = join(model_path, '{}.model'.format(job_name))
-        if (task in ['cross_validate', 'learning_curve'] or
-            not exists(modelfile) or
-            overwrite):
-            train_examples = _load_featureset(train_path, featureset, suffix,
-                                              label_col=label_col,
-                                              id_col=id_col,
-                                              ids_to_floats=ids_to_floats,
-                                              quiet=quiet, class_map=class_map,
-                                              feature_hasher=feature_hasher,
-                                              num_features=hasher_features)
+    # check whether a trained model on the same data with the same
+    # featureset already exists if so, load it and then use it on test data
+    modelfile = join(model_path, '{}.model'.format(job_name))
+    if (task in ['cross_validate', 'learning_curve'] or
+        not exists(modelfile) or
+        overwrite):
+        train_examples = _load_featureset(train_path,
+                                          featureset,
+                                          suffix,
+                                          label_col=label_col,
+                                          id_col=id_col,
+                                          ids_to_floats=ids_to_floats,
+                                          quiet=quiet,
+                                          class_map=class_map,
+                                          feature_hasher=feature_hasher,
+                                          num_features=hasher_features,
+                                          logger=logger)
 
-            train_set_size = len(train_examples.ids)
-            if not train_examples.has_labels:
-                raise ValueError('Training examples do not have labels')
-            # initialize a classifer object
-            learner = Learner(learner_name,
-                              probability=probability,
-                              feature_scaling=feature_scaling,
-                              model_kwargs=fixed_parameters,
-                              pos_label_str=pos_label_str,
-                              min_feature_count=min_feature_count,
-                              sampler=sampler,
-                              sampler_kwargs=sampler_parameters,
-                              custom_learner_path=custom_learner_path)
-        # load the model if it already exists
-        else:
-            # import the custom learner path here in case we are reusing a
-            # saved model
-            if custom_learner_path:
-                _import_custom_learner(custom_learner_path, learner_name)
-            train_set_size = 'unknown'
-            if exists(modelfile) and not overwrite:
-                print(('\tloading pre-existing %s model: %s') % (learner_name,
-                                                                 modelfile))
-            learner = Learner.from_file(modelfile)
+        train_set_size = len(train_examples.ids)
+        if not train_examples.has_labels:
+            raise ValueError('Training examples do not have labels')
+        # initialize a classifer object
+        learner = Learner(learner_name,
+                          probability=probability,
+                          feature_scaling=feature_scaling,
+                          model_kwargs=fixed_parameters,
+                          pos_label_str=pos_label_str,
+                          min_feature_count=min_feature_count,
+                          sampler=sampler,
+                          sampler_kwargs=sampler_parameters,
+                          custom_learner_path=custom_learner_path,
+                          logger=logger)
+    # load the model if it already exists
+    else:
+        # import the custom learner path here in case we are reusing a
+        # saved model
+        if custom_learner_path:
+            _import_custom_learner(custom_learner_path, learner_name)
+        train_set_size = 'unknown'
+        if exists(modelfile) and not overwrite:
+            logger.info("Loading pre-existing {} model: {}".format(learner_name,
+                                                                   modelfile))
+        learner = Learner.from_file(modelfile)
 
-        # Load test set if there is one
-        if task == 'evaluate' or task == 'predict':
-            test_examples = _load_featureset(test_path, featureset, suffix,
-                                             label_col=label_col,
-                                             id_col=id_col,
-                                             ids_to_floats=ids_to_floats,
-                                             quiet=quiet, class_map=class_map,
-                                             feature_hasher=feature_hasher,
-                                             num_features=hasher_features)
-            test_set_size = len(test_examples.ids)
-        else:
-            test_set_size = 'n/a'
+        # attach the job logger to this learner
+        learner.logger = logger
 
-        # compute information about xval and grid folds that can be put in results
-        # in readable form
-        if isinstance(cv_folds, dict):
-            cv_folds_to_print = '{} via folds file'.format(len(set(cv_folds.values())))
-        else:
-            cv_folds_to_print = str(cv_folds)
+    # Load test set if there is one
+    if task == 'evaluate' or task == 'predict':
+        test_examples = _load_featureset(test_path,
+                                         featureset,
+                                         suffix,
+                                         label_col=label_col,
+                                         id_col=id_col,
+                                         ids_to_floats=ids_to_floats,
+                                         quiet=quiet,
+                                         class_map=class_map,
+                                         feature_hasher=feature_hasher,
+                                         num_features=hasher_features)
+        test_set_size = len(test_examples.ids)
+    else:
+        test_set_size = 'n/a'
 
-        if isinstance(grid_search_folds, dict):
-            grid_search_folds_to_print = '{} via folds file'.format(len(set(grid_search_folds.values())))
-        else:
-            grid_search_folds_to_print = str(grid_search_folds)
+    # compute information about xval and grid folds that can be put in results
+    # in readable form
+    if isinstance(cv_folds, dict):
+        cv_folds_to_print = '{} via folds file'.format(len(set(cv_folds.values())))
+    else:
+        cv_folds_to_print = str(cv_folds)
+
+    if isinstance(grid_search_folds, dict):
+        grid_search_folds_to_print = '{} via folds file'.format(len(set(grid_search_folds.values())))
+    else:
+        grid_search_folds_to_print = str(grid_search_folds)
 
 
-        # create a list of dictionaries of the results information
-        learner_result_dict_base = {'experiment_name': experiment_name,
-                                    'train_set_name': train_set_name,
-                                    'train_set_size': train_set_size,
-                                    'test_set_name': test_set_name,
-                                    'test_set_size': test_set_size,
-                                    'featureset': json.dumps(featureset),
-                                    'featureset_name': featureset_name,
-                                    'shuffle': shuffle,
-                                    'learner_name': learner_name,
-                                    'task': task,
-                                    'start_timestamp':
-                                    start_timestamp.strftime('%d %b %Y %H:%M:'
-                                                             '%S.%f'),
-                                    'version': __version__,
-                                    'feature_scaling': feature_scaling,
-                                    'folds_file': folds_file,
-                                    'grid_search': grid_search,
-                                    'grid_objective': grid_objective,
-                                    'grid_search_folds': grid_search_folds_to_print,
-                                    'min_feature_count': min_feature_count,
-                                    'cv_folds': cv_folds_to_print,
-                                    'using_folds_file': isinstance(cv_folds, dict) \
-                                                         or isinstance(grid_search_folds, dict),
-                                    'save_cv_folds': save_cv_folds,
-                                    'use_folds_file_for_grid_search': use_folds_file_for_grid_search,
-                                    'stratified_folds': stratified_folds,
-                                    'scikit_learn_version': SCIKIT_VERSION}
+    # create a list of dictionaries of the results information
+    learner_result_dict_base = {'experiment_name': experiment_name,
+                                'train_set_name': train_set_name,
+                                'train_set_size': train_set_size,
+                                'test_set_name': test_set_name,
+                                'test_set_size': test_set_size,
+                                'featureset': json.dumps(featureset),
+                                'featureset_name': featureset_name,
+                                'shuffle': shuffle,
+                                'learner_name': learner_name,
+                                'task': task,
+                                'start_timestamp':
+                                start_timestamp.strftime('%d %b %Y %H:%M:'
+                                                         '%S.%f'),
+                                'version': __version__,
+                                'feature_scaling': feature_scaling,
+                                'folds_file': folds_file,
+                                'grid_search': grid_search,
+                                'grid_objective': grid_objective,
+                                'grid_search_folds': grid_search_folds_to_print,
+                                'min_feature_count': min_feature_count,
+                                'cv_folds': cv_folds_to_print,
+                                'using_folds_file': isinstance(cv_folds, dict) \
+                                                     or isinstance(grid_search_folds, dict),
+                                'save_cv_folds': save_cv_folds,
+                                'use_folds_file_for_grid_search': use_folds_file_for_grid_search,
+                                'stratified_folds': stratified_folds,
+                                'scikit_learn_version': SCIKIT_VERSION}
 
-        # check if we're doing cross-validation, because we only load/save
-        # models when we're not.
-        task_results = None
-        if task == 'cross_validate':
-            print('\tcross-validating', file=log_file)
-            (task_results,
-             grid_scores,
-             skll_fold_ids) = learner.cross_validate(train_examples,
-                                                     shuffle=shuffle,
-                                                     stratified=stratified_folds,
-                                                     prediction_prefix=prediction_prefix,
-                                                     grid_search=grid_search,
-                                                     grid_search_folds=grid_search_folds,
-                                                     cv_folds=cv_folds,
-                                                     grid_objective=grid_objective,
-                                                     param_grid=param_grid,
-                                                     grid_jobs=grid_search_jobs,
-                                                     save_cv_folds=save_cv_folds,
-                                                     use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
-        elif task == 'learning_curve':
-            print('\tgenerating learning curve', file=log_file)
-            (curve_train_scores,
-             curve_test_scores,
-             computed_curve_train_sizes) = learner.learning_curve(train_examples,
-                                                                  cv_folds=learning_curve_cv_folds,
-                                                                  train_sizes=learning_curve_train_sizes,
-                                                                  objective=grid_objective)
-        else:
-            # if we have do not have a saved model, we need to train one.
-            if not exists(modelfile) or overwrite:
-                print(('\tfeaturizing and training new ' +
-                       '{} model').format(learner_name),
-                      file=log_file)
-
-                best_score = learner.train(train_examples,
-                                           shuffle=shuffle,
-                                           grid_search=grid_search,
-                                           grid_search_folds=grid_search_folds,
-                                           grid_objective=grid_objective,
-                                           param_grid=param_grid,
-                                           grid_jobs=grid_search_jobs)
-                grid_scores = [best_score]
-
-                # save model
-                if model_path:
-                    learner.save(modelfile)
-
-                if grid_search:
-                    # note: bankers' rounding is used in python 3,
-                    # so these scores may be different between runs in
-                    # python 2 and 3 at the final decimal place.
-                    print('\tbest {} grid search score: {}'
-                          .format(grid_objective, round(best_score, 3)),
-                          file=log_file)
-            else:
-                grid_scores = [None]
-
-            # print out the tuned parameters and best CV score
-            param_out = ('{}: {}'.format(param_name, param_value)
-                         for param_name, param_value in
-                         iteritems(learner.model.get_params()))
-            print('\thyperparameters: {}'.format(', '.join(param_out)),
-                  file=log_file)
-
-            # run on test set or cross-validate on training data,
-            # depending on what was asked for
-            if task == 'evaluate':
-                print('\tevaluating predictions', file=log_file)
-                task_results = [learner.evaluate(test_examples,
+    # check if we're doing cross-validation, because we only load/save
+    # models when we're not.
+    task_results = None
+    if task == 'cross_validate':
+        logger.info("Cross-validating")
+        (task_results,
+         grid_scores,
+         skll_fold_ids) = learner.cross_validate(train_examples,
+                                                 shuffle=shuffle,
+                                                 stratified=stratified_folds,
                                                  prediction_prefix=prediction_prefix,
-                                                 grid_objective=grid_objective)]
-            elif task == 'predict':
-                print('\twriting predictions', file=log_file)
-                learner.predict(test_examples,
-                                prediction_prefix=prediction_prefix)
-            # do nothing here for train
+                                                 grid_search=grid_search,
+                                                 grid_search_folds=grid_search_folds,
+                                                 cv_folds=cv_folds,
+                                                 grid_objective=grid_objective,
+                                                 output_metrics=output_metrics,
+                                                 param_grid=param_grid,
+                                                 grid_jobs=grid_search_jobs,
+                                                 save_cv_folds=save_cv_folds,
+                                                 use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
+    elif task == 'learning_curve':
+        logger.info("Generating learning curve(s)")
+        (curve_train_scores,
+         curve_test_scores,
+         computed_curve_train_sizes) = learner.learning_curve(train_examples,
+                                                              cv_folds=learning_curve_cv_folds,
+                                                              train_sizes=learning_curve_train_sizes,
+                                                              metric=grid_objective)
+    else:
+        # if we have do not have a saved model, we need to train one.
+        if not exists(modelfile) or overwrite:
+            logger.info("Featurizing and training new {} model".format(learner_name))
 
-        end_timestamp = datetime.datetime.now()
-        learner_result_dict_base['end_timestamp'] = end_timestamp.strftime(
-            '%d %b %Y %H:%M:%S.%f')
-        total_time = end_timestamp - start_timestamp
-        learner_result_dict_base['total_time'] = str(total_time)
+            best_score = learner.train(train_examples,
+                                       shuffle=shuffle,
+                                       grid_search=grid_search,
+                                       grid_search_folds=grid_search_folds,
+                                       grid_objective=grid_objective,
+                                       param_grid=param_grid,
+                                       grid_jobs=grid_search_jobs)
+            grid_scores = [best_score]
 
-        if task == 'cross_validate' or task == 'evaluate':
-            results_json_path = join(results_path,
-                                     '{}.results.json'.format(job_name))
+            # save model
+            if model_path:
+                learner.save(modelfile)
 
-            res = _create_learner_result_dicts(task_results,
-                                               grid_scores,
-                                               learner_result_dict_base)
-
-            # write out the result dictionary to a json file
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(results_json_path, file_mode) as json_file:
-                json.dump(res, json_file, cls=NumpyTypeEncoder)
-
-            with open(join(results_path,
-                           '{}.results'.format(job_name)),
-                      'w') as output_file:
-                _print_fancy_output(res, output_file)
-        elif task == 'learning_curve':
-            results_json_path = join(results_path,
-                                     '{}.results.json'.format(job_name))
-
-            res = {}
-            res.update(learner_result_dict_base)
-            res.update({'learning_curve_cv_folds': learning_curve_cv_folds,
-                        'given_curve_train_sizes': learning_curve_train_sizes,
-                        'learning_curve_train_scores_means': np.mean(curve_train_scores, axis=1),
-                        'learning_curve_test_scores_means': np.mean(curve_test_scores, axis=1),
-                        'learning_curve_train_scores_stds': np.std(curve_train_scores, axis=1, ddof=1),
-                        'learning_curve_test_scores_stds': np.std(curve_test_scores, axis=1, ddof=1),
-                        'computed_curve_train_sizes': computed_curve_train_sizes})
-
-            # write out the result dictionary to a json file
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(results_json_path, file_mode) as json_file:
-                json.dump([res], json_file, cls=NumpyTypeEncoder)
+            if grid_search:
+                # note: bankers' rounding is used in python 3,
+                # so these scores may be different between runs in
+                # python 2 and 3 at the final decimal place.
+                logger.info("Best {} grid search score: {}".format(grid_objective,
+                                                                   round(best_score, 3)))
         else:
-            res = [learner_result_dict_base]
+            grid_scores = [None]
 
-        # write out the cv folds if required
-        if task == 'cross_validate' and save_cv_folds:
-            skll_fold_ids_file = experiment_name + '_skll_fold_ids.csv'
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(join(results_path, skll_fold_ids_file),
-                      file_mode) as output_file:
-                _write_skll_folds(skll_fold_ids, output_file)
+        # print out the tuned parameters and best CV score
+        param_out = ('{}: {}'.format(param_name, param_value)
+                     for param_name, param_value in
+                     iteritems(learner.model.get_params()))
+        logger.info("Hyperparameters: {}".format(', '.join(param_out)))
+
+        # run on test set or cross-validate on training data,
+        # depending on what was asked for
+        if task == 'evaluate':
+            logger.info("Evaluating predictions")
+            task_results = [learner.evaluate(test_examples,
+                                             prediction_prefix=prediction_prefix,
+                                             grid_objective=grid_objective,
+                                             output_metrics=output_metrics)]
+        elif task == 'predict':
+            logger.info("Writing predictions")
+            learner.predict(test_examples,
+                            prediction_prefix=prediction_prefix)
+        # do nothing here for train
+
+    end_timestamp = datetime.datetime.now()
+    learner_result_dict_base['end_timestamp'] = end_timestamp.strftime(
+        '%d %b %Y %H:%M:%S.%f')
+    total_time = end_timestamp - start_timestamp
+    learner_result_dict_base['total_time'] = str(total_time)
+
+    if task == 'cross_validate' or task == 'evaluate':
+        results_json_path = join(results_path,
+                                 '{}.results.json'.format(job_name))
+
+        res = _create_learner_result_dicts(task_results,
+                                           grid_scores,
+                                           learner_result_dict_base)
+
+        # write out the result dictionary to a json file
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        with open(results_json_path, file_mode) as json_file:
+            json.dump(res, json_file, cls=NumpyTypeEncoder)
+
+        with open(join(results_path,
+                       '{}.results'.format(job_name)),
+                  'w') as output_file:
+            _print_fancy_output(res, output_file)
+    elif task == 'learning_curve':
+        results_json_path = join(results_path,
+                                 '{}.results.json'.format(job_name))
+
+        res = {}
+        res.update(learner_result_dict_base)
+        res.update({'learning_curve_cv_folds': learning_curve_cv_folds,
+                    'given_curve_train_sizes': learning_curve_train_sizes,
+                    'learning_curve_train_scores_means': np.mean(curve_train_scores, axis=1),
+                    'learning_curve_test_scores_means': np.mean(curve_test_scores, axis=1),
+                    'learning_curve_train_scores_stds': np.std(curve_train_scores, axis=1, ddof=1),
+                    'learning_curve_test_scores_stds': np.std(curve_test_scores, axis=1, ddof=1),
+                    'computed_curve_train_sizes': computed_curve_train_sizes})
+
+        # we need to return and write out a list of dictionaries
+        res = [res]
+
+        # write out the result dictionary to a json file
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        with open(results_json_path, file_mode) as json_file:
+            json.dump(res, json_file, cls=NumpyTypeEncoder)
+    else:
+        res = [learner_result_dict_base]
+
+    # write out the cv folds if required
+    if task == 'cross_validate' and save_cv_folds:
+        skll_fold_ids_file = experiment_name + '_skll_fold_ids.csv'
+        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+        with open(join(results_path, skll_fold_ids_file),
+                  file_mode) as output_file:
+            _write_skll_folds(skll_fold_ids, output_file)
 
     return res
 
@@ -735,6 +778,7 @@ def _create_learner_result_dicts(task_results,
     num_folds = len(task_results)
     accuracy_sum = 0.0
     pearson_sum = 0.0
+    additional_metric_score_sums = {}
     score_sum = None
     prec_sum_dict = defaultdict(float)
     recall_sum_dict = defaultdict(float)
@@ -745,9 +789,10 @@ def _create_learner_result_dicts(task_results,
              fold_accuracy,
              result_dict,
              model_params,
-             score), grid_score) in enumerate(zip(task_results,
-                                                  grid_scores),
-                                              start=1):
+             score,
+             additional_scores), grid_score) in enumerate(zip(task_results,
+                                                              grid_scores),
+                                                          start=1):
 
         # create a new dict for this fold
         learner_result_dict = {}
@@ -805,12 +850,18 @@ def _create_learner_result_dicts(task_results,
             learner_result_dict.update(result_dict)
             pearson_sum += float(learner_result_dict['pearson'])
 
+        # get the scores for all the metrics and compute the sums
         if score is not None:
             if score_sum is None:
                 score_sum = score
             else:
                 score_sum += score
             learner_result_dict['score'] = score
+        learner_result_dict['additional_scores'] = additional_scores
+        for metric, score in additional_scores.items():
+            if score is not None:
+                additional_metric_score_sums[metric] = \
+                    additional_metric_score_sums.get(metric, 0) + score
         res.append(learner_result_dict)
 
     if num_folds > 1:
@@ -841,13 +892,17 @@ def _create_learner_result_dicts(task_results,
 
         if score_sum is not None:
             learner_result_dict['score'] = score_sum / num_folds
+        scoredict = {}
+        for metric, score_sum in additional_metric_score_sums.items():
+            scoredict[metric] = score_sum / num_folds
+        learner_result_dict['additional_scores'] = scoredict
         res.append(learner_result_dict)
     return res
 
 
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                       hosts=None, write_summary=True, quiet=False,
-                      ablation=0, resume=False):
+                      ablation=0, resume=False, log_level=logging.INFO):
     """
     Takes a configuration file and runs the specified jobs on the grid.
 
@@ -879,14 +934,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                    overwrite them. This is very useful when doing a large
                    ablation experiment and part of it crashes.
     :type resume: bool
+    :param log_level: The level for logging messages (default: INFO)
+    :type log_level: str
 
     :return: A list of paths to .json results files for each variation in the
              experiment.
     :rtype: list of str
 
     """
-    # Initialize logger
-    logger = logging.getLogger(__name__)
 
     # Read configuration
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
@@ -897,7 +952,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
      param_grid_list, featureset_names, learners, prediction_dir, log_path, train_path,
      test_path, ids_to_floats, class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes) = _parse_config_file(config_file)
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_file,
+                                                                          log_level=log_level)
+
+    # get the main experiment logger that will already have been
+    # created by the configuration parser so we don't need anything
+    # except the name `experiment`.
+    logger = get_skll_logger('experiment')
 
     # Check if we have gridmap
     if not local and not _HAVE_GRIDMAP:
@@ -916,6 +977,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             ablation = 0
             logger.warning("Ablating features is not supported during "
                            "learning curve generation. Ignoring.")
+
+    # if we just had a train file and a test file, there are no real featuresets
+    # in which case there are no features to ablate
+    if len(featuresets) == 1 and len(featuresets[0]) == 1:
+        if ablation is None or ablation > 0:
+            ablation = 0
+            logger.warning("Not enough featuresets for ablation. Ignoring.")
 
     # if performing ablation, expand featuresets to include combinations of
     # features within those sets
@@ -975,6 +1043,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                           ' auto-generated name would be longer than the file '
                           'system can handle'.format(featureset_name))
 
+    # if the task is learning curve, and ``metrics`` was specified, then
+    # assign the value of ``metrics`` to ``grid_objectives`` - this lets
+    # us piggyback on the parallelization of the objectives that is already
+    # set up for us to use
+    if task == 'learning_curve' and len(output_metrics) > 0:
+        grid_objectives = output_metrics
+
     # Run each featureset-learner-objective combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
         for learner_num, learner_name in enumerate(learners):
@@ -996,7 +1071,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
                 # the log file that stores the actual output of this script (e.g.,
                 # the tuned parameters, what kind of experiment was run, etc.)
-                temp_logfile = join(log_path, '{}.log'.format(job_name))
+                logfile = join(log_path, '{}.log'.format(job_name))
 
                 # Figure out result json file path
                 result_json_path = join(results_path,
@@ -1032,8 +1107,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["prediction_prefix"] = prediction_prefix
                 job_args["grid_search"] = do_grid_search
                 job_args["grid_objective"] = grid_objective
+                job_args['output_metrics'] = output_metrics
                 job_args["suffix"] = suffix
-                job_args["log_path"] = temp_logfile
+                job_args["log_file"] = logfile
+                job_args["log_level"] = log_level
                 job_args["probability"] = probability
                 job_args["results_path"] = results_path
                 job_args["sampler_parameters"] = (fixed_sampler_parameters
@@ -1065,11 +1142,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["learning_curve_train_sizes"] = learning_curve_train_sizes
 
                 if not local:
-                    jobs.append(Job(_classify_featureset, [job_args],
+                    jobs.append(Job(_classify_featureset,
+                                    [job_args],
                                     num_slots=(MAX_CONCURRENT_PROCESSES if
                                                (do_grid_search or
                                                 task == 'learning_curve') else 1),
-                                    name=job_name, queue=queue))
+                                    name=job_name,
+                                    queue=queue))
                 else:
                     _classify_featureset(job_args)
     test_set_name = basename(test_path)
@@ -1087,8 +1166,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if (task == 'cross_validate' or task == 'evaluate') and write_summary:
         summary_file_name = experiment_name + '_summary.tsv'
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(join(results_path, summary_file_name),
-                  file_mode) as output_file:
+        with open(join(results_path, summary_file_name), file_mode) as output_file:
             _write_summary_file(result_json_paths,
                                 output_file,
                                 ablation=ablation)
@@ -1116,7 +1194,7 @@ def _check_job_results(job_results):
     """
     See if we have a complete results dictionary for every job.
     """
-    logger = logging.getLogger(__name__)
+    logger = get_skll_logger('experiment')
     logger.info('Checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
@@ -1124,7 +1202,7 @@ def _check_job_results(job_results):
                          result_dicts)
 
 
-def _compute_ylimits_for_featureset(df, objectives):
+def _compute_ylimits_for_featureset(df, metrics):
     """
     Compute the y-limits for learning curve plots.
     """
@@ -1132,10 +1210,10 @@ def _compute_ylimits_for_featureset(df, objectives):
     # set the y-limits of the curves depending on what kind
     # of values the metric produces
     ylimits = {}
-    for objective in objectives:
+    for metric in metrics:
         # get the real min and max for the values that will be plotted
-        df_train = df[(df['variable'] == 'train_score_mean') & (df['objective'] == objective)]
-        df_test = df[(df['variable'] == 'test_score_mean') & (df['objective'] == objective)]
+        df_train = df[(df['variable'] == 'train_score_mean') & (df['metric'] == metric)]
+        df_test = df[(df['variable'] == 'test_score_mean') & (df['metric'] == metric)]
         train_values_lower = df_train['value'].values - df_train['train_score_std'].values
         test_values_lower = df_test['value'].values - df_test['test_score_std'].values
         min_score = np.min(np.concatenate([train_values_lower,
@@ -1146,17 +1224,18 @@ def _compute_ylimits_for_featureset(df, objectives):
                                            test_values_upper]))
 
         # squeeze the limits to hide unnecessary parts of the graph
+        # set the limits with a little buffer on either side but not too much
         if min_score < 0:
-            lower_limit = -1.1 if min_score >= -1 else math.floor(min_score)
+            lower_limit = max(min_score - 0.1, math.floor(min_score) - 0.05)
         else:
             lower_limit = 0
 
         if max_score > 0:
-            upper_limit = 1.1 if max_score <= 1 else math.ceil(max_score)
+            upper_limit = min(max_score + 0.1, math.ceil(max_score) + 0.05)
         else:
             upper_limit = 0
 
-        ylimits[objective] = (lower_limit, upper_limit)
+        ylimits[metric] = (lower_limit, upper_limit)
 
     return ylimits
 
@@ -1173,7 +1252,7 @@ def _generate_learning_curve_plots(experiment_name,
     # and massage it from wide to long format for plotting
     df = pd.read_csv(learning_curve_tsv_file, sep='\t')
     num_learners = len(df['learner_name'].unique())
-    num_objectives = len(df['objective'].unique())
+    num_metrics = len(df['metric'].unique())
     df_melted = pd.melt(df, id_vars=[c for c in df.columns
                                      if c not in ['train_score_mean', 'test_score_mean']])
 
@@ -1186,12 +1265,12 @@ def _generate_learning_curve_plots(experiment_name,
     # each of the featuresets
     for fs_name, df_fs in df_melted.groupby('featureset_name'):
         fig = plt.figure();
-        fig.set_size_inches(2.5*num_learners, 2.5*num_objectives);
+        fig.set_size_inches(2.5*num_learners, 2.5*num_metrics);
 
         # compute ylimits for this feature set for each objective
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
-            g = sns.FacetGrid(df_fs, row="objective", col="learner_name",
+            g = sns.FacetGrid(df_fs, row="metric", col="learner_name",
                               hue="variable", size=2.5, aspect=1,
                               margin_titles=True, despine=True, sharex=False,
                               sharey=False, legend_out=False, palette="Set1")
@@ -1211,10 +1290,10 @@ def _generate_learning_curve_plots(experiment_name,
                     ax = g.axes[i][j]
                     ax.set(ylim=ylimits[row_name])
                     df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
-                                        (df_fs['objective'] == row_name) &
+                                        (df_fs['metric'] == row_name) &
                                         (df_fs['variable'] == 'train_score_mean')]
                     df_ax_test = df_fs[(df_fs['learner_name'] == col_name) &
-                                       (df_fs['objective'] == row_name) &
+                                       (df_fs['metric'] == row_name) &
                                        (df_fs['variable'] == 'test_score_mean')]
                     ax.fill_between(list(range(len(df_ax_train))),
                                     df_ax_train['value'] - df_ax_train['train_score_std'],

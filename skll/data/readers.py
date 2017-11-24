@@ -69,11 +69,14 @@ class Reader(object):
                          of 2 greater than the actual number of features to
                          avoid collisions.
     :type num_features: int
+    :param logger: A logger instance to use to log messages instead of creating
+                   a new one by default.
+    :type logger: logging.Logger
     """
 
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
                  label_col='y', id_col='id', class_map=None, sparse=True,
-                 feature_hasher=False, num_features=None):
+                 feature_hasher=False, num_features=None, logger=None):
         super(Reader, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
@@ -86,6 +89,7 @@ class Reader(object):
             self.vectorizer = FeatureHasher(n_features=num_features)
         else:
             self.vectorizer = DictVectorizer(sparse=sparse)
+        self.logger = logger if logger else logging.getLogger(__name__)
 
     @classmethod
     def for_path(cls, path_or_list, **kwargs):
@@ -169,10 +173,7 @@ class Reader(object):
         :returns: :class:`~skll.data.featureset.FeatureSet` representing the
                   file we read in.
         """
-        # Setup logger
-        logger = logging.getLogger(__name__)
-
-        logger.debug('Path: %s', self.path_or_list)
+        self.logger.debug('Path: %s', self.path_or_list)
 
         if not self.quiet:
             self._progress_msg = "Loading {}...".format(self.path_or_list)
@@ -182,6 +183,7 @@ class Reader(object):
         # Get labels and IDs
         ids = []
         labels = []
+        ex_num = 0
         with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
                 # Update lists of IDs, clases, and features
@@ -202,6 +204,9 @@ class Reader(object):
 
         # Remember total number of examples for percentage progress meter
         total = ex_num
+        if total == 0:
+            raise ValueError("No features found in possibly "
+                             "empty file '{}'.".format(self.path_or_list))
 
         # Convert everything to numpy arrays
         ids = np.array(ids)
@@ -682,7 +687,7 @@ class TSVReader(DelimitedReader):
         super(TSVReader, self).__init__(path_or_list, **kwargs)
 
 
-def safe_float(text, replace_dict=None):
+def safe_float(text, replace_dict=None, logger=None):
     """
     Attempts to convert a string to an int, and then a float, but if neither is
     possible, just returns the original string value.
@@ -695,19 +700,24 @@ def safe_float(text, replace_dict=None):
                          floats. Anything not in the mapping will be kept the
                          same.
     :type replace_dict: dict from str to str
+    :param logger: The Logger instance to use to log messages. Used instead of
+                 creating a new Logger instance by default.
+    :type logger: logging.Logger
     """
 
     # convert to text to be "Safe"!
     text = text_type(text)
 
+    # get a logger unless we are passed one
+    if not logger:
+        logger = logging.getLogger(__name__)
+
     if replace_dict is not None:
         if text in replace_dict:
             text = replace_dict[text]
         else:
-            logging.getLogger(__name__).warning('Encountered value that was '
-                                                'not in replacement '
-                                                'dictionary (e.g., class_map):'
-                                                ' {}'.format(text))
+            logger.warning('Encountered value that was not in replacement '
+                           'dictionary (e.g., class_map): {}'.format(text))
     try:
         return int(text)
     except ValueError:

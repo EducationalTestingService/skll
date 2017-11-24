@@ -34,7 +34,7 @@ from sklearn.model_selection import (GridSearchCV,
                                      LeaveOneGroupOut,
                                      ShuffleSplit,
                                      StratifiedKFold)
-from sklearn.dummy import DummyClassifier
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
                               GradientBoostingClassifier,
@@ -43,21 +43,31 @@ from sklearn.ensemble import (AdaBoostClassifier,
                               RandomForestRegressor)
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_selection import SelectKBest
+from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
-from sklearn.kernel_approximation import (AdditiveChi2Sampler,
-                                          Nystroem,
+from sklearn.kernel_approximation import (Nystroem,
                                           RBFSampler,
                                           SkewedChi2Sampler)
-from sklearn.linear_model import (ElasticNet, Lasso, LinearRegression,
-                                  LogisticRegression, Ridge, SGDClassifier,
-                                  SGDRegressor)
+from sklearn.linear_model import (BayesianRidge,
+                                  ElasticNet,
+                                  HuberRegressor,
+                                  Lars,
+                                  Lasso,
+                                  LinearRegression,
+                                  LogisticRegression,
+                                  RANSACRegressor,
+                                  Ridge,
+                                  RidgeClassifier,
+                                  SGDClassifier,
+                                  SGDRegressor,
+                                  TheilSenRegressor)
 from sklearn.linear_model.base import LinearModel
 from sklearn.metrics import (accuracy_score,
                              confusion_matrix,
-                             precision_recall_fscore_support,
-                             SCORERS)
+                             precision_recall_fscore_support)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, LinearSVR, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -95,11 +105,18 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         AdaBoostRegressor:
                         [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        BayesianRidge:
+                        [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
+                          'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
+                          'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
+                          'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}],
                         DecisionTreeClassifier:
                         [{'max_features': ["auto", None]}],
                         DecisionTreeRegressor:
                         [{'max_features': ["auto", None]}],
                         DummyClassifier:
+                        [{}],
+                        DummyRegressor:
                         [{}],
                         ElasticNet:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
@@ -107,12 +124,27 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'max_depth': [1, 3, 5]}],
                         GradientBoostingRegressor:
                         [{'max_depth': [1, 3, 5]}],
+                        HuberRegressor:
+                        [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}],
                         KNeighborsClassifier:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
                         KNeighborsRegressor:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
+                        MLPClassifier:
+                        [{'activation': ['logistic', 'tanh', 'relu'],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'learning_rate_init': [0.001, 0.01, 0.1]}],
+                        MLPRegressor:
+                        [{'activation': ['logistic', 'tanh', 'relu'],
+                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'learning_rate_init': [0.001, 0.01, 0.1]}],
+                        MultinomialNB:
+                        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
+                        Lars:
+                        [{}],
                         Lasso:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LinearRegression:
@@ -121,15 +153,18 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         LogisticRegression:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SVC: [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                               'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        MultinomialNB:
-                        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
+                        SVC:
+                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         RandomForestClassifier:
                         [{'max_depth': [1, 5, 10, None]}],
                         RandomForestRegressor:
                         [{'max_depth': [1, 5, 10, None]}],
+                        RANSACRegressor:
+                        [{}],
                         Ridge:
+                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        RidgeClassifier:
                         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SGDClassifier:
                         [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
@@ -141,7 +176,9 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]}
+                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                        TheilSenRegressor:
+                        [{}]}
 
 
 # list of valid grid objective functions for regression and classification
@@ -155,7 +192,8 @@ _BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                      'qwk_off_by_one',
                                      'kendall_tau',
                                      'pearson',
-                                     'spearman'])
+                                     'spearman',
+                                     'neg_log_loss'])
 
 _REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
                                         'neg_mean_squared_error'])
@@ -169,16 +207,22 @@ _CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
                                             'f1_score_weighted',
                                             'f1_score_least_frequent',
                                             'average_precision',
-                                            'roc_auc'])
+                                            'roc_auc',
+                                            'neg_log_loss'])
 
 _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'linear_weighted_kappa',
                                   'quadratic_weighted_kappa',
                                   'uwk_off_by_one',
                                   'lwk_off_by_one',
-                                  'qwk_off_by_one'])
+                                  'qwk_off_by_one',
+                                  'neg_log_loss'])
 
-_REQUIRES_DENSE = (GradientBoostingClassifier, GradientBoostingRegressor)
+_REQUIRES_DENSE = (BayesianRidge,
+                   GradientBoostingClassifier,
+                   GradientBoostingRegressor,
+                   Lars,
+                   TheilSenRegressor)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
@@ -196,7 +240,6 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         self.keep = keep
         self.example_ids = example_ids
         self._warned = False
-        self.logger = logging.getLogger(__name__)
 
     def split(self, X, y, groups):
         for train_index, test_index in super(FilteredLeaveOneGroupOut,
@@ -480,6 +523,11 @@ def rescaled(cls):
 
 # Rescaled regressors
 @rescaled
+class RescaledBayesianRidge(BayesianRidge):
+    pass
+
+
+@rescaled
 class RescaledAdaBoostRegressor(AdaBoostRegressor):
     pass
 
@@ -500,7 +548,17 @@ class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
 
 
 @rescaled
+class RescaledHuberRegressor(HuberRegressor):
+    pass
+
+
+@rescaled
 class RescaledKNeighborsRegressor(KNeighborsRegressor):
+    pass
+
+
+@rescaled
+class RescaledLars(Lars):
     pass
 
 
@@ -515,7 +573,22 @@ class RescaledLinearRegression(LinearRegression):
 
 
 @rescaled
+class RescaledLinearSVR(LinearSVR):
+    pass
+
+
+@rescaled
+class RescaledMLPRegressor(MLPRegressor):
+    pass
+
+
+@rescaled
 class RescaledRandomForestRegressor(RandomForestRegressor):
+    pass
+
+
+@rescaled
+class RescaledRANSACRegressor(RANSACRegressor):
     pass
 
 
@@ -525,17 +598,17 @@ class RescaledRidge(Ridge):
 
 
 @rescaled
+class RescaledSGDRegressor(SGDRegressor):
+    pass
+
+
+@rescaled
 class RescaledSVR(SVR):
     pass
 
 
 @rescaled
-class RescaledLinearSVR(LinearSVR):
-    pass
-
-
-@rescaled
-class RescaledSGDRegressor(SGDRegressor):
+class RescaledTheilSenRegressor(TheilSenRegressor):
     pass
 
 
@@ -582,7 +655,8 @@ class Learner(object):
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
                  model_kwargs=None, pos_label_str=None, min_feature_count=1,
-                 sampler=None, sampler_kwargs=None, custom_learner_path=None):
+                 sampler=None, sampler_kwargs=None, custom_learner_path=None,
+                 logger=None):
         """
         Initializes a learner object with the specified settings.
         """
@@ -599,6 +673,7 @@ class Learner(object):
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
         self._sampler_kwargs = {}
+        self.logger = logger if logger else logging.getLogger(__name__)
 
         if model_type not in globals():
             # here, we need to import the custom model and add it
@@ -631,11 +706,10 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
             if self.probability:
-                logger = logging.getLogger(__name__)
-                logger.warning('Because LibSVM does an internal ' +
-                               'cross-validation to produce probabilities, ' +
-                               'results will not be exactly replicable when ' +
-                               'using SVC and probability mode.')
+                self.logger.warning('Because LibSVM does an internal '
+                                    'cross-validation to produce probabilities, '
+                                    'results will not be exactly replicable when '
+                                    'using SVC and probability mode.')
         elif issubclass(self._model_type,
                         (RandomForestClassifier, RandomForestRegressor,
                          GradientBoostingClassifier, GradientBoostingRegressor,
@@ -645,14 +719,24 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
+        elif issubclass(self._model_type, RANSACRegressor):
+            self._model_kwargs['loss'] = 'squared_loss'
+        elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
+            self._model_kwargs['learning_rate'] = 'invscaling'
+            self._model_kwargs['max_iter'] = 500
+
 
         if issubclass(self._model_type,
-                      (RandomForestClassifier, LinearSVC, LogisticRegression,
-                       DecisionTreeClassifier, GradientBoostingClassifier,
-                       GradientBoostingRegressor, DecisionTreeRegressor,
-                       RandomForestRegressor, SGDClassifier, SGDRegressor,
-                       AdaBoostRegressor, AdaBoostClassifier, LinearSVR,
-                       Lasso, Ridge, ElasticNet, SVC)):
+                      (AdaBoostClassifier, AdaBoostRegressor,
+                        DecisionTreeClassifier, DecisionTreeRegressor,
+                        DummyClassifier, ElasticNet,
+                        GradientBoostingClassifier,
+                        GradientBoostingRegressor, Lasso, LinearSVC,
+                        LinearSVR, LogisticRegression, MLPClassifier,
+                        MLPRegressor, RandomForestClassifier,
+                        RandomForestRegressor, RANSACRegressor, Ridge,
+                        RidgeClassifier, SGDClassifier, SGDRegressor,
+                        SVC, TheilSenRegressor)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
@@ -667,16 +751,20 @@ class Learner(object):
             self.sampler = None
 
         if model_kwargs:
-            # if the model is an AdaBoost classifier or regressor, then we
-            # need to convert any specified `base_estimator` (a string)
-            # into an object before passing it in to the learner constructor.
-            # we also need to make sure that if the base estimator is
-            # anything other than MultinomialNB, we set the random state
-            # to a fixed seed such that results are replicable
+            # if the model is an AdaBoost classifier or regressor or
+            # a RANSAC regressor, then we need to convert any specified
+            # `base_estimator` (a string) into an object before passing
+            # it in to the learner constructor. We also need to make sure
+            # where appropriate, we set the random state to a fixed seed
+            # such that results are replicable
             if issubclass(self._model_type,
-                          (AdaBoostRegressor, AdaBoostClassifier)) and ('base_estimator' in model_kwargs):
+                          (AdaBoostRegressor,
+                           AdaBoostClassifier,
+                           RANSACRegressor)) and ('base_estimator' in model_kwargs):
                 base_estimator_name = model_kwargs['base_estimator']
-                base_estimator_kwargs = {} if base_estimator_name in ['MultinomialNB', 'SVR'] else {'random_state': 123456789}
+                base_estimator_kwargs = {} if base_estimator_name in ['LinearRegression',
+                                                                      'MultinomialNB',
+                                                                      'SVR'] else {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
                 model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
@@ -809,7 +897,7 @@ class Learner(object):
             # not supported
             raise ValueError(("{} is not supported by" +
                               " model_params with its current settings."
-                              ).format(self._model_type))
+                              ).format(self._model_type.__name__))
 
         return res, intercept
 
@@ -826,11 +914,18 @@ class Learner(object):
         # LinearSVC doesn't support predict_proba
         self._probability = value
         if not hasattr(self.model_type, "predict_proba") and value:
-            logger = logging.getLogger(__name__)
-            logger.warning(("probability was set to True, but {} does not have"
-                            " a predict_proba() method.")
-                           .format(self.model_type))
+            self.logger.warning("Probability was set to True, but {} does not have "
+                                "a predict_proba() method.".format(self.model_type.__name__))
             self._probability = False
+
+    def __getstate__(self):
+        """
+        Return the attributes that should be pickled. We need this
+        because we cannot pickle loggers.
+        """
+        attribute_dict = dict(self.__dict__)
+        del attribute_dict['logger']
+        return attribute_dict
 
     def save(self, learner_path):
         """
@@ -843,7 +938,7 @@ class Learner(object):
         learner_dir = os.path.dirname(learner_path)
         if not os.path.exists(learner_dir):
             os.makedirs(learner_dir)
-        # write out the files
+        # write out the learner to disk
         joblib.dump((VERSION, self), learner_path)
 
     def _create_estimator(self):
@@ -855,7 +950,7 @@ class Learner(object):
         default_param_grid = _find_default_param_grid(self._model_type)
         if default_param_grid is None:
             raise ValueError("%s is not a valid learner type." %
-                             (self._model_type,))
+                             (self._model_type.__name__,))
 
         estimator = self._model_type(**self._model_kwargs)
 
@@ -879,18 +974,16 @@ class Learner(object):
                 raise TypeError("You have feature values that are strings.  "
                                 "Convert them to floats.")
 
-    @staticmethod
-    def _check_max_feature_value(feat_array):
+    def _check_max_feature_value(self, feat_array):
         """
         Check if the the maximum absolute value of any feature is too large
         """
         max_feat_abs = np.max(np.abs(feat_array.data))
         if max_feat_abs > 1000.0:
-            logger = logging.getLogger(__name__)
-            logger.warning(("You have a feature with a very large absolute " +
-                            "value (%s).  That may cause the learning " +
-                            "algorithm to crash or perform " +
-                            "poorly."), max_feat_abs)
+            self.logger.warning("You have a feature with a very large absolute "
+                                "value ({}).  That may cause the learning "
+                                "algorithm to crash or perform "
+                                "poorly.".format(max_feat_abs))
 
     def _create_label_dict(self, examples):
         """
@@ -971,9 +1064,9 @@ class Learner(object):
         :type grid_search_folds: int or dict
         :param grid_search: Should we do grid search?
         :type grid_search: bool
-        :param grid_objective: The objective function to use when doing the
-                               grid search.
-        :type grid_objective: function
+        :param grid_objective: The name of the objective function to use when
+                               doing the grid search.
+        :type grid_objective: str
         :param grid_jobs: The number of jobs to run in parallel when doing the
                           grid search. If unspecified or 0, the number of
                           grid search folds will be used.
@@ -993,7 +1086,6 @@ class Learner(object):
                  not doing grid search.
         :rtype: float
         """
-        logger = logging.getLogger(__name__)
 
         # if we are asked to do grid search, check that the grid objective
         # function is valid for the selected learner
@@ -1004,7 +1096,7 @@ class Learner(object):
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner"
                                      .format(grid_objective,
-                                             self._model_type))
+                                             self._model_type.__name__))
             elif grid_objective not in _CLASSIFICATION_ONLY_OBJ_FUNCS:
                 # This is a classifier. Valid objective functions depend on
                 # type of label (int, string, binary)
@@ -1016,7 +1108,7 @@ class Learner(object):
                                          "function for the {} learner with "
                                          "integer labels"
                                          .format(grid_objective,
-                                                 self._model_type))
+                                                 self._model_type.__name__))
 
                 elif issubclass(examples.labels.dtype.type, str):
                     # if all of the labels are strings, only class 1 objectives
@@ -1024,7 +1116,7 @@ class Learner(object):
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner with string "
                                      "labels".format(grid_objective,
-                                                     self._model_type))
+                                                     self._model_type.__name__))
 
                 elif len(set(examples.labels)) == 2:
                     # If there are two labels, class 3 objectives are valid for
@@ -1034,13 +1126,13 @@ class Learner(object):
                                          "function for the {} learner with "
                                          "binary labels"
                                          .format(grid_objective,
-                                                 self._model_type))
+                                                 self._model_type.__name__))
                 elif grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
                     # simple backoff check for mixed-type labels
                     raise ValueError("{} is not a valid grid objective "
                                      "function for the {} learner"
                                      .format(grid_objective,
-                                             self._model_type))
+                                             self._model_type.__name__))
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1048,9 +1140,9 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                logger.warning('Training data will be shuffled to randomize '
-                               'grid search folds.  Shuffling may yield '
-                               'different results compared to scikit-learn.')
+                self.logger.warning('Training data will be shuffled to randomize '
+                                    'grid search folds.  Shuffling may yield '
+                                    'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
                                                random_state=123456789)
@@ -1074,7 +1166,7 @@ class Learner(object):
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = ('{} does not support sparse ' +
-                              'matrices.').format(self._model_type)
+                              'matrices.').format(self._model_type.__name__)
                 else:
                     reason = ('{} feature scaling requires a dense ' +
                               'matrix.').format(self._feature_scaling)
@@ -1097,15 +1189,12 @@ class Learner(object):
 
         # Sampler
         if self.sampler:
-            logger.warning('Sampler converts sparse matrix to dense')
+            self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
-                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 xtrain = self.sampler.fit_transform(xtrain.todense())
             else:
                 xtrain = self.sampler.fit_transform(xtrain)
-
-        # Instantiate an estimator and get the default parameter grid to search
-        estimator, default_param_grid = self._create_estimator()
 
         # use label dict transformed version of examples.labels if doing
         # classification
@@ -1114,6 +1203,23 @@ class Learner(object):
                                examples.labels])
         else:
             labels = examples.labels
+
+        # Instantiate an estimator and get the default parameter grid to search
+        estimator, default_param_grid = self._create_estimator()
+
+        # Use default parameter grid if we weren't passed one
+        # In case the default parameter grid is also empty
+        # then there's no point doing the grid search at all
+        if grid_search and not param_grid:
+            if default_param_grid == [{}]:
+                self.logger.warning("SKLL has no default parameter grid "
+                                    "available for the {} learner and no "
+                                    "parameter grids were supplied. Using "
+                                    "default values instead of grid "
+                                    "search.".format(self._model_type.__name__))
+                grid_search = False
+            else:
+                param_grid = default_param_grid
 
         # set up a grid searcher if we are asked to
         if grid_search:
@@ -1140,10 +1246,6 @@ class Learner(object):
                                curr_id in examples.ids]
                 kfold = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids)
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
-
-            # Use default parameter grid if we weren't passed one
-            if not param_grid:
-                param_grid = default_param_grid
 
             # If we're using a correlation metric for doing binary
             # classification, override the estimator's predict function
@@ -1173,9 +1275,9 @@ class Learner(object):
         return grid_score
 
     def evaluate(self, examples, prediction_prefix=None, append=False,
-                 grid_objective=None):
+                 grid_objective=None, output_metrics=[]):
         """
-        Evaluates a given model on a given dev or test example set.
+        Evaluates a given model on a given dev or test example set
 
         :param examples: The examples to evaluate the performance of the model
                          on.
@@ -1190,18 +1292,26 @@ class Learner(object):
         :param grid_objective: The objective function that was used when doing
                                the grid search.
         :type grid_objective: function
+        :param output_metrics: List of additional metric names to compute in
+                                   addition to grid objective. Empty by default.
+        :type output_metrics: list of str
 
         :return: The confusion matrix, the overall accuracy, the per-label
                  PRFs, the model parameters, and the grid search objective
                  function score.
         :rtype: 5-tuple
         """
-        # initialize grid score
-        grid_score = None
+        # initialize a dictionary that will hold all of the metric scores
+        metric_scores = {metric: None for metric in output_metrics}
 
         # make the prediction on the test data
-        yhat = self.predict(examples, prediction_prefix=prediction_prefix,
+        yhat = self.predict(examples,
+                            prediction_prefix=prediction_prefix,
                             append=append)
+
+        # make a single list of metrics including the grid objective
+        # since it's easier to compute everything together
+        metrics_to_compute = [grid_objective] + output_metrics
 
         # extract actual labels (transformed for classification tasks)
         if self.model_type._estimator_type == 'classifier':
@@ -1221,27 +1331,40 @@ class Learner(object):
         else:
             ytest = examples.labels
 
-        # if run in probability mode, convert yhat to list of labels predicted
-        if self.probability:
-            # if we're using a correlation grid objective, calculate it here
-            if grid_objective and grid_objective in _CORRELATION_METRICS:
+        # compute all of the metrics that we need to but save the original
+        # predictions since we will need to use those for each metric
+        original_yhat = yhat
+        for metric in metrics_to_compute:
+
+            # if run in probability mode, convert yhat to list of labels predicted
+            if self.probability:
+                # if we're using a correlation grid objective, calculate it here
+                if metric and metric in _CORRELATION_METRICS:
+                    try:
+                        metric_scores[metric] = use_score_func(metric, ytest, yhat[:, 1])
+                    except ValueError:
+                        metric_scores[metric] = float('NaN')
+
+                yhat = np.array([max(range(len(row)),
+                                     key=lambda i: row[i])
+                                 for row in original_yhat])
+
+            # calculate grid search objective function score, if specified
+            if (metric and (metric not in _CORRELATION_METRICS or
+                                   not self.probability)):
                 try:
-                    grid_score = use_score_func(grid_objective, ytest,
-                                                yhat[:, 1])
+                    metric_scores[metric] = use_score_func(metric, ytest, yhat)
                 except ValueError:
-                    grid_score = float('NaN')
+                    metric_scores[metric] = float('NaN')
 
-            yhat = np.array([max(range(len(row)),
-                                 key=lambda i: row[i])
-                             for row in yhat])
-
-        # calculate grid search objective function score, if specified
-        if (grid_objective and (grid_objective not in _CORRELATION_METRICS or
-                                not self.probability)):
-            try:
-                grid_score = use_score_func(grid_objective, ytest, yhat)
-            except ValueError:
-                grid_score = float('NaN')
+        # now separate out the grid objective score from the additional metric scores
+        # if a grid objective was actually passed in. If no objective was passed in
+        # then that score should just be none.
+        objective_score = None
+        additional_scores = metric_scores.copy()
+        if grid_objective:
+            objective_score = metric_scores[grid_objective]
+            del additional_scores[grid_objective]
 
         if self.model_type._estimator_type == 'regressor':
             result_dict = {'descriptive': defaultdict(dict)}
@@ -1251,8 +1374,8 @@ class Learner(object):
                 result_dict['descriptive'][table_label]['avg'] = np.mean(y)
                 result_dict['descriptive'][table_label]['std'] = np.std(y)
             result_dict['pearson'] = use_score_func('pearson', ytest, yhat)
-            res = (None, None, result_dict, self._model.get_params(),
-                   grid_score)
+            res = (None, None, result_dict, self._model.get_params(), objective_score,
+                   additional_scores)
         else:
             # compute the confusion matrix
             num_labels = len(train_and_test_label_dict)
@@ -1272,7 +1395,8 @@ class Learner(object):
                 result_dict[actual_label]["F-measure"] = result_matrix[2][col]
 
             res = (conf_mat.tolist(), overall_accuracy, result_dict,
-                   self._model.get_params(), grid_score)
+                   self._model.get_params(), objective_score,
+                   additional_scores)
         return res
 
     def predict(self, examples, prediction_prefix=None, append=False,
@@ -1297,7 +1421,6 @@ class Learner(object):
         :return: The predictions returned by the learner.
         :rtype: array
         """
-        logger = logging.getLogger(__name__)
         example_ids = examples.ids
 
         # Need to do some transformations so the features are in the right
@@ -1306,8 +1429,8 @@ class Learner(object):
         if isinstance(self.feat_vectorizer, FeatureHasher):
             if (self.feat_vectorizer.n_features !=
                     examples.vectorizer.n_features):
-                logger.warning("There is mismatch between the training model "
-                               "features and the data passed to predict.")
+                self.logger.warning("There is mismatch between the training model "
+                                    "features and the data passed to predict.")
 
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
@@ -1327,8 +1450,8 @@ class Learner(object):
         else:
             if (set(self.feat_vectorizer.feature_names_) !=
                     set(examples.vectorizer.feature_names_)):
-                logger.warning("There is mismatch between the training model "
-                               "features and the data passed to predict.")
+                self.logger.warning("There is mismatch between the training model "
+                                    "features and the data passed to predict.")
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
@@ -1342,9 +1465,9 @@ class Learner(object):
 
         # Sampler
         if self.sampler:
-            logger.warning('Sampler converts sparse matrix to dense')
+            self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
-                logger.warning('SkewedChi2Sampler uses a dense matrix')
+                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 xtest = self.sampler.fit_transform(xtest.todense())
             else:
                 xtest = self.sampler.fit_transform(xtest)
@@ -1356,7 +1479,7 @@ class Learner(object):
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = ('{} does not support sparse ' +
-                              'matrices.').format(self._model_type)
+                              'matrices.').format(self._model_type.__name__)
                 else:
                     reason = ('{} feature scaling requires a dense ' +
                               'matrix.').format(self._feature_scaling)
@@ -1375,8 +1498,11 @@ class Learner(object):
                         not class_labels)
                     else self._model.predict(xtest))
         except NotImplementedError as e:
-            logger.error("Model type: %s\nModel: %s\nProbability: %s\n",
-                         self._model_type, self._model, self.probability)
+            self.logger.error("Model type: {}\n"
+                              "Model: {}\n"
+                              "Probability: {}\n".format(self._model_type.__name__,
+                                                         self._model,
+                                                         self.probability))
             raise e
 
         # write out the predictions if we are asked to
@@ -1432,10 +1558,9 @@ class Learner(object):
             raise ValueError(('The training set has only {} example for a' +
                               ' label.').format(min_examples_per_label))
         if min_examples_per_label < cv_folds:
-            logger = logging.getLogger(__name__)
-            logger.warning('The minimum number of examples per label was %s.  '
-                           'Setting the number of cross-validation folds to '
-                           'that value.', min_examples_per_label)
+            self.logger.warning('The minimum number of examples per label was {}. '
+                                'Setting the number of cross-validation folds to '
+                                'that value.'.format(min_examples_per_label))
             cv_folds = min_examples_per_label
         return cv_folds
 
@@ -1447,6 +1572,7 @@ class Learner(object):
                        grid_search_folds=3,
                        grid_jobs=None,
                        grid_objective='f1_score_micro',
+                       output_metrics=[],
                        prediction_prefix=None,
                        param_grid=None,
                        shuffle=False,
@@ -1474,9 +1600,13 @@ class Learner(object):
                           grid search. If unspecified or 0, the number of
                           grid search folds will be used.
         :type grid_jobs: int
-        :param grid_objective: The objective function to use when doing the
-                               grid search.
-        :type grid_objective: function
+        :param grid_objective: The name of the objective function to use when
+                               doing the grid search.
+        :type grid_objective: str
+        :param output_metrics: List of additional metric names to compute in
+                                   addition to the metric used for grid search. Empty
+                                   by default.
+        :type output_metrics: list of str
         :param param_grid: The parameter grid to search through for grid
                            search. If unspecified, a default parameter
                            grid will be used.
@@ -1508,8 +1638,16 @@ class Learner(object):
         # Seed the random number generator so that randomized algorithms are
         # replicable.
         random_state = np.random.RandomState(123456789)
-        # Set up logger.
-        logger = logging.getLogger(__name__)
+
+        # We need to check whether the labels in the featureset are labels
+        # or continuous values. If it's the latter, we need to raise an
+        # an exception since the stratified splitting in sklearn does not
+        # work with continuous labels. Note that although using random folds
+        # _will_ work, we want to raise an error in general since it's better
+        # to encode the labels as strings anyway.
+        if (self.model_type._estimator_type == 'classifier' and
+            type_of_target(examples.labels) not in ['binary', 'multiclass']):
+            raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1517,9 +1655,9 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                logger.warning('Training data will be shuffled to randomize '
-                               'grid search folds. Shuffling may yield '
-                               'different results compared to scikit-learn.')
+                self.logger.warning('Training data will be shuffled to randomize '
+                                    'grid search folds. Shuffling may yield '
+                                    'different results compared to scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
                                                random_state=random_state)
@@ -1563,8 +1701,8 @@ class Learner(object):
             # when we are using the API; otherwise the configparser should
             # take care of this even before this method is called
             if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
-                logger.warning("The specified custom folds will be used for "
-                               "the inner grid search.")
+                self.logger.warning("The specified custom folds will be used for "
+                                    "the inner grid search.")
                 grid_search_folds = cv_folds
 
         # Save the cross-validation fold information, if required
@@ -1616,7 +1754,8 @@ class Learner(object):
             results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
                                          append=append_predictions,
-                                         grid_objective=grid_objective))
+                                         grid_objective=grid_objective,
+                                         output_metrics=output_metrics))
             append_predictions = True
 
         # return list of results for all folds
@@ -1626,7 +1765,7 @@ class Learner(object):
                        examples,
                        cv_folds=10,
                        train_sizes=np.linspace(0.1, 1.0, 5),
-                       objective='f1_score_micro'):
+                       metric='f1_score_micro'):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
@@ -1648,10 +1787,10 @@ class Learner(object):
                              at least one sample from each class.
                              (default: `np.linspace(0.1, 1.0, 5)`)
         :type train_sizes: list of float or int
-        :param objective: The name of the objective function to use
+        :param metric: The name of the metric function to use
                            when computing the train and test scores
                            for the learning curve. (default: 'f1_score_micro')
-        :type objective: string
+        :type metric: string
 
         :return: The scores on the training sets, the scores on the test set,
                  and the numbers of training examples used to generate
@@ -1662,9 +1801,6 @@ class Learner(object):
         # Seed the random number generator so that randomized algorithms are
         # replicable.
         random_state = np.random.RandomState(123456789)
-
-        # Set up logger.
-        logger = logging.getLogger(__name__)
 
         # Call train setup before since we need to train
         # the learner eventually
@@ -1702,7 +1838,7 @@ class Learner(object):
         out = parallel(joblib.delayed(_train_and_score)(self,
                                                         train_fs[:n_train_samples],
                                                         test_fs,
-                                                        objective)
+                                                        metric)
                        for train_fs, test_fs in featureset_iter
                        for n_train_samples in train_sizes_abs)
 

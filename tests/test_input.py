@@ -1,7 +1,6 @@
 # License: BSD 3 clause
 """
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+Tests for SKLL inputs, mainly configuration files.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
@@ -21,13 +20,16 @@ import numpy as np
 
 from nose.tools import eq_, ok_, raises
 
-from six import string_types
+from six import string_types, PY2
 
-from skll.config import _parse_config_file, _load_cv_folds, _locate_file
+from skll.config import (_parse_config_file,
+                         _load_cv_folds,
+                         _locate_file)
 from skll.data.readers import safe_float
 from skll.experiments import _load_featureset
 
-from utils import fill_in_config_options
+from utils import (create_jsonlines_feature_files,
+                   fill_in_config_options)
 
 _my_dir = abspath(dirname(__file__))
 
@@ -45,6 +47,10 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+
+    # create jsonlines feature files
+    train_path = join(_my_dir, 'train')
+    create_jsonlines_feature_files(train_path)
 
 
 def tearDown():
@@ -591,7 +597,7 @@ def test_config_parsing_bad_objective_2():
 
 def test_config_parsing_bad_objectives():
     """
-    Test to ensure config file parsing raises an error with a grid objectives given as a string
+    Test to ensure config file parsing raises an error with grid objectives given as a string
     """
 
     train_dir = join(_my_dir, 'train')
@@ -618,7 +624,6 @@ def test_config_parsing_bad_objectives():
     yield check_config_parsing_type_error, config_path
 
 
-
 def test_config_parsing_bad_objective_and_objectives():
     """
     Test to ensure config file parsing raises an error with
@@ -642,6 +647,96 @@ def test_config_parsing_bad_objective_and_objectives():
     config_path = fill_in_config_options(config_template_path,
                            values_to_fill_dict,
                            'bad_objective_and_objectives')
+    yield check_config_parsing_value_error, config_path
+
+
+def test_config_parsing_bad_metric():
+    """
+    Test to ensure config file parsing raises an error with an invalid evaluation metric
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'metrics': "['foobar', 'accuracy']"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_metric')
+
+    yield check_config_parsing_value_error, config_path
+
+
+def test_config_parsing_bad_metric_2():
+    """
+    Test to ensure config file parsing raises an error with metrics given as a string
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'metrics': "accuracy"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'bad_metric_as_string')
+
+    yield check_config_parsing_type_error, config_path
+
+
+def test_config_parsing_log_loss_no_probability():
+    """
+    Test that config parsing raises an error if log loss is used without probability
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'neg_log_loss'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'log_loss_no_probability')
+
     yield check_config_parsing_value_error, config_path
 
 
@@ -910,7 +1005,8 @@ def test_config_parsing_mse_to_neg_mse():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(grid_objective, ['neg_mean_squared_error'])
 
@@ -946,7 +1042,8 @@ def test_config_parsing_relative_input_path():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(normpath(train_path), (join(_my_dir, 'train')))
 
@@ -983,7 +1080,71 @@ def test_config_parsing_relative_input_paths():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+
+def check_config_parsing_metrics_and_objectives_overlap(task,
+                                                        metrics,
+                                                        objectives):
+
+    test_dir = join('..', 'test')
+    train_dir = join('..', 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has an invalid option
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': task,
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'metrics': str(metrics)}
+
+    if task == 'evaluate':
+        values_to_fill_dict['test_directory'] = test_dir
+
+    if objectives:
+        values_to_fill_dict['objectives'] = str(objectives)
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'metrics_and_objectives_overlap')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, parsed_objectives, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, parsed_metrics) = _parse_config_file(config_path)
+
+    if not objectives:
+        objectives = ["f1_score_micro"]
+    common_metrics = set(objectives).intersection(metrics)
+    pruned_metrics = [metric for metric in metrics if metric not in common_metrics]
+    eq_(parsed_objectives, objectives)
+    eq_(parsed_metrics, pruned_metrics)
+
+
+def test_config_parsing_metrics_and_objectives_overlap():
+
+    for task, metrics, objectives in product(["evaluate", "cross_validate"],
+                                             [["f1_score_micro", "unweighted_kappa"],
+                                              ["accuracy", "unweighted_kappa"]],
+                                             [[], ["accuracy"]]):
+        metrics = [str(m) for m in metrics] if PY2 else metrics
+        objectives = [str(o) for o in objectives] if PY2 else objectives
+        yield check_config_parsing_metrics_and_objectives_overlap, \
+                task, metrics, objectives
 
 
 def test_cv_folds_and_grid_search_folds():
@@ -1134,7 +1295,8 @@ def check_cv_folds_and_grid_search_folds(task,
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(cv_folds, chosen_cv_folds)
     eq_(grid_search_folds, chosen_grid_search_folds)
@@ -1171,7 +1333,8 @@ def test_default_number_of_cv_folds():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(cv_folds, 10)
 
@@ -1207,7 +1370,8 @@ def test_setting_number_of_cv_folds():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(cv_folds, 5)
 
@@ -1246,7 +1410,8 @@ def test_setting_param_grids():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(param_grid_list[0]['C'][0], 1e-6)
     eq_(param_grid_list[0]['C'][1], 1e-3)
@@ -1290,7 +1455,8 @@ def test_setting_fixed_parameters():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(fixed_parameter_list[0]['C'][0], 1e-6)
     eq_(fixed_parameter_list[0]['C'][1], 1e-3)
@@ -1584,7 +1750,8 @@ def test_default_learning_curve_options():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(learning_curve_cv_folds_list, [10, 10])
     ok_(np.all(learning_curve_train_sizes == np.linspace(0.1, 1.0, 5)))
@@ -1621,7 +1788,175 @@ def test_setting_learning_curve_options():
      use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes) = _parse_config_file(config_path)
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(learning_curve_cv_folds_list, [100, 10])
     eq_(learning_curve_train_sizes, [10, 50, 100, 200, 500])
+
+
+def test_learning_curve_metrics_and_objectives():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'f1_score_macro',
+                           'metrics': '["accuracy", "f1_score_micro"]'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'learning_curve_metrics_and_objectives')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    eq_(output_metrics, ["accuracy", "f1_score_micro"])
+    eq_(grid_objective, [])
+
+
+def test_learning_curve_metrics_and_no_objectives():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'metrics': '["accuracy", "unweighted_kappa"]'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'learning_curve_metrics_and_no_objectives')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    eq_(output_metrics, ["accuracy", "unweighted_kappa"])
+    eq_(grid_objective, [])
+
+
+def test_learning_curve_objectives_and_no_metrics():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objectives': '["accuracy"]'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'learning_curve_objectives_and_no_metrics')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    eq_(output_metrics, ["accuracy"])
+    eq_(grid_objective, [])
+
+
+def test_learning_curve_default_objectives_and_no_metrics():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'learning_curve_default_objectives_and_no_metrics')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    eq_(output_metrics, ["f1_score_micro"])
+    eq_(grid_objective, [])
+
+
+def test_learning_curve_no_metrics_and_no_objectives():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objectives': '[]'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'learning_curve_no_metrics_and_no_objectives')
+
+    yield check_config_parsing_value_error, config_path

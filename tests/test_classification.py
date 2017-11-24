@@ -16,11 +16,17 @@ import glob
 import itertools
 import json
 import os
+import re
+import warnings
+
 from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
+
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.metrics import accuracy_score
 
 from skll.data import FeatureSet
 from skll.data.writers import NDJWriter
@@ -164,7 +170,7 @@ def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False
     train_fs, test_fs = make_sparse_data(
         use_feature_hashing=use_feature_hashing)
 
-    # train a logistic regression classifier on the training
+    # train the given classifier on the training
     # data and evalute on the testing data
     learner = Learner(learner_name)
     learner.train(train_fs, grid_search=False)
@@ -178,13 +184,40 @@ def test_sparse_predict():
                                               'RandomForestClassifier',
                                               'AdaBoostClassifier',
                                               'MultinomialNB',
-                                              'KNeighborsClassifier'],
+                                              'KNeighborsClassifier',
+                                              'RidgeClassifier',
+                                              'MLPClassifier'],
                                              [(0.45, 0.52), (0.52, 0.5),
                                               (0.48, 0.5), (0.49, 0.5),
-                                              (0.43, 0), (0.53, 0.57)]):
+                                              (0.43, 0), (0.53, 0.57),
+                                              (0.49, 0.49), (0.48, 0.5)]):
         yield check_sparse_predict, learner_name, expected_scores[0], False
         if learner_name != 'MultinomialNB':
             yield check_sparse_predict, learner_name, expected_scores[1], True
+
+
+def test_mlp_classification():
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_labels=3,
+                                                 num_features=5)
+
+    # train an MLPCLassifier on the training data and evalute on the
+    # testing data
+    learner = Learner('MLPClassifier')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=ConvergenceWarning)
+        learner.train(train_fs, grid_search=True)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated
+    accuracy = accuracy_score(predictions, test_fs.labels)
+    assert_almost_equal(accuracy, 0.825)
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
@@ -210,36 +243,36 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
     assert_almost_equal(test_score, expected_score)
 
 
-def test_dummy_classifier_predict():
-    # hard-code dataset
+def check_dummy_classifier_predict(model_args, train_labels, expected_output):
+
+    # create hard-coded featuresets based with known labels
     train_fs = FeatureSet('classification_train',
                           ['TrainExample{}'.format(i) for i in range(20)],
-                          labels=([0] * 14) + ([1] * 6),
+                          labels=train_labels,
                           features=[{"feature": i} for i in range(20)])
 
     test_fs = FeatureSet('classification_test',
                          ['TestExample{}'.format(i) for i in range(10)],
                          features=[{"feature": i} for i in range(20, 30)])
 
-    toy_data = (
-        [{"strategy": "stratified", "random_state": 12345},
-         np.array([1, 0, 0, 0, 0, 0, 1, 0, 1, 0])],
-        [{"strategy": "most_frequent"},
-         np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])],
-        [{"strategy": "constant", "constant": 1},
-         np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])]
-    )
-
-    # Ensure predictions are correct for all strategies.
-    correct = []
-    for model_args, expected_output in toy_data:
-        learner = Learner('DummyClassifier', model_kwargs=model_args)
-        learner.train(train_fs)
-        predictions = learner.predict(test_fs)
-        correct.append(np.array_equal(expected_output, predictions))
-    eq_(correct, [True, True, True])
+    # Ensure predictions are as expectedfor the given strategy
+    learner = Learner('DummyClassifier', model_kwargs=model_args)
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(np.array_equal(expected_output, predictions), True)
 
 
+def test_dummy_classifier_predict():
+
+    # create a known set of labels
+    train_labels = ([0] * 14) + ([1] * 6)
+    for (model_args, expected_output) in zip([{"strategy": "stratified"},
+                                              {"strategy": "most_frequent"},
+                                              {"strategy": "constant", "constant": 1}],
+                                             [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]),
+                                              np.zeros(10),
+                                              np.ones(10)*1]):
+        yield check_dummy_classifier_predict, model_args, train_labels, expected_output
 
 
 def test_sparse_predict_sampler():
@@ -305,6 +338,35 @@ def test_train_file_test_file():
                                        '_f1.results.json'))) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['score'], 0.9491525423728813)
+
+
+def test_train_file_test_file_ablation():
+    """
+    Test that specifying ablation with train and test file is ignored
+    """
+    # Create data files
+    make_single_file_featureset_data()
+
+    # Run experiment
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file"
+                                                            ".template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file'
+                                                            '.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.'
+                                                            'jsonlines'))
+    run_configuration(config_path, quiet=True, ablation=None)
+
+    # check that we see the message that ablation was ignored in the experiment log
+    # Check experiment log output
+    with open(join(_my_dir,
+                   'output',
+                   'train_test_single_file.log')) as f:
+        cv_file_pattern = re.compile('Not enough featuresets for ablation. Ignoring.')
+        matches = re.findall(cv_file_pattern, f.read())
+        eq_(len(matches), 1)
 
 
 @raises(ValueError)
@@ -373,11 +435,15 @@ def check_results_with_unseen_labels(res, n_labels, new_label_list):
      score,
      result_dict,
      model_params,
-     grid_score) = res
+     grid_score,
+     additional_scores) = res
 
     # check that the new label is included into the results
     for output in [confusion_matrix, result_dict]:
         eq_(len(output), n_labels)
+
+    # check that any additional metrics are zero
+    eq_(additional_scores, {})
 
     # check that all metrics for new label are 0
     for label in new_label_list:
@@ -437,7 +503,9 @@ def test_all_new_labels_in_test():
 
 
 # the function to create data with labels that look like floats
-def make_float_class_data():
+# that are either encoded as strings or not depending on the
+# keyword argument
+def make_float_class_data(labels_as_strings=False):
     """
     We want to create data that has labels that look like
     floats to make sure they are preserved correctly
@@ -445,6 +513,8 @@ def make_float_class_data():
 
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, 76)]
     y = [1.2] * 25 + [1.5] * 25 + [1.8] * 25
+    if labels_as_strings:
+        y = list(map(str, y))
     X = np.vstack([np.identity(25), np.identity(25), np.identity(25)])
     feature_names = ['f{}'.format(i) for i in range(1, 6)]
     features = []
@@ -454,13 +524,12 @@ def make_float_class_data():
     return FeatureSet('float-classes', ids, features=features, labels=y)
 
 
-def test_float_classes():
+def test_xval_float_classes_as_strings():
     """
-    Test classification with labels that look like floats
-    Make sure that they have been converted to strings as expected
+    Test that classification with float labels encoded as strings works
     """
 
-    float_class_fs = make_float_class_data()
+    float_class_fs = make_float_class_data(labels_as_strings=True)
     prediction_prefix = join(_my_dir, 'output', 'float_class')
     learner = Learner('LogisticRegression')
     learner.cross_validate(float_class_fs,
@@ -475,3 +544,19 @@ def test_float_classes():
             assert p in ['1.2', '1.5', '1.8']
 
 
+@raises(ValueError)
+def check_bad_xval_float_classes(do_stratified_xval):
+
+    float_class_fs = make_float_class_data()
+    prediction_prefix = join(_my_dir, 'output', 'float_class')
+    learner = Learner('LogisticRegression')
+    learner.cross_validate(float_class_fs,
+                           stratified=do_stratified_xval,
+                           grid_objective='accuracy',
+                           prediction_prefix=prediction_prefix)
+
+
+def test_bad_xval_float_classes():
+
+    yield check_bad_xval_float_classes, True
+    yield check_bad_xval_float_classes, False
