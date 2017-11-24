@@ -60,8 +60,6 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
     for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
         os.unlink(config_file)
-    for config_file in glob(join(config_dir, 'test_config_param_conflicts_*.cfg')):
-        os.unlink(config_file)
 
 
 def check_safe_float_conversion(converted_val, expected_val):
@@ -267,6 +265,41 @@ def test_config_parsing_bad_task():
                                              values_to_fill_dict,
                                              sub_prefix)
 
+        yield check_config_parsing_value_error, config_path
+
+
+def test_config_parsing_bad_learner():
+    # Test to ensure config file parsing raises an error with missing, bad and
+    # duplicate learners
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    for learners_list, sub_prefix in zip([None, '[]', 'LogisticRegression',
+                                          "['LogisticRegression', "
+                                          "'LogisticRegression']"],
+                                         ['no_learner', 'empty_learner',
+                                          'not_list_learner',
+                                          'duplicate_learner']):
+        if learners_list is not None:
+            values_to_fill_dict['learners'] = learners_list
+
+        config_template_path = join(_my_dir, 'configs',
+                                    'test_config_parsing.template.cfg')
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
         yield check_config_parsing_value_error, config_path
 
 
@@ -1464,261 +1497,6 @@ def test_setting_fixed_parameters():
     eq_(fixed_parameter_list[0]['C'][3], 10)
     eq_(fixed_parameter_list[0]['C'][4], 100)
     eq_(fixed_parameter_list[0]['C'][5], 1e5)
-
-
-def test_config_fixed_parameters_param_grids_conflict1():
-    """
-    Test the case where fixed parameters and parameter grids are both
-    specified for a particular learner (and "grid_search" is set to True)
-    and there is a conflict between one or more parameters. For example,
-    "alpha" is specified as having a fixed value of 0.01 and is also
-    specified in the parameter grid as a list of only one value that is
-    0.1. In this case, it is not clear what the intention is, so an
-    exception should be raised.
-    """
-
-    # Make a configuration file that has both a `fixed_parameters` list and a
-    # `param_grids` list specified, between which there are conflicting
-    # parameter values
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-    values_to_fill_dict = {'experiment_name':
-                               'config_fixed_parameters_param_grids_conflict1',
-                           'train_directory': train_dir,
-                           'log': output_dir,
-                           'results': output_dir,
-                           'learners': '[SGDRegressor]',
-                           'grid_search': 'true',
-                           'fixed_parameters': "[{'alpha': 0.01}]",
-                           'param_grids': "[[{'alpha': [0.1]}]]"}
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_param_conflicts.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'fixed_parameters_param_grids_conflict1')
-
-    yield check_config_parsing_value_error, config_path
-
-
-def test_config_fixed_parameters_param_grids_conflict2():
-    """
-    Test the case where fixed parameters and parameter grids are both
-    specified for a particular learner (and "grid_search" is set to True)
-    and there is a conflict between one or more parameters. For example,
-    "alpha" is specified as having a fixed value of 0.01 and is also
-    specified in the parameter grid as a range of values, such as [0.01,
-    0.1]. In this case, it is not clear what the intention is, so an
-    exception should be raised.
-    """
-
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-
-    # Make a configuration file that has both a `fixed_parameters` list and a
-    # `param_grids` list specified, between which there are conflicting
-    # parameter values
-    values_to_fill_dict = {'experiment_name':
-                               'config_fixed_parameters_param_grids_conflict2',
-                           'train_directory': train_dir,
-                           'log': output_dir,
-                           'results': output_dir,
-                           'learners': '[SGDRegressor]',
-                           'grid_search': 'true',
-                           'fixed_parameters': "[{'alpha': 0.01}]",
-                           'param_grids': "[[{'alpha': [0.01, 0.1]}]]"}
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_param_conflicts.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'fixed_parameters_param_grids_conflict2')
-
-    yield check_config_parsing_value_error, config_path
-
-
-def test_config_fixed_parameters_param_grids_conflict3():
-    """
-    Test the case where fixed parameters and parameter grids are both
-    specified for a particular learner (and "grid_search" is set to True)
-    and there is a conflict between one or more parameters. For example,
-    "alpha" is specified as having a fixed value of 0.01 and is also
-    specified in the parameter grid as a list containing only the value
-    0.1. In this case, since the values are the same, it does not matter
-    that the parameter is specified in both places and, therefore, the
-    configuration parsing can continue since no exception will be raised.
-    """
-
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-
-    # Make a configuration file that has both a `fixed_parameters` list and a
-    # `param_grids` list specified, between which there are conflicting
-    # parameter values but in which case the values turn out to be the same
-    # and, thus, do not result in an exception
-    values_to_fill_dict = {'experiment_name':
-                               'config_fixed_parameters_param_grids_conflict3',
-                           'train_directory': train_dir,
-                           'log': output_dir,
-                           'results': output_dir,
-                           'learners': '[SGDRegressor]',
-                           'grid_search': 'true',
-                           'fixed_parameters': "[{'alpha': 0.01}]",
-                           'param_grids': "[[{'alpha': [0.01]}]]"}
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_param_conflicts.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'fixed_parameters_param_grids_conflict3')
-
-    _parse_config_file(config_path)
-
-
-def test_config_fixed_parameters_default_param_grids_conflict1():
-    """
-    Test the case where fixed parameters and an empty parameter grid are
-    both specified (and "grid_search" is set to True) in such a way that
-    there is a conflict for a particular parameter. For example, "alpha"
-    is specified as having a fixed value of 0.01 and the default parameter
-    grid for the learner being used also specifies values for that
-    parameter. Since the user definitely intended to fix the value of that
-    parameter, it can be assumed that it takes precedence over any
-    conflicting value specified in the default parameter grid. A warning
-    should be logged, but the parsing of the configuration file should
-    continue on without error (after removing the conflicting parameter
-    from the parameter grid).
-    """
-
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-
-    values_to_fill_dict = \
-        {'experiment_name':
-             'config_fixed_parameters_default_param_grids_conflict1',
-         'train_directory': train_dir,
-         'log': output_dir,
-         'results': output_dir,
-         'learners': '[SGDRegressor]',
-         'grid_search': 'true',
-         'fixed_parameters': "[{'alpha': 0.01}]",
-         'param_grids': "[[]]"}
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_param_conflicts.template.cfg')
-    config_path = \
-        fill_in_config_options(config_template_path,
-                               values_to_fill_dict,
-                               'fixed_parameters_default_param_grids_conflict1')
-
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objective, probability, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes) = _parse_config_file(config_path)
-
-    # The fixed parameter value that was specified should remain as is
-    # while the conflicting default parameter value will be removed from
-    # the parameter grid
-    assert fixed_parameter_list[0]['alpha'] == 0.01
-    assert param_grid_list[0][0].get('alpha') is None
-
-
-def test_config_fixed_parameters_default_param_grids_conflict2():
-    """
-    Test the case where "grid_search" is set to True and fixed parameters
-    (but no parameter grids) are specified such that there is a conflict
-    for a particular parameter. For example, "alpha" is specified as having
-    a fixed value of 0.01 and the default parameter grid for the learner
-    being used also specifies values for that parameter. Since the user
-    definitely intended to fix the value of that parameter, it can be
-    assumed that it takes precedence over any conflicting value specified
-    in the default parameter grid. A warning should be logged, but the
-    parsing of the configuration file should continue on without error
-    (after removing the conflicting parameter from the parameter grid).
-    """
-
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-
-    values_to_fill_dict = \
-        {'experiment_name':
-             'config_fixed_parameters_default_param_grids_conflict2',
-         'train_directory': train_dir,
-         'log': output_dir,
-         'results': output_dir,
-         'learners': '[SGDRegressor]',
-         'grid_search': 'true',
-         'fixed_parameters': "[{'alpha': 0.01}]"}
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_param_conflicts.template.cfg')
-    config_path = \
-        fill_in_config_options(config_template_path,
-                               values_to_fill_dict,
-                               'fixed_parameters_default_param_grids_conflict2')
-
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objective, probability, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes) = _parse_config_file(config_path)
-
-    # The fixed parameter value that was specified should remain as is
-    # while the conflicting default parameter value will be removed from
-    # the parameter grid
-    assert fixed_parameter_list[0]['alpha'] == 0.01
-    assert param_grid_list[0][0].get('alpha') is None
-
-
-def test_config_fixed_parameters_default_param_grids_conflict3():
-    """
-    Test the case where fixed parameters and parameter grids are both
-    specified (or defaults are used due to specifying an emtpy list) for
-    multiple learners (and "grid_search" is set to True)
-    and there is a conflict between one or more fixed and default
-    parameters. For example, "alpha" is specified as having a fixed value
-    of 0.01 and is also specified in the default parameter grid. Since the
-    user definitely intended to fix the value of that parameter, it can be
-    assumed that it takes precedence over any conflicting value specified
-    in the default parameter grid. A warning should be logged, but the
-    parsing of the configuration file should continue on without error
-    (after removing the conflicting parameter from the parameter grid).
-    """
-
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-
-    # Make a configuration file that has both a `fixed_parameters` list and a
-    # `param_grids` list specified, between which there are conflicting
-    # parameter values but in which case the values turn out to be the same
-    # and, thus, do not result in an exception
-    values_to_fill_dict = {'experiment_name':
-                               'fixed_parameters_default_param_grids_conflict3',
-                           'train_directory': train_dir,
-                           'log': output_dir,
-                           'results': output_dir,
-                           'learners': '[SGDRegressor, Ridge]',
-                           'grid_search': 'true',
-                           'fixed_parameters':
-                               "[{'alpha': 0.01}, {'alpha': 0.01}]",
-                           'param_grids':
-                               "[[{'max_iter': [500, 1000, 2000]}], []]"}
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_param_conflicts.template.cfg')
-    config_path = \
-        fill_in_config_options(config_template_path,
-                               values_to_fill_dict,
-                               'fixed_parameters_default_param_grids_conflict3')
-
-    _parse_config_file(config_path)
 
 
 def test_default_learning_curve_options():
