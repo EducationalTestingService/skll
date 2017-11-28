@@ -620,7 +620,7 @@ def rescaled(cls):
             Defaults to True.
         rescale : bool
             Whether to rescale prediction values using z-scores.
-            Defaults to True.    
+            Defaults to True.
         """
         # pylint: disable=W0201
         self.constrain = constrain
