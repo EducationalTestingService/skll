@@ -210,6 +210,13 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
     """
     Version of LeaveOneGroupOut cross-validation iterator that only outputs
     indices of instances with IDs in a prespecified set.
+
+    Parameters
+    ----------
+    keep : set
+        A set of IDs to keep.
+    example_ids : list, of length n_samples
+        A list of example IDs.
     """
 
     def __init__(self, keep, example_ids):
@@ -219,6 +226,27 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         self._warned = False
 
     def split(self, X, y, groups):
+        """
+        Generate indices to split data into training and test set.
+
+        Parameters
+        ----------
+        X : array-like, with shape (n_samples, n_features)
+            Training data, where n_samples is the number of samples
+            and n_features is the number of features.
+        y : array-like, of length n_samples
+            The target variable for supervised learning problems.
+        groups : array-like, with shape (n_samples,)
+            Group labels for the samples used while splitting the dataset into
+            train/test set.
+
+        Yields
+        -------
+        train_index : ndarray
+            The training set indices for that split.
+        test_index : ndarray
+            The testing set indices for that split.
+        """
         for train_index, test_index in super(FilteredLeaveOneGroupOut,
                                              self).split(X, y, groups):
             train_len = len(train_index)
@@ -239,6 +267,16 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 def _find_default_param_grid(cls):
     """
     Finds the default parameter grid for the specified classifier.
+
+    Parameters
+    ----------
+    cls
+        A parent class to check.
+
+    Returns
+    -------
+    grid : list of dicts
+        The parameters grid for a given classifier.
     """
     for key_cls, grid in _DEFAULT_PARAM_GRIDS.items():
         if issubclass(cls, key_cls):
@@ -249,6 +287,20 @@ def _find_default_param_grid(cls):
 def _import_custom_learner(custom_learner_path, custom_learner_name):
     """
     Does the gruntwork of adding the custom model's module to globals.
+
+    Parameters
+    ----------
+    custom_learner_path : str
+        The path to a custom learner.
+    custom_learner_name : str
+        The name of a custom learner.
+
+    Raises
+    ------
+    ValueError
+        If the custom learner path is None.
+    ValueError
+        If the custom learner path does not end in '.py'.
     """
     if not custom_learner_path:
         raise ValueError('custom_learner_path was not set and learner {} '
@@ -279,6 +331,25 @@ def _train_and_score(learner,
     called from within joblib.Parallel() and, therefore, needs to be
     picklable which it would not be as an instancemethod of the Learner
     class.
+
+    Parameters
+    ----------
+    learner : skll.Learner
+        The SKLL Learner object
+    train_examples : array-like, with shape (n_samples, n_features)
+        The training examples.
+    test_examples : array-like, of length n_samples
+        The test examples.
+    objective : str, optional
+        The objective function passed to `use_score_func()`.
+        Defaults to 'f1_score_micro'.
+
+    Returns
+    -------
+    train_score : float
+        Score function applied to prediction of estimator on train.
+    test_score : float
+        Score function applied to prediction of estimator on test.
     """
 
     _ = learner.train(train_examples, grid_search=False, shuffle=False)
@@ -317,9 +388,15 @@ def _predict_binary(self, X):
     function for `self` as `predict_normal`. It's kind of a hack, but it saves
     us from having to override GridSearchCV to change one little line.
 
-    :param self: A scikit-learn classifier instance
-    :param X: A set of examples to predict values for.
-    :type X: array
+    Parameters
+    ----------
+    X : array-like
+        A set of examples to predict values for.
+
+    Returns
+    -------
+    res : array-like
+        The prediction results.
     """
 
     if self.coef_.shape[0] == 1:
@@ -332,8 +409,14 @@ def _predict_binary(self, X):
 class SelectByMinCount(SelectKBest):
 
     """
-    Select features ocurring in more (and/or fewer than) than a specified
+    Select features occurring in more (and/or fewer than) than a specified
     number of examples in the training data (or a CV training fold).
+
+    Parameters
+    ----------
+    min_count : int
+        The minimum count to select.
+        Defaults to 1.
     """
 
     def __init__(self, min_count=1):
@@ -341,6 +424,20 @@ class SelectByMinCount(SelectKBest):
         self.scores_ = None
 
     def fit(self, X, y=None):
+        """
+        Fit the data.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            The training data to fit.
+        y : Ignored
+
+        Returns
+        -------
+        self
+        """
+
         # initialize a list of counts of times each feature appears
         col_counts = [0 for _ in range(X.shape[1])]
 
@@ -361,6 +458,11 @@ class SelectByMinCount(SelectKBest):
         """
         Returns an indication of which features to keep.
         Adapted from SelectKBest.
+
+        Returns
+        -------
+        mask : np.array
+            The mask with features to keep set to True.
         """
         mask = np.zeros(self.scores_.shape, dtype=bool)
         mask[self.scores_ >= self.min_count] = True
@@ -374,10 +476,15 @@ def rescaled(cls):
     the means and SDs of the gold standard and the predictions on the training
     set to rescale the predictions (e.g., as in e-rater).
 
-    :param cls: A regressor to add rescaling to.
-    :type cls: BaseEstimator
+    Parameters
+    ----------
+    cls : BaseEstimator
+        A regressor to add rescaling to.
 
-    :returns: Modified version of class with rescaled functions added.
+    Returns
+    -------
+    cls : BaseEstimator
+        Modified version of class with rescaled functions added.
     """
     # If this class has already been run through the decorator, return it
     if hasattr(cls, 'rescale'):
@@ -398,6 +505,16 @@ def rescaled(cls):
         """
         Fit a model, then store the mean, SD, max and min of the training set
         and the mean and SD of the predictions on the training set.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            The data to fit.
+        y : Ignored
+
+        Returns
+        -------
+        self
         """
 
         # fit a regular regression model
@@ -423,6 +540,16 @@ def rescaled(cls):
         """
         Make predictions with the super class, and then adjust them using the
         stored min, max, means, and standard deviations.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples,)
+            The data to predict.
+
+        Returns
+        -------
+        res : array-like
+            The prediction results.
         """
         # get the unconstrained predictions
         res = orig_predict(self, X)
@@ -447,6 +574,16 @@ def rescaled(cls):
         This is adapted from scikit-learns's BaseEstimator class.
         It gets the kwargs for the superclass's init method and adds the
         kwargs for newly added __init__ method.
+
+        Parameters
+        ----------
+        class_x : Class
+            The data to predict.
+
+        Returns
+        -------
+        args : list
+            A list of parameter names for the class's init method.
         """
         try:
             init = getattr(orig_init, 'deprecated_original', orig_init)
@@ -475,6 +612,15 @@ def rescaled(cls):
         """
         This special init function is used by the decorator to make sure
         that things get initialized in the right order.
+
+        Parameters
+        ----------
+        constrain : bool
+            Whether to constrain predictions within min and max values.
+            Defaults to True.
+        rescale : bool
+            Whether to rescale prediction values using z-scores.
+            Defaults to True.    
         """
         # pylint: disable=W0201
         self.constrain = constrain
@@ -595,39 +741,53 @@ class Learner(object):
     A simpler learner interface around many scikit-learn classification
     and regression functions.
 
-    :param model_type: Type of estimator to create (e.g., LogisticRegression).
-                       See the skll package documentation for valid options.
-    :type model_type: str
-    :param probability: Should learner return probabilities of all
-                        labels (instead of just label with highest
-                        probability)?
-    :type probability: bool
-    :param feature_scaling: how to scale the features, if at all. Options are:
-                    'with_std': scale features using the standard deviation,
-                    'with_mean': center features using the mean,
-                    'both': do both scaling as well as centering,
-                    'none': do neither scaling nor centering
-    :type feature_scaling: str
-    :param model_kwargs: A dictionary of keyword arguments to pass to the
-                         initializer for the specified model.
-    :type model_kwargs: dict
-    :param pos_label_str: The string for the positive label in the binary
-                          classification setting.  Otherwise, an arbitrary
-                          label is picked.
-    :type pos_label_str: str
-    :param min_feature_count: The minimum number of examples a feature
-                              must have a nonzero value in to be included.
-    :type min_feature_count: int
-    :param sampler: The sampler to use for kernel approximation, if desired.
-                    Valid values are: ``'AdditiveChi2Sampler'``, ``'Nystroem'``,
-                    ``'RBFSampler'``, and ``'SkewedChi2Sampler'``.
-    :type sampler: str
-    :param sampler_kwargs: A dictionary of keyword arguments to pass to the
-                          initializer for the specified sampler.
-    :type sampler_kwargs: dict
-    :param custom_learner_path: Path to module where a custom classifier is
-                                defined.
-    :type custom_learner_path: str
+    Parameters
+    ----------
+    model_type : str
+        Type of estimator to create (e.g., LogisticRegression).
+        See the skll package documentation for valid options.
+    probability : bool
+        Should learner return probabilities of all
+        labels (instead of just label with highest probability)?
+        Defaults to False.
+    feature_scaling : str
+        How to scale the features, if at all. Options are:
+            'with_std': scale features using the standard deviation,
+            'with_mean': center features using the mean,
+            'both': do both scaling as well as centering,
+            'none': do neither scaling nor centering
+        Defaults to 'none'.
+    model_kwargs : dict
+        A dictionary of keyword arguments to pass to the
+        initializer for the specified model.
+        Defaults to None.
+    pos_label_str : str
+        The string for the positive label in the binary
+        classification setting.  Otherwise, an arbitrary
+        label is picked.
+        Defaults to None.
+    min_feature_count : int
+        The minimum number of examples a feature
+        must have a nonzero value in to be included.
+        Defaults to 1.
+    sampler : str
+        The sampler to use for kernel approximation, if desired.
+        Valid values are:
+            'AdditiveChi2Sampler',
+            'Nystroem',
+            'RBFSampler',
+            'SkewedChi2Sampler'
+        Defaults to None.
+    sampler_kwargs : dict
+        A dictionary of keyword arguments to pass to the
+        initializer for the specified sampler.
+        Defaults to None.
+    custom_learner_path : str
+        Path to module where a custom classifier is defined.
+        Defaults to None.
+    logger : logging object
+        A logging object. If None is passed, get logger from __name__.
+        Defaults to None.
     """
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
@@ -790,7 +950,9 @@ class Learner(object):
 
     @property
     def model_type(self):
-        """ The model type (i.e., the class) """
+        """
+        The model type (i.e., the class)
+        """
         return self._model_type
 
     @property
@@ -802,15 +964,19 @@ class Learner(object):
 
     @property
     def model(self):
-        """ The underlying scikit-learn model """
+        """
+        The underlying scikit-learn model
+        """
         return self._model
 
     def load(self, learner_path):
         """
         Replace the current learner instance with a saved learner.
 
-        :param learner_path: The path to the file to load.
-        :type learner_path: str
+        Parameters
+        ----------
+        learner_path : str
+            The path to a saved learner object file to load.
         """
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
@@ -821,10 +987,12 @@ class Learner(object):
         Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
         regression and liblinear models.
 
-        :returns: Labeled weights and (labeled if more than one) intercept
-                  value(s)
-        :rtype: tuple of (``weights``, ``intercepts``), where ``weights`` is a
-                dict and ``intercepts`` is a dictionary
+        Returns
+        -------
+        res : dict
+            A dictionary of labeled weights.
+        intercept : dict
+            A dictionary of intercept(s).
         """
         res = {}
         intercept = None
@@ -888,6 +1056,15 @@ class Learner(object):
 
     @probability.setter
     def probability(self, value):
+        """
+        Set the probabilities flag (i.e. whether learner
+        should return probabilities of all labels).
+
+        Parameters
+        ----------
+        value : bool
+            Whether learner should return probabilities of all labels.
+        """
         # LinearSVC doesn't support predict_proba
         self._probability = value
         if not hasattr(self.model_type, "predict_proba") and value:
@@ -908,8 +1085,10 @@ class Learner(object):
         """
         Save the learner to a file.
 
-        :param learner_path: The path to where you want to save the learner.
-        :type learner_path: str
+        Parameters
+        ----------
+        learner_path : str
+            The path to save the learner object to a file.
         """
         # create the directory if it doesn't exist
         learner_dir = os.path.dirname(learner_path)
@@ -920,8 +1099,19 @@ class Learner(object):
 
     def _create_estimator(self):
         """
-        :returns: A tuple containing an instantiation of the requested
-                  estimator, and a parameter grid to search.
+        Create an estimator.
+
+        Returns
+        -------
+        estimator
+            The estimator that was created.
+        default_param_grid : list of dicts
+            The parameter grid for the estimator.
+
+        Raises
+        ------
+        ValueError
+            If there is no default parameter grid for estimator.
         """
         estimator = None
         default_param_grid = _find_default_param_grid(self._model_type)
@@ -936,6 +1126,18 @@ class Learner(object):
     def _check_input_formatting(self, examples):
         """
         check that the examples are properly formatted.
+
+        Parameters
+        ----------
+        examples : FeatureSet
+            The examples to use for training.
+
+        Raises
+        ------
+        TypeError
+            If labels are strings.
+        TypeError
+            If any features are strings.
         """
         # Make sure the labels for a regression task are not strings.
         if self.model_type._estimator_type == 'regressor':
@@ -966,8 +1168,10 @@ class Learner(object):
         """
         Creates a dictionary of labels for classification problems.
 
-        :param examples: The examples to use for training.
-        :type examples: FeatureSet
+        Parameters
+        ----------
+        examples : FeatureSet
+            The examples to use for training.
         """
         # We don't need to do this for regression models, so return.
         if self.model_type._estimator_type == 'regressor':
@@ -992,8 +1196,10 @@ class Learner(object):
         """
         Set up the feature vectorizer and the scaler.
 
-        :param examples: The examples to use for training.
-        :type examples: FeatureSet
+        Parameters
+        ----------
+        examples : FeatureSet
+            The examples to use for training.
         """
         # Check feature values and labels
         self._check_input_formatting(examples)
@@ -1028,40 +1234,59 @@ class Learner(object):
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
 
-        :param examples: The examples to train the model on.
-        :type examples: FeatureSet
-        :param param_grid: The parameter grid to search through for grid
-                           search. If unspecified, a default parameter grid
-                           will be used.
-        :type param_grid: list of dicts mapping from strs to
-                          lists of parameter values
-        :param grid_search_folds: The number of folds to use when doing the
-                                  grid search, or a mapping from
-                                  example IDs to folds.
-        :type grid_search_folds: int or dict
-        :param grid_search: Should we do grid search?
-        :type grid_search: bool
-        :param grid_objective: The name of the objective function to use when
-                               doing the grid search.
-        :type grid_objective: str
-        :param grid_jobs: The number of jobs to run in parallel when doing the
-                          grid search. If unspecified or 0, the number of
-                          grid search folds will be used.
-        :type grid_jobs: int
-        :param shuffle: Shuffle examples (e.g., for grid search CV.)
-        :type shuffle: bool
-        :param create_label_dict: Should we create the label dictionary?  This
-                                  dictionary is used to map between string
-                                  labels and their corresponding numerical
-                                  values.  This should only be done once per
-                                  experiment, so when ``cross_validate`` calls
-                                  ``train``, ``create_label_dict`` gets set to
-                                  ``False``.
-        :type create_label_dict: bool
+        Parameters
+        ----------
+        examples : FeatureSet
+            The examples to use for training.
+        param_grid : list of dicts
+            The parameter grid to search through for grid
+            search. If unspecified, a default parameter grid
+            will be used.
+            Defaults to None.
+        grid_search_folds : int or dict
+            The number of folds to use when doing the
+            grid search, or a mapping from
+            example IDs to folds.
+            Defaults to 3.
+        grid_search : bool
+            Should we do grid search?
+            Defaults to True.
+        grid_objective : str
+            The name of the objective function to use when
+            doing the grid search.
+            Defaults to 'f1_score_micro'.
+        grid_jobs : int
+            The number of jobs to run in parallel when doing the
+            grid search. If unspecified or 0, the number of
+            grid search folds will be used.
+            Defaults to None.
+        shuffle : bool
+            Shuffle examples (e.g., for grid search CV.)
+            Defaults to False.
+        create_label_dict : bool
+            Should we create the label dictionary?  This
+            dictionary is used to map between string
+            labels and their corresponding numerical
+            values.  This should only be done once per
+            experiment, so when ``cross_validate`` calls
+            ``train``, ``create_label_dict`` gets set to
+            ``False``.
+            Defaults to True.
 
-        :return: The best grid search objective function score, or 0 if we're
-                 not doing grid search.
-        :rtype: float
+        Returns
+        -------
+        grid_score : float
+            The best grid search objective function score, or 0 if we're
+            not doing grid search.
+
+        Raises
+        ------
+        ValueError
+            If grid_objective is not a valid grid objective.
+        MemoryError
+            If process runs out of memory converting training data to dense.
+        ValueError
+            If FeatureHasher is used with MultinomialNB.
         """
 
         # if we are asked to do grid search, check that the grid objective
@@ -1256,27 +1481,34 @@ class Learner(object):
         """
         Evaluates a given model on a given dev or test example set
 
-        :param examples: The examples to evaluate the performance of the model
-                         on.
-        :type examples: FeatureSet
-        :param prediction_prefix: If saving the predictions, this is the
-                                  prefix that will be used for the filename.
-                                  It will be followed by "_predictions.tsv"
-        :type prediction_prefix: str
-        :param append: Should we append the current predictions to the file if
-                       it exists?
-        :type append: bool
-        :param grid_objective: The objective function that was used when doing
-                               the grid search.
-        :type grid_objective: function
-        :param output_metrics: List of additional metric names to compute in
-                                   addition to grid objective. Empty by default.
-        :type output_metrics: list of str
+        Parameters
+        ----------
+        examples : FeatureSet
+            The examples to evaluate the performance of the model on.
+        prediction_prefix : str
+            If saving the predictions, this is the
+            prefix that will be used for the filename.
+            It will be followed by "_predictions.tsv"
+            Defaults to None.
+        append : bool
+            Should we append the current predictions to the file if
+            it exists?
+            Defaults to False.
+        grid_objective : function
+            The objective function that was used when doing
+            the grid search.
+            Defaults to None.
+        output_metrics : list of str
+            List of additional metric names to compute in
+            addition to grid objective. Empty by default.
+            Defaults to empty list.
 
-        :return: The confusion matrix, the overall accuracy, the per-label
-                 PRFs, the model parameters, and the grid search objective
-                 function score.
-        :rtype: 5-tuple
+        Returns
+        -------
+        res : 5-tuple
+            The confusion matrix, the overall accuracy, the per-label
+            PRFs, the model parameters, and the grid search objective
+            function score.
         """
         # initialize a dictionary that will hold all of the metric scores
         metric_scores = {metric: None for metric in output_metrics}
@@ -1379,24 +1611,30 @@ class Learner(object):
     def predict(self, examples, prediction_prefix=None, append=False,
                 class_labels=False):
         """
-        Uses a given model to generate predictions on a given data set
+        Uses a given model to generate predictions on a given data set.
 
-        :param examples: The examples to predict the labels for.
-        :type examples: FeatureSet
-        :param prediction_prefix: If saving the predictions, this is the
-                                  prefix that will be used for the
-                                  filename. It will be followed by
-                                  "_predictions.tsv"
-        :type prediction_prefix: str
-        :param append: Should we append the current predictions to the file if
-                       it exists?
-        :type append: bool
-        :param class_labels: For classifier, should we convert class
-                             indices to their (str) labels?
-        :type class_labels: bool
+        Parameters
+        ----------
+        examples : FeatureSet
+            The examples to predict labels for.
+        prediction_prefix : str
+            If saving the predictions, this is the
+            prefix that will be used for the filename.
+            It will be followed by "_predictions.tsv"
+            Defaults to None.
+        append : bool
+            Should we append the current predictions to the file if
+            it exists?
+            Defaults to False.
+        class_labels : bool
+            For classifier, should we convert class
+            indices to their (str) labels?
+            Defaults to False.
 
-        :return: The predictions returned by the learner.
-        :rtype: array
+        Returns
+        -------
+        yhat : array-like
+            The predictions returned by the learner.
         """
         example_ids = examples.ids
 
@@ -1523,6 +1761,24 @@ class Learner(object):
         """
         Calculate the number of folds we should use for cross validation, based
         on the number of examples we have for each label.
+
+        Parameters
+        ----------
+        cv_folds : int
+            The number of cross-validation folds.
+        labels : list
+            The example labels.
+
+        Returns
+        -------
+        cv_folds : int
+            The number of folds to use, based on the number of examples
+            for each label.
+
+        Raises
+        ------
+        ValueError
+            If the training set has less than or equal to one label(s).
         """
         assert isinstance(cv_folds, int)
 
@@ -1558,58 +1814,78 @@ class Learner(object):
         """
         Cross-validates a given model on the training examples.
 
-        :param examples: The data to cross-validate learner performance on.
-        :type examples: FeatureSet
-        :param stratified: Should we stratify the folds to ensure an even
-                           distribution of labels for each fold?
-        :type stratified: bool
-        :param cv_folds: The number of folds to use for cross-validation, or
-                         a mapping from example IDs to folds.
-        :type cv_folds: int or dict
-        :param grid_search: Should we do grid search when training each fold?
-                            Note: This will make this take *much* longer.
-        :type grid_search: bool
-        :param grid_search_folds: The number of folds to use when doing the
-                                  grid search, or a mapping from
-                                  example IDs to folds.
-        :type grid_search_folds: int or dict
-        :param grid_jobs: The number of jobs to run in parallel when doing the
-                          grid search. If unspecified or 0, the number of
-                          grid search folds will be used.
-        :type grid_jobs: int
-        :param grid_objective: The name of the objective function to use when
-                               doing the grid search.
-        :type grid_objective: str
-        :param output_metrics: List of additional metric names to compute in
-                                   addition to the metric used for grid search. Empty
-                                   by default.
-        :type output_metrics: list of str
-        :param param_grid: The parameter grid to search through for grid
-                           search. If unspecified, a default parameter
-                           grid will be used.
-        :type param_grid: list of dicts mapping from strs to
-                          lists of parameter values
-        :param prediction_prefix: If saving the predictions, this is the
-                                  prefix that will be used for the filename.
-                                  It will be followed by "_predictions.tsv"
-        :type prediction_prefix: str
-        :param shuffle: Shuffle examples before splitting into folds for CV.
-        :type shuffle: bool
-        :param save_cv_folds: Whether to save the cv fold ids or not?
-        :type save_cv_folds: bool
-        :param use_custom_folds_for_grid_search: If ``cv_folds`` is a custom dictionary, but
-                                                 ``grid_search_folds`` is not, perhaps due to user
-                                                 oversight, should the same custom dictionary
-                                                 automatically be used for the inner grid-search
-                                                 cross-validation?
-        :type use_custom_folds_for_grid_search: bool
+        Parameters
+        ----------
+        examples : FeatureSet
+            The data to cross-validate learner performance on.
+        stratified : bool
+            Should we stratify the folds to ensure an even
+            distribution of labels for each fold?
+            Defaults to True.
+        cv_folds : int
+            The number of folds to use for cross-validation, or
+            a mapping from example IDs to folds.
+            Defaults to 10.
+        grid_search : bool
+            Should we do grid search when training each fold?
+            Note: This will make this take *much* longer.
+            Defaults to False.
+        grid_search_folds : int or dict
+            The number of folds to use when doing the
+            grid search, or a mapping from
+            example IDs to folds.
+            Defaults to 3.
+        grid_jobs : int
+            The number of jobs to run in parallel when doing the
+            grid search. If unspecified or 0, the number of
+            grid search folds will be used.
+            Defaults to None.
+        grid_objective : str
+            The name of the objective function to use when
+            doing the grid search.
+            Defaults to 'f1_score_micro'.
+        output_metrics : list of str
+            List of additional metric names to compute in
+            addition to the metric used for grid search. Empty
+            by default.
+            Defaults to empty list.
+        prediction_prefix : str
+            If saving the predictions, this is the
+            prefix that will be used for the filename.
+            It will be followed by "_predictions.tsv"
+            Defaults to None.
+        param_grid : list of dicts
+            The parameter grid to traverse.
+            Defaults to None.
+        shuffle : bool
+            Shuffle examples before splitting into folds for CV.
+            Defaults to False.
+        save_cv_folds : bool
+             Whether to save the cv fold ids or not?
+             Defaults to False.
+        use_custom_folds_for_grid_search : bool
+            If ``cv_folds`` is a custom dictionary, but
+            ``grid_search_folds`` is not, perhaps due to user
+            oversight, should the same custom dictionary
+            automatically be used for the inner grid-search
+            cross-validation?
+            Defaults to True.
 
-        :return: The confusion matrix, overall accuracy, per-label PRFs, and
-                 model parameters for each fold in one list, and another list
-                 with the grid search scores for each fold. Also return a
-                 dictionary containing the test-fold number for each id
-                 if ``save_cv_folds`` is ``True``, otherwise ``None``.
-        :rtype: (list of 4-tuples, list of float, dict)
+        Returns
+        -------
+        results : list of 4-tuples
+            The confusion matrix, overall accuracy, per-label PRFs, and
+            model parameters for each fold.
+        grid_search_scores : list of floats
+            The grid search scores for each fold.
+        skll_fold_ids : dict
+            A dictionary containing the test-fold number for each id
+            if ``save_cv_folds`` is ``True``, otherwise ``None``.
+
+        Raises
+        ------
+        ValueError
+            If labels are not encoded as strings.
         """
 
         # Seed the random number generator so that randomized algorithms are
@@ -1748,31 +2024,42 @@ class Learner(object):
         via cross-validation. Adapted from the scikit-learn code for learning
         curve generation (cf. ```sklearn.model_selection.learning_curve```).
 
-        :param examples: The data to generate the learning curve on.
-        :type examples: skll.data.FeatureSet
-        :param cv_folds: The number of folds to use for cross-validation with each training size
-        :type cv_folds: int
-        :param train_sizes: Relative or absolute numbers of training examples
-                             that will be used to generate the learning curve.
-                             If the type is float, it is regarded as a fraction
-                             of the maximum size of the training set (that is
-                             determined by the selected validation method),
-                             i.e. it has to be within (0, 1]. Otherwise it
-                             is interpreted as absolute sizes of the training
-                             sets. Note that for classification the number of
-                             samples usually have to be big enough to contain
-                             at least one sample from each class.
-                             (default: `np.linspace(0.1, 1.0, 5)`)
-        :type train_sizes: list of float or int
-        :param metric: The name of the metric function to use
-                           when computing the train and test scores
-                           for the learning curve. (default: 'f1_score_micro')
-        :type metric: string
 
-        :return: The scores on the training sets, the scores on the test set,
-                 and the numbers of training examples used to generate
-                 the curve.
-        :rtype: (list of float, list of float, list of int)
+        Parameters
+        ----------
+        examples : FeatureSet
+            The data to generate the learning curve on.
+        cv_folds : int
+            The number of folds to use for cross-validation, or
+            a mapping from example IDs to folds.
+            Defaults to 10.
+        train_sizes : list of float or int
+            Relative or absolute numbers of training examples
+            that will be used to generate the learning curve.
+            If the type is float, it is regarded as a fraction
+            of the maximum size of the training set (that is
+            determined by the selected validation method),
+            i.e. it has to be within (0, 1]. Otherwise it
+            is interpreted as absolute sizes of the training
+            sets. Note that for classification the number of
+            samples usually have to be big enough to contain
+            at least one sample from each class.
+             Defaults to  `np.linspace(0.1, 1.0, 5)`.
+        metric : str
+            The name of the metric function to use
+            when computing the train and test scores
+            for the learning curve. (default: 'f1_score_micro')
+            Defaults to 'f1_score_micro'.
+
+        Returns
+        -------
+        train_scores : list of float
+            The scores for the training set.
+        test_scores : list of float
+            The scores on the test set.
+        num_examples : list of int
+            The numbers of training examples used to generate
+            the curve
         """
 
         # Seed the random number generator so that randomized algorithms are
