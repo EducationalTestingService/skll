@@ -38,28 +38,45 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     This function contains a combination of code from yorchopolis's kappa-stats
     and Ben Hamner's Metrics projects on Github.
 
-    :param y_true: The true/actual/gold labels for the data.
-    :type y_true: array-like of float
-    :param y_pred: The predicted/observed labels for the data.
-    :type y_pred: array-like of float
-    :param weights: Specifies the weight matrix for the calculation.
-                    Options are:
+    Parameters
+    ----------
+    y_true : array-like of float
+        The true/actual/gold labels for the data.
+    y_pred : array-like of float
+        The predicted/observed labels for the data.
+    
+    weights : str or np.array
+        Specifies the weight matrix for the calculation.
+        Options are:
+            -  None = unweighted-kappa
+            -  'quadratic' = quadratic-weighted kappa
+            -  'linear' = linear-weighted kappa
+            -  two-dimensional numpy array = a custom matrix of
+               weights. Each weight corresponds to the
+               :math:`w_{ij}` values in the wikipedia description
+               of how to calculate weighted Cohen's kappa.
+        Defaults to None.
+    allow_off_by_one : bool
+        If true, ratings that are off by one are counted as
+        equal, and all other differences are reduced by
+        one. For example, 1 and 2 will be considered to be
+        equal, whereas 1 and 3 will have a difference of 1
+        for when building the weights matrix.
+        Defaults to False.
 
-                        -  None = unweighted-kappa
-                        -  'quadratic' = quadratic-weighted kappa
-                        -  'linear' = linear-weighted kappa
-                        -  two-dimensional numpy array = a custom matrix of
-                           weights. Each weight corresponds to the
-                           :math:`w_{ij}` values in the wikipedia description
-                           of how to calculate weighted Cohen's kappa.
+    Returns
+    -------
+    k : float
+        The kappa score, or weighted kappa score.
 
-    :type weights: str or numpy array
-    :param allow_off_by_one: If true, ratings that are off by one are counted as
-                             equal, and all other differences are reduced by
-                             one. For example, 1 and 2 will be considered to be
-                             equal, whereas 1 and 3 will have a difference of 1
-                             for when building the weights matrix.
-    :type allow_off_by_one: bool
+    Raises
+    ------
+    AssertionError
+        If `y_true` != `y_pred`.
+    ValueError
+        If labels cannot be converted to int.
+    ValueError
+        If invalid weight scheme.
     """
 
     # Ensure that the lists are both the same length
@@ -138,13 +155,18 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 def kendall_tau(y_true, y_pred):
     """
     Calculate Kendall's tau between ``y_true`` and ``y_pred``.
+    
+    Parameters
+    ----------
+    y_true : array-like of float
+        The true/actual/gold labels for the data.
+    y_pred : array-like of float
+        The predicted/observed labels for the data.
 
-    :param y_true: The true/actual/gold labels for the data.
-    :type y_true: array-like of float
-    :param y_pred: The predicted/observed labels for the data.
-    :type y_pred: array-like of float
-
-    :returns: Kendall's tau if well-defined, else 0
+    Returns
+    -------
+    ret_score : float
+        Kendall's tau if well-defined, else 0.0
     """
     ret_score = kendalltau(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -155,12 +177,17 @@ def spearman(y_true, y_pred):
     Calculate Spearman's rank correlation coefficient between ``y_true`` and
     ``y_pred``.
 
-    :param y_true: The true/actual/gold labels for the data.
-    :type y_true: array-like of float
-    :param y_pred: The predicted/observed labels for the data.
-    :type y_pred: array-like of float
+    Parameters
+    ----------
+    y_true : array-like of float
+        The true/actual/gold labels for the data.
+    y_pred : array-like of float
+        The predicted/observed labels for the data.
 
-    :returns: Spearman's rank correlation coefficient if well-defined, else 0
+    Returns
+    -------
+    ret_score : float
+        Spearman's rank correlation coefficient if well-defined, else 0.0
     """
     ret_score = spearmanr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -171,13 +198,17 @@ def pearson(y_true, y_pred):
     Calculate Pearson product-moment correlation coefficient between ``y_true``
     and ``y_pred``.
 
-    :param y_true: The true/actual/gold labels for the data.
-    :type y_true: array-like of float
-    :param y_pred: The predicted/observed labels for the data.
-    :type y_pred: array-like of float
+    Parameters
+    ----------
+    y_true : array-like of float
+        The true/actual/gold labels for the data.
+    y_pred : array-like of float
+        The predicted/observed labels for the data.
 
-    :returns: Pearson product-moment correlation coefficient if well-defined,
-              else 0
+    Returns
+    -------
+    ret_score : float
+        Pearson product-moment correlation coefficient if well-defined, else 0.0
     """
     ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -188,12 +219,17 @@ def f1_score_least_frequent(y_true, y_pred):
     Calculate the F1 score of the least frequent label/class in ``y_true`` for
     ``y_pred``.
 
-    :param y_true: The true/actual/gold labels for the data.
-    :type y_true: array-like of float
-    :param y_pred: The predicted/observed labels for the data.
-    :type y_pred: array-like of float
+    Parameters
+    ----------
+    y_true : array-like of float
+        The true/actual/gold labels for the data.
+    y_pred : array-like of float
+        The predicted/observed labels for the data.
 
-    :returns: F1 score of the least frequent label
+    Returns
+    -------
+    ret_score : float
+        F1 score of the least frequent label.
     """
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
@@ -205,6 +241,20 @@ def use_score_func(func_name, y_true, y_pred):
     This takes care of handling keyword arguments that were pre-specified when
     creating the scorer. This applies any sign-flipping that was specified by
     `make_scorer` when the scorer was created.
+
+    Parameters
+    ----------
+    func_name : str
+        The name of the objective function to use from SCORERS.
+    y_true : array-like of float
+        The true/actual/gold labels for the data.
+    y_pred : array-like of float
+        The predicted/observed labels for the data.
+
+    Returns
+    -------
+    ret_score : float
+        The scored result from the given scorer.
     """
     scorer = SCORERS[func_name]
     return scorer._sign * scorer._score_func(y_true, y_pred, **scorer._kwargs)
