@@ -358,7 +358,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         When generating result summary files, this name helps prevent
         overwriting previous summaries.
     task : str
-        The types of experiment we’re trying to run (e.g. 'cross_validate').
+        The types of experiment we're trying to run (e.g. 'cross_validate').
     sampler : str
         The name of a sampler to perform non-linear transformations of the input.
     fixed_sampler_parameters : dict
