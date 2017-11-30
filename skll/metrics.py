@@ -44,7 +44,6 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
         The true/actual/gold labels for the data.
     y_pred : array-like of float
         The predicted/observed labels for the data.
-    
     weights : str or np.array
         Specifies the weight matrix for the calculation.
         Options are:
@@ -155,7 +154,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 def kendall_tau(y_true, y_pred):
     """
     Calculate Kendall's tau between ``y_true`` and ``y_pred``.
-    
+
     Parameters
     ----------
     y_true : array-like of float
