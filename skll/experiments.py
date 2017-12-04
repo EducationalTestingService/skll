@@ -146,8 +146,9 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
         A list of paths to the individual result JSON files.
     output_file : str
         The path to the output file (TSV format).
-    ablation : int
+    ablation : int, optional
         The number of features to remove when doing ablation experiment.
+        Defaults to 0.
     """
     learner_result_dicts = []
     # Map from feature set names to all features in them
@@ -282,7 +283,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     ----------
     learner_result_dicts : list of str
         A list of paths to the individual result JSON files.
-    output_file : file buffer
+    output_file : file buffer, optional
         The file buffer to print to.
         Defaults to sys.stdout.
     """
@@ -384,37 +385,37 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
         A list of feature file prefixes.
     suffix : str
         The suffix to add to feature file prefixes to get the full filenames.
-    id_col : str
+    id_col : str, optional
         Name of the column which contains the instance IDs.
         If no column with that name exists, or `None` is
         specified, example IDs will be automatically generated.
         Defaults to 'id'.
-    label_col : str
+    label_col : str, optional
         Name of the column which contains the class labels.
         If no column with that name exists, or `None` is
         specified, the data is considered to be unlabelled.
         Defaults to 'y'.
-    ids_to_floats : bool
+    ids_to_floats : bool, optional
         Whether to convert the IDs to floats to save memory. Will raise error
         if we encounter non-numeric IDs.
         Defaults to False.
-    quiet : bool
+    quiet : bool, optional
         Do not print "Loading..." status message to stderr.
         Defaults to False.
-    class_map : dict
+    class_map : dict, optional
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
         Defaults to None.
-    feature_hasher : bool
+    feature_hasher : bool, optional
         Should we use a FeatureHasher when vectorizing
         features?
-    num_features : int
+    num_features : int, optional
         The number of features to use with the FeatureHasher.
         This should always be set to the power of 2 greater
         than the actual number of features you're using.
         Defaults to None.
-    logger : logging.Logger
+    logger : logging.Logger, optional
         A logger instance to use to log messages instead of creating
         a new one by default.
         Defaults to None.
@@ -971,26 +972,26 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     ----------
     config_file : 
         Path to the configuration file we would like to use.
-    local : bool
+    local : bool, optional
         Should this be run locally instead of on the cluster?
         Defaults to False.
-    overwrite : bool
+    overwrite : bool, optional
         If the model files already exist, should we overwrite
         them instead of re-using them?
         Defaults to True.
-    queue : str
+    queue : str, optional
         The DRMAA queue to use if we're running on the cluster.
         Defaults to 'all.q'
-    hosts : list of str
+    hosts : list of str, optional
         If running on the cluster, these are the machines we should use.
         Defaults to None.
-    write_summary : bool
+    write_summary : bool, optional
         Write a TSV file with a summary of the results.
         Defaults to True.
-    quite : bool
+    quite : bool, optional
         Suppress printing of "Loading..." messages.
         Defaults to False.
-    ablation : int
+    ablation : int, optional
         Number of features to remove when doing an ablation
         experiment. If positive, we will perform repeated ablation
         runs for all combinations of features removing the
@@ -999,12 +1000,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         ablation is performed. If negative, a ``ValueError`` is
         raised.
         Defaults to 0.
-    resume : bool
+    resume : bool, optional
         If result files already exist for an experiment, do not
         overwrite them. This is very useful when doing a large
         ablation experiment and part of it crashes.
         Defaults to False.
-    log_level : str
+    log_level : str, optional
         The level for logging messages
         Defaults to logging.INFO
 

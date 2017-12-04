@@ -242,9 +242,9 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
         Yields
         -------
-        train_index : ndarray
+        train_index : np.array
             The training set indices for that split.
-        test_index : ndarray
+        test_index : np.array
             The testing set indices for that split.
         """
         for train_index, test_index in super(FilteredLeaveOneGroupOut,
@@ -414,8 +414,8 @@ class SelectByMinCount(SelectKBest):
 
     Parameters
     ----------
-    min_count : int
-        The minimum count to select.
+    min_count : int, optional
+        The minimum feature count to select.
         Defaults to 1.
     """
 
@@ -429,7 +429,7 @@ class SelectByMinCount(SelectKBest):
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
+        X : array-like, with shape (n_samples, n_features)
             The training data to fit.
         y : Ignored
 
@@ -508,7 +508,7 @@ def rescaled(cls):
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
+        X : array-like, with shape (n_samples, n_features)
             The data to fit.
         y : Ignored
 
@@ -543,7 +543,7 @@ def rescaled(cls):
 
         Parameters
         ----------
-        X : array-like, shape (n_samples,)
+        X : array-like, with shape (n_samples,)
             The data to predict.
 
         Returns
@@ -577,7 +577,7 @@ def rescaled(cls):
 
         Parameters
         ----------
-        class_x : Class
+        class_x
             The data to predict.
 
         Returns
@@ -615,12 +615,14 @@ def rescaled(cls):
 
         Parameters
         ----------
-        constrain : bool
+        constrain : bool, optional
             Whether to constrain predictions within min and max values.
             Defaults to True.
-        rescale : bool
+        rescale : bool, optional
             Whether to rescale prediction values using z-scores.
             Defaults to True.
+        kwargs : dict, optional
+            Arguments for base class.
         """
         # pylint: disable=W0201
         self.constrain = constrain
@@ -746,31 +748,31 @@ class Learner(object):
     model_type : str
         Type of estimator to create (e.g., LogisticRegression).
         See the skll package documentation for valid options.
-    probability : bool
+    probability : bool, optional
         Should learner return probabilities of all
         labels (instead of just label with highest probability)?
         Defaults to False.
-    feature_scaling : str
+    feature_scaling : str, optional
         How to scale the features, if at all. Options are:
             'with_std': scale features using the standard deviation,
             'with_mean': center features using the mean,
             'both': do both scaling as well as centering,
             'none': do neither scaling nor centering
         Defaults to 'none'.
-    model_kwargs : dict
+    model_kwargs : dict, optional
         A dictionary of keyword arguments to pass to the
         initializer for the specified model.
         Defaults to None.
-    pos_label_str : str
+    pos_label_str : str, optional
         The string for the positive label in the binary
         classification setting.  Otherwise, an arbitrary
         label is picked.
         Defaults to None.
-    min_feature_count : int
+    min_feature_count : int, optional
         The minimum number of examples a feature
         must have a nonzero value in to be included.
         Defaults to 1.
-    sampler : str
+    sampler : str, optional
         The sampler to use for kernel approximation, if desired.
         Valid values are:
             'AdditiveChi2Sampler',
@@ -778,14 +780,14 @@ class Learner(object):
             'RBFSampler',
             'SkewedChi2Sampler'
         Defaults to None.
-    sampler_kwargs : dict
+    sampler_kwargs : dict, optional
         A dictionary of keyword arguments to pass to the
         initializer for the specified sampler.
         Defaults to None.
-    custom_learner_path : str
+    custom_learner_path : str, optional
         Path to module where a custom classifier is defined.
         Defaults to None.
-    logger : logging object
+    logger : logging object, optional
         A logging object. If None is passed, get logger from __name__.
         Defaults to None.
     """
@@ -909,8 +911,24 @@ class Learner(object):
     @classmethod
     def from_file(cls, learner_path):
         """
-        :returns: New instance of Learner from the pickle at the specified
-                  path.
+        Load a saved learner object from a file path.
+
+        Parameters
+        ----------
+        learner_path : str
+            The path to a saved learner object file to load.
+
+        Returns
+        -------
+        learner : skll.Learner
+            The learner object loaded from the file.
+
+        Raises
+        ------
+        ValueError
+            If the pickled object is not a Learner
+        ValueError
+            If the pickled version of the Learner is out of date.
         """
         skll_version, learner = joblib.load(learner_path)
 
@@ -993,6 +1011,11 @@ class Learner(object):
             A dictionary of labeled weights.
         intercept : dict
             A dictionary of intercept(s).
+
+        Raises
+        ------
+        ValueError
+            If the instance does not support model parameters.
         """
         res = {}
         intercept = None
@@ -1156,6 +1179,11 @@ class Learner(object):
     def _check_max_feature_value(self, feat_array):
         """
         Check if the the maximum absolute value of any feature is too large
+
+        Parameters
+        ----------
+        feat_array : np.array
+            A numpy array with features.
         """
         max_feat_abs = np.max(np.abs(feat_array.data))
         if max_feat_abs > 1000.0:
@@ -1238,32 +1266,32 @@ class Learner(object):
         ----------
         examples : FeatureSet
             The examples to use for training.
-        param_grid : list of dicts
+        param_grid : list of dicts, optional
             The parameter grid to search through for grid
             search. If unspecified, a default parameter grid
             will be used.
             Defaults to None.
-        grid_search_folds : int or dict
+        grid_search_folds : int or dict, optional
             The number of folds to use when doing the
             grid search, or a mapping from
             example IDs to folds.
             Defaults to 3.
-        grid_search : bool
+        grid_search : bool, optional
             Should we do grid search?
             Defaults to True.
-        grid_objective : str
+        grid_objective : str, optional
             The name of the objective function to use when
             doing the grid search.
             Defaults to 'f1_score_micro'.
-        grid_jobs : int
+        grid_jobs : int, optional
             The number of jobs to run in parallel when doing the
             grid search. If unspecified or 0, the number of
             grid search folds will be used.
             Defaults to None.
-        shuffle : bool
+        shuffle : bool, optional
             Shuffle examples (e.g., for grid search CV.)
             Defaults to False.
-        create_label_dict : bool
+        create_label_dict : bool, optional
             Should we create the label dictionary?  This
             dictionary is used to map between string
             labels and their corresponding numerical
@@ -1485,20 +1513,20 @@ class Learner(object):
         ----------
         examples : FeatureSet
             The examples to evaluate the performance of the model on.
-        prediction_prefix : str
+        prediction_prefix : str, optional
             If saving the predictions, this is the
             prefix that will be used for the filename.
             It will be followed by "_predictions.tsv"
             Defaults to None.
-        append : bool
+        append : bool, optional
             Should we append the current predictions to the file if
             it exists?
             Defaults to False.
-        grid_objective : function
+        grid_objective : function, optional
             The objective function that was used when doing
             the grid search.
             Defaults to None.
-        output_metrics : list of str
+        output_metrics : list of str, optional
             List of additional metric names to compute in
             addition to grid objective. Empty by default.
             Defaults to empty list.
@@ -1617,16 +1645,16 @@ class Learner(object):
         ----------
         examples : FeatureSet
             The examples to predict labels for.
-        prediction_prefix : str
+        prediction_prefix : str, optional
             If saving the predictions, this is the
             prefix that will be used for the filename.
             It will be followed by "_predictions.tsv"
             Defaults to None.
-        append : bool
+        append : bool, optional
             Should we append the current predictions to the file if
             it exists?
             Defaults to False.
-        class_labels : bool
+        class_labels : bool, optional
             For classifier, should we convert class
             indices to their (str) labels?
             Defaults to False.
@@ -1635,6 +1663,11 @@ class Learner(object):
         -------
         yhat : array-like
             The predictions returned by the learner.
+
+        Raises
+        ------
+        MemoryError
+            If process runs out of memory when converting to dense.
         """
         example_ids = examples.ids
 
@@ -1777,6 +1810,8 @@ class Learner(object):
 
         Raises
         ------
+        AssertionError
+            If `cv_folds` is not an integer.
         ValueError
             If the training set has less than or equal to one label(s).
         """
@@ -1818,52 +1853,52 @@ class Learner(object):
         ----------
         examples : FeatureSet
             The data to cross-validate learner performance on.
-        stratified : bool
+        stratified : bool, optional
             Should we stratify the folds to ensure an even
             distribution of labels for each fold?
             Defaults to True.
-        cv_folds : int
+        cv_folds : int, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
-        grid_search : bool
+        grid_search : bool, optional
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
             Defaults to False.
-        grid_search_folds : int or dict
+        grid_search_folds : int or dict, optional
             The number of folds to use when doing the
             grid search, or a mapping from
             example IDs to folds.
             Defaults to 3.
-        grid_jobs : int
+        grid_jobs : int, optional
             The number of jobs to run in parallel when doing the
             grid search. If unspecified or 0, the number of
             grid search folds will be used.
             Defaults to None.
-        grid_objective : str
+        grid_objective : str, optional
             The name of the objective function to use when
             doing the grid search.
             Defaults to 'f1_score_micro'.
-        output_metrics : list of str
+        output_metrics : list of str, optional
             List of additional metric names to compute in
             addition to the metric used for grid search. Empty
             by default.
             Defaults to empty list.
-        prediction_prefix : str
+        prediction_prefix : str, optional
             If saving the predictions, this is the
             prefix that will be used for the filename.
             It will be followed by "_predictions.tsv"
             Defaults to None.
-        param_grid : list of dicts
+        param_grid : list of dicts, optional
             The parameter grid to traverse.
             Defaults to None.
-        shuffle : bool
+        shuffle : bool, optional
             Shuffle examples before splitting into folds for CV.
             Defaults to False.
-        save_cv_folds : bool
+        save_cv_folds : bool, optional
              Whether to save the cv fold ids or not?
              Defaults to False.
-        use_custom_folds_for_grid_search : bool
+        use_custom_folds_for_grid_search : bool, optional
             If ``cv_folds`` is a custom dictionary, but
             ``grid_search_folds`` is not, perhaps due to user
             oversight, should the same custom dictionary
@@ -2029,11 +2064,11 @@ class Learner(object):
         ----------
         examples : FeatureSet
             The data to generate the learning curve on.
-        cv_folds : int
+        cv_folds : int, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
-        train_sizes : list of float or int
+        train_sizes : list of float or int, optional
             Relative or absolute numbers of training examples
             that will be used to generate the learning curve.
             If the type is float, it is regarded as a fraction
@@ -2044,8 +2079,8 @@ class Learner(object):
             sets. Note that for classification the number of
             samples usually have to be big enough to contain
             at least one sample from each class.
-             Defaults to  `np.linspace(0.1, 1.0, 5)`.
-        metric : str
+            Defaults to  `np.linspace(0.1, 1.0, 5)`.
+        metric : str, optional
             The name of the metric function to use
             when computing the train and test scores
             for the learning curve. (default: 'f1_score_micro')
@@ -2113,4 +2148,3 @@ class Learner(object):
         out = np.asarray(out).transpose((2, 1, 0))
 
         return list(out[0]), list(out[1]), list(train_sizes_abs)
-

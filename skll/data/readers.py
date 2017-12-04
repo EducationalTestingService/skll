@@ -36,42 +36,52 @@ class Reader(object):
     A little helper class to make picklable iterators out of example
     dictionary generators
 
-    :param path_or_list: Path or a list of example dictionaries.
-    :type path_or_list: str or list of dict
-    :param quiet: Do not print "Loading..." status message to stderr.
-    :type quiet: bool
-    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
-                          if we encounter an a non-numeric ID.
-    :type ids_to_floats: bool
-    :param id_col: Name of the column which contains the instance IDs for
-                   ARFF/CSV/TSV files. If no column with that name exists, or
-                   `None` is specified, the IDs will be generated
-                   automatically.
-    :type id_col: str
-    :param label_col: Name of the column which contains the class labels
-                      for ARFF/CSV/TSV files. If no column with that name
-                      exists, or `None` is specified, the data is
-                      considered to be unlabelled.
-    :type label_col: str
-    :param class_map: Mapping from original class labels to new ones. This is
-                      mainly used for collapsing multiple labels into a single
-                      class. Anything not in the mapping will be kept the same.
-    :type class_map: dict from str to str
-    :param sparse: Whether or not to store the features in a numpy CSR
-                   matrix when using a DictVectorizer to vectorize the
-                   features.
-    :type sparse: bool
-    :param feature_hasher: Whether or not a FeatureHasher should be used to
-                           vectorize the features.
-    :type feature_hasher: bool
-    :param num_features: If using a FeatureHasher, how many features should the
-                         resulting matrix have?  You should set this to a power
-                         of 2 greater than the actual number of features to
-                         avoid collisions.
-    :type num_features: int
-    :param logger: A logger instance to use to log messages instead of creating
-                   a new one by default.
-    :type logger: logging.Logger
+    Parameters
+    ----------
+    path_or_list : str or list of dict
+        Path or a list of example dictionaries.
+    quiet : bool, optional
+        Do not print "Loading..." status message to stderr.
+        Defaults to True.
+    ids_to_floats : bool, optional
+        Convert IDs to float to save memory. Will raise error
+        if we encounter an a non-numeric ID.
+        Defaults to False.
+    label_col : str, optional
+        Name of the column which contains the class labels
+        for ARFF/CSV/TSV files. If no column with that name
+        exists, or `None` is specified, the data is
+        considered to be unlabelled.
+        Defaults to 'y'.
+    id_col : str, optional
+        Name of the column which contains the instance IDs.
+        If no column with that name exists, or `None` is
+        specified, example IDs will be automatically generated.
+        Defaults to 'id'.
+    class_map : dict, optional
+        Mapping from original class labels to new ones. This is
+        mainly used for collapsing multiple labels into a single
+        class. Anything not in the mapping will be kept the same.
+        Defaults to None.
+    sparse : bool, optional
+        Whether or not to store the features in a numpy CSR
+        matrix when using a DictVectorizer to vectorize the
+        features.
+        Defaults to True.
+    feature_hasher : bool, optional
+        Whether or not a FeatureHasher should be used to
+        vectorize the features.
+        Defaults to False
+    num_features : int, optional
+        If using a FeatureHasher, how many features should the
+        resulting matrix have?  You should set this to a power
+        of 2 greater than the actual number of features to
+        avoid collisions.
+        Defaults to None.
+    logger : logging.Logger, optional
+        A logger instance to use to log messages instead of creating
+        a new one by default.
+        Defaults to None.
     """
 
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
@@ -94,36 +104,26 @@ class Reader(object):
     @classmethod
     def for_path(cls, path_or_list, **kwargs):
         """
-        :param path: The path to the file to load the examples from, or a list
-                     of example dictionaries.
-        :type path: str or dict
-        :param quiet: Do not print "Loading..." status message to stderr.
-        :type quiet: bool
-        :param sparse: Whether or not to store the features in a numpy CSR
-                       matrix.
-        :type sparse: bool
-        :param id_col: Name of the column which contains the instance IDs for
-                       ARFF/CSV/TSV files. If no column with that name exists,
-                       or `None` is specified, the IDs will be generated
-                       automatically.
-        :type id_col: str
-        :param label_col: Name of the column which contains the class labels
-                          for ARFF/CSV/TSV files. If no column with that name
-                          exists, or `None` is specified, the data is
-                          considered to be unlabelled.
-        :type label_col: str
-        :param ids_to_floats: Convert IDs to float to save memory. Will raise
-                              error if we encounter an a non-numeric ID.
-        :type ids_to_floats: bool
-        :param class_map: Mapping from original class labels to new ones. This
-                          is mainly used for collapsing multiple classes into a
-                          single class. Anything not in the mapping will be
-                          kept the same.
-        :type class_map: dict from str to str
+        Instantiate the appropriate Reader sub-class, given a path
+        with an appropriate extension.
 
-        :returns: New instance of the :class:`Reader` sub-class that is
-                  appropriate for the given path, or :class:`DictListReader` if
-                  given a list of dictionaries.
+        Parameters
+        ----------
+        path_or_list : str or list or dicts
+            A path or list of example dictionaries.
+        kwargs : dict, optional
+            The arguments to the Reader object being instantiated.
+
+        Returns
+        -------
+        reader : Reader object
+            A new instance of the Reader sub-class that is
+            appropriate for the given path.
+
+        Raises
+        ------
+        ValueError
+            If file does not have appropriate extension.
         """
         if not isinstance(path_or_list, string_types):
             return DictListReader(path_or_list)
@@ -141,23 +141,32 @@ class Reader(object):
         """
         Does the actual reading of the given file or list.
 
-        :param f: An open file to iterate through
-        :type f: file
+        Parameters
+        ----------
+        f : file buffer
+            An open file to iterate through.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError
 
     def _print_progress(self, progress_num, end="\r"):
         """
         Little helper to print out progress numbers in proper format.
-
         Nothing gets printed if ``self.quiet`` is ``True``.
 
-        :param progress_num: Progress indicator value.  Usually either a line
-                             number or a percentage.
-        :type progress_num: anything that can be converted to str
-        :param end: The string to put at the end of the line.  "\\r" should be
-                    used for every update except for the final one.
-        :type end: str
+        Parameters
+        ----------
+        progress_num
+            Progress indicator value. Usually either a line
+            number or a percentage. Must be able to convert to string.
+=
+        end : str, optional
+            The string to put at the end of the line.  "\\r" should be
+            used for every update except for the final one.
+            Defaults to '\r'.
         """
         # Print out status
         if not self.quiet:
@@ -170,8 +179,19 @@ class Reader(object):
         Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
         ``.megam``, ``.ndj``, or ``.tsv`` formats.
 
-        :returns: :class:`~skll.data.featureset.FeatureSet` representing the
-                  file we read in.
+        Returns
+        -------
+        feature_set : FeatureSet
+            FeatureSet representing the file we read in.
+
+        Raises
+        ------
+        ValueError
+            If `ids_to_floats` is True, but IDs cannot be converted.
+        ValueError
+            If no features are found.
+        ValueError
+            If IDs are not unique.
         """
         self.logger.debug('Path: %s', self.path_or_list)
 
@@ -218,7 +238,7 @@ class Reader(object):
                     yield feat_dict
                     if ex_num % 100 == 0:
                         self._print_progress('{:.8}%'.format(100 * ((ex_num /
-                                                                    total))))
+                                                                     total))))
                 self._print_progress("100%")
 
         # Convert everything to numpy arrays
@@ -246,17 +266,17 @@ class DictListReader(Reader):
     :class:`~skll.data.featureset.FeatureSet` objects as input. It iterates
     over examples in the same way as other :class:`Reader` clases, but uses a
     list of example dictionaries instead of a path to a file.
-
-    :param path_or_list: List of example dictionaries.
-    :type path_or_list: Iterable of dict
-    :param quiet: Do not print "Loading..." status message to stderr.
-    :type quiet: bool
-    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
-                          if we encounter an a non-numeric ID.
-    :type ids_to_floats: bool
     """
 
     def read(self):
+        """
+        Read examples from list of dictionaries.
+
+        Returns
+        -------
+        feature_set : FeatureSet
+            FeatureSet representing the list of dictionaries we read in.
+        """
         ids = []
         labels = []
         feat_dicts = []
@@ -310,6 +330,31 @@ class NDJReader(Reader):
     """
 
     def _sub_read(self, f):
+        """
+        The function called on the file buffer in the `read()` method
+        to iterate through rows.
+
+        Parameters
+        ----------
+        f : file buffer
+            A file buffer for an NDJ file.
+
+        Yields
+        ------
+        curr_id : str
+            The current ID for the example.
+        class_name : float or str
+            The name of the class label for the example.
+        example : dict
+            The example valued in dictionary format, with 'x'
+            as list of features.
+
+        Raises
+        ------
+        ValueError
+            If IDs cannot be converted to floats, and `ids_to_floats`
+            is True
+        """
         for example_num, line in enumerate(f):
             # Remove extraneous whitespace
             line = line.strip()
@@ -352,6 +397,27 @@ class MegaMReader(Reader):
     """
 
     def _sub_read(self, f):
+        """
+        Parameters
+        ----------
+        f : file buffer
+            A file buffer for an MegaM file.
+
+        Yields
+        ------
+        curr_id : str
+            The current ID for the example.
+        class_name : float or str
+            The name of the class label for the example.
+        example : dict
+            The example valued in dictionary format, with 'x'
+            as list of features.
+
+        Raises
+        ------
+        ValueError
+            If there are duplicate feature names.
+        """
         example_num = 0
         curr_id = 'EXAMPLE_0'
         for line in f:
@@ -438,6 +504,18 @@ class LibSVMReader(Reader):
         """
         Split a feature-value pair separated by a colon into a tuple.  Also
         do safe_float conversion on the value.
+
+        Parameters
+        ----------
+        feat_map : str
+            A feature-value pair to split.
+
+        Returns
+        -------
+        name : str
+            The name of the feature.
+        value
+            The value of the example.
         """
         name, value = pair.split(':')
         if feat_map is not None:
@@ -446,6 +524,27 @@ class LibSVMReader(Reader):
         return (name, value)
 
     def _sub_read(self, f):
+        """
+        Parameters
+        ----------
+        f : file buffer
+            A file buffer for an LibSVM file.
+
+        Yields
+        ------
+        curr_id : str
+            The current ID for the example.
+        class_name : float or str
+            The name of the class label for the example.
+        example : dict
+            The example valued in dictionary format, with 'x'
+            as list of features.
+
+        Raises
+        ------
+        ValueError
+            If line does not look like valid libsvm format.
+        """
         for example_num, line in enumerate(f):
             curr_id = ''
             # Decode line if it's not already str
@@ -508,9 +607,15 @@ class DelimitedReader(Reader):
     name specified by `label_col` if the data is labelled. For ARFF files,
     this column must also be the final one (as it is in Weka).
 
-    :param dialect: The dialect of to pass on to the underlying CSV reader.
-                    Default: ``excel-tab``
-    :type dialect: str
+    Parameters
+    ----------
+    path_or_list : str
+        The path to a delimited file.
+    dialect : str
+        The dialect of to pass on to the underlying CSV reader.
+        Defaults to 'excel-tab'
+    kwargs : dict, optional
+        Other arguments to the Reader object.
     """
 
     def __init__(self, path_or_list, **kwargs):
@@ -518,6 +623,22 @@ class DelimitedReader(Reader):
         super(DelimitedReader, self).__init__(path_or_list, **kwargs)
 
     def _sub_read(self, f):
+        """
+        Parameters
+        ----------
+        f : file buffer
+            A file buffer for an delimited file.
+
+        Yields
+        ------
+        curr_id : str
+            The current ID for the example.
+        class_name : float or str
+            The name of the class label for the example.
+        example : dict
+            The example valued in dictionary format, with 'x'
+            as list of features.
+        """
         reader = DictReader(f, dialect=self.dialect)
         for example_num, row in enumerate(reader):
             if self.label_col is not None and self.label_col in row:
@@ -578,6 +699,13 @@ class CSVReader(DelimitedReader):
 
     Also, there must be a column with the name specified by `label_col` if the
     data is labelled.
+
+    Parameters
+    ----------
+    path_or_list : str
+        The path to a comma-delimited file.
+    kwargs : dict, optional
+        Other arguments to the Reader object.
     """
 
     def __init__(self, path_or_list, **kwargs):
@@ -595,7 +723,14 @@ class ARFFReader(DelimitedReader):
     must be specified as an "id" column.
 
     Also, there must be a column with the name specified by `label_col` if the
-    data is labelled, and this column must be the final one (as it is in Weka).
+    data is labeled, and this column must be the final one (as it is in Weka).
+
+    Parameters
+    ----------
+    path_or_list : str
+        The path to the ARFF file.
+    kwargs : dict, optional
+        Other arguments to the Reader object.
     """
 
     def __init__(self, path_or_list, **kwargs):
@@ -609,6 +744,20 @@ class ARFFReader(DelimitedReader):
         """
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
+
+        Parameters
+        ----------
+        s : str
+            The string with quotes to split
+        delimiter : str, optional
+            The delimiter to split on.
+            Defaults to ' '.
+        quote_char : str, optional
+            The quote character to ignore.
+            Defaults to "'".
+        escape_char : str, optional
+            The escape character.
+            Defaults to '\\'
         """
         if PY2:
             delimiter = delimiter.encode()
@@ -618,6 +767,22 @@ class ARFFReader(DelimitedReader):
                                escapechar=escape_char))
 
     def _sub_read(self, f):
+        """
+        Parameters
+        ----------
+        f : file buffer
+            A file buffer for the ARFF file.
+
+        Yields
+        ------
+        curr_id : str
+            The current ID for the example.
+        class_name : float or str
+            The name of the class label for the example.
+        example : dict
+            The example valued in dictionary format, with 'x'
+            as list of features.
+        """
         field_names = []
         # Process ARFF header
         for line in f:
@@ -679,7 +844,14 @@ class TSVReader(DelimitedReader):
     must be specified as an "id" column.
 
     Also there must be a column with the name specified by `label_col` if the
-    data is labelled.
+    data is labeled.
+
+    Parameters
+    ----------
+    path_or_list : str
+        The path to the TSV file.
+    kwargs : dict, optional
+        Other arguments to the Reader object.
     """
 
     def __init__(self, path_or_list, **kwargs):
@@ -692,17 +864,26 @@ def safe_float(text, replace_dict=None, logger=None):
     Attempts to convert a string to an int, and then a float, but if neither is
     possible, just returns the original string value.
 
-    :param text: The text to convert.
-    :type text: str
-    :param replace_dict: Mapping from text to replacement text values. This is
-                         mainly used for collapsing multiple labels into a
-                         single class. Replacing happens before conversion to
-                         floats. Anything not in the mapping will be kept the
-                         same.
-    :type replace_dict: dict from str to str
-    :param logger: The Logger instance to use to log messages. Used instead of
-                 creating a new Logger instance by default.
-    :type logger: logging.Logger
+    Parameters
+    ----------
+    text : str
+        The text to convert.
+    replace_dict : dict, optional
+        Mapping from text to replacement text values. This is
+        mainly used for collapsing multiple labels into a
+        single class. Replacing happens before conversion to
+        floats. Anything not in the mapping will be kept the
+        same.
+        Defaults to None.
+    logger : logging.Logger
+        The Logger instance to use to log messages. Used instead of
+        creating a new Logger instance by default.
+        Defaults to None.
+
+    Returns
+    -------
+    text : int or float or str
+        The text value converted to int or float, if possible
     """
 
     # convert to text to be "Safe"!
