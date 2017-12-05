@@ -22,10 +22,24 @@ def get_prediction_from_probabilities(classes, probs, prediction_method):
     Convert a list of class-probabilities into a class prediction. This function assumes
     that, if the prediction method is 'expected_value', the class labels are integers.
 
-    :param classes: list of classes (str, but can be convertable to int).
-    :param probs: list of floats.
-    :param prediction_method: str
-    :return: name of predicted class as str.
+    Parameters
+    ----------
+    classes: list
+        List of str or int class names.
+
+    probs: list of float
+        Probabilities for respective classes.
+
+    prediction_method: str
+        Indicates how to get a single class prediction from the probabilities. Currently
+        supported options are  "highest", which selects the class with the highest
+        probability, and "expected_value", which calculates an expected value over
+        integer classes and rounds to the nearest int.
+
+    Returns
+    -------
+    str or int
+        Predicted class.
 
     """
     if prediction_method == 'highest':
@@ -45,17 +59,36 @@ def compute_eval_from_predictions(examples_file, predictions_file,
     Compute evaluation metrics from prediction files after you have run an
     experiment.
 
-    :param examples_file: a SKLL examples file (in .jsonlines or other format)
-    :param predictions_file: a SKLL predictions output TSV file with id
-                             and prediction column names
-    :param metric_names: a list of SKLL metric names
-                         (e.g., [pearson, unweighted_kappa])
-    :param probabilities: boolean value indicating whether or not the predictions file
-                          contains probabilities.
-    :param prediction_method: str indicating which method is to be used for converting
-                              class probabilities into a predictions. If `probabilities`
-                              is False, this will be ignored.
-    :returns: a dictionary from metrics names to values
+    Parameters
+    ----------
+    examples_file: str
+        Path to a SKLL examples file (in .jsonlines or other format).
+
+    predictions_file: str
+        Path to a SKLL predictions output TSV file with id and prediction column names.
+
+    metric_names: list of str
+        A list of SKLL metric names (e.g., [pearson, unweighted_kappa]).
+
+    probabilities: boolean
+        Indicates whether the predictions file contains probabilities instead of predictions.
+
+    prediction_method: str
+        Indicates how to get a single class prediction from the probabilities. Currently
+        supported options are  "highest", which selects the class with the highest
+        probability, and "expected_value", which calculates an expected value over
+        integer classes and rounds to the nearest int.
+
+    Returns
+    -------
+    dict
+        Maps metrics names to corresponding values.
+
+    Raises
+    ------
+    ValueError
+        If the requested prediction method is 'expected_value' but the class names can't
+        be converted to ints.
     """
 
     # read gold standard labels
@@ -66,9 +99,13 @@ def compute_eval_from_predictions(examples_file, predictions_file,
     pred = {}
     with open(predictions_file) as pred_file:
         reader = csv.reader(pred_file, dialect=csv.excel_tab)
-        header = next(reader)  # skip header
-        if probabilities:  # prediction file contains probabilities, not predictions.
-            classes = header[1:]
+        header = next(reader)
+
+        # If prediction file contains probabilities instead of predictions, convert
+        # class probabilities to a class prediction using the specified
+        # `prediction_mathod`.
+        if probabilities:
+            classes = [c for c in header[1:] if c]
             if prediction_method == 'expected_value':
                 if any(not c.isdigit() for c in classes):
                     raise ValueError("Cannot calculate expected value with non-integer "
@@ -90,7 +127,6 @@ def compute_eval_from_predictions(examples_file, predictions_file,
     if set(gold.keys()) != set(pred.keys()):
         raise ValueError('The example and prediction IDs do not match.')
     example_ids = sorted(gold.keys())
-    #import pdb;pdb.set_trace()
 
     res = {}
     for metric_name in metric_names:
