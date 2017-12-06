@@ -10,14 +10,22 @@ from __future__ import print_function, unicode_literals
 import argparse
 import csv
 import logging
-import random
-
+from numpy.random import RandomState
 from skll.data import Reader, safe_float
 from skll.metrics import use_score_func
 from skll.version import __version__
 
+# Make warnings from built-in warnings module get formatted more nicely
+logging.captureWarnings(True)
+logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+                            '%(message)s'))
+logger = logging.getLogger(__name__)
 
-def get_prediction_from_probabilities(classes, probs, prediction_method):
+
+def get_prediction_from_probabilities(classes,
+                                      probabilities,
+                                      prediction_method,
+                                      random_state=1234567890):
     """
     Convert a list of class-probabilities into a class prediction. This function assumes
     that, if the prediction method is 'expected_value', the class labels are integers.
@@ -27,14 +35,19 @@ def get_prediction_from_probabilities(classes, probs, prediction_method):
     classes: list
         List of str or int class names.
 
-    probs: list of float
+    probabilities: list of float
         Probabilities for respective classes.
 
     prediction_method: str
         Indicates how to get a single class prediction from the probabilities. Currently
-        supported options are  "highest", which selects the class with the highest
-        probability, and "expected_value", which calculates an expected value over
-        integer classes and rounds to the nearest int.
+        supported options are
+            1. "highest": Selects the class with the highest probability. If
+               multiple classes have the same probability, a class is selected randomly.
+            2. "expected_value": Calculates an expected value over integer classes and
+               rounds to the nearest int.
+
+    random_state: int
+        Seed for `RandomState`, used for randomly selecting a class when necessary.
 
     Returns
     -------
@@ -42,18 +55,23 @@ def get_prediction_from_probabilities(classes, probs, prediction_method):
         Predicted class.
 
     """
+    prng = RandomState(random_state)
     if prediction_method == 'highest':
-        if len(set(probs)) == 1:  # probabilities are all equal
-            return random.choice(classes)
+        highest_p = max(probabilities)
+        best_classes = [classes[i] for i, p in enumerate(probabilities) if p == highest_p]
+        if len(best_classes) > 1:
+            return prng.choice(best_classes)
         else:
-            return classes[probs.index(max(probs))]
+            return best_classes[0]
+
     elif prediction_method == 'expected_value':
-        exp_val = sum([classes[i] * prob for i, prob in enumerate(probs)])
+        exp_val = sum([classes[i] * prob for i, prob in enumerate(probabilities)])
         return int(round(exp_val))
 
 
-def compute_eval_from_predictions(examples_file, predictions_file,
-                                  metric_names, probabilities=False,
+def compute_eval_from_predictions(examples_file,
+                                  predictions_file,
+                                  metric_names,
                                   prediction_method=None):
     """
     Compute evaluation metrics from prediction files after you have run an
@@ -70,14 +88,12 @@ def compute_eval_from_predictions(examples_file, predictions_file,
     metric_names: list of str
         A list of SKLL metric names (e.g., [pearson, unweighted_kappa]).
 
-    probabilities: boolean
-        Indicates whether the predictions file contains probabilities instead of predictions.
-
-    prediction_method: str
+    prediction_method: str or None
         Indicates how to get a single class prediction from the probabilities. Currently
         supported options are  "highest", which selects the class with the highest
         probability, and "expected_value", which calculates an expected value over
-        integer classes and rounds to the nearest int.
+        integer classes and rounds to the nearest int. If predictions file does not
+        contain probabilities, this should be set to None.
 
     Returns
     -------
@@ -101,23 +117,30 @@ def compute_eval_from_predictions(examples_file, predictions_file,
         reader = csv.reader(pred_file, dialect=csv.excel_tab)
         header = next(reader)
 
-        # If prediction file contains probabilities instead of predictions, convert
-        # class probabilities to a class prediction using the specified
-        # `prediction_mathod`.
-        if probabilities:
+        # If there are more than two columns, assume column 0 contains the ids, and
+        # columns 1-n contain class probabilities. Convert them to a class prediction
+        # using the specified `method`.
+        if len(header) > 2:
             classes = [c for c in header[1:] if c]
+            if prediction_method is None:
+                prediction_method = "highest"
+                logger.info("No prediction method specified. Using 'highest'.")
             if prediction_method == 'expected_value':
-                if any(not c.isdigit() for c in classes):
-                    raise ValueError("Cannot calculate expected value with non-integer "
-                                     "classes.")
-                else:
+                try:
                     classes = [int(c) for c in classes]
-
+                except ValueError as e:
+                    raise e
             for row in reader:
-                probs = [safe_float(p) for p in row[1:]]
-                prediction = get_prediction_from_probabilities(classes, probs,
+                probabilities = [safe_float(p) for p in row[1:]]
+                prediction = get_prediction_from_probabilities(classes,
+                                                               probabilities,
                                                                prediction_method)
                 pred[row[0]] = safe_float(prediction)
+        else:
+            if prediction_method is not None:
+                logger.warning("A prediction method was provided, but the predictions "
+                               "file doesn't contain probabilities. Ignoring prediction "
+                               "method '{}'.".format(prediction_method))
 
         for row in reader:
             pred[row[0]] = safe_float(row[1])
@@ -148,10 +171,10 @@ def main(argv=None):
         is used instead.
     """
     # Get command line arguments
-    parser = argparse.ArgumentParser(
-        description="Computes evaluation metrics from prediction files after \
-                     you have run an experiment.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description=("Computes evaluation metrics from "
+                                                  "prediction files after you have run an "
+                                                  "experiment."),
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('examples_file',
                         help='SKLL input file with labeled examples')
     parser.add_argument('predictions_file',
@@ -159,28 +182,23 @@ def main(argv=None):
     parser.add_argument('metric_names',
                         help='metrics to compute',
                         nargs='+')
-    parser.add_argument('--probability', '-p',
-                        help="Whether the predictions file contains probabilities.",
-                        action='store_true')
-    parser.add_argument('--prediction_method', '-P',
-                        help="How to generate a prediction from the class probabilities "
-                             "(only use with -p flag). Supported methods: 'choose_best' "
-                             "(default) and 'expected_value' (only works with integer "
-                             "classes", default='highest')
+    parser.add_argument('--method', '-m',
+                        help="How to generate a prediction from the class probabilities. "
+                             "Supported methods are 'highest' (default) and "
+                             "'expected_value' (only works with integer classes).")
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args(argv)
 
-    # Make warnings from built-in warnings module get formatted more nicely
-    logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
-                                '%(message)s'))
+    supported_prediction_methods = {"highest", "expected_value"}
+    if (args.method is not None) and (args.method not in supported_prediction_methods):
+        raise KeyError("Unrecognized prediction method '{}'. Supported methods are "
+                       "'highest' and 'expected_value'.")
 
     scores = compute_eval_from_predictions(args.examples_file,
                                            args.predictions_file,
                                            args.metric_names,
-                                           args.probability,
-                                           args.prediction_method)
+                                           args.method)
 
     for metric_name in args.metric_names:
         print("{}\t{}\t{}".format(scores[metric_name],
