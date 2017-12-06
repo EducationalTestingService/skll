@@ -15,8 +15,6 @@ import itertools
 import os
 import sys
 
-
-from io import open
 from glob import glob
 from itertools import combinations, product
 from os.path import abspath, dirname, exists, join
@@ -27,8 +25,9 @@ try:
 except ImportError:
     from mock import create_autospec, patch
 
-from nose.tools import eq_, assert_almost_equal, raises, assert_raises
-from numpy.testing import assert_array_equal, assert_allclose, assert_array_almost_equal
+from nose.plugins.attrib import attr
+from nose.tools import eq_, assert_almost_equal, raises
+from numpy.testing import assert_allclose, assert_array_almost_equal
 
 import skll
 import skll.utilities.compute_eval_from_predictions as cefp
@@ -38,7 +37,6 @@ import skll.utilities.print_model_weights as pmw
 import skll.utilities.run_experiment as rex
 import skll.utilities.skll_convert as sk
 import skll.utilities.summarize_results as sr
-import skll.utilities.filter_features as ff
 import skll.utilities.join_features as jf
 import skll.utilities.plot_learning_curves as plc
 
@@ -524,7 +522,7 @@ def test_summarize_results_argparse():
     yield check_summarize_results_argparse, False
     yield check_summarize_results_argparse, True
 
-
+@attr('have_pandas_and_seaborn')
 def test_plot_learning_curves():
     # A utility function to check that we are setting up argument parsing
     # correctly for plot_learning_curves. We are not checking whether the learning
