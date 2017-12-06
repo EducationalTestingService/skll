@@ -583,20 +583,19 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # Check if `param_grids` is specified, but `grid_search` is False
     if param_grid_list and not do_grid_search:
-        logger.warning('"param_grids" was specified despite the fact that '
-                       '"grid_search" was not specified or specified as '
-                       'False.')
+        logger.warning('Since "grid_search" is set to False, the specified'
+                       ' "param_grids" will be ignored.')
 
     # Warn user about potential conflicts between parameter values
     # specified in `fixed_parameter_list` and values specified in
     # `param_grid_list` (or values passed in by default) if
     # `do_grid_search` is True
     if do_grid_search and fixed_parameter_list:
-        logger.warning('"grid_search" is set to True and "fixed_parameters"'
-                       ' is specified. Be aware that, if there is a conflict'
-                       ' between the grid search parameter space and the '
-                       'fixed parameter values, the fixed parameter values '
-                       'will take precedence.')
+        logger.warning('Note that "grid_search" is set to True and '
+                       '"fixed_parameters" is also specified. If there '
+                       'is a conflict between the grid search parameter'
+                       ' space and the fixed parameter values, the '
+                       'fixed parameter values will take precedence.')
 
     # minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")

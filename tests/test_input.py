@@ -1773,9 +1773,9 @@ def test_config_parsing_param_grids_no_grid_search():
     _parse_config_file(config_path)
     log_path = join(output_dir, "config_parsing_param_grids_no_grid_search.log")
     with open(log_path) as f:
-        warning_pattern = re.compile('"param_grids" was specified despite'
-                                     ' the fact that "grid_search" was not '
-                                     'specified or specified as False.')
+        warning_pattern = re.compile('Since "grid_search" is set to False, '
+                                     'the specified "param_grids" will be '
+                                     'ignored.')
         matches = re.findall(warning_pattern, f.read())
         assert_equal(len(matches), 1)
 
@@ -1814,12 +1814,11 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
     log_path = join(output_dir,
                     "config_parsing_param_grids_fixed_parameters_conflict.log")
     with open(log_path) as f:
-        warning_pattern = re.compile('"grid_search" is set to True and '
-                                     '"fixed_parameters" is specified. Be'
-                                     ' aware that, if there is a conflict'
-                                     ' between the grid search parameter '
-                                     'space and the fixed parameter '
-                                     'values, the fixed parameter values '
-                                     'will take precedence.')
+        warning_pattern = \
+            re.compile('Note that "grid_search" is set to True and '
+                       '"fixed_parameters" is also specified. If there '
+                       'is a conflict between the grid search parameter '
+                       'space and the fixed parameter values, the fixed '
+                       'parameter values will take precedence.')
         matches = re.findall(warning_pattern, f.read())
         assert_equal(len(matches), 1)
