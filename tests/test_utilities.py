@@ -40,12 +40,13 @@ import skll.utilities.skll_convert as sk
 import skll.utilities.summarize_results as sr
 import skll.utilities.filter_features as ff
 import skll.utilities.join_features as jf
+import skll.utilities.plot_learning_curves as plc
 
 from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
                        MegaMWriter, LibSVMReader, safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
-from skll.experiments import _write_summary_file, run_configuration
+from skll.experiments import _generate_learning_curve_plots, _write_summary_file, run_configuration
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
 from utils import make_classification_data, make_regression_data
@@ -522,6 +523,31 @@ def check_summarize_results_argparse(use_ablation=False):
 def test_summarize_results_argparse():
     yield check_summarize_results_argparse, False
     yield check_summarize_results_argparse, True
+
+
+def test_plot_learning_curves():
+    # A utility function to check that we are setting up argument parsing
+    # correctly for plot_learning_curves. We are not checking whether the learning
+    # curves produced are accurate because we have separate tests for that.
+
+    # replace the _generate_learning_curve_plots function that's called
+    # by the main() in plot_learning_curves with a mocked up version
+    generate_learning_curve_plots_mock = create_autospec(_generate_learning_curve_plots)
+    plc._generate_learning_curve_plots = generate_learning_curve_plots_mock
+
+    # now call main with some arguments
+    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
+    experiment_name = 'sample_learning_curve'
+    output_dir_name = join(_my_dir, 'other')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+
+    # now check to make sure that _generate_learning_curve_plots (or our mocked up version
+    # of it) got the arguments that we passed
+    positional_arguments, keyword_arguments = generate_learning_curve_plots_mock.call_args
+    eq_(positional_arguments[0], experiment_name)
+    eq_(positional_arguments[1], output_dir_name)
+    eq_(positional_arguments[2], summary_file_name)
 
 
 def check_run_experiments_argparse(multiple_config_files=False,
