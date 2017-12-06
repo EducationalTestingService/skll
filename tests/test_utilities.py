@@ -551,11 +551,6 @@ def test_plot_learning_curves_argparse():
 
 @raises(SystemExit)
 def test_plot_learning_curves_no_pandas_no_seaborn():
-    # A utility function to check that we are setting up argument parsing
-    # correctly for plot_learning_curves. We are not checking whether the learning
-    # curves produced are accurate because we have separate tests for that.
-
-    # now call main with some arguments
     summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
     output_dir_name = join(_my_dir, 'other')
     plc_cmd_args = [summary_file_name, output_dir_name]
@@ -565,15 +560,19 @@ def test_plot_learning_curves_no_pandas_no_seaborn():
 @attr('have_pandas_and_seaborn')
 @raises(SystemExit)
 def test_plot_learning_curves_missing_file():
-    # A utility function to check that we are setting up argument parsing
-    # correctly for plot_learning_curves. We are not checking whether the learning
-    # curves produced are accurate because we have separate tests for that.
-
-    # now call main with some arguments
     summary_file_name = join(_my_dir, 'other', 'non_existent_summary.tsv')
     output_dir_name = join(_my_dir, 'other')
     plc_cmd_args = [summary_file_name, output_dir_name]
     plc.main(argv=plc_cmd_args)
+
+
+@attr('have_pandas_and_seaborn')
+def test_plot_learning_curves_create_output_directory():
+    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
+    output_dir_name = join(_my_dir, 'other', 'foobar')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+    exists(output_dir_name)
 
 
 def check_run_experiments_argparse(multiple_config_files=False,
