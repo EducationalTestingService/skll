@@ -154,7 +154,7 @@ def test_compute_eval_from_predictions_with_probs():
 
     # we need to capture stdout since that's what main() writes to
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
-                                         'unweighted_kappa','-p']
+                                         'unweighted_kappa']
     try:
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -181,7 +181,7 @@ def test_compute_eval_from_predictions_with_probs():
     # Test expected value predictions method
     #
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
-                                         'r2' ,'-p', '-P', 'expected_value']
+                                         'r2' ,'--method', 'expected_value']
     try:
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -216,7 +216,7 @@ def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes
                       'test_compute_eval_from_predictions_nonnumeric_classes.jsonlines')
 
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
-                                         'r2' ,'-p', '-P', 'expected_value']
+                                         'r2' , '--method', 'expected_value']
     assert_raises(ValueError, cefp.main, compute_eval_from_predictions_cmd)
 
 
