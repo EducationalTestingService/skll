@@ -522,6 +522,7 @@ def test_summarize_results_argparse():
     yield check_summarize_results_argparse, False
     yield check_summarize_results_argparse, True
 
+
 @attr('have_pandas_and_seaborn')
 def test_plot_learning_curves():
     # A utility function to check that we are setting up argument parsing
