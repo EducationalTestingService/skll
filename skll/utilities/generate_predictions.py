@@ -30,18 +30,22 @@ class Predictor(object):
         """
         Initialize the predictor.
 
-        :param model_path: Path to use when loading trained model.
-        :type model_path: str
-        :param threshold: If the model we're using is generating probabilities
-                          of the positive label, return 1 if it meets/exceeds
-                          the given threshold and 0 otherwise.
-        :type threshold: float
-        :param positive_label: If the model is only being used to predict the
-                               probability of a particular class, this
-                               specifies the index of the class we're
-                               predicting. 1 = second class, which is default
-                               for binary classification.
-        :type positive_label: int
+        Parameters
+        ----------
+        model_path : str
+            Path to use when loading trained model.
+        threshold : float, optional
+            If the model we're using is generating probabilities
+            of the positive label, return 1 if it meets/exceeds
+            the given threshold and 0 otherwise.
+            Defaults to None.
+        positive_label : int, optional
+            If the model is only being used to predict the
+            probability of a particular class, this
+            specifies the index of the class we're
+            predicting. 1 = second class, which is default
+            for binary classification.
+            Defaults to 1.
         """
         self._learner = Learner.from_file(model_path)
         self._pos_index = positive_label
@@ -51,11 +55,15 @@ class Predictor(object):
         """
         Generate a list of predictions for the given examples.
 
-        :param data: FeatureSet to get predictions for.
-        :type data: FeatureSet
+        Parameters
+        ----------
+        data : skll.FeatureSet
+            FeatureSet to get predictions for.
 
-        :returns: A list of predictions the model generated for the given
-                  examples.
+        Returns
+        -------
+        A list of predictions the model generated for the given
+        examples.
         """
         # compute the predictions from the learner
         preds = self._learner.predict(data)
@@ -78,9 +86,11 @@ def main(argv=None):
     """
     Handles command line arguments and gets things started.
 
-    :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv[1:]`` is used instead.
-    :type argv: list of str
+    Parameters
+    ----------
+    argv : list of str
+        List of arguments, as if specified on the command-line.
+        If None, ``sys.argv[1:]`` is used instead.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(

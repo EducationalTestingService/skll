@@ -22,13 +22,27 @@ def compute_eval_from_predictions(examples_file, predictions_file,
     Compute evaluation metrics from prediction files after you have run an
     experiment.
 
-    :param examples_file: a SKLL examples file (in .jsonlines or other format)
-    :param predictions_file: a SKLL predictions output TSV file with id
-                             and prediction column names
-    :param metric_names: a list of SKLL metric names
-                         (e.g., [pearson, unweighted_kappa])
+    Parameters
+    ----------
 
-    :returns: a dictionary from metrics names to values
+    examples_file : str
+        A SKLL examples file (in .jsonlines or other format)
+    predictions_file : str
+        A SKLL predictions output TSV file with id
+        and prediction column names
+    metric_names : list
+        A list of SKLL metric names
+        (e.g., [pearson, unweighted_kappa])
+
+    Returns
+    -------
+    res : dict
+        A dictionary from metrics names to values
+
+    Raises
+    ------
+    ValueError
+        If the example and prediction IDs do not match
     """
 
     # read gold standard labels
@@ -62,9 +76,11 @@ def main(argv=None):
     """
     Handles command line arguments and gets things started.
 
-    :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv[1:]`` is used instead.
-    :type argv: list of str
+    Parameters
+    ----------
+    argv : list of str
+        List of arguments, as if specified on the command-line.
+        If None, ``sys.argv[1:]`` is used instead.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(
