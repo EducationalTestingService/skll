@@ -24,15 +24,14 @@ def compute_eval_from_predictions(examples_file, predictions_file,
 
     Parameters
     ----------
-
     examples_file : str
-        A SKLL examples file (in .jsonlines or other format)
+        A SKLL examples file (in .jsonlines or other format).
     predictions_file : str
         A SKLL predictions output TSV file with id
-        and prediction column names
+        and prediction column names.
     metric_names : list
         A list of SKLL metric names
-        (e.g., [pearson, unweighted_kappa])
+        (e.g., [pearson, unweighted_kappa]).
 
     Returns
     -------
@@ -79,8 +78,8 @@ def main(argv=None):
     Parameters
     ----------
     argv : list of str
-        List of arguments, as if specified on the command-line.
-        If None, ``sys.argv[1:]`` is used instead.
+        List of arguments, as if specified on the command-line. If None, ``sys.argv[1:]``
+        is used instead.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(
