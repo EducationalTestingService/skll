@@ -64,7 +64,7 @@ def main(argv=None):
     if not exists(args.output_dir):
         makedirs(args.output_dir)
 
-    # check that we have pandas and seaborn available other
+    # check that we have pandas and seaborn available
     if not (_HAVE_PANDAS and _HAVE_SEABORN):
         logging.error("Error: need pandas and seaborn to generate learning curve plots.")
         sys.exit(1)
