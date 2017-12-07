@@ -9,6 +9,7 @@ notifications:
 env:
   - WITH_PANDAS_AND_SEABORN=true TESTFILES="tests/test_featureset.py"
   - WITH_PANDAS_AND_SEABORN=true TESTFILES="tests/test_output.py"
+  - WITH_PANDAS_AND_SEABORN=true TESTFILES="tests/test_utilities.py"
   - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_regression.py"
   - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_featureset.py"
   - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_output.py tests/test_input.py tests/test_preprocessing.py tests/test_cv.py tests/test_metrics.py tests/test_ablation.py tests/test_classification.py tests/test_custom_learner.py tests/test_utilities.py"

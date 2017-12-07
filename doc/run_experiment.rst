@@ -584,8 +584,10 @@ fixed_parameters *(Optional)*
 """""""""""""""""""""""""""""
 
 List of dicts containing parameters you want to have fixed for each
-classifier in :ref:`learners` list. Any empty ones will be ignored
-(and the defaults will be used).
+learner in :ref:`learners` list. Any empty ones will be ignored
+(and the defaults will be used). If :ref:`grid_search` is ``True``,
+there is a potential for conflict with specified/default parameter grids
+and fixed parameters.
 
 The default fixed parameters (beyond those that scikit-learn sets) are:
 
