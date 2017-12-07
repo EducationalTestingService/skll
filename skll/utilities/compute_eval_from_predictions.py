@@ -142,8 +142,8 @@ def compute_eval_from_predictions(examples_file,
                                "file doesn't contain probabilities. Ignoring prediction "
                                "method '{}'.".format(prediction_method))
 
-        for row in reader:
-            pred[row[0]] = safe_float(row[1])
+            for row in reader:
+                pred[row[0]] = safe_float(row[1])
 
     # make a sorted list of example ids in order to match up
     # labels and predictions
