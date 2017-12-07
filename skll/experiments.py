@@ -978,6 +978,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             logger.warning("Ablating features is not supported during "
                            "learning curve generation. Ignoring.")
 
+    # if we just had a train file and a test file, there are no real featuresets
+    # in which case there are no features to ablate
+    if len(featuresets) == 1 and len(featuresets[0]) == 1:
+        if ablation is None or ablation > 0:
+            ablation = 0
+            logger.warning("Not enough featuresets for ablation. Ignoring.")
+
     # if performing ablation, expand featuresets to include combinations of
     # features within those sets
     if ablation is None or ablation > 0:

@@ -15,8 +15,6 @@ import itertools
 import os
 import sys
 
-
-from io import open
 from glob import glob
 from itertools import combinations, product
 from os.path import abspath, dirname, exists, join
@@ -27,8 +25,9 @@ try:
 except ImportError:
     from mock import create_autospec, patch
 
+from nose.plugins.attrib import attr
 from nose.tools import eq_, assert_almost_equal, raises
-from numpy.testing import assert_array_equal, assert_allclose, assert_array_almost_equal
+from numpy.testing import assert_allclose, assert_array_almost_equal
 
 import skll
 import skll.utilities.compute_eval_from_predictions as cefp
@@ -38,14 +37,14 @@ import skll.utilities.print_model_weights as pmw
 import skll.utilities.run_experiment as rex
 import skll.utilities.skll_convert as sk
 import skll.utilities.summarize_results as sr
-import skll.utilities.filter_features as ff
 import skll.utilities.join_features as jf
+import skll.utilities.plot_learning_curves as plc
 
 from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
                        MegaMWriter, LibSVMReader, safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
-from skll.experiments import _write_summary_file, run_configuration
+from skll.experiments import _generate_learning_curve_plots, _write_summary_file, run_configuration
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
 from utils import make_classification_data, make_regression_data
@@ -602,6 +601,58 @@ def check_summarize_results_argparse(use_ablation=False):
 def test_summarize_results_argparse():
     yield check_summarize_results_argparse, False
     yield check_summarize_results_argparse, True
+
+
+@attr('have_pandas_and_seaborn')
+def test_plot_learning_curves_argparse():
+    # A utility function to check that we are setting up argument parsing
+    # correctly for plot_learning_curves. We are not checking whether the learning
+    # curves produced are accurate because we have separate tests for that.
+
+    # replace the _generate_learning_curve_plots function that's called
+    # by the main() in plot_learning_curves with a mocked up version
+    generate_learning_curve_plots_mock = create_autospec(_generate_learning_curve_plots)
+    plc._generate_learning_curve_plots = generate_learning_curve_plots_mock
+
+    # now call main with some arguments
+    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
+    experiment_name = 'sample_learning_curve'
+    output_dir_name = join(_my_dir, 'other')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+
+    # now check to make sure that _generate_learning_curve_plots (or our mocked up version
+    # of it) got the arguments that we passed
+    positional_arguments, keyword_arguments = generate_learning_curve_plots_mock.call_args
+    eq_(positional_arguments[0], experiment_name)
+    eq_(positional_arguments[1], output_dir_name)
+    eq_(positional_arguments[2], summary_file_name)
+
+
+@raises(SystemExit)
+def test_plot_learning_curves_no_pandas_no_seaborn():
+    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
+    output_dir_name = join(_my_dir, 'other')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+
+
+@attr('have_pandas_and_seaborn')
+@raises(SystemExit)
+def test_plot_learning_curves_missing_file():
+    summary_file_name = join(_my_dir, 'other', 'non_existent_summary.tsv')
+    output_dir_name = join(_my_dir, 'other')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+
+
+@attr('have_pandas_and_seaborn')
+def test_plot_learning_curves_create_output_directory():
+    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
+    output_dir_name = join(_my_dir, 'other', 'foobar')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+    exists(output_dir_name)
 
 
 def check_run_experiments_argparse(multiple_config_files=False,

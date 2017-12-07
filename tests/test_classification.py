@@ -16,6 +16,7 @@ import glob
 import itertools
 import json
 import os
+import re
 import warnings
 
 from io import open
@@ -339,6 +340,35 @@ def test_train_file_test_file():
     assert_almost_equal(result_dict['score'], 0.9491525423728813)
 
 
+def test_train_file_test_file_ablation():
+    """
+    Test that specifying ablation with train and test file is ignored
+    """
+    # Create data files
+    make_single_file_featureset_data()
+
+    # Run experiment
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file"
+                                                            ".template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file'
+                                                            '.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.'
+                                                            'jsonlines'))
+    run_configuration(config_path, quiet=True, ablation=None)
+
+    # check that we see the message that ablation was ignored in the experiment log
+    # Check experiment log output
+    with open(join(_my_dir,
+                   'output',
+                   'train_test_single_file.log')) as f:
+        cv_file_pattern = re.compile('Not enough featuresets for ablation. Ignoring.')
+        matches = re.findall(cv_file_pattern, f.read())
+        eq_(len(matches), 1)
+
+
 @raises(ValueError)
 def test_train_file_and_train_directory():
     """
@@ -473,7 +503,9 @@ def test_all_new_labels_in_test():
 
 
 # the function to create data with labels that look like floats
-def make_float_class_data():
+# that are either encoded as strings or not depending on the
+# keyword argument
+def make_float_class_data(labels_as_strings=False):
     """
     We want to create data that has labels that look like
     floats to make sure they are preserved correctly
@@ -481,6 +513,8 @@ def make_float_class_data():
 
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, 76)]
     y = [1.2] * 25 + [1.5] * 25 + [1.8] * 25
+    if labels_as_strings:
+        y = list(map(str, y))
     X = np.vstack([np.identity(25), np.identity(25), np.identity(25)])
     feature_names = ['f{}'.format(i) for i in range(1, 6)]
     features = []
@@ -490,13 +524,12 @@ def make_float_class_data():
     return FeatureSet('float-classes', ids, features=features, labels=y)
 
 
-def test_float_classes():
+def test_xval_float_classes_as_strings():
     """
-    Test classification with labels that look like floats
-    Make sure that they have been converted to strings as expected
+    Test that classification with float labels encoded as strings works
     """
 
-    float_class_fs = make_float_class_data()
+    float_class_fs = make_float_class_data(labels_as_strings=True)
     prediction_prefix = join(_my_dir, 'output', 'float_class')
     learner = Learner('LogisticRegression')
     learner.cross_validate(float_class_fs,
@@ -511,3 +544,19 @@ def test_float_classes():
             assert p in ['1.2', '1.5', '1.8']
 
 
+@raises(ValueError)
+def check_bad_xval_float_classes(do_stratified_xval):
+
+    float_class_fs = make_float_class_data()
+    prediction_prefix = join(_my_dir, 'output', 'float_class')
+    learner = Learner('LogisticRegression')
+    learner.cross_validate(float_class_fs,
+                           stratified=do_stratified_xval,
+                           grid_objective='accuracy',
+                           prediction_prefix=prediction_prefix)
+
+
+def test_bad_xval_float_classes():
+
+    yield check_bad_xval_float_classes, True
+    yield check_bad_xval_float_classes, False

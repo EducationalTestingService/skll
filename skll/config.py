@@ -27,7 +27,6 @@ from six import string_types, iteritems  # Python 2/3
 from skll import get_skll_logger
 from sklearn.metrics import SCORERS
 
-
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate',
                           'cross_validate', 'learning_curve'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
@@ -431,7 +430,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     do_shuffle = config.getboolean("Input", "shuffle")
 
     fixed_parameter_list = yaml.safe_load(_fix_json(config.get("Input",
-                                                          "fixed_parameters")))
+                                                               "fixed_parameters")))
     fixed_sampler_parameters = _fix_json(config.get("Input",
                                                     "sampler_parameters"))
     fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
@@ -582,6 +581,22 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
+    # Check if `param_grids` is specified, but `grid_search` is False
+    if param_grid_list and not do_grid_search:
+        logger.warning('Since "grid_search" is set to False, the specified'
+                       ' "param_grids" will be ignored.')
+
+    # Warn user about potential conflicts between parameter values
+    # specified in `fixed_parameter_list` and values specified in
+    # `param_grid_list` (or values passed in by default) if
+    # `do_grid_search` is True
+    if do_grid_search and fixed_parameter_list:
+        logger.warning('Note that "grid_search" is set to True and '
+                       '"fixed_parameters" is also specified. If there '
+                       'is a conflict between the grid search parameter'
+                       ' space and the fixed parameter values, the '
+                       'fixed parameter values will take precedence.')
+
     # minimum number of examples a feature must be nonzero in to be included
     min_feature_count = config.getint("Tuning", "min_feature_count")
 
@@ -653,6 +668,12 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                                'former.'.format(common_metrics_and_objectives))
                 output_metrics = [metric for metric in output_metrics
                                   if metric not in common_metrics_and_objectives]
+
+    # if the grid objectives contains `neg_log_loss`, then probability
+    # must be specified as true since that's needed to compute the loss
+    if 'neg_log_loss' in grid_objectives and not probability:
+        raise ValueError("The 'probability' option must be true in order "
+                         "to use `neg_log_loss` as the objective.")
 
     # set the folds appropriately based on the task:
     #  (a) if the task is `train` and if an external fold mapping is specified

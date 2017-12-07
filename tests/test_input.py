@@ -12,6 +12,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
+import re
 import tempfile
 from glob import glob
 from itertools import product
@@ -19,6 +20,7 @@ from os.path import abspath, dirname, exists, join, normpath
 import numpy as np
 
 from nose.tools import eq_, ok_, raises
+from sklearn.utils.testing import assert_equal
 
 from six import string_types, PY2
 
@@ -741,6 +743,36 @@ def test_config_parsing_bad_metric_2():
                                          'bad_metric_as_string')
 
     yield check_config_parsing_type_error, config_path
+
+
+def test_config_parsing_log_loss_no_probability():
+    """
+    Test that config parsing raises an error if log loss is used without probability
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objective': 'neg_log_loss'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'log_loss_no_probability')
+
+    yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_task_paths():
@@ -1708,3 +1740,85 @@ def test_learning_curve_no_metrics_and_no_objectives():
                                          'learning_curve_no_metrics_and_no_objectives')
 
     yield check_config_parsing_value_error, config_path
+
+
+def test_config_parsing_param_grids_no_grid_search():
+    """
+    Test to check whether a warning is logged if parameter grids are
+    provided but `grid_search` is off.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name':
+                               'config_parsing_param_grids_no_grid_search',
+                           'task': 'train',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LinearSVC']",
+                           'log': output_dir,
+                           'models': output_dir,
+                           'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'param_grids_no_grid_search')
+
+    _parse_config_file(config_path)
+    log_path = join(output_dir, "config_parsing_param_grids_no_grid_search.log")
+    with open(log_path) as f:
+        warning_pattern = re.compile('Since "grid_search" is set to False, '
+                                     'the specified "param_grids" will be '
+                                     'ignored.')
+        matches = re.findall(warning_pattern, f.read())
+        assert_equal(len(matches), 1)
+
+
+def test_config_parsing_param_grids_fixed_parameters_conflict():
+    """
+    Test to check whether a warning is logged if parameter grids are
+    provided in addition to fixed parameters.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name':
+                               'config_parsing_param_grids_fixed_parameters_conflict',
+                           'task': 'train',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LinearSVC']",
+                           'log': output_dir,
+                           'models': output_dir,
+                           'grid_search': 'true',
+                           'fixed_parameters': "[{'C': 0.001}]",
+                           'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'param_grids_no_grid_search')
+
+    _parse_config_file(config_path)
+    log_path = join(output_dir,
+                    "config_parsing_param_grids_fixed_parameters_conflict.log")
+    with open(log_path) as f:
+        warning_pattern = \
+            re.compile('Note that "grid_search" is set to True and '
+                       '"fixed_parameters" is also specified. If there '
+                       'is a conflict between the grid search parameter '
+                       'space and the fixed parameter values, the fixed '
+                       'parameter values will take precedence.')
+        matches = re.findall(warning_pattern, f.read())
+        assert_equal(len(matches), 1)

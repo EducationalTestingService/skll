@@ -24,6 +24,7 @@ from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 
+import skll
 from skll.data import FeatureSet, Writer, Reader
 from skll.data.readers import DictListReader
 from skll.experiments import _load_featureset
@@ -52,6 +53,23 @@ def setup():
         os.makedirs(output_dir)
 
 
+def tearDown():
+    """
+    Clean up files created during testing.
+    """
+    for filetype in ['csv', 'jsonlines', 'libsvm', 'megam', 'tsv']:
+        filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
+        if exists(filepath):
+            os.unlink(filepath)
+
+
+def _create_empty_file(filetype):
+    filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
+    with open(filepath, 'w'):
+        pass
+    return filepath
+
+
 @raises(ValueError)
 def test_empty_ids():
     """
@@ -71,6 +89,20 @@ def test_empty_ids():
 
     # create a feature set with ids set to None and raise ValueError
     FeatureSet('test', None, features=features, labels=y)
+
+@raises(ValueError)
+def check_empty_file_read(filetype, reader_type):
+    empty_filepath = _create_empty_file(filetype)
+    reader = getattr(skll.data, reader_type).for_path(empty_filepath)
+    _ = reader.read()
+
+
+def test_empty_file_read():
+    for filetype, reader_type in zip(['csv',  'jsonlines',
+                                      'libsvm', 'megam', 'tsv'],
+                                     ['CSVReader', 'NDJReader',
+                                      'LibSVMReader', 'MegaMReader', 'TSVReader']):
+        yield check_empty_file_read, filetype, reader_type
 
 
 def test_empty_labels():
