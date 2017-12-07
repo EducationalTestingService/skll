@@ -186,6 +186,27 @@ Optional Arguments
 
 -------------------------------------------------------------------------------
 
+.. _plot_learning_curves:
+
+plot_learning_curves
+--------------------
+.. program:: plot_learning_curves
+
+Generate learning curve plots from a learning curve output TSV file.
+
+Positional Arguments
+^^^^^^^^^^^^^^^^^^^^
+
+.. option:: tsv_file
+
+    Input learning Curve TSV output file.
+
+.. option:: output_dir
+
+    Output directory to store the learning curve plots.
+
+-------------------------------------------------------------------------------
+
 .. _print_model_weights:
 
 print_model_weights
@@ -303,4 +324,6 @@ Optional Arguments
 .. option:: --version
 
     Show program's version number and exit.
+
+
 
