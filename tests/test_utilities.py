@@ -140,6 +140,86 @@ def test_compute_eval_from_predictions():
     assert_almost_equal(scores['unweighted_kappa'], 0.2)
 
 
+def test_compute_eval_from_predictions_with_probs():
+    """
+    Test compute_eval_from_predictions function console script, with probabilities in
+    the predictions file.
+    """
+
+    pred_path = join(_my_dir, 'other',
+                     'test_compute_eval_from_predictions_probs_predictions.tsv')
+    input_path = join(_my_dir, 'other',
+                      'test_compute_eval_from_predictions_probs.jsonlines')
+
+    # we need to capture stdout since that's what main() writes to
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
+                                         'unweighted_kappa']
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        cefp.main(compute_eval_from_predictions_cmd)
+        score_rows = mystdout.getvalue().strip().split('\n')
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+    scores = {}
+    for score_row in score_rows:
+        score, metric_name, pred_path = score_row.split('\t')
+        scores[metric_name] = float(score)
+
+    assert_almost_equal(scores['pearson'], 0.6197797868009122)
+    assert_almost_equal(scores['unweighted_kappa'], 0.2)
+
+
+    #
+    # Test expected value predictions method
+    #
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
+                                         'r2' ,'--method', 'expected_value']
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        cefp.main(compute_eval_from_predictions_cmd)
+        score_rows = mystdout.getvalue().strip().split('\n')
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+    scores = {}
+    for score_row in score_rows:
+        score, metric_name, pred_path = score_row.split('\t')
+        scores[metric_name] = float(score)
+
+    assert_almost_equal(scores['r2'], 0.19999999999999996)
+    assert_almost_equal(scores['explained_variance'], 0.23809523809523792)
+
+@raises(ValueError)
+def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes():
+    """
+    Make sure compute_eval_from_predictions breaks when predictions are calculated via
+    expected_value and the classes are non numeric.
+    """
+
+    pred_path = join(_my_dir, 'other',
+                     'test_compute_eval_from_predictions_nonnumeric_classes_predictions.tsv')
+    input_path = join(_my_dir, 'other',
+                      'test_compute_eval_from_predictions_nonnumeric_classes.jsonlines')
+
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
+                                         'r2', '--method', 'expected_value']
+    cefp.main(compute_eval_from_predictions_cmd)
+
+
+
 def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
     # create some simple classification data without feature hashing
