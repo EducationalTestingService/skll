@@ -27,7 +27,7 @@ try:
 except ImportError:
     from mock import create_autospec, patch
 
-from nose.tools import eq_, assert_almost_equal, raises, assert_raises
+from nose.tools import eq_, assert_almost_equal, raises
 from numpy.testing import assert_array_equal, assert_allclose, assert_array_almost_equal
 
 import skll
@@ -203,7 +203,7 @@ def test_compute_eval_from_predictions_with_probs():
     assert_almost_equal(scores['r2'], 0.19999999999999996)
     assert_almost_equal(scores['explained_variance'], 0.23809523809523792)
 
-
+@raises(ValueError)
 def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes():
     """
     Make sure compute_eval_from_predictions breaks when predictions are calculated via
@@ -217,7 +217,7 @@ def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes
 
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
                                          'r2', '--method', 'expected_value']
-    assert_raises(ValueError, cefp.main, compute_eval_from_predictions_cmd)
+    cefp.main(compute_eval_from_predictions_cmd)
 
 
 
