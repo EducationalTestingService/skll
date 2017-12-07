@@ -393,7 +393,7 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
     label_col : str, optional
         Name of the column which contains the class labels.
         If no column with that name exists, or `None` is
-        specified, the data is considered to be unlabelled.
+        specified, the data is considered to be unlabeled.
         Defaults to 'y'.
     ids_to_floats : bool, optional
         Whether to convert the IDs to floats to save memory. Will raise error
@@ -970,7 +970,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     Parameters
     ----------
-    config_file : 
+    config_file : str
         Path to the configuration file we would like to use.
     local : bool, optional
         Should this be run locally instead of on the cluster?
@@ -1008,7 +1008,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     log_level : str, optional
         The level for logging messages
         Defaults to logging.INFO
-
 
     Returns
     -------

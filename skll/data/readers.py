@@ -162,7 +162,7 @@ class Reader(object):
         progress_num
             Progress indicator value. Usually either a line
             number or a percentage. Must be able to convert to string.
-=
+
         end : str, optional
             The string to put at the end of the line.  "\\r" should be
             used for every update except for the final one.

@@ -33,12 +33,15 @@ class FeatureSet(object):
         Example IDs for this set.
     labels : np.array, optional
         labels for this set.
+        Defaults to None
     feature : list of dict or array-like
         The features for each instance represented as either a
         list of dictionaries or an array-like (if `vectorizer` is
         also specified).
+        Defaults to None
     vectorizer : DictVectorizer or FeatureHasher
         Vectorizer which will be used to generate the feature matrix.
+        Defaults to None.
 
     Warnings
     --------
@@ -49,8 +52,8 @@ class FeatureSet(object):
     This is not a problem because we _always_ use sparse matrices with
     ``DictVectorizer`` when creating FeatureSets.
 
-    Note
-    ----
+    Notes
+    -----
     If ids, labels, and/or features are not None, the number of rows in
     each array must be equal.
     """
@@ -150,6 +153,9 @@ class FeatureSet(object):
             return
 
     def __len__(self):
+        """
+        The number of rows in the feature_set.
+        """
         return self.features.shape[0]
 
     def __add__(self, other):
@@ -235,7 +241,7 @@ class FeatureSet(object):
     def filter(self, ids=None, labels=None, features=None, inverse=False):
         """
         Removes or keeps features and/or examples from the Featureset depending
-        on the passed in parameters.
+        on the passed in parameters. Filtering is done in-place.
 
         Parameters
         ----------
@@ -482,7 +488,9 @@ class FeatureSet(object):
         Returns
         -------
         fs1 : skll.FeatureSet
+            The first feature_set.
         fs2 : skll.FeatureSet
+            The second feature_set.
         """
 
         # Note: an alternative way to implement this is to make copies

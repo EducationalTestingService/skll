@@ -271,11 +271,12 @@ def _find_default_param_grid(cls):
     Parameters
     ----------
     cls
-        A parent class to check.
+        A parent classifier class to check, and find the
+        default param grid.
 
     Returns
     -------
-    grid : list of dicts
+    grid : list of dicts or None
         The parameters grid for a given classifier.
     """
     for key_cls, grid in _DEFAULT_PARAM_GRIDS.items():
@@ -335,7 +336,7 @@ def _train_and_score(learner,
     Parameters
     ----------
     learner : skll.Learner
-        The SKLL Learner object
+        The SKLL Learner object.
     train_examples : array-like, with shape (n_samples, n_features)
         The training examples.
     test_examples : array-like, of length n_samples
@@ -425,7 +426,7 @@ class SelectByMinCount(SelectKBest):
 
     def fit(self, X, y=None):
         """
-        Fit the data.
+        Fit the SelectByMinCount model.
 
         Parameters
         ----------
@@ -479,12 +480,17 @@ def rescaled(cls):
     Parameters
     ----------
     cls : BaseEstimator
-        A regressor to add rescaling to.
+        An estimator class to add rescaling to.
 
     Returns
     -------
     cls : BaseEstimator
-        Modified version of class with rescaled functions added.
+        Modified version of estimator class with rescaled functions added.
+
+    Raises
+    ------
+    ValueError
+        If classifier cannot be rescaled (i.e. is not a regressor).
     """
     # If this class has already been run through the decorator, return it
     if hasattr(cls, 'rescale'):
@@ -578,12 +584,17 @@ def rescaled(cls):
         Parameters
         ----------
         class_x
-            The data to predict.
+            The the superclass from which to retrieve param names.
 
         Returns
         -------
         args : list
             A list of parameter names for the class's init method.
+
+        Raises
+        ------
+        RunTimeError
+            If `varargs` exist in the scikit-learn estimator.
         """
         try:
             init = getattr(orig_init, 'deprecated_original', orig_init)
@@ -926,7 +937,7 @@ class Learner(object):
         Raises
         ------
         ValueError
-            If the pickled object is not a Learner
+            If the pickled object is not a Learner.
         ValueError
             If the pickled version of the Learner is out of date.
         """
