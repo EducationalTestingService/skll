@@ -6,9 +6,9 @@ SKLL can be installed via ``pip`` for any Python version::
 
     pip install skll
 
-or via ``conda`` (only for Python 3.4)::
+or via ``conda`` (only for Python 3.6)::
 
-    conda install -c desilinguist python=3.4 skll
+    conda install -c defaults -c conda-forge -c desilinguist python=3.6 skll
 
 It can also be downloaded directly from
 `GitHub <http://github.com/EducationalTestingService/skll>`_.
