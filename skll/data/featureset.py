@@ -545,7 +545,8 @@ class FeatureSet(object):
 
         Returns
         -------
-        FeatureSet
+        feature_set : skll.FeatureSet
+            A feature_set object from data_frame.
         """
         if labels_column:
             feature_columns = [column for column in df.columns if column != labels_column]

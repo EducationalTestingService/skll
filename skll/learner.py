@@ -749,7 +749,6 @@ class RescaledTheilSenRegressor(TheilSenRegressor):
 
 
 class Learner(object):
-
     """
     A simpler learner interface around many scikit-learn classification
     and regression functions.
@@ -764,11 +763,11 @@ class Learner(object):
         labels (instead of just label with highest probability)?
         Defaults to False.
     feature_scaling : str, optional
-        How to scale the features, if at all. Options are:
-            'with_std': scale features using the standard deviation,
-            'with_mean': center features using the mean,
-            'both': do both scaling as well as centering,
-            'none': do neither scaling nor centering
+        How to scale the features, if at all. Options are
+        -  'with_std': scale features using the standard deviation
+        -  'with_mean': center features using the mean
+        -  'both': do both scaling as well as centering
+        -  'none': do neither scaling nor centering
         Defaults to 'none'.
     model_kwargs : dict, optional
         A dictionary of keyword arguments to pass to the
@@ -785,11 +784,11 @@ class Learner(object):
         Defaults to 1.
     sampler : str, optional
         The sampler to use for kernel approximation, if desired.
-        Valid values are:
-            'AdditiveChi2Sampler',
-            'Nystroem',
-            'RBFSampler',
-            'SkewedChi2Sampler'
+        Valid values are
+        -  'AdditiveChi2Sampler'
+        -  'Nystroem'
+        -  'RBFSampler'
+        -  'SkewedChi2Sampler'
         Defaults to None.
     sampler_kwargs : dict, optional
         A dictionary of keyword arguments to pass to the
@@ -878,15 +877,15 @@ class Learner(object):
 
         if issubclass(self._model_type,
                       (AdaBoostClassifier, AdaBoostRegressor,
-                        DecisionTreeClassifier, DecisionTreeRegressor,
-                        DummyClassifier, ElasticNet,
-                        GradientBoostingClassifier,
-                        GradientBoostingRegressor, Lasso, LinearSVC,
-                        LinearSVR, LogisticRegression, MLPClassifier,
-                        MLPRegressor, RandomForestClassifier,
-                        RandomForestRegressor, RANSACRegressor, Ridge,
-                        RidgeClassifier, SGDClassifier, SGDRegressor,
-                        SVC, TheilSenRegressor)):
+                       DecisionTreeClassifier, DecisionTreeRegressor,
+                       DummyClassifier, ElasticNet,
+                       GradientBoostingClassifier,
+                       GradientBoostingRegressor, Lasso, LinearSVC,
+                       LinearSVR, LogisticRegression, MLPClassifier,
+                       MLPRegressor, RandomForestClassifier,
+                       RandomForestRegressor, RANSACRegressor, Ridge,
+                       RidgeClassifier, SGDClassifier, SGDRegressor,
+                       SVC, TheilSenRegressor)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
@@ -1163,7 +1162,7 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : FeatureSet
+        examples : skll.FeatureSet
             The examples to use for training.
 
         Raises
@@ -1209,7 +1208,7 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : FeatureSet
+        examples : skll.FeatureSet
             The examples to use for training.
         """
         # We don't need to do this for regression models, so return.
@@ -1237,7 +1236,7 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : FeatureSet
+        examples : skll.FeatureSet
             The examples to use for training.
         """
         # Check feature values and labels
@@ -1275,7 +1274,7 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : FeatureSet
+        examples : skll.FeatureSet
             The examples to use for training.
         param_grid : list of dicts, optional
             The parameter grid to search through for grid
@@ -1522,7 +1521,7 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : FeatureSet
+        examples : skll.FeatureSet
             The examples to evaluate the performance of the model on.
         prediction_prefix : str, optional
             If saving the predictions, this is the
@@ -1654,7 +1653,7 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : FeatureSet
+        examples : skll.FeatureSet
             The examples to predict labels for.
         prediction_prefix : str, optional
             If saving the predictions, this is the
@@ -1862,7 +1861,7 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : FeatureSet
+        examples : skll.FeatureSet
             The data to cross-validate learner performance on.
         stratified : bool, optional
             Should we stratify the folds to ensure an even
@@ -2073,7 +2072,7 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : FeatureSet
+        examples : skll.FeatureSet
             The data to generate the learning curve on.
         cv_folds : int, optional
             The number of folds to use for cross-validation, or

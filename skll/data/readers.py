@@ -181,7 +181,7 @@ class Reader(object):
 
         Returns
         -------
-        feature_set : FeatureSet
+        feature_set : skll.FeatureSet
             FeatureSet representing the file we read in.
 
         Raises
@@ -274,7 +274,7 @@ class DictListReader(Reader):
 
         Returns
         -------
-        feature_set : FeatureSet
+        feature_set : skll.FeatureSet
             FeatureSet representing the list of dictionaries we read in.
         """
         ids = []

@@ -40,7 +40,7 @@ class Writer(object):
         assumed to be a string containing the path to the directory to
         write the feature files with an additional file extension
         specifying the file type. For example ``/foo/.csv``.
-    feature_set : FeatureSet
+    feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     quiet : bool
         Do not print "Writing..." status message to stderr.
@@ -89,7 +89,10 @@ class Writer(object):
     @classmethod
     def for_path(cls, path, feature_set, **kwargs):
         """
-       Parameters
+        Retrieve object of Writer sub-class that is
+        appropriate for given path.
+
+        Parameters
         ----------
         path : str
             A path to the feature file we would like to create. The
@@ -100,7 +103,7 @@ class Writer(object):
             containing the path to the directory to write the feature
             files with an additional file extension specifying the
             file type. For example ``/foo/.csv``.
-        feature_set : FeatureSet
+        feature_set : skll.FeatureSet
             The FeatureSet to dump to a file.
         kwargs : dict
             The keyword arguments for ``for_path`` are the same as
@@ -186,7 +189,7 @@ class Writer(object):
 
         Parameters
         ----------
-        feature_set : FeatureSet
+        feature_set : skll.FeatureSet
             The FeatureSet being written to a file.
         output_file : file buffer
             The file being written to.
@@ -232,7 +235,7 @@ class DelimitedFileWriter(Writer):
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.csv``.
-    feature_set : FeatureSet
+    feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     quiet : bool
         Do not print "Writing..." status message to stderr.
@@ -301,7 +304,7 @@ class DelimitedFileWriter(Writer):
 
         Parameters
         ----------
-        feature_set : FeatureSet
+        feature_set : skll.FeatureSet
             The FeatureSet being written to a file.
         output_file : file buffer
             The file being written to.
@@ -369,7 +372,7 @@ class CSVWriter(DelimitedFileWriter):
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.csv``.
-    feature_set : FeatureSet
+    feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     kwargs : dict, optional
         The arguments to the Writer object being instantiated.
@@ -394,7 +397,7 @@ class TSVWriter(DelimitedFileWriter):
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.tsv``.
-    feature_set : FeatureSet
+    feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     kwargs : dict, optional
         The arguments to the Writer object being instantiated.
@@ -419,7 +422,7 @@ class ARFFWriter(DelimitedFileWriter):
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.arff``.
-    feature_set : FeatureSet
+    feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     relation : str, optional
         The name of the relation in the ARFF file.
@@ -445,7 +448,7 @@ class ARFFWriter(DelimitedFileWriter):
 
         Parameters
         ----------
-        feature_set : FeatureSet
+        feature_set : skll.FeatureSet
             The FeatureSet being written to a file.
         output_file : file buffer
             The file being written to.
@@ -555,7 +558,7 @@ class NDJWriter(Writer):
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.ndj``.
-    feature_set : FeatureSet
+    feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     kwargs : dict, optional
         The arguments to the Writer object being instantiated.
@@ -602,7 +605,7 @@ class LibSVMWriter(Writer):
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.libsvm``.
-    feature_set : FeatureSet
+    feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     kwargs : dict, optional
         The arguments to the Writer object being instantiated.
