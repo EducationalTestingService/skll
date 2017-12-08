@@ -34,10 +34,8 @@ def get_prediction_from_probabilities(classes,
     ----------
     classes: list
         List of str or int class names.
-
     probabilities: list of float
         Probabilities for respective classes.
-
     prediction_method: str
         Indicates how to get a single class prediction from the probabilities. Currently
         supported options are
