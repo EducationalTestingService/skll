@@ -147,7 +147,7 @@ class SKLLConfigParser(configparser.ConfigParser):
 
         Returns
         -------
-        invalid_options : set
+        invalid_options : set of str
             The set of invalid options specified by the user.
         """
 
@@ -173,13 +173,13 @@ class SKLLConfigParser(configparser.ConfigParser):
 
         Returns
         -------
-        incorrectly_specified_options : list
+        incorrectly_specified_options : list of str
             A list of incorrectly specified options.
-        multiply_specified_options : list
+        multiply_specified_options : list of str
             A list of options specified more than once.
 
-        Note
-        ----
+        Notes
+        -----
         This will NOT work if the user specifies the default value for the
         option but puts it in the wrong section. However, since specifying
         the default value for the option  does not result in running an
@@ -279,7 +279,7 @@ def _setup_config_parser(config_path, validate=True):
     ----------
     config_path : str
         The path to the configuration file.
-    validate : bool
+    validate : bool, optional
         Whether to validate the configuration file.
         Defaults to True.
 
@@ -291,9 +291,9 @@ def _setup_config_parser(config_path, validate=True):
     Raises
     ------
     IOError
-        If configuration file does not exist
+        If the configuration file does not exist.
     ValueError
-        If the configuration file specifies both objective and objectives
+        If the configuration file specifies both objective and objectives.
     TypeError
         If any objective is not a string.
     """
@@ -346,7 +346,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     ----------
     config_path : str
         The path to the configuration file.
-    log_level : logging level
+    log_level : logging level, optional
         The logging level to use.
         Defaults to `logging.INFO`.
 
@@ -379,7 +379,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         The name of the test set.
     suffix : str
         The file format the training/test files are in.
-    featuresets : list
+    featuresets : list of str
         A list of lists of prefixes for the files containing
         the features you would like to train/test on.
     do_shuffle : bool
@@ -388,7 +388,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         The path to the model file(s).
     do_grid_search : bool
         Whether to perform grid search.
-    grid_objectives : list
+    grid_objectives : list of str
         A list of objects functions to use for tuning.
     probability : bool
         Whether to output probabilities for each class.
@@ -416,10 +416,10 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         Whether to use folds file for grid search.
     do_stratified_folds : bool
         Whether to use random folds for cross-validation.
-    fixed_parameter_list : list
+    fixed_parameter_list : list of dict
         List of dicts containing parameters you want to have fixed for
         each classifier in learners list.
-    param_grid_list : list
+    param_grid_list : list of dict
         List of parameter grids to search for each learner.
     featureset_names : list of str
         The names of the featuresets used for each job.
@@ -439,9 +439,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         A class map collapsing several labels into one.
     custom_learner_path : str
         Path to a .py file that defines a custom learner.
-    learning_curve_cv_folds_list : list
+    learning_curve_cv_folds_list : list of int
         A list of integers specifying the number of folds to use for CV.
-    learning_curve_train_sizes : list of floats or list of ints
+    learning_curve_train_sizes : list of float or list of int
         List of floats or integers representing relative or absolute numbers
         of training examples that will be used to generate the learning
         curve respectively.
@@ -921,7 +921,7 @@ def _munge_featureset_name(featureset):
     Returns
     -------
     res : str
-        feature_set names joined with '+', if feature_set is not str.
+        feature_set names joined with '+', if feature_set is not a string.
     """
     if isinstance(featureset, string_types):
         return featureset
@@ -932,8 +932,8 @@ def _munge_featureset_name(featureset):
 
 def _fix_json(json_string):
     """
-    Takes a bit of JSON that might have bad quotes or capitalized booleans and
-    fixes that stuff.
+    Fixes incorrectly formatted quotes and capitalized booleans in the given
+    JSON string.
 
     Parameters
     ----------
@@ -953,8 +953,8 @@ def _fix_json(json_string):
 
 def _parse_and_validate_metrics(metrics, option_name, logger=None):
     """
-    Given a string containing a list of metrics, this function parses
-    that string into a list and validates the given list.
+    Given a string containing a list of metrics, this function
+    parses that string into a list and validates the list.
 
     Parameters
     ----------
@@ -962,21 +962,21 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
         A string containing a list of metrics
     option_name : str
         The name of the option with which the metrics are associated.
-    logger : logging.Logger
+    logger : logging.Logger, optional
         A logging object
         Defaults to None.
 
     Returns
     -------
-    metrics : list
+    metrics : list of str
         A list of metrics for the given option.
 
     Raises
     ------
     TypeError
-        If metrics is not converted to list.
+        If the given string cannot be converted to a list.
     ValueError
-        If any invalid metrics are in the list.
+        If there are any invalid metrics specified.
     """
 
     # create a logger if one was not passed in
@@ -1013,19 +1013,19 @@ def _load_cv_folds(folds_file, ids_to_floats=False):
     ----------
     folds_file : str
         The path to a folds file to read.
-    ids_to_floats : bool
+    ids_to_floats : bool, optional
         Whether to convert IDs to floats.
-        Defaults to True.
+        Defaults to False.
 
     Returns
     -------
     res : dict
-        A dictionary with keys as example ID and values as fold ID.
+        A dictionary with example IDs as the keys and fold IDs as the values.
 
     Raises
     ------
     ValueError
-        If IDs cannot be converted to floats and `ids_to_floats` is True.
+        If example IDs cannot be converted to floats and `ids_to_floats` is `True`.
     """
     with open(folds_file, 'r') as f:
         reader = csv.reader(f)
