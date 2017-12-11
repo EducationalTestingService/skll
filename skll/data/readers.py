@@ -33,8 +33,8 @@ from skll.data.dict_vectorizer import DictVectorizer
 class Reader(object):
 
     """
-    A little helper class to make picklable iterators out of example
-    dictionary generators
+    A helper class to make picklable iterators out of example
+    dictionary generators.
 
     Parameters
     ----------
@@ -104,26 +104,27 @@ class Reader(object):
     @classmethod
     def for_path(cls, path_or_list, **kwargs):
         """
-        Instantiate the appropriate Reader sub-class, given a path
-        with an appropriate extension.
+        Instantiate the appropriate Reader sub-class based on the
+        file extension of the given path. Or use a dictionary reader
+        if the input is a list of dictionaries.
 
         Parameters
         ----------
-        path_or_list : str or list or dicts
+        path_or_list : str or list of dicts
             A path or list of example dictionaries.
         kwargs : dict, optional
             The arguments to the Reader object being instantiated.
 
         Returns
         -------
-        reader : Reader object
+        reader : skll.Reader
             A new instance of the Reader sub-class that is
             appropriate for the given path.
 
         Raises
         ------
         ValueError
-            If file does not have appropriate extension.
+            If file does not have a valid extension.
         """
         if not isinstance(path_or_list, string_types):
             return DictListReader(path_or_list)
@@ -182,7 +183,7 @@ class Reader(object):
         Returns
         -------
         feature_set : skll.FeatureSet
-            FeatureSet representing the file we read in.
+            `FeatureSet` instance representing the input file.
 
         Raises
         ------
@@ -191,7 +192,7 @@ class Reader(object):
         ValueError
             If no features are found.
         ValueError
-            If IDs are not unique.
+            If the example IDs are not unique.
         """
         self.logger.debug('Path: %s', self.path_or_list)
 
