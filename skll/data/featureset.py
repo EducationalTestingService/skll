@@ -3,6 +3,8 @@
 Classes related to storing/merging feature sets.
 
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
+:author: Jeremy Biggs (jbiggs@ets.org)
 :organization: ETS
 """
 
@@ -23,7 +25,7 @@ class FeatureSet(object):
 
     """
     Encapsulation of all of the features, values, and metadata about a given
-    set of data. This replaces ``ExamplesTuple`` from older versions.
+    set of data. This replaces ``ExamplesTuple`` from older versions of SKLL.
 
     Parameters
     ----------
@@ -34,12 +36,12 @@ class FeatureSet(object):
     labels : np.array, optional
         labels for this set.
         Defaults to None
-    feature : list of dict or array-like
+    feature : list of dict or array-like, optional
         The features for each instance represented as either a
         list of dictionaries or an array-like (if `vectorizer` is
         also specified).
         Defaults to None
-    vectorizer : DictVectorizer or FeatureHasher
+    vectorizer : DictVectorizer or FeatureHasher, optional
         Vectorizer which will be used to generate the feature matrix.
         Defaults to None.
 
@@ -95,12 +97,12 @@ class FeatureSet(object):
 
     def __contains__(self, value):
         """
-        Check if example ID is in set
+        Check if example ID is in the FeatureSet.
 
         Parameters
         ----------
         value
-            The value to check to see if it is in the FeatureSet.
+            The value to check.
         """
         return value in self.ids
 
@@ -110,8 +112,8 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        other : skll.FeautreSet
-            The other feature_set to check equivalence with.
+        other : skll.FeatureSet
+            The other `FeatureSet` to check equivalence with.
 
         Note
         ----
@@ -154,7 +156,7 @@ class FeatureSet(object):
 
     def __len__(self):
         """
-        The number of rows in the feature_set.
+        The number of rows in the `FeatureSet`.
         """
         return self.features.shape[0]
 
@@ -165,17 +167,17 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        other : skll.FeautreSet
-            The other feature_set to add.
+        other : skll.FeatureSet
+            The other `FeatureSet` to add.
 
         Raises
         ------
         ValueError
-            If IDs are not in the same order in each feature_set.
+            If IDs are not in the same order in each `FeatureSet` instance.
         ValueError
-            If vectorizers are different between feature_sets.
+            If vectorizers are different between the two `FeatureSet` instances.
         ValueError
-            If there are duplicate feature_names.
+            If there are duplicate feature names.
         ValueError
             If there are conflicting labels.
         """
@@ -240,8 +242,8 @@ class FeatureSet(object):
 
     def filter(self, ids=None, labels=None, features=None, inverse=False):
         """
-        Removes or keeps features and/or examples from the Featureset depending
-        on the passed in parameters. Filtering is done in-place.
+        Removes or keeps features and/or examples from the `Featureset` depending
+        on the parameters. Filtering is done in-place.
 
         Parameters
         ----------
@@ -272,8 +274,8 @@ class FeatureSet(object):
         Raises
         ------
         ValueError
-            If attempting to filter feature_set with FeatureHasher
-            by feature.
+            If attempting to use features to filter a `FeatureSet` that
+            uses a FeatureHasher vectorizer.
         """
         # Construct mask that indicates which examples to keep
         mask = np.ones(len(self), dtype=bool)
@@ -316,7 +318,7 @@ class FeatureSet(object):
         Parameters
         ----------
         ids : list of str/float, optional
-            Examples to keep in the FeatureSet. If `None`, no ID
+            Examples to keep in the `FeatureSet`. If `None`, no ID
             filtering takes place.
             Defaults to None.
         labels : list of str/float, optional
@@ -324,14 +326,14 @@ class FeatureSet(object):
             no label filtering takes place.
             Defaults to None
         features : list of str, optional
-            Features to keep in the FeatureSet. To help with
+            Features to keep in the `FeatureSet`. To help with
             filtering string-valued features that were converted
             to sequences of boolean features when read in, any
-            features in the FeatureSet that contain a `=` will be
+            features in the `FeatureSet` that contain a `=` will be
             split on the first occurrence and the prefix will be
             checked to see if it is in `features`.
             If `None`, no feature filtering takes place.
-            Cannot be used if FeatureSet uses a FeatureHasher for
+            Cannot be used if `FeatureSet` uses a FeatureHasher for
             vectorization.
             Defaults to None
         inverse : bool, optional
@@ -352,7 +354,7 @@ class FeatureSet(object):
         Raises
         ------
         ValueError
-            If vectorizer is not DictVectorizer.
+            If the vectorizer is not a `DictVectorizer`.
         """
         if self.features is not None and not isinstance(self.vectorizer,
                                                         DictVectorizer):
@@ -383,12 +385,14 @@ class FeatureSet(object):
 
     def __sub__(self, other):
         """
-        Subset feature_set by removing feature from other.
+        Subset `FeatureSet` by removing all the features from the
+        other given `FeatureSet` instance.
 
         Parameters
         ----------
-        other : skll.FeautreSet
-            The other feature_set to check equivalence with.
+        other : skll.FeatureSet
+            The other `FeatureSet` containing the features that should
+            be removed from this `FeatureSet`.
 
         Returns
         -------
@@ -402,7 +406,7 @@ class FeatureSet(object):
     @property
     def has_labels(self):
         """
-        Check if feature_set has finite labels.
+        Check if `FeatureSet` has finite labels.
 
         Returns
         -------
@@ -419,7 +423,7 @@ class FeatureSet(object):
         """
         Returns
         -------
-        A string representation of FeatureSet
+        A string representation of `FeatureSet`
         """
         return str(self.__dict__)
 
@@ -427,7 +431,7 @@ class FeatureSet(object):
         """
         Returns
         -------
-        A string representation of FeatureSet
+        A string representation of `FeatureSet`
         """
         return repr(self.__dict__)
 
@@ -440,8 +444,8 @@ class FeatureSet(object):
 
         Returns
         -------
-        A specific example by row number, or if given a slice,
-        a new FeatureSet containing a subset of the data.
+        A specific example by row number or, if given a slice,
+        a new `FeatureSet` instance containing a subset of the data.
         """
         # Check if we're slicing
         if isinstance(value, slice):
@@ -463,24 +467,24 @@ class FeatureSet(object):
     @staticmethod
     def split_by_ids(fs, ids_for_split1, ids_for_split2=None):
         """
-        Split the given FeatureSet into two new FeatureSet instances based on
+        Split the `FeatureSet` into two new `FeatureSet` instances based on
         the given IDs for the two splits.
 
         Parameters
         ----------
         fs : skll.FeatureSet
-            The FeatureSet instance to split.
+            The `FeatureSet` instance to split.
         ids_for_split1 : list of int
             A list of example IDs which will be split out into
-            the first FeatureSet instance. Note that the
+            the first `FeatureSet` instance. Note that the
             FeatureSet instance will respect the order of the
             specified IDs.
         ids_for_split2 : list of int, optional
             An optional ist of example IDs which will be
-            split out into the second FeatureSet instance.
-            Note that the FeatureSet instance will respect
+            split out into the second `FeatureSet` instance.
+            Note that the `FeatureSet` instance will respect
             the order of the specified IDs. If this is
-            not specified, then the second FeatureSet
+            not specified, then the second `FeatureSet`
             instance will contain the complement of the
             first set of IDs sorted in ascending order.
             Defaults to None.
@@ -488,9 +492,9 @@ class FeatureSet(object):
         Returns
         -------
         fs1 : skll.FeatureSet
-            The first feature_set.
+            The first `FeatureSet`.
         fs2 : skll.FeatureSet
-            The second feature_set.
+            The second `FeatureSet`.
         """
 
         # Note: an alternative way to implement this is to make copies
@@ -526,27 +530,27 @@ class FeatureSet(object):
     @staticmethod
     def from_data_frame(df, name, labels_column=None, vectorizer=None):
         """
-        Helper function to create a FeatureSet object from a `pandas.DataFrame`.
+        Helper function to create a `FeatureSet` object from a `pandas.DataFrame`.
         Will raise an Exception if pandas is not installed in your environment.
-        `FeatureSet` `ids` will be the index on `df`.
+        `FeatureSet` `ids` will be the index from the given frame.
 
         Parameters
         ----------
         df : pd.DataFrame
-            The pandas.DataFrame object you'd like to use as a feature set.
+            The pandas.DataFrame object to use as a `FeatureSet`.
         name : str
-            The name of this feature set.
+            The name of the output `FeatureSet`.
         labels_column : str, optional
             The name of the column containing the labels (data to predict).
             Defaults to None.
-        vectorizer : DictVectorizer or FeatureHasher
+        vectorizer : DictVectorizer or FeatureHasher, optional
             Vectorizer which will be used to generate the feature matrix.
             Defaults to None.
 
         Returns
         -------
         feature_set : skll.FeatureSet
-            A feature_set object from data_frame.
+            A `FeatureSet` object generated from from the given data frame.
         """
         if labels_column:
             feature_columns = [column for column in df.columns if column != labels_column]
