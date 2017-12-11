@@ -44,7 +44,7 @@ def main(argv=None):
     ----------
     argv : list of str
         List of arguments, as if specified on the command-line.
-        If None, ``sys.argv[1:]`` is used instead.
+        If None, `sys.argv[1:]` is used instead.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(

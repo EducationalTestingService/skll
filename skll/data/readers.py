@@ -156,7 +156,7 @@ class Reader(object):
     def _print_progress(self, progress_num, end="\r"):
         """
         Little helper to print out progress numbers in proper format.
-        Nothing gets printed if ``self.quiet`` is ``True``.
+        Nothing gets printed if `self.quiet` is `True`.
 
         Parameters
         ----------
@@ -177,8 +177,8 @@ class Reader(object):
 
     def read(self):
         """
-        Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
-        ``.megam``, ``.ndj``, or ``.tsv`` formats.
+        Loads examples in the `.arff`, `.csv`, `.jsonlines`, `.libsvm`,
+        `.megam`, `.ndj`, or `.tsv` formats.
 
         Returns
         -------
@@ -263,9 +263,9 @@ class DictListReader(Reader):
 
     """
     This class is to facilitate programmatic use of
-    :meth:`~skll.learner.Learner.predict` and other functions that take
-    :class:`~skll.data.featureset.FeatureSet` objects as input. It iterates
-    over examples in the same way as other :class:`Reader` clases, but uses a
+    `~skll.learner.Learner.predict` and other functions that take
+    `~skll.data.featureset.FeatureSet` objects as input. It iterates
+    over examples in the same way as other `Reader` classes, but uses a
     list of example dictionaries instead of a path to a file.
     """
 
@@ -322,7 +322,7 @@ class DictListReader(Reader):
 class NDJReader(Reader):
 
     """
-    Reader to create a :class:`~skll.data.featureset.FeatureSet` out of a
+    Reader to create a `~skll.data.featureset.FeatureSet` out of a
     .jsonlines/.ndj file
 
     If you would like to include example/instance IDs in your files, they
@@ -389,7 +389,7 @@ class NDJReader(Reader):
 class MegaMReader(Reader):
 
     """
-    Reader to create a :class:`~skll.data.featureset.FeatureSet` out ouf a
+    Reader to create a `~skll.data.featureset.FeatureSet` out ouf a
     MegaM -fvals file.
 
     If you would like to include example/instance IDs in your files, they
@@ -478,7 +478,7 @@ class MegaMReader(Reader):
 class LibSVMReader(Reader):
 
     """
-    Reader to create a :class:`~skll.data.featureset.FeatureSet` out ouf a
+    Reader to create a `~skll.data.featureset.FeatureSet` out ouf a
     LibSVM/LibLinear/SVMLight file.
 
     We use a specially formatted comment for storing example IDs, class names,
@@ -598,11 +598,11 @@ class LibSVMReader(Reader):
 class DelimitedReader(Reader):
 
     """
-    Reader for creating a :class:`~skll.data.featureset.FeatureSet` out of a
+    Reader for creating a `~skll.data.featureset.FeatureSet` out of a
     delimited (CSV/TSV) file.
 
     If you would like to include example/instance IDs in your files, they
-    must be specified as an ``id`` column.
+    must be specified as an `id` column.
 
     Also, for ARFF, CSV, and TSV files, there must be a column with the
     name specified by `label_col` if the data is labelled. For ARFF files,
@@ -692,7 +692,7 @@ class DelimitedReader(Reader):
 class CSVReader(DelimitedReader):
 
     """
-    Reader for creating a :class:`~skll.data.featureset.FeatureSet` out of a
+    Reader for creating a `~skll.data.featureset.FeatureSet` out of a
     CSV file.
 
     If you would like to include example/instance IDs in your files, they
@@ -717,7 +717,7 @@ class CSVReader(DelimitedReader):
 class ARFFReader(DelimitedReader):
 
     """
-    Reader for creating a :class:`~skll.data.featureset.FeatureSet` out of an
+    Reader for creating a `~skll.data.featureset.FeatureSet` out of an
     ARFF file.
 
     If you would like to include example/instance IDs in your files, they
@@ -838,7 +838,7 @@ class ARFFReader(DelimitedReader):
 class TSVReader(DelimitedReader):
 
     """
-    Reader for creating a :class:`~skll.data.featureset.FeatureSet` out of a
+    Reader for creating a `~skll.data.featureset.FeatureSet` out of a
     TSV file.
 
     If you would like to include example/instance IDs in your files, they

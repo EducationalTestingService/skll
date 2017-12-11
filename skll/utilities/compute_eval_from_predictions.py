@@ -162,7 +162,7 @@ def main(argv=None):
     Parameters
     ----------
     argv: list of str
-        List of arguments, as if specified on the command-line. If None, ``sys.argv[1:]``
+        List of arguments, as if specified on the command-line. If None, `sys.argv[1:]`
         is used instead.
     """
     # Get command line arguments

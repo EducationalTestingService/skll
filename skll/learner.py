@@ -1012,7 +1012,7 @@ class Learner(object):
     @property
     def model_params(self):
         """
-        Model parameters (i.e., weights) for ``LinearModel`` (e.g., ``Ridge``)
+        Model parameters (i.e., weights) for `LinearModel` (e.g., `Ridge`)
         regression and liblinear models.
 
         Returns
@@ -1306,9 +1306,9 @@ class Learner(object):
             dictionary is used to map between string
             labels and their corresponding numerical
             values.  This should only be done once per
-            experiment, so when ``cross_validate`` calls
-            ``train``, ``create_label_dict`` gets set to
-            ``False``.
+            experiment, so when `cross_validate` calls
+            `train`, `create_label_dict` gets set to
+            `False`.
             Defaults to True.
 
         Returns
@@ -1909,8 +1909,8 @@ class Learner(object):
              Whether to save the cv fold ids or not?
              Defaults to False.
         use_custom_folds_for_grid_search : bool, optional
-            If ``cv_folds`` is a custom dictionary, but
-            ``grid_search_folds`` is not, perhaps due to user
+            If `cv_folds` is a custom dictionary, but
+            `grid_search_folds` is not, perhaps due to user
             oversight, should the same custom dictionary
             automatically be used for the inner grid-search
             cross-validation?
@@ -1925,7 +1925,7 @@ class Learner(object):
             The grid search scores for each fold.
         skll_fold_ids : dict
             A dictionary containing the test-fold number for each id
-            if ``save_cv_folds`` is ``True``, otherwise ``None``.
+            if `save_cv_folds` is `True`, otherwise `None`.
 
         Raises
         ------
@@ -2067,7 +2067,7 @@ class Learner(object):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
-        curve generation (cf. ```sklearn.model_selection.learning_curve```).
+        curve generation (cf.`sklearn.model_selection.learning_curve`).
 
 
         Parameters

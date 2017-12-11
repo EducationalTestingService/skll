@@ -25,7 +25,7 @@ class FeatureSet(object):
 
     """
     Encapsulation of all of the features, values, and metadata about a given
-    set of data. This replaces ``ExamplesTuple`` from older versions of SKLL.
+    set of data. This replaces `ExamplesTuple` from older versions of SKLL.
 
     Parameters
     ----------
@@ -49,10 +49,10 @@ class FeatureSet(object):
     --------
     FeatureSets can only be equal if the order of the instances is
     identical because these are stored as lists/arrays. Since scikit-learn's
-    ``DictVectorizer`` automatically sorts the underlying feature matrix
+    `DictVectorizer` automatically sorts the underlying feature matrix
     if it is sparse, we do not do any sorting before checking for equality.
     This is not a problem because we _always_ use sparse matrices with
-    ``DictVectorizer`` when creating FeatureSets.
+    `DictVectorizer` when creating FeatureSets.
 
     Notes
     -----
@@ -312,7 +312,7 @@ class FeatureSet(object):
     def filtered_iter(self, ids=None, labels=None, features=None,
                       inverse=False):
         """
-        A version of ``__iter__`` that retains only the specified features
+        A version of `__iter__` that retains only the specified features
         and/or examples from the output.
 
         Parameters
@@ -396,7 +396,7 @@ class FeatureSet(object):
 
         Returns
         -------
-        A copy of ``self`` with all features in ``other`` removed.
+        A copy of `self` with all features in `other` removed.
         """
         new_set = deepcopy(self)
         new_set.filter(features=other.vectorizer.feature_names_,

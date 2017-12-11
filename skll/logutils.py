@@ -8,6 +8,7 @@ Functions related to logging in SKLL.
 import logging
 from logging import FileHandler
 
+
 def get_skll_logger(name, filepath=None, log_level=logging.INFO):
     """
     Create and return logger instances that are appropriate for use

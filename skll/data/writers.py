@@ -34,12 +34,12 @@ class Writer(object):
     ----------
     path : str
         A path to the feature file we would like to create. The suffix
-        to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
-        ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets``
-        is not ``None``, when calling the ``write()`` method, path is
+        to this filename must be `.arff`, `.csv`, `.jsonlines`,
+        `.libsvm`, `.megam`, `.ndj`, or `.tsv`. If `subsets`
+        is not `None`, when calling the `write()` method, path is
         assumed to be a string containing the path to the directory to
         write the feature files with an additional file extension
-        specifying the file type. For example ``/foo/.csv``.
+        specifying the file type. For example `/foo/.csv`.
     feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     quiet : bool
@@ -53,11 +53,11 @@ class Writer(object):
         A mapping from subset names to lists of feature names
         that are included in those sets. If given, a feature
         file will be written for every subset (with the name
-        containing the subset name as suffix to ``path``).
+        containing the subset name as suffix to `path`).
         Note, since string- valued features are automatically
         converted into boolean features with names of the form
-        ``FEATURE_NAME=STRING_VALUE``, when doing the
-        filtering, the portion before the ``=`` is all that's
+        `FEATURE_NAME=STRING_VALUE`, when doing the
+        filtering, the portion before the `=` is all that's
         used for matching. Therefore, you do not need to
         enumerate all of these boolean feature names in your
         mapping.
@@ -96,18 +96,18 @@ class Writer(object):
         ----------
         path : str
             A path to the feature file we would like to create. The
-            suffix to this filename must be ``.arff``, ``.csv``,
-            ``.jsonlines``, ``.libsvm``, ``.megam``, ``.ndj``, or
-            ``.tsv``. If ``subsets`` is not ``None``, when calling the
-            ``write()`` method, path is assumed to be a string
+            suffix to this filename must be `.arff`, `.csv`,
+            `.jsonlines`, `.libsvm`, `.megam`, `.ndj`, or
+            `.tsv`. If `subsets` is not `None`, when calling the
+            `write()` method, path is assumed to be a string
             containing the path to the directory to write the feature
             files with an additional file extension specifying the
-            file type. For example ``/foo/.csv``.
+            file type. For example `/foo/.csv`.
         feature_set : skll.FeatureSet
             The FeatureSet to dump to a file.
         kwargs : dict
-            The keyword arguments for ``for_path`` are the same as
-            the initializer for the desired ``Writer`` subclass.
+            The keyword arguments for `for_path` are the same as
+            the initializer for the desired `Writer` subclass.
 
         Returns
         -------
@@ -195,7 +195,7 @@ class Writer(object):
             The file being written to.
         filter_features : set of str
             If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
+            FeatureSet to `output_file`, these are the
             features to include in this file.
         """
         pass
@@ -231,10 +231,10 @@ class DelimitedFileWriter(Writer):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If ``subsets`` is not ``None``, this is assumed to be a string
+        If `subsets` is not `None`, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example ``/foo/.csv``.
+        type. For example `/foo/.csv`.
     feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     quiet : bool
@@ -310,7 +310,7 @@ class DelimitedFileWriter(Writer):
             The file being written to.
         filter_features : set of str
             If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
+            FeatureSet to `output_file`, these are the
             features to include in this file.
         """
         # Initialize DictWriter that will be used to write header and rows
@@ -368,10 +368,10 @@ class CSVWriter(DelimitedFileWriter):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If ``subsets`` is not ``None``, this is assumed to be a string
+        If `subsets` is not `None`, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example ``/foo/.csv``.
+        type. For example `/foo/.csv`.
     feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     kwargs : dict, optional
@@ -393,10 +393,10 @@ class TSVWriter(DelimitedFileWriter):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If ``subsets`` is not ``None``, this is assumed to be a string
+        If `subsets` is not `None`, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example ``/foo/.tsv``.
+        type. For example `/foo/.tsv`.
     feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     kwargs : dict, optional
@@ -418,10 +418,10 @@ class ARFFWriter(DelimitedFileWriter):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If ``subsets`` is not ``None``, this is assumed to be a string
+        If `subsets` is not `None`, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example ``/foo/.arff``.
+        type. For example `/foo/.arff`.
     feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     relation : str, optional
@@ -454,7 +454,7 @@ class ARFFWriter(DelimitedFileWriter):
             The file being written to.
         filter_features : set of str
             If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
+            FeatureSet to `output_file`, these are the
             features to include in this file.
         """
         fieldnames = self._get_fieldnames(filter_features)
@@ -554,10 +554,10 @@ class NDJWriter(Writer):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If ``subsets`` is not ``None``, this is assumed to be a string
+        If `subsets` is not `None`, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example ``/foo/.ndj``.
+        type. For example `/foo/.ndj`.
     feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     kwargs : dict, optional
@@ -601,10 +601,10 @@ class LibSVMWriter(Writer):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If ``subsets`` is not ``None``, this is assumed to be a string
+        If `subsets` is not `None`, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example ``/foo/.libsvm``.
+        type. For example `/foo/.libsvm`.
     feature_set : skll.FeatureSet
         The FeatureSet to dump to a file.
     kwargs : dict, optional

@@ -206,10 +206,11 @@ class SKLLConfigParser(configparser.ConfigParser):
 
     def validate(self):
         """
-        Validate specified options to check:
-             (a) no invalid options are specified
-             (b) options are not specified in multiple sections
-             (c) options are specified in the correct section
+        Validate specified options to check ::
+
+            (a) no invalid options are specified
+            (b) options are not specified in multiple sections
+            (c) options are specified in the correct section
 
         Raises
         ------
