@@ -69,16 +69,16 @@ _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 
-class NumpyTypeEncoder(json.JSONEncoder):
 
-    '''
+class NumpyTypeEncoder(json.JSONEncoder):
+    """
     This class is used when serializing results, particularly the input label
     values if the input has int-valued labels.  Numpy int64 objects can't
     be serialized by the json module, so we must convert them to int objects.
 
     A related issue where this was adapted from:
     http://stackoverflow.com/questions/11561932/why-does-json-dumpslistnp-arange5-fail-while-json-dumpsnp-arange5-tolis
-    '''
+    """
 
     def default(self, obj):
         if isinstance(obj, np.int64):
@@ -90,18 +90,22 @@ class NumpyTypeEncoder(json.JSONEncoder):
 
 def _get_stat_float(label_result_dict, stat):
     """
-    Little helper for getting output for precision, recall, and f-score
-    columns in confusion matrix.
+    A helper function to get output for the precision, recall, and f-score
+    columns in the confusion matrix.
 
-    :param label_result_dict: Dictionary containing the stat we'd like
-                              to retrieve for a particular label.
-    :type label_result_dict: dict
-    :param stat: The statistic we're looking for in the dictionary.
-    :type stat: str
+    Parameters
+    ----------
+    label_result_dict : dict
+        Dictionary containing the stat we'd like
+        to retrieve for a particular label.
+    stat : str
+        The statistic we're looking for in the dictionary.
 
-    :return: The value of the stat if it's in the dictionary, and NaN
-             otherwise.
-    :rtype: float
+    Returns
+    -------
+    stat_float : float
+        The value of the stat if it's in the dictionary, and NaN
+        otherwise.
     """
     if stat in label_result_dict and label_result_dict[stat] is not None:
         return label_result_dict[stat]
@@ -111,12 +115,15 @@ def _get_stat_float(label_result_dict, stat):
 
 def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
     """
-    Function to take a dictionary of id:test-fold-number and
-    write it to a file
+    Function to take a dictionary of id->test-fold-number and
+    write it to a file.
 
-    :param skll_fold_ids: the dictionary of id: test-fold-numbers
-    :param skll_fold_ids_file: the open file handle to write to
-    :return: None
+    Parameters
+    ----------
+    skll_fold_ids : dict
+        Dictionary with ids as keys and test-fold-numbers as values.
+    skll_fold_ids_file : file buffer
+        An open file handler to write to.
     """
 
     f = csv.writer(skll_fold_ids_file)
@@ -133,13 +140,15 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     json files and returns a single file that summarizes
     all of them.
 
-    :param result_json_paths: A list of paths to the
-                              individual result json files.
-    :type result_json_paths: list
-
-    :returns: The output file to contain a summary of the individual result
-              files.
-    :rtype: file
+    Parameters
+    ----------
+    result_json_paths : list of str
+        A list of paths to the individual result JSON files.
+    output_file : str
+        The path to the output file (TSV format).
+    ablation : int, optional
+        The number of features to remove when doing ablation experiment.
+        Defaults to 0.
     """
     learner_result_dicts = []
     # Map from feature set names to all features in them
@@ -197,11 +206,12 @@ def _write_learning_curve_file(result_json_paths, output_file):
     results json files and writes out a single TSV file with the
     learning curve data.
 
-    :param result_json_paths: A list of paths to the
-                              individual result json files.
-    :type result_json_paths: list
-    :param output_file: The path to the output TSV file.
-    :type output_file: string
+    Parameters
+    ----------
+    result_json_paths : list of str
+        A list of paths to the individual result JSON files.
+    output_file : str
+        The path to the output file (TSV format).
     """
 
     learner_result_dicts = []
@@ -268,6 +278,14 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     """
     Function to take all of the results from all of the folds and print
     nice tables with the results.
+
+    Parameters
+    ----------
+    learner_result_dicts : list of str
+        A list of paths to the individual result JSON files.
+    output_file : file buffer, optional
+        The file buffer to print to.
+        Defaults to ``sys.stdout``.
     """
     if not learner_result_dicts:
         raise ValueError('Result dictionary list is empty!')
@@ -359,44 +377,55 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
     """
     Load a list of feature files and merge them.
 
-    :param dir_path: Path to the directory that contains the feature files.
-    :type dir_path: str
-    :param feat_files: List of feature file prefixes
-    :type feat_files: str
-    :param suffix: Suffix to add to feature file prefixes to get full
-                   filenames.
-    :type suffix: str
-    :param label_col: Name of the column which contains the class labels.
-                      If no column with that name exists, or `None` is
-                      specified, the data is considered to be unlabelled.
-    :type label_col: str
-    :param id_col: Name of the column which contains the instance IDs.
-                   If no column with that name exists, or `None` is
-                   specified, example IDs will be automatically generated.
-    :type id_col: str
-    :param ids_to_floats: Convert IDs to float to save memory. Will raise error
-                          if we encounter an a non-numeric ID.
-    :type ids_to_floats: bool
-    :param quiet: Do not print "Loading..." status message to stderr.
-    :type quiet: bool
-    :param class_map: Mapping from original class labels to new ones. This is
-                      mainly used for collapsing multiple labels into a single
-                      class. Anything not in the mapping will be kept the same.
-    :type class_map: dict from str to str
-    :param feature_hasher: Should we use a FeatureHasher when vectorizing
-                           features?
-    :type feature_hasher: bool
-    :param num_features: The number of features to use with the FeatureHasher.
-                         This should always be set to the power of 2 greater
-                         than the actual number of features you're using.
-    :type num_features: int
-    :param logger: A logger instance to use to log messages instead of creating
-                   a new one by default.
-    :type logger: logging.Logger
+    Parameters
+    ----------
+    dir_path : str
+        Path to the directory that contains the feature files.
+    feat_files : list of str
+        A list of feature file prefixes.
+    suffix : str
+        The suffix to add to feature file prefixes to get the full filenames.
+    id_col : str, optional
+        Name of the column which contains the instance IDs.
+        If no column with that name exists, or `None` is
+        specified, example IDs will be automatically generated.
+        Defaults to ``'id'``.
+    label_col : str, optional
+        Name of the column which contains the class labels.
+        If no column with that name exists, or `None` is
+        specified, the data is considered to be unlabeled.
+        Defaults to ``'y'``.
+    ids_to_floats : bool, optional
+        Whether to convert the IDs to floats to save memory. Will raise error
+        if we encounter non-numeric IDs.
+        Defaults to ``False``.
+    quiet : bool, optional
+        Do not print "Loading..." status message to stderr.
+        Defaults to ``False``.
+    class_map : dict, optional
+        Mapping from original class labels to new ones. This is
+        mainly used for collapsing multiple labels into a single
+        class. Anything not in the mapping will be kept the same.
+        Defaults to ``None``.
+    feature_hasher : bool, optional
+        Should we use a FeatureHasher when vectorizing
+        features?
+        Defaults to ``False``.
+    num_features : int, optional
+        The number of features to use with the ``FeatureHasher``.
+        This should always be set to the power of 2 greater
+        than the actual number of features you're using.
+        Defaults to ``None``.
+    logger : logging.Logger, optional
+        A logger instance to use to log messages instead of creating
+        a new one by default.
+        Defaults to ``None``.
 
-    :returns: The labels, IDs, features, and feature vectorizer representing
-              the given featureset.
-    :rtype: FeatureSet
+    Returns
+    -------
+    merged_set : skll.FeatureSet
+        A ``FeatureSet`` instance containing the specified labels, IDs, features,
+        and feature vectorizer.
     """
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
@@ -431,7 +460,26 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
 
 
 def _classify_featureset(args):
-    """ Classification job to be submitted to grid """
+    """
+    Classification job to be submitted to grid.
+
+    Parameters
+    ----------
+    args : dict
+        A dictionary with arguments for classifying the
+        ``FeatureSet`` instance.
+
+    Returns
+    -------
+    res : list of dicts
+        The results of the classification, in the format
+        of a list of dictionaries.
+
+    Raises
+    ------
+    ValueError
+        If extra unknown arguments are passed to the function.
+    """
 
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
@@ -772,6 +820,21 @@ def _create_learner_result_dicts(task_results,
     """
     Create the learner result dictionaries that are used to create JSON and
     plain-text results files.
+
+    Parameters
+    ----------
+    task_results : list
+        The task results list.
+    grid_scores : list
+        The grid scores list.
+    learner_result_dict_base : dict
+        Base dictionary for all learner results.
+
+    Returns
+    -------
+    res : list of dicts
+        The results of the learners, as a list of
+        dictionaries.
     """
     res = []
 
@@ -906,41 +969,59 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     """
     Takes a configuration file and runs the specified jobs on the grid.
 
-    :param config_path: Path to the configuration file we would like to use.
-    :type config_path: str
-    :param local: Should this be run locally instead of on the cluster?
-    :type local: bool
-    :param overwrite: If the model files already exist, should we overwrite
-                      them instead of re-using them?
-    :type overwrite: bool
-    :param queue: The DRMAA queue to use if we're running on the cluster.
-    :type queue: str
-    :param hosts: If running on the cluster, these are the machines we should
-                  use.
-    :type hosts: list of str
-    :param write_summary: Write a tsv file with a summary of the results.
-    :type write_summary: bool
-    :param quiet: Suppress printing of "Loading..." messages.
-    :type quiet: bool
-    :param ablation: Number of features to remove when doing an ablation
-                     experiment. If positive, we will perform repeated ablation
-                     runs for all combinations of features removing the
-                     specified number at a time. If ``None``, we will use all
-                     combinations of all lengths. If 0, the default, no
-                     ablation is performed. If negative, a ``ValueError`` is
-                     raised.
-    :type ablation: int or None
-    :param resume: If result files already exist for an experiment, do not
-                   overwrite them. This is very useful when doing a large
-                   ablation experiment and part of it crashes.
-    :type resume: bool
-    :param log_level: The level for logging messages (default: INFO)
-    :type log_level: str
+    Parameters
+    ----------
+    config_file : str
+        Path to the configuration file we would like to use.
+    local : bool, optional
+        Should this be run locally instead of on the cluster?
+        Defaults to ``False``.
+    overwrite : bool, optional
+        If the model files already exist, should we overwrite
+        them instead of re-using them?
+        Defaults to ``True``.
+    queue : str, optional
+        The DRMAA queue to use if we're running on the cluster.
+        Defaults to ``'all.q'``.
+    hosts : list of str, optional
+        If running on the cluster, these are the machines we should use.
+        Defaults to ``None``.
+    write_summary : bool, optional
+        Write a TSV file with a summary of the results.
+        Defaults to ``True``.
+    quite : bool, optional
+        Suppress printing of "Loading..." messages.
+        Defaults to ``False``.
+    ablation : int, optional
+        Number of features to remove when doing an ablation
+        experiment. If positive, we will perform repeated ablation
+        runs for all combinations of features removing the
+        specified number at a time. If ``None``, we will use all
+        combinations of all lengths. If 0, the default, no
+        ablation is performed. If negative, a ``ValueError`` is
+        raised.
+        Defaults to 0.
+    resume : bool, optional
+        If result files already exist for an experiment, do not
+        overwrite them. This is very useful when doing a large
+        ablation experiment and part of it crashes.
+        Defaults to ``False``.
+    log_level : str, optional
+        The level for logging messages.
+        Defaults to ``logging.INFO``.
 
-    :return: A list of paths to .json results files for each variation in the
-             experiment.
-    :rtype: list of str
+    Returns
+    -------
+    result_json_paths : list of str
+        A list of paths to .json results files for each variation in the
+        experiment.
 
+    Raises
+    ------
+    ValueError
+        If value for ``"ablation"`` is not a positive int or ``None``.
+    OSError
+        If the lenth of the ``FeatureSet`` name > 210.
     """
 
     # Read configuration
@@ -1193,6 +1274,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 def _check_job_results(job_results):
     """
     See if we have a complete results dictionary for every job.
+
+    Parameters
+    ----------
+    job_results : list of dicts
+        A list of job result dictionaries.
     """
     logger = get_skll_logger('experiment')
     logger.info('Checking job results')
@@ -1205,6 +1291,20 @@ def _check_job_results(job_results):
 def _compute_ylimits_for_featureset(df, metrics):
     """
     Compute the y-limits for learning curve plots.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        A data_frame with relevant metric information for
+        train and test.
+    metrics : list of str
+        A list of metrics for learning curve plots.
+
+    Returns
+    -------
+    ylimits : dict
+        A dictionary, with metric names as keys
+        and a tuple of (lower_limit, upper_limit) as values.
     """
 
     # set the y-limits of the curves depending on what kind
@@ -1246,6 +1346,15 @@ def _generate_learning_curve_plots(experiment_name,
     """
     Generate the learning curve plots given the TSV output
     file from a learning curve experiment.
+
+    Parameters
+    ----------
+    experiment_name : str
+        The name of the experiment.
+    output_dir : str
+        Path to the output directory for the plots.
+    learning_curve_tsv_file : str
+        The path to the learning curve TSV file.
     """
 
     # use pandas to read in the TSV file into a data frame

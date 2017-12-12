@@ -4,7 +4,7 @@
 Script that converts feature files from one format to another
 
 :author: Nitin Madnani (nmadnani@ets.org)
-:date: September 2013
+:organization: ETS
 """
 
 from __future__ import print_function, unicode_literals
@@ -26,7 +26,7 @@ from skll.version import __version__
 
 def _pair_to_dict_tuple(pair):
     """
-    Little helper method for constructing mappings from feature/class names to
+    A helper function for constructing mappings from feature/class names to
     numbers.
     """
     number, name = pair.split('=')
@@ -40,10 +40,13 @@ def main(argv=None):
     """
     Handles command line arguments and gets things started.
 
-    :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv[1:]`` is used instead.
-    :type argv: list of str
+    Parameters
+    ----------
+    argv : list of str
+        List of arguments, as if specified on the command-line.
+        If None, ``sys.argv[1:]`` is used instead.
     """
+
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Takes an input feature file and converts it to another \

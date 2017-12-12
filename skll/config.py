@@ -37,7 +37,9 @@ _VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
 
 class SKLLConfigParser(configparser.ConfigParser):
 
-    """A custom configuration file parser for SKLL"""
+    """
+    A custom configuration file parser for SKLL
+    """
 
     def __init__(self):
 
@@ -141,7 +143,12 @@ class SKLLConfigParser(configparser.ConfigParser):
 
     def _find_invalid_options(self):
         """
-        Returns the set of invalid options specified by the user
+        Find the set of invalid options specified by the user.
+
+        Returns
+        -------
+        invalid_options : set of str
+            The set of invalid options specified by the user.
         """
 
         # compute a list of all the valid options
@@ -164,13 +171,20 @@ class SKLLConfigParser(configparser.ConfigParser):
         (specified) value and if that's not the right section as indicated by
         our section mapping, then we need to raise an exception.
 
-        .. note::
+        Returns
+        -------
+        incorrectly_specified_options : list of str
+            A list of incorrectly specified options.
+        multiply_specified_options : list of str
+            A list of options specified more than once.
 
-            This will NOT work if the user specifies the default value for the
-            option but puts it in the wrong section. However, since specifying
-            the default value for the option  does not result in running an
-            experiment with unexpected settings, this is not really a major
-            problem.
+        Notes
+        -----
+        This will NOT work if the user specifies the default value for the
+        option but puts it in the wrong section. However, since specifying
+        the default value for the option  does not result in running an
+        experiment with unexpected settings, this is not really a major
+        problem.
         """
         incorrectly_specified_options = []
         multiply_specified_options = []
@@ -191,10 +205,21 @@ class SKLLConfigParser(configparser.ConfigParser):
         return (incorrectly_specified_options, multiply_specified_options)
 
     def validate(self):
-        """Validate specified options to check:
-             (a) no invalid options are specified
-             (b) options are not specified in multiple sections
-             (c) options are specified in the correct section
+        """
+        Validate specified options to check ::
+
+            (a) no invalid options are specified
+            (b) options are not specified in multiple sections
+            (c) options are specified in the correct section
+
+        Raises
+        ------
+        KeyError
+            If configuration file contains unrecognized options.
+        KeyError
+            If any options are defined in multiple sections.
+        KeyError
+            If any options are not defined in the appropriate sections.
         """
 
         invalid_options = self._find_invalid_options()
@@ -215,6 +240,26 @@ class SKLLConfigParser(configparser.ConfigParser):
 
 
 def _locate_file(file_path, config_dir):
+    """
+    Locate a file, given a file path and configuration directory.
+
+    Parameters
+    ----------
+    file_path : str
+        The file to locate. Path may be absolute or relative.
+    config_dir : str
+        The path to the configuration file directory.
+
+    Returns
+    -------
+    path_to_check : str
+        The normalized absolute path, if it exists.
+
+    Raises
+    ------
+    IOError
+        If the file does not exist.
+    """
     if not file_path:
         return ''
     path_to_check = file_path if isabs(file_path) else normpath(join(config_dir,
@@ -230,6 +275,28 @@ def _setup_config_parser(config_path, validate=True):
     """
     Returns a config parser at a given path. Only implemented as a separate
     function to simplify testing.
+
+    Parameters
+    ----------
+    config_path : str
+        The path to the configuration file.
+    validate : bool, optional
+        Whether to validate the configuration file.
+        Defaults to ``True``.
+
+    Returns
+    -------
+    config : SKLLConfigParser
+        A SKLL configuration object.
+
+    Raises
+    ------
+    IOError
+        If the configuration file does not exist.
+    ValueError
+        If the configuration file specifies both objective and objectives.
+    TypeError
+        If any objective is not a string.
     """
     # initialize config parser with the given defaults
     config = SKLLConfigParser()
@@ -275,6 +342,120 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     """
     Parses a SKLL experiment configuration file with the given path.
     Log messages with the given log level (default: INFO).
+
+    Parameters
+    ----------
+    config_path : str
+        The path to the configuration file.
+    log_level : logging level, optional
+        The logging level to use.
+        Defaults to ``logging.INFO``.
+
+    Returns
+    -------
+    experiment_name : str
+        A string used to identify this particular experiment configuration.
+        When generating result summary files, this name helps prevent
+        overwriting previous summaries.
+    task : str
+        The types of experiment we're trying to run (e.g. 'cross_validate').
+    sampler : str
+        The name of a sampler to perform non-linear transformations of the input.
+    fixed_sampler_parameters : dict
+        A dictionary containing parameters you want to have fixed for the sampler
+    feature_hasher : bool
+        If True, this enables a high-speed, low-memory vectorizer that uses
+        feature hashing for converting feature dictionaries into NumPy arrays
+        instead of using a DictVectorizer.
+    hasher_features : int
+        The number of features used by the FeatureHasher if the feature_hasher
+        flag is enabled.
+    id_col : str
+        The column with IDs.
+    label_col : str
+        The column with labels.
+    train_set_name : str
+        The name of the training set.
+    test_set_name : str
+        The name of the test set.
+    suffix : str
+        The file format the training/test files are in.
+    featuresets : list of str
+        A list of lists of prefixes for the files containing
+        the features you would like to train/test on.
+    do_shuffle : bool
+        Whether to shuffle the data.
+    model_path : str
+        The path to the model file(s).
+    do_grid_search : bool
+        Whether to perform grid search.
+    grid_objectives : list of str
+        A list of objects functions to use for tuning.
+    probability : bool
+        Whether to output probabilities for each class.
+    results_path : str
+        Path to store result files in.
+    pos_label_str : str
+        The string label for the positive class in the binary
+        classification setting.
+    feature_scaling : str
+        How to scale features (e.g. 'with_mean').
+    min_feature_count : int
+        The minimum number of examples for which the value of a
+        feature must be nonzero to be included in the model.
+    folds_file : str
+        The path to the cv_folds_file, if specified.
+    grid_search_jobs : int
+        Number of folds to run in parallel when using grid search.
+    grid_search_folds : int
+        The number of folds to use for grid search.
+    cv_folds : dict or int
+        The specified folds mapping, or the number of folds.
+    save_cv_folds : bool
+        Whether to save CV Folds to file.
+    use_folds_file_for_grid_search : bool
+        Whether to use folds file for grid search.
+    do_stratified_folds : bool
+        Whether to use random folds for cross-validation.
+    fixed_parameter_list : list of dict
+        List of dicts containing parameters you want to have fixed for
+        each classifier in learners list.
+    param_grid_list : list of dict
+        List of parameter grids to search for each learner.
+    featureset_names : list of str
+        The names of the featuresets used for each job.
+    learners : list of str
+        A list of learners to try using.
+    prediction_dir : str
+        The directories where predictions are saved.
+    log_path : str
+        The path to the log file.
+    train_path : str
+        The path to a file containing feature to train on.
+    test_path : str
+        The path to a file containing features to test on.
+    ids_to_floats : bool
+        Whether to convert IDs to floats.
+    class_map : dict
+        A class map collapsing several labels into one.
+    custom_learner_path : str
+        Path to a .py file that defines a custom learner.
+    learning_curve_cv_folds_list : list of int
+        A list of integers specifying the number of folds to use for CV.
+    learning_curve_train_sizes : list of float or list of int
+        List of floats or integers representing relative or absolute numbers
+        of training examples that will be used to generate the learning
+        curve respectively.
+    output_metrics : list
+        A list of output metrics to use.
+
+    Raises
+    ------
+    IOError
+        If configuration file name is empty
+    ValueError
+        If various configuration parameters are incorrectly specified,
+        or cause conflicts.
     """
 
     # check that config_path is not empty
@@ -732,6 +913,16 @@ def _munge_featureset_name(featureset):
     """
     Joins features in featureset by '+' if featureset is not a string, and just
     returns featureset otherwise.
+
+    Parameters
+    ----------
+    featureset : SKLL.FeatureSet
+        A SKLL feature_set object.
+
+    Returns
+    -------
+    res : str
+        feature_set names joined with '+', if feature_set is not a string.
     """
     if isinstance(featureset, string_types):
         return featureset
@@ -742,8 +933,18 @@ def _munge_featureset_name(featureset):
 
 def _fix_json(json_string):
     """
-    Takes a bit of JSON that might have bad quotes or capitalized booleans and
-    fixes that stuff.
+    Fixes incorrectly formatted quotes and capitalized booleans in the given
+    JSON string.
+
+    Parameters
+    ----------
+    json_string : str
+        A JSON-style string.
+
+    Returns
+    -------
+    json_string : str
+        The normalized JSON string.
     """
     json_string = json_string.replace('True', 'true')
     json_string = json_string.replace('False', 'false')
@@ -753,8 +954,30 @@ def _fix_json(json_string):
 
 def _parse_and_validate_metrics(metrics, option_name, logger=None):
     """
-    Given a string containing a list of metrics, this function parses
-    that string into a list and validates the given list.
+    Given a string containing a list of metrics, this function
+    parses that string into a list and validates the list.
+
+    Parameters
+    ----------
+    metrics : str
+        A string containing a list of metrics
+    option_name : str
+        The name of the option with which the metrics are associated.
+    logger : logging.Logger, optional
+        A logging object
+        Defaults to ``None``.
+
+    Returns
+    -------
+    metrics : list of str
+        A list of metrics for the given option.
+
+    Raises
+    ------
+    TypeError
+        If the given string cannot be converted to a list.
+    ValueError
+        If there are any invalid metrics specified.
     """
 
     # create a logger if one was not passed in
@@ -786,6 +1009,24 @@ def _load_cv_folds(folds_file, ids_to_floats=False):
     """
     Loads CV folds from a CSV file with columns for example ID and fold ID (and
     a header).
+
+    Parameters
+    ----------
+    folds_file : str
+        The path to a folds file to read.
+    ids_to_floats : bool, optional
+        Whether to convert IDs to floats.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    res : dict
+        A dictionary with example IDs as the keys and fold IDs as the values.
+
+    Raises
+    ------
+    ValueError
+        If example IDs cannot be converted to floats and `ids_to_floats` is `True`.
     """
     with open(folds_file, 'r') as f:
         reader = csv.reader(f)

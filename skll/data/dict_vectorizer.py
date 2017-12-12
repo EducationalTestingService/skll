@@ -1,6 +1,6 @@
 """
-This module is here because the scikit-learn version of ``DictVectorizer``
-does not contain an ``__eq__`` method for vectorizer equality which we need
+This module is here because the scikit-learn version of `DictVectorizer`
+does not contain an `__eq__` method for vectorizer equality which we need
 for SKLL.
 
 :author: Dan Blanchard (dblanchard@ets.org)
@@ -12,7 +12,8 @@ from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 
 
 class DictVectorizer(OldDictVectorizer):
-    """Transforms lists of feature-value mappings to vectors.
+    """
+    Transforms lists of feature-value mappings to vectors.
 
     This transformer turns lists of mappings (dict-like objects) of feature
     names to feature values into Numpy arrays or scipy.sparse matrices for use
@@ -46,7 +47,7 @@ class DictVectorizer(OldDictVectorizer):
         Whether transform should produce scipy.sparse matrices.
         True by default.
     sort : boolean, optional.
-        Whether ``feature_names_`` and ``vocabulary_`` should be sorted when fitting.
+        Whether `feature_names_` and `vocabulary_` should be sorted when fitting.
         True by default.
 
     Attributes
@@ -85,4 +86,3 @@ class DictVectorizer(OldDictVectorizer):
         """
         return (self.dtype == other.dtype and
                 self.vocabulary_ == other.vocabulary_)
-

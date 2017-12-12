@@ -89,7 +89,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --version
 
@@ -135,7 +135,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: -t <threshold>, --threshold <threshold>
 
@@ -178,7 +178,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --version
 
@@ -231,7 +231,7 @@ Optional Arguments
 
 .. option:: sign {positive,negative,all}
 
-    Show only positive, only negative, or all weights (default: all)
+    Show only positive, only negative, or all weights (default: ``all``)
 
 .. option:: --version
 
@@ -272,7 +272,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --arff_regression
 
