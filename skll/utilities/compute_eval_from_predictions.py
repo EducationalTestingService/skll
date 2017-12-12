@@ -32,15 +32,13 @@ def get_prediction_from_probabilities(classes,
 
     Parameters
     ----------
-    classes: list
-        List of str or int class names.
-
+    classes: list of str or int
+        List of string or integer class names.
     probabilities: list of float
-        Probabilities for respective classes.
-
+        List of probabilities for the respective classes.
     prediction_method: str
-        Indicates how to get a single class prediction from the probabilities. Currently
-        supported options are
+        Indicates how to get a single class prediction from the probabilities.
+        Must be one of:
             1. "highest": Selects the class with the highest probability. If
                multiple classes have the same probability, a class is selected randomly.
             2. "expected_value": Calculates an expected value over integer classes and
@@ -51,7 +49,7 @@ def get_prediction_from_probabilities(classes,
 
     Returns
     -------
-    str or int
+    predicted_class: str or int
         Predicted class.
 
     """
@@ -81,13 +79,10 @@ def compute_eval_from_predictions(examples_file,
     ----------
     examples_file: str
         Path to a SKLL examples file (in .jsonlines or other format).
-
     predictions_file: str
         Path to a SKLL predictions output TSV file with id and prediction column names.
-
     metric_names: list of str
         A list of SKLL metric names (e.g., [pearson, unweighted_kappa]).
-
     prediction_method: str or None
         Indicates how to get a single class prediction from the probabilities. Currently
         supported options are  "highest", which selects the class with the highest
@@ -167,7 +162,7 @@ def main(argv=None):
     Parameters
     ----------
     argv: list of str
-        List of arguments, as if specified on the command-line. If None, ``sys.argv[1:]``
+        List of arguments, as if specified on the command-line. If None, `sys.argv[1:]`
         is used instead.
     """
     # Get command line arguments

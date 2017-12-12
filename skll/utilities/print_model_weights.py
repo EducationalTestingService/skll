@@ -24,10 +24,13 @@ def main(argv=None):
     """
     Handles command line arguments and gets things started.
 
-    :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv[1:]`` is used instead.
-    :type argv: list of str
+    Parameters
+    ----------
+    argv : list of str
+        List of arguments, as if specified on the command-line.
+        If None, ``sys.argv[1:]`` is used instead.
     """
+
     parser = argparse.ArgumentParser(description="Prints out the weights of a \
                                                   given model.",
                                      conflict_handler='resolve',

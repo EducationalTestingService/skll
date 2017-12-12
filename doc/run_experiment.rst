@@ -469,7 +469,7 @@ specifying ``[10, 100]`` as the value of ``learning_curve_cv_folds_list`` will
 tell SKLL to use 10 cross-validation folds at each point of the SVC curve and
 100 cross-validation folds at each point of the logistic regression curve. Although
 more folds will generally yield more reliable results, smaller number of folds
-may be better for learners that are slow to train. Defaults to ``10`` for
+may be better for learners that are slow to train. Defaults to 10 for
 each learner.
 
 .. _learning_curve_train_sizes:

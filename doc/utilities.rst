@@ -89,7 +89,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --version
 
@@ -135,7 +135,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: -t <threshold>, --threshold <threshold>
 
@@ -178,11 +178,32 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --version
 
     Show program's version number and exit.
+
+-------------------------------------------------------------------------------
+
+.. _plot_learning_curves:
+
+plot_learning_curves
+--------------------
+.. program:: plot_learning_curves
+
+Generate learning curve plots from a learning curve output TSV file.
+
+Positional Arguments
+^^^^^^^^^^^^^^^^^^^^
+
+.. option:: tsv_file
+
+    Input learning Curve TSV output file.
+
+.. option:: output_dir
+
+    Output directory to store the learning curve plots.
 
 -------------------------------------------------------------------------------
 
@@ -210,7 +231,7 @@ Optional Arguments
 
 .. option:: sign {positive,negative,all}
 
-    Show only positive, only negative, or all weights (default: all)
+    Show only positive, only negative, or all weights (default: ``all``)
 
 .. option:: --version
 
@@ -251,7 +272,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --arff_regression
 
