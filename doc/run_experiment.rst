@@ -355,7 +355,7 @@ id_col *(Optional)*
 If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
 files, the IDs for each instance are assumed to be in a column with this
 name. If no column with this name is found, the IDs are generated
-automatically. Defaults to ``id``.
+automatically. Defaults to ``'id'``.
 
 .. _label_col:
 
@@ -365,7 +365,7 @@ label_col *(Optional)*
 If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
 files, the class labels for each instance are assumed to be in a column with
 this name. If no column with this name is found, the data is assumed to be
-unlabelled. Defaults to ``y``. For ARFF files only, this must also be the final
+unlabelled. Defaults to ``'y'``. For ARFF files only, this must also be the final
 column to count as the label (for compatibility with Weka).
 
 .. _ids_to_floats:

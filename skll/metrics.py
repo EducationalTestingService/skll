@@ -29,7 +29,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     complete disagreement) to 1 (representing complete agreement).  A kappa
     value of 0 is expected if all agreement is due to chance.
 
-    In the course of calculating kappa, all items in `y_true` and `y_pred` will
+    In the course of calculating kappa, all items in ``y_true`` and ``y_pred`` will
     first be converted to floats and then rounded to integers.
 
     It is assumed that y_true and y_pred contain the complete range of possible
@@ -73,7 +73,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     Raises
     ------
     AssertionError
-        If `y_true` != `y_pred`.
+        If ``y_true`` != ``y_pred``.
     ValueError
         If labels cannot be converted to int.
     ValueError
@@ -238,10 +238,10 @@ def f1_score_least_frequent(y_true, y_pred):
 
 def use_score_func(func_name, y_true, y_pred):
     """
-    Call the scoring function in `sklearn.metrics.SCORERS` with the given name.
+    Call the scoring function in ``sklearn.metrics.SCORERS`` with the given name.
     This takes care of handling keyword arguments that were pre-specified when
     creating the scorer. This applies any sign-flipping that was specified by
-    `make_scorer` when the scorer was created.
+    ``make_scorer()`` when the scorer was created.
 
     Parameters
     ----------

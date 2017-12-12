@@ -28,44 +28,44 @@ from sklearn.feature_extraction import FeatureHasher
 class Writer(object):
 
     """
-    Helper class for writing out FeatureSets to files.
+    Helper class for writing out FeatureSets to files on disk.
 
     Parameters
     ----------
     path : str
         A path to the feature file we would like to create. The suffix
-        to this filename must be `.arff`, `.csv`, `.jsonlines`,
-        `.libsvm`, `.megam`, `.ndj`, or `.tsv`. If `subsets`
-        is not `None`, when calling the `write()` method, path is
+        to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
+        ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets``
+        is not ``None``, when calling the ``write()`` method, path is
         assumed to be a string containing the path to the directory to
         write the feature files with an additional file extension
-        specifying the file type. For example `/foo/.csv`.
+        specifying the file type. For example ``/foo/.csv``.
     feature_set : skll.FeatureSet
-        The FeatureSet to dump to a file.
+        The ``FeatureSet`` instance to dump to the file.
     quiet : bool
         Do not print "Writing..." status message to stderr.
-        Defaults to True
+        Defaults to ``True``.
     requires_binary : bool
         Whether or not the Writer must open the
         file in binary mode for writing with Python 2.
-        Defaults to False.
+        Defaults to ``False``.
     subsets : dict (str to list of str)
         A mapping from subset names to lists of feature names
         that are included in those sets. If given, a feature
         file will be written for every subset (with the name
-        containing the subset name as suffix to `path`).
+        containing the subset name as suffix to ``path``).
         Note, since string- valued features are automatically
         converted into boolean features with names of the form
-        `FEATURE_NAME=STRING_VALUE`, when doing the
-        filtering, the portion before the `=` is all that's
+        ``FEATURE_NAME=STRING_VALUE``, when doing the
+        filtering, the portion before the ``=`` is all that's
         used for matching. Therefore, you do not need to
         enumerate all of these boolean feature names in your
         mapping.
-        Defaults to None.
+        Defaults to ``None``.
     logger : logging.Logger
         A logger instance to use to log messages instead of creating
         a new one by default.
-        Defaults to None.
+        Defaults to ``None``.
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -89,29 +89,29 @@ class Writer(object):
     @classmethod
     def for_path(cls, path, feature_set, **kwargs):
         """
-        Retrieve object of Writer sub-class that is
+        Retrieve object of ``Writer`` sub-class that is
         appropriate for given path.
 
         Parameters
         ----------
         path : str
             A path to the feature file we would like to create. The
-            suffix to this filename must be `.arff`, `.csv`,
-            `.jsonlines`, `.libsvm`, `.megam`, `.ndj`, or
-            `.tsv`. If `subsets` is not `None`, when calling the
-            `write()` method, path is assumed to be a string
+            suffix to this filename must be ``.arff``, ``.csv``,
+            ``.jsonlines``, ``.libsvm``, ``.megam``, ``.ndj``, or
+            ``.tsv``. If ``subsets`` is not ``None``, when calling the
+            ``write()`` method, path is assumed to be a string
             containing the path to the directory to write the feature
             files with an additional file extension specifying the
-            file type. For example `/foo/.csv`.
+            file type. For example ``/foo/.csv``.
         feature_set : skll.FeatureSet
-            The FeatureSet to dump to a file.
+            The ``FeatureSet`` instance to dump to the output file.
         kwargs : dict
-            The keyword arguments for `for_path` are the same as
-            the initializer for the desired `Writer` subclass.
+            The keyword arguments for ``for_path`` are the same as
+            the initializer for the desired ``Writer`` subclass.
 
         Returns
         -------
-        writer : Writer object
+        writer : skll.data.writers.Writer
             New instance of the Writer sub-class that is
             appropriate for the given path.
         """
@@ -121,7 +121,7 @@ class Writer(object):
 
     def write(self):
         """
-        Writes out this Writer's FeatureSet to a file in its
+        Writes out this Writer's ``FeatureSet`` to a file in its
         format.
         """
         if isinstance(self.feat_set.vectorizer, FeatureHasher):
@@ -142,7 +142,7 @@ class Writer(object):
 
     def _write_subset(self, sub_path, filter_features):
         """
-        Writes out the given FeatureSet to a file in this class's format.
+        Writes out the given ``FeatureSet`` instance to a file in this class's format.
 
         Parameters
         ----------
@@ -190,12 +190,12 @@ class Writer(object):
         Parameters
         ----------
         feature_set : skll.FeatureSet
-            The FeatureSet being written to a file.
+            The ``FeatureSet`` instance being written to a file.
         output_file : file buffer
             The file being written to.
         filter_features : set of str
             If only writing a subset of the features in the
-            FeatureSet to `output_file`, these are the
+            FeatureSet to ``output_file``, these are the
             features to include in this file.
         """
         pass
@@ -231,35 +231,35 @@ class DelimitedFileWriter(Writer):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If `subsets` is not `None`, this is assumed to be a string
+        If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example `/foo/.csv`.
+        type. For example ``/foo/.csv``.
     feature_set : skll.FeatureSet
-        The FeatureSet to dump to a file.
+        The ``FeatureSet`` instance to dump to the output file.
     quiet : bool
         Do not print "Writing..." status message to stderr.
-        Defaults to True
+        Defaults to ``True``.
     label_col : str
         Name of the column which contains the class labels
         for ARFF/CSV/TSV files. If no column with that name
-        exists, or `None` is specified, the data is
+        exists, or ``None`` is specified, the data is
         considered to be unlabelled.
-        Defaults to 'y'.
+        Defaults to ``'y'``.
     id_col : str
         Name of the column which contains the instance IDs.
-        If no column with that name exists, or `None` is
+        If no column with that name exists, or ``None`` is
         specified, example IDs will be automatically generated.
-        Defaults to 'id'.
+        Defaults to ``'id'``.
     dialect : str
         Name of the column which contains the class labels for
         CSV/TSV files.
     logger : logging.Logger
         A logger instance to use to log messages instead of creating
         a new one by default.
-        Defaults to None.
+        Defaults to ``None``.
     kwargs : dict, optional
-        The arguments to the Writer object being instantiated.
+        The arguments to the ``Writer`` object being instantiated.
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -281,7 +281,7 @@ class DelimitedFileWriter(Writer):
 
         Returns
         -------
-        fieldnames : list
+        fieldnames : list of str
             A list of alphabetically sorted field names.
         """
         # Build list of fieldnames (features + id_col + label_col)
@@ -305,12 +305,12 @@ class DelimitedFileWriter(Writer):
         Parameters
         ----------
         feature_set : skll.FeatureSet
-            The FeatureSet being written to a file.
+            The ``FeatureSet`` instance being written to a file.
         output_file : file buffer
             The file being written to.
         filter_features : set of str
             If only writing a subset of the features in the
-            FeatureSet to `output_file`, these are the
+            ``FeatureSet`` instance to ``output_file``, these are the
             features to include in this file.
         """
         # Initialize DictWriter that will be used to write header and rows
@@ -362,20 +362,20 @@ class DelimitedFileWriter(Writer):
 class CSVWriter(DelimitedFileWriter):
 
     """
-    Writer for writing out FeatureSets as CSV files.
+    Writer for writing out ``FeatureSet`` instances as CSV files.
 
     Parameters
     ----------
     path : str
         A path to the feature file we would like to create.
-        If `subsets` is not `None`, this is assumed to be a string
+        If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example `/foo/.csv`.
+        type. For example ``/foo/.csv``.
     feature_set : skll.FeatureSet
-        The FeatureSet to dump to a file.
+        The ``FeatureSet`` instance to dump to the output file.
     kwargs : dict, optional
-        The arguments to the Writer object being instantiated.
+        The arguments to the ``Writer`` object being instantiated.
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -393,14 +393,14 @@ class TSVWriter(DelimitedFileWriter):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If `subsets` is not `None`, this is assumed to be a string
+        If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example `/foo/.tsv`.
+        type. For example ``/foo/.tsv``.
     feature_set : skll.FeatureSet
-        The FeatureSet to dump to a file.
+        The ``FeatureSet`` instance to dump to the output file.
     kwargs : dict, optional
-        The arguments to the Writer object being instantiated.
+        The arguments to the ``Writer`` object being instantiated.
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -418,20 +418,20 @@ class ARFFWriter(DelimitedFileWriter):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If `subsets` is not `None`, this is assumed to be a string
+        If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example `/foo/.arff`.
+        type. For example ``/foo/.arff``.
     feature_set : skll.FeatureSet
-        The FeatureSet to dump to a file.
+        The ``FeatureSet`` instance to dump to the output file.
     relation : str, optional
         The name of the relation in the ARFF file.
-        Defaults to 'skll_relation'.
+        Defaults to ``'skll_relation'``.
     regression : bool, optional
         Is this an ARFF file to be used for regression?
-        Defaults to False.
+        Defaults to ``False``.
     kwargs : dict, optional
-        The arguments to the Writer object being instantiated.
+        The arguments to the ``Writer`` object being instantiated.
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -454,7 +454,7 @@ class ARFFWriter(DelimitedFileWriter):
             The file being written to.
         filter_features : set of str
             If only writing a subset of the features in the
-            FeatureSet to `output_file`, these are the
+            FeatureSet to ``output_file``, these are the
             features to include in this file.
         """
         fieldnames = self._get_fieldnames(filter_features)
@@ -554,14 +554,14 @@ class NDJWriter(Writer):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If `subsets` is not `None`, this is assumed to be a string
+        If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example `/foo/.ndj`.
+        type. For example ``/foo/.ndj``.
     feature_set : skll.FeatureSet
-        The FeatureSet to dump to a file.
+        The ``FeatureSet`` instance to dump to the output file.
     kwargs : dict, optional
-        The arguments to the Writer object being instantiated.
+        The arguments to the ``Writer`` object being instantiated.
     """
 
     def __init__(self, path, feature_set, **kwargs):
@@ -601,14 +601,14 @@ class LibSVMWriter(Writer):
     ----------
     path : str
         A path to the feature file we would like to create.
-        If `subsets` is not `None`, this is assumed to be a string
+        If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
-        type. For example `/foo/.libsvm`.
+        type. For example ``/foo/.libsvm``.
     feature_set : skll.FeatureSet
-        The FeatureSet to dump to a file.
+        The ``FeatureSet`` instance to dump to the output file.
     kwargs : dict, optional
-        The arguments to the Writer object being instantiated.
+        The arguments to the ``Writer`` object being instantiated.
     """
 
     LIBSVM_REPLACE_DICT = {':': '\u2236',

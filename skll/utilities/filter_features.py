@@ -5,7 +5,7 @@ Script that filters a given feature file to remove unwanted features, labels,
 or IDs.
 
 :author: Dan Blanchard (dblanchard@ets.org)
-:date: November 2014
+:organization: ETS
 '''
 
 from __future__ import print_function, unicode_literals
@@ -21,15 +21,16 @@ from skll.version import __version__
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     Parameters
     ----------
     argv : list of str
         List of arguments, as if specified on the command-line.
-        If None, `sys.argv[1:]` is used instead.
-    '''
+        If None, ``sys.argv[1:]`` is used instead.
+    """
+
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Takes an input feature file and removes any instances or\

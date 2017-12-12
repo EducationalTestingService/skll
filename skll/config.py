@@ -282,7 +282,7 @@ def _setup_config_parser(config_path, validate=True):
         The path to the configuration file.
     validate : bool, optional
         Whether to validate the configuration file.
-        Defaults to True.
+        Defaults to ``True``.
 
     Returns
     -------
@@ -349,7 +349,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         The path to the configuration file.
     log_level : logging level, optional
         The logging level to use.
-        Defaults to `logging.INFO`.
+        Defaults to ``logging.INFO``.
 
     Returns
     -------
@@ -965,7 +965,7 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
         The name of the option with which the metrics are associated.
     logger : logging.Logger, optional
         A logging object
-        Defaults to None.
+        Defaults to ``None``.
 
     Returns
     -------
@@ -1016,7 +1016,7 @@ def _load_cv_folds(folds_file, ids_to_floats=False):
         The path to a folds file to read.
     ids_to_floats : bool, optional
         Whether to convert IDs to floats.
-        Defaults to False.
+        Defaults to ``False``.
 
     Returns
     -------

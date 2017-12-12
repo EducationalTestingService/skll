@@ -5,7 +5,7 @@ Little helper script to create a summary file out of a list of JSON results
 files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
-:date: September 2013
+:organization: ETS
 """
 
 from __future__ import print_function, unicode_literals
@@ -27,8 +27,9 @@ def main(argv=None):
     ----------
     argv : list of str
         List of arguments, as if specified on the command-line.
-        If None, `sys.argv[1:]` is used instead.
+        If None, ``sys.argv[1:]`` is used instead.
     """
+
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Creates an experiment summary TSV file from a list of JSON\

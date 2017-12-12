@@ -4,7 +4,7 @@
 Script that joins a bunch of feature files together to create one file.
 
 :author: Dan Blanchard (dblanchard@ets.org)
-:date: November 2014
+:organization: ETS
 '''
 
 from __future__ import print_function, unicode_literals
@@ -20,15 +20,16 @@ from skll.version import __version__
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
     Parameters
     ----------
     argv : list of str
         List of arguments, as if specified on the command-line.
-        If None, `sys.argv[1:]` is used instead.
-    '''
+        If None, ``sys.argv[1:]`` is used instead.
+    """
+
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Joins multiple input feature files together into one \

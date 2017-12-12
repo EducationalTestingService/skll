@@ -208,14 +208,14 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
     """
-    Version of LeaveOneGroupOut cross-validation iterator that only outputs
+    Version of ``LeaveOneGroupOut`` cross-validation iterator that only outputs
     indices of instances with IDs in a prespecified set.
 
     Parameters
     ----------
-    keep : set
+    keep : set of str
         A set of IDs to keep.
-    example_ids : list, of length n_samples
+    example_ids : list of str, of length n_samples
         A list of example IDs.
     """
 
@@ -329,28 +329,30 @@ def _train_and_score(learner,
     The method returns the train and test scores.
 
     Note that this method needs to be a top-level function since it is
-    called from within joblib.Parallel() and, therefore, needs to be
-    picklable which it would not be as an instancemethod of the Learner
+    called from within ``joblib.Parallel()`` and, therefore, needs to be
+    picklable which it would not be as an instancemethod of the ``Learner``
     class.
 
     Parameters
     ----------
     learner : skll.Learner
-        The SKLL Learner object.
+        A SKLL ``Learner`` instance.
     train_examples : array-like, with shape (n_samples, n_features)
         The training examples.
     test_examples : array-like, of length n_samples
         The test examples.
     objective : str, optional
-        The objective function passed to `use_score_func()`.
-        Defaults to 'f1_score_micro'.
+        The objective function passed to ``use_score_func()``.
+        Defaults to ``'f1_score_micro'``.
 
     Returns
     -------
     train_score : float
-        Score function applied to prediction of estimator on train.
+        Output of the score function applied to predictions of
+        ``learner`` on ``train_examples``.
     test_score : float
-        Score function applied to prediction of estimator on test.
+        Output of the score function applied to predictions of
+        ``learner`` on ``test_examples``.
     """
 
     _ = learner.train(train_examples, grid_search=False, shuffle=False)
@@ -380,14 +382,14 @@ def _train_and_score(learner,
 
 def _predict_binary(self, X):
     """
-    Little helper function to allow us to use `GridSearchCV` with objective
+    A helper function to allow us to use ``GridSearchCV`` with objective
     functions like Kendall's tau for binary classification problems (where the
     probability of the true class is used as the input to the objective
     function).
 
     This only works if we've also taken the step of storing the old predict
-    function for `self` as `predict_normal`. It's kind of a hack, but it saves
-    us from having to override GridSearchCV to change one little line.
+    function for ``self`` as ``predict_normal``. It's kind of a hack, but it saves
+    us from having to override ``GridSearchCV`` to change one little line.
 
     Parameters
     ----------
@@ -458,7 +460,7 @@ class SelectByMinCount(SelectKBest):
     def _get_support_mask(self):
         """
         Returns an indication of which features to keep.
-        Adapted from SelectKBest.
+        Adapted from ``SelectKBest``.
 
         Returns
         -------
@@ -577,9 +579,9 @@ def rescaled(cls):
     @wraps(cls._get_param_names)
     def _get_param_names(class_x):
         """
-        This is adapted from scikit-learns's BaseEstimator class.
+        This is adapted from scikit-learns's ``BaseEstimator`` class.
         It gets the kwargs for the superclass's init method and adds the
-        kwargs for newly added __init__ method.
+        kwargs for newly added ``__init__()`` method.
 
         Parameters
         ----------
@@ -756,12 +758,12 @@ class Learner(object):
     Parameters
     ----------
     model_type : str
-        Type of estimator to create (e.g., LogisticRegression).
+        Name of estimator to create (e.g., ``'LogisticRegression'``).
         See the skll package documentation for valid options.
     probability : bool, optional
         Should learner return probabilities of all
         labels (instead of just label with highest probability)?
-        Defaults to False.
+        Defaults to ``False``.
     feature_scaling : str, optional
         How to scale the features, if at all. Options are
         -  'with_std': scale features using the standard deviation
@@ -772,12 +774,12 @@ class Learner(object):
     model_kwargs : dict, optional
         A dictionary of keyword arguments to pass to the
         initializer for the specified model.
-        Defaults to None.
+        Defaults to ``None``.
     pos_label_str : str, optional
         The string for the positive label in the binary
         classification setting.  Otherwise, an arbitrary
         label is picked.
-        Defaults to None.
+        Defaults to ``None``.
     min_feature_count : int, optional
         The minimum number of examples a feature
         must have a nonzero value in to be included.
@@ -789,17 +791,17 @@ class Learner(object):
         -  'Nystroem'
         -  'RBFSampler'
         -  'SkewedChi2Sampler'
-        Defaults to None.
+        Defaults to ``None``.
     sampler_kwargs : dict, optional
         A dictionary of keyword arguments to pass to the
         initializer for the specified sampler.
-        Defaults to None.
+        Defaults to ``None``.
     custom_learner_path : str, optional
         Path to module where a custom classifier is defined.
-        Defaults to None.
+        Defaults to ``None``.
     logger : logging object, optional
-        A logging object. If None is passed, get logger from __name__.
-        Defaults to None.
+        A logging object. If ``None`` is passed, get logger from ``__name__``.
+        Defaults to ``None``.
     """
 
     def __init__(self, model_type, probability=False, feature_scaling='none',
@@ -921,24 +923,24 @@ class Learner(object):
     @classmethod
     def from_file(cls, learner_path):
         """
-        Load a saved learner object from a file path.
+        Load a saved ``Learner`` instance from a file path.
 
         Parameters
         ----------
         learner_path : str
-            The path to a saved learner object file to load.
+            The path to a saved ``Learner`` instance file.
 
         Returns
         -------
         learner : skll.Learner
-            The learner object loaded from the file.
+            The ``Learner`` instance loaded from the file.
 
         Raises
         ------
         ValueError
-            If the pickled object is not a Learner.
+            If the pickled object is not a ``Learner`` instance.
         ValueError
-            If the pickled version of the Learner is out of date.
+            If the pickled version of the ``Learner`` instance is out of date.
         """
         skll_version, learner = joblib.load(learner_path)
 
@@ -1012,7 +1014,7 @@ class Learner(object):
     @property
     def model_params(self):
         """
-        Model parameters (i.e., weights) for `LinearModel` (e.g., `Ridge`)
+        Model parameters (i.e., weights) for a ``LinearModel`` (e.g., ``Ridge``)
         regression and liblinear models.
 
         Returns
@@ -1116,12 +1118,12 @@ class Learner(object):
 
     def save(self, learner_path):
         """
-        Save the learner to a file.
+        Save the ``Learner`` instance to a file.
 
         Parameters
         ----------
         learner_path : str
-            The path to save the learner object to a file.
+            The path to save the ``Learner`` instance to.
         """
         # create the directory if it doesn't exist
         learner_dir = os.path.dirname(learner_path)
@@ -1163,7 +1165,7 @@ class Learner(object):
         Parameters
         ----------
         examples : skll.FeatureSet
-            The examples to use for training.
+            The ``FeatureSet`` instance to use for training.
 
         Raises
         ------
@@ -1237,7 +1239,7 @@ class Learner(object):
         Parameters
         ----------
         examples : skll.FeatureSet
-            The examples to use for training.
+            The ``FeatureSet`` instance to use for training.
         """
         # Check feature values and labels
         self._check_input_formatting(examples)
@@ -1275,12 +1277,12 @@ class Learner(object):
         Parameters
         ----------
         examples : skll.FeatureSet
-            The examples to use for training.
+            The ``FeatureSet`` instance to use for training.
         param_grid : list of dicts, optional
             The parameter grid to search through for grid
-            search. If unspecified, a default parameter grid
+            search. If ``None``, a default parameter grid
             will be used.
-            Defaults to None.
+            Defaults to ``None``.
         grid_search_folds : int or dict, optional
             The number of folds to use when doing the
             grid search, or a mapping from
@@ -1288,28 +1290,28 @@ class Learner(object):
             Defaults to 3.
         grid_search : bool, optional
             Should we do grid search?
-            Defaults to True.
+            Defaults to ``True``.
         grid_objective : str, optional
             The name of the objective function to use when
             doing the grid search.
-            Defaults to 'f1_score_micro'.
+            Defaults to ``'f1_score_micro'``.
         grid_jobs : int, optional
             The number of jobs to run in parallel when doing the
-            grid search. If unspecified or 0, the number of
+            grid search. If ``None`` or 0, the number of
             grid search folds will be used.
-            Defaults to None.
+            Defaults to ``None``.
         shuffle : bool, optional
             Shuffle examples (e.g., for grid search CV.)
-            Defaults to False.
+            Defaults to ``False``.
         create_label_dict : bool, optional
             Should we create the label dictionary?  This
             dictionary is used to map between string
             labels and their corresponding numerical
             values.  This should only be done once per
-            experiment, so when `cross_validate` calls
-            `train`, `create_label_dict` gets set to
-            `False`.
-            Defaults to True.
+            experiment, so when ``cross_validate`` calls
+            ``train``, ``create_label_dict`` gets set to
+            ``False``.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -1517,36 +1519,36 @@ class Learner(object):
     def evaluate(self, examples, prediction_prefix=None, append=False,
                  grid_objective=None, output_metrics=[]):
         """
-        Evaluates a given model on a given dev or test example set
+        Evaluates a given model on a given dev or test ``FeatureSet``.
 
         Parameters
         ----------
         examples : skll.FeatureSet
-            The examples to evaluate the performance of the model on.
+            The ``FeatureSet`` instance to evaluate the performance of the model on.
         prediction_prefix : str, optional
             If saving the predictions, this is the
             prefix that will be used for the filename.
-            It will be followed by "_predictions.tsv"
-            Defaults to None.
+            It will be followed by ``"_predictions.tsv"``
+            Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if
             it exists?
-            Defaults to False.
+            Defaults to ``False``.
         grid_objective : function, optional
             The objective function that was used when doing
             the grid search.
-            Defaults to None.
+            Defaults to ``None``.
         output_metrics : list of str, optional
             List of additional metric names to compute in
             addition to grid objective. Empty by default.
-            Defaults to empty list.
+            Defaults to an empty list.
 
         Returns
         -------
-        res : 5-tuple
+        res : 6-tuple
             The confusion matrix, the overall accuracy, the per-label
-            PRFs, the model parameters, and the grid search objective
-            function score.
+            PRFs, the model parameters, the grid search objective
+            function score, and the additional evaluation metrics, if any.
         """
         # initialize a dictionary that will hold all of the metric scores
         metric_scores = {metric: None for metric in output_metrics}
@@ -1649,30 +1651,27 @@ class Learner(object):
     def predict(self, examples, prediction_prefix=None, append=False,
                 class_labels=False):
         """
-        Uses a given model to generate predictions on a given data set.
+        Uses a given model to generate predictions on a given ``FeatureSet``.
 
         Parameters
         ----------
         examples : skll.FeatureSet
-            The examples to predict labels for.
+            The ``FeatureSet`` instance to predict labels for.
         prediction_prefix : str, optional
-            If saving the predictions, this is the
-            prefix that will be used for the filename.
-            It will be followed by "_predictions.tsv"
-            Defaults to None.
+            If saving the predictions, this is the prefix that will be used for
+            the filename. It will be followed by ``"_predictions.tsv"``
+            Defaults to ``None``.
         append : bool, optional
-            Should we append the current predictions to the file if
-            it exists?
-            Defaults to False.
+            Should we append the current predictions to the file if it exists?
+            Defaults to ``False``.
         class_labels : bool, optional
-            For classifier, should we convert class
-            indices to their (str) labels?
-            Defaults to False.
+            For classifier, should we convert class indices to their (str) labels?
+            Defaults to ``False``.
 
         Returns
         -------
         yhat : array-like
-            The predictions returned by the learner.
+            The predictions returned by the ``Learner`` instance.
 
         Raises
         ------
@@ -1821,7 +1820,7 @@ class Learner(object):
         Raises
         ------
         AssertionError
-            If `cv_folds` is not an integer.
+            If ```cv_folds``` is not an integer.
         ValueError
             If the training set has less than or equal to one label(s).
         """
@@ -1862,11 +1861,11 @@ class Learner(object):
         Parameters
         ----------
         examples : skll.FeatureSet
-            The data to cross-validate learner performance on.
+            The ``FeatureSet`` instance to cross-validate learner performance on.
         stratified : bool, optional
             Should we stratify the folds to ensure an even
             distribution of labels for each fold?
-            Defaults to True.
+            Defaults to ``True``.
         cv_folds : int, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
@@ -1874,7 +1873,7 @@ class Learner(object):
         grid_search : bool, optional
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
-            Defaults to False.
+            Defaults to ``False``.
         grid_search_folds : int or dict, optional
             The number of folds to use when doing the
             grid search, or a mapping from
@@ -1882,50 +1881,51 @@ class Learner(object):
             Defaults to 3.
         grid_jobs : int, optional
             The number of jobs to run in parallel when doing the
-            grid search. If unspecified or 0, the number of
+            grid search. If ``None`` or 0, the number of
             grid search folds will be used.
-            Defaults to None.
+            Defaults to ``None``.
         grid_objective : str, optional
             The name of the objective function to use when
             doing the grid search.
-            Defaults to 'f1_score_micro'.
+            Defaults to ``'f1_score_micro'``.
         output_metrics : list of str, optional
             List of additional metric names to compute in
             addition to the metric used for grid search. Empty
             by default.
-            Defaults to empty list.
+            Defaults to an empty list.
         prediction_prefix : str, optional
             If saving the predictions, this is the
             prefix that will be used for the filename.
-            It will be followed by "_predictions.tsv"
-            Defaults to None.
+            It will be followed by ``"_predictions.tsv"``
+            Defaults to ``None``.
         param_grid : list of dicts, optional
             The parameter grid to traverse.
-            Defaults to None.
+            Defaults to ``None``.
         shuffle : bool, optional
             Shuffle examples before splitting into folds for CV.
-            Defaults to False.
+            Defaults to ``False``.
         save_cv_folds : bool, optional
              Whether to save the cv fold ids or not?
-             Defaults to False.
+             Defaults to ``False``.
         use_custom_folds_for_grid_search : bool, optional
-            If `cv_folds` is a custom dictionary, but
-            `grid_search_folds` is not, perhaps due to user
+            If ``cv_folds`` is a custom dictionary, but
+            ``grid_search_folds`` is not, perhaps due to user
             oversight, should the same custom dictionary
             automatically be used for the inner grid-search
             cross-validation?
-            Defaults to True.
+            Defaults to ``True``.
 
         Returns
         -------
-        results : list of 4-tuples
-            The confusion matrix, overall accuracy, per-label PRFs, and
-            model parameters for each fold.
+        results : list of 6-tuples
+            The confusion matrix, overall accuracy, per-label PRFs, model
+            parameters, objective function score, and evaluation metrics (if any)
+            for each fold.
         grid_search_scores : list of floats
             The grid search scores for each fold.
         skll_fold_ids : dict
             A dictionary containing the test-fold number for each id
-            if `save_cv_folds` is `True`, otherwise `None`.
+            if ``save_cv_folds`` is ``True``, otherwise ``None``.
 
         Raises
         ------
@@ -2067,13 +2067,12 @@ class Learner(object):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
-        curve generation (cf.`sklearn.model_selection.learning_curve`).
-
+        curve generation (cf.``sklearn.model_selection.learning_curve``).
 
         Parameters
         ----------
         examples : skll.FeatureSet
-            The data to generate the learning curve on.
+            The ``FeatureSet`` instance to generate the learning curve on.
         cv_folds : int, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
@@ -2089,12 +2088,12 @@ class Learner(object):
             sets. Note that for classification the number of
             samples usually have to be big enough to contain
             at least one sample from each class.
-            Defaults to  `np.linspace(0.1, 1.0, 5)`.
+            Defaults to  ``np.linspace(0.1, 1.0, 5)``.
         metric : str, optional
             The name of the metric function to use
             when computing the train and test scores
             for the learning curve. (default: 'f1_score_micro')
-            Defaults to 'f1_score_micro'.
+            Defaults to ``'f1_score_micro'``.
 
         Returns
         -------

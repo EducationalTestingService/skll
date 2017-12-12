@@ -12,7 +12,7 @@ In these cases, the summary file should always be generated and this script can 
 to generate the plots later.
 
 :author: Nitin Madnani
-:date: December 2017
+:organization: ETS
 """
 
 from __future__ import print_function, unicode_literals
@@ -37,8 +37,9 @@ def main(argv=None):
     ----------
     argv : list of str
         List of arguments, as if specified on the command-line.
-        If None, `sys.argv[1:]` is used instead.
+        If None, ``sys.argv[1:]`` is used instead.
     """
+
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Generates learning curve plots from the learning curve TSV file.",

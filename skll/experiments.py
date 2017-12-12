@@ -90,8 +90,8 @@ class NumpyTypeEncoder(json.JSONEncoder):
 
 def _get_stat_float(label_result_dict, stat):
     """
-    Little helper for getting output for precision, recall, and f-score
-    columns in confusion matrix.
+    A helper function to get output for the precision, recall, and f-score
+    columns in the confusion matrix.
 
     Parameters
     ----------
@@ -115,7 +115,7 @@ def _get_stat_float(label_result_dict, stat):
 
 def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
     """
-    Function to take a dictionary of id:test-fold-number and
+    Function to take a dictionary of id->test-fold-number and
     write it to a file.
 
     Parameters
@@ -285,7 +285,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         A list of paths to the individual result JSON files.
     output_file : file buffer, optional
         The file buffer to print to.
-        Defaults to sys.stdout.
+        Defaults to ``sys.stdout``.
     """
     if not learner_result_dicts:
         raise ValueError('Result dictionary list is empty!')
@@ -389,42 +389,43 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
         Name of the column which contains the instance IDs.
         If no column with that name exists, or `None` is
         specified, example IDs will be automatically generated.
-        Defaults to 'id'.
+        Defaults to ``'id'``.
     label_col : str, optional
         Name of the column which contains the class labels.
         If no column with that name exists, or `None` is
         specified, the data is considered to be unlabeled.
-        Defaults to 'y'.
+        Defaults to ``'y'``.
     ids_to_floats : bool, optional
         Whether to convert the IDs to floats to save memory. Will raise error
         if we encounter non-numeric IDs.
-        Defaults to False.
+        Defaults to ``False``.
     quiet : bool, optional
         Do not print "Loading..." status message to stderr.
-        Defaults to False.
+        Defaults to ``False``.
     class_map : dict, optional
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
-        Defaults to None.
+        Defaults to ``None``.
     feature_hasher : bool, optional
         Should we use a FeatureHasher when vectorizing
         features?
+        Defaults to ``False``.
     num_features : int, optional
-        The number of features to use with the FeatureHasher.
+        The number of features to use with the ``FeatureHasher``.
         This should always be set to the power of 2 greater
         than the actual number of features you're using.
-        Defaults to None.
+        Defaults to ``None``.
     logger : logging.Logger, optional
         A logger instance to use to log messages instead of creating
         a new one by default.
-        Defaults to None.
+        Defaults to ``None``.
 
     Returns
     -------
-    merged_set : FeatureSet
-        The labels, IDs, features, and feature vectorizer representing
-        the given featureset.
+    merged_set : skll.FeatureSet
+        A ``FeatureSet`` instance containing the specified labels, IDs, features,
+        and feature vectorizer.
     """
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
@@ -466,13 +467,13 @@ def _classify_featureset(args):
     ----------
     args : dict
         A dictionary with arguments for classifying the
-        FeatureSet.
+        ``FeatureSet`` instance.
 
     Returns
     -------
     res : list of dicts
         The results of the classification, in the format
-        of a list of Dictionaries.
+        of a list of dictionaries.
 
     Raises
     ------
@@ -974,23 +975,23 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         Path to the configuration file we would like to use.
     local : bool, optional
         Should this be run locally instead of on the cluster?
-        Defaults to False.
+        Defaults to ``False``.
     overwrite : bool, optional
         If the model files already exist, should we overwrite
         them instead of re-using them?
-        Defaults to True.
+        Defaults to ``True``.
     queue : str, optional
         The DRMAA queue to use if we're running on the cluster.
-        Defaults to 'all.q'
+        Defaults to ``'all.q'``.
     hosts : list of str, optional
         If running on the cluster, these are the machines we should use.
-        Defaults to None.
+        Defaults to ``None``.
     write_summary : bool, optional
         Write a TSV file with a summary of the results.
-        Defaults to True.
+        Defaults to ``True``.
     quite : bool, optional
         Suppress printing of "Loading..." messages.
-        Defaults to False.
+        Defaults to ``False``.
     ablation : int, optional
         Number of features to remove when doing an ablation
         experiment. If positive, we will perform repeated ablation
@@ -1004,10 +1005,10 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         If result files already exist for an experiment, do not
         overwrite them. This is very useful when doing a large
         ablation experiment and part of it crashes.
-        Defaults to False.
+        Defaults to ``False``.
     log_level : str, optional
-        The level for logging messages
-        Defaults to logging.INFO
+        The level for logging messages.
+        Defaults to ``logging.INFO``.
 
     Returns
     -------
@@ -1018,9 +1019,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     Raises
     ------
     ValueError
-        If value for "ablation" is not a positive int or None
+        If value for ``"ablation"`` is not a positive int or ``None``.
     OSError
-        If len(featureset_name) > 210.
+        If the lenth of the ``FeatureSet`` name > 210.
     """
 
     # Read configuration
@@ -1296,7 +1297,7 @@ def _compute_ylimits_for_featureset(df, metrics):
     df : pd.DataFrame
         A data_frame with relevant metric information for
         train and test.
-    metrics : list
+    metrics : list of str
         A list of metrics for learning curve plots.
 
     Returns

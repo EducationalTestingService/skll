@@ -12,7 +12,8 @@ from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 
 
 class DictVectorizer(OldDictVectorizer):
-    """Transforms lists of feature-value mappings to vectors.
+    """
+    Transforms lists of feature-value mappings to vectors.
 
     This transformer turns lists of mappings (dict-like objects) of feature
     names to feature values into Numpy arrays or scipy.sparse matrices for use

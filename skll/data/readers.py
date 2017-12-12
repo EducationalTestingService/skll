@@ -42,46 +42,46 @@ class Reader(object):
         Path or a list of example dictionaries.
     quiet : bool, optional
         Do not print "Loading..." status message to stderr.
-        Defaults to True.
+        Defaults to ``True``.
     ids_to_floats : bool, optional
         Convert IDs to float to save memory. Will raise error
         if we encounter an a non-numeric ID.
-        Defaults to False.
+        Defaults to ``False``.
     label_col : str, optional
         Name of the column which contains the class labels
         for ARFF/CSV/TSV files. If no column with that name
-        exists, or `None` is specified, the data is
+        exists, or ``None`` is specified, the data is
         considered to be unlabelled.
-        Defaults to 'y'.
+        Defaults to ``'y'``.
     id_col : str, optional
         Name of the column which contains the instance IDs.
-        If no column with that name exists, or `None` is
+        If no column with that name exists, or ``None`` is
         specified, example IDs will be automatically generated.
-        Defaults to 'id'.
+        Defaults to ``'id'``.
     class_map : dict, optional
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
-        Defaults to None.
+        Defaults to ``None``.
     sparse : bool, optional
         Whether or not to store the features in a numpy CSR
         matrix when using a DictVectorizer to vectorize the
         features.
-        Defaults to True.
+        Defaults to ``True``.
     feature_hasher : bool, optional
         Whether or not a FeatureHasher should be used to
         vectorize the features.
-        Defaults to False
+        Defaults to ``False``.
     num_features : int, optional
         If using a FeatureHasher, how many features should the
         resulting matrix have?  You should set this to a power
         of 2 greater than the actual number of features to
         avoid collisions.
-        Defaults to None.
+        Defaults to ``None``.
     logger : logging.Logger, optional
         A logger instance to use to log messages instead of creating
         a new one by default.
-        Defaults to None.
+        Defaults to ``None``.
     """
 
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
@@ -155,8 +155,8 @@ class Reader(object):
 
     def _print_progress(self, progress_num, end="\r"):
         """
-        Little helper to print out progress numbers in proper format.
-        Nothing gets printed if `self.quiet` is `True`.
+        Helper method to print out progress numbers in proper format.
+        Nothing gets printed if ``self.quiet`` is ``True``.
 
         Parameters
         ----------
@@ -167,7 +167,7 @@ class Reader(object):
         end : str, optional
             The string to put at the end of the line.  "\\r" should be
             used for every update except for the final one.
-            Defaults to '\r'.
+            Defaults to ``'\r'``.
         """
         # Print out status
         if not self.quiet:
@@ -183,12 +183,12 @@ class Reader(object):
         Returns
         -------
         feature_set : skll.FeatureSet
-            `FeatureSet` instance representing the input file.
+            ``FeatureSet`` instance representing the input file.
 
         Raises
         ------
         ValueError
-            If `ids_to_floats` is True, but IDs cannot be converted.
+            If ``ids_to_floats`` is True, but IDs cannot be converted.
         ValueError
             If no features are found.
         ValueError
@@ -260,12 +260,11 @@ class Reader(object):
 
 
 class DictListReader(Reader):
-
     """
     This class is to facilitate programmatic use of
-    `~skll.learner.Learner.predict` and other functions that take
-    `~skll.data.featureset.FeatureSet` objects as input. It iterates
-    over examples in the same way as other `Reader` classes, but uses a
+    ``Learner.predict()`` and other methods that take
+    ``FeatureSet`` objects as input. It iterates
+    over examples in the same way as other ``Reader`` classes, but uses a
     list of example dictionaries instead of a path to a file.
     """
 
@@ -322,17 +321,15 @@ class DictListReader(Reader):
 class NDJReader(Reader):
 
     """
-    Reader to create a `~skll.data.featureset.FeatureSet` out of a
-    .jsonlines/.ndj file
+    Reader to create a ``FeatureSet`` instance from a JSONlines/NDJ file.
 
-    If you would like to include example/instance IDs in your files, they
-    must be specified in the following ways as an "id" key in each JSON
-    dictionary.
+    If example/instance IDs are included in the files, they
+    must be specified as the  "id" key in each JSON dictionary.
     """
 
     def _sub_read(self, f):
         """
-        The function called on the file buffer in the `read()` method
+        The function called on the file buffer in the ``read()`` method
         to iterate through rows.
 
         Parameters
@@ -353,8 +350,8 @@ class NDJReader(Reader):
         Raises
         ------
         ValueError
-            If IDs cannot be converted to floats, and `ids_to_floats`
-            is True
+            If IDs cannot be converted to floats, and ``ids_to_floats``
+            is ``True``.
         """
         for example_num, line in enumerate(f):
             # Remove extraneous whitespace
@@ -389,12 +386,10 @@ class NDJReader(Reader):
 class MegaMReader(Reader):
 
     """
-    Reader to create a `~skll.data.featureset.FeatureSet` out ouf a
-    MegaM -fvals file.
+    Reader to create a ``FeatureSet`` instance from  a MegaM -fvals file.
 
-    If you would like to include example/instance IDs in your files, they
-    must be specified as a comment line directly preceding the line with
-    feature values.
+    If example/instance IDs are included in the files, they must be specified
+    as a comment line directly preceding the line with feature values.
     """
 
     def _sub_read(self, f):
@@ -478,8 +473,7 @@ class MegaMReader(Reader):
 class LibSVMReader(Reader):
 
     """
-    Reader to create a `~skll.data.featureset.FeatureSet` out ouf a
-    LibSVM/LibLinear/SVMLight file.
+    Reader to create a ``FeatureSet`` instance from a LibSVM/LibLinear/SVMLight file.
 
     We use a specially formatted comment for storing example IDs, class names,
     and feature names, which are normally not supported by the format.  The
@@ -598,14 +592,13 @@ class LibSVMReader(Reader):
 class DelimitedReader(Reader):
 
     """
-    Reader for creating a `~skll.data.featureset.FeatureSet` out of a
-    delimited (CSV/TSV) file.
+    Reader for creating a ``FeatureSet`` instance from a delimited (CSV/TSV) file.
 
-    If you would like to include example/instance IDs in your files, they
-    must be specified as an `id` column.
+    If example/instance IDs are included in the files, they
+    must be specified in the ``id`` column.
 
-    Also, for ARFF, CSV, and TSV files, there must be a column with the
-    name specified by `label_col` if the data is labelled. For ARFF files,
+    For ARFF, CSV, and TSV files, there must be a column with the
+    name specified by ``label_col`` if the data is labeled. For ARFF files,
     this column must also be the final one (as it is in Weka).
 
     Parameters
@@ -614,7 +607,7 @@ class DelimitedReader(Reader):
         The path to a delimited file.
     dialect : str
         The dialect of to pass on to the underlying CSV reader.
-        Defaults to 'excel-tab'
+        Defaults to ``'excel-tab'``.
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -692,14 +685,13 @@ class DelimitedReader(Reader):
 class CSVReader(DelimitedReader):
 
     """
-    Reader for creating a `~skll.data.featureset.FeatureSet` out of a
-    CSV file.
+    Reader for creating a ``FeatureSet`` instance from a CSV file.
 
-    If you would like to include example/instance IDs in your files, they
-    must be specified as an "id" column.
+    If example/instance IDs are included in the files, they
+    must be specified in the ``id`` column.
 
-    Also, there must be a column with the name specified by `label_col` if the
-    data is labelled.
+    Also, there must be a column with the name specified by ``label_col`` if the
+    data is labeled.
 
     Parameters
     ----------
@@ -717,13 +709,12 @@ class CSVReader(DelimitedReader):
 class ARFFReader(DelimitedReader):
 
     """
-    Reader for creating a `~skll.data.featureset.FeatureSet` out of an
-    ARFF file.
+    Reader for creating a ``FeatureSet`` instance from an ARFF file.
 
-    If you would like to include example/instance IDs in your files, they
-    must be specified as an "id" column.
+    If example/instance IDs are included in the files, they
+    must be specified in the ``id`` column.
 
-    Also, there must be a column with the name specified by `label_col` if the
+    Also, there must be a column with the name specified by ``label_col`` if the
     data is labeled, and this column must be the final one (as it is in Weka).
 
     Parameters
@@ -752,13 +743,13 @@ class ARFFReader(DelimitedReader):
             The string with quotes to split
         delimiter : str, optional
             The delimiter to split on.
-            Defaults to ' '.
+            Defaults to ``' '``.
         quote_char : str, optional
             The quote character to ignore.
-            Defaults to "'".
+            Defaults to ``"'"``.
         escape_char : str, optional
             The escape character.
-            Defaults to '\\'
+            Defaults to ``'\\'``.
         """
         if PY2:
             delimiter = delimiter.encode()
@@ -838,14 +829,13 @@ class ARFFReader(DelimitedReader):
 class TSVReader(DelimitedReader):
 
     """
-    Reader for creating a `~skll.data.featureset.FeatureSet` out of a
-    TSV file.
+    Reader for creating a ``FeatureSet`` instance from a TSV file.
 
-    If you would like to include example/instance IDs in your files, they
-    must be specified as an "id" column.
+    If example/instance IDs are included in the files, they
+    must be specified in the ``id`` column.
 
-    Also there must be a column with the name specified by `label_col` if the
-    data is labeled.
+    Also there must be a column with the name specified by ``label_col``
+    if the data is labeled.
 
     Parameters
     ----------
@@ -863,7 +853,7 @@ class TSVReader(DelimitedReader):
 def safe_float(text, replace_dict=None, logger=None):
     """
     Attempts to convert a string to an int, and then a float, but if neither is
-    possible, just returns the original string value.
+    possible, returns the original string value.
 
     Parameters
     ----------
@@ -875,11 +865,11 @@ def safe_float(text, replace_dict=None, logger=None):
         single class. Replacing happens before conversion to
         floats. Anything not in the mapping will be kept the
         same.
-        Defaults to None.
+        Defaults to ``None``.
     logger : logging.Logger
         The Logger instance to use to log messages. Used instead of
         creating a new Logger instance by default.
-        Defaults to None.
+        Defaults to ``None``.
 
     Returns
     -------

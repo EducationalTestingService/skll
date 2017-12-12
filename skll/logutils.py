@@ -3,6 +3,7 @@
 Functions related to logging in SKLL.
 
 :author: Nitin Madnani (nmadnani@ets.org)
+:organization: ETS
 """
 
 import logging
@@ -24,14 +25,15 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
         The file to be used for the logger via a FileHandler.
         Default: None in which case no file is attached to the
         logger.
+        Defaults to ``None``.
     log_level : str, optional
         The level for logging messages
-        Defaults to logging.INFO
+        Defaults to ``logging.INFO``.
 
     Returns
     -------
-    logging.Logger
-        A Logger instance.
+    logger: logging.Logger
+        A ``Logger`` instance.
     """
 
     # first get the logger instance associated with the
