@@ -27,7 +27,7 @@ def requirements():
 
 setup(name='skll',
       version=__version__,
-      description=('SciKit-Learn Laboratory makes it easier to run machine'
+      description=('SciKit-Learn Laboratory makes it easier to run machine '
                    'learning experiments with scikit-learn.'),
       long_description=readme(),
       keywords='learning scikit-learn',
