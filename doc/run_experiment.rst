@@ -1202,6 +1202,10 @@ specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURE
 and contains a faceted learning curve plot for the featureset with objective
 functions on rows and learners on columns. Here's an example of such a plot.
 
+If you didn't have pandas and seaborn available when running the learning curve
+experiment, you can always generate the plots later from the learning curve summary
+file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
+
     .. image:: learning_curve.png
 
 

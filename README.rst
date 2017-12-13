@@ -8,16 +8,20 @@ SciKit-Learn Laboratory
 .. image:: https://img.shields.io/coveralls/EducationalTestingService/skll/stable.svg
     :target: https://coveralls.io/r/EducationalTestingService/skll
 
-.. image:: https://img.shields.io/pypi/dm/skll.svg
-   :target: https://warehouse.python.org/project/skll/
-   :alt: PyPI downloads
-
 .. image:: https://img.shields.io/pypi/v/skll.svg
-   :target: https://warehouse.python.org/project/skll/
+   :target: https://pypi.org/project/skll/
    :alt: Latest version on PyPI
 
 .. image:: https://img.shields.io/pypi/l/skll.svg
    :alt: License
+
+.. image:: https://img.shields.io/conda/v/desilinguist/skll.svg
+   :target: https://anaconda.org/desilinguist/skll
+   :alt: Conda package for SKLL
+
+.. image:: https://img.shields.io/pypi/pyversions/skll.svg
+   :target: https://pypi.org/project/skll/
+   :alt: Supported python versions for SKLL
 
 .. image:: https://img.shields.io/badge/DOI-10.5281%2Fzenodo.12825-blue.svg
    :target: http://dx.doi.org/10.5281/zenodo.12825
