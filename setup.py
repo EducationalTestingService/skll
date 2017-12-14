@@ -27,13 +27,13 @@ def requirements():
 
 setup(name='skll',
       version=__version__,
-      description=('SciKit-Learn Laboratory makes it easier to run machine'
+      description=('SciKit-Learn Laboratory makes it easier to run machine '
                    'learning experiments with scikit-learn.'),
       long_description=readme(),
       keywords='learning scikit-learn',
       url='http://github.com/EducationalTestingService/skll',
-      author='Daniel Blanchard',
-      author_email='dblanchard@ets.org',
+      author='Nitin Madnani',
+      author_email='nmadnani@ets.org',
       license='BSD 3 clause',
       packages=find_packages(),
       include_package_data=True,
