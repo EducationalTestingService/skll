@@ -24,8 +24,7 @@ GitHub:
 
           $ git checkout -b feature/my-new-addition
 
-   and start making changes. Never work in the ``master`` or ``stable``
-   branches!
+   and start making changes. Never work in the ``master`` branch!
 
 4. Work on this copy on your computer using Git to do the version
    control. When you're done editing, do:

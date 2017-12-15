@@ -31,7 +31,7 @@ The first step to getting the Titanic data is logging into Kaggle and
 downloading `train.csv <http://www.kaggle.com/c/titanic-gettingStarted/download/train.csv>`__
 and `test.csv <http://www.kaggle.com/c/titanic-gettingStarted/download/test.csv>`__.
 Once you have those files, you'll also want to grab the
-`examples folder <https://github.com/EducationalTestingService/skll/tree/stable/examples>`__
+`examples folder <https://github.com/EducationalTestingService/skll/tree/master/examples>`__
 on our GitHub page and put ``train.csv`` and ``test.csv`` in ``examples``.
 
 The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`,
