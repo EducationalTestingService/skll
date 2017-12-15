@@ -1,11 +1,11 @@
 SciKit-Learn Laboratory
 -----------------------
 
-.. image:: https://img.shields.io/travis/EducationalTestingService/skll/stable.svg
+.. image:: https://img.shields.io/travis/EducationalTestingService/skll/master.svg
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
-.. image:: https://img.shields.io/coveralls/EducationalTestingService/skll/stable.svg
+.. image:: https://img.shields.io/coveralls/EducationalTestingService/skll/master.svg
     :target: https://coveralls.io/r/EducationalTestingService/skll
 
 .. image:: https://img.shields.io/pypi/v/skll.svg
