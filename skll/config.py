@@ -872,10 +872,10 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             logger.warning("Specifying \"folds_file\" overrides both "
                            "explicit and default \"grid_search_folds\".")
     if task == 'cross_validate':
-        logger.warning("Specifying \"folds_file\" overrides both "
-                       "explicit and default \"num_cv_folds\".")
         cv_folds = specified_folds_mapping if specified_folds_mapping else specified_num_folds
         if specified_folds_mapping:
+            logger.warning("Specifying \"folds_file\" overrides both "
+                           "explicit and default \"num_cv_folds\".")
             if use_folds_file_for_grid_search:
                 grid_search_folds = cv_folds
             else:
