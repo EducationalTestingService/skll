@@ -1113,7 +1113,8 @@ class Learner(object):
         because we cannot pickle loggers.
         """
         attribute_dict = dict(self.__dict__)
-        del attribute_dict['logger']
+        if 'logger' in attribute_dict:
+            del attribute_dict['logger']
         return attribute_dict
 
     def save(self, learner_path):
