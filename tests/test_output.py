@@ -53,7 +53,7 @@ def setup():
     """
     Create necessary directories for testing.
     """
-    for dir_name in ('train', 'test', 'evaluate'):
+    for dir_name in ('train', 'test', 'output', 'evaluate'):
         new_dir = join(_my_dir, dir_name)
         if not exists(new_dir):
             os.makedirs(new_dir)
