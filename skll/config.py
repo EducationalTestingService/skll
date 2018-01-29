@@ -481,10 +481,11 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # next, get the log path before anything else since we need to
     # save all logging messages to a log file in addition to displaying
     # them on the console
-    log_path = _locate_file(config.get("Output", "log"), config_dir)
-    if log_path:
-        log_path = join(config_dir, log_path)
-        if not exists(log_path):
+    try:
+        log_path = _locate_file(config.get("Output", "log"), config_dir)
+    except IOError as e:
+        if e.errno == errno.ENOENT:
+            log_path = e.filename
             os.makedirs(log_path)
 
     # Create a top-level log file under the log path
@@ -731,24 +732,29 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     probability = config.getboolean("Output", "probability")
 
     # do we want to keep the predictions?
-    prediction_dir = _locate_file(config.get("Output", "predictions"),
-                                  config_dir)
-    if prediction_dir:
-        if not exists(prediction_dir):
+    # make sure the predictions path exists and if not create it
+    try:
+        prediction_dir = _locate_file(config.get("Output", "predictions"),
+                                      config_dir)
+    except IOError as e:
+        if e.errno == errno.ENOENT:
+            prediction_dir = e.filename
             os.makedirs(prediction_dir)
 
-    # make sure model path exists
-    model_path = _locate_file(config.get("Output", "models"), config_dir)
-    if model_path:
-        model_path = join(config_dir, model_path)
-        if not exists(model_path):
+    # make sure model path exists and if not, create it
+    try:
+        model_path = _locate_file(config.get("Output", "models"), config_dir)
+    except IOError as e:
+        if e.errno == errno.ENOENT:
+            model_path = e.filename
             os.makedirs(model_path)
 
     # make sure results path exists
-    results_path = _locate_file(config.get("Output", "results"), config_dir)
-    if results_path:
-        results_path = join(config_dir, results_path)
-        if not exists(results_path):
+    try:
+        results_path = _locate_file(config.get("Output", "results"), config_dir)
+    except IOError as e:
+        if e.errno == errno.ENOENT:
+            results_path = e.filename
             os.makedirs(results_path)
 
     # what are the output metrics?
