@@ -284,12 +284,15 @@ def test_compute_eval_from_predictions_random_choice():
     eq_(pred, 'C')
 
 
-def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
+def check_generate_predictions(use_feature_hashing=False,
+                               use_threshold=False,
+                               test_on_subset=False):
 
     # create some simple classification data without feature hashing
-    train_fs, test_fs = make_classification_data(
-        num_examples=1000, num_features=5,
-        use_feature_hashing=use_feature_hashing, feature_bins=4)
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 use_feature_hashing=use_feature_hashing,
+                                                 feature_bins=4)
 
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier', probability=use_threshold)
@@ -297,7 +300,11 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
     # train the learner with grid search
     learner.train(train_fs, grid_search=True)
 
-    # get the predictions on the test featureset
+    # get the predictions on the test featureset, if we are asked to
+    # just use a subset of the test features, filter the test set
+    # to get rid of the fifth feature
+    if test_on_subset and not use_feature_hashing:
+        test_fs.filter(features=['f01', 'f02', 'f03', 'f04'])
     predictions = learner.predict(test_fs)
 
     # if we asked for probabilities, then use the threshold
@@ -323,14 +330,11 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
 
 def test_generate_predictions():
-    """
-    Test generate predictions API with hashing and a threshold
-    """
 
-    yield check_generate_predictions, False, False
-    yield check_generate_predictions, True, False
-    yield check_generate_predictions, False, True
-    yield check_generate_predictions, True, True
+    for (use_feature_hashing,
+         use_threshold,
+         test_on_subset) in product([True, False], [True, False], [True, False]):
+        yield check_generate_predictions, use_feature_hashing, use_threshold, test_on_subset
 
 
 def check_generate_predictions_console(use_threshold=False):
