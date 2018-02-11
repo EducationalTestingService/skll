@@ -26,7 +26,7 @@ class Predictor(object):
     predictions for feature strings.
     """
 
-    def __init__(self, model_path, threshold=None, positive_label=1):
+    def __init__(self, model_path, threshold=None, positive_label=1, logger=None):
         """
         Initialize the predictor.
 
@@ -46,7 +46,11 @@ class Predictor(object):
             predicting. 1 = second class, which is default
             for binary classification.
             Defaults to 1.
+        logger : logging object, optional
+            A logging object. If ``None`` is passed, get logger from ``__name__``.
+            Defaults to ``None``.
         """
+        # self.logger = logger if logger else logging.getLogger(__name__)
         self._learner = Learner.from_file(model_path)
         self._pos_index = positive_label
         self.threshold = threshold
@@ -145,7 +149,8 @@ def main(argv=None):
     # Create the classifier and load the model
     predictor = Predictor(args.model_file,
                           positive_label=args.positive_label,
-                          threshold=args.threshold)
+                          threshold=args.threshold,
+                          logger=logger)
 
     # Iterate over all the specified input files
     for input_file in args.input_file:
