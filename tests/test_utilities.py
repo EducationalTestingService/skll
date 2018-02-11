@@ -288,7 +288,7 @@ def check_generate_predictions(use_feature_hashing=False,
                                use_threshold=False,
                                test_on_subset=False):
 
-    # create some simple classification data without feature hashing
+    # create some simple classification feature sets for training and testing
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
                                                  use_feature_hashing=use_feature_hashing,
@@ -300,11 +300,13 @@ def check_generate_predictions(use_feature_hashing=False,
     # train the learner with grid search
     learner.train(train_fs, grid_search=True)
 
-    # get the predictions on the test featureset, if we are asked to
-    # just use a subset of the test features, filter the test set
-    # to get rid of the fifth feature
+    # if we are asked to use only a subset, then filter out
+    # one of the features if we are not using feature hashing,
+    # do nothing if we are using feature hashing
     if test_on_subset and not use_feature_hashing:
         test_fs.filter(features=['f01', 'f02', 'f03', 'f04'])
+
+    # get the predictions on the test featureset
     predictions = learner.predict(test_fs)
 
     # if we asked for probabilities, then use the threshold
