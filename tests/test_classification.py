@@ -29,6 +29,7 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import accuracy_score
 
 from skll.data import FeatureSet
+from skll.data.readers import NDJReader
 from skll.data.writers import NDJWriter
 from skll.config import _parse_config_file
 from skll.experiments import run_configuration
@@ -76,9 +77,11 @@ def tearDown():
     for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
         os.unlink(output_file)
 
-    config_file = join(config_dir, 'test_single_file.cfg')
-    if exists(config_file):
-        os.unlink(config_file)
+    config_files = [join(config_dir, cfgname) for cfgname in ['test_single_file.cfg',
+                                                              'test_single_file_saved_subset']]
+    for config_file in config_files:
+        if exists(config_file):
+            os.unlink(config_file)
 
 
 def check_predict(model, use_feature_hashing=False):
@@ -301,6 +304,12 @@ def make_single_file_featureset_data():
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
+    # Also write another test feature set that has fewer features than the training set
+    test_fs.filter(features=['f01', 'f02'])
+    test_path = join(_my_dir, 'test', 'test_single_file_subset.jsonlines')
+    writer = NDJWriter(test_path, test_fs)
+    writer.write()
+
 
 def test_train_file_test_file():
     """
@@ -338,6 +347,43 @@ def test_train_file_test_file():
                                        '_f1.results.json'))) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['score'], 0.9491525423728813)
+
+
+def test_predict_on_subset_with_existing_model():
+    """
+    Test generating predictions on subset with existing model
+    """
+    # Create data files
+    make_single_file_featureset_data()
+
+    # train and save a model on the training file
+    train_fs = NDJReader.for_path(join(_my_dir, 'train', 'train_single_file.jsonlines')).read()
+    learner = Learner('RandomForestClassifier')
+    learner.train(train_fs, grid_search=True, grid_objective="accuracy")
+    model_filename = join(_my_dir, 'output', ('train_test_single_file_train_train_'
+                                              'single_file.jsonlines_test_test_single'
+                                              '_file_subset.jsonlines_RandomForestClassifier'
+                                              '.model'))
+
+    learner.save(model_filename)
+
+    # Run experiment
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file_saved_subset"
+                                                            ".template.cfg"),
+                                                       join(_my_dir, 'train', 'train_single_file.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file_subset.'
+                                                            'jsonlines'))
+    run_configuration(config_path, quiet=True, overwrite=False)
+
+    # Check results
+    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
+                                       'single_file.jsonlines_test_test_single'
+                                       '_file_subset.jsonlines_RandomForestClassifier'
+                                       '.results.json'))) as f:
+        result_dict = json.load(f)[0]
+    assert_almost_equal(result_dict['score'], 0.7333333)
 
 
 def test_train_file_test_file_ablation():
