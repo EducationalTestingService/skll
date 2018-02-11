@@ -949,7 +949,7 @@ class Learner(object):
 
         # create the learner logger attribute to the logger that's passed in
         # or if nothing was passed in, then a new logger should be linked
-        # learner.logger = logger if logger else logging.getLogger(__name__)
+        learner.logger = logger if logger else logging.getLogger(__name__)
 
         # For backward compatibility, convert string model types to labels.
         if isinstance(learner._model_type, string_types):
