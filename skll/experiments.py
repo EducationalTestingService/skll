@@ -989,7 +989,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     write_summary : bool, optional
         Write a TSV file with a summary of the results.
         Defaults to ``True``.
-    quite : bool, optional
+    quiet : bool, optional
         Suppress printing of "Loading..." messages.
         Defaults to ``False``.
     ablation : int, optional
