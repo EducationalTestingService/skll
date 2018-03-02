@@ -62,7 +62,8 @@ from sklearn.linear_model import (BayesianRidge,
                                   SGDRegressor,
                                   TheilSenRegressor)
 from sklearn.linear_model.base import LinearModel
-from sklearn.metrics import (accuracy_score,
+from sklearn.metrics import (make_scorer,
+                             accuracy_score,
                              confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.naive_bayes import MultinomialNB
@@ -76,6 +77,7 @@ from sklearn.utils import shuffle as sk_shuffle
 from skll.data import FeatureSet
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
+from .metrics import d
 
 # Constants #
 _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
@@ -170,7 +172,8 @@ _BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                      'kendall_tau',
                                      'pearson',
                                      'spearman',
-                                     'neg_log_loss'])
+                                     'neg_log_loss',
+                                     'd'])
 
 _REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
                                         'neg_mean_squared_error'])
@@ -185,7 +188,8 @@ _CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
                                             'f1_score_least_frequent',
                                             'average_precision',
                                             'roc_auc',
-                                            'neg_log_loss'])
+                                            'neg_log_loss',
+                                            'd'])
 
 _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'linear_weighted_kappa',
@@ -193,7 +197,8 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'uwk_off_by_one',
                                   'lwk_off_by_one',
                                   'qwk_off_by_one',
-                                  'neg_log_loss'])
+                                  'neg_log_loss',
+                                  'd'])
 
 _REQUIRES_DENSE = (BayesianRidge,
                    GradientBoostingClassifier,
@@ -1508,11 +1513,18 @@ class Learner(object):
             # number of cores for the machine, whichever is lower
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
 
-            grid_searcher = GridSearchCV(estimator, param_grid,
-                                         scoring=grid_objective,
-                                         cv=folds,
-                                         n_jobs=grid_jobs,
-                                         pre_dispatch=grid_jobs)
+            if grid_objective != "d":
+                grid_searcher = GridSearchCV(estimator, param_grid,
+                                             scoring=grid_objective,
+                                             cv=folds,
+                                             n_jobs=grid_jobs,
+                                             pre_dispatch=grid_jobs)
+            else:
+                grid_searcher = GridSearchCV(estimator, param_grid,
+                                             scoring=make_scorer(d, ids=examples.ids),
+                                             cv=folds,
+                                             n_jobs=grid_jobs,
+                                             pre_dispatch=grid_jobs)
 
             # run the grid search for hyperparameters
             grid_searcher.fit(xtrain, labels)

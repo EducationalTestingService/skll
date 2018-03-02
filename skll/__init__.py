@@ -17,10 +17,10 @@ from .data import FeatureSet, Reader, Writer
 from .experiments import run_configuration
 from .learner import Learner
 from .metrics import (kappa, kendall_tau, spearman, pearson,
-                      f1_score_least_frequent)
+                      f1_score_least_frequent, d)
 
 
-__all__ = ['FeatureSet', 'Learner', 'Reader', 'kappa', 'kendall_tau',
+__all__ = ['FeatureSet', 'Learner', 'Reader', 'd', 'kappa', 'kendall_tau',
            'spearman', 'pearson', 'f1_score_least_frequent',
            'get_skll_logger', 'run_configuration', 'Writer']
 
@@ -44,6 +44,7 @@ _scorers = {'f1_score_micro': make_scorer(f1_score,
                                           allow_off_by_one=True),
             'lwk_off_by_one': make_scorer(kappa, weights='linear',
                                           allow_off_by_one=True),
-            'uwk_off_by_one': make_scorer(kappa, allow_off_by_one=True)}
+            'uwk_off_by_one': make_scorer(kappa, allow_off_by_one=True),
+            'd': make_scorer(d)}
 
 SCORERS.update(_scorers)

@@ -11,15 +11,53 @@ evaluate the performance of learners.
 
 from __future__ import print_function, unicode_literals
 
+import sys
+import csv
+from os.path import join
+
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from six import string_types
 from six.moves import xrange as range
 from sklearn.metrics import confusion_matrix, f1_score, SCORERS
 
-call_dir_path = join("/home/research/mmulholland/text-dynamic/call2/spoken-call-shared-task-v2")
-sys.path.append(call_dir_path)
-import score_file
+
+def d(y, y_pred, ids=None):
+    """
+    Note: `y` is not used and is only included to fit the
+    specification of a scorer.
+    """
+
+    if ids is None:
+        raise ValueError("ids needs to be specified to compute d.")
+
+    call_dir_path = "/home/research/mmulholland/text-dynamic/call2/spoken-call-shared-task-v2"
+    if call_dir_path not in sys.path:
+        sys.path.append(call_dir_path)
+    import score_file
+
+    grammar_dict, known_prompts = score_file.read_grammar()
+
+    gold_file_path = join(call_dir_path, "data", "master_data_spreadsheet.csv")
+    gold_decisions_dict = {}
+    with open(gold_file_path) as gold_file:
+        reader = csv.DictReader(gold_file)
+        for row in reader:
+            gold_decisions_dict[row["id"]] = {"language": row["language"],
+                                              "meaning": row["meaning"]}
+    predictions_dict = {}
+    for id_, y in zip(ids, y_pred):
+        prediction = int(np.round(float(y)))
+        if prediction:
+            prediction = "accept"
+        else:
+            prediction = "reject"
+        predictions_dict[id_] = \
+            score_file.score_decision2(prediction,
+                                       gold_decisions_dict[id_]["language"],
+                                       gold_decisions_dict[id_]["meaning"])
+
+    return score_file.calculate_D(score_file.read_results(predictions_dict))
 
 
 # Constants
