@@ -17,6 +17,10 @@ from six import string_types
 from six.moves import xrange as range
 from sklearn.metrics import confusion_matrix, f1_score, SCORERS
 
+call_dir_path = join("/home/research/mmulholland/text-dynamic/call2/spoken-call-shared-task-v2")
+sys.path.append(call_dir_path)
+import score_file
+
 
 # Constants
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
