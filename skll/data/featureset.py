@@ -36,6 +36,9 @@ class FeatureSet(object):
     labels : np.array, optional
         labels for this set.
         Defaults to ``None``.
+    labels2 : np.array, optional
+        labels from a second annotator for this set.
+        Defaults to ``None``.
     feature : list of dict or array-like, optional
         The features for each instance represented as either a
         list of dictionaries or an array-like (if `vectorizer` is
@@ -44,6 +47,7 @@ class FeatureSet(object):
     vectorizer : DictVectorizer or FeatureHasher, optional
         Vectorizer which will be used to generate the feature matrix.
         Defaults to ``None``.
+
 
     Warnings
     --------
@@ -60,7 +64,7 @@ class FeatureSet(object):
     each array must be equal.
     """
 
-    def __init__(self, name, ids, labels=None, features=None,
+    def __init__(self, name, ids, labels=None, labels2=None, features=None,
                  vectorizer=None):
         super(FeatureSet, self).__init__()
         self.name = name
@@ -70,6 +74,7 @@ class FeatureSet(object):
         if isinstance(labels, list):
             labels = np.array(labels)
         self.labels = labels
+        self.labels2 = labels2
         self.features = features
         self.vectorizer = vectorizer
         # Convert list of dicts to numpy array
@@ -89,6 +94,9 @@ class FeatureSet(object):
             if self.labels is None:
                 self.labels = np.empty(num_feats)
                 self.labels.fill(None)
+            if self.labels2 is None:
+                self.labels2 = np.empty(num_feats)
+                self.labels2.fill(None)
             num_labels = self.labels.shape[0]
             if num_feats != num_labels:
                 raise ValueError(('Number of labels (%s) does not equal '
@@ -126,6 +134,7 @@ class FeatureSet(object):
                 self.features.shape == other.features.shape and
                 (self.ids == other.ids).all() and
                 (self.labels == other.labels).all() and
+                (self.labels2 == other.labels2).all() and
                 np.allclose(self.features.data, other.features.data,
                             rtol=1e-6) and
                 (self.features.indices == other.features.indices).all() and
@@ -134,14 +143,14 @@ class FeatureSet(object):
 
     def __iter__(self):
         """
-        Iterate through (ID, label, feature_dict) tuples in feature set.
+        Iterate through (ID, label, feature_dict, label2) tuples in feature set.
         """
         if self.features is not None:
             if not isinstance(self.vectorizer, DictVectorizer):
                 raise ValueError('FeatureSets can only be iterated through if '
                                  'they use a DictVectorizer for their feature '
                                  'vectorizer.')
-            for id_, label_, feats in zip(self.ids, self.labels, self.features):
+            for id_, label_, feats, label2_ in zip(self.ids, self.labels, self.features, self.labels2):
 
                 # reshape to a 2D matrix if we are not using a sparse matrix
                 # to store the features
@@ -150,7 +159,7 @@ class FeatureSet(object):
                 # When calling inverse_transform we have to add [0] to get the
                 # results for the current instance because it always returns a
                 # 2D array
-                yield (id_, label_, self.vectorizer.inverse_transform(feats)[0])
+                yield (id_, label_, self.vectorizer.inverse_transform(feats)[0], label2_)
         else:
             return
 
@@ -237,6 +246,17 @@ class FeatureSet(object):
             new_set.labels = deepcopy(self.labels)
         else:
             new_set.labels = deepcopy(other.labels[relative_order])
+
+        # If either set has labels2, check that they don't conflict.
+        if self.has_labels2:
+            # labels2 should be the same for each FeatureSet, so store once.
+            if other.has_labels2 and \
+                    not np.all(self.labels2 == other.labels2[relative_order]):
+                raise ValueError('Feature sets have conflicting labels2 for '
+                                 'examples with the same ID.')
+            new_set.labels2 = deepcopy(self.labels2)
+        else:
+            new_set.labels2 = deepcopy(other.labels2[relative_order])
 
         return new_set
 
@@ -419,6 +439,22 @@ class FeatureSet(object):
         else:
             return False
 
+    @property
+    def has_labels2(self):
+        """
+        Check if ``FeatureSet`` has finite labels2.
+
+        Returns
+        -------
+        has_labels2 : bool
+            Whether or not this FeatureSet has any finite labels2.
+        """
+        if self.labels2 is not None:
+            return not (np.issubdtype(self.labels2.dtype, float) and
+                        np.isnan(np.min(self.labels2)))
+        else:
+            return False
+
     def __str__(self):
         """
         Returns
@@ -454,15 +490,18 @@ class FeatureSet(object):
                             else None)
             sliced_labels = (self.labels[value] if self.labels is not None
                              else None)
+            sliced_labels2 = (self.labels2[value] if self.labels2 is not None
+                            else None)
             return FeatureSet('{}_{}'.format(self.name, value), sliced_ids,
                               features=sliced_feats, labels=sliced_labels,
-                              vectorizer=self.vectorizer)
+                              vectorizer=self.vectorizer, labels2=sliced_labels2)
         else:
             label = self.labels[value] if self.labels is not None else None
+            label2 = self.labels2[value] if self.labels2 is not None else None
             feats = self.features[value, :]
             features = (self.vectorizer.inverse_transform(feats)[0] if
                         self.features is not None else {})
-            return self.ids[value], label, features
+            return self.ids[value], label, features, label2
 
     @staticmethod
     def split_by_ids(fs, ids_for_split1, ids_for_split2=None):
@@ -505,30 +544,35 @@ class FeatureSet(object):
         # they should be much smaller than the original FeatureSet.
         ids1 = fs.ids[ids_for_split1]
         labels1 = fs.labels[ids_for_split1]
+        labels1_2 = fs.labels2[ids_for_split1]
         features1 = fs.features[ids_for_split1]
         if ids_for_split2 is None:
             ids2 = fs.ids[~np.in1d(fs.ids, ids_for_split1)]
             labels2 = fs.labels[~np.in1d(fs.ids, ids_for_split1)]
+            labels2_2 = fs.labels2[~np.in1d(fs.ids, ids_for_split1)]
             features2 = fs.features[~np.in1d(fs.ids, ids_for_split1)]
         else:
             ids2 = fs.ids[ids_for_split2]
             labels2 = fs.labels[ids_for_split2]
+            labels2_2 = fs.labels2[ids_for_split2]
             features2 = fs.features[ids_for_split2]
 
         fs1 = FeatureSet('{}_1'.format(fs.name),
                          ids1,
                          labels=labels1,
                          features=features1,
-                         vectorizer=fs.vectorizer)
+                         vectorizer=fs.vectorizer,
+                         labels2=labels1_2)
         fs2 = FeatureSet('{}_2'.format(fs.name),
                          ids2,
                          labels=labels2,
                          features=features2,
-                         vectorizer=fs.vectorizer)
+                         vectorizer=fs.vectorizer,
+                         labels2=labels2_2)
         return fs1, fs2
 
     @staticmethod
-    def from_data_frame(df, name, labels_column=None, vectorizer=None):
+    def from_data_frame(df, name, labels_column=None, labels2_column=None, vectorizer=None):
         """
         Helper function to create a ``FeatureSet`` instance from a `pandas.DataFrame`.
         Will raise an Exception if pandas is not installed in your environment.
@@ -546,6 +590,9 @@ class FeatureSet(object):
         vectorizer : DictVectorizer or FeatureHasher, optional
             Vectorizer which will be used to generate the feature matrix.
             Defaults to ``None``.
+        labels2_column : str, optional
+            The name of the column containing the labels2 (second annotation).
+            Defaults to ``None``.
 
         Returns
         -------
@@ -559,9 +606,17 @@ class FeatureSet(object):
             feature_columns = df.columns
             labels = None
 
+        if labels2_column:
+            feature_columns = [column for column in df.columns if column != labels2_column]
+            labels2 = df[labels2_column].tolist()
+        else:
+            feature_columns = df.columns
+            labels2 = None
+
         features = df[feature_columns].to_dict(orient='records')
         return FeatureSet(name,
                           ids=df.index.tolist(),
                           labels=labels,
                           features=features,
-                          vectorizer=vectorizer)
+                          vectorizer=vectorizer,
+                          labels2=labels2)

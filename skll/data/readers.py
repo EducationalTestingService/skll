@@ -53,6 +53,12 @@ class Reader(object):
         exists, or ``None`` is specified, the data is
         considered to be unlabelled.
         Defaults to ``'y'``.
+    label_col2 : str, optional
+        Name of the column which contains the second class labels
+        for ARFF/CSV/TSV files. If no column with that name
+        exists, or ``None`` is specified, the data is
+        considered to not contain a second label
+        Defaults to ``'y2'``.
     id_col : str, optional
         Name of the column which contains the instance IDs.
         If no column with that name exists, or ``None`` is
@@ -85,13 +91,14 @@ class Reader(object):
     """
 
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y', id_col='id', class_map=None, sparse=True,
+                 label_col='y', label_col2='y2', id_col='id', class_map=None, sparse=True,
                  feature_hasher=False, num_features=None, logger=None):
         super(Reader, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
         self.ids_to_floats = ids_to_floats
         self.label_col = label_col
+        self.label_col2 = label_col2
         self.id_col = id_col
         self.class_map = class_map
         self._progress_msg = ''
@@ -204,9 +211,10 @@ class Reader(object):
         # Get labels and IDs
         ids = []
         labels = []
+        labels2 = []
         ex_num = 0
         with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
-            for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
+            for ex_num, (id_, class_, class2_, _) in enumerate(self._sub_read(f), start=1):
                 # Update lists of IDs, clases, and features
                 if self.ids_to_floats:
                     try:
@@ -219,6 +227,7 @@ class Reader(object):
                                                        self.path_or_list))
                 ids.append(id_)
                 labels.append(class_)
+                labels2.append(class2_)
                 if ex_num % 100 == 0:
                     self._print_progress(ex_num)
             self._print_progress(ex_num)
@@ -232,10 +241,11 @@ class Reader(object):
         # Convert everything to numpy arrays
         ids = np.array(ids)
         labels = np.array(labels)
+        labels2 = np.array(labels2)
 
         def feat_dict_generator():
             with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
-                for ex_num, (_, _, feat_dict) in enumerate(self._sub_read(f)):
+                for ex_num, (_, _, _, feat_dict) in enumerate(self._sub_read(f)):
                     yield feat_dict
                     if ex_num % 100 == 0:
                         self._print_progress('{:.8}%'.format(100 * ((ex_num /
@@ -255,7 +265,7 @@ class Reader(object):
             raise ValueError('The example IDs are not unique in %s.' %
                              self.path_or_list)
 
-        return FeatureSet(self.path_or_list, ids, labels=labels,
+        return FeatureSet(self.path_or_list, ids, labels=labels, labels2=labels2,
                           features=features, vectorizer=self.vectorizer)
 
 
@@ -279,6 +289,7 @@ class DictListReader(Reader):
         """
         ids = []
         labels = []
+        labels2 = []
         feat_dicts = []
         for example_num, example in enumerate(self.path_or_list):
             curr_id = str(example.get("id",
@@ -294,6 +305,9 @@ class DictListReader(Reader):
             class_name = (safe_float(example['y'],
                                      replace_dict=self.class_map)
                           if 'y' in example else None)
+            class_name2 = (safe_float(example['y2'],
+                                     replace_dict=self.class_map)
+                          if 'y2' in example else None)
             example = example['x']
             # Update lists of IDs, labels, and feature dictionaries
             if self.ids_to_floats:
@@ -305,6 +319,7 @@ class DictListReader(Reader):
                                       '{}').format(curr_id, self.path_or_list))
             ids.append(curr_id)
             labels.append(class_name)
+            labels2.append(class_name2)
             feat_dicts.append(example)
             # Print out status
             if example_num % 100 == 0:
@@ -312,9 +327,10 @@ class DictListReader(Reader):
         # Convert lists to numpy arrays
         ids = np.array(ids)
         labels = np.array(labels)
+        labels2 = np.array(labels2)
         features = self.vectorizer.fit_transform(feat_dicts)
 
-        return FeatureSet('converted', ids, labels=labels,
+        return FeatureSet('converted', ids, labels=labels, labels2=labels2,
                           features=features, vectorizer=self.vectorizer)
 
 
@@ -343,6 +359,8 @@ class NDJReader(Reader):
             The current ID for the example.
         class_name : float or str
             The name of the class label for the example.
+        class_name2 : float or str
+            The name of the second class label for the example.
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
@@ -370,6 +388,9 @@ class NDJReader(Reader):
             class_name = (safe_float(example['y'],
                                      replace_dict=self.class_map)
                           if 'y' in example else None)
+            class_name2 = (safe_float(example['y2'],
+                                     replace_dict=self.class_map)
+                          if 'y2' in example else None)
             example = example["x"]
 
             if self.ids_to_floats:
@@ -380,7 +401,7 @@ class NDJReader(Reader):
                                       ' ID {} could not be converted to ' +
                                       'float').format(curr_id))
 
-            yield curr_id, class_name, example
+            yield curr_id, class_name, class_name2, example
 
 
 class MegaMReader(Reader):
@@ -629,11 +650,14 @@ class DelimitedReader(Reader):
             The current ID for the example.
         class_name : float or str
             The name of the class label for the example.
+        class_name2 : float or str
+            The name of the second class label for the example.
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
         """
         reader = DictReader(f, dialect=self.dialect)
+
         for example_num, row in enumerate(reader):
             if self.label_col is not None and self.label_col in row:
                 class_name = safe_float(row[self.label_col],
@@ -641,6 +665,13 @@ class DelimitedReader(Reader):
                 del row[self.label_col]
             else:
                 class_name = None
+
+            if self.label_col2 is not None and self.label_col2 in row:
+                class_name2 = safe_float(row[self.label_col2],
+                                        replace_dict=self.class_map)
+                del row[self.label_col2]
+            else:
+                class_name2 = None
 
             if self.id_col not in row:
                 curr_id = "EXAMPLE_{}".format(example_num)
@@ -679,7 +710,7 @@ class DelimitedReader(Reader):
                 if not self.ids_to_floats:
                     curr_id = curr_id.decode('utf-8')
 
-            yield curr_id, class_name, row
+            yield curr_id, class_name, class_name2, row
 
 
 class CSVReader(DelimitedReader):

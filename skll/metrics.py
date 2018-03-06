@@ -20,7 +20,7 @@ from sklearn.metrics import confusion_matrix, f1_score, SCORERS
 
 # Constants
 _CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
-
+_NEEDS_SECOND_LABEL_METRIC = frozenset(['prmse'])
 
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     """
@@ -236,6 +236,67 @@ def f1_score_least_frequent(y_true, y_pred):
     return f1_score(y_true, y_pred, average=None)[least_frequent]
 
 
+def prmse(y_true, y_true2, y_pred):
+    """
+       Calculate the PRMSE for a dataset with
+       double-scored data (needs pandas)
+
+       Parameters
+       ----------
+       y_true : array-like of float
+           The true/actual/gold labels for the data for rater1
+       y_true2 : array-like of float
+           The true/actual/gold labels for the data for rater2
+       y_pred : array-like of float
+           The predicted/observed labels for the data.
+
+       Returns
+       -------
+       ret_score : float
+           Proportional Reduction in MSE
+    """
+
+    df_predictions = None
+
+    try:
+        # make a dataframe with the labels and predictions
+        import pandas as pd
+        df_predictions = pd.DataFrame({'rater 1': y_true, 'rater 2': y_true2, 'predicted': y_pred})
+    except:
+        raise Exception('Pandas needs to be installed to compute PRMSE')
+
+    # step 1: compute the estimated rater variance (V_R) over the double scored responses
+    df_double_scored = df_predictions.dropna().copy()
+
+    if len(df_double_scored) == 0:
+        raise Exception('A second label needs to be supplied to compute PRMSE')
+    else:
+        squared_differences = df_double_scored.apply(lambda row: (row['rater 1'] - row['rater 2']) ** 2, axis=1)
+        rater_variance = squared_differences.mean() / 2
+
+        # step 2a: compute the variance of the first human score (V_H)
+        human_score1_variance = df_predictions['rater 1'].var()
+
+        # step 2b: compute the sample variance of the machine scores (V_M)
+        machine_score_variance = df_predictions['predicted'].var()
+
+        # step 2c: compute the sample covariance of the machine score
+        # and the first human score
+        machine_rater1_covariance = df_predictions['predicted'].cov(df_predictions['rater 1'])
+
+        # step 3: compute estimated variance for the human true scores
+        true_score_variance = human_score1_variance - rater_variance
+
+        # step 4: compute the PRMSE for machine scores R^2_{M}
+        prmse_machine = (machine_rater1_covariance ** 2) / (true_score_variance * machine_score_variance)
+
+        print(df_predictions)
+        print(prmse_machine)
+        return prmse_machine
+
+
+
+
 def use_score_func(func_name, y_true, y_pred):
     """
     Call the scoring function in ``sklearn.metrics.SCORERS`` with the given name.
@@ -259,3 +320,30 @@ def use_score_func(func_name, y_true, y_pred):
     """
     scorer = SCORERS[func_name]
     return scorer._sign * scorer._score_func(y_true, y_pred, **scorer._kwargs)
+
+
+def use_score_func_with_second_label(func_name, y_true, y_true2, y_pred):
+    """
+    Call the scoring function in ``sklearn.metrics.SCORERS`` with the given name.
+    This takes care of handling keyword arguments that were pre-specified when
+    creating the scorer. This applies any sign-flipping that was specified by
+    ``make_scorer()`` when the scorer was created.
+
+    Parameters
+    ----------
+    func_name : str
+        The name of the objective function to use from SCORERS.
+    y_true : array-like of float
+        The true/actual/gold labels for the data.
+    y_true2 : array-like of float
+        The true/actual/gold labels for the data from the second annotator.
+    y_pred : array-like of float
+        The predicted/observed labels for the data.
+
+    Returns
+    -------
+    ret_score : float
+        The scored result from the given scorer.
+    """
+    scorer = SCORERS[func_name]
+    return scorer._sign * scorer._score_func(y_true, y_true2, y_pred, **scorer._kwargs)

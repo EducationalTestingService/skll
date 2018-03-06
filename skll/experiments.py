@@ -371,7 +371,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         print('', file=output_file)
 
 
-def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
+def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y', label_col2='y2',
                      ids_to_floats=False, quiet=False, class_map=None,
                      feature_hasher=False, num_features=None, logger=None):
     """
@@ -395,6 +395,11 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
         If no column with that name exists, or `None` is
         specified, the data is considered to be unlabeled.
         Defaults to ``'y'``.
+    label_col2 : str, optional
+        Name of the column which contains the second class labels.
+        If no column with that name exists, or `None` is
+        specified, the data is considered to not contain a second label.
+        Defaults to ``'y2'``.
     ids_to_floats : bool, optional
         Whether to convert the IDs to floats to save memory. Will raise error
         if we encounter non-numeric IDs.
@@ -429,9 +434,11 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
     """
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
+
     if isfile(dir_path):
         return Reader.for_path(dir_path,
                                label_col=label_col,
+                               label_col2=label_col2,
                                id_col=id_col,
                                ids_to_floats=ids_to_floats,
                                quiet=quiet,
@@ -445,6 +452,7 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                                 featfile in feat_files):
             fs = Reader.for_path(file_name,
                                  label_col=label_col,
+                                 label_col2=label_col2,
                                  id_col=id_col,
                                  ids_to_floats=ids_to_floats,
                                  quiet=quiet,
@@ -524,6 +532,7 @@ def _classify_featureset(args):
     use_folds_file_for_grid_search = args.pop("use_folds_file_for_grid_search")
     stratified_folds = args.pop("do_stratified_folds")
     label_col = args.pop("label_col")
+    label_col2 = args.pop("label_col2")
     id_col = args.pop("id_col")
     ids_to_floats = args.pop("ids_to_floats")
     class_map = args.pop("class_map")
@@ -586,6 +595,7 @@ def _classify_featureset(args):
                                           featureset,
                                           suffix,
                                           label_col=label_col,
+                                          label_col2=label_col2,
                                           id_col=id_col,
                                           ids_to_floats=ids_to_floats,
                                           quiet=quiet,
@@ -629,6 +639,7 @@ def _classify_featureset(args):
                                          featureset,
                                          suffix,
                                          label_col=label_col,
+                                         label_col2=label_col2,
                                          id_col=id_col,
                                          ids_to_floats=ids_to_floats,
                                          quiet=quiet,
@@ -1026,7 +1037,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # Read configuration
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
-     hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
+     hasher_features, id_col, label_col, label_col2, train_set_name, test_set_name, suffix,
      featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
      probability, results_path, pos_label_str, feature_scaling, min_feature_count,
      folds_file, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
@@ -1214,6 +1225,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["use_folds_file_for_grid_search"] = use_folds_file_for_grid_search
                 job_args["do_stratified_folds"] = do_stratified_folds
                 job_args["label_col"] = label_col
+                job_args["label_col2"] = label_col2
                 job_args["id_col"] = id_col
                 job_args["ids_to_floats"] = ids_to_floats
                 job_args["quiet"] = quiet

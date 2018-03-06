@@ -65,6 +65,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'id_col': 'id',
                     'ids_to_floats': 'False',
                     'label_col': 'y',
+                    'label_col2': 'y2',
                     'log': '',
                     'learning_curve_cv_folds_list': '[]',
                     'learning_curve_train_sizes': '[]',
@@ -107,6 +108,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'id_col': 'Input',
                                    'ids_to_floats': 'Input',
                                    'label_col': 'Input',
+                                   'label_col2': 'Input',
                                    'log': 'Output',
                                    'learning_curve_cv_folds_list': 'Input',
                                    'learning_curve_train_sizes': 'Input',
@@ -374,6 +376,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         The column with IDs.
     label_col : str
         The column with labels.
+    label_col2 : str
+        The column with labels.
     train_set_name : str
         The name of the training set.
     test_set_name : str
@@ -628,6 +632,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     suffix = config.get("Input", "suffix")
     label_col = config.get("Input", "label_col")
+    label_col2 = config.get("Input", "label_col2")
     id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
@@ -903,7 +908,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     test_set_name = basename(test_path) if test_path else "cv"
 
     return (experiment_name, task, sampler, fixed_sampler_parameters,
-            feature_hasher, hasher_features, id_col, label_col, train_set_name,
+            feature_hasher, hasher_features, id_col, label_col, label_col2, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objectives, probability, results_path,
             pos_label_str, feature_scaling, min_feature_count, folds_file,

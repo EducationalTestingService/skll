@@ -74,7 +74,11 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
-from skll.metrics import _CORRELATION_METRICS, use_score_func
+from skll.metrics import (_CORRELATION_METRICS,
+                          _NEEDS_SECOND_LABEL_METRIC,
+                          use_score_func,
+                          use_score_func_with_second_label)
+
 from skll.version import VERSION
 
 # Constants #
@@ -173,7 +177,8 @@ _BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                      'neg_log_loss'])
 
 _REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
-                                        'neg_mean_squared_error'])
+                                        'neg_mean_squared_error',
+                                        'prmse'])
 
 _CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
                                             'precision',
@@ -369,14 +374,24 @@ def _train_and_score(learner,
         train_and_test_label_dict.update(unseen_label_dict)
         train_labels = np.array([train_and_test_label_dict[label]
                                  for label in train_examples.labels])
+        train_labels2 = np.array([train_and_test_label_dict[label]
+                                 for label in train_examples.labels2])
         test_labels = np.array([train_and_test_label_dict[label]
                                  for label in test_examples.labels])
+        test_labels2 = np.array([train_and_test_label_dict[label]
+                                for label in test_examples.labels2])
     else:
         train_labels = train_examples.labels
+        train_labels2 = train_examples.labels2
         test_labels = test_examples.labels
+        test_labels2 = test_examples.labels2
 
-    train_score = use_score_func(objective, train_labels, train_predictions)
-    test_score = use_score_func(objective, test_labels, test_predictions)
+    if objective in _NEEDS_SECOND_LABEL_METRIC:
+        train_score = use_score_func_with_second_label(objective, train_labels, train_labels2, train_predictions)
+        test_score = use_score_func_with_second_label(objective, test_labels, test_labels2, test_predictions)
+    else:
+        train_score = use_score_func(objective, train_labels, train_predictions)
+        test_score = use_score_func(objective, test_labels, test_predictions)
     return train_score, test_score
 
 
@@ -1578,8 +1593,11 @@ class Learner(object):
             train_and_test_label_dict.update(unseen_label_dict)
             ytest = np.array([train_and_test_label_dict[label]
                               for label in examples.labels])
+            ytest2 = np.array([train_and_test_label_dict[label]
+                              for label in examples.labels2])
         else:
             ytest = examples.labels
+            ytest2 = examples.labels2
 
         # compute all of the metrics that we need to but save the original
         # predictions since we will need to use those for each metric
@@ -1594,18 +1612,30 @@ class Learner(object):
                         metric_scores[metric] = use_score_func(metric, ytest, yhat[:, 1])
                     except ValueError:
                         metric_scores[metric] = float('NaN')
+                elif metric and metric in _NEEDS_SECOND_LABEL_METRIC:
+                    try:
+                        metric_scores[metric] = use_score_func_with_second_label(metric, ytest, ytest2, yhat[:, 1])
+                    except ValueError:
+                        metric_scores[metric] = float('NaN')
 
                 yhat = np.array([max(range(len(row)),
                                      key=lambda i: row[i])
                                  for row in original_yhat])
 
             # calculate grid search objective function score, if specified
-            if (metric and (metric not in _CORRELATION_METRICS or
-                                   not self.probability)):
+            if (metric and (metric not in _NEEDS_SECOND_LABEL_METRIC)
+                       and (metric not in _CORRELATION_METRICS or
+                            not self.probability)):
                 try:
                     metric_scores[metric] = use_score_func(metric, ytest, yhat)
                 except ValueError:
                     metric_scores[metric] = float('NaN')
+            elif metric and metric in _NEEDS_SECOND_LABEL_METRIC:
+                try:
+                    metric_scores[metric] = use_score_func_with_second_label(metric, ytest, ytest2, yhat)
+                except ValueError:
+                    metric_scores[metric] = float('NaN')
+
 
         # now separate out the grid objective score from the additional metric scores
         # if a grid objective was actually passed in. If no objective was passed in
