@@ -1,6 +1,6 @@
 package:
   name: skll
-  version: 1.5.1
+  version: 1.5.2
 
 source:
   path: ../../../skll
