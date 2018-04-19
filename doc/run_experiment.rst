@@ -696,7 +696,7 @@ TheilSenRegressor
 
        {'class_weight': {1: 10}}
 
-    Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_labels.html>`__.
+    Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_samples.html>`__.
 
 .. _feature_scaling:
 
