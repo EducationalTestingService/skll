@@ -18,14 +18,14 @@ from collections import OrderedDict
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import eq_, raises, assert_not_equal
+from nose.tools import eq_, raises, assert_not_equal, assert_equal
 from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 
 import skll
-from skll.data import FeatureSet, Writer, Reader
+from skll.data import FeatureSet, Writer, Reader, CSVReader, NDJWriter
 from skll.data.readers import DictListReader
 from skll.experiments import _load_featureset
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -972,3 +972,23 @@ def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
                         rtol=1e-6) and
             np.all(np.isnan(expected.labels)) and
             np.all(np.isnan(current.labels)))
+
+
+def test_read_write_no_labels():
+    featureset_file = os.path.join(_my_dir, 'other', 'featureset_no_labels.csv')
+    reader = CSVReader(featureset_file, label_col=None)
+    fs = reader.read()
+    outpath = os.path.join(_my_dir, 'output', 'featureset_no_labels.jsonlines')
+    writer = NDJWriter(outpath, fs)
+    writer.write()
+
+    expected_path = os.path.join(_my_dir,
+                                 "output",
+                                 "featureset_no_labels_expected.jsonlines")
+
+    with open(expected_path) as f_expected:
+        expected_output = f_expected.read()
+    with open(outpath) as f_actual:
+        actual_output = f_actual.read()
+
+    assert_equal(actual_output, expected_output)
