@@ -982,7 +982,7 @@ def test_read_write_no_labels():
     outpath = os.path.join(_my_dir, 'output', 'featureset_no_labels.jsonlines')
     writer = NDJWriter(outpath, fs)
     writer.write()
-    expected_path = os.path.join(_my_dir, "train",
+    expected_path = os.path.join(_my_dir, "other",
                                  "featureset_no_labels_expected.jsonlines")
 
     with open(expected_path) as f_expected:
