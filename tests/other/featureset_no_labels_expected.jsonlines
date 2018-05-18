@@ -1,0 +1,4 @@
+{"id": "1", "x": {"feature1": 0.2, "feature2": 0.8}}
+{"id": "2", "x": {"feature1": 0.1, "feature2": 0.9}}
+{"id": "3", "x": {"feature1": 0.99, "feature2": 0.01}}
+{"id": "4", "x": {"feature2": 1.0}}

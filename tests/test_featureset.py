@@ -975,15 +975,14 @@ def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
 
 
 def test_read_write_no_labels():
-    featureset_file = os.path.join(_my_dir, 'other', 'featureset_no_labels.csv')
+    featureset_file = os.path.join(_my_dir, 'train',
+                                   'featureset_no_labels_input.csv')
     reader = CSVReader(featureset_file, label_col=None)
     fs = reader.read()
     outpath = os.path.join(_my_dir, 'output', 'featureset_no_labels.jsonlines')
     writer = NDJWriter(outpath, fs)
     writer.write()
-
-    expected_path = os.path.join(_my_dir,
-                                 "output",
+    expected_path = os.path.join(_my_dir, "train",
                                  "featureset_no_labels_expected.jsonlines")
 
     with open(expected_path) as f_expected:
