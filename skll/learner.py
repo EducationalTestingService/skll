@@ -196,8 +196,6 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'neg_log_loss'])
 
 _REQUIRES_DENSE = (BayesianRidge,
-                   GradientBoostingClassifier,
-                   GradientBoostingRegressor,
                    Lars,
                    TheilSenRegressor)
 
