@@ -26,7 +26,8 @@ class Predictor(object):
     predictions for feature strings.
     """
 
-    def __init__(self, model_path, threshold=None, positive_label=1, logger=None):
+    def __init__(self, model_path, threshold=None, positive_label=1,
+                 return_all_probabilities=False, logger=None):
         """
         Initialize the predictor.
 
@@ -54,6 +55,7 @@ class Predictor(object):
         self._learner = Learner.from_file(model_path)
         self._pos_index = positive_label
         self.threshold = threshold
+        self.all_probs = return_all_probabilities
 
     def predict(self, data):
         """
@@ -73,7 +75,9 @@ class Predictor(object):
         preds = preds.tolist()
 
         if self._learner.probability:
-            if self.threshold is None:
+            if self.all_probs:
+                return preds
+            elif self.threshold is None:
                 return [pred[self._pos_index] for pred in preds]
             else:
                 return [int(pred[self._pos_index] >= self.threshold)
