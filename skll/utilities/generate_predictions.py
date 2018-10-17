@@ -14,6 +14,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import argparse
 import logging
 import os
+import sys
 
 from skll.data.readers import EXT_TO_READER
 from skll.learner import Learner
@@ -47,6 +48,10 @@ class Predictor(object):
             predicting. 1 = second class, which is default
             for binary classification.
             Defaults to 1.
+        return_all_probabilities: bool
+            A flag indicating whether to return the probabilities for all
+            labels in each row instead of just returning the probability of
+            `positive_label`.
         logger : logging object, optional
             A logging object. If ``None`` is passed, get logger from ``__name__``.
             Defaults to ``None``.
@@ -56,6 +61,7 @@ class Predictor(object):
         self._pos_index = positive_label
         self.threshold = threshold
         self.all_probs = return_all_probabilities
+        self.output_file_header = None
 
     def predict(self, data):
         """
@@ -73,20 +79,29 @@ class Predictor(object):
         # compute the predictions from the learner
         preds = self._learner.predict(data)
         preds = preds.tolist()
+        labels = self._learner.label_list
 
+        # Create file header list, and transform predictions as needed
+        # depending on the specified prediction arguments.
         if self._learner.probability:
             if self.all_probs:
-                return preds
+                self.output_file_header = ["id"] + [str(x) for x in labels]
             elif self.threshold is None:
-                return [pred[self._pos_index] for pred in preds]
+                label = self._learner.label_dict[self._pos_index]
+                self.output_file_header = ["id",
+                                           "Probability of '{}'".format(label)]
+                preds = [pred[self._pos_index] for pred in preds]
             else:
-                return [int(pred[self._pos_index] >= self.threshold)
-                        for pred in preds]
+                self.output_file_header = ["id", "prediction"]
+                preds = [int(pred[self._pos_index] >= self.threshold)
+                         for pred in preds]
         elif self._learner.model._estimator_type == 'regressor':
-            return preds
+            self.output_file_header = ["id", "prediction"]
         else:
-            return [self._learner.label_list[pred if isinstance(pred, int) else
-                                             int(pred[0])] for pred in preds]
+            self.output_file_header = ["id", "prediction"]
+            preds = [labels[pred if isinstance(pred, int) else int(pred[0])]
+                     for pred in preds]
+        return preds
 
 
 def main(argv=None):
@@ -134,14 +149,25 @@ def main(argv=None):
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
-    parser.add_argument('-t', '--threshold',
-                        help="If the model we're using is generating \
-                              probabilities of the positive label, return 1 \
-                              if it meets/exceeds the given threshold and 0 \
-                              otherwise.",
-                        type=float)
+    parser.add_argument('--output_file', '-o',
+                        help="Path to output tsv file. If not specified, "
+                             "predictions will be printed to stdout.")
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
+    probability_handling = parser.add_mutually_exclusive_group()
+    probability_handling.add_argument('-t', '--threshold',
+                                      help="If the model we're using is "
+                                           "generating probabilities of the "
+                                           "positive label, return 1 if it "
+                                           "meets/exceeds the given threshold "
+                                           "and 0 otherwise.",  type=float)
+    probability_handling.add_argument('--all_probabilities', '-a',
+                                      action='store_true',
+                                      help="Flag indicating whether to output "
+                                           "the probabilities of all labels "
+                                           "instead of just the probability "
+                                           "of the positive label.")
+
     args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
@@ -150,14 +176,20 @@ def main(argv=None):
                                 '%(message)s'))
     logger = logging.getLogger(__name__)
 
+    if args.positive_label and args.all_probabilities:
+        logger.warning("Ignoring `--positive_label` since "
+                       "`--all_probabilities` is set to True. The probability "
+                       "of all labels will be displayed.")
+
     # Create the classifier and load the model
     predictor = Predictor(args.model_file,
                           positive_label=args.positive_label,
                           threshold=args.threshold,
+                          return_all_probabilities=args.all_probabilities,
                           logger=logger)
 
     # Iterate over all the specified input files
-    for input_file in args.input_file:
+    for i, input_file in enumerate(args.input_file):
 
         # make sure each file extension is one we can process
         input_extension = os.path.splitext(input_file)[1].lower()
@@ -173,8 +205,34 @@ def main(argv=None):
                                                     label_col=args.label_col,
                                                     id_col=args.id_col)
             feature_set = reader.read()
-            for pred in predictor.predict(feature_set):
-                print(pred)
+            preds = predictor.predict(feature_set)
+            header = predictor.output_file_header
+
+            if args.output_file is not None:
+                with open(args.output_file, "a") as fout:
+                    if i == 0:  # Only write header once per set of input files
+                        print("\t".join(header), file=fout)
+                    if args.all_probabilities:
+                        for i, probabilities in enumerate(preds):
+                            id_ = feature_set.ids[i]
+                            probs_str = "\t".join([str(p) for p in probabilities])
+                            print("{}\t{}".format(id_, probs_str), file=fout)
+                    else:
+                        for i, pred in enumerate(preds):
+                            id_ = feature_set.ids[i]
+                            print("{}\t{}".format(id_, pred), file=fout)
+            else:
+                if i == 0:  # Only write header once per set of input files
+                    print("\t".join(header))
+                if args.all_probabilities:
+                    for i, probabilities in enumerate(preds):
+                        id_ = feature_set.ids[i]
+                        probs_str = "\t".join([str(p) for p in probabilities])
+                        print("{}\t{}".format(id_, probs_str))
+                else:
+                    for i, pred in enumerate(preds):
+                        id_ = feature_set.ids[i]
+                        print("{}\t{}".format(id_, pred))
 
 
 if __name__ == '__main__':
