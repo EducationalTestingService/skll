@@ -28,7 +28,7 @@ class Predictor(object):
     """
 
     def __init__(self, model_path, threshold=None, positive_label=1,
-                 return_all_probabilities=False, logger=None):
+                 all_labels=False, logger=None):
         """
         Initialize the predictor.
 
@@ -48,7 +48,7 @@ class Predictor(object):
             predicting. 1 = second class, which is default
             for binary classification.
             Defaults to 1.
-        return_all_probabilities: bool
+        all_labels: bool
             A flag indicating whether to return the probabilities for all
             labels in each row instead of just returning the probability of
             `positive_label`.
@@ -60,7 +60,7 @@ class Predictor(object):
         self._learner = Learner.from_file(model_path)
         self._pos_index = positive_label
         self.threshold = threshold
-        self.all_probs = return_all_probabilities
+        self.all_labels = all_labels
         self.output_file_header = None
 
     def predict(self, data):
@@ -84,7 +84,7 @@ class Predictor(object):
         # Create file header list, and transform predictions as needed
         # depending on the specified prediction arguments.
         if self._learner.probability:
-            if self.all_probs:
+            if self.all_labels:
                 self.output_file_header = ["id"] + [str(x) for x in labels]
             elif self.threshold is None:
                 label = self._learner.label_dict[self._pos_index]
@@ -122,29 +122,30 @@ def main(argv=None):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         conflict_handler='resolve')
     parser.add_argument('model_file',
-                        help='Model file to load and use for generating \
-                              predictions.')
-    parser.add_argument('input_file',
-                        help='A csv file, json file, or megam file \
-                              (with or without the label column), \
-                              with the appropriate suffix.',
+                        help='Model file to load and use for generating '
+                             'predictions.')
+    parser.add_argument('input_files',
+                        help='A space-separated list of csv file, json file, '
+                             'or megam file (with or without the label '
+                             'column), with the appropriate suffix.',
                         nargs='+')
     parser.add_argument('-i', '--id_col',
-                        help='Name of the column which contains the instance \
-                              IDs in ARFF, CSV, or TSV files.',
+                        help='Name of the column which contains the instance '
+                             'IDs in ARFF, CSV, or TSV files.',
                         default='id')
     parser.add_argument('-l', '--label_col',
-                        help='Name of the column which contains the labels\
-                              in ARFF, CSV, or TSV files. For ARFF files, this\
-                              must be the final column to count as the label.',
+                        help='Name of the column which contains the labels '
+                             'in ARFF, CSV, or TSV files. For ARFF files, '
+                             'this must be the final column to count as the '
+                             'label.',
                         default='y')
     parser.add_argument('-p', '--positive_label',
-                        help="If the model is only being used to predict the \
-                              probability of a particular label, this \
-                              specifies the index of the label we're \
-                              predicting. 1 = second label, which is default \
-                              for binary classification. Keep in mind that \
-                              labels are sorted lexicographically.",
+                        help="If the model is only being used to predict the "
+                             "probability of a particular label, this "
+                             "specifies the index of the label we're "
+                             "predicting. 1 = second label, which is default "
+                             "for binary classification. Keep in mind that "
+                             "labels are sorted lexicographically.",
                         default=1, type=int)
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
@@ -180,7 +181,7 @@ def main(argv=None):
     predictor = Predictor(args.model_file,
                           positive_label=args.positive_label,
                           threshold=args.threshold,
-                          return_all_probabilities=args.all_probabilities,
+                          all_labels=args.all_probabilities,
                           logger=logger)
 
     # Iterate over all the specified input files
@@ -204,18 +205,18 @@ def main(argv=None):
             header = predictor.output_file_header
 
             if args.output_file is not None:
-                with open(args.output_file, "a") as fout:
+                with open(args.output_file, "a") as outputfh:
                     if i == 0:  # Only write header once per set of input files
-                        print("\t".join(header), file=fout)
+                        print("\t".join(header), file=outputfh)
                     if args.all_probabilities:
                         for i, probabilities in enumerate(preds):
                             id_ = feature_set.ids[i]
                             probs_str = "\t".join([str(p) for p in probabilities])
-                            print("{}\t{}".format(id_, probs_str), file=fout)
+                            print("{}\t{}".format(id_, probs_str), file=outputfh)
                     else:
                         for i, pred in enumerate(preds):
                             id_ = feature_set.ids[i]
-                            print("{}\t{}".format(id_, pred), file=fout)
+                            print("{}\t{}".format(id_, pred), file=outputfh)
             else:
                 if i == 0:  # Only write header once per set of input files
                     print("\t".join(header))

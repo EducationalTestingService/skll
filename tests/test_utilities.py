@@ -287,16 +287,16 @@ def test_compute_eval_from_predictions_random_choice():
 def check_generate_predictions(use_feature_hashing=False,
                                use_threshold=False,
                                test_on_subset=False,
-                               all_probs=False):
+                               use_all_labels=False):
 
     # create some simple classification feature sets for training and testing
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
                                                  use_feature_hashing=use_feature_hashing,
                                                  feature_bins=4)
-    proba = use_threshold or all_probs
+    enable_probability = use_threshold or use_all_labels
     # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=proba)
+    learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
     learner.train(train_fs, grid_search=True)
@@ -327,7 +327,7 @@ def check_generate_predictions(use_feature_hashing=False,
     # now use Predictor to generate the predictions and make
     # sure that they are the same as before saving the model
     p = gp.Predictor(model_file, threshold=threshold,
-                     return_all_probabilities=all_probs)
+                     all_labels=use_all_labels)
     predictions_after_saving = p.predict(test_fs)
 
     eq_(predictions, predictions_after_saving)
@@ -350,7 +350,7 @@ def test_generate_predictions():
                use_threshold, test_on_subset, all_probabilities)
 
 
-def check_generate_predictions_console(use_threshold=False, all_probs=False):
+def check_generate_predictions_console(use_threshold=False, all_labels=False):
 
     # create some simple classification data without feature hashing
     train_fs, test_fs = make_classification_data(num_examples=1000,
@@ -362,9 +362,9 @@ def check_generate_predictions_console(use_threshold=False, all_probs=False):
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
-    proba = use_threshold or all_probs
+    enable_probability = use_threshold or all_labels
     # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=proba)
+    learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
     learner.train(train_fs, grid_search=True)
@@ -390,7 +390,7 @@ def check_generate_predictions_console(use_threshold=False, all_probs=False):
     generate_cmd = []
     if use_threshold:
         generate_cmd.append('-t {}'.format(threshold))
-    elif all_probs:
+    elif all_labels:
         generate_cmd.append('-a')
 
     generate_cmd.extend([model_file, input_file])
@@ -406,7 +406,7 @@ def check_generate_predictions_console(use_threshold=False, all_probs=False):
         out = mystdout.getvalue()
         err = mystderr.getvalue()
         output_lines = out.strip().split('\n')[1:]  # Skip headers
-        if all_probs:
+        if all_labels:
             # Ignore the id (first column) in output.
             predictions_after_saving = [[float(p) for p in x.split('\t')[1:]]
                                         for x in output_lines]
@@ -414,7 +414,7 @@ def check_generate_predictions_console(use_threshold=False, all_probs=False):
             # Ignore the id (first column) in output.
             predictions_after_saving = [int(x.split('\t')[1])
                                         for x in output_lines]
-        if all_probs:
+        if all_labels:
             assert_array_almost_equal(predictions, predictions_after_saving)
         else:
             eq_(predictions, predictions_after_saving)
