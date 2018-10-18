@@ -176,11 +176,6 @@ def main(argv=None):
                                 '%(message)s'))
     logger = logging.getLogger(__name__)
 
-    if args.positive_label and args.all_probabilities:
-        logger.warning("Ignoring `--positive_label` since "
-                       "`--all_probabilities` is set to True. The probability "
-                       "of all labels will be displayed.")
-
     # Create the classifier and load the model
     predictor = Predictor(args.model_file,
                           positive_label=args.positive_label,

@@ -414,7 +414,10 @@ def check_generate_predictions_console(use_threshold=False, all_probs=False):
             # Ignore the id (first column) in output.
             predictions_after_saving = [int(x.split('\t')[1])
                                         for x in output_lines]
-        eq_(predictions, predictions_after_saving)
+        if all_probs:
+            assert_array_almost_equal(predictions, predictions_after_saving)
+        else:
+            eq_(predictions, predictions_after_saving)
     finally:
         sys.stdout = old_stdout
         sys.stderr = old_stderr
