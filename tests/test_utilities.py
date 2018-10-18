@@ -286,16 +286,17 @@ def test_compute_eval_from_predictions_random_choice():
 
 def check_generate_predictions(use_feature_hashing=False,
                                use_threshold=False,
-                               test_on_subset=False):
+                               test_on_subset=False,
+                               all_probs=False):
 
     # create some simple classification feature sets for training and testing
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
                                                  use_feature_hashing=use_feature_hashing,
                                                  feature_bins=4)
-
+    proba = use_threshold or all_probs
     # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=use_threshold)
+    learner = Learner('SGDClassifier', probability=proba)
 
     # train the learner with grid search
     learner.train(train_fs, grid_search=True)
@@ -325,21 +326,31 @@ def check_generate_predictions(use_feature_hashing=False,
 
     # now use Predictor to generate the predictions and make
     # sure that they are the same as before saving the model
-    p = gp.Predictor(model_file, threshold=threshold)
+    p = gp.Predictor(model_file, threshold=threshold,
+                     return_all_probabilities=all_probs)
     predictions_after_saving = p.predict(test_fs)
 
     eq_(predictions, predictions_after_saving)
 
 
 def test_generate_predictions():
+    possibilities = [
+        (True, True, True, False), (True, True, False, False),
+        (True, False, True, False), (True, False, True, True),
+        (True, False, False, False), (True, False, False, True),
+        (False, True, True, False), (False, True, False, False),
+        (False, False, True, False), (False, False, True, True),
+        (False, False, False, False), (False, False, False, True)]
 
     for (use_feature_hashing,
          use_threshold,
-         test_on_subset) in product([True, False], [True, False], [True, False]):
-        yield check_generate_predictions, use_feature_hashing, use_threshold, test_on_subset
+         test_on_subset,
+         all_probabilities) in possibilities:
+        yield (check_generate_predictions, use_feature_hashing,
+               use_threshold, test_on_subset, all_probabilities)
 
 
-def check_generate_predictions_console(use_threshold=False):
+def check_generate_predictions_console(use_threshold=False, all_probs=False):
 
     # create some simple classification data without feature hashing
     train_fs, test_fs = make_classification_data(num_examples=1000,
@@ -351,8 +362,9 @@ def check_generate_predictions_console(use_threshold=False):
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
+    proba = use_threshold or all_probs
     # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=use_threshold)
+    learner = Learner('SGDClassifier', probability=proba)
 
     # train the learner with grid search
     learner.train(train_fs, grid_search=True)
@@ -378,6 +390,9 @@ def check_generate_predictions_console(use_threshold=False):
     generate_cmd = []
     if use_threshold:
         generate_cmd.append('-t {}'.format(threshold))
+    elif all_probs:
+        generate_cmd.append('-a')
+
     generate_cmd.extend([model_file, input_file])
 
     # we need to capture stdout since that's what main() writes to
@@ -390,7 +405,15 @@ def check_generate_predictions_console(use_threshold=False):
         gp.main(generate_cmd)
         out = mystdout.getvalue()
         err = mystderr.getvalue()
-        predictions_after_saving = [int(x) for x in out.strip().split('\n')]
+        output_lines = out.strip().split('\n')[1:]  # Skip headers
+        if all_probs:
+            # Ignore the id (first column) in output.
+            predictions_after_saving = [[float(p) for p in x.split('\t')[1:]]
+                                        for x in output_lines]
+        else:
+            # Ignore the id (first column) in output.
+            predictions_after_saving = [int(x.split('\t')[1])
+                                        for x in output_lines]
         eq_(predictions, predictions_after_saving)
     finally:
         sys.stdout = old_stdout
@@ -403,8 +426,9 @@ def test_generate_predictions_console():
     Test generate_predictions as a console script with/without a threshold
     """
 
-    yield check_generate_predictions_console, False
-    yield check_generate_predictions_console, True
+    yield check_generate_predictions_console, False, False
+    yield check_generate_predictions_console, False, True
+    yield check_generate_predictions_console, True, False
 
 
 def check_skll_convert(from_suffix, to_suffix):
