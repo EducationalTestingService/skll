@@ -334,18 +334,13 @@ def check_generate_predictions(use_feature_hashing=False,
 
 
 def test_generate_predictions():
-    possibilities = [
-        (True, True, True, False), (True, True, False, False),
-        (True, False, True, False), (True, False, True, True),
-        (True, False, False, False), (True, False, False, True),
-        (False, True, True, False), (False, True, False, False),
-        (False, False, True, False), (False, False, True, True),
-        (False, False, False, False), (False, False, False, True)]
-
     for (use_feature_hashing,
          use_threshold,
          test_on_subset,
-         all_probabilities) in possibilities:
+         all_probabilities) in product([True, False], [True, False],
+                                       [True, False], [True, False]):
+        if use_threshold and all_probabilities:
+            continue
         yield (check_generate_predictions, use_feature_hashing,
                use_threshold, test_on_subset, all_probabilities)
 
@@ -422,6 +417,35 @@ def check_generate_predictions_console(use_threshold=False, all_labels=False):
         sys.stdout = old_stdout
         sys.stderr = old_stderr
         print(err)
+
+@raises(SystemExit)
+def test_mutually_exclusive_generate_predictions_args():
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+    threshold = 0.6
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test',
+                      'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier')
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True)
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = ['-t {}'.format(threshold), '-a']
+    generate_cmd.extend([model_file, input_file])
+    gp.main(generate_cmd)
 
 
 def test_generate_predictions_console():

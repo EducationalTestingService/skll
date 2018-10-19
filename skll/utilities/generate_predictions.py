@@ -185,7 +185,7 @@ def main(argv=None):
                           logger=logger)
 
     # Iterate over all the specified input files
-    for i, input_file in enumerate(args.input_file):
+    for i, input_file in enumerate(args.input_files):
 
         # make sure each file extension is one we can process
         input_extension = os.path.splitext(input_file)[1].lower()
