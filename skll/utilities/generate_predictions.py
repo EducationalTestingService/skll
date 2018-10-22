@@ -57,6 +57,10 @@ class Predictor(object):
             Defaults to ``None``.
         """
         # self.logger = logger if logger else logging.getLogger(__name__)
+        if threshold is not None and all_labels:
+            raise ValueError("`threshold` and `all_labels` are mutually "
+                             "exclusive. They can not both be set to True.")
+
         self._learner = Learner.from_file(model_path)
         self._pos_index = positive_label
         self.threshold = threshold
@@ -205,7 +209,7 @@ def main(argv=None):
             header = predictor.output_file_header
 
             if args.output_file is not None:
-                with open(args.output_file, "a") as outputfh:
+                with open(args.output_file, 'a') as outputfh:
                     if i == 0:  # Only write header once per set of input files
                         print("\t".join(header), file=outputfh)
                     if args.all_probabilities:
