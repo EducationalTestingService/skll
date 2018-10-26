@@ -493,7 +493,7 @@ def check_generate_predictions_file_output(use_threshold=False,
 
     with open(output_file_path) as saved_predictions_file:
         predictions_after_saving = []
-        reader = csv.reader(saved_predictions_file, delimiter="\t")
+        reader = csv.reader(saved_predictions_file, delimiter=str("\t"))
         next(reader)
         if all_labels:
             for row in reader:
