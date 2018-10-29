@@ -334,6 +334,47 @@ def check_generate_predictions(use_feature_hashing=False,
     eq_(predictions, predictions_after_saving)
 
 
+def check_generate_predictions_file_headers(use_threshold=False,
+                                            use_all_labels=False):
+    # create some simple classification feature sets for training and testing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 feature_bins=4)
+    enable_probability = use_threshold or use_all_labels
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier', probability=enable_probability)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True)
+
+    # get the predictions on the test featureset
+    predictions = learner.predict(test_fs)
+
+    # if we asked for probabilities, then use the threshold
+    # to convert them into binary predictions
+    if use_threshold:
+        threshold = 0.6
+    else:
+        threshold = None
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions.model')
+    learner.save(model_file)
+
+    # now use Predictor to generate the predictions and make
+    # sure that they are the same as before saving the model
+    p = gp.Predictor(model_file, threshold=threshold,
+                     all_labels=use_all_labels)
+    predictions_after_saving = p.predict(test_fs)
+
+    if threshold:
+        assert (p.output_file_header == ['id', 'prediction'])
+    elif use_all_labels:
+        assert (p.output_file_header == ['id', '0', '1'])
+
+
+
 @raises(ValueError)
 def test_generate_predictions_conflicting_params():
     """
@@ -341,7 +382,7 @@ def test_generate_predictions_conflicting_params():
     initialized with both `threshold` and `all_labels` turned on.
     """
     model_file = "not/real/model/file.model"
-    p = gp.Predictor(model_file, threshold=0.6, all_labels=True)
+    gp.Predictor(model_file, threshold=0.6, all_labels=True)
 
 
 def test_generate_predictions():
@@ -354,6 +395,15 @@ def test_generate_predictions():
             continue
         yield (check_generate_predictions, use_feature_hashing,
                use_threshold, test_on_subset, all_probabilities)
+
+
+def test_generate_predictions_file_header():
+
+    for (use_threshold, all_probabilities) in ([True, False], [False, True]):
+        if use_threshold and all_probabilities:
+            continue
+        yield (check_generate_predictions_file_headers,
+               use_threshold, all_probabilities)
 
 
 def check_generate_predictions_console(use_threshold=False, all_labels=False):
