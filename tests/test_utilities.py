@@ -329,6 +329,10 @@ def check_generate_predictions(use_feature_hashing=False,
     # sure that they are the same as before saving the model
     p = gp.Predictor(model_file, threshold=threshold,
                      all_labels=use_all_labels)
+
+    assert(p._pos_index == 1)
+    assert(p.threshold == threshold)
+
     predictions_after_saving = p.predict(test_fs)
 
     eq_(predictions, predictions_after_saving)
@@ -478,6 +482,50 @@ def check_generate_predictions_console(use_threshold=False, all_labels=False):
         sys.stdout = old_stdout
         sys.stderr = old_stderr
         print(err)
+
+def test_generate_predictions_console_bad_input_ext():
+    lc = LogCapture()
+    lc.begin()
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier')
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True)
+    # get the predictions on the test featureset
+    predictions = learner.predict(test_fs)
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, "fake_input_file.txt"]
+
+    # we need to capture stdout since that's what main() writes to
+    err = ''
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        gp.main(generate_cmd)
+        out = mystdout.getvalue()
+        err = mystderr.getvalue()
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        print(err)
+
+    expected_log_mssg = ("skll.utilities.generate_predictions: ERROR: Input "
+                         "file must be in either .arff, .csv, .jsonlines, "
+                         ".libsvm, .megam, .ndj, or .tsv format.  Skipping "
+                         "file fake_input_file.txt")
+
+    eq_(lc.handler.buffer[-1], expected_log_mssg)
 
 
 def test_generate_predictions_console():
