@@ -611,7 +611,7 @@ def test_ransac_regression():
                                                      'SGDRegressor',
                                                      'DecisionTreeRegressor',
                                                      'SVR'],
-                                                     [0.95, 0.45, 0.75, 0.65]):
+                                                    [0.95, 0.45, 0.75, 0.65]):
         yield check_ransac_regression, base_estimator_name, pearson_value
 
 
@@ -627,7 +627,7 @@ def check_mlp_regression(use_rescaling=False):
     # we don't want to see any convergence warnings during the grid search
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
-        learner.train(train_fs, grid_search=True, grid_objective='pearson')
+        learner.train(train_fs, grid_search=False)
 
     # now generate the predictions on the test set
     predictions = learner.predict(test_fs)
