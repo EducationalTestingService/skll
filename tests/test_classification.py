@@ -210,7 +210,7 @@ def test_mlp_classification():
     learner = Learner('MLPClassifier')
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=ConvergenceWarning)
-        learner.train(train_fs, grid_search=True)
+        learner.train(train_fs, grid_search=False)
 
     # now generate the predictions on the test set
     predictions = learner.predict(test_fs)
@@ -220,7 +220,7 @@ def test_mlp_classification():
     # using make_regression_data. To do this, we just
     # make sure that they are correlated
     accuracy = accuracy_score(predictions, test_fs.labels)
-    assert_almost_equal(accuracy, 0.825)
+    assert_almost_equal(accuracy, 0.858, places=3)
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
