@@ -30,6 +30,7 @@ from nose.plugins.attrib import attr
 from nose.plugins.logcapture import LogCapture
 from nose.tools import eq_, assert_almost_equal, raises
 from numpy.testing import assert_allclose, assert_array_almost_equal
+from numpy import concatenate
 
 import skll
 import skll.utilities.compute_eval_from_predictions as cefp
@@ -536,6 +537,87 @@ def test_generate_predictions_console():
     yield check_generate_predictions_console, False, False
     yield check_generate_predictions_console, False, True
     yield check_generate_predictions_console, True, False
+
+
+def check_generate_predictions_file_output_multi_infiles(use_threshold=False,
+                                                         all_labels=False):
+    """
+    Make sure generate_predictions works with multiple input files.
+    """
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    enable_probability = use_threshold or all_labels
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier', probability=enable_probability)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True)
+
+    # get the predictions on the test featureset
+    predictions = learner.predict(test_fs)
+    predictions = concatenate([predictions, predictions])
+
+    # if we asked for probabilities, then use the threshold
+    # to convert them into binary predictions
+    if use_threshold:
+        threshold = 0.6
+        predictions = [int(p[1] >= threshold) for p in predictions]
+    else:
+        predictions = predictions.tolist()
+        threshold = None
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = []
+    if use_threshold:
+        generate_cmd.append('-t {}'.format(threshold))
+    elif all_labels:
+        generate_cmd.append('-a')
+
+    output_file_path = join(_my_dir, 'output',
+                            'output_test_{}_{}_MULTI.tsv'
+                            .format(use_threshold, all_labels))
+    generate_cmd.extend(["--output_file", output_file_path])
+
+    generate_cmd.extend([model_file, input_file, input_file])
+
+    gp.main(generate_cmd)
+
+    with open(output_file_path) as saved_predictions_file:
+        predictions_after_saving = []
+        reader = csv.reader(saved_predictions_file, delimiter=str("\t"))
+        next(reader)
+        if all_labels:
+            for row in reader:
+                predictions_after_saving.append([float(r) for r in row[1:]])
+        else:
+            for row in reader:
+                predictions_after_saving.append(float(row[1]))
+
+    assert_array_almost_equal(predictions, predictions_after_saving)
+
+
+def test_generate_predictions_file_output_multi_infiles():
+    """
+    Test generate_predictions file output with/without a threshold
+    """
+
+    yield check_generate_predictions_file_output_multi_infiles, False, False
+    yield check_generate_predictions_file_output_multi_infiles, False, True
+    yield check_generate_predictions_file_output_multi_infiles, True, False
+
 
 
 def check_generate_predictions_file_output(use_threshold=False,

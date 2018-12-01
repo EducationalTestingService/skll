@@ -48,10 +48,10 @@ class Predictor(object):
             predicting. 1 = second class, which is default
             for binary classification.
             Defaults to 1.
-        all_labels: bool
+        all_labels: bool, optional
             A flag indicating whether to return the probabilities for all
             labels in each row instead of just returning the probability of
-            `positive_label`.
+            `positive_label`. Defaults to None.
         logger : logging object, optional
             A logging object. If ``None`` is passed, get logger from ``__name__``.
             Defaults to ``None``.
