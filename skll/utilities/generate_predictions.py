@@ -213,25 +213,25 @@ def main(argv=None):
                     if i == 0:  # Only write header once per set of input files
                         print("\t".join(header), file=outputfh)
                     if args.all_probabilities:
-                        for i, probabilities in enumerate(preds):
-                            id_ = feature_set.ids[i]
+                        for j, probabilities in enumerate(preds):
+                            id_ = feature_set.ids[j]
                             probs_str = "\t".join([str(p) for p in probabilities])
                             print("{}\t{}".format(id_, probs_str), file=outputfh)
                     else:
-                        for i, pred in enumerate(preds):
-                            id_ = feature_set.ids[i]
+                        for j, pred in enumerate(preds):
+                            id_ = feature_set.ids[j]
                             print("{}\t{}".format(id_, pred), file=outputfh)
             else:
                 if i == 0:  # Only write header once per set of input files
                     print("\t".join(header))
                 if args.all_probabilities:
-                    for i, probabilities in enumerate(preds):
-                        id_ = feature_set.ids[i]
+                    for j, probabilities in enumerate(preds):
+                        id_ = feature_set.ids[j]
                         probs_str = "\t".join([str(p) for p in probabilities])
                         print("{}\t{}".format(id_, probs_str))
                 else:
-                    for i, pred in enumerate(preds):
-                        id_ = feature_set.ids[i]
+                    for j, pred in enumerate(preds):
+                        id_ = feature_set.ids[j]
                         print("{}\t{}".format(id_, pred))
 
 
