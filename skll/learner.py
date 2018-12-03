@@ -854,6 +854,7 @@ class Learner(object):
         if issubclass(self._model_type, SVC):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
+            self._model_kwargs['gamma'] = 'auto'
             if self.probability:
                 self.logger.warning('Because LibSVM does an internal '
                                     'cross-validation to produce probabilities, '
@@ -866,14 +867,22 @@ class Learner(object):
             self._model_kwargs['n_estimators'] = 500
         elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
+            self._model_kwargs['gamma'] = 'auto'
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
+            self._model_kwargs['max_iter'] = 1000
+            self._model_kwargs['tol'] = 1e-3
+        elif issubclass(self._model_type, SGDRegressor):
+            self._model_kwargs['max_iter'] = 1000
+            self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, RANSACRegressor):
             self._model_kwargs['loss'] = 'squared_loss'
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
             self._model_kwargs['learning_rate'] = 'invscaling'
             self._model_kwargs['max_iter'] = 500
-
+        elif issubclass(self._model_type, LogisticRegression):
+            self._model_kwargs['solver'] = 'liblinear'
+            self._model_kwargs['multi_class'] = 'auto'
 
         if issubclass(self._model_type,
                       (AdaBoostClassifier, AdaBoostRegressor,
@@ -911,9 +920,18 @@ class Learner(object):
                            AdaBoostClassifier,
                            RANSACRegressor)) and ('base_estimator' in model_kwargs):
                 base_estimator_name = model_kwargs['base_estimator']
-                base_estimator_kwargs = {} if base_estimator_name in ['LinearRegression',
-                                                                      'MultinomialNB',
-                                                                      'SVR'] else {'random_state': 123456789}
+                if base_estimator_name in ['LinearRegression', 'MultinomialNB']:
+                    base_estimator_kwargs = {}
+                elif base_estimator_name in ['SGDClassifier', 'SGDRegressor']:
+                    base_estimator_kwargs = {'max_iter': 1000,
+                                             'tol': 1e-3,
+                                             'random_state': 123456789}
+                elif base_estimator_name == 'SVR':
+                    base_estimator_kwargs = {'gamma': 'auto'}
+                elif base_estimator_name == 'SVC':
+                    base_estimator_kwargs = {'gamma': 'auto', 'random_state': 123456789}
+                else:
+                    base_estimator_kwargs = {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
                 model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
