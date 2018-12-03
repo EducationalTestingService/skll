@@ -870,11 +870,11 @@ class Learner(object):
             self._model_kwargs['gamma'] = 'auto'
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
-            self._model_kwargs['max_iter'] = 1000
-            self._model_kwargs['tol'] = 1e-3
+            self._model_kwargs['max_iter'] = None
+            self._model_kwargs['tol'] = None
         elif issubclass(self._model_type, SGDRegressor):
-            self._model_kwargs['max_iter'] = 1000
-            self._model_kwargs['tol'] = 1e-3
+            self._model_kwargs['max_iter'] = None
+            self._model_kwargs['tol'] = None
         elif issubclass(self._model_type, RANSACRegressor):
             self._model_kwargs['loss'] = 'squared_loss'
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
@@ -923,8 +923,8 @@ class Learner(object):
                 if base_estimator_name in ['LinearRegression', 'MultinomialNB']:
                     base_estimator_kwargs = {}
                 elif base_estimator_name in ['SGDClassifier', 'SGDRegressor']:
-                    base_estimator_kwargs = {'max_iter': 1000,
-                                             'tol': 1e-3,
+                    base_estimator_kwargs = {'max_iter': None,
+                                             'tol': None,
                                              'random_state': 123456789}
                 elif base_estimator_name == 'SVR':
                     base_estimator_kwargs = {'gamma': 'auto'}
