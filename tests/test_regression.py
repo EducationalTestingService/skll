@@ -135,7 +135,7 @@ def check_rescaling(name, grid_search=False):
     train_p_std = np.std(train_predictions)
     rescaled_train_p_std = np.std(rescaled_train_predictions)
     assert_less(abs(rescaled_train_p_std - train_y_std),
-                      abs(train_p_std - train_y_std))
+                abs(train_p_std - train_y_std))
 
 
 def test_rescaling():
@@ -403,14 +403,14 @@ def check_ensemble_models(name,
         else:
             expected_feature_importances = [0.10266744, 0.18681777, 0.71051479]
     else:
-        expected_feature_importances = ([0.204,
-                                         0.172,
-                                         0.178,
-                                         0.212,
-                                         0.234] if use_feature_hashing else
-                                        [0.262,
-                                         0.288,
-                                         0.45])
+        expected_feature_importances = ([0.471714,
+                                         0.022797,
+                                         0.283377,
+                                         0.170823,
+                                         0.051288] if use_feature_hashing else
+                                        [0.082621,
+                                         0.166652,
+                                         0.750726])
 
     feature_importances = learner.model.feature_importances_
     assert_allclose(feature_importances, expected_feature_importances,

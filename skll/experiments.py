@@ -1374,13 +1374,13 @@ def _generate_learning_curve_plots(experiment_name,
     # each of the featuresets
     for fs_name, df_fs in df_melted.groupby('featureset_name'):
         fig = plt.figure();
-        fig.set_size_inches(2.5*num_learners, 2.5*num_metrics);
+        fig.set_size_inches(2.5 * num_learners, 2.5 * num_metrics);
 
         # compute ylimits for this feature set for each objective
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
             g = sns.FacetGrid(df_fs, row="metric", col="learner_name",
-                              hue="variable", size=2.5, aspect=1,
+                              hue="variable", height=2.5, aspect=1,
                               margin_titles=True, despine=True, sharex=False,
                               sharey=False, legend_out=False, palette="Set1")
             colors = train_color, test_color = sns.color_palette("Set1")[:2]
