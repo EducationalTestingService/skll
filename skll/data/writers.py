@@ -585,9 +585,21 @@ class NDJWriter(Writer):
         """
         example_dict = {}
         # Don't try to add class column if this is label-less data
+        # Try to convert the label to a scalar assuming it'a numpy
+        # non-scalar type (e.g., int64) but if that doesn't work
+        # then use it as is
         if self.feat_set.has_labels:
-            example_dict['y'] = np.asscalar(label_)
-        example_dict['id'] = np.asscalar(id_)
+            try:
+                example_dict['y'] = label_.item()
+            except AttributeError:
+                example_dict['y'] = label_
+        # Try to convert the ID to a scalar assuming it'a numpy
+        # non-scalar type (e.g., int64) but if that doesn't work
+        # then use it as is
+        try:
+            example_dict['id'] = id_.item()
+        except AttributeError:
+            example_dict['id'] = id_
         example_dict["x"] = feat_dict
         print(json.dumps(example_dict, sort_keys=True), file=output_file)
 
