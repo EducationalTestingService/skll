@@ -62,7 +62,7 @@ def tearDown():
         if exists(filepath):
             os.unlink(filepath)
 
-    filepaths = [join(_my_dir, 'other', '{}.jsonlines'.format(x)) for x in ['test_string_ids', 'test_string_ids_df']]
+    filepaths = [join(_my_dir, 'other', '{}.jsonlines'.format(x)) for x in ['test_string_ids', 'test_string_ids_df', 'test_string_labels_df']]
     for filepath in filepaths:
         if exists(filepath):
             os.unlink(filepath)
@@ -94,6 +94,7 @@ def test_empty_ids():
 
     # create a feature set with ids set to None and raise ValueError
     FeatureSet('test', None, features=features, labels=y)
+
 
 @raises(ValueError)
 def check_empty_file_read(filetype, reader_type):
@@ -1023,5 +1024,33 @@ def test_featureset_creation_from_dataframe_with_string_ids():
     # read in the written file into a featureset and confirm that the
     # two featuresets are equal
     fs_test2 = NDJReader.for_path(output_path).read()
+
+    assert fs_test == fs_test2
+
+
+@attr('have_pandas_and_seaborn')
+def test_featureset_creation_from_dataframe_with_string_labels():
+
+    import pandas
+
+    dftest = pandas.DataFrame({"id": [1, 2],
+                               "score": ['yes', 'no'],
+                               "text": ["a b", "b c"]})
+    dftest.set_index("id", inplace=True)
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    test_dict_vectorizer = DictVectorizer()
+    Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
+    fs_test = FeatureSet('test',
+                         ids=dftest.index.values,
+                         labels=dftest['score'].values,
+                         features=Xtest,
+                         vectorizer=test_dict_vectorizer)
+    output_path = join(_my_dir, "other", "test_string_labels_df.jsonlines")
+    test_writer = NDJWriter(output_path, fs_test)
+    test_writer.write()
+
+    # read in the written file into a featureset and confirm that the
+    # two featuresets are equal
+    fs_test2 = NDJReader.for_path(output_path, ids_to_floats=True).read()
 
     assert fs_test == fs_test2
