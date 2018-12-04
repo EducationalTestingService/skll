@@ -77,7 +77,7 @@ class NumpyTypeEncoder(json.JSONEncoder):
     be serialized by the json module, so we must convert them to int objects.
 
     A related issue where this was adapted from:
-    http://stackoverflow.com/questions/11561932/why-does-json-dumpslistnp-arange5-fail-while-json-dumpsnp-arange5-tolis
+    https://stackoverflow.com/questions/11561932/why-does-json-dumpslistnp-arange5-fail-while-json-dumpsnp-arange5-tolis
     """
 
     def default(self, obj):

@@ -21,15 +21,15 @@ Titanic Example
 ---------------
 
 Let's see how we can apply the basic workflow above to a simple example using
-the `Titantic: Machine Learning from Disaster <http://www.kaggle.com/c/titanic-gettingStarted/>`__
-data from `Kaggle <http://www.kaggle.com>`__.
+the `Titantic: Machine Learning from Disaster <https://www.kaggle.com/c/titanic/>`__
+data from `Kaggle <https://www.kaggle.com>`__.
 
 Get your data into the correct format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first step to getting the Titanic data is logging into Kaggle and
-downloading `train.csv <http://www.kaggle.com/c/titanic-gettingStarted/download/train.csv>`__
-and `test.csv <http://www.kaggle.com/c/titanic-gettingStarted/download/test.csv>`__.
+downloading `train.csv <https://www.kaggle.com/c/titanic-gettingStarted/download/train.csv>`__
+and `test.csv <https://www.kaggle.com/c/titanic-gettingStarted/download/test.csv>`__.
 Once you have those files, you'll also want to grab the
 `examples folder <https://github.com/EducationalTestingService/skll/tree/master/examples>`__
 on our GitHub page and put ``train.csv`` and ``test.csv`` in ``examples``.
@@ -48,7 +48,7 @@ For this tutorial, we will refer to an "experiment" as having a single data set
 split into training and testing portions.  As part of each
 experiment, we can train and test several models, either simultaneously or
 sequentially, depending whether we're using
-`GridMap <https://github.com/EducationalTestingService/gridmap>`__ or not.
+`GridMap <https://pypi.org/project/gridmap/>`__ or not.
 This will be described in more detail later on, when we are ready to run our
 experiment.
 
@@ -87,9 +87,9 @@ instances IDs for each example.
 
 The :ref:`Tuning` section defines how we want our model to be tuned.  Setting
 :ref:`grid_search <grid_search>` to ``True`` here employs scikit-learn's
-`GridSearchCV <http://scikit-learn.org/stable/modules/generated/sklearn.grid_search.GridSearchCV.html#sklearn.grid_search.GridSearchCV>`_
+`GridSearchCV <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html#sklearn.model_selection.GridSearchCV>`_
 class, which is an implementation of the
-`standard, brute-force approach to hyperparameter optimization <http://en.wikipedia.org/wiki/Hyperparameter_optimization#Grid_search>`_.
+`standard, brute-force approach to hyperparameter optimization <https://en.wikipedia.org/wiki/Hyperparameter_optimization#Grid_search>`_.
 
 :ref:`objectives <objectives>` refers to the desired objective functions; here,
 ``accuracy`` will optimize for overall accuracy.  You can see a list of all the
