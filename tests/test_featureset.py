@@ -61,8 +61,11 @@ def tearDown():
         filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
         if exists(filepath):
             os.unlink(filepath)
-    os.unlink(join(_my_dir, 'other', 'string_ids_df.jsonlines'))
-    os.unlink(join(_my_dir, 'other', 'string_ids.jsonlines'))
+
+    filepaths = [join(_my_dir, 'other', '{}.jsonlines'.format(x)) for x in ['test_string_ids', 'test_string_ids_df']]
+    for filepath in filepaths:
+        if exists(filepath):
+            os.unlink(filepath)
 
 
 def _create_empty_file(filetype):
@@ -985,7 +988,7 @@ def test_writing_ndj_featureset_with_string_ids():
                          labels=[1, 2],
                          features=Xtest,
                          vectorizer=test_dict_vectorizer)
-    output_path = join(_my_dir, "other", "string_ids.jsonlines")
+    output_path = join(_my_dir, "other", "test_string_ids.jsonlines")
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()
 
@@ -1013,7 +1016,7 @@ def test_featureset_creation_from_dataframe_with_string_ids():
                          labels=dftest['score'].values,
                          features=Xtest,
                          vectorizer=test_dict_vectorizer)
-    output_path = join(_my_dir, "other", "string_ids_df.jsonlines")
+    output_path = join(_my_dir, "other", "test_string_ids_df.jsonlines")
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()
 
