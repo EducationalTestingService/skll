@@ -237,24 +237,24 @@ class DelimitedFileWriter(Writer):
         type. For example ``/foo/.csv``.
     feature_set : skll.FeatureSet
         The ``FeatureSet`` instance to dump to the output file.
-    quiet : bool
+    quiet : bool, optional
         Do not print "Writing..." status message to stderr.
         Defaults to ``True``.
-    label_col : str
+    label_col : str, optional
         Name of the column which contains the class labels
         for ARFF/CSV/TSV files. If no column with that name
         exists, or ``None`` is specified, the data is
         considered to be unlabelled.
         Defaults to ``'y'``.
-    id_col : str
+    id_col : str, optional
         Name of the column which contains the instance IDs.
         If no column with that name exists, or ``None`` is
         specified, example IDs will be automatically generated.
         Defaults to ``'id'``.
-    dialect : str
-        Name of the column which contains the class labels for
-        CSV/TSV files.
-    logger : logging.Logger
+    dialect : str, optional
+        The dialect to use for writing out the delimited file.
+        Defaults to ``'excel-tab'``.
+    logger : logging.Logger, optional
         A logger instance to use to log messages instead of creating
         a new one by default.
         Defaults to ``None``.
@@ -585,9 +585,21 @@ class NDJWriter(Writer):
         """
         example_dict = {}
         # Don't try to add class column if this is label-less data
+        # Try to convert the label to a scalar assuming it'a numpy
+        # non-scalar type (e.g., int64) but if that doesn't work
+        # then use it as is
         if self.feat_set.has_labels:
-            example_dict['y'] = np.asscalar(label_)
-        example_dict['id'] = np.asscalar(id_)
+            try:
+                example_dict['y'] = label_.item()
+            except AttributeError:
+                example_dict['y'] = label_
+        # Try to convert the ID to a scalar assuming it'a numpy
+        # non-scalar type (e.g., int64) but if that doesn't work
+        # then use it as is
+        try:
+            example_dict['id'] = id_.item()
+        except AttributeError:
+            example_dict['id'] = id_
         example_dict["x"] = feat_dict
         print(json.dumps(example_dict, sort_keys=True), file=output_file)
 
