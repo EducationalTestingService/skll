@@ -839,7 +839,7 @@ def check_print_model_weights(task='classification'):
     # create some simple classification or regression data
     if task == 'classification' or task == 'classification_no_intercept':
         train_fs, _ = make_classification_data(train_test_ratio=0.8)
-    elif task == 'multiclass_classification':
+    elif task in ['multiclass_classification', 'multiclass_classification_svc']:
         train_fs, _ = make_classification_data(train_test_ratio=0.8, num_labels=3)
     else:
         train_fs, _, _ = make_regression_data(num_features=4,
@@ -849,9 +849,14 @@ def check_print_model_weights(task='classification'):
     if task == 'classification' or task == 'multiclass_classification':
         learner = Learner('LogisticRegression')
         learner.train(train_fs, grid_objective='f1_score_micro')
+    elif task == 'multiclass_classification_svc':
+        learner = Learner('SVC', model_kwargs={'kernel': 'linear'})
+        learner.train(train_fs, grid_objective='f1_score_micro')
     elif task == 'classification_no_intercept':
         learner = Learner('LogisticRegression')
-        learner.train(train_fs, grid_objective='f1_score_micro', param_grid=[{'fit_intercept':[False]}])
+        learner.train(train_fs,
+                      grid_objective='f1_score_micro',
+                      param_grid=[{'fit_intercept': [False]}])
     elif task == 'regression':
         learner = Learner('LinearRegression')
         learner.train(train_fs, grid_objective='pearson')
@@ -913,6 +918,49 @@ def check_print_model_weights(task='classification'):
             assert_array_almost_equal(weights, feature_values[index])
 
         assert_array_almost_equal(intercept, learner.model.intercept_)
+    elif task == 'multiclass_classification_svc':
+        # for multiple classes with the SVC with a linear kernel,
+        # we get an intercept for each class pair combination
+        # as well as a list of weights for each class pair
+        # combination
+
+        # save the computed intercept values in a dictionary
+        # with the class oair label as the key
+        lines_to_parse = [l for l in out.split('\n')[1:] if l]
+        parsed_intercepts_dict = {}
+        for intercept_string in lines_to_parse[0:3]:
+            fields = intercept_string.split('\t')
+            parsed_intercepts_dict[fields[1]] = safe_float(fields[0])
+
+        # save the computed feature weights in a dictionary
+        # with the class pair label as the key and the value
+        # being a list; each feature weight for this class pair
+        # is stored at the index of the feature name as given
+        # by the feature vectorizer vocabulary dictionary
+        parsed_weights_dict = {}
+        for ltp in lines_to_parse[3:]:
+            (weight, class_pair, feature) = ltp.split('\t')
+            if class_pair not in parsed_weights_dict:
+                parsed_weights_dict[class_pair] = [0] * 10
+            feature_index = learner.feat_vectorizer.vocabulary_[feature]
+            parsed_weights_dict['{}'.format(class_pair)][feature_index] = safe_float(weight)
+
+        # to validate that our coefficients are correct, we will
+        # get the coefficient array (for all features) from `coef_`
+        # for a particular class pair and then check that this array
+        # is equal to the list that we computed above. We will do
+        # the same for intercepts which are even easier to validate
+        # since they _only_ depend on the class pair
+        for idx, (class1, class2) in enumerate(itertools.combinations([0, 1, 2], 2)):
+            class_pair_label = '{}-vs-{}'.format(class1, class2)
+            computed_coefficients = parsed_weights_dict[class_pair_label]
+            expected_coefficients = learner.model.coef_[idx].toarray()[0]
+            assert_array_almost_equal(computed_coefficients, expected_coefficients)
+
+            computed_intercept = parsed_intercepts_dict[class_pair_label]
+            expected_intercept = learner.model.intercept_[idx]
+            assert_almost_equal(computed_intercept, expected_intercept)
+
     elif task == 'classification_no_intercept':
         lines_to_parse = [l for l in out.split('\n')[0:] if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
@@ -954,6 +1002,7 @@ def check_print_model_weights(task='classification'):
 def test_print_model_weights():
     yield check_print_model_weights, 'classification'
     yield check_print_model_weights, 'multiclass_classification'
+    yield check_print_model_weights, 'multiclass_classification_svc'
     yield check_print_model_weights, 'classification_no_intercept'
     yield check_print_model_weights, 'regression'
     yield check_print_model_weights, 'regression_linearSVR'

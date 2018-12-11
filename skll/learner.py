@@ -20,6 +20,7 @@ import sys
 from collections import Counter, defaultdict
 from functools import wraps
 from importlib import import_module
+from itertools import combinations
 from multiprocessing import cpu_count
 
 import joblib
@@ -1095,6 +1096,30 @@ class Learner(object):
                 intercept = {'_intercept_': self.model.intercept_}
             elif self.model.intercept_.any():
                 intercept = dict(zip(label_list, self.model.intercept_))
+
+        # for SVCs with linear kernels, we want to print out the primal
+        # weights - that is, the weights for each feature for each one-vs-one
+        # binary classifier. These are the weights contained in the `coef_`
+        # attribute of the underlying scikit-learn model. This is a matrix that
+        # has the shape [(n_classes)*(n_classes -1)/2, n_features] since there
+        # are C(n_classes, 2) = n_classes*(n_classes-1)/2 one-vs-one classifiers
+        # and each one has weights for each of the features. According to the
+        # scikit-learn user guide and the code for the function `_one_vs_one_coef()`
+        # in `svm/base.py`, the order of the rows is as follows is "0 vs 1",
+        # "0 vs 2", ... "0 vs n", "1 vs 2", "1 vs 3", "1 vs n", ... "n-1 vs n".
+        elif isinstance(self._model, SVC) and self._model.kernel == 'linear':
+            intercept = {}
+            for i, class_pair in enumerate(combinations(range(len(self.label_list)), 2)):
+                coef = self.model.coef_[i]
+                coef = coef.toarray()
+                coef = self.feat_selector.inverse_transform(coef)[0]
+                class1 = self.label_list[class_pair[0]]
+                class2 = self.label_list[class_pair[1]]
+                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
+                    if coef[idx]:
+                        res['{}-vs-{}\t{}'.format(class1, class2, feat)] = coef[idx]
+
+                intercept['{}-vs-{}'.format(class1, class2)] = self.model.intercept_[i]
 
         else:
             # not supported
