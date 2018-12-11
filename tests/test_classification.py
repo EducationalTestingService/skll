@@ -133,8 +133,10 @@ def test_predict():
 
 # test predictions when both the model and the data use DictVectorizers
 def test_predict_dict_dict():
-    train_fs = NDJReader.for_path('../examples/iris/train/example_iris_features.jsonlines').read()
-    test_fs = NDJReader.for_path('../examples/iris/test/example_iris_features.jsonlines').read()
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file).read()
+    test_fs = NDJReader.for_path(test_file).read()
     learner = Learner('LogisticRegression')
     learner.train(train_fs, grid_search=False)
     predictions = learner.predict(test_fs)
@@ -144,8 +146,10 @@ def test_predict_dict_dict():
 # test predictions when both the model and the data use FeatureHashers
 # and the same number of bins
 def test_predict_hasher_hasher_same_bins():
-    train_fs = NDJReader.for_path('../examples/iris/train/example_iris_features.jsonlines', feature_hasher=True, num_features=3).read()
-    test_fs = NDJReader.for_path('../examples/iris/test/example_iris_features.jsonlines', feature_hasher=True, num_features=3).read()
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
     learner = Learner('LogisticRegression')
     learner.train(train_fs, grid_search=False)
     predictions = learner.predict(test_fs)
@@ -156,8 +160,10 @@ def test_predict_hasher_hasher_same_bins():
 # but different number of bins
 @raises(RuntimeError)
 def test_predict_hasher_hasher_different_bins():
-    train_fs = NDJReader.for_path('../examples/iris/train/example_iris_features.jsonlines', feature_hasher=True, num_features=3).read()
-    test_fs = NDJReader.for_path('../examples/iris/test/example_iris_features.jsonlines', feature_hasher=True, num_features=2).read()
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=2).read()
     learner = Learner('LogisticRegression')
     learner.train(train_fs, grid_search=False)
     _ = learner.predict(test_fs)
@@ -166,8 +172,10 @@ def test_predict_hasher_hasher_different_bins():
 # test predictions when model uses a FeatureHasher and data
 # uses a DictVectorizer
 def test_predict_hasher_dict():
-    train_fs = NDJReader.for_path('../examples/iris/train/example_iris_features.jsonlines', feature_hasher=True, num_features=3).read()
-    test_fs = NDJReader.for_path('../examples/iris/test/example_iris_features.jsonlines').read()
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file).read()
     learner = Learner('LogisticRegression')
     learner.train(train_fs, grid_search=False)
     predictions = learner.predict(test_fs)
@@ -178,8 +186,10 @@ def test_predict_hasher_dict():
 # uses a FeatureHasher
 @raises(RuntimeError)
 def test_predict_dict_hasher():
-    train_fs = NDJReader.for_path('../examples/iris/train/example_iris_features.jsonlines').read()
-    test_fs = NDJReader.for_path('../examples/iris/test/example_iris_features.jsonlines', feature_hasher=True, num_features=3).read()
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
     learner = Learner('LogisticRegression')
     learner.train(train_fs, grid_search=False)
     _ = learner.predict(test_fs)
