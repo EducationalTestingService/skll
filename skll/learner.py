@@ -1773,7 +1773,9 @@ class Learner(object):
             if (set(self.feat_vectorizer.feature_names_) !=
                     set(examples.vectorizer.feature_names_)):
                 self.logger.warning("There is mismatch between the training model "
-                                    "features and the data passed to predict.")
+                                    "features and the data passed to predict. The "
+                                    "prediction features will be transformed to "
+                                    "the trained model space.")
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
