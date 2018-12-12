@@ -43,6 +43,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
                               RandomForestClassifier,
                               RandomForestRegressor)
 from sklearn.feature_extraction import FeatureHasher
+from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_selection import SelectKBest
 from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
@@ -1736,20 +1737,34 @@ class Learner(object):
 
         # We also need to think about the various combinations of the model
         # vectorizer and the vectorizer for the set for which we want to make
-        # predictions
+        # predictions:
 
-        # 1. Both vectorizers are DictVectorizers. If they use different sets of features, we raise a warning and transform the features of the prediction set from its space to the trained model space.
+        # 1. Both vectorizers are DictVectorizers. If they use different sets
+        # of features, we raise a warning and transform the features of the
+        # prediction set from its space to the trained model space.
 
-        # 2. Both vectorizers are FeatureHashers. If they use different number of feature bins, we should just raise an error since there's no inverse_transform() available for a FeatureHasher - the hash function is not reversible.
+        # 2. Both vectorizers are FeatureHashers. If they use different number
+        # of feature bins, we should just raise an error since there's no
+        #inverse_transform() available for a FeatureHasher - the hash function
+        # is not reversible.
 
-        # 3. The model vectorizer is a FeatureHasher but the prediction feature set vectorizer is a DictVectorizer. We should be able to handle this case, since we can just call inverse_transform() on the DictVectorizer and then transform() on the FeatureHasher?
+        # 3. The model vectorizer is a FeatureHasher but the prediction feature
+        # set vectorizer is a DictVectorizer. We should be able to handle this
+        # case, since we can just call inverse_transform() on the DictVectorizer
+        # and then transform() on the FeatureHasher?
 
-        # 4. The model vectorizer is a DictVectorizer but the prediction feature set vectorizer is a FeatureHasher. Again, we should raise an error here since there's no inverse available for the hasher.
+        # 4. The model vectorizer is a DictVectorizer but the prediction feature
+        # set vectorizer is a FeatureHasher. Again, we should raise an error here
+        # since there's no inverse available for the hasher.
 
-        both_dict_vectorizers = (isinstance(self.feat_vectorizer, DictVectorizer) and isinstance(examples.vectorizer, DictVectorizer))
-        both_hashers = (isinstance(self.feat_vectorizer, FeatureHasher) and isinstance(examples.vectorizer, FeatureHasher))
-        model_hasher_and_set_vectorizer = (isinstance(self.feat_vectorizer, FeatureHasher) and isinstance(examples.vectorizer, DictVectorizer))
-        model_vectorizer_and_set_hasher = (isinstance(self.feat_vectorizer, DictVectorizer) and isinstance(examples.vectorizer, FeatureHasher))
+        both_dict_vectorizers = (isinstance(self.feat_vectorizer, (DictVectorizer, OldDictVectorizer)) and \
+                                     isinstance(examples.vectorizer, (DictVectorizer, OldDictVectorizer)))
+        both_hashers = (isinstance(self.feat_vectorizer, FeatureHasher) and \
+                                     isinstance(examples.vectorizer, FeatureHasher))
+        model_hasher_and_set_vectorizer = (isinstance(self.feat_vectorizer, FeatureHasher) and \
+                                     isinstance(examples.vectorizer, (DictVectorizer, OldDictVectorizer)))
+        model_vectorizer_and_set_hasher = (isinstance(self.feat_vectorizer, (DictVectorizer, OldDictVectorizer)) and \
+                                     isinstance(examples.vectorizer, FeatureHasher))
 
         # 1. both are DictVectorizers
         if both_dict_vectorizers:
