@@ -26,6 +26,7 @@ import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
 
 from sklearn.exceptions import ConvergenceWarning
+from sklearn.feature_extraction import FeatureHasher
 from sklearn.metrics import accuracy_score
 
 from skll.data import FeatureSet
@@ -128,6 +129,70 @@ def test_predict():
     for model, use_feature_hashing in \
             itertools.product(_ALL_MODELS, [True, False]):
         yield check_predict, model, use_feature_hashing
+
+
+# test predictions when both the model and the data use DictVectorizers
+def test_predict_dict_dict():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file).read()
+    test_fs = NDJReader.for_path(test_file).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(len(predictions), test_fs.features.shape[0])
+
+
+# test predictions when both the model and the data use FeatureHashers
+# and the same number of bins
+def test_predict_hasher_hasher_same_bins():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(len(predictions), test_fs.features.shape[0])
+
+
+# test predictions when both the model and the data use FeatureHashers
+# but different number of bins
+@raises(RuntimeError)
+def test_predict_hasher_hasher_different_bins():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=2).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    _ = learner.predict(test_fs)
+
+
+# test predictions when model uses a FeatureHasher and data
+# uses a DictVectorizer
+def test_predict_hasher_dict():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(len(predictions), test_fs.features.shape[0])
+
+
+# test predictions when model uses a DictVectorizer and data
+# uses a FeatureHasher
+@raises(RuntimeError)
+def test_predict_dict_hasher():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    _ = learner.predict(test_fs)
 
 
 # the function to create data with rare labels for cross-validation

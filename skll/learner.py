@@ -43,6 +43,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
                               RandomForestClassifier,
                               RandomForestRegressor)
 from sklearn.feature_extraction import FeatureHasher
+from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_selection import SelectKBest
 from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
@@ -75,6 +76,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
+from skll.data.dict_vectorizer import DictVectorizer
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
 
@@ -1732,12 +1734,57 @@ class Learner(object):
         # Need to do some transformations so the features are in the right
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
-        if isinstance(self.feat_vectorizer, FeatureHasher):
-            if (self.feat_vectorizer.n_features !=
-                    examples.vectorizer.n_features):
-                self.logger.warning("There is mismatch between the training model "
-                                    "features and the data passed to predict.")
 
+        # We also need to think about the various combinations of the model
+        # vectorizer and the vectorizer for the set for which we want to make
+        # predictions:
+
+        # 1. Both vectorizers are DictVectorizers. If they use different sets
+        # of features, we raise a warning and transform the features of the
+        # prediction set from its space to the trained model space.
+
+        # 2. Both vectorizers are FeatureHashers. If they use different number
+        # of feature bins, we should just raise an error since there's no
+        # inverse_transform() available for a FeatureHasher - the hash function
+        # is not reversible.
+
+        # 3. The model vectorizer is a FeatureHasher but the prediction feature
+        # set vectorizer is a DictVectorizer. We should be able to handle this
+        # case, since we can just call inverse_transform() on the DictVectorizer
+        # and then transform() on the FeatureHasher?
+
+        # 4. The model vectorizer is a DictVectorizer but the prediction feature
+        # set vectorizer is a FeatureHasher. Again, we should raise an error here
+        # since there's no inverse available for the hasher.
+        model_is_dict = isinstance(self.feat_vectorizer,
+                                   (DictVectorizer, OldDictVectorizer))
+        model_is_hasher = isinstance(self.feat_vectorizer, FeatureHasher)
+        data_is_dict = isinstance(examples.vectorizer,
+                                  (DictVectorizer, OldDictVectorizer))
+        data_is_hasher = isinstance(examples.vectorizer, FeatureHasher)
+
+        both_dicts = model_is_dict and data_is_dict
+        both_hashers = model_is_hasher and data_is_hasher
+        model_hasher_and_data_dict = model_is_hasher and data_is_dict
+        model_dict_and_data_hasher = model_is_dict and data_is_hasher
+
+        # 1. both are DictVectorizers
+        if both_dicts:
+            if (set(self.feat_vectorizer.feature_names_) !=
+                    set(examples.vectorizer.feature_names_)):
+                self.logger.warning("There is mismatch between the training model "
+                                    "features and the data passed to predict. The "
+                                    "prediction features will be transformed to "
+                                    "the trained model space.")
+            if self.feat_vectorizer == examples.vectorizer:
+                xtest = examples.features
+            else:
+                xtest = self.feat_vectorizer.transform(
+                    examples.vectorizer.inverse_transform(
+                        examples.features))
+
+        # 2. both are FeatureHashers
+        elif both_hashers:
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
                                    self.feat_vectorizer.n_features,
@@ -1750,21 +1797,23 @@ class Learner(object):
             if self_feat_vec_tuple == example_feat_vec_tuple:
                 xtest = examples.features
             else:
-                xtest = self.feat_vectorizer.transform(
-                    examples.vectorizer.inverse_transform(
-                        examples.features))
-        else:
-            if (set(self.feat_vectorizer.feature_names_) !=
-                    set(examples.vectorizer.feature_names_)):
-                self.logger.warning("There is mismatch between the training model "
-                                    "features and the data passed to predict.")
-            if self.feat_vectorizer == examples.vectorizer:
-                xtest = examples.features
-            else:
+                self.logger.error('There is mismatch between the FeatureHasher '
+                                  'configuration for the training data and '
+                                  'the configuration for the data passed to predict')
+                raise RuntimeError('Mismatched hasher configurations')
 
-                xtest = self.feat_vectorizer.transform(
-                    examples.vectorizer.inverse_transform(
-                        examples.features))
+        # 3. model is a FeatureHasher and test set is a DictVectorizer
+        elif model_hasher_and_data_dict:
+            xtest = self.feat_vectorizer.transform(
+                examples.vectorizer.inverse_transform(
+                    examples.features))
+
+        # 4. model is a DictVectorizer and test set is a FeatureHasher
+        elif model_dict_and_data_hasher:
+            self.logger.error('Cannot predict with a model using a '
+                              'DictVectorizer on data that uses '
+                              'a FeatureHasher')
+            raise RuntimeError('Cannot use FeatureHasher for data')
 
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
