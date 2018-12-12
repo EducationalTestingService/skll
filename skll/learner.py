@@ -1745,7 +1745,7 @@ class Learner(object):
 
         # 2. Both vectorizers are FeatureHashers. If they use different number
         # of feature bins, we should just raise an error since there's no
-        #inverse_transform() available for a FeatureHasher - the hash function
+        # inverse_transform() available for a FeatureHasher - the hash function
         # is not reversible.
 
         # 3. The model vectorizer is a FeatureHasher but the prediction feature
@@ -1756,18 +1756,20 @@ class Learner(object):
         # 4. The model vectorizer is a DictVectorizer but the prediction feature
         # set vectorizer is a FeatureHasher. Again, we should raise an error here
         # since there's no inverse available for the hasher.
+        model_is_dict = isinstance(self.feat_vectorizer,
+                                   (DictVectorizer, OldDictVectorizer))
+        model_is_hasher = isinstance(self.feat_vectorizer, FeatureHasher)
+        data_is_dict = isinstance(examples.vectorizer,
+                                  (DictVectorizer, OldDictVectorizer))
+        data_is_hasher = isinstance(examples.vectorizer, FeatureHasher)
 
-        both_dict_vectorizers = (isinstance(self.feat_vectorizer, (DictVectorizer, OldDictVectorizer)) and \
-                                     isinstance(examples.vectorizer, (DictVectorizer, OldDictVectorizer)))
-        both_hashers = (isinstance(self.feat_vectorizer, FeatureHasher) and \
-                                     isinstance(examples.vectorizer, FeatureHasher))
-        model_hasher_and_set_vectorizer = (isinstance(self.feat_vectorizer, FeatureHasher) and \
-                                     isinstance(examples.vectorizer, (DictVectorizer, OldDictVectorizer)))
-        model_vectorizer_and_set_hasher = (isinstance(self.feat_vectorizer, (DictVectorizer, OldDictVectorizer)) and \
-                                     isinstance(examples.vectorizer, FeatureHasher))
+        both_dicts = model_is_dict and data_is_dict
+        both_hashers = model_is_hasher and data_is_hasher
+        model_hasher_and_data_dict = model_is_hasher and data_is_dict
+        model_dict_and_data_hasher = model_is_dict and data_is_hasher
 
         # 1. both are DictVectorizers
-        if both_dict_vectorizers:
+        if both_dicts:
             if (set(self.feat_vectorizer.feature_names_) !=
                     set(examples.vectorizer.feature_names_)):
                 self.logger.warning("There is mismatch between the training model "
@@ -1778,6 +1780,7 @@ class Learner(object):
                 xtest = self.feat_vectorizer.transform(
                     examples.vectorizer.inverse_transform(
                         examples.features))
+
         # 2. both are FeatureHashers
         elif both_hashers:
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
@@ -1798,13 +1801,13 @@ class Learner(object):
                 raise RuntimeError('Mismatched hasher configurations')
 
         # 3. model is a FeatureHasher and test set is a DictVectorizer
-        elif model_hasher_and_set_vectorizer:
+        elif model_hasher_and_data_dict:
             xtest = self.feat_vectorizer.transform(
                 examples.vectorizer.inverse_transform(
                     examples.features))
 
         # 4. model is a DictVectorizer and test set is a FeatureHasher
-        elif model_vectorizer_and_set_hasher:
+        elif model_dict_and_data_hasher:
             self.logger.error('Cannot predict with a model using a '
                               'DictVectorizer on data that uses '
                               'a FeatureHasher')
