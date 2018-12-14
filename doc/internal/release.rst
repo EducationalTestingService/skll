@@ -17,17 +17,17 @@ This document is only meant for the project administrators, not users and develo
 
    e. update the README.
 
-3. Build the new conda package locally on your mac using the following command::
+3. Build the new conda package locally on your mac using the following command  (*Note*: you may have to replace the contents of the ``requirements()`` function in ``setup.py`` with a ``pass`` statement to get ``conda build`` to work)::
 
-    conda build -c defaults -c conda-forge --python=3.6 skll
+    conda build -c defaults -c conda-forge --python=3.6 --numpy=1.14 skll
 
 4. Convert the package for both linux and windows::
 
     conda convert -p win-64 -p linux-64 <mac package tarball>
 
-5. Upload all packages to anaconda.org using ``anaconda upload``.
+5. Upload each of the packages to anaconda.org using ``anaconda upload <package tarball>``.
 
-6. Upload source package to PyPI using ``python setup.py sdist upload``.
+6. Upload source and wheel packages to PyPI using ``python setup.py sdist upload`` and ``python setup.py bdist_wheel upload``.
 
 7. Draft a release on GitHub.
 
