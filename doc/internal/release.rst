@@ -27,7 +27,7 @@ This document is only meant for the project administrators, not users and develo
 
 5. Upload each of the packages to anaconda.org using ``anaconda upload <package tarball>``.
 
-6. Upload source and wheel packages to PyPI using ``python setup.py sdist upload`` and ``python setup.py bdist_wheel upload``.
+6. Upload source package to PyPI using ``python setup.py sdist upload``.
 
 7. Draft a release on GitHub.
 
