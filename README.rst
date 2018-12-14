@@ -124,17 +124,17 @@ Requirements
 
 -  Python 2.7+
 -  `scikit-learn <http://scikit-learn.org/stable/>`__
--  `six <https://warehouse.python.org/project/six>`__
--  `PrettyTable <https://warehouse.python.org/project/PrettyTable>`__
+-  `six <https://pypi.org/project/six/>`__
+-  `PrettyTable <https://pypi.org/project/PrettyTable/>`__
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
--  `Grid Map <https://warehouse.python.org/project/gridmap>`__ (only required if you plan
+-  `Grid Map <https://pypi.org/project/gridmap/>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
--  `joblib <https://warehouse.python.org/project/joblib>`__
+-  `joblib <https://pypi.org/project/joblib/>`__
 -  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
--  `configparser <https://warehouse.python.org/project/configparser>`__ (only required for
+-  `configparser <https://pypi.org/project/configparser/>`__ (only required for
    Python 2.7)
--  `logutils <https://warehouse.python.org/project/logutils>`__ (only required for Python 2.7)
--  `mock <https://warehouse.python.org/project/mock>`__ (only required for Python 2.7)
+-  `logutils <https://pypi.org/project/logutils/>`__ (only required for Python 2.7)
+-  `mock <https://pypi.org/project/mock/>`__ (only required for Python 2.7)
 
 The following packages can be optionally installed for additional features
 but are not required:
