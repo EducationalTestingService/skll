@@ -20,6 +20,7 @@ import sys
 from collections import Counter, defaultdict
 from functools import wraps
 from importlib import import_module
+from itertools import combinations
 from multiprocessing import cpu_count
 
 import joblib
@@ -42,6 +43,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
                               RandomForestClassifier,
                               RandomForestRegressor)
 from sklearn.feature_extraction import FeatureHasher
+from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_selection import SelectKBest
 from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
@@ -74,6 +76,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
+from skll.data.dict_vectorizer import DictVectorizer
 from skll.metrics import _CORRELATION_METRICS, use_score_func
 from skll.version import VERSION
 
@@ -196,8 +199,6 @@ _INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
                                   'neg_log_loss'])
 
 _REQUIRES_DENSE = (BayesianRidge,
-                   GradientBoostingClassifier,
-                   GradientBoostingRegressor,
                    Lars,
                    TheilSenRegressor)
 
@@ -856,6 +857,7 @@ class Learner(object):
         if issubclass(self._model_type, SVC):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
+            self._model_kwargs['gamma'] = 'auto'
             if self.probability:
                 self.logger.warning('Because LibSVM does an internal '
                                     'cross-validation to produce probabilities, '
@@ -868,14 +870,22 @@ class Learner(object):
             self._model_kwargs['n_estimators'] = 500
         elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
+            self._model_kwargs['gamma'] = 'auto'
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
+            self._model_kwargs['max_iter'] = None
+            self._model_kwargs['tol'] = None
+        elif issubclass(self._model_type, SGDRegressor):
+            self._model_kwargs['max_iter'] = None
+            self._model_kwargs['tol'] = None
         elif issubclass(self._model_type, RANSACRegressor):
             self._model_kwargs['loss'] = 'squared_loss'
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
             self._model_kwargs['learning_rate'] = 'invscaling'
             self._model_kwargs['max_iter'] = 500
-
+        elif issubclass(self._model_type, LogisticRegression):
+            self._model_kwargs['solver'] = 'liblinear'
+            self._model_kwargs['multi_class'] = 'auto'
 
         if issubclass(self._model_type,
                       (AdaBoostClassifier, AdaBoostRegressor,
@@ -913,15 +923,24 @@ class Learner(object):
                            AdaBoostClassifier,
                            RANSACRegressor)) and ('base_estimator' in model_kwargs):
                 base_estimator_name = model_kwargs['base_estimator']
-                base_estimator_kwargs = {} if base_estimator_name in ['LinearRegression',
-                                                                      'MultinomialNB',
-                                                                      'SVR'] else {'random_state': 123456789}
+                if base_estimator_name in ['LinearRegression', 'MultinomialNB']:
+                    base_estimator_kwargs = {}
+                elif base_estimator_name in ['SGDClassifier', 'SGDRegressor']:
+                    base_estimator_kwargs = {'max_iter': None,
+                                             'tol': None,
+                                             'random_state': 123456789}
+                elif base_estimator_name == 'SVR':
+                    base_estimator_kwargs = {'gamma': 'auto'}
+                elif base_estimator_name == 'SVC':
+                    base_estimator_kwargs = {'gamma': 'auto', 'random_state': 123456789}
+                else:
+                    base_estimator_kwargs = {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
                 model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
 
     @classmethod
-    def from_file(cls, learner_path):
+    def from_file(cls, learner_path, logger=None):
         """
         Load a saved ``Learner`` instance from a file path.
 
@@ -929,6 +948,9 @@ class Learner(object):
         ----------
         learner_path : str
             The path to a saved ``Learner`` instance file.
+        logger : logging object, optional
+            A logging object. If ``None`` is passed, get logger from ``__name__``.
+            Defaults to ``None``.
 
         Returns
         -------
@@ -943,6 +965,10 @@ class Learner(object):
             If the pickled version of the ``Learner`` instance is out of date.
         """
         skll_version, learner = joblib.load(learner_path)
+
+        # create the learner logger attribute to the logger that's passed in
+        # or if nothing was passed in, then a new logger should be linked
+        learner.logger = logger if logger else logging.getLogger(__name__)
 
         # For backward compatibility, convert string model types to labels.
         if isinstance(learner._model_type, string_types):
@@ -1073,6 +1099,30 @@ class Learner(object):
             elif self.model.intercept_.any():
                 intercept = dict(zip(label_list, self.model.intercept_))
 
+        # for SVCs with linear kernels, we want to print out the primal
+        # weights - that is, the weights for each feature for each one-vs-one
+        # binary classifier. These are the weights contained in the `coef_`
+        # attribute of the underlying scikit-learn model. This is a matrix that
+        # has the shape [(n_classes)*(n_classes -1)/2, n_features] since there
+        # are C(n_classes, 2) = n_classes*(n_classes-1)/2 one-vs-one classifiers
+        # and each one has weights for each of the features. According to the
+        # scikit-learn user guide and the code for the function `_one_vs_one_coef()`
+        # in `svm/base.py`, the order of the rows is as follows is "0 vs 1",
+        # "0 vs 2", ... "0 vs n", "1 vs 2", "1 vs 3", "1 vs n", ... "n-1 vs n".
+        elif isinstance(self._model, SVC) and self._model.kernel == 'linear':
+            intercept = {}
+            for i, class_pair in enumerate(combinations(range(len(self.label_list)), 2)):
+                coef = self.model.coef_[i]
+                coef = coef.toarray()
+                coef = self.feat_selector.inverse_transform(coef)[0]
+                class1 = self.label_list[class_pair[0]]
+                class2 = self.label_list[class_pair[1]]
+                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
+                    if coef[idx]:
+                        res['{}-vs-{}\t{}'.format(class1, class2, feat)] = coef[idx]
+
+                intercept['{}-vs-{}'.format(class1, class2)] = self.model.intercept_[i]
+
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
@@ -1113,7 +1163,8 @@ class Learner(object):
         because we cannot pickle loggers.
         """
         attribute_dict = dict(self.__dict__)
-        del attribute_dict['logger']
+        if 'logger' in attribute_dict:
+            del attribute_dict['logger']
         return attribute_dict
 
     def save(self, learner_path):
@@ -1683,12 +1734,57 @@ class Learner(object):
         # Need to do some transformations so the features are in the right
         # columns for the test set. Obviously a bit hacky, but storing things
         # in sparse matrices saves memory over our old list of dicts approach.
-        if isinstance(self.feat_vectorizer, FeatureHasher):
-            if (self.feat_vectorizer.n_features !=
-                    examples.vectorizer.n_features):
-                self.logger.warning("There is mismatch between the training model "
-                                    "features and the data passed to predict.")
 
+        # We also need to think about the various combinations of the model
+        # vectorizer and the vectorizer for the set for which we want to make
+        # predictions:
+
+        # 1. Both vectorizers are DictVectorizers. If they use different sets
+        # of features, we raise a warning and transform the features of the
+        # prediction set from its space to the trained model space.
+
+        # 2. Both vectorizers are FeatureHashers. If they use different number
+        # of feature bins, we should just raise an error since there's no
+        # inverse_transform() available for a FeatureHasher - the hash function
+        # is not reversible.
+
+        # 3. The model vectorizer is a FeatureHasher but the prediction feature
+        # set vectorizer is a DictVectorizer. We should be able to handle this
+        # case, since we can just call inverse_transform() on the DictVectorizer
+        # and then transform() on the FeatureHasher?
+
+        # 4. The model vectorizer is a DictVectorizer but the prediction feature
+        # set vectorizer is a FeatureHasher. Again, we should raise an error here
+        # since there's no inverse available for the hasher.
+        model_is_dict = isinstance(self.feat_vectorizer,
+                                   (DictVectorizer, OldDictVectorizer))
+        model_is_hasher = isinstance(self.feat_vectorizer, FeatureHasher)
+        data_is_dict = isinstance(examples.vectorizer,
+                                  (DictVectorizer, OldDictVectorizer))
+        data_is_hasher = isinstance(examples.vectorizer, FeatureHasher)
+
+        both_dicts = model_is_dict and data_is_dict
+        both_hashers = model_is_hasher and data_is_hasher
+        model_hasher_and_data_dict = model_is_hasher and data_is_dict
+        model_dict_and_data_hasher = model_is_dict and data_is_hasher
+
+        # 1. both are DictVectorizers
+        if both_dicts:
+            if (set(self.feat_vectorizer.feature_names_) !=
+                    set(examples.vectorizer.feature_names_)):
+                self.logger.warning("There is mismatch between the training model "
+                                    "features and the data passed to predict. The "
+                                    "prediction features will be transformed to "
+                                    "the trained model space.")
+            if self.feat_vectorizer == examples.vectorizer:
+                xtest = examples.features
+            else:
+                xtest = self.feat_vectorizer.transform(
+                    examples.vectorizer.inverse_transform(
+                        examples.features))
+
+        # 2. both are FeatureHashers
+        elif both_hashers:
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
                                    self.feat_vectorizer.n_features,
@@ -1701,21 +1797,23 @@ class Learner(object):
             if self_feat_vec_tuple == example_feat_vec_tuple:
                 xtest = examples.features
             else:
-                xtest = self.feat_vectorizer.transform(
-                    examples.vectorizer.inverse_transform(
-                        examples.features))
-        else:
-            if (set(self.feat_vectorizer.feature_names_) !=
-                    set(examples.vectorizer.feature_names_)):
-                self.logger.warning("There is mismatch between the training model "
-                                    "features and the data passed to predict.")
-            if self.feat_vectorizer == examples.vectorizer:
-                xtest = examples.features
-            else:
+                self.logger.error('There is mismatch between the FeatureHasher '
+                                  'configuration for the training data and '
+                                  'the configuration for the data passed to predict')
+                raise RuntimeError('Mismatched hasher configurations')
 
-                xtest = self.feat_vectorizer.transform(
-                    examples.vectorizer.inverse_transform(
-                        examples.features))
+        # 3. model is a FeatureHasher and test set is a DictVectorizer
+        elif model_hasher_and_data_dict:
+            xtest = self.feat_vectorizer.transform(
+                examples.vectorizer.inverse_transform(
+                    examples.features))
+
+        # 4. model is a DictVectorizer and test set is a FeatureHasher
+        elif model_dict_and_data_hasher:
+            self.logger.error('Cannot predict with a model using a '
+                              'DictVectorizer on data that uses '
+                              'a FeatureHasher')
+            raise RuntimeError('Cannot use FeatureHasher for data')
 
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)

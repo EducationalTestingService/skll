@@ -62,6 +62,10 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
     for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
         os.unlink(config_file)
+    for auto_dir in glob(join(_my_dir, 'auto*')):
+        for auto_dir_file in os.listdir(auto_dir):
+            os.unlink(join(auto_dir, auto_dir_file))
+        os.rmdir(auto_dir)
 
 
 def check_safe_float_conversion(converted_val, expected_val):
@@ -1117,6 +1121,60 @@ def test_config_parsing_relative_input_paths():
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+
+def test_config_parsing_automatic_output_directory_creation():
+
+    train_dir = '../train'
+    train_file = join(train_dir, 'f0.jsonlines')
+    test_file = join(train_dir, 'f1.jsonlines')
+    output_dir = '../output'
+
+    # make a simple config file that has new directories that should
+    # be automatically created
+    new_log_path = join(_my_dir, 'autolog')
+    new_results_path = join(_my_dir, 'autoresults')
+    new_models_path = join(_my_dir, 'automodels')
+    new_predictions_path = join(_my_dir, 'autopredictions')
+
+    ok_(not(exists(new_log_path)))
+    ok_(not(exists(new_results_path)))
+    ok_(not(exists(new_models_path)))
+    ok_(not(exists(new_predictions_path)))
+
+    values_to_fill_dict = {'experiment_name': 'auto_dir_creation',
+                           'task': 'evaluate',
+                           'train_file': train_file,
+                           'test_file': test_file,
+                           'learners': "['LogisticRegression']",
+                           'log': new_log_path,
+                           'results': new_results_path,
+                           'models': new_models_path,
+                           'predictions': new_predictions_path,
+                           'objective': 'f1_score_micro'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_relative_paths.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'auto_dir_creation')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objective, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    ok_(exists(new_log_path))
+    ok_(exists(new_results_path))
+    ok_(exists(new_models_path))
+    ok_(exists(new_predictions_path))
 
 
 def check_config_parsing_metrics_and_objectives_overlap(task,

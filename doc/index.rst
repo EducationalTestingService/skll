@@ -30,6 +30,7 @@ Documentation
    run_experiment
    utilities
    api
+   internal
 
 
 Indices and tables

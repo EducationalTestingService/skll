@@ -25,7 +25,7 @@ from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 
 import skll
-from skll.data import FeatureSet, Writer, Reader
+from skll.data import FeatureSet, Writer, Reader, NDJReader, NDJWriter
 from skll.data.readers import DictListReader
 from skll.experiments import _load_featureset
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -59,6 +59,11 @@ def tearDown():
     """
     for filetype in ['csv', 'jsonlines', 'libsvm', 'megam', 'tsv']:
         filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
+        if exists(filepath):
+            os.unlink(filepath)
+
+    filepaths = [join(_my_dir, 'other', '{}.jsonlines'.format(x)) for x in ['test_string_ids', 'test_string_ids_df', 'test_string_labels_df']]
+    for filepath in filepaths:
         if exists(filepath):
             os.unlink(filepath)
 
@@ -1026,3 +1031,79 @@ def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
                         rtol=1e-6) and
             np.all(np.isnan(expected.labels)) and
             np.all(np.isnan(current.labels)))
+
+
+def test_writing_ndj_featureset_with_string_ids():
+    test_dict_vectorizer = DictVectorizer()
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
+    fs_test = FeatureSet('test',
+                         ids=['1', '2'],
+                         labels=[1, 2],
+                         features=Xtest,
+                         vectorizer=test_dict_vectorizer)
+    output_path = join(_my_dir, "other", "test_string_ids.jsonlines")
+    test_writer = NDJWriter(output_path, fs_test)
+    test_writer.write()
+
+    # read in the written file into a featureset and confirm that the
+    # two featuresets are equal
+    fs_test2 = NDJReader.for_path(output_path).read()
+
+    assert fs_test == fs_test2
+
+
+@attr('have_pandas_and_seaborn')
+def test_featureset_creation_from_dataframe_with_string_ids():
+
+    import pandas
+
+    dftest = pandas.DataFrame({"id": ['1', '2'],
+                               "score": [1, 2],
+                               "text": ["a b", "b c"]})
+    dftest.set_index("id", inplace=True)
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    test_dict_vectorizer = DictVectorizer()
+    Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
+    fs_test = FeatureSet('test',
+                         ids=dftest.index.values,
+                         labels=dftest['score'].values,
+                         features=Xtest,
+                         vectorizer=test_dict_vectorizer)
+    output_path = join(_my_dir, "other", "test_string_ids_df.jsonlines")
+    test_writer = NDJWriter(output_path, fs_test)
+    test_writer.write()
+
+    # read in the written file into a featureset and confirm that the
+    # two featuresets are equal
+    fs_test2 = NDJReader.for_path(output_path).read()
+
+    assert fs_test == fs_test2
+
+
+@attr('have_pandas_and_seaborn')
+def test_featureset_creation_from_dataframe_with_string_labels():
+
+    import pandas
+
+    dftest = pandas.DataFrame({"id": [1, 2],
+                               "score": ['yes', 'no'],
+                               "text": ["a b", "b c"]})
+    dftest.set_index("id", inplace=True)
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    test_dict_vectorizer = DictVectorizer()
+    Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
+    fs_test = FeatureSet('test',
+                         ids=dftest.index.values,
+                         labels=dftest['score'].values,
+                         features=Xtest,
+                         vectorizer=test_dict_vectorizer)
+    output_path = join(_my_dir, "other", "test_string_labels_df.jsonlines")
+    test_writer = NDJWriter(output_path, fs_test)
+    test_writer.write()
+
+    # read in the written file into a featureset and confirm that the
+    # two featuresets are equal
+    fs_test2 = NDJReader.for_path(output_path, ids_to_floats=True).read()
+
+    assert fs_test == fs_test2

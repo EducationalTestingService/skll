@@ -31,7 +31,7 @@ The following feature file formats are supported:
 
 arff
 ^^^^
-The same file format used by `Weka <http://www.cs.waikato.ac.nz/ml/weka/>`__
+The same file format used by `Weka <https://www.cs.waikato.ac.nz/ml/weka/>`__
 with the following added restrictions:
 
 *   Only simple numeric, string, and nomimal values are supported.
@@ -81,8 +81,8 @@ libsvm
 ^^^^^^
 
 While we can process the standard input file format supported by
-`LibSVM <http://www.csie.ntu.edu.tw/~cjlin/libsvm/>`__,
-`LibLinear <http://www.csie.ntu.edu.tw/~cjlin/liblinear/>`__,
+`LibSVM <https://www.csie.ntu.edu.tw/~cjlin/libsvm/>`__,
+`LibLinear <https://www.csie.ntu.edu.tw/~cjlin/liblinear/>`__,
 and `SVMLight <http://svmlight.joachims.org>`__, we also support specifying
 extra metadata usually missing from the format in comments at the of each line.
 The comments are not mandatory, but without them, your labels and features will
@@ -105,7 +105,7 @@ megam
 ^^^^^
 
 An expanded form of the input format for the
-`MegaM classification package <http://www.umiacs.umd.edu/~hal/megam/>`__ with
+`MegaM classification package <http://users.umiacs.umd.edu/~hal/megam/>`__ with
 the ``-fvals`` switch.
 
 The basic format is::
@@ -127,7 +127,7 @@ to/from this MegaM format and for adding/removing features from the files.
 Creating configuration files
 ----------------------------
 The experiment configuration files that run_experiment accepts are standard
-`Python configuration files <http://docs.python.org/2/library/configparser.html>`__
+`Python configuration files <https://docs.python.org/2/library/configparser.html>`__
 that are similar in format to Windows INI files. [#]_
 There are four expected sections in a configuration file: :ref:`General`,
 :ref:`Input`, :ref:`Tuning`, and :ref:`Output`.  A detailed description of each
@@ -138,7 +138,7 @@ possible settings for each section is provided below, but to summarize:
 *   If you want to do **cross-validation**, specify a path to training feature
     files, and set :ref:`task` to ``cross_validate``. Please note that the
     cross-validation currently uses
-    `StratifiedKFold <http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedKFold.html>`__.
+    `StratifiedKFold <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html>`__.
     You also can optionally use predetermined folds with the
     :ref:`folds_file <folds_file>` setting.
 
@@ -167,7 +167,7 @@ possible settings for each section is provided below, but to summarize:
 
 .. _learning_curve:
 
-*   If you want to **generate a learning curve** for your data, specify a training location and set :ref:`task` to ``learning_curve``. The learning curve is generated using essentially the same underlying process as in `scikit-learn <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html#sklearn.model_selection.learning_curve>`__ except that the SKLL feature pre-processing pipline is used while training the various models and computing the scores.
+*   If you want to **generate a learning curve** for your data, specify a training location and set :ref:`task` to ``learning_curve``. The learning curve is generated using essentially the same underlying process as in `scikit-learn <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html#sklearn.model_selection.learning_curve>`__ except that the SKLL feature pre-processing pipline is used while training the various models and computing the scores.
 
     .. note::
 
@@ -178,7 +178,7 @@ possible settings for each section is provided below, but to summarize:
 *   A :ref:`list of classifiers/regressors <learners>` to try on your feature
     files is required.
 
-Example configuration files are available `here <https://github.com/EducationalTestingService/skll/blob/master/examples/>`__.
+Example configuration files are available `here <https://github.com/EducationalTestingService/skll/tree/master/examples/>`__.
 
 .. _general:
 
@@ -227,43 +227,43 @@ below.  Custom learners can also be specified. See
 
 Classifiers:
 
-    *   **AdaBoostClassifier**: `AdaBoost Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__.  Note that the default base estimator is a ``DecisionTreeClassifier``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``MultinomialNB``, ``SGDClassifier``, and ``SVC``. Note that the last two base require setting an additional ``algorithm`` fixed parameter with the value ``'SAMME'``.
-    *   **DummyClassifier**: `Simple rule-based Classification <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier>`__
-    *   **DecisionTreeClassifier**: `Decision Tree Classification <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
-    *   **GradientBoostingClassifier**: `Gradient Boosting Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
-    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classification <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
-    *   **LinearSVC**: `Support Vector Classification using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
-    *   **LogisticRegression**: `Logistic Regression Classification using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
-    *   **MLPClassifier**: `Multi-layer Perceptron Classification <http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier>`__
-    *   **MultinomialNB**: `Multinomial Naive Bayes Classification <http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
-    *   **RandomForestClassifier**: `Random Forest Classification <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
-    *   **RidgeClassifier**: `Classification using Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
-    *   **SGDClassifier**: `Stochastic Gradient Descent Classification <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
-    *   **SVC**: `Support Vector Classification using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
+    *   **AdaBoostClassifier**: `AdaBoost Classification <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier>`__.  Note that the default base estimator is a ``DecisionTreeClassifier``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``MultinomialNB``, ``SGDClassifier``, and ``SVC``. Note that the last two base require setting an additional ``algorithm`` fixed parameter with the value ``'SAMME'``.
+    *   **DummyClassifier**: `Simple rule-based Classification <https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier>`__
+    *   **DecisionTreeClassifier**: `Decision Tree Classification <https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
+    *   **GradientBoostingClassifier**: `Gradient Boosting Classification <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
+    *   **KNeighborsClassifier**: `K-Nearest Neighbors Classification <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
+    *   **LinearSVC**: `Support Vector Classification using LibLinear <https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
+    *   **LogisticRegression**: `Logistic Regression Classification using LibLinear <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
+    *   **MLPClassifier**: `Multi-layer Perceptron Classification <https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier>`__
+    *   **MultinomialNB**: `Multinomial Naive Bayes Classification <https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
+    *   **RandomForestClassifier**: `Random Forest Classification <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
+    *   **RidgeClassifier**: `Classification using Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
+    *   **SGDClassifier**: `Stochastic Gradient Descent Classification <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
+    *   **SVC**: `Support Vector Classification using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
 
 .. _regressors:
 
 Regressors:
 
-    *   **AdaBoostRegressor**: `AdaBoost Regression <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__. Note that the default base estimator is a ``DecisionTreeRegressor``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``SGDRegressor``, and ``SVR``.
-    *   **BayesianRidge**: `Bayesian Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge>`__
-    *   **DecisionTreeRegressor**: `Decision Tree Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
-    *   **DummyRegressor**: `Simple Rule-based Regression <http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyRegressor.html#sklearn.dummy.DummyRegressor>`__
-    *   **ElasticNet**: `ElasticNet Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
-    *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
-    *   **HuberRegressor**: `Huber Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.HuberRegressor.html#sklearn.linear_model.HuberRegressor>`__
-    *   **KNeighborsRegressor**: `K-Nearest Neighbors Regression <http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
-    *   **Lars**: `Least Angle Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lars.html#sklearn.linear_model.Lars>`__
-    *   **Lasso**: `Lasso Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
-    *   **LinearRegression**: `Linear Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
-    *   **LinearSVR**: `Support Vector Regression using LibLinear <http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR>`__
-    *   **MLPRegressor**: `Multi-layer Perceptron Regression <http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html#sklearn.neural_network.MLPRegressor>`__
-    *   **RandomForestRegressor**: `Random Forest Regression <http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
-    *   **RANSACRegressor**: `RANdom SAmple Consensus Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RANSACRegressor.html#sklearn.linear_model.RANSACRegressor>`__. Note that the default base estimator is a ``LinearRegression``. A different base regressor can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list.
-    *   **Ridge**: `Ridge Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
-    *   **SGDRegressor**: `Stochastic Gradient Descent Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
-    *   **SVR**: `Support Vector Regression using LibSVM <http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
-    *   **TheilSenRegressor**: `Theil-Sen Regression <http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__
+    *   **AdaBoostRegressor**: `AdaBoost Regression <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__. Note that the default base estimator is a ``DecisionTreeRegressor``. A different base estimator can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``SGDRegressor``, and ``SVR``.
+    *   **BayesianRidge**: `Bayesian Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge>`__
+    *   **DecisionTreeRegressor**: `Decision Tree Regressor <https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
+    *   **DummyRegressor**: `Simple Rule-based Regression <https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyRegressor.html#sklearn.dummy.DummyRegressor>`__
+    *   **ElasticNet**: `ElasticNet Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
+    *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
+    *   **HuberRegressor**: `Huber Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.HuberRegressor.html#sklearn.linear_model.HuberRegressor>`__
+    *   **KNeighborsRegressor**: `K-Nearest Neighbors Regression <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
+    *   **Lars**: `Least Angle Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lars.html#sklearn.linear_model.Lars>`__
+    *   **Lasso**: `Lasso Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
+    *   **LinearRegression**: `Linear Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
+    *   **LinearSVR**: `Support Vector Regression using LibLinear <https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR>`__
+    *   **MLPRegressor**: `Multi-layer Perceptron Regression <https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html#sklearn.neural_network.MLPRegressor>`__
+    *   **RandomForestRegressor**: `Random Forest Regression <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
+    *   **RANSACRegressor**: `RANdom SAmple Consensus Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RANSACRegressor.html#sklearn.linear_model.RANSACRegressor>`__. Note that the default base estimator is a ``LinearRegression``. A different base regressor can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list.
+    *   **Ridge**: `Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
+    *   **SGDRegressor**: `Stochastic Gradient Descent Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
+    *   **SVR**: `Support Vector Regression using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
+    *   **TheilSenRegressor**: `Theil-Sen Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__
 
     For all regressors you can also prepend ``Rescaled`` to the
     beginning of the full name (e.g., ``RescaledSVR``) to get a version
@@ -496,9 +496,9 @@ imported dynamically.  This is only required if a custom learner is specified
 in the list of :ref:`learners`.
 
 All Custom learners must implement the ``fit`` and
-``predict`` methods. Custom classifiers must either (a) inherit from an existing scikit-learn classifier, or (b) inherit from both `sklearn.base.BaseEstimator <http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <http://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
+``predict`` methods. Custom classifiers must either (a) inherit from an existing scikit-learn classifier, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
 
-Similarly, Custom regressors must either (a) inherit from an existing scikit-learn regressor, or (b) inherit from both `sklearn.base.BaseEstimator <http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <http://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
+Similarly, Custom regressors must either (a) inherit from an existing scikit-learn regressor, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
 
 Learners that require dense matrices should implement a method ``requires_dense``
 that returns ``True``.
@@ -511,11 +511,11 @@ sampler *(Optional)*
 It performs a non-linear transformations of the input, which can serve
 as a basis for linear classification or other algorithms. Valid options
 are:
-`Nystroem <http://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.Nystroem.html#sklearn.kernel_approximation.Nystroem>`__,
-`RBFSampler <http://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.RBFSampler.html#sklearn.kernel_approximation.RBFSampler>`__,
-`SkewedChi2Sampler <http://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html#sklearn.kernel_approximation.SkewedChi2Sampler>`__, and
-`AdditiveChi2Sampler <http://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.AdditiveChi2Sampler.html#sklearn.kernel_approximation.AdditiveChi2Sampler>`__.  For additional information see
-`the scikit-learn documentation <http://scikit-learn.org/stable/modules/kernel_approximation.html>`__.
+`Nystroem <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.Nystroem.html#sklearn.kernel_approximation.Nystroem>`__,
+`RBFSampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.RBFSampler.html#sklearn.kernel_approximation.RBFSampler>`__,
+`SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html#sklearn.kernel_approximation.SkewedChi2Sampler>`__, and
+`AdditiveChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.AdditiveChi2Sampler.html#sklearn.kernel_approximation.AdditiveChi2Sampler>`__.  For additional information see
+`the scikit-learn documentation <https://scikit-learn.org/stable/modules/kernel_approximation.html>`__.
 
 .. _sampler_parameters:
 
@@ -550,18 +550,18 @@ feature_hasher *(Optional)*
 If "true", this enables a high-speed, low-memory vectorizer that uses
 feature hashing for converting feature dictionaries into NumPy arrays
 instead of using a
-`DictVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__.  This flag will drastically
+`DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__.  This flag will drastically
 reduce memory consumption for data sets with a large number of
 features. If enabled, the user should also specify the number of
 features in the :ref:`hasher_features <hasher_features>` field.  For additional
-information see `the scikit-learn documentation <http://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`__.
+information see `the scikit-learn documentation <https://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`__.
 
 .. _hasher_features:
 
 hasher_features *(Optional)*
 """"""""""""""""""""""""""""
 
-The number of features used by the `FeatureHasher <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ if the
+The number of features used by the `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ if the
 :ref:`feature_hasher <feature_hasher>` flag is enabled.
 
 .. note::
@@ -696,7 +696,7 @@ TheilSenRegressor
 
        {'class_weight': {1: 10}}
 
-    Additional examples and information can be seen `here <http://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_labels.html>`__.
+    Additional examples and information can be seen `here <https://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_samples.html>`__.
 
 .. _feature_scaling:
 
@@ -785,9 +785,9 @@ The objective functions to use for tuning. This is a list of one or more objecti
 
 Classification:
 
-    *   **accuracy**: Overall `accuracy <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__
-    *   **precision**: `Precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`__
-    *   **recall**: `Recall <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`__
+    *   **accuracy**: Overall `accuracy <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__
+    *   **precision**: `Precision <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`__
+    *   **recall**: `Recall <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`__
     *   **f1**: The default scikit-learn |F1 link|_
         (F\ :sub:`1` of the positive class for binary classification, or the weighted average F\ :sub:`1` for multiclass classification)
     *   **f1_score_micro**: Micro-averaged |F1 link|_
@@ -796,20 +796,20 @@ Classification:
     *   **f1_score_least_frequent**: F:\ :sub:`1` score of the least frequent
         class. The least frequent class may vary from fold to fold for certain
         data distributions.
-    * **neg_log_loss**: The negative of the classification `log loss <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <http://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this as the objective, :ref:`probability <probability>` must be set to ``True``.
-    *   **average_precision**: `Area under PR curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
+    * **neg_log_loss**: The negative of the classification `log loss <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this as the objective, :ref:`probability <probability>` must be set to ``True``.
+    *   **average_precision**: `Area under PR curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
         (for binary classification)
-    *   **roc_auc**: `Area under ROC curve <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__
+    *   **roc_auc**: `Area under ROC curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__
         (for binary classification)
 
 .. |F1 link| replace:: F\ :sub:`1` score
-.. _F1 link: http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
+.. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 
 .. _int_label_classification_obj:
 
 Regression or classification with integer labels:
 
-    *   **unweighted_kappa**: Unweighted `Cohen's kappa <http://en.wikipedia.org/wiki/Cohen's_kappa>`__ (any floating point
+    *   **unweighted_kappa**: Unweighted `Cohen's kappa <https://en.wikipedia.org/wiki/Cohen's_kappa>`__ (any floating point
         values are rounded to ints)
     *   **linear_weighted_kappa**: Linear weighted kappa (any floating
         point values are rounded to ints)
@@ -827,16 +827,16 @@ Regression or classification with integer labels:
 
 Regression or classification with binary labels:
 
-    *   **kendall_tau**: `Kendall's tau <http://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__
-    *   **pearson**: `Pearson correlation <http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__
-    *   **spearman**: `Spearman rank-correlation <http://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__
+    *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__
+    *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__
+    *   **spearman**: `Spearman rank-correlation <https://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__
 
 .. _regression_obj:
 
 Regression:
 
-    *   **r2**: `R2 <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
-    *   **neg_mean_squared_error**: The negative of the `mean squared error <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <http://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
+    *   **r2**: `R2 <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
+    *   **neg_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
 
 
 Defaults to ``['f1_score_micro']``.
@@ -1121,7 +1121,7 @@ specified via command-line arguments instead of in the configuration file:
 GridMap options
 ^^^^^^^^^^^^^^^
 
-If you have `GridMap <http://pypi.python.org/pypi/gridmap>`__ installed,
+If you have `GridMap <https://pypi.org/project/gridmap/>`__ installed,
 :program:`run_experiment` will automatically schedule jobs on your DRMAA-
 compatible cluster. You can use the following options to customize this
 behavior.
@@ -1132,7 +1132,7 @@ behavior.
 
 .. option:: -q <queue>, --queue <queue>
 
-    Use this queue for `GridMap <http://pypi.python.org/pypi/gridmap>`__.
+    Use this queue for `GridMap <https://pypi.org/project/gridmap/>`__.
     (default: ``all.q``)
 
 .. option:: -m <machines>, --machines <machines>

@@ -1,6 +1,6 @@
 package:
   name: skll
-  version: 1.5
+  version: 1.5.3
 
 source:
   path: ../../../skll
@@ -42,7 +42,7 @@ build:
 requirements:
   build:
     - python
-    - scikit-learn ==0.19.1
+    - scikit-learn ==0.20.1
     - joblib >=0.8
     - setuptools
     - six
@@ -57,7 +57,7 @@ requirements:
 
   run:
     - python
-    - scikit-learn ==0.19.1
+    - scikit-learn ==0.20.1
     - joblib >=0.8
     - six
     - prettytable
