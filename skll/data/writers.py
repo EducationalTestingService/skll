@@ -458,7 +458,7 @@ class ARFFWriter(DelimitedFileWriter):
             features to include in this file.
         """
         fieldnames = self._get_fieldnames(filter_features)
-        if self.label_col in fieldnames:
+        if self.label_col and self.label_col in fieldnames:
             fieldnames.remove(self.label_col)
 
         # Add relation to header
@@ -480,7 +480,8 @@ class ARFFWriter(DelimitedFileWriter):
                       "{" + ','.join(map(str,
                                          sorted(set(self.feat_set.labels)))) +
                       "}", file=output_file)
-        fieldnames.append(self.label_col)
+        if self.label_col:
+            fieldnames.append(self.label_col)
 
         # Create CSV writer to handle missing values for lines in data section
         # and to ignore the instance values for non-numeric attributes
