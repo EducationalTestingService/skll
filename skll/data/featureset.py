@@ -413,9 +413,11 @@ class FeatureSet(object):
         has_labels : bool
             Whether or not this FeatureSet has any finite labels.
         """
-        if self.labels is not None:
-            return not ((np.issubdtype(self.labels.dtype, float) and np.isnan(np.min(self.labels))) or
-                        (all(label is None for label in self.labels)))
+        # make sure that labels is not None or a list of Nones
+        if self.labels is not None and not all(label is None for label in self.labels):
+            # then check that they are not a list of NaNs
+            return not (np.issubdtype(self.labels.dtype, np.floating) and
+                        np.isnan(np.min(self.labels)))
         else:
             return False
 
