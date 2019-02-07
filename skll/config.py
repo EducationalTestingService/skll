@@ -72,8 +72,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'models': '',
                     'num_cv_folds': '10',
                     'metrics': "[]",
-                    'objectives': "['f1_score_micro']",
-                    'objective': "f1_score_micro",
+                    'objectives': "[]",
                     'param_grids': '[]',
                     'pos_label_str': '',
                     'predictions': '',
@@ -115,7 +114,6 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'models': 'Output',
                                    'num_cv_folds': 'Input',
                                    'objectives': 'Tuning',
-                                   'objective': 'Tuning',
                                    'param_grids': 'Tuning',
                                    'pos_label_str': 'Tuning',
                                    'predictions': 'Output',
@@ -293,10 +291,6 @@ def _setup_config_parser(config_path, validate=True):
     ------
     IOError
         If the configuration file does not exist.
-    ValueError
-        If the configuration file specifies both objective and objectives.
-    TypeError
-        If any objective is not a string.
     """
     # initialize config parser with the given defaults
     config = SKLLConfigParser()
@@ -306,31 +300,6 @@ def _setup_config_parser(config_path, validate=True):
         raise IOError(errno.ENOENT, "Configuration file does not exist",
                       config_path)
     config.read(config_path)
-
-    # normalize objective to objectives
-    objective_value = config.get('Tuning', 'objective')
-    objectives_value = config.get('Tuning', 'objectives')
-    objective_default = config._defaults['objective']
-    objectives_default = config._defaults['objectives']
-
-    # if both of them are non default, raise error
-    if (objectives_value != objectives_default and objective_value != objective_default):
-        raise ValueError("The configuration file can specify "
-                         "either 'objective' or 'objectives', "
-                         "not both")
-    else:
-        # if objective is default value, delete it
-        if objective_value == objective_default:
-            config.remove_option('Tuning', 'objective')
-        else:
-            # else convert objective into objectives and delete objective
-            objective_value = yaml.safe_load(_fix_json(objective_value), )
-            if isinstance(objective_value, string_types):
-                config.set(
-                    'Tuning', 'objectives', "['{}']".format(objective_value))
-                config.remove_option('Tuning', 'objective')
-            else:
-                raise TypeError("objective should be a string")
 
     if validate:
         config.validate()
@@ -390,7 +359,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     do_grid_search : bool
         Whether to perform grid search.
     grid_objectives : list of str
-        A list of objects functions to use for tuning.
+        A list of scoring functions to use for tuning.
     probability : bool
         Whether to output probabilities for each class.
     results_path : str
@@ -471,7 +440,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # extract parameters from the various sections in the config file
 
-    # 1. General
+    ######################
+    # 1. General section #
+    ######################
     if config.has_option("General", "experiment_name"):
         experiment_name = config.get("General", "experiment_name")
     else:
@@ -489,7 +460,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             os.makedirs(log_path)
 
     # Create a top-level log file under the log path
-    main_log_file =join(log_path, '{}.log'.format(experiment_name))
+    main_log_file = join(log_path, '{}.log'.format(experiment_name))
 
     # Now create a SKLL logger that will log to this file as well
     # as to the console. Use the log level provided - note that
@@ -508,7 +479,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
                          ' {}'.format(task, ', '.join(_VALID_TASKS)))
 
-    # 2. Input
+    ####################
+    # 2. Input section #
+    ####################
     sampler = config.get("Input", "sampler")
     if sampler not in _VALID_SAMPLERS:
         raise ValueError('An invalid sampler was specified: {}.  Valid '
@@ -585,8 +558,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         learning_curve_cv_folds_list = [10] * len(learners)
     else:
         if (not isinstance(learning_curve_cv_folds_list, list) or
-            not all([isinstance(fold, int) for fold in learning_curve_cv_folds_list]) or
-            not len(learning_curve_cv_folds_list) == len(learners)):
+                not all([isinstance(fold, int) for fold in learning_curve_cv_folds_list]) or
+                not len(learning_curve_cv_folds_list) == len(learners)):
             raise ValueError("The learning_curve_cv_folds parameter should "
                              "be a list of integers of the same length as "
                              "the number of learners. You specified: {}"
@@ -603,7 +576,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     else:
         if (not isinstance(learning_curve_train_sizes, list) or
             not all([isinstance(size, int) or isinstance(size, float) for size in
-                         learning_curve_train_sizes])):
+                     learning_curve_train_sizes])):
             raise ValueError("The learning_curve_train_sizes parameter should "
                              "be a list of integers or floats. You specified: {}"
                              .format(learning_curve_train_sizes))
@@ -728,7 +701,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     else:
         class_map = None
 
-    # 3. Output
+    #####################
+    # 3. Output section #
+    #####################
     probability = config.getboolean("Output", "probability")
 
     # do we want to keep the predictions?
@@ -760,15 +735,28 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # what are the output metrics?
     output_metrics = config.get("Output", "metrics")
     output_metrics = _parse_and_validate_metrics(output_metrics,
-                                                     'metrics',
-                                                     logger=logger)
+                                                 'metrics',
+                                                 logger=logger)
 
-    # 4. Tuning
+    #####################
+    # 4. Tuning section #
+    #####################
+
     # do we need to run a grid search for the hyperparameters or are we just
     # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
-    # Check if `param_grids` is specified, but `grid_search` is False
+    # check if `do_grid_search` is True but there are no objectives specified
+    # If they are specified, then validate the specified strings to make sure
+    # they are real metrics
+    grid_objectives = config.get("Tuning", "objectives")
+    grid_objectives = _parse_and_validate_metrics(grid_objectives,
+                                                  'objectives',
+                                                  logger=logger)
+    if do_grid_search and not grid_objectives:
+        raise ValueError('You must specify a list of tuning objectives if doing grid search.')
+
+    # Check if `param_grids` is specified, but `do_grid_search` is False
     if param_grid_list and not do_grid_search:
         logger.warning('Since "grid_search" is set to False, the specified'
                        ' "param_grids" will be ignored.')
@@ -799,12 +787,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # how many folds should we run in parallel for grid search
     grid_search_folds = config.getint("Tuning", "grid_search_folds")
-
-    # what are the objective functions for the grid search?
-    grid_objectives = config.get("Tuning", "objectives")
-    grid_objectives = _parse_and_validate_metrics(grid_objectives,
-                                                  'objectives',
-                                                  logger=logger)
 
     # check whether the right things are set for the given task
     if (task == 'evaluate' or task == 'predict') and not test_path:
@@ -846,7 +828,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         # some overlaps - we will assume that the user meant to
         # use the metric for tuning _and_ evaluation, not just evaluation
         if (len(grid_objectives) > 0 and
-            len(output_metrics) > 0):
+                len(output_metrics) > 0):
             common_metrics_and_objectives = set(grid_objectives).intersection(output_metrics)
             if common_metrics_and_objectives:
                 logger.warning('The following are specified both as '
@@ -990,7 +972,8 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     if not logger:
         logger = logging.getLogger(__name__)
 
-    # what are the objective functions for the grid search?
+    # make sure the given metrics data type is a list
+    # and parse it correctly
     metrics = yaml.safe_load(_fix_json(metrics))
     if not isinstance(metrics, list):
         raise TypeError("{} should be a list".format(option_name))
