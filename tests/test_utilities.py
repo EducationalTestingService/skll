@@ -166,7 +166,7 @@ def test_warning_when_prediction_method_and_no_probabilities():
         sys.stdout = mystdout = StringIO()
         sys.stderr = mystderr = StringIO()
         cefp.main(compute_eval_from_predictions_cmd)
-        score_rows = mystdout.getvalue().strip().split('\n')
+        _ = mystdout.getvalue().strip().split('\n')
         err = mystderr.getvalue()
         print(err)
     finally:
@@ -215,12 +215,11 @@ def test_compute_eval_from_predictions_with_probs():
     assert_almost_equal(scores['pearson'], 0.6197797868009122)
     assert_almost_equal(scores['unweighted_kappa'], 0.2)
 
-
     #
     # Test expected value predictions method
     #
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
-                                         'r2' ,'--method', 'expected_value']
+                                         'r2', '--method', 'expected_value']
     try:
         old_stdout = sys.stdout
         old_stderr = sys.stderr
@@ -301,7 +300,7 @@ def check_generate_predictions(use_feature_hashing=False,
     learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
     # if we are asked to use only a subset, then filter out
     # one of the features if we are not using feature hashing,
@@ -350,10 +349,10 @@ def check_generate_predictions_file_headers(use_threshold=False,
     learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
     # get the predictions on the test featureset
-    predictions = learner.predict(test_fs)
+    _ = learner.predict(test_fs)
 
     # if we asked for probabilities, then use the threshold
     # to convert them into binary predictions
@@ -371,13 +370,12 @@ def check_generate_predictions_file_headers(use_threshold=False,
     # sure that they are the same as before saving the model
     p = gp.Predictor(model_file, threshold=threshold,
                      all_labels=use_all_labels)
-    predictions_after_saving = p.predict(test_fs)
+    _ = p.predict(test_fs)
 
     if threshold:
         assert (p.output_file_header == ['id', 'prediction'])
     elif use_all_labels:
         assert (p.output_file_header == ['id', '0', '1'])
-
 
 
 @raises(ValueError)
@@ -428,7 +426,7 @@ def check_generate_predictions_console(use_threshold=False, all_labels=False):
     learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
     # get the predictions on the test featureset
     predictions = learner.predict(test_fs)
@@ -484,6 +482,7 @@ def check_generate_predictions_console(use_threshold=False, all_labels=False):
         sys.stderr = old_stderr
         print(err)
 
+
 def test_generate_predictions_console_bad_input_ext():
     lc = LogCapture()
     lc.begin()
@@ -495,9 +494,9 @@ def test_generate_predictions_console_bad_input_ext():
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier')
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
     # get the predictions on the test featureset
-    predictions = learner.predict(test_fs)
+    _ = learner.predict(test_fs)
     # save the learner to a file
     model_file = join(_my_dir, 'output',
                       'test_generate_predictions_console.model')
@@ -514,7 +513,7 @@ def test_generate_predictions_console_bad_input_ext():
         sys.stdout = mystdout = StringIO()
         sys.stderr = mystderr = StringIO()
         gp.main(generate_cmd)
-        out = mystdout.getvalue()
+        _ = mystdout.getvalue()
         err = mystderr.getvalue()
     finally:
         sys.stdout = old_stdout
@@ -559,7 +558,7 @@ def check_generate_predictions_file_output_multi_infiles(use_threshold=False,
     learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
     # get the predictions on the test featureset
     predictions = learner.predict(test_fs)
@@ -619,7 +618,6 @@ def test_generate_predictions_file_output_multi_infiles():
     yield check_generate_predictions_file_output_multi_infiles, True, False
 
 
-
 def check_generate_predictions_file_output(use_threshold=False,
                                            all_labels=False):
 
@@ -637,7 +635,7 @@ def check_generate_predictions_file_output(use_threshold=False,
     learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
     # get the predictions on the test featureset
     predictions = learner.predict(test_fs)
@@ -695,8 +693,6 @@ def test_generate_predictions_file_output():
     yield check_generate_predictions_file_output, True, False
 
 
-
-
 @raises(SystemExit)
 def test_mutually_exclusive_generate_predictions_args():
     # create some simple classification data without feature hashing
@@ -714,7 +710,7 @@ def test_mutually_exclusive_generate_predictions_args():
     learner = Learner('SGDClassifier')
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
     # save the learner to a file
     model_file = join(_my_dir, 'output',

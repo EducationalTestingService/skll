@@ -86,7 +86,6 @@ def tearDown():
         os.unlink(output_file)
 
 
-
 def make_cv_folds_data(num_examples_per_fold=100,
                        num_folds=3,
                        use_feature_hashing=False):
@@ -167,7 +166,8 @@ def test_specified_cv_folds():
         folds = custom_cv_folds if not use_hashing else 10
         cv_output = learner.cross_validate(cv_fs,
                                            cv_folds=folds,
-                                           grid_search=True)
+                                           grid_search=True,
+                                           grid_objective='f1_score_micro')
         fold_test_scores = [t[-2] for t in cv_output[0]]
 
         overall_score = np.mean(fold_test_scores)
@@ -221,6 +221,7 @@ def test_load_cv_folds_non_float_ids():
     # now read the CSV file using _load_cv_folds, which should raise ValueError
     _load_cv_folds(fold_file_path, ids_to_floats=True)
 
+
 def test_retrieve_cv_folds():
     """
     Test to make sure that the fold ids get returned correctly after cross-validation
@@ -246,6 +247,7 @@ def test_retrieve_cv_folds():
                                                  stratified=True,
                                                  cv_folds=num_folds,
                                                  grid_search=True,
+                                                 grid_objective='f1_score_micro',
                                                  shuffle=False,
                                                  save_cv_folds=True)
     assert_equal(skll_fold_ids, expected_fold_ids)
@@ -255,6 +257,7 @@ def test_retrieve_cv_folds():
                                                  stratified=True,
                                                  cv_folds=custom_cv_folds,
                                                  grid_search=True,
+                                                 grid_objective='f1_score_micro',
                                                  shuffle=False,
                                                  save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
@@ -275,6 +278,7 @@ def test_retrieve_cv_folds():
                                                  stratified=False,
                                                  cv_folds=num_folds,
                                                  grid_search=False,
+                                                 grid_objective='f1_score_micro',
                                                  shuffle=False,
                                                  save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
@@ -385,4 +389,3 @@ def test_cross_validate_task():
     expected_skll_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(expected_skll_ids.items()))
 
     assert_equal(skll_fold_ids_str, expected_skll_ids_str)
-
