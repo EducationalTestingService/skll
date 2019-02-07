@@ -251,7 +251,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
         train_scores_stds_by_size = lrd['learning_curve_train_scores_stds']
         test_scores_stds_by_size = lrd['learning_curve_test_scores_stds']
 
-        # rename `grid_objective` to `objective` since that can be confusing
+        # rename `grid_objective` to `metric` since the latter name can be confusing
         lrd['metric'] = lrd['grid_objective']
 
         for (size,
@@ -321,8 +321,8 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         print('Grid Objective Function: {}'.format(lrd['grid_objective']),
               file=output_file)
     if (lrd['task'] == 'cross_validate' and
-        lrd['grid_search'] and
-        lrd['cv_folds'].endswith('folds file')):
+            lrd['grid_search'] and
+            lrd['cv_folds'].endswith('folds file')):
         print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
               file=output_file)
     if lrd['task'] in ['evaluate', 'cross_validate'] and lrd['additional_scores']:
@@ -580,8 +580,8 @@ def _classify_featureset(args):
     # featureset already exists if so, load it and then use it on test data
     modelfile = join(model_path, '{}.model'.format(job_name))
     if (task in ['cross_validate', 'learning_curve'] or
-        not exists(modelfile) or
-        overwrite):
+            not exists(modelfile) or
+            overwrite):
         train_examples = _load_featureset(train_path,
                                           featureset,
                                           suffix,
@@ -651,7 +651,6 @@ def _classify_featureset(args):
     else:
         grid_search_folds_to_print = str(grid_search_folds)
 
-
     # create a list of dictionaries of the results information
     learner_result_dict_base = {'experiment_name': experiment_name,
                                 'train_set_name': train_set_name,
@@ -674,8 +673,7 @@ def _classify_featureset(args):
                                 'grid_search_folds': grid_search_folds_to_print,
                                 'min_feature_count': min_feature_count,
                                 'cv_folds': cv_folds_to_print,
-                                'using_folds_file': isinstance(cv_folds, dict) \
-                                                     or isinstance(grid_search_folds, dict),
+                                'using_folds_file': isinstance(cv_folds, dict) or isinstance(grid_search_folds, dict),
                                 'save_cv_folds': save_cv_folds,
                                 'use_folds_file_for_grid_search': use_folds_file_for_grid_search,
                                 'stratified_folds': stratified_folds,
@@ -706,9 +704,9 @@ def _classify_featureset(args):
         (curve_train_scores,
          curve_test_scores,
          computed_curve_train_sizes) = learner.learning_curve(train_examples,
+                                                              grid_objective,
                                                               cv_folds=learning_curve_cv_folds,
-                                                              train_sizes=learning_curve_train_sizes,
-                                                              metric=grid_objective)
+                                                              train_sizes=learning_curve_train_sizes)
     else:
         # if we have do not have a saved model, we need to train one.
         if not exists(modelfile) or overwrite:
@@ -1034,7 +1032,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      param_grid_list, featureset_names, learners, prediction_dir, log_path, train_path,
      test_path, ids_to_floats, class_map, custom_learner_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_file,
-                                                                          log_level=log_level)
+                                                                      log_level=log_level)
 
     # get the main experiment logger that will already have been
     # created by the configuration parser so we don't need anything
@@ -1424,4 +1422,4 @@ def _generate_learning_curve_plots(experiment_name,
                                       ncol=1,
                                       frameon=True)
             g.fig.tight_layout(w_pad=1)
-            plt.savefig(join(output_dir,'{}_{}.png'.format(experiment_name, fs_name)), dpi=300);
+            plt.savefig(join(output_dir, '{}_{}.png'.format(experiment_name, fs_name)), dpi=300);
