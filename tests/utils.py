@@ -41,7 +41,7 @@ def fill_in_config_paths(config_template_path):
     to_fill_in = ['log']
 
     if task != 'learning_curve':
-      to_fill_in.append('predictions')
+        to_fill_in.append('predictions')
 
     if task not in ['cross_validate', 'learning_curve']:
         to_fill_in.append('models')
