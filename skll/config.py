@@ -788,10 +788,13 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set must be set when task is evaluate or '
                          'predict.')
-    if (task in ['cross_validate', 'evaluate', 'train'] and
-            do_grid_search and
-            len(grid_objectives) == 0):
-        raise ValueError('You must specify a list of objectives if doing grid search.')
+    if task in ['cross_validate', 'evaluate', 'train']:
+        if do_grid_search and len(grid_objectives) == 0:
+            raise ValueError('You must specify a list of objectives if doing grid search.')
+        if not do_grid_search and len(grid_objectives) > 0:
+            logger.warning('Since "grid_search" is set to False, any specified'
+                           ' "objectives" will be ignored.')
+            grid_objectives = []
     if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
                          '{}.'.format(task))
