@@ -286,9 +286,7 @@ def test_retrieve_cv_folds():
 
 def test_folds_file_logging_num_folds():
     """
-    Test that, when `folds_file` is used, the log prints the number of folds,
-     instead of the entire cv_folds data. And that the folds file warning shows up
-     in the log file.
+    Test when using `folds_file`, log shows number of folds and appropriate warning.
     """
     # Run experiment
     suffix = '.jsonlines'
