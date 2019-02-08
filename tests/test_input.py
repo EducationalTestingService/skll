@@ -1024,6 +1024,46 @@ def test_config_parsing_mse_to_neg_mse():
     eq_(grid_objectives, ['neg_mean_squared_error'])
 
 
+def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
+
+    train_dir = join('..', 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has an invalid option
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'grid_search': 'true',
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'metrics': "['neg_mean_squared_error']",
+                           'results': output_dir}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'no_objectives_learning_curve')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    eq_(do_grid_search, True)
+    eq_(grid_objectives, [])
+    eq_(output_metrics, ['neg_mean_squared_error'])
+
+
 def test_config_parsing_relative_input_path():
 
     train_dir = join('..', 'train')
