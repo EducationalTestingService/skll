@@ -1772,20 +1772,7 @@ def test_learning_curve_default_objectives_and_no_metrics():
                                          values_to_fill_dict,
                                          'learning_curve_default_objectives_and_no_metrics')
 
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objective, probability, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
-
-    eq_(output_metrics, ["f1_score_micro"])
-    eq_(grid_objective, [])
+    yield check_config_parsing_value_error, config_path
 
 
 def test_learning_curve_no_metrics_and_no_objectives():
