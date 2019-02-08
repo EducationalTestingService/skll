@@ -1129,6 +1129,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if task == 'learning_curve' and len(output_metrics) > 0:
         grid_objectives = output_metrics
 
+    # if there were no grid objectives provided, just set it to
+    # a list containing a single None so as to allow the parallelization
+    # to proceeed and to pass the correct default value of grid_objective
+    # down to _classify_featureset().
+    if not grid_objectives:
+        grid_objectives = [None]
+
     # Run each featureset-learner-objective combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
         for learner_num, learner_name in enumerate(learners):
@@ -1136,7 +1143,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
                 # for the individual job name, we need to add the feature set name
                 # and the learner name
-                if len(grid_objectives) == 1:
+                if grid_objective is None:
                     job_name_components = [experiment_name, featureset_name,
                                            learner_name]
                 else:
