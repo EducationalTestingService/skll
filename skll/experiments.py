@@ -1143,7 +1143,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
                 # for the individual job name, we need to add the feature set name
                 # and the learner name
-                if grid_objective is None:
+                if grid_objective is None or len(grid_objectives) == 1:
                     job_name_components = [experiment_name, featureset_name,
                                            learner_name]
                 else:
