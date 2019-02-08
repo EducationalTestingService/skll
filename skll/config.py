@@ -746,15 +746,11 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # using the defaults?
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
-    # check if `do_grid_search` is True but there are no objectives specified
-    # If they are specified, then validate the specified strings to make sure
-    # they are real metrics
+    # parse any provided grid objective functions
     grid_objectives = config.get("Tuning", "objectives")
     grid_objectives = _parse_and_validate_metrics(grid_objectives,
                                                   'objectives',
                                                   logger=logger)
-    if do_grid_search and not grid_objectives:
-        raise ValueError('You must specify a list of tuning objectives if doing grid search.')
 
     # Check if `param_grids` is specified, but `do_grid_search` is False
     if param_grid_list and not do_grid_search:
@@ -792,6 +788,10 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if (task == 'evaluate' or task == 'predict') and not test_path:
         raise ValueError('The test set must be set when task is evaluate or '
                          'predict.')
+    if (task in ['cross_validate', 'evaluate', 'train'] and
+            do_grid_search and
+            len(grid_objectives) == 0):
+        raise ValueError('You must specify a list of objectives if doing grid search.')
     if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
                          '{}.'.format(task))
