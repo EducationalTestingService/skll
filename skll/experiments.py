@@ -358,7 +358,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                       file=output_file)
             print('Pearson = {: f}'.format(lrd['pearson']),
                   file=output_file)
-        print('Objective Function Score (Test) = {}'.format(lrd['score']),
+        print('Objective Function Score (Test) = {}'.format(lrd.get('score', '')),
               file=output_file)
 
         # now print the additional metrics, if there were any
