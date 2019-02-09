@@ -1842,6 +1842,54 @@ def test_config_parsing_param_grids_no_grid_search():
         assert_equal(len(matches), 1)
 
 
+def test_config_parsing_no_grid_search_but_objectives_specified():
+    """
+    Test for warning if grid search is off but with objectives.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad task
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing_objectives_no_grid_search',
+                           'task': 'train',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LinearSVC']",
+                           'log': output_dir,
+                           'models': output_dir,
+                           'objectives': "['f1_score_macro', 'accuracy']"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'objectives_no_grid_search')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    eq_(do_grid_search, False)
+    eq_(grid_objectives, [])
+
+    log_path = join(output_dir, "config_parsing_objectives_no_grid_search.log")
+    with open(log_path) as f:
+        warning_pattern = re.compile('Since "grid_search" is set to False, '
+                                     'any specified "objectives" will be ignored.')
+        matches = re.findall(warning_pattern, f.read())
+        assert_equal(len(matches), 1)
+
+
 def test_config_parsing_param_grids_fixed_parameters_conflict():
     """
     Test for warning if param grids are provided in addition to fixed params.
