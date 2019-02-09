@@ -336,8 +336,8 @@ def check_xval_fancy_results_file(do_grid_search,
             values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
 
     config_template_path = join(_my_dir,
-                               'configs',
-                               'test_fancy.template.cfg')
+                                'configs',
+                                'test_fancy.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
@@ -405,9 +405,9 @@ def test_xval_fancy_results_file():
                                             [True, False],
                                             [True, False]):
 
-        yield check_xval_fancy_results_file, do_grid_search, \
-                use_folds_file, use_folds_file_for_grid_search, \
-                use_additional_metrics
+        yield (check_xval_fancy_results_file, do_grid_search,
+               use_folds_file, use_folds_file_for_grid_search,
+               use_additional_metrics)
 
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.
@@ -453,7 +453,7 @@ def test_learning_curve_implementation():
     random_state = 123456789
     cv = ShuffleSplit(n_splits=cv_folds, test_size=0.2, random_state=random_state)
     estimator = MultinomialNB()
-    train_sizes=np.linspace(.1, 1.0, 5)
+    train_sizes = np.linspace(.1, 1.0, 5)
     train_sizes1, train_scores1, test_scores1 = learning_curve(estimator,
                                                                X,
                                                                y,
@@ -471,7 +471,7 @@ def test_learning_curve_implementation():
 
     # we don't want to filter out any features since scikit-learn
     # does not do that either
-    l = Learner('MultinomialNB', min_feature_count=0)
+    _ = Learner('MultinomialNB', min_feature_count=0)
     train_scores2, test_scores2, train_sizes2 = l.learning_curve(fs,
                                                                  cv_folds=cv_folds,
                                                                  train_sizes=train_sizes,
