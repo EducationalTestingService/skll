@@ -346,8 +346,7 @@ def test_folds_file_logging_grid_search():
 
 def test_cross_validate_task():
     """
-    Test that 10-fold cross_validate experiments work.
-    Test that fold ids get correctly saved.
+    Test that 10-fold cross_validate experiments work and fold ids get saved.
     """
 
     # Run experiment
