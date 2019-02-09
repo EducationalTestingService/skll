@@ -740,6 +740,7 @@ def test_config_parsing_log_loss_no_probability():
                            'test_directory': test_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
+                           'grid_search': 'true',
                            'log': output_dir,
                            'results': output_dir,
                            'objectives': "['neg_log_loss']"}
@@ -1000,6 +1001,7 @@ def test_config_parsing_mse_to_neg_mse():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
+                           'grid_search': 'true',
                            'objectives': "['mean_squared_error']"}
 
     config_template_path = join(_my_dir, 'configs',
@@ -1077,7 +1079,7 @@ def test_config_parsing_relative_input_path():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objective': 'f1_score_macro'}
+                           'objectives': "['f1_score_macro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -1116,7 +1118,7 @@ def test_config_parsing_relative_input_paths():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objective': 'f1_score_micro'}
+                           'objectives': "['f1_score_micro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_relative_paths.template.cfg')
@@ -1164,7 +1166,7 @@ def test_config_parsing_automatic_output_directory_creation():
                            'results': new_results_path,
                            'models': new_models_path,
                            'predictions': new_predictions_path,
-                           'objective': 'f1_score_micro'}
+                           'objectives': "['f1_score_micro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_relative_paths.template.cfg')
@@ -1198,7 +1200,7 @@ def check_config_parsing_metrics_and_objectives_overlap(task,
     train_dir = join('..', 'train')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has an invalid option
+    # make a simple config file
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': task,
                            'train_directory': train_dir,
@@ -1212,6 +1214,7 @@ def check_config_parsing_metrics_and_objectives_overlap(task,
         values_to_fill_dict['test_directory'] = test_dir
 
     if objectives:
+        values_to_fill_dict['grid_search'] = 'true'
         values_to_fill_dict['objectives'] = str(objectives)
 
     config_template_path = join(_my_dir, 'configs',
@@ -1234,7 +1237,7 @@ def check_config_parsing_metrics_and_objectives_overlap(task,
      learning_curve_train_sizes, parsed_metrics) = _parse_config_file(config_path)
 
     if not objectives:
-        objectives = ["f1_score_micro"]
+        objectives = []
     common_metrics = set(objectives).intersection(metrics)
     pruned_metrics = [metric for metric in metrics if metric not in common_metrics]
     eq_(parsed_objectives, objectives)
@@ -1362,7 +1365,7 @@ def check_cv_folds_and_grid_search_folds(task,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
-                           'objective': 'f1_score_macro'}
+                           'objectives': "['f1_score_macro']"}
 
     # we need the models field when training but the results field
     # when cross-validating
@@ -1416,11 +1419,12 @@ def test_default_number_of_cv_folds():
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'cross_validate',
                            'train_directory': train_dir,
+                           'grid_search': 'true',
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objective': 'f1_score_macro'}
+                           'objectives': "['f1_score_macro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -1456,8 +1460,9 @@ def test_setting_number_of_cv_folds():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
+                           'grid_search': 'true',
                            'num_cv_folds': "5",
-                           'objective': 'f1_score_macro'}
+                           'objectives': "['f1_score_macro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -1496,8 +1501,9 @@ def test_setting_param_grids():
                            'learners': "['LinearSVC']",
                            'log': output_dir,
                            'results': output_dir,
+                           'grid_search': 'true',
                            'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
-                           'objective': 'f1_score_macro'}
+                           'objectives': "['f1_score_macro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -1542,7 +1548,8 @@ def test_setting_fixed_parameters():
                            'log': output_dir,
                            'results': output_dir,
                            'fixed_parameters': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
-                           'objective': 'f1_score_macro'}
+                           'grid_search': 'true',
+                           'objectives': "['f1_score_macro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -1582,7 +1589,8 @@ def test_default_learning_curve_options():
                            'learners': "['LogisticRegression', 'MultinomialNB']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objective': 'f1_score_macro'}
+                           'grid_search': 'true',
+                           'objectives': "['f1_score_macro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -1620,7 +1628,7 @@ def test_setting_learning_curve_options():
                            'results': output_dir,
                            'learning_curve_cv_folds_list': "[100, 10]",
                            'learning_curve_train_sizes': "[10, 50, 100, 200, 500]",
-                           'objective': 'f1_score_macro'}
+                           'metrics': "['f1_score_macro']"}
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -1656,7 +1664,7 @@ def test_learning_curve_metrics_and_objectives():
                            'learners': "['LogisticRegression', 'MultinomialNB']",
                            'log': output_dir,
                            'results': output_dir,
-                           'objective': 'f1_score_macro',
+                           'objectives': "['f1_score_macro']",
                            'metrics': '["accuracy", "f1_score_micro"]'}
 
     config_template_path = join(_my_dir, 'configs',
@@ -1800,8 +1808,7 @@ def test_learning_curve_no_metrics_and_no_objectives():
 
 def test_config_parsing_param_grids_no_grid_search():
     """
-    Test to check whether a warning is logged if parameter grids are
-    provided but `grid_search` is off.
+    Test for warning if grid search is off but with param grids.
     """
 
     train_dir = join(_my_dir, 'train')
@@ -1816,6 +1823,7 @@ def test_config_parsing_param_grids_no_grid_search():
                            'learners': "['LinearSVC']",
                            'log': output_dir,
                            'models': output_dir,
+                           'objectives': "['f1_score_macro']",
                            'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"}
 
     config_template_path = join(_my_dir, 'configs',
@@ -1836,8 +1844,7 @@ def test_config_parsing_param_grids_no_grid_search():
 
 def test_config_parsing_param_grids_fixed_parameters_conflict():
     """
-    Test to check whether a warning is logged if parameter grids are
-    provided in addition to fixed parameters.
+    Test for warning if param grids are provided in addition to fixed params.
     """
 
     train_dir = join(_my_dir, 'train')
@@ -1853,6 +1860,7 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
                            'log': output_dir,
                            'models': output_dir,
                            'grid_search': 'true',
+                           'objectives': "['f1_score_macro']",
                            'fixed_parameters': "[{'C': 0.001}]",
                            'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"}
 
