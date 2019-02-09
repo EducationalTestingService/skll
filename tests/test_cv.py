@@ -365,7 +365,7 @@ def test_cross_validate_task():
                                       'jsonlines_LogisticRegression.results.json')) as f:
         result_dict = json.load(f)[10]
 
-    assert_almost_equal(result_dict['score'], 0.517)
+    assert_almost_equal(result_dict['accuracy'], 0.517)
 
     # Check that the fold ids were saved correctly
     expected_skll_ids = {}
