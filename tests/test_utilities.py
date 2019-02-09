@@ -84,6 +84,9 @@ def tearDown():
     if exists(join(test_dir, 'test_generate_predictions.jsonlines')):
         os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
 
+    for f in glob(join(output_dir, 'output_test_*.tsv')):
+        os.unlink(f)
+
     for model_chunk in glob(join(output_dir,
                                  'test_print_model_weights.model*')):
         os.unlink(model_chunk)
