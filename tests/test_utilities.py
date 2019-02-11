@@ -766,7 +766,7 @@ def check_skll_convert(from_suffix, to_suffix):
 
 
 def test_skll_convert():
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines',
                                                           '.megam', '.tsv',
                                                           '.csv', '.arff',
                                                           '.libsvm'], 2):
@@ -832,6 +832,15 @@ def test_skll_convert_libsvm_map():
     # now ensure that this new featureset and the original
     # featureset are the same
     eq_(orig_fs, converted_fs)
+
+
+@raises(SystemExit)
+def test_skll_convert_no_labels_with_label_col():
+    """
+    Check that --no_labels/--label_col cannot both be specified for skll_convert
+    """
+    skll_convert_cmd = ['--no_labels', '--label_col', 't', 'foo.tsv', 'foo.libsvm']
+    sk.main(argv=skll_convert_cmd)
 
 
 def check_print_model_weights(task='classification'):
