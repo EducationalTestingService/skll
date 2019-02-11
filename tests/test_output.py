@@ -471,11 +471,13 @@ def test_learning_curve_implementation():
 
     # we don't want to filter out any features since scikit-learn
     # does not do that either
-    _ = Learner('MultinomialNB', min_feature_count=0)
-    train_scores2, test_scores2, train_sizes2 = l.learning_curve(fs,
-                                                                 cv_folds=cv_folds,
-                                                                 train_sizes=train_sizes,
-                                                                 metric='accuracy')
+    learner = Learner('MultinomialNB', min_feature_count=0)
+    (train_scores2,
+     test_scores2,
+     train_sizes2) = learner.learning_curve(fs,
+                                            cv_folds=cv_folds,
+                                            train_sizes=train_sizes,
+                                            metric='accuracy')
 
     assert np.all(train_sizes1 == train_sizes2)
     assert np.allclose(train_scores1, train_scores2)
