@@ -1806,6 +1806,29 @@ def test_learning_curve_no_metrics_and_no_objectives():
     yield check_config_parsing_value_error, config_path
 
 
+def test_learning_curve_bad_folds_specifications():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learning_curve_cv_folds_list': "[10]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'metrics': "['accuracy', 'f1_score_macro']",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'learning_curve_bad_folds_specifications')
+    yield check_config_parsing_value_error, config_path
+
+
 def test_config_parsing_param_grids_no_grid_search():
     """
     Test for warning if grid search is off but with param grids.
