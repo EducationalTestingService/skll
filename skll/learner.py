@@ -322,11 +322,11 @@ def _import_custom_learner(custom_learner_path, custom_learner_name):
 def _train_and_score(learner,
                      train_examples,
                      test_examples,
-                     objective='f1_score_micro'):
+                     metric):
     """
     A utility method to train a given learner instance on the given training examples,
     generate predictions on the training set itself and also the given
-    test set, and score those predictions using the given objective function.
+    test set, and score those predictions using the given metric.
     The method returns the train and test scores.
 
     Note that this method needs to be a top-level function since it is
@@ -342,9 +342,8 @@ def _train_and_score(learner,
         The training examples.
     test_examples : array-like, of length n_samples
         The test examples.
-    objective : str, optional
-        The objective function passed to ``use_score_func()``.
-        Defaults to ``'f1_score_micro'``.
+    metric : str
+        The scoring function passed to ``use_score_func()``.
 
     Returns
     -------
@@ -362,7 +361,7 @@ def _train_and_score(learner,
     if learner.model_type._estimator_type == 'classifier':
         test_label_list = np.unique(test_examples.labels).tolist()
         unseen_test_label_list = [label for label in test_label_list
-                                  if not label in learner.label_list]
+                                  if label not in learner.label_list]
         unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
                                                                 start=len(learner.label_list))}
         # combine the two dictionaries
@@ -371,13 +370,13 @@ def _train_and_score(learner,
         train_labels = np.array([train_and_test_label_dict[label]
                                  for label in train_examples.labels])
         test_labels = np.array([train_and_test_label_dict[label]
-                                 for label in test_examples.labels])
+                                for label in test_examples.labels])
     else:
         train_labels = train_examples.labels
         test_labels = test_examples.labels
 
-    train_score = use_score_func(objective, train_labels, train_predictions)
-    test_score = use_score_func(objective, test_labels, test_predictions)
+    train_score = use_score_func(metric, train_labels, train_predictions)
+    test_score = use_score_func(metric, test_labels, test_predictions)
     return train_score, test_score
 
 
@@ -566,8 +565,7 @@ def rescaled(cls):
         if self.rescale:
             # convert the predictions to z-scores,
             # then rescale to match the training set distribution
-            res = (((res - self.yhat_mean) / self.yhat_sd)
-                   * self.y_sd) + self.y_mean
+            res = (((res - self.yhat_mean) / self.yhat_sd) * self.y_sd) + self.y_mean
 
         if self.constrain:
             # apply min and max constraints
@@ -993,7 +991,7 @@ class Learner(object):
                 # need the original value of `std_`.
                 if (not hasattr(new_scaler, 'scale_') and
                         'std_' in new_scaler.__dict__):
-                    new_scaler.scale_ =  new_scaler.__dict__['std_']
+                    new_scaler.scale_ = new_scaler.__dict__['std_']
                     learner.scaler = new_scaler
             return learner
         else:
@@ -1058,9 +1056,9 @@ class Learner(object):
         res = {}
         intercept = None
         if (isinstance(self._model, LinearModel) or
-            (isinstance(self._model, SVR) and
-                 self._model.kernel == 'linear') or
-            isinstance(self._model, SGDRegressor)):
+           (isinstance(self._model, SVR) and
+                self._model.kernel == 'linear') or
+           isinstance(self._model, SGDRegressor)):
             # also includes RescaledRidge, RescaledSVR, RescaledSGDRegressor
 
             coef = self.model.coef_
@@ -1319,7 +1317,7 @@ class Learner(object):
                                              with_std=False)
 
     def train(self, examples, param_grid=None, grid_search_folds=3,
-              grid_search=True, grid_objective='f1_score_micro',
+              grid_search=True, grid_objective=None,
               grid_jobs=None, shuffle=False, create_label_dict=True):
         """
         Train a classification model and return the model, score, feature
@@ -1344,8 +1342,9 @@ class Learner(object):
             Defaults to ``True``.
         grid_objective : str, optional
             The name of the objective function to use when
-            doing the grid search.
-            Defaults to ``'f1_score_micro'``.
+            doing the grid search. Must be specified if
+            ``grid_search`` is ``True``.
+            Defaults to ``None``.
         grid_jobs : int, optional
             The number of jobs to run in parallel when doing the
             grid search. If ``None`` or 0, the number of
@@ -1373,7 +1372,8 @@ class Learner(object):
         Raises
         ------
         ValueError
-            If grid_objective is not a valid grid objective.
+            If grid_objective is not a valid grid objective or if
+            one is not specified when necessary.
         MemoryError
             If process runs out of memory converting training data to dense.
         ValueError
@@ -1381,8 +1381,12 @@ class Learner(object):
         """
 
         # if we are asked to do grid search, check that the grid objective
-        # function is valid for the selected learner
+        # is specified and that the specified function is valid for the
+        # selected learner
         if grid_search:
+            if not grid_objective:
+                raise ValueError("You must specify a grid objective "
+                                 "if doing grid search.")
             if self.model_type._estimator_type == 'regressor':
                 # types 2-4 are valid for all regression models
                 if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
@@ -1620,7 +1624,7 @@ class Learner(object):
             # identify unseen test labels if any and add a new dictionary for these
             # labels
             unseen_test_label_list = [label for label in test_label_list
-                                      if not label in self.label_list]
+                                      if label not in self.label_list]
             unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
                                                                     start=len(self.label_list))}
             # combine the two dictionaries
@@ -1650,8 +1654,7 @@ class Learner(object):
                                  for row in original_yhat])
 
             # calculate grid search objective function score, if specified
-            if (metric and (metric not in _CORRELATION_METRICS or
-                                   not self.probability)):
+            if (metric and (metric not in _CORRELATION_METRICS or not self.probability)):
                 try:
                     metric_scores[metric] = use_score_func(metric, ytest, yhat)
                 except ValueError:
@@ -1946,7 +1949,7 @@ class Learner(object):
                        grid_search=False,
                        grid_search_folds=3,
                        grid_jobs=None,
-                       grid_objective='f1_score_micro',
+                       grid_objective=None,
                        output_metrics=[],
                        prediction_prefix=None,
                        param_grid=None,
@@ -1984,8 +1987,9 @@ class Learner(object):
             Defaults to ``None``.
         grid_objective : str, optional
             The name of the objective function to use when
-            doing the grid search.
-            Defaults to ``'f1_score_micro'``.
+            doing the grid search. Must be specified if
+            ``grid_search`` is ``True``.
+            Defaults to ``None``.
         output_metrics : list of str, optional
             List of additional metric names to compute in
             addition to the metric used for grid search. Empty
@@ -2042,7 +2046,7 @@ class Learner(object):
         # _will_ work, we want to raise an error in general since it's better
         # to encode the labels as strings anyway.
         if (self.model_type._estimator_type == 'classifier' and
-            type_of_target(examples.labels) not in ['binary', 'multiclass']):
+                type_of_target(examples.labels) not in ['binary', 'multiclass']):
             raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -2159,9 +2163,9 @@ class Learner(object):
 
     def learning_curve(self,
                        examples,
+                       metric,
                        cv_folds=10,
-                       train_sizes=np.linspace(0.1, 1.0, 5),
-                       metric='f1_score_micro'):
+                       train_sizes=np.linspace(0.1, 1.0, 5)):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
@@ -2175,6 +2179,10 @@ class Learner(object):
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
+        metric : str
+            The name of the metric function to use
+            when computing the train and test scores
+            for the learning curve.
         train_sizes : list of float or int, optional
             Relative or absolute numbers of training examples
             that will be used to generate the learning curve.
@@ -2187,11 +2195,6 @@ class Learner(object):
             samples usually have to be big enough to contain
             at least one sample from each class.
             Defaults to  ``np.linspace(0.1, 1.0, 5)``.
-        metric : str, optional
-            The name of the metric function to use
-            when computing the train and test scores
-            for the learning curve. (default: 'f1_score_micro')
-            Defaults to ``'f1_score_micro'``.
 
         Returns
         -------

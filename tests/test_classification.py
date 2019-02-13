@@ -448,7 +448,7 @@ def test_predict_on_subset_with_existing_model():
                                        '_file_subset.jsonlines_RandomForestClassifier'
                                        '.results.json'))) as f:
         result_dict = json.load(f)[0]
-    assert_almost_equal(result_dict['score'], 0.7333333)
+    assert_almost_equal(result_dict['accuracy'], 0.7333333)
 
 
 def test_train_file_test_file_ablation():

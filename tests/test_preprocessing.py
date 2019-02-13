@@ -159,10 +159,9 @@ def test_class_map():
 
     make_class_map_data()
 
-    config_template_path = join(
-        _my_dir,
-        'configs',
-        'test_class_map.template.cfg')
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_class_map.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
@@ -172,8 +171,8 @@ def test_class_map():
         outd = json.loads(f.read())
         # outstr = f.read()
         # logistic_result_score = float(
-            # SCORE_OUTPUT_RE.search(outstr).groups()[0])
-        logistic_result_score = outd[0]['score']
+        # SCORE_OUTPUT_RE.search(outstr).groups()[0])
+        logistic_result_score = outd[0]['accuracy']
 
     assert_almost_equal(logistic_result_score, 0.5)
 
@@ -198,7 +197,7 @@ def test_class_map_feature_hasher():
         outd = json.loads(f.read())
         # logistic_result_score = float(
         #     SCORE_OUTPUT_RE.search(outstr).groups()[0])
-        logistic_result_score = outd[0]['score']
+        logistic_result_score = outd[0]['accuracy']
 
     assert_almost_equal(logistic_result_score, 0.5)
 
@@ -248,7 +247,7 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
                       pos_label_str=1)
 
     # train the learner on the training set and test on the testing set
-    learner.train(train_fs)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
     test_output = learner.evaluate(test_fs)
     fmeasures = [test_output[2][0]['F-measure'],
                  test_output[2][1]['F-measure']]

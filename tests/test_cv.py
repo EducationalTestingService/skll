@@ -86,7 +86,6 @@ def tearDown():
         os.unlink(output_file)
 
 
-
 def make_cv_folds_data(num_examples_per_fold=100,
                        num_folds=3,
                        use_feature_hashing=False):
@@ -167,7 +166,8 @@ def test_specified_cv_folds():
         folds = custom_cv_folds if not use_hashing else 10
         cv_output = learner.cross_validate(cv_fs,
                                            cv_folds=folds,
-                                           grid_search=True)
+                                           grid_search=True,
+                                           grid_objective='f1_score_micro')
         fold_test_scores = [t[-2] for t in cv_output[0]]
 
         overall_score = np.mean(fold_test_scores)
@@ -221,6 +221,7 @@ def test_load_cv_folds_non_float_ids():
     # now read the CSV file using _load_cv_folds, which should raise ValueError
     _load_cv_folds(fold_file_path, ids_to_floats=True)
 
+
 def test_retrieve_cv_folds():
     """
     Test to make sure that the fold ids get returned correctly after cross-validation
@@ -246,6 +247,7 @@ def test_retrieve_cv_folds():
                                                  stratified=True,
                                                  cv_folds=num_folds,
                                                  grid_search=True,
+                                                 grid_objective='f1_score_micro',
                                                  shuffle=False,
                                                  save_cv_folds=True)
     assert_equal(skll_fold_ids, expected_fold_ids)
@@ -255,6 +257,7 @@ def test_retrieve_cv_folds():
                                                  stratified=True,
                                                  cv_folds=custom_cv_folds,
                                                  grid_search=True,
+                                                 grid_objective='f1_score_micro',
                                                  shuffle=False,
                                                  save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
@@ -275,6 +278,7 @@ def test_retrieve_cv_folds():
                                                  stratified=False,
                                                  cv_folds=num_folds,
                                                  grid_search=False,
+                                                 grid_objective='f1_score_micro',
                                                  shuffle=False,
                                                  save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
@@ -282,9 +286,7 @@ def test_retrieve_cv_folds():
 
 def test_folds_file_logging_num_folds():
     """
-    Test that, when `folds_file` is used, the log prints the number of folds,
-     instead of the entire cv_folds data. And that the folds file warning shows up
-     in the log file.
+    Test when using `folds_file`, log shows number of folds and appropriate warning.
     """
     # Run experiment
     suffix = '.jsonlines'
@@ -344,8 +346,7 @@ def test_folds_file_logging_grid_search():
 
 def test_cross_validate_task():
     """
-    Test that 10-fold cross_validate experiments work.
-    Test that fold ids get correctly saved.
+    Test that 10-fold cross_validate experiments work and fold ids get saved.
     """
 
     # Run experiment
@@ -364,7 +365,7 @@ def test_cross_validate_task():
                                       'jsonlines_LogisticRegression.results.json')) as f:
         result_dict = json.load(f)[10]
 
-    assert_almost_equal(result_dict['score'], 0.517)
+    assert_almost_equal(result_dict['accuracy'], 0.517)
 
     # Check that the fold ids were saved correctly
     expected_skll_ids = {}
@@ -385,4 +386,3 @@ def test_cross_validate_task():
     expected_skll_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(expected_skll_ids.items()))
 
     assert_equal(skll_fold_ids_str, expected_skll_ids_str)
-
