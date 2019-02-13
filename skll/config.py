@@ -979,7 +979,7 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     # and parse it correctly
     metrics = yaml.safe_load(_fix_json(metrics))
     if not isinstance(metrics, list):
-        raise TypeError("{} should be a list".format(option_name))
+        raise TypeError("{} should be a list, not a {}.".format(option_name, type(metrics)))
 
     # `mean_squared_error` should be replaced with `neg_mean_squared_error`
     if 'mean_squared_error' in metrics:
