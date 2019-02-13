@@ -21,18 +21,19 @@ from glob import glob
 from itertools import product
 from os.path import abspath, dirname, join, exists
 
-from nose.tools import eq_, assert_almost_equal
+from nose.tools import eq_, assert_almost_equal, raises
 
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
+from sklearn.linear_model import LogisticRegression
 from sklearn.utils.testing import assert_greater, assert_less
 
 from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
 from skll.experiments import run_configuration
-from skll.learner import Learner
+from skll.learner import Learner, rescaled
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
 from utils import make_regression_data, fill_in_config_paths_for_fancy_output
@@ -676,10 +677,19 @@ def test_dummy_regressor_predict():
                                               {"strategy": "quantile", "quantile": 0.0},
                                               {"strategy": "quantile", "quantile": 1.0},
                                               {"strategy": "constant", "constant": 1}],
-                                             [np.ones(10)*np.mean(train_labels),
-                                              np.ones(10)*np.median(train_labels),
-                                              np.ones(10)*np.median(train_labels),
-                                              np.ones(10)*np.min(train_labels),
-                                              np.ones(10)*np.max(train_labels),
+                                             [np.ones(10) * np.mean(train_labels),
+                                              np.ones(10) * np.median(train_labels),
+                                              np.ones(10) * np.median(train_labels),
+                                              np.ones(10) * np.min(train_labels),
+                                              np.ones(10) * np.max(train_labels),
                                               np.ones(10)]):
         yield check_dummy_regressor_predict, model_args, train_labels, expected_output
+
+
+@raises(ValueError)
+def test_learner_api_rescaling_classifier():
+    """
+    Check that rescaling fails for classifiers
+    """
+
+    _ = rescaled(LogisticRegression)
