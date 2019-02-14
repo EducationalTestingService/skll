@@ -1385,8 +1385,8 @@ class Learner(object):
         # selected learner
         if grid_search:
             if not grid_objective:
-                raise ValueError("You must specify a grid objective "
-                                 "or turn off grid search.")
+                raise ValueError("Grid search is on by default. You must either "
+                                 "specify a grid objective or turn off grid search.")
             if self.model_type._estimator_type == 'regressor':
                 # types 2-4 are valid for all regression models
                 if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
