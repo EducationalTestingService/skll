@@ -17,6 +17,7 @@ import itertools
 import json
 import os
 import re
+import sys
 import warnings
 
 from io import open
@@ -26,7 +27,6 @@ import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
 
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.feature_extraction import FeatureHasher
 from sklearn.metrics import accuracy_score
 
 from skll.data import FeatureSet
@@ -34,7 +34,7 @@ from skll.data.readers import NDJReader
 from skll.data.writers import NDJWriter
 from skll.config import _parse_config_file
 from skll.experiments import run_configuration
-from skll.learner import Learner
+from skll.learner import Learner, _train_and_score
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
 from utils import (make_classification_data, make_regression_data,
@@ -671,3 +671,81 @@ def test_bad_xval_float_classes():
 
     yield check_bad_xval_float_classes, True
     yield check_bad_xval_float_classes, False
+
+
+def check_train_and_score_function(model_type):
+    """
+    Check that the _train_and_score() function works as expected
+    """
+
+    # create train and test data
+    (train_fs,
+     test_fs) = make_classification_data(num_examples=500,
+                                         train_test_ratio=0.7,
+                                         num_features=5,
+                                         use_feature_hashing=False,
+                                         non_negative=True)
+
+    # call _train_and_score() on this data
+    estimator_name = 'LogisticRegression' if model_type == 'classifier' else 'Ridge'
+    metric = 'accuracy' if model_type == 'classifier' else 'pearson'
+    learner1 = Learner(estimator_name)
+    train_score1, test_score1 = _train_and_score(learner1, train_fs, test_fs, metric)
+
+    # this should yield identical results when training another instance
+    # of the same learner without grid search and shuffling and evaluating
+    # that instance on the train and the test set
+    learner2 = Learner(estimator_name)
+    learner2.train(train_fs, grid_search=False, shuffle=False)
+    train_score2 = learner2.evaluate(train_fs, output_metrics=[metric])[-1][metric]
+    test_score2 = learner2.evaluate(test_fs, output_metrics=[metric])[-1][metric]
+
+    eq_(train_score1, train_score2)
+    eq_(test_score1, test_score2)
+
+
+def test_train_and_score_function():
+    yield check_train_and_score_function, 'classifier'
+    yield check_train_and_score_function, 'regressor'
+
+
+@raises(ValueError)
+def test_learner_api_grid_search_no_objective():
+
+    (train_fs,
+     test_fs) = make_classification_data(num_examples=500,
+                                         train_test_ratio=0.7,
+                                         num_features=5,
+                                         use_feature_hashing=False,
+                                         non_negative=True)
+    learner = Learner('LogisticRegression')
+    _ = learner.train(train_fs)
+
+
+def test_learner_api_load_into_existing_instance():
+    """
+    Check that `Learner.load()` works as expected
+    """
+
+    # create a LinearSVC instance and train it on some data
+    learner1 = Learner('LinearSVC')
+    (train_fs,
+     test_fs) = make_classification_data(num_examples=200,
+                                         num_features=5,
+                                         use_feature_hashing=False,
+                                         non_negative=True)
+    learner1.train(train_fs, grid_search=False)
+
+    # now use `load()` to replace the existing instance with a
+    # different saved learner
+    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.{}.model'.format(sys.version_info[0]))
+    learner1.load(other_model_file)
+
+    # now load the saved model into another instance using the class method
+    # `from_file()`
+    learner2 = Learner.from_file(other_model_file)
+
+    # check that the two instances are now basically the same
+    eq_(learner1.model_type, learner2.model_type)
+    eq_(learner1.model_params, learner2.model_params)
+    eq_(learner1.model_kwargs, learner2.model_kwargs)
