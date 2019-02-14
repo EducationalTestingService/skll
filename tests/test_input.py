@@ -225,8 +225,7 @@ def test_config_parsing_no_name():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has no experiment name
     values_to_fill_dict = {'train_directory': train_dir,
                            'test_directory': test_dir,
                            'task': 'evaluate',
@@ -282,8 +281,7 @@ def test_config_parsing_bad_learner():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has bas learner specifications
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -318,8 +316,7 @@ def test_config_parsing_bad_sampler():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has a bad sampling information
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -348,8 +345,7 @@ def test_config_parsing_bad_hashing():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has bad feature hashing information
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -377,8 +373,7 @@ def test_config_parsing_bad_featuresets():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has bad feature sets
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -410,8 +405,7 @@ def test_config_parsing_bad_featurenames():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has bad feature names
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -446,8 +440,7 @@ def test_config_parsing_bad_scaling():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has bad scaling information
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -481,8 +474,7 @@ def test_config_parsing_bad_train():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has a bad train paths
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'test_directory': test_dir,
@@ -532,8 +524,7 @@ def test_config_parsing_bad_test():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has bad test paths
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -583,12 +574,10 @@ def test_config_parsing_grid_search_but_no_objectives():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has grid search turned on but no objectives
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
-                           'grid_search': 'true',
                            'test_directory': test_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
@@ -613,8 +602,7 @@ def test_config_parsing_bad_objective():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has an invalid objective value
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -623,6 +611,7 @@ def test_config_parsing_bad_objective():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
+                           'grid_search': 'true',
                            'objectives': "['foobar']"}
 
     config_template_path = join(_my_dir, 'configs',
@@ -643,9 +632,7 @@ def test_config_parsing_bad_objectives():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
-
+    # make a simple config file that has a mistyped objective value
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
     values_to_fill_dict = {'experiment_name': 'config_parsing',
@@ -656,6 +643,7 @@ def test_config_parsing_bad_objectives():
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'results': output_dir,
+                           'grid_search': 'true',
                            'objectives': "accuracy"}
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
@@ -672,8 +660,7 @@ def test_config_parsing_bad_metric():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has bad metrics
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -702,8 +689,7 @@ def test_config_parsing_bad_metric_2():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has bad metrics
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -732,8 +718,6 @@ def test_config_parsing_log_loss_no_probability():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -755,8 +739,9 @@ def test_config_parsing_log_loss_no_probability():
 
 
 def test_config_parsing_bad_task_paths():
+
     # Test to ensure config file parsing raises an error with various
-    # incorrectly set path
+    # incorrectly set paths
 
     train_dir = join(_my_dir, 'train')
     test_dir = join(_my_dir, 'test')
@@ -968,7 +953,7 @@ def test_config_parsing_mislocated_input_path():
     train_dir = 'train'
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has an invalid option
+    # make a simple config file that has a mislocated path
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'cross_validate',
                            'train_directory': train_dir,
@@ -989,6 +974,9 @@ def test_config_parsing_mislocated_input_path():
 
 
 def test_config_parsing_mse_to_neg_mse():
+    """
+    Check that `mean_squared_error` gets normalized properly
+    """
 
     train_dir = join('..', 'train')
     output_dir = join(_my_dir, 'output')
@@ -1027,11 +1015,13 @@ def test_config_parsing_mse_to_neg_mse():
 
 
 def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
+    """
+    Check that tuning objectives are not needed for learning curve task
+    """
 
     train_dir = join('..', 'train')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has an invalid option
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'learning_curve',
                            'train_directory': train_dir,
@@ -1070,8 +1060,8 @@ def test_config_parsing_relative_input_path():
 
     train_dir = join('..', 'train')
     output_dir = join(_my_dir, 'output')
-
-    # make a simple config file that has an invalid option
+    
+    # make a simple config file that has relative paths
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'cross_validate',
                            'train_directory': train_dir,
@@ -1365,7 +1355,7 @@ def check_cv_folds_and_grid_search_folds(task,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
-                           'objectives': "['f1_score_macro']"}
+                           'objectives': "['f1_score_mcro']"}
 
     # we need the models field when training but the results field
     # when cross-validating
@@ -1837,8 +1827,7 @@ def test_config_parsing_param_grids_no_grid_search():
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that turns off grid search but specifies param grids
     values_to_fill_dict = {'experiment_name': 'config_parsing_param_grids_no_grid_search',
                            'task': 'train',
                            'train_directory': train_dir,
@@ -1846,7 +1835,7 @@ def test_config_parsing_param_grids_no_grid_search():
                            'learners': "['LinearSVC']",
                            'log': output_dir,
                            'models': output_dir,
-                           'objectives': "['f1_score_macro']",
+                           'grid_search': 'false',
                            'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"}
 
     config_template_path = join(_my_dir, 'configs',
@@ -1873,8 +1862,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad task
-    # but everything else is correct
+    # make a simple config file that has grid search off but still specifies objectives
     values_to_fill_dict = {'experiment_name': 'config_parsing_objectives_no_grid_search',
                            'task': 'train',
                            'train_directory': train_dir,
@@ -1882,6 +1870,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
                            'learners': "['LinearSVC']",
                            'log': output_dir,
                            'models': output_dir,
+                           'grid_search': 'false',
                            'objectives': "['f1_score_macro', 'accuracy']"}
 
     config_template_path = join(_my_dir, 'configs',

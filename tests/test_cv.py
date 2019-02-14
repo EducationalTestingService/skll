@@ -278,7 +278,6 @@ def test_retrieve_cv_folds():
                                                  stratified=False,
                                                  cv_folds=num_folds,
                                                  grid_search=False,
-                                                 grid_objective='f1_score_micro',
                                                  shuffle=False,
                                                  save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)

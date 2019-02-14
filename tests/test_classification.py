@@ -585,9 +585,9 @@ def test_new_labels_in_test_set_change_order():
     train_fs, test_fs = make_classification_data(num_labels=3,
                                                  train_test_ratio=0.8)
     # change train labels to create a gap
-    train_fs.labels = train_fs.labels*10
+    train_fs.labels = train_fs.labels * 10
     # add new test labels
-    test_fs.labels = test_fs.labels*10
+    test_fs.labels = test_fs.labels * 10
     test_fs.labels[-3:] = 15
 
     learner = Learner('SVC')
@@ -604,7 +604,7 @@ def test_all_new_labels_in_test():
     train_fs, test_fs = make_classification_data(num_labels=3,
                                                  train_test_ratio=0.8)
     # change all test labels
-    test_fs.labels = test_fs.labels+3
+    test_fs.labels = test_fs.labels + 3
 
     learner = Learner('SVC')
     learner.train(train_fs, grid_search=False)
@@ -644,6 +644,7 @@ def test_xval_float_classes_as_strings():
     prediction_prefix = join(_my_dir, 'output', 'float_class')
     learner = Learner('LogisticRegression')
     learner.cross_validate(float_class_fs,
+                           grid_search=True,
                            grid_objective='accuracy',
                            prediction_prefix=prediction_prefix)
 
@@ -663,6 +664,7 @@ def check_bad_xval_float_classes(do_stratified_xval):
     learner = Learner('LogisticRegression')
     learner.cross_validate(float_class_fs,
                            stratified=do_stratified_xval,
+                           grid_search=True,
                            grid_objective='accuracy',
                            prediction_prefix=prediction_prefix)
 
