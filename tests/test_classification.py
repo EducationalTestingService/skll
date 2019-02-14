@@ -288,17 +288,6 @@ def test_mlp_classification():
     assert_almost_equal(accuracy, 0.858, places=3)
 
 
-def test_binary_classification_with_correlation_metric():
-    train_fs, test_fs = make_classification_data(num_examples=600,
-                                                 train_test_ratio=0.7,
-                                                 num_features=5)
-    learner = Learner('LogisticRegression')
-    train_score = learner.train(train_fs,
-                                grid_search=True,
-                                grid_objective='pearson')
-    assert_almost_equal(train_score, 0.5265, places=4)
-
-
 def check_sparse_predict_sampler(use_feature_hashing=False):
     train_fs, test_fs = make_sparse_data(
         use_feature_hashing=use_feature_hashing)
