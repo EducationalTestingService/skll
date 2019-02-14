@@ -673,7 +673,7 @@ def test_bad_xval_float_classes():
     yield check_bad_xval_float_classes, False
 
 
-def test_train_and_score_function():
+def check_train_and_score_function(model_type):
     """
     Check that the _train_and_score() function works as expected
     """
@@ -687,19 +687,39 @@ def test_train_and_score_function():
                                          non_negative=True)
 
     # call _train_and_score() on this data
-    learner1 = Learner('LogisticRegression')
-    train_score1, test_score1 = _train_and_score(learner1, train_fs, test_fs, 'accuracy')
+    estimator_name = 'LogisticRegression' if model_type == 'classifier' else 'Ridge'
+    metric = 'accuracy' if model_type == 'classifier' else 'pearson'
+    learner1 = Learner(estimator_name)
+    train_score1, test_score1 = _train_and_score(learner1, train_fs, test_fs, metric)
 
     # this should yield identical results when training another instance
     # of the same learner without grid search and shuffling and evaluating
     # that instance on the train and the test set
-    learner2 = Learner("LogisticRegression")
+    learner2 = Learner(estimator_name)
     learner2.train(train_fs, grid_search=False, shuffle=False)
-    train_score2 = learner2.evaluate(train_fs, output_metrics=['accuracy'])[-1]['accuracy']
-    test_score2 = learner2.evaluate(test_fs, output_metrics=['accuracy'])[-1]['accuracy']
+    train_score2 = learner2.evaluate(train_fs, output_metrics=[metric])[-1][metric]
+    test_score2 = learner2.evaluate(test_fs, output_metrics=[metric])[-1][metric]
 
     eq_(train_score1, train_score2)
     eq_(test_score1, test_score2)
+
+
+def test_train_and_score_function():
+    yield check_train_and_score_function, 'classifier'
+    yield check_train_and_score_function, 'regressor'
+
+
+@raises(ValueError)
+def test_learner_api_grid_search_no_objective():
+
+    (train_fs,
+     test_fs) = make_classification_data(num_examples=500,
+                                         train_test_ratio=0.7,
+                                         num_features=5,
+                                         use_feature_hashing=False,
+                                         non_negative=True)
+    learner = Learner('LogisticRegression')
+    _ = learner.train(train_fs)
 
 
 def test_learner_api_load_into_existing_instance():
