@@ -757,7 +757,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if task == 'learning_curve' and do_grid_search:
         do_grid_search = False
         logger.warning("Grid search is not supported during "
-                       "learning curve generation. Ignoring.")
+                       "learning curve generation. Disabling.")
 
     # Check if `param_grids` is specified, but `do_grid_search` is False
     if param_grid_list and not do_grid_search:

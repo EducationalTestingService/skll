@@ -1051,7 +1051,7 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
      class_map, custom_learner_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
-    eq_(do_grid_search, True)
+    eq_(do_grid_search, False)
     eq_(grid_objectives, [])
     eq_(output_metrics, ['neg_mean_squared_error'])
 
@@ -1060,7 +1060,7 @@ def test_config_parsing_relative_input_path():
 
     train_dir = join('..', 'train')
     output_dir = join(_my_dir, 'output')
-    
+
     # make a simple config file that has relative paths
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'cross_validate',
