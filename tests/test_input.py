@@ -1026,7 +1026,6 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
                            'task': 'learning_curve',
                            'train_directory': train_dir,
                            'featuresets': "[['f1', 'f2', 'f3']]",
-                           'grid_search': 'true',
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'metrics': "['neg_mean_squared_error']",
