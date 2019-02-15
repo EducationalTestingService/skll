@@ -712,7 +712,7 @@ def test_train_and_score_function():
 
 
 @raises(ValueError)
-def test_learner_api_grid_search_no_objective():
+def check_learner_api_grid_search_no_objective(task='train'):
 
     (train_fs,
      test_fs) = make_classification_data(num_examples=500,
@@ -721,7 +721,15 @@ def test_learner_api_grid_search_no_objective():
                                          use_feature_hashing=False,
                                          non_negative=True)
     learner = Learner('LogisticRegression')
-    _ = learner.train(train_fs)
+    if task == 'train':
+        _ = learner.train(train_fs)
+    else:
+        _ = learner.cross_validate(train_fs)
+
+
+def test_learner_api_grid_search_no_objective():
+    yield check_learner_api_grid_search_no_objective, 'train'
+    yield check_learner_api_grid_search_no_objective, 'cross_validate'
 
 
 def test_learner_api_load_into_existing_instance():
