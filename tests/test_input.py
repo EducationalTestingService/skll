@@ -281,7 +281,7 @@ def test_config_parsing_bad_learner():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has bas learner specifications
+    # make a simple config file that has bad learner specifications
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -316,7 +316,7 @@ def test_config_parsing_bad_sampler():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has a bad sampling information
+    # make a simple config file that has bad sampling information
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
@@ -524,7 +524,7 @@ def test_config_parsing_bad_test():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
 
-    # make a simple config file that has bad test paths
+    # make a simple config file that has bad test path
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'task': 'evaluate',
                            'train_directory': train_dir,
