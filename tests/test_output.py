@@ -154,14 +154,14 @@ def check_summary_score(use_feature_hashing,
 
     if use_feature_hashing:
         cfgfile = ('test_summary_feature_hasher_with_metrics.template.cfg' if
-                    use_additional_metrics else 'test_summary_feature_hasher.template.cfg')
+                   use_additional_metrics else 'test_summary_feature_hasher.template.cfg')
         outprefix = ('test_summary_feature_hasher_with_metrics_test_summary' if
                      use_additional_metrics else 'test_summary_feature_hasher_test_summary')
         summprefix = ('test_summary_feature_hasher_with_metrics' if
                       use_additional_metrics else 'test_summary_feature_hasher')
     else:
         cfgfile = ('test_summary_with_metrics.template.cfg' if
-                    use_additional_metrics else 'test_summary.template.cfg')
+                   use_additional_metrics else 'test_summary.template.cfg')
         outprefix = ('test_summary_with_metrics_test_summary' if
                      use_additional_metrics else 'test_summary_test_summary')
         summprefix = ('test_summary_with_metrics' if
@@ -258,7 +258,7 @@ def check_summary_score(use_feature_hashing,
 
     if not use_feature_hashing:
         test_tuples.append((naivebayes_result_score,
-                             naivebayes_summary_score,
+                            naivebayes_summary_score,
                             'MultinomialNB'))
         if use_additional_metrics:
             test_tuples.extend([(nb_result_additional_metric1,
@@ -606,6 +606,7 @@ def test_learning_curve_plots_with_objectives():
         ok_(exists(join(_my_dir,
                         'output',
                         '{}_{}.png'.format(outprefix, featureset_name))))
+
 
 @attr('have_pandas_and_seaborn')
 def test_learning_curve_ylimits():

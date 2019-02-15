@@ -100,8 +100,8 @@ def check_rescaling(name, grid_search=False):
     # train both the regular regressor and the rescaled regressor
     # with and without using grid search
     if grid_search:
-        learner.train(train_fs, grid_objective='pearson')
-        rescaled_learner.train(train_fs, grid_objective='pearson')
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
+        rescaled_learner.train(train_fs, grid_search=True, grid_objective='pearson')
     else:
         learner.train(train_fs, grid_search=False)
         rescaled_learner.train(train_fs, grid_search=False)
@@ -180,7 +180,7 @@ def check_linear_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson')
+    learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # make sure that the weights are close to the weights
     # that we got from make_regression_data. Take the
@@ -258,7 +258,7 @@ def check_non_linear_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson')
+    learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # Note that we cannot check the feature weights here
     # since `model_params()` is not defined for non-linear
@@ -315,7 +315,7 @@ def check_tree_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson')
+    learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # make sure that the feature importances are as expected.
     if name.endswith('DecisionTreeRegressor'):
@@ -391,7 +391,7 @@ def check_ensemble_models(name,
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_objective='pearson')
+    learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # make sure that the feature importances are as expected.
     if name.endswith('AdaBoostRegressor'):
@@ -478,7 +478,7 @@ def test_additional_metrics():
 
     # train a regression model using the train feature set
     learner = Learner('LinearRegression')
-    learner.train(train_fs, grid_objective='pearson')
+    learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # evaluate the trained model using the test feature set
     results = learner.evaluate(test_fs, output_metrics=['spearman',
@@ -499,7 +499,7 @@ def test_fancy_output():
 
     # train a regression model using the train feature set
     learner = Learner('LinearRegression')
-    learner.train(train_fs, grid_objective='pearson')
+    learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # evaluate the trained model using the test feature set
     resultdict = learner.evaluate(test_fs)

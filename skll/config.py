@@ -58,7 +58,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'featuresets': '[]',
                     'featureset_names': '[]',
                     'fixed_parameters': '[]',
-                    'grid_search': 'False',
+                    'grid_search': 'True',
                     'grid_search_folds': '3',
                     'grid_search_jobs': '0',
                     'hasher_features': '0',
@@ -752,6 +752,13 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                                                   'objectives',
                                                   logger=logger)
 
+    # if we are doing learning curves , we don't care about
+    # grid search
+    if task == 'learning_curve' and do_grid_search:
+        do_grid_search = False
+        logger.warning("Grid search is not supported during "
+                       "learning curve generation. Disabling.")
+
     # Check if `param_grids` is specified, but `do_grid_search` is False
     if param_grid_list and not do_grid_search:
         logger.warning('Since "grid_search" is set to False, the specified'
@@ -790,7 +797,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                          'predict.')
     if task in ['cross_validate', 'evaluate', 'train']:
         if do_grid_search and len(grid_objectives) == 0:
-            raise ValueError('You must specify a list of objectives if doing grid search.')
+            raise ValueError('Grid search is on. Either specify a list of tuning '
+                             'objectives or set `grid_search` to `false` in the '
+                             'Tuning section.')
         if not do_grid_search and len(grid_objectives) > 0:
             logger.warning('Since "grid_search" is set to False, any specified'
                            ' "objectives" will be ignored.')

@@ -1048,10 +1048,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     # No grid search or ablation for learning curve generation
     if task == 'learning_curve':
-        if do_grid_search:
-            do_grid_search = False
-            logger.warning("Grid search is not supported during "
-                           "learning curve generation. Ignoring.")
         if ablation is None or ablation > 0:
             ablation = 0
             logger.warning("Ablating features is not supported during "

@@ -18,7 +18,6 @@ from os.path import abspath, dirname, exists, join
 from nose.tools import raises
 from numpy.testing import assert_almost_equal
 
-from skll.data import FeatureSet
 from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.metrics import kappa
