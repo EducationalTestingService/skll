@@ -1204,8 +1204,9 @@ def check_config_parsing_metrics_and_objectives_overlap(task,
         values_to_fill_dict['test_directory'] = test_dir
 
     if objectives:
-        values_to_fill_dict['grid_search'] = 'true'
         values_to_fill_dict['objectives'] = str(objectives)
+    else:
+        values_to_fill_dict['grid_search'] = 'false'
 
     config_template_path = join(_my_dir, 'configs',
                                 'test_config_parsing.template.cfg')
@@ -1355,7 +1356,7 @@ def check_cv_folds_and_grid_search_folds(task,
                            'featuresets': "[['f1', 'f2', 'f3']]",
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
-                           'objectives': "['f1_score_mcro']"}
+                           'objectives': "['f1_score_macro']"}
 
     # we need the models field when training but the results field
     # when cross-validating
