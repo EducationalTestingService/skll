@@ -1946,7 +1946,7 @@ class Learner(object):
                        examples,
                        stratified=True,
                        cv_folds=10,
-                       grid_search=False,
+                       grid_search=True,
                        grid_search_folds=3,
                        grid_jobs=None,
                        grid_objective=None,
@@ -2048,6 +2048,15 @@ class Learner(object):
         if (self.model_type._estimator_type == 'classifier' and
                 type_of_target(examples.labels) not in ['binary', 'multiclass']):
             raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
+
+        # check that we have an objective since grid search is on by default
+        # Note that `train()` would raise this error anyway later but it's
+        # better to raise this early on so rather than after a whole bunch of
+        # stuff has happened
+        if grid_search:
+            if not grid_objective:
+                raise ValueError("Grid search is on by default. You must either "
+                                 "specify a grid objective or turn off grid search.")
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
