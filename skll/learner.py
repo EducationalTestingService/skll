@@ -14,6 +14,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import copy
 import inspect
+import math
 import logging
 import os
 import sys
@@ -1071,9 +1072,19 @@ class Learner(object):
             # inverse transform to get indices for before feature selection
             coef = coef.reshape(1, -1)
             coef = self.feat_selector.inverse_transform(coef)[0]
-            for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                if coef[idx]:
-                    res[feat] = coef[idx]
+            if isinstance(self.feat_vectorizer, FeatureHasher):
+                self.logger.warning("No feature names are available since this model was trained on hashed features.")
+                num_features = len(coef)
+                index_width_in_feature_name = math.floor(math.log10(num_features)) + 1
+                for idx in range(num_features):
+                    if coef[idx]:
+                        index_str = str(idx + 1).zfill(index_width_in_feature_name)
+                        feature_name = 'hashed_feature_{}'.format(index_str)
+                        res[feature_name] = coef[idx]
+            else:
+                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
+                    if coef[idx]:
+                        res[feat] = coef[idx]
 
         elif isinstance(self._model, LinearSVC) or isinstance(self._model, LogisticRegression):
             label_list = self.label_list
@@ -1084,13 +1095,25 @@ class Learner(object):
             if len(self.label_list) == 2:
                 label_list = self.label_list[-1:]
 
+            if isinstance(self.feat_vectorizer, FeatureHasher):
+                self.logger.warning("No feature names are available since this model was trained on hashed features.")
+
             for i, label in enumerate(label_list):
                 coef = self.model.coef_[i]
                 coef = coef.reshape(1, -1)
                 coef = self.feat_selector.inverse_transform(coef)[0]
-                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                    if coef[idx]:
-                        res['{}\t{}'.format(label, feat)] = coef[idx]
+                if isinstance(self.feat_vectorizer, FeatureHasher):
+                    num_features = len(coef)
+                    index_width_in_feature_name = math.floor(math.log10(num_features)) + 1
+                    for idx in range(num_features):
+                        if coef[idx]:
+                            index_str = str(idx + 1).zfill(index_width_in_feature_name)
+                            feature_name = '{}\thashed_feature_{}'.format(label, index_str)
+                            res[feature_name] = coef[idx]
+                else:
+                    for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
+                        if coef[idx]:
+                            res['{}\t{}'.format(label, feat)] = coef[idx]
 
             if isinstance(self.model.intercept_, float):
                 intercept = {'_intercept_': self.model.intercept_}
@@ -1109,18 +1132,27 @@ class Learner(object):
         # "0 vs 2", ... "0 vs n", "1 vs 2", "1 vs 3", "1 vs n", ... "n-1 vs n".
         elif isinstance(self._model, SVC) and self._model.kernel == 'linear':
             intercept = {}
+            if isinstance(self.feat_vectorizer, FeatureHasher):
+                self.logger.warning("No feature names are available since this model was trained on hashed features.")
             for i, class_pair in enumerate(combinations(range(len(self.label_list)), 2)):
                 coef = self.model.coef_[i]
                 coef = coef.toarray()
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 class1 = self.label_list[class_pair[0]]
                 class2 = self.label_list[class_pair[1]]
-                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                    if coef[idx]:
-                        res['{}-vs-{}\t{}'.format(class1, class2, feat)] = coef[idx]
-
+                if isinstance(self.feat_vectorizer, FeatureHasher):
+                    num_features = len(coef)
+                    index_width_in_feature_name = math.floor(math.log10(num_features)) + 1
+                    for idx in range(num_features):
+                        if coef[idx]:
+                            index_str = str(idx + 1).zfill(index_width_in_feature_name)
+                            feature_name = '{}-vs-{}\thashed_feature_{}'.format(class1, class2, index_str)
+                            res[feature_name] = coef[idx]
+                else:
+                    for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
+                        if coef[idx]:
+                            res['{}-vs-{}\t{}'.format(class1, class2, feat)] = coef[idx]
                 intercept['{}-vs-{}'.format(class1, class2)] = self.model.intercept_[i]
-
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
