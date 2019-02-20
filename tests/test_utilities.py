@@ -32,6 +32,9 @@ from nose.tools import eq_, assert_almost_equal, raises
 from numpy.testing import assert_allclose, assert_array_almost_equal
 from numpy import concatenate
 
+from sklearn.feature_extraction import FeatureHasher
+
+import numpy as np
 import skll
 import skll.utilities.compute_eval_from_predictions as cefp
 from skll.utilities.compute_eval_from_predictions import get_prediction_from_probabilities
@@ -847,30 +850,50 @@ def check_print_model_weights(task='classification'):
     # create some simple classification or regression data
     if task == 'classification' or task == 'classification_no_intercept':
         train_fs, _ = make_classification_data(train_test_ratio=0.8)
+    elif task == 'classification_with_hashing':
+        train_fs, _ = make_classification_data(train_test_ratio=0.8,
+                                               use_feature_hashing=True,
+                                               feature_bins=10)
     elif task in ['multiclass_classification', 'multiclass_classification_svc']:
         train_fs, _ = make_classification_data(train_test_ratio=0.8, num_labels=3)
+    elif task in ['multiclass_classification_with_hashing',
+                  'multiclass_classification_svc_with_hashing']:
+        train_fs, _ = make_classification_data(train_test_ratio=0.8,
+                                               num_labels=3,
+                                               use_feature_hashing=True,
+                                               feature_bins=10)
+
+    elif task == 'regression_with_hashing':
+        train_fs, _, _ = make_regression_data(num_features=4,
+                                              train_test_ratio=0.8,
+                                              use_feature_hashing=True,
+                                              feature_bins=2)
     else:
         train_fs, _, _ = make_regression_data(num_features=4,
                                               train_test_ratio=0.8)
 
     # now train the appropriate model
-    if task == 'classification' or task == 'multiclass_classification':
+    if task in ['classification',
+                'classification_with_hashing',
+                'multiclass_classification',
+                'multiclass_classification_with_hashing']:
         learner = Learner('LogisticRegression')
-        learner.train(train_fs, grid_objective='f1_score_micro')
-    elif task == 'multiclass_classification_svc':
+        learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+    elif task in ['multiclass_classification_svc', 'multiclass_classification_svc_with_hashing']:
         learner = Learner('SVC', model_kwargs={'kernel': 'linear'})
-        learner.train(train_fs, grid_objective='f1_score_micro')
+        learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
     elif task == 'classification_no_intercept':
         learner = Learner('LogisticRegression')
         learner.train(train_fs,
+                      grid_search=True,
                       grid_objective='f1_score_micro',
                       param_grid=[{'fit_intercept': [False]}])
-    elif task == 'regression':
+    elif task in ['regression', 'regression_with_hashing']:
         learner = Learner('LinearRegression')
-        learner.train(train_fs, grid_objective='pearson')
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
     else:
         learner = Learner('LinearSVR')
-        learner.train(train_fs, grid_objective='pearson')
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # now save the model to disk
     model_file = join(_my_dir, 'output',
@@ -895,17 +918,18 @@ def check_print_model_weights(task='classification'):
 
     # now parse the output of the print_model_weight command
     # and get the intercept and the feature values
-    if task == 'classification':
+    if task in ['classification', 'classification_with_hashing']:
         lines_to_parse = [l for l in out.split('\n')[1:] if l]
         intercept = safe_float(lines_to_parse[0].split('\t')[0])
         feature_values = []
         for ltp in lines_to_parse[1:]:
-            fields = ltp.split('\t')
-            feature_values.append((fields[2], safe_float(fields[0])))
+            weight, _, feature_name = ltp.split('\t')
+            feature_values.append((feature_name, safe_float(weight)))
         feature_values = [t[1] for t in sorted(feature_values)]
         assert_almost_equal(intercept, learner.model.intercept_[0])
         assert_allclose(learner.model.coef_[0], feature_values)
-    elif task == 'multiclass_classification':
+    elif task in ['multiclass_classification',
+                  'multiclass_classification_with_hashing']:
         # for multiple classes we get an intercept for each class
         # as well as a list of weights for each class
 
@@ -916,8 +940,8 @@ def check_print_model_weights(task='classification'):
 
         feature_values = [[], [], []]
         for ltp in lines_to_parse[3:]:
-            fields = ltp.split('\t')
-            feature_values[int(fields[1])].append((fields[2], safe_float(fields[0])))
+            weight, label, feature_name = ltp.split('\t')
+            feature_values[int(label)].append((feature_name, safe_float(weight)))
 
         for index, weights in enumerate(feature_values):
             feature_values[index] = [t[1] for t in sorted(weights)]
@@ -926,7 +950,8 @@ def check_print_model_weights(task='classification'):
             assert_array_almost_equal(weights, feature_values[index])
 
         assert_array_almost_equal(intercept, learner.model.intercept_)
-    elif task == 'multiclass_classification_svc':
+    elif task in ['multiclass_classification_svc',
+                  'multiclass_classification_svc_with_hashing']:
         # for multiple classes with the SVC with a linear kernel,
         # we get an intercept for each class pair combination
         # as well as a list of weights for each class pair
@@ -950,7 +975,10 @@ def check_print_model_weights(task='classification'):
             (weight, class_pair, feature) = ltp.split('\t')
             if class_pair not in parsed_weights_dict:
                 parsed_weights_dict[class_pair] = [0] * 10
-            feature_index = learner.feat_vectorizer.vocabulary_[feature]
+            if isinstance(learner.feat_vectorizer, FeatureHasher):
+                feature_index = int(feature.split('_')[-1]) - 1
+            else:
+                feature_index = learner.feat_vectorizer.vocabulary_[feature]
             parsed_weights_dict['{}'.format(class_pair)][feature_index] = safe_float(weight)
 
         # to validate that our coefficients are correct, we will
@@ -961,7 +989,10 @@ def check_print_model_weights(task='classification'):
         # since they _only_ depend on the class pair
         for idx, (class1, class2) in enumerate(itertools.combinations([0, 1, 2], 2)):
             class_pair_label = '{}-vs-{}'.format(class1, class2)
-            computed_coefficients = parsed_weights_dict[class_pair_label]
+            computed_coefficients = np.array(parsed_weights_dict[class_pair_label])
+            # we want to remove any extra zeros here for features that ended up
+            # with zero weights since those are never printed out
+            computed_coefficients = computed_coefficients[computed_coefficients.nonzero()]
             expected_coefficients = learner.model.coef_[idx].toarray()[0]
             assert_array_almost_equal(computed_coefficients, expected_coefficients)
 
@@ -972,30 +1003,29 @@ def check_print_model_weights(task='classification'):
     elif task == 'classification_no_intercept':
         lines_to_parse = [l for l in out.split('\n')[0:] if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
-        feature_values = []
+        computed_coefficients = []
         for ltp in lines_to_parse[1:]:
             fields = ltp.split('\t')
-            feature_values.append((fields[2], safe_float(fields[0])))
-        feature_values = [t[1] for t in sorted(feature_values)]
+            computed_coefficients.append((fields[2], safe_float(fields[0])))
+        computed_coefficients = [t[1] for t in sorted(computed_coefficients)]
         assert_almost_equal(intercept, learner.model.intercept_)
-        assert_allclose(learner.model.coef_[0], feature_values)
-    elif task == 'regression':
+        expected_coefficients = learner.model.coef_[0]
+        assert_allclose(expected_coefficients, computed_coefficients)
+    elif task in ['regression', 'regression_with_hashing']:
         lines_to_parse = [l for l in out.split('\n') if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
-        feature_values = []
+        computed_coefficients = []
         for ltp in lines_to_parse[1:]:
-            fields = ltp.split('\t')
-            feature_values.append((fields[1], safe_float(fields[0])))
-        feature_values = [t[1] for t in sorted(feature_values)]
+            weight, feature_name = ltp.split('\t')
+            computed_coefficients.append((feature_name, safe_float(weight)))
+        computed_coefficients = [t[1] for t in sorted(computed_coefficients)]
         assert_almost_equal(intercept, learner.model.intercept_)
-        assert_allclose(learner.model.coef_, feature_values)
+        assert_allclose(learner.model.coef_, computed_coefficients)
     else:
         lines_to_parse = [l for l in out.split('\n') if l]
 
         intercept_list = ast.literal_eval(lines_to_parse[0].split('=')[1].strip())
-        intercept = []
-        for intercept_string in intercept_list:
-            intercept.append(safe_float(intercept_string))
+        intercept = safe_float(intercept_list)
 
         feature_values = []
         for ltp in lines_to_parse[1:]:
@@ -1009,10 +1039,14 @@ def check_print_model_weights(task='classification'):
 
 def test_print_model_weights():
     yield check_print_model_weights, 'classification'
+    yield check_print_model_weights, 'classification_with_hashing'
     yield check_print_model_weights, 'multiclass_classification'
+    yield check_print_model_weights, 'multiclass_classification_with_hashing'
     yield check_print_model_weights, 'multiclass_classification_svc'
+    yield check_print_model_weights, 'multiclass_classification_svc_with_hashing'
     yield check_print_model_weights, 'classification_no_intercept'
     yield check_print_model_weights, 'regression'
+    yield check_print_model_weights, 'regression_with_hashing'
     yield check_print_model_weights, 'regression_linearSVR'
 
 
