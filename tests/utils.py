@@ -312,8 +312,10 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     return (train_fs, test_fs)
 
 
-def make_regression_data(num_examples=100, train_test_ratio=0.5,
-                         num_features=2, sd_noise=1.0,
+def make_regression_data(num_examples=100,
+                         train_test_ratio=0.5,
+                         num_features=2,
+                         sd_noise=1.0,
                          use_feature_hashing=False,
                          feature_bins=4,
                          start_feature_num=1,
@@ -322,7 +324,8 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     # use sklearn's make_regression to generate the data for us
     X, y, weights = make_regression(n_samples=num_examples,
                                     n_features=num_features,
-                                    noise=sd_noise, random_state=random_state,
+                                    noise=sd_noise,
+                                    random_state=random_state,
                                     coef=True)
 
     # since we want to use SKLL's FeatureSet class, we need to
@@ -335,8 +338,30 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
                               start_feature_num + num_features)]
     features = [dict(zip(feature_names, row)) for row in X]
 
+    # At this point the weights are learned from unhashed features
+    # even if we want to do feature hashing. `make_regression()` from
+    # sklearn doesn't know anything about feature hashing, so we need
+    # a hack here to compute the correct expected weights ourselves
+    # using the same command that sklearn uses inside `make_regression()`
+    # which is to generate the X and the weights and then compute the
+    # y as the dot product of the two. This y will then be used as our
+    # labels instead of the original y we got from `make_regression()`
+    # note that we only want to use the number of weights that are
+    # equal to the number of feature bins for the hashing
+    if use_feature_hashing:
+        feature_hasher = FeatureHasher(n_features=feature_bins)
+        hashed_X = feature_hasher.fit_transform(features)
+        y = hashed_X.dot(weights[:feature_bins])
+
     # convert the weights array into a dictionary for convenience
-    weightdict = dict(zip(feature_names, weights))
+    # if we are using feature hashing, we need to use the names
+    # that would be output by `model_params()` instead of the
+    # original names since that's what we would get from SKLL
+    if use_feature_hashing:
+        hashed_feature_names = ['hashed_feature_{}'.format(i + 1) for i in range(feature_bins)]
+        weightdict = dict(zip(hashed_feature_names, weights[:feature_bins]))
+    else:
+        weightdict = dict(zip(feature_names, weights))
 
     # split everything into training and testing portions
     num_train_examples = int(round(train_test_ratio * num_examples))
