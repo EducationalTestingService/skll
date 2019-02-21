@@ -14,13 +14,13 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import copy
 import inspect
-import math
 import logging
 import os
 import sys
 from collections import Counter, defaultdict
 from functools import wraps
 from importlib import import_module
+from math import floor, log10
 from itertools import combinations
 from multiprocessing import cpu_count
 
@@ -1075,7 +1075,7 @@ class Learner(object):
             if isinstance(self.feat_vectorizer, FeatureHasher):
                 self.logger.warning("No feature names are available since this model was trained on hashed features.")
                 num_features = len(coef)
-                index_width_in_feature_name = math.floor(math.log10(num_features)) + 1
+                index_width_in_feature_name = int(floor(log10(num_features))) + 1
                 for idx in range(num_features):
                     if coef[idx]:
                         index_str = str(idx + 1).zfill(index_width_in_feature_name)
@@ -1104,7 +1104,7 @@ class Learner(object):
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 if isinstance(self.feat_vectorizer, FeatureHasher):
                     num_features = len(coef)
-                    index_width_in_feature_name = math.floor(math.log10(num_features)) + 1
+                    index_width_in_feature_name = int(floor(log10(num_features))) + 1
                     for idx in range(num_features):
                         if coef[idx]:
                             index_str = str(idx + 1).zfill(index_width_in_feature_name)
@@ -1142,7 +1142,7 @@ class Learner(object):
                 class2 = self.label_list[class_pair[1]]
                 if isinstance(self.feat_vectorizer, FeatureHasher):
                     num_features = len(coef)
-                    index_width_in_feature_name = math.floor(math.log10(num_features)) + 1
+                    index_width_in_feature_name = int(floor(log10(num_features))) + 1
                     for idx in range(num_features):
                         if coef[idx]:
                             index_str = str(idx + 1).zfill(index_width_in_feature_name)

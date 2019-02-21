@@ -5,10 +5,10 @@ Utilities functions to make SKLL testing simpler
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import math
 import re
 
 from collections import OrderedDict
+from math import floor, log10
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
@@ -341,7 +341,7 @@ def make_regression_data(num_examples=100,
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
-    index_width_for_feature_name = math.floor(math.log10(num_features)) + 1
+    index_width_for_feature_name = int(floor(log10(num_features))) + 1
     feature_names = []
     for n in range(start_feature_num, start_feature_num + num_features):
         index_str = str(n).zfill(index_width_for_feature_name)
@@ -369,7 +369,7 @@ def make_regression_data(num_examples=100,
     # that would be output by `model_params()` instead of the
     # original names since that's what we would get from SKLL
     if use_feature_hashing:
-        index_width_for_feature_name = math.floor(math.log10(feature_bins)) + 1
+        index_width_for_feature_name = int(floor(log10(feature_bins))) + 1
         hashed_feature_names = []
         for i in range(feature_bins):
             index_str = str(i + 1).zfill(index_width_for_feature_name)
