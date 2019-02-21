@@ -324,7 +324,7 @@ def make_regression_data(num_examples=100,
 
     # if we are doing feature hashing and we have asked for more
     # feature bins than number of total features, we need to
-    # handle that because `mqke_regression()` doesn't know
+    # handle that because `make_regression()` doesn't know
     # about hashing
     if use_feature_hashing and num_features < feature_bins:
         num_features = feature_bins
@@ -349,15 +349,15 @@ def make_regression_data(num_examples=100,
         feature_names.append(feature_name)
     features = [dict(zip(feature_names, row)) for row in X]
 
-    # At this point the weights are learned from unhashed features
+    # At this point the labels are generated using unhashed features
     # even if we want to do feature hashing. `make_regression()` from
     # sklearn doesn't know anything about feature hashing, so we need
-    # a hack here to compute the correct expected weights ourselves
+    # a hack here to compute the updated labels ourselves
     # using the same command that sklearn uses inside `make_regression()`
     # which is to generate the X and the weights and then compute the
     # y as the dot product of the two. This y will then be used as our
-    # labels instead of the original y we got from `make_regression()`
-    # note that we only want to use the number of weights that are
+    # labels instead of the original y we got from `make_regression()`.
+    # Note that we only want to use the number of weights that are
     # equal to the number of feature bins for the hashing
     if use_feature_hashing:
         feature_hasher = FeatureHasher(n_features=feature_bins)
