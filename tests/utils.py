@@ -5,6 +5,7 @@ Utilities functions to make SKLL testing simpler
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import math
 import re
 
 from collections import OrderedDict
@@ -321,6 +322,13 @@ def make_regression_data(num_examples=100,
                          start_feature_num=1,
                          random_state=1234567890):
 
+    # if we are doing feature hashing and we have asked for more
+    # feature bins than number of total features, we need to
+    # handle that because `mqke_regression()` doesn't know
+    # about hashing
+    if use_feature_hashing and num_features < feature_bins:
+        num_features = feature_bins
+
     # use sklearn's make_regression to generate the data for us
     X, y, weights = make_regression(n_samples=num_examples,
                                     n_features=num_features,
@@ -333,9 +341,12 @@ def make_regression_data(num_examples=100,
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
-    feature_names = ['f{:02d}'.format(n) for n
-                     in range(start_feature_num,
-                              start_feature_num + num_features)]
+    index_width_for_feature_name = math.floor(math.log10(num_features)) + 1
+    feature_names = []
+    for n in range(start_feature_num, start_feature_num + num_features):
+        index_str = str(n).zfill(index_width_for_feature_name)
+        feature_name = 'f{}'.format(index_str)
+        feature_names.append(feature_name)
     features = [dict(zip(feature_names, row)) for row in X]
 
     # At this point the weights are learned from unhashed features
@@ -358,7 +369,12 @@ def make_regression_data(num_examples=100,
     # that would be output by `model_params()` instead of the
     # original names since that's what we would get from SKLL
     if use_feature_hashing:
-        hashed_feature_names = ['hashed_feature_{}'.format(i + 1) for i in range(feature_bins)]
+        index_width_for_feature_name = math.floor(math.log10(feature_bins)) + 1
+        hashed_feature_names = []
+        for i in range(feature_bins):
+            index_str = str(i + 1).zfill(index_width_for_feature_name)
+            feature_name = 'hashed_feature_{}'.format(index_str)
+            hashed_feature_names.append(feature_name)
         weightdict = dict(zip(hashed_feature_names, weights[:feature_bins]))
     else:
         weightdict = dict(zip(feature_names, weights))
