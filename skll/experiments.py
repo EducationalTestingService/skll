@@ -548,7 +548,7 @@ def _classify_featureset(args):
     if task == 'cross_validate':
         if isinstance(cv_folds, int):
             num_folds = cv_folds
-        else:  # cv_folds_file was used, so count the unique fold ids.
+        else:  # folds_file was used, so count the unique fold ids.
             num_folds = len(set(cv_folds.values()))
         logger.info("Cross-validating ({} folds) on {}, feature "
                     "set {} ...".format(num_folds,

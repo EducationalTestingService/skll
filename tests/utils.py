@@ -113,10 +113,10 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
         config.set("Output", d, join(output_dir))
 
     if task == 'cross_validate':
-        cv_folds_file = config.get("Input", "cv_folds_file")
-        if cv_folds_file:
-            config.set("Input", "cv_folds_file",
-                       join(train_dir, cv_folds_file))
+        folds_file = config.get("Input", "folds_file")
+        if folds_file:
+            config.set("Input", "folds_file",
+                       join(train_dir, folds_file))
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
