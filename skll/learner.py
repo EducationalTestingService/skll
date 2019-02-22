@@ -46,6 +46,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_selection import SelectKBest
+from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (Nystroem,
@@ -764,6 +765,14 @@ class Learner(object):
         Should learner return probabilities of all
         labels (instead of just label with highest probability)?
         Defaults to ``False``.
+    pipeline : bool, optional
+        Should learner contain a pipeline attribute that
+        contains a scikit-learn Pipeline object composed
+        of all steps including the vectorizer, the feature
+        selector, the feature scaler, and the estimator.
+        Note that this will increase the size of the learner
+        object in memory and also when it is saved to disk.
+        Defaults to ``False``.
     feature_scaling : str, optional
         How to scale the features, if at all. Options are
         -  'with_std': scale features using the standard deviation
@@ -804,10 +813,10 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self, model_type, probability=False, feature_scaling='none',
-                 model_kwargs=None, pos_label_str=None, min_feature_count=1,
-                 sampler=None, sampler_kwargs=None, custom_learner_path=None,
-                 logger=None):
+    def __init__(self, model_type, probability=False, pipeline=False,
+                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
+                 min_feature_count=1, sampler=None, sampler_kwargs=None,
+                 custom_learner_path=None, logger=None):
         """
         Initializes a learner object with the specified settings.
         """
@@ -819,6 +828,7 @@ class Learner(object):
         self.label_list = None
         self.pos_label_str = pos_label_str
         self._model = None
+        self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
         self.feat_selector = None
         self._min_feature_count = min_feature_count
@@ -1600,6 +1610,33 @@ class Learner(object):
         else:
             self._model = estimator.fit(xtrain, labels)
             grid_score = 0.0
+
+        # store a scikit-learn Pipeline in the `pipeline` attribute
+        # composed of a copy of the vectorizer, the selector,
+        # the sampler, the scaler, and the estimator. This pipeline
+        # attribute can then be used by someone who wants to take a SKLL
+        # model and then do further analysis using scikit-learn
+        # We are using copies since the user might want to play
+        # around with the pipeline and we want to let her do that
+        # but keep the SKLL model the same
+
+        # start with the vectorizer and the selector
+        if self._store_pipeline:
+            pipeline_steps = [('vectorizer',
+                               copy.deepcopy(self.feat_vectorizer)),
+                              ('selector',
+                               copy.deepcopy(self.feat_selector))]
+
+            # if there is a sampler, include it
+            if self.sampler:
+                pipeline_steps.append(('sampler',
+                                       copy.deepcopy(self.sampler)))
+
+            # finish with the scaler and the estimator
+            pipeline_steps.extend([('scaler', copy.deepcopy(self.scaler)),
+                                   ('estimator', copy.deepcopy(self.model))])
+
+            self.pipeline = Pipeline(steps=pipeline_steps)
 
         return grid_score
 
