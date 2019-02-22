@@ -53,6 +53,7 @@ def main(argv=None):
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args(argv)
+
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
@@ -65,12 +66,12 @@ def main(argv=None):
 
     multiclass = False
     model = learner._model
-    if  (isinstance(model, LinearSVC) or
-         isinstance(model, LogisticRegression) or
-         (isinstance(model, SVC) and model.kernel == 'linear')):
+    if (isinstance(model, LinearSVC) or
+        isinstance(model, LogisticRegression) or
+        (isinstance(model, SVC) and
+            model.kernel == 'linear')):
         multiclass = True
     weight_items = iteritems(weights)
-
     if args.sign == 'positive':
         weight_items = (x for x in weight_items if x[1] > 0)
     elif args.sign == 'negative':
@@ -86,9 +87,7 @@ def main(argv=None):
             else:
                 print("intercept = {: .12f}".format(intercept['_intercept_']))
         else:
-
             print("== intercept values ==")
-
             for (label, val) in intercept.items():
                 print("{: .12f}\t{}".format(val, label))
         print()
