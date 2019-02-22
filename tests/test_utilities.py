@@ -842,7 +842,7 @@ def test_skll_convert_no_labels_with_label_col():
     sk.main(argv=skll_convert_cmd)
 
 
-def check_print_model_weights(task='classification'):
+def check_print_model_weights(task='classification', sort_by_labels=False):
 
     # create some simple classification or regression data
     if task == 'classification' or task == 'classification_no_intercept':
@@ -878,7 +878,10 @@ def check_print_model_weights(task='classification'):
     learner.save(model_file)
 
     # now call print_model_weights main() and capture the output
-    print_model_weights_cmd = [model_file]
+    if sort_by_labels:
+        print_model_weights_cmd = [model_file, "--sort_by_labels"]
+    else:
+        print_model_weights_cmd = [model_file]
     err = ''
     try:
         old_stderr = sys.stderr
@@ -1011,6 +1014,8 @@ def test_print_model_weights():
     yield check_print_model_weights, 'classification'
     yield check_print_model_weights, 'multiclass_classification'
     yield check_print_model_weights, 'multiclass_classification_svc'
+    yield check_print_model_weights, 'multiclass_classification',  True
+    yield check_print_model_weights, 'multiclass_classification_svc', True
     yield check_print_model_weights, 'classification_no_intercept'
     yield check_print_model_weights, 'regression'
     yield check_print_model_weights, 'regression_linearSVR'
