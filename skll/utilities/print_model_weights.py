@@ -81,16 +81,16 @@ def main(argv=None):
         if '_intercept_' in intercept:
             # Some learners (e.g. LinearSVR) may return a list of intercepts
             if isinstance(intercept['_intercept_'], np.ndarray):
-                intercept_list = ["%.12f" % i for i in intercept['_intercept_']]
+                intercept_list = ["% .12f" % i for i in intercept['_intercept_']]
                 print("intercept = {}".format(intercept_list))
             else:
-                print("intercept = {:.12f}".format(intercept['_intercept_']))
+                print("intercept = {: .12f}".format(intercept['_intercept_']))
         else:
 
             print("== intercept values ==")
 
             for (label, val) in intercept.items():
-                print("{:.12f}\t{}".format(val, label))
+                print("{: .12f}\t{}".format(val, label))
         print()
 
     print("Number of nonzero features:", len(weights), file=sys.stderr)
@@ -101,10 +101,10 @@ def main(argv=None):
             weight_by_class[label][feature] = weight
         for label in sorted(weight_by_class):
             for feat, val in sorted(weight_by_class[label].items(), key=lambda x: -abs(x[1])):
-                print("{:.12f}\t{}\t{}".format(val, label, feat))
+                print("{: .12f}\t{}\t{}".format(val, label, feat))
     else:
         for feat, val in sorted(weight_items, key=lambda x: -abs(x[1]))[:k]:
-            print("{:.12f}\t{}".format(val, feat))
+            print("{: .12f}\t{}".format(val, feat))
 
 
 if __name__ == '__main__':
