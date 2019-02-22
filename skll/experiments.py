@@ -686,6 +686,7 @@ def _classify_featureset(args):
         logger.info("Cross-validating")
         (task_results,
          grid_scores,
+         grid_search_cv_results_dicts,
          skll_fold_ids) = learner.cross_validate(train_examples,
                                                  shuffle=shuffle,
                                                  stratified=stratified_folds,
@@ -712,14 +713,16 @@ def _classify_featureset(args):
         if not exists(modelfile) or overwrite:
             logger.info("Featurizing and training new {} model".format(learner_name))
 
-            best_score = learner.train(train_examples,
-                                       shuffle=shuffle,
-                                       grid_search=grid_search,
-                                       grid_search_folds=grid_search_folds,
-                                       grid_objective=grid_objective,
-                                       param_grid=param_grid,
-                                       grid_jobs=grid_search_jobs)
+            (best_score,
+             grid_search_cv_results) = learner.train(train_examples,
+                                                     shuffle=shuffle,
+                                                     grid_search=grid_search,
+                                                     grid_search_folds=grid_search_folds,
+                                                     grid_objective=grid_objective,
+                                                     param_grid=param_grid,
+                                                     grid_jobs=grid_search_jobs)
             grid_scores = [best_score]
+            grid_search_cv_results_dicts = [grid_search_cv_results]
 
             # save model
             if model_path:
@@ -733,12 +736,14 @@ def _classify_featureset(args):
                                                                    round(best_score, 3)))
         else:
             grid_scores = [None]
+            grid_search_cv_results_dicts = [None]
 
-        # print out the tuned parameters and best CV score
-        param_out = ('{}: {}'.format(param_name, param_value)
-                     for param_name, param_value in
-                     iteritems(learner.model.get_params()))
-        logger.info("Hyperparameters: {}".format(', '.join(param_out)))
+        # print out the tuned parameters
+        if grid_search:
+            param_out = ('{}: {}'.format(param_name, param_value)
+                         for param_name, param_value in
+                         iteritems(learner.model.get_params()))
+            logger.info("Hyperparameters: {}".format(', '.join(param_out)))
 
         # run on test set or cross-validate on training data,
         # depending on what was asked for
@@ -766,6 +771,7 @@ def _classify_featureset(args):
 
         res = _create_learner_result_dicts(task_results,
                                            grid_scores,
+                                           grid_search_cv_results_dicts,
                                            learner_result_dict_base)
 
         # write out the result dictionary to a json file
@@ -799,6 +805,20 @@ def _classify_featureset(args):
         with open(results_json_path, file_mode) as json_file:
             json.dump(res, json_file, cls=NumpyTypeEncoder)
     else:
+        if results_path:
+            results_json_path = join(results_path,
+                                     '{}.grid_search_cv_results.json'.format(job_name))
+
+            assert len(grid_scores) == 1
+            assert len(grid_search_cv_results_dicts) == 1
+            grid_search_cv_results_dict = {"grid_score": grid_scores[0]}
+            grid_search_cv_results_dict["grid_search_cv_results"] = \
+                grid_search_cv_results_dicts[0]
+            grid_search_cv_results_dict.update(learner_result_dict_base)
+            # write out the result dictionary to a json file
+            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+            with open(results_json_path, file_mode) as json_file:
+                json.dump(grid_search_cv_results_dict, json_file, cls=NumpyTypeEncoder)
         res = [learner_result_dict_base]
 
     # write out the cv folds if required
@@ -814,6 +834,7 @@ def _classify_featureset(args):
 
 def _create_learner_result_dicts(task_results,
                                  grid_scores,
+                                 grid_search_cv_results_dicts,
                                  learner_result_dict_base):
     """
     Create the learner result dictionaries that are used to create JSON and
@@ -825,6 +846,11 @@ def _create_learner_result_dicts(task_results,
         The task results list.
     grid_scores : list
         The grid scores list.
+    grid_search_cv_results_dicts : list of dicts
+        A list of dictionaries of grid search CV results, one per fold,
+        with keys such as "params", "mean_test_score", etc, that are
+        mapped to lists of values associated with each hyperparameter set
+        combination.
     learner_result_dict_base : dict
         Base dictionary for all learner results.
 
@@ -846,14 +872,18 @@ def _create_learner_result_dicts(task_results,
     f_sum_dict = defaultdict(float)
     result_table = None
 
-    for k, ((conf_matrix,
-             fold_accuracy,
-             result_dict,
-             model_params,
-             score,
-             additional_scores), grid_score) in enumerate(zip(task_results,
-                                                              grid_scores),
-                                                          start=1):
+    for (k,
+         ((conf_matrix,
+           fold_accuracy,
+           result_dict,
+           model_params,
+           score,
+           additional_scores),
+          grid_score,
+          grid_search_cv_results)) in enumerate(zip(task_results,
+                                                    grid_scores,
+                                                    grid_search_cv_results_dicts),
+                                                start=1):
 
         # create a new dict for this fold
         learner_result_dict = {}
@@ -873,6 +903,7 @@ def _create_learner_result_dicts(task_results,
         learner_result_dict['model_params'] = json.dumps(model_params)
         if grid_score is not None:
             learner_result_dict['grid_score'] = grid_score
+            learner_result_dict['grid_search_cv_results'] = grid_search_cv_results
 
         if conf_matrix:
             labels = sorted(iterkeys(task_results[0][2]))
@@ -1233,7 +1264,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                     queue=queue))
                 else:
                     _classify_featureset(job_args)
-    test_set_name = basename(test_path)
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:

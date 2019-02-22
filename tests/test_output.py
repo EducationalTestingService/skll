@@ -92,6 +92,12 @@ def tearDown():
                             glob(join(output_dir, 'test_majority_class_custom_learner_*'))):
             os.unlink(output_file)
 
+    for suffix in ['train', 'xval']:
+        config_files = ['test_cv_results_{}.cfg'.format(suffix)]
+        for cf in config_files:
+            if exists(join(config_dir, cf)):
+                os.unlink(join(config_dir, cf))
+
 
 # Generate and write out data for the test that checks summary scores
 def make_summary_data():
@@ -206,10 +212,10 @@ def check_summary_score(use_feature_hashing,
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 33 rows,
+            # the learner results dictionaries should have 34 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 33)
+            eq_(len(row), 34)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -408,6 +414,98 @@ def test_xval_fancy_results_file():
         yield (check_xval_fancy_results_file, do_grid_search,
                use_folds_file, use_folds_file_for_grid_search,
                use_additional_metrics)
+
+
+def test_train_and_xval_grid_search_cv_results():
+    learners = ['LogisticRegression', 'SVC']
+    expected_path = join(_my_dir, "other", "cv_results")
+    for task in ["train", "cross_validate"]:
+        train_path = join(_my_dir, 'train', 'f0.jsonlines')
+        output_dir = join(_my_dir, 'output')
+
+        # make a simple config file for cross-validation
+        values_to_fill_dict = {'experiment_name': 'test_cv_results',
+                               'train_file': train_path,
+                               'task': task,
+                               'grid_search': 'true',
+                               'objectives': "['f1_score_micro']",
+                               'featureset_names': '["f0"]',
+                               'learners': "{}".format(json.dumps(learners)),
+                               'log': output_dir,
+                               'results': output_dir}
+        if task == "train":
+            values_to_fill_dict['models'] = output_dir
+        if task == "cross_validate":
+            values_to_fill_dict['predictions'] = output_dir
+
+        config_template_path = join(_my_dir,
+                                    'configs',
+                                    'test_cv_results.template.cfg')
+
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             task if task == "train" else "xval")
+
+        # run the experiment
+        run_configuration(config_path, quiet=True)
+
+        # now make sure that the results json file was produced
+        for learner in learners:
+            if task == "train":
+                results_file_name = 'test_cv_results_f0_{}.grid_search_cv_results.json'.format(learner)
+                actual_results_file_path = join(_my_dir, 'output',
+                                                results_file_name)
+                expected_results_file_path = join(expected_path,
+                                                  results_file_name)
+            else:
+                results_file_name = 'test_cv_results_f0_{}.results.json'.format(learner)
+                actual_results_file_path = join(_my_dir, 'output',
+                                                results_file_name)
+                expected_results_file_path = join(expected_path, results_file_name)
+            ok_(exists(actual_results_file_path))
+            with open(expected_results_file_path) as expected, \
+                 open(actual_results_file_path) as actual:
+                expected_lines = [json.loads(line) for line in expected][0]
+                actual_lines = [json.loads(line) for line in actual][0]
+                assert len(expected_lines) == len(actual_lines)
+                if task == "cross_validate":
+                    # All but the last line will have grid search-related
+                    # results
+                    for (expected_gs_cv_results,
+                         actual_gs_cv_results) in zip(expected_lines[:-1],
+                                                      actual_lines[:-1]):
+                        assert len(expected_gs_cv_results) == len(actual_gs_cv_results)
+                        for field in ["grid_score", "grid_search_cv_results"]:
+                            assert (set(expected_gs_cv_results)
+                                    .intersection(actual_gs_cv_results) ==
+                                    set(expected_gs_cv_results))
+                            if field == "grid_score":
+                                assert expected_gs_cv_results[field] == \
+                                       actual_gs_cv_results[field]
+                            else:
+                                for subfield in expected_gs_cv_results[field]:
+                                    if subfield.endswith("_time"): continue
+                                    assert expected_gs_cv_results[field][subfield] == \
+                                           actual_gs_cv_results[field][subfield]
+                    # The last line should be for the "average" and should
+                    # not contain any grid search results
+                    assert actual_lines[-1]["fold"] == "average"
+                    for field in ["grid_score", "grid_search_cv_results"]:
+                        assert field not in actual_lines[-1]
+                else:
+                    expected_gs_cv_results = expected_lines
+                    actual_gs_cv_results = actual_lines
+                    assert set(expected_gs_cv_results).intersection(actual_gs_cv_results) == \
+                           set(expected_gs_cv_results)
+                    for field in ["grid_score", "grid_search_cv_results"]:
+                        if field == "grid_score":
+                            assert expected_gs_cv_results[field] == \
+                                   actual_gs_cv_results[field]
+                        else:
+                            for subfield in expected_gs_cv_results[field]:
+                                if subfield.endswith("_time"): continue
+                                assert expected_gs_cv_results[field][subfield] == \
+                                       actual_gs_cv_results[field][subfield]
 
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.
