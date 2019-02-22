@@ -1569,10 +1569,10 @@ def test_setting_fixed_parameters():
 
 @raises(ValueError)
 def test_learning_curve_objectives_deprecated_error():
-   """
-   testing that the SKLL learning_curve
-   does not support objectives option any more
-   """
+    """
+    testing that the SKLL learning_curve
+    does not support objectives option any more
+    """
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')
 
