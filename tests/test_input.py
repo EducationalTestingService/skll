@@ -1568,7 +1568,7 @@ def test_setting_fixed_parameters():
 
 
 @raises(ValueError)
-def test_learning_curve_objectives_deprecated_error():
+def test_learning_curve_objectives_unsupported_error():
     """
     testing that the SKLL learning_curve
     does not support objectives option any more
@@ -1679,8 +1679,8 @@ def test_setting_learning_curve_options():
     eq_(learning_curve_cv_folds_list, [100, 10])
     eq_(learning_curve_train_sizes, [10, 50, 100, 200, 500])
 
-
-def test_learning_curve_metrics_and_objectives():
+@raises(ValueError)
+def test_learning_curve_metrics_and_objectives_throw_error():
 
     train_dir = join(_my_dir, 'train')
     output_dir = join(_my_dir, 'output')

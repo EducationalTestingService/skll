@@ -811,7 +811,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         raise ValueError('The models path should not be set when task is '
                          '{}.'.format(task))
     if task == 'learning_curve':
-        if len(grid_objectives) > 0 and len(output_metrics) == 0:
+        if len(grid_objectives) > 0:
             raise ValueError("The \"objectives\" option "
                              "is removed from the learning_curve "
                              "and is not supported any more. "
@@ -820,13 +820,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                              "section instead.")
             output_metrics = grid_objectives
             grid_objectives = []
-        elif len(grid_objectives) == 0 and len(output_metrics) == 0:
+        if len(output_metrics) == 0:
             raise ValueError('The "metrics" option must be set when '
                              'the task is "learning_curve".')
-        elif len(grid_objectives) > 0 and len(output_metrics) > 0:
-            logger.warning("Ignoring \"objectives\" for the learning_curve "
-                           "task since \"metrics\" is already specified.")
-            grid_objectives = []
     elif task in ['evaluate', 'cross_validate']:
         # for other appropriate tasks, if metrics and objectives have
         # some overlaps - we will assume that the user meant to
