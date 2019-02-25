@@ -423,8 +423,10 @@ def test_train_and_xval_grid_search_cv_results():
         train_path = join(_my_dir, 'train', 'f0.jsonlines')
         output_dir = join(_my_dir, 'output')
 
+        exp_name = 'test_grid_search_cv_results_{}'.format(task)
+
         # make a simple config file for cross-validation
-        values_to_fill_dict = {'experiment_name': 'test_cv_results',
+        values_to_fill_dict = {'experiment_name': exp_name,
                                'train_file': train_path,
                                'task': task,
                                'grid_search': 'true',
@@ -451,14 +453,14 @@ def test_train_and_xval_grid_search_cv_results():
 
         # now make sure that the results json file was produced
         for learner in learners:
+            results_file_name = ('{}_f0_{}.results.json'
+                                 .format(exp_name, learner))
             if task == "train":
-                results_file_name = 'test_cv_results_f0_{}.grid_search_cv_results.json'.format(learner)
                 actual_results_file_path = join(_my_dir, 'output',
                                                 results_file_name)
                 expected_results_file_path = join(expected_path,
                                                   results_file_name)
             else:
-                results_file_name = 'test_cv_results_f0_{}.results.json'.format(learner)
                 actual_results_file_path = join(_my_dir, 'output',
                                                 results_file_name)
                 expected_results_file_path = join(expected_path, results_file_name)

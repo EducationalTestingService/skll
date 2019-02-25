@@ -738,12 +738,11 @@ def _classify_featureset(args):
             grid_scores = [None]
             grid_search_cv_results_dicts = [None]
 
-        # print out the tuned parameters
-        if grid_search:
-            param_out = ('{}: {}'.format(param_name, param_value)
-                         for param_name, param_value in
-                         iteritems(learner.model.get_params()))
-            logger.info("Hyperparameters: {}".format(', '.join(param_out)))
+        # print out the parameters
+        param_out = ('{}: {}'.format(param_name, param_value)
+                     for param_name, param_value in
+                     iteritems(learner.model.get_params()))
+        logger.info("Hyperparameters: {}".format(', '.join(param_out)))
 
         # run on test set or cross-validate on training data,
         # depending on what was asked for
@@ -807,7 +806,7 @@ def _classify_featureset(args):
     else:
         if results_path:
             results_json_path = join(results_path,
-                                     '{}.grid_search_cv_results.json'.format(job_name))
+                                     '{}.results.json'.format(job_name))
 
             assert len(grid_scores) == 1
             assert len(grid_search_cv_results_dicts) == 1
