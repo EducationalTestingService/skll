@@ -900,7 +900,7 @@ def _create_learner_result_dicts(task_results,
                                     headers=headers,
                                     stralign="right",
                                     floatfmt=".3f",
-                                    tablefmt="grid",)
+                                    tablefmt="grid")
             result_table_str = '{}'.format(result_table)
             result_table_str += '\n(row = reference; column = predicted)'
             learner_result_dict['result_table'] = result_table_str
@@ -946,7 +946,7 @@ def _create_learner_result_dicts(task_results,
             result_table = tabulate(rows, 
                                     headers=headers,
                                     floatfmt=".3f",
-                                    tablefmt="psql",)
+                                    tablefmt="psql")
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = accuracy_sum / num_folds
         else:
