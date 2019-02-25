@@ -897,8 +897,9 @@ def _create_learner_result_dicts(task_results,
                 rows.append(result_row)
 
             result_table = tabulate(rows, 
-                                    headers=headers, 
-                                    floatfmt=".3f", 
+                                    headers=headers,
+                                    stralign="right",
+                                    floatfmt=".3f",
                                     tablefmt="grid",)
             result_table_str = '{}'.format(result_table)
             result_table_str += '\n(row = reference; column = predicted)'
@@ -943,9 +944,9 @@ def _create_learner_result_dicts(task_results,
                 rows.append([actual_label] + [prec_mean, recall_mean, f_mean])
 
             result_table = tabulate(rows, 
-                                    headers=headers, 
-                                    floatfmt=".3f", 
-                                    tablefmt="grid",)
+                                    headers=headers,
+                                    floatfmt=".3f",
+                                    tablefmt="psql",)
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = accuracy_sum / num_folds
         else:
