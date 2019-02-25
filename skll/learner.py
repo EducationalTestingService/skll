@@ -1620,14 +1620,24 @@ class Learner(object):
         # around with the pipeline and we want to let her do that
         # but keep the SKLL model the same
 
-        # start with the vectorizer and the selector
+        # start with the vectorizer
         if self._store_pipeline:
-            pipeline_steps = [('vectorizer',
-                               copy.deepcopy(self.feat_vectorizer)),
-                              ('selector',
-                               copy.deepcopy(self.feat_selector))]
 
-            # if there is a sampler, include it
+            # note that if we had to end up using dense features
+            # then let's turn off `sparse` for the vectorizer copy
+            # to be stored in the pipeline as well so that it works
+            # on the scikit-learn in the same way
+            vectorizer_copy = copy.deepcopy(self.feat_vectorizer)
+            if self._use_dense_features:
+                vectorizer_copy.sparse = False
+
+            pipeline_steps = [('vectorizer', vectorizer_copy)]
+
+            # next add the selector
+            pipeline_steps.append(('selector',
+                                   copy.deepcopy(self.feat_selector)))
+
+            # next, include the sampler, if there is one
             if self.sampler:
                 pipeline_steps.append(('sampler',
                                        copy.deepcopy(self.sampler)))
