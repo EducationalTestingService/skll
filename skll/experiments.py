@@ -782,6 +782,7 @@ def _classify_featureset(args):
                        '{}.results'.format(job_name)),
                   'w') as output_file:
             _print_fancy_output(res, output_file)
+
     elif task == 'learning_curve':
         results_json_path = join(results_path,
                                  '{}.results.json'.format(job_name))
@@ -803,6 +804,8 @@ def _classify_featureset(args):
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(results_json_path, file_mode) as json_file:
             json.dump(res, json_file, cls=NumpyTypeEncoder)
+
+    # For all other tasks, i.e. train or predict
     else:
         if results_path:
             results_json_path = join(results_path,
