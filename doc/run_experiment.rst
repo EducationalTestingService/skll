@@ -984,6 +984,65 @@ most probable class for each instance. Only really makes a difference
 when storing predictions. Defaults to ``False``. Note that this also
 applies to the tuning objective.
 
+.. _pipeline:
+
+pipeline *(Optional)*
+"""""""""""""""""""""
+
+Whether or not the final learner object should contain a ``pipeline``
+attribute that contains a scikit-learn `Pipeline <http://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html>`__ object composed
+of copies of each of the following steps of training the learner:
+
+    * feature vectorization (`vectorizer`)
+    * feature selection (`selector`)
+    * feature sampling (`sampler`) 
+    * feature scaling (`scaler`)
+    * main estimator (`estimator`)
+
+The strings in the parentheses represent the name given to each
+step in the pipeline. 
+
+The goal of this attribute is to allow better interoperability 
+between SKLL learner objects and scikit-learn. The user can 
+train the model in SKLL and then further tweak or analyze 
+the pipeline in scikit-learn, if needed. Each component of the 
+pipeline is a (deep) copy of the component that was fit as part 
+of the SKLL model training process. We use copies since we do 
+not want the  original SKLL model to be affected if the user 
+modifies the components of the pipeline in scikit-learn space.
+
+Here's an example of how to use this attribute.
+
+.. code-block:: python
+
+    from sklearn.preprocessing import LabelEncoder
+
+    from skll import Learner
+    from skll.data import CSVReader, NDJReader
+
+    # train a classifier and a regressor using the SKLL API
+    fs1 = NDJReader('examples/iris/train/example_iris_features.jsonlines').read()
+    learner1 = Learner('LogisticRegression', pipeline=True)
+    learner1.train(fs1, grid_search=True, grid_objective='f1_score_macro')
+
+    fs2 = CSVReader('examples/boston/train/example_boston_features.csv').read()
+    learner2 = Learner('RescaledSVR', feature_scaling='both', pipeline=True)
+    learner2.train(fs2, grid_search=True, grid_objective='pearson')
+    
+    # now, we can explore the stored pipelines in sklearn space
+    enc = LabelEncoder().fit(fs1.labels)
+
+    # first, the classifier
+    D1 = {"f0": 6.1, "f1": 2.8, "f2": 4.7, "f3": 1.2}
+    pipeline1 = learner1.pipeline
+    enc.inverse_transform(pipeline1.predict(D1))
+
+    # then, the regressor
+    D2 = {"f0": 0.09178, "f1": 0.0, "f2": 4.05, "f3": 0.0, "f4": 0.51, "f5": 6.416, "f6": 84.1, "f7": 2.6463, "f8": 5.0, "f9": 296.0, "f10": 16.6, "f11": 395.5, "f12": 9.04}
+    pipeline2 = learner2.pipeline
+    pipeline2.predict(D2)
+
+
 .. _results:
 
 results *(Optional)*
