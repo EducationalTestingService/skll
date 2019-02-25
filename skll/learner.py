@@ -769,9 +769,10 @@ class Learner(object):
         Should learner contain a pipeline attribute that
         contains a scikit-learn Pipeline object composed
         of all steps including the vectorizer, the feature
-        selector, the feature scaler, and the estimator.
-        Note that this will increase the size of the learner
-        object in memory and also when it is saved to disk.
+        selector, the sampler, the feature scaler, and the
+        actual estimator. Note that this will increase the
+        size of the learner object in memory and also when
+        it is saved to disk.
         Defaults to ``False``.
     feature_scaling : str, optional
         How to scale the features, if at all. Options are
