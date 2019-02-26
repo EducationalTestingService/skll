@@ -26,7 +26,6 @@ from os.path import basename, exists, isfile, join
 
 import ruamel.yaml as yaml
 
-from prettytable import PrettyTable, ALL
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn import __version__ as SCIKIT_VERSION
@@ -37,6 +36,7 @@ from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
                           _import_custom_learner)
 from skll.version import __version__
+from tabulate import tabulate
 
 # Check if gridmap is available
 try:
@@ -876,11 +876,8 @@ def _create_learner_result_dicts(task_results,
 
         if conf_matrix:
             labels = sorted(iterkeys(task_results[0][2]))
-            result_table = PrettyTable([""] + labels + ["Precision", "Recall",
-                                                        "F-measure"],
-                                       header=True, hrules=ALL)
-            result_table.align = 'r'
-            result_table.float_format = '.3'
+            headers = [""] + labels + ["Precision", "Recall", "F-measure"]
+            rows = []
             for i, actual_label in enumerate(labels):
                 conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
                 label_prec = _get_stat_float(result_dict[actual_label],
@@ -897,8 +894,13 @@ def _create_learner_result_dicts(task_results,
                     f_sum_dict[actual_label] += float(label_f)
                 result_row = ([actual_label] + conf_matrix[i] +
                               [label_prec, label_recall, label_f])
-                result_table.add_row(result_row)
+                rows.append(result_row)
 
+            result_table = tabulate(rows, 
+                                    headers=headers,
+                                    stralign="right",
+                                    floatfmt=".3f",
+                                    tablefmt="grid")
             result_table_str = '{}'.format(result_table)
             result_table_str += '\n(row = reference; column = predicted)'
             learner_result_dict['result_table'] = result_table_str
@@ -932,20 +934,19 @@ def _create_learner_result_dicts(task_results,
         learner_result_dict['fold'] = 'average'
 
         if result_table:
-            result_table = PrettyTable(["Label", "Precision", "Recall",
-                                        "F-measure"],
-                                       header=True)
-            result_table.align = "r"
-            result_table.align["Label"] = "l"
-            result_table.float_format = '.3'
+            headers = ["Label", "Precision", "Recall", "F-measure"]
+            rows = []
             for actual_label in labels:
                 # Convert sums to means
                 prec_mean = prec_sum_dict[actual_label] / num_folds
                 recall_mean = recall_sum_dict[actual_label] / num_folds
                 f_mean = f_sum_dict[actual_label] / num_folds
-                result_table.add_row([actual_label] +
-                                     [prec_mean, recall_mean, f_mean])
+                rows.append([actual_label] + [prec_mean, recall_mean, f_mean])
 
+            result_table = tabulate(rows, 
+                                    headers=headers,
+                                    floatfmt=".3f",
+                                    tablefmt="psql")
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = accuracy_sum / num_folds
         else:
