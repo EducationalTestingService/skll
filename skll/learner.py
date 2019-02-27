@@ -31,6 +31,7 @@ from six import iteritems, itervalues
 from six import string_types
 from six.moves import xrange as range
 from six.moves import zip
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import (GridSearchCV,
                                      KFold,
                                      LeaveOneGroupOut,
@@ -208,6 +209,24 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
 
 # pylint: disable=W0223,R0903
+class Densifier(BaseEstimator, TransformerMixin):
+    """
+    A custom pipeline stage that will be inserted into the
+    learner pipeline attribute to accommodate the situation
+    when SKLL needs to manually converts feature arrays from
+    sparse to dense. For example, when features are being hashed
+    but we are also doing centering using the feature means.
+    """
+    def fit(self, X, y=None):
+        return self
+
+    def fit_transform(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        return X.todense()
+
+
 class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
     """
@@ -1630,28 +1649,43 @@ class Learner(object):
         # start with the vectorizer
         if self._store_pipeline:
 
+            # initialize the list that will hold the pipeline steps
+            pipeline_steps = []
+
             # note that if we had to end up using dense features
             # then let's turn off `sparse` for the vectorizer copy
             # to be stored in the pipeline as well so that it works
-            # on the scikit-learn in the same way
+            # on the scikit-learn in the same way. However, note that
+            # this solution will only work for DictVectorizers. For
+            # feature hashers, we manually convert things to dense
+            # when we need in SKLL. Therefore, to handle this case,
+            # we basically need to create a custom intermediate
+            # pipeline stage that will convert the features to dense
+            # once the hashing is done since this is what happens
+            # in SKLL.
             vectorizer_copy = copy.deepcopy(self.feat_vectorizer)
             if self._use_dense_features:
-                vectorizer_copy.sparse = False
-
-            pipeline_steps = [('vectorizer', vectorizer_copy)]
+                if isinstance(self.feat_vectorizer, DictVectorizer):
+                    vectorizer_copy.sparse = False
+                else:
+                    densifier = Densifier()
+                    pipeline_steps.append(('densifier', densifier))
+            pipeline_steps.insert(0, ('vectorizer', vectorizer_copy))
 
             # next add the selector
             pipeline_steps.append(('selector',
                                    copy.deepcopy(self.feat_selector)))
+
+            # next, include the scaler
+            pipeline_steps.append(('scaler', copy.deepcopy(self.scaler)))
 
             # next, include the sampler, if there is one
             if self.sampler:
                 pipeline_steps.append(('sampler',
                                        copy.deepcopy(self.sampler)))
 
-            # finish with the scaler and the estimator
-            pipeline_steps.extend([('scaler', copy.deepcopy(self.scaler)),
-                                   ('estimator', copy.deepcopy(self.model))])
+            # finish with the estimator
+            pipeline_steps.append(('estimator', copy.deepcopy(self.model)))
 
             self.pipeline = Pipeline(steps=pipeline_steps)
 
