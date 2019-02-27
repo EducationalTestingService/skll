@@ -1516,7 +1516,7 @@ class Learner(object):
 
         if isinstance(self.feat_vectorizer, FeatureHasher) and \
                 issubclass(self._model_type, MultinomialNB):
-            raise ValueError('Cannot use FeatureHasher with MultinomialNB, '
+            raise ValueError('Cannot use FeatureHasher with MultinomialNB '
                              'because MultinomialNB cannot handle negative '
                              'feature values.')
 
@@ -1528,6 +1528,12 @@ class Learner(object):
         self._check_max_feature_value(xtrain)
 
         # Sampler
+        if self.sampler is not None and \
+                issubclass(self._model_type, MultinomialNB):
+            raise ValueError('Cannot use a sampler with MultinomialNB '
+                             'because MultinomialNB cannot handle negative '
+                             'feature values.')
+
         if self.sampler:
             self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
