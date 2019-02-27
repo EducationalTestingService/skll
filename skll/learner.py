@@ -1907,15 +1907,6 @@ class Learner(object):
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
 
-        # Sampler
-        if self.sampler:
-            self.logger.warning('Sampler converts sparse matrix to dense')
-            if isinstance(self.sampler, SkewedChi2Sampler):
-                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
-                xtest = self.sampler.fit_transform(xtest.todense())
-            else:
-                xtest = self.sampler.fit_transform(xtest)
-
         # Convert to dense if necessary
         if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
@@ -1934,6 +1925,15 @@ class Learner(object):
         # Scale xtest if necessary
         if not issubclass(self._model_type, MultinomialNB):
             xtest = self.scaler.transform(xtest)
+
+        # Sampler
+        if self.sampler:
+            self.logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
+                xtest = self.sampler.fit_transform(xtest.todense())
+            else:
+                xtest = self.sampler.fit_transform(xtest)
 
         # make the prediction on the test data
         try:
