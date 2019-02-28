@@ -1751,6 +1751,42 @@ def test_learning_curve_objectives_and_no_metrics():
     eq_(grid_objectives, [])
 
 
+def test_learning_curve_pipeline_option():
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'learning_curve',
+                           'train_directory': train_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression', 'MultinomialNB']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'pipeline': 'true',
+                           'metrics': '["accuracy", "unweighted_kappa"]'}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'learning_curve_metrics_and_no_objectives')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    eq_(pipeline, True)
+
+
 def test_learning_curve_default_objectives_and_no_metrics():
 
     train_dir = join(_my_dir, 'train')
