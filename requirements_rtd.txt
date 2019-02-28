@@ -7,5 +7,6 @@ tabulate
 beautifulsoup4
 numpy
 scipy
+pandas
 joblib>=0.8
 ruamel.yaml
