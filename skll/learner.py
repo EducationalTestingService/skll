@@ -217,6 +217,7 @@ class Densifier(BaseEstimator, TransformerMixin):
     sparse to dense. For example, when features are being hashed
     but we are also doing centering using the feature means.
     """
+
     def fit(self, X, y=None):
         return self
 

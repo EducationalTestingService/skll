@@ -1043,6 +1043,10 @@ Here's an example of how to use this attribute.
     pipeline2.predict(D2)
 
 
+.. note::
+    For cases where feature hashing is used (via a ``FeatureHasher``) along with centering (via a ``StandardScaler``), a custom pipeline stage :py:mod:`skll.learner.Densifier` is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` only returns sparse vectors and ``StandardScaler`` requires dense vectors when centering.
+
+
 .. _results:
 
 results *(Optional)*
