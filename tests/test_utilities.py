@@ -1076,14 +1076,6 @@ def test_plot_learning_curves_argparse():
     eq_(positional_arguments[2], summary_file_name)
 
 
-@raises(SystemExit)
-def test_plot_learning_curves_no_pandas_no_seaborn():
-    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
-    output_dir_name = join(_my_dir, 'other')
-    plc_cmd_args = [summary_file_name, output_dir_name]
-    plc.main(argv=plc_cmd_args)
-
-
 @attr('have_pandas_and_seaborn')
 @raises(SystemExit)
 def test_plot_learning_curves_missing_file():
