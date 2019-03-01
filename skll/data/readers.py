@@ -11,19 +11,17 @@ Handles loading data from various types of data files.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import csv
 import json
 import logging
 import re
 import sys
-from csv import DictReader
-from itertools import chain, islice
-from io import open, BytesIO, StringIO
+from itertools import islice
+from io import open, StringIO
 
 import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
-from six import iteritems, PY2, PY3, string_types, text_type
+from six import PY2, PY3, string_types, text_type
 from six.moves import zip
 from sklearn.feature_extraction import FeatureHasher
 
@@ -826,7 +824,7 @@ class ARFFReader(Reader):
 
             lines = [UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
                      if not isinstance(line, text_type) and PY2
-                     else line
+                     else line.strip()
                      for line in f if line.strip()]
 
         # find the row index starting with data; the line below this
