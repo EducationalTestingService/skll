@@ -1036,6 +1036,54 @@ class Learner(object):
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
 
+    def _convert_coef_array_to_feature_names(self, coef, feature_name_prefix=''):
+        """
+        A helper method used by `model_params` to convert the model coefficients
+        array into a dictionary with feature names as keys and the coefficients
+        as values.
+
+        Parameters
+        ----------
+        coef : np.array
+            A numpy array with the model coefficients
+        feature_name_prefix : str, optional
+            An optional string that should be prefixed to the feature
+            name, e.g. the name of the class for LogisticRegression
+            or the class pair for SVCs with linear kernels.
+
+        Returns
+        -------
+        res : dict
+            A dictionary of labeled weights
+        """
+        res = {}
+
+        # if we are doing feature hashing, then we need to make up
+        # the feature names
+        if isinstance(self.feat_vectorizer, FeatureHasher):
+            self.logger.warning("No feature names are available since this model was trained on hashed features.")
+            num_features = len(coef)
+            index_width_in_feature_name = int(floor(log10(num_features))) + 1
+            feature_names = []
+            for idx in range(num_features):
+                index_str = str(idx + 1).zfill(index_width_in_feature_name)
+                feature_names.append('hashed_feature_{}'.format(index_str))
+            feature_indices = range(num_features)
+            vocabulary = dict(zip(feature_names, feature_indices))
+
+        # otherwise we can just use the DictVectorizer vocabulary
+        # to get the feature names
+        else:
+            vocabulary = self.feat_vectorizer.vocabulary_
+
+        # create the final result dictionary with the prefixed
+        # feature names and the corresponding coefficient
+        for feat, idx in iteritems(vocabulary):
+            if coef[idx]:
+                res['{}{}'.format(feature_name_prefix, feat)] = coef[idx]
+
+        return res
+
     @property
     def model_params(self):
         """
@@ -1072,19 +1120,7 @@ class Learner(object):
             # inverse transform to get indices for before feature selection
             coef = coef.reshape(1, -1)
             coef = self.feat_selector.inverse_transform(coef)[0]
-            if isinstance(self.feat_vectorizer, FeatureHasher):
-                self.logger.warning("No feature names are available since this model was trained on hashed features.")
-                num_features = len(coef)
-                index_width_in_feature_name = int(floor(log10(num_features))) + 1
-                for idx in range(num_features):
-                    if coef[idx]:
-                        index_str = str(idx + 1).zfill(index_width_in_feature_name)
-                        feature_name = 'hashed_feature_{}'.format(index_str)
-                        res[feature_name] = coef[idx]
-            else:
-                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                    if coef[idx]:
-                        res[feat] = coef[idx]
+            res = self._convert_coef_array_to_feature_names(coef)
 
         elif isinstance(self._model, LinearSVC) or isinstance(self._model, LogisticRegression):
             label_list = self.label_list
@@ -1102,18 +1138,8 @@ class Learner(object):
                 coef = self.model.coef_[i]
                 coef = coef.reshape(1, -1)
                 coef = self.feat_selector.inverse_transform(coef)[0]
-                if isinstance(self.feat_vectorizer, FeatureHasher):
-                    num_features = len(coef)
-                    index_width_in_feature_name = int(floor(log10(num_features))) + 1
-                    for idx in range(num_features):
-                        if coef[idx]:
-                            index_str = str(idx + 1).zfill(index_width_in_feature_name)
-                            feature_name = '{}\thashed_feature_{}'.format(label, index_str)
-                            res[feature_name] = coef[idx]
-                else:
-                    for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                        if coef[idx]:
-                            res['{}\t{}'.format(label, feat)] = coef[idx]
+                label_res = self._convert_coef_array_to_feature_names(coef, feature_name_prefix='{}\t'.format(label))
+                res.update(label_res)
 
             if isinstance(self.model.intercept_, float):
                 intercept = {'_intercept_': self.model.intercept_}
@@ -1140,18 +1166,8 @@ class Learner(object):
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 class1 = self.label_list[class_pair[0]]
                 class2 = self.label_list[class_pair[1]]
-                if isinstance(self.feat_vectorizer, FeatureHasher):
-                    num_features = len(coef)
-                    index_width_in_feature_name = int(floor(log10(num_features))) + 1
-                    for idx in range(num_features):
-                        if coef[idx]:
-                            index_str = str(idx + 1).zfill(index_width_in_feature_name)
-                            feature_name = '{}-vs-{}\thashed_feature_{}'.format(class1, class2, index_str)
-                            res[feature_name] = coef[idx]
-                else:
-                    for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                        if coef[idx]:
-                            res['{}-vs-{}\t{}'.format(class1, class2, feat)] = coef[idx]
+                class_pair_res = self._convert_coef_array_to_feature_names(coef, feature_name_prefix='{}-vs-{}\t'.format(class1, class2))
+                res.update(class_pair_res)
                 intercept['{}-vs-{}'.format(class1, class2)] = self.model.intercept_[i]
         else:
             # not supported
