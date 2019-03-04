@@ -1113,9 +1113,14 @@ class Learner(object):
             coef = self.model.coef_
             intercept = {'_intercept_': self.model.intercept_}
 
-            # convert SVR coefficient format (1 x matrix) to array
+            # convert SVR coefficient from a matrix to a 1D array
+            # and convert from sparse to dense also if necessary.
+            # However, this last bit may not be necessary
+            # if we did feature scaling and coef is already dense.
             if isinstance(self._model, SVR):
-                coef = coef.toarray()[0]
+                if sp.issparse(coef):
+                    coef = coef.toarray()
+                coef = coef[0]
 
             # inverse transform to get indices for before feature selection
             coef = coef.reshape(1, -1)
