@@ -24,7 +24,7 @@ import sys
 from os import makedirs
 from os.path import basename, exists
 
-from skll.experiments import _HAVE_PANDAS, _HAVE_SEABORN
+from skll.experiments import _HAVE_SEABORN
 from skll.experiments import _generate_learning_curve_plots
 from skll.version import __version__
 
@@ -68,7 +68,7 @@ def main(argv=None):
         makedirs(args.output_dir)
 
     # check that we have pandas and seaborn available
-    if not (_HAVE_PANDAS and _HAVE_SEABORN):
+    if not _HAVE_SEABORN:
         logging.error("Error: need pandas and seaborn to generate learning curve plots.")
         sys.exit(1)
 
@@ -77,6 +77,7 @@ def main(argv=None):
     experiment_name = basename(args.tsv_file).rstrip('_summary.tsv')
     logging.info("Generating learning curve(s)")
     _generate_learning_curve_plots(experiment_name, args.output_dir, args.tsv_file)
+
 
 if __name__ == '__main__':
     main()
