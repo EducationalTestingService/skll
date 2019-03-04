@@ -4,6 +4,7 @@
 Simple script for printing out model weights.
 
 :author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
 
