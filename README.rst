@@ -135,11 +135,11 @@ Requirements
    Python 2.7)
 -  `logutils <https://pypi.org/project/logutils/>`__ (only required for Python 2.7)
 -  `mock <https://pypi.org/project/mock/>`__ (only required for Python 2.7)
+-  `pandas <http://pandas.pydata.org>`__ (optional)
 
 The following packages can be optionally installed for additional features
 but are not required:
 
--  `pandas <http://pandas.pydata.org>`__ (optional)
 -  `seaborn <http://seaborn.pydata.org>`__ (optional)
 
 Talks
