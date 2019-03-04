@@ -175,9 +175,9 @@ class Reader(object):
                   end=end, file=sys.stderr)
             sys.stderr.flush()
 
-    def _read_rows(self, path):
+    def _sub_read_rows(self, path):
         """
-        Read the file in row by row.
+        Read the file in row-by-row.
 
         Parameters
         ----------
@@ -279,7 +279,6 @@ class Reader(object):
             # then convert the ids to floats
             if self.ids_to_floats:
                 ids = ids.astype(float)
-
             ids = ids.values
 
         # if the label column exists,
@@ -293,10 +292,10 @@ class Reader(object):
             # map the new classes to the labels;
             # otherwise, just convert them to floats
             if self.class_map is not None:
-                labels = labels.apply(safe_float, replace_dict=self.class_map)
+                labels = labels.apply(safe_float,
+                                      replace_dict=self.class_map)
             else:
                 labels = labels.apply(safe_float)
-
             labels = labels.values
 
         # convert the remaining features to
@@ -344,7 +343,7 @@ class Reader(object):
         if self._use_pandas:
             ids, labels, features = self._sub_read(self.path_or_list)
         else:
-            ids, labels, features = self._read_rows(self.path_or_list)
+            ids, labels, features = self._sub_read_rows(self.path_or_list)
 
         # Convert everything to numpy arrays
         features = self.vectorizer.fit_transform(features)
@@ -722,7 +721,7 @@ class CSVReader(Reader):
         Parameters
         ----------
         f : file buffer
-            A file buffer for the TSV file.
+            A file buffer for the CSV file.
 
         Returns
         -------
@@ -837,11 +836,15 @@ class ARFFReader(Reader):
         # rows, and add them to the columns list
         columns = []
         for row in lines[:data_idx]:
-            row_series = self.split_with_quotes(row)
 
+            row_series = self.split_with_quotes(row)
             if row_series.loc[0, 0] == '@attribute':
                 column = row_series.loc[0, 1]
                 columns.append(column)
+
+                # if the column is the label column,
+                # and the type is 'numeric', set regression
+                # to True; otherwise False
                 if column == self.label_col:
                     self.regression = row_series.loc[0, 2] == 'numeric'
 
