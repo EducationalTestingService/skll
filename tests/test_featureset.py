@@ -18,6 +18,7 @@ from collections import OrderedDict
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
+import pandas as pd
 from nose.tools import eq_, raises, assert_not_equal
 from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
@@ -942,7 +943,6 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
     Helper function for the two unit tests for FeatureSet.from_data_frame().
     Since labels are optional, run two tests, one with, one without.
     """
-    import pandas
 
     # First, setup the test data.
     # get a 100 instances with 4 features each
@@ -976,7 +976,7 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
                               vectorizer=vectorizer)
 
     # Also create a DataFrame and then create a FeatureSet from it.
-    df = pandas.DataFrame(features, index=ids)
+    df = pd.DataFrame(features, index=ids)
     if with_labels:
         df['y'] = y
         current = FeatureSet.from_data_frame(df, featureset_name, labels_column='y',
@@ -1056,11 +1056,9 @@ def test_writing_ndj_featureset_with_string_ids():
 @attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_string_ids():
 
-    import pandas
-
-    dftest = pandas.DataFrame({"id": ['1', '2'],
-                               "score": [1, 2],
-                               "text": ["a b", "b c"]})
+    dftest = pd.DataFrame({"id": ['1', '2'],
+                           "score": [1, 2],
+                           "text": ["a b", "b c"]})
     dftest.set_index("id", inplace=True)
     test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
     test_dict_vectorizer = DictVectorizer()
@@ -1084,11 +1082,9 @@ def test_featureset_creation_from_dataframe_with_string_ids():
 @attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_string_labels():
 
-    import pandas
-
-    dftest = pandas.DataFrame({"id": [1, 2],
-                               "score": ['yes', 'no'],
-                               "text": ["a b", "b c"]})
+    dftest = pd.DataFrame({"id": [1, 2],
+                           "score": ['yes', 'no'],
+                           "text": ["a b", "b c"]})
     dftest.set_index("id", inplace=True)
     test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
     test_dict_vectorizer = DictVectorizer()
