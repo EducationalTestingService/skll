@@ -14,6 +14,7 @@ import copy
 import csv
 import itertools
 import os
+import scipy.sparse as sp
 import sys
 
 from glob import glob
@@ -848,13 +849,14 @@ def test_skll_convert_no_labels_with_label_col():
 def check_print_model_weights(task='classification'):
 
     # create some simple classification or regression data
-    if task == 'classification' or task == 'classification_no_intercept':
+    if task in ['classification', 'classification_no_intercept']:
         train_fs, _ = make_classification_data(train_test_ratio=0.8)
     elif task == 'classification_with_hashing':
         train_fs, _ = make_classification_data(train_test_ratio=0.8,
                                                use_feature_hashing=True,
                                                feature_bins=10)
-    elif task in ['multiclass_classification', 'multiclass_classification_svc']:
+    elif task in ['multiclass_classification',
+                  'multiclass_classification_svc']:
         train_fs, _ = make_classification_data(train_test_ratio=0.8, num_labels=3)
     elif task in ['multiclass_classification_with_hashing',
                   'multiclass_classification_svc_with_hashing']:
@@ -863,7 +865,10 @@ def check_print_model_weights(task='classification'):
                                                use_feature_hashing=True,
                                                feature_bins=10)
 
-    elif task == 'regression_with_hashing':
+    elif task in ['regression_with_hashing',
+                  'regression_linearsvr_with_hashing',
+                  'regression_svr_linear_with_hashing',
+                  'regression_svr_linear_with_scaling_and_hashing']:
         train_fs, _, _ = make_regression_data(num_features=4,
                                               train_test_ratio=0.8,
                                               use_feature_hashing=True,
@@ -891,8 +896,14 @@ def check_print_model_weights(task='classification'):
     elif task in ['regression', 'regression_with_hashing']:
         learner = Learner('LinearRegression')
         learner.train(train_fs, grid_search=True, grid_objective='pearson')
-    else:
+    elif task in ['regression_linearsvr', 'regression_linearsvr_with_hashing']:
         learner = Learner('LinearSVR')
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
+    elif task in ['regression_svr_linear', 'regression_svr_linear_with_hashing']:
+        learner = Learner('SVR', model_kwargs={'kernel': 'linear'})
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
+    else:
+        learner = Learner('SVR', model_kwargs={'kernel': 'linear'}, feature_scaling='both')
         learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # now save the model to disk
@@ -1034,7 +1045,14 @@ def check_print_model_weights(task='classification'):
         feature_values = [t[1] for t in sorted(feature_values)]
 
         assert_array_almost_equal(intercept, learner.model.intercept_)
-        assert_allclose(learner.model.coef_, feature_values)
+        if task in ['regression_svr_linear', 'regression_svr_linear_with_hashing']:
+            coef = learner.model.coef_.toarray()[0]
+            assert_allclose(coef, feature_values)
+        elif task in ['regression_svr_linear_with_scaling', 'regression_svr_linear_with_scaling_and_hashing']:
+            coef = learner.model.coef_[0]
+            assert_allclose(coef, feature_values)
+        else:
+            assert_allclose(learner.model.coef_, feature_values)
 
 
 def test_print_model_weights():
@@ -1047,7 +1065,12 @@ def test_print_model_weights():
     yield check_print_model_weights, 'classification_no_intercept'
     yield check_print_model_weights, 'regression'
     yield check_print_model_weights, 'regression_with_hashing'
-    yield check_print_model_weights, 'regression_linearSVR'
+    yield check_print_model_weights, 'regression_linearsvr'
+    yield check_print_model_weights, 'regression_linearsvr_with_hashing'
+    yield check_print_model_weights, 'regression_svr_linear'
+    yield check_print_model_weights, 'regression_svr_linear_with_hashing'
+    yield check_print_model_weights, 'regression_svr_linear_with_scaling'
+    yield check_print_model_weights, 'regression_svr_linear_with_scaling_and_hashing'
 
 
 def check_summarize_results_argparse(use_ablation=False):
