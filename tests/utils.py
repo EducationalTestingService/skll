@@ -47,7 +47,7 @@ def fill_in_config_paths(config_template_path):
     if task not in ['cross_validate', 'learning_curve']:
         to_fill_in.append('models')
 
-    if task in ['cross_validate', 'evaluate', 'learning_curve']:
+    if task in ['cross_validate', 'evaluate', 'learning_curve', 'train']:
         to_fill_in.append('results')
 
     for d in to_fill_in:

@@ -164,11 +164,12 @@ def test_specified_cv_folds():
         cv_fs, custom_cv_folds = make_cv_folds_data(
             use_feature_hashing=use_hashing)
         folds = custom_cv_folds if not use_hashing else 10
-        cv_output = learner.cross_validate(cv_fs,
-                                           cv_folds=folds,
-                                           grid_search=True,
-                                           grid_objective='f1_score_micro')
-        fold_test_scores = [t[-2] for t in cv_output[0]]
+        (grid_scores, _, _, _) = \
+            learner.cross_validate(cv_fs,
+                                   cv_folds=folds,
+                                   grid_search=True,
+                                   grid_objective='f1_score_micro')
+        fold_test_scores = [t[-2] for t in grid_scores]
 
         overall_score = np.mean(fold_test_scores)
 
@@ -243,23 +244,23 @@ def test_retrieve_cv_folds():
                          'EXAMPLE_7': '0',
                          'EXAMPLE_8': '4',
                          'EXAMPLE_9': '3'}
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs,
-                                                 stratified=True,
-                                                 cv_folds=num_folds,
-                                                 grid_search=True,
-                                                 grid_objective='f1_score_micro',
-                                                 shuffle=False,
-                                                 save_cv_folds=True)
+    _, _, _, skll_fold_ids = learner.cross_validate(cv_fs,
+                                                    stratified=True,
+                                                    cv_folds=num_folds,
+                                                    grid_search=True,
+                                                    grid_objective='f1_score_micro',
+                                                    shuffle=False,
+                                                    save_cv_folds=True)
     assert_equal(skll_fold_ids, expected_fold_ids)
 
     # Test 2: if we pass in custom fold ids, those are also preserved.
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs,
-                                                 stratified=True,
-                                                 cv_folds=custom_cv_folds,
-                                                 grid_search=True,
-                                                 grid_objective='f1_score_micro',
-                                                 shuffle=False,
-                                                 save_cv_folds=True)
+    _, _, _, skll_fold_ids = learner.cross_validate(cv_fs,
+                                                    stratified=True,
+                                                    cv_folds=custom_cv_folds,
+                                                    grid_search=True,
+                                                    grid_objective='f1_score_micro',
+                                                    shuffle=False,
+                                                    save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
 
     # Test 3: when learner.cross_validate() makes the folds but stratified=False
@@ -274,12 +275,12 @@ def test_retrieve_cv_folds():
                          'EXAMPLE_7': '3',
                          'EXAMPLE_8': '4',
                          'EXAMPLE_9': '4'}
-    _, _, skll_fold_ids = learner.cross_validate(cv_fs,
-                                                 stratified=False,
-                                                 cv_folds=num_folds,
-                                                 grid_search=False,
-                                                 shuffle=False,
-                                                 save_cv_folds=True)
+    _, _, _, skll_fold_ids = learner.cross_validate(cv_fs,
+                                                    stratified=False,
+                                                    cv_folds=num_folds,
+                                                    grid_search=False,
+                                                    shuffle=False,
+                                                    save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
 
 
