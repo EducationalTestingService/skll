@@ -21,6 +21,7 @@ from io import open, StringIO
 import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
+from pandas.io.common import CParserError
 from six import PY2, PY3, string_types, text_type
 from six.moves import zip
 from sklearn.feature_extraction import FeatureHasher
@@ -248,7 +249,7 @@ class Reader(object):
 
         return ids, labels, features
 
-    def _parse_dataframe(self, df):
+    def _parse_dataframe(self, df, id_col, label_col, features=None):
         """
         Parse the data frame into ids,
         labels, and features.
@@ -257,6 +258,15 @@ class Reader(object):
         ----------
         df : pd.DataFrame
             The pandas data frame to parse.
+        id_col : str or None
+            The id column.
+        label_col : str or None
+            The label column.
+        features : list of dict or None
+            The features, if they already exist;
+            if not, then they will be extracted
+            from the data frame.
+            Defaults to None.
 
         Returns
         -------
@@ -267,13 +277,16 @@ class Reader(object):
         features : list of dicts
             The features for the feature set.
         """
+        if df.empty:
+            raise ValueError("No features found in possibly "
+                             "empty file '{}'.".format(self.path_or_list))
 
         # if the id column exists,
         # get them from the data frame and
         # delete the column
-        if self.id_col is not None:
-            ids = df[self.id_col]
-            del df[self.id_col]
+        if id_col is not None:
+            ids = df[id_col]
+            del df[id_col]
 
             # if `ids_to_floats` is True,
             # then convert the ids to floats
@@ -284,9 +297,9 @@ class Reader(object):
         # if the label column exists,
         # get them from the data frame and
         # delete the column
-        if self.label_col is not None:
-            labels = df[self.label_col]
-            del df[self.label_col]
+        if label_col is not None:
+            labels = df[label_col]
+            del df[label_col]
 
             # if `class_map` exists, then
             # map the new classes to the labels;
@@ -299,17 +312,19 @@ class Reader(object):
             labels = labels.values
 
         # convert the remaining features to
-        # a list of dictionaries
-        features = df.to_dict(orient='records')
+        # a list of dictionaries, if no
+        # features argument was passed
+        if features is None:
+            features = df.to_dict(orient='records')
 
         # if the id column does not exist,
         # then create ids with the prefix `EXAMPLE_`
-        if self.id_col is None:
+        if id_col is None:
             ids = np.array(['EXAMPLE_{}'.format(i) for i in range(len(features))])
 
         # if the label column does not exist,
         # create an array of Nones
-        if self.label_col is None:
+        if label_col is None:
             labels = np.array([None] * len(features))
 
         return ids, labels, features
@@ -431,6 +446,10 @@ class NDJReader(Reader):
     must be specified as the  "id" key in each JSON dictionary.
     """
 
+    def __init__(self, path_or_list, **kwargs):
+        super(NDJReader, self).__init__(path_or_list, **kwargs)
+        self._use_pandas = True
+
     def _sub_read(self, f):
         """
         The function called on the file buffer in the ``read()`` method
@@ -441,50 +460,38 @@ class NDJReader(Reader):
         f : file buffer
             A file buffer for an NDJ file.
 
-        Yields
-        ------
-        curr_id : str
-            The current ID for the example.
-        class_name : float or str
-            The name of the class label for the example.
-        example : dict
-            The example valued in dictionary format, with 'x'
-            as list of features.
-
-        Raises
-        ------
-        ValueError
-            If IDs cannot be converted to floats, and ``ids_to_floats``
-            is ``True``.
+        Returns
+        -------
+        ids : np.array
+            The ids for the feature set.
+        labels : np.array
+            The labels for the feature set.
+        features : list of dicts
+            The features for the features set.
         """
-        for example_num, line in enumerate(f):
-            # Remove extraneous whitespace
-            line = line.strip()
+        with open(f, 'r' if PY3 else 'rb') as buff:
+            lines = [json.loads(line.strip()) for line in buff
+                     if line.strip() and not line.startswith('//')]
 
-            # If this is a comment line or a blank line, move on
-            if line.startswith('//') or not line:
-                continue
+        # create a data frame; if it's empty,
+        # then return `_parse_dataframe()`, which
+        # will raise an error
+        df = pd.DataFrame(lines)
+        if df.empty:
+            return self._parse_dataframe(df, None, None)
 
-            # Process good lines
-            example = json.loads(line)
-            # Convert all IDs to strings initially,
-            # for consistency with csv and megam formats.
-            curr_id = str(example.get("id",
-                                      "EXAMPLE_{}".format(example_num)))
-            class_name = (safe_float(example['y'],
-                                     replace_dict=self.class_map)
-                          if 'y' in example else None)
-            example = example["x"]
+        # if it's PY2 and `id` is in the
+        # data frame, make sure it's a string
+        if PY2 and 'id' in df:
+            df['id'] = df['id'].astype(str)
 
-            if self.ids_to_floats:
-                try:
-                    curr_id = float(curr_id)
-                except ValueError:
-                    raise ValueError(('You set ids_to_floats to true, but' +
-                                      ' ID {} could not be converted to ' +
-                                      'float').format(curr_id))
-
-            yield curr_id, class_name, example
+        # convert the features to a
+        # list of dictionaries
+        features = df['x'].tolist()
+        return self._parse_dataframe(df,
+                                     'id' if 'id' in df else None,
+                                     'y' if 'y' in df else None,
+                                     features=features)
 
 
 class MegaMReader(Reader):
@@ -732,8 +739,11 @@ class CSVReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        df = pd.read_csv(f)
-        return self._parse_dataframe(df)
+        try:
+            df = pd.read_csv(f, engine='c')
+        except CParserError:
+            df = pd.read_csv(f)
+        return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
 class ARFFReader(Reader):
@@ -767,8 +777,7 @@ class ARFFReader(Reader):
                           delimiter=' ',
                           header=None,
                           quote_char="'",
-                          escape_char='\\',
-                          **kwargs):
+                          escape_char='\\'):
         """
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
@@ -796,12 +805,18 @@ class ARFFReader(Reader):
             quote_char = quote_char.encode()
             escape_char = escape_char.encode()
 
-        return pd.read_csv(StringIO(s),
-                           header=header,
-                           delimiter=delimiter,
-                           quotechar=quote_char,
-                           escapechar=escape_char,
-                           **kwargs)
+        # additional arguments we want
+        # to pass to the `pd.read_csv()` function
+        kwargs = {'header': header,
+                  'delimiter': delimiter,
+                  'quotechar': quote_char,
+                  'escapechar': escape_char}
+
+        try:
+            df = pd.read_csv(StringIO(s), engine='c', **kwargs)
+        except CParserError:
+            df = pd.read_csv(StringIO(s), **kwargs)
+        return df
 
     def _sub_read(self, f):
         """
@@ -819,12 +834,12 @@ class ARFFReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
+        with open(f, 'r' if PY3 else 'rb') as buff:
 
             lines = [UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
                      if not isinstance(line, text_type) and PY2
                      else line.strip()
-                     for line in f if line.strip()]
+                     for line in buff if line.strip()]
 
         # find the row index starting with data; the line below this
         # is where the data should actually begin
@@ -854,7 +869,7 @@ class ARFFReader(Reader):
                 self.relation = row_series.loc[0, 1]
 
         df.columns = columns
-        return self._parse_dataframe(df)
+        return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
 class TSVReader(Reader):
@@ -896,8 +911,11 @@ class TSVReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        df = pd.read_csv(f, sep='\t')
-        return self._parse_dataframe(df)
+        try:
+            df = pd.read_csv(f, sep='\t', engine='c')
+        except CParserError:
+            df = pd.read_csv(f, sep='\t')
+        return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
 def safe_float(text, replace_dict=None, logger=None):
