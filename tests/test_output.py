@@ -28,13 +28,14 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 from nose.plugins.attrib import attr
-from nose.tools import eq_, ok_
+from nose.tools import eq_, ok_, assert_raises
 
 from sklearn.datasets import load_digits
 from sklearn.model_selection import ShuffleSplit, learning_curve
 from sklearn.naive_bayes import MultinomialNB
 
 from skll.data import FeatureSet, NDJWriter, Reader
+from skll.config import _VALID_TASKS
 from skll.experiments import (_HAVE_PANDAS,
                               _HAVE_SEABORN,
                               _compute_ylimits_for_featureset,
@@ -96,6 +97,12 @@ def tearDown():
         for output_file in (glob(join(output_dir, 'test_{}_*'.format(suffix))) +
                             glob(join(output_dir, 'test_majority_class_custom_learner_*'))):
             os.unlink(output_file)
+
+    for suffix in _VALID_TASKS:
+        config_files = ['test_cv_results_{}.cfg'.format(suffix)]
+        for cf in config_files:
+            if exists(join(config_dir, cf)):
+                os.unlink(join(config_dir, cf))
 
 
 # Generate and write out data for the test that checks summary scores
@@ -211,10 +218,10 @@ def check_summary_score(use_feature_hashing,
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
-            # the learner results dictionaries should have 33 rows,
+            # the learner results dictionaries should have 34 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 33)
+            eq_(len(row), 34)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -413,6 +420,162 @@ def test_xval_fancy_results_file():
         yield (check_xval_fancy_results_file, do_grid_search,
                use_folds_file, use_folds_file_for_grid_search,
                use_additional_metrics)
+
+
+def check_grid_search_cv_results(task, do_grid_search):
+    learners = ['LogisticRegression', 'SVC']
+    expected_path = join(_my_dir, 'other', 'cv_results')
+    time_field = lambda x: x.endswith('_time')
+    train_path = join(_my_dir, 'train', 'f0.jsonlines')
+    output_dir = join(_my_dir, 'output')
+
+    exp_name = ('test_grid_search_cv_results_{}_{}'
+                .format(task, "gs" if do_grid_search else "nogs"))
+
+    # make a simple config file for cross-validation
+    values_to_fill_dict = {'experiment_name': exp_name,
+                           'train_file': train_path,
+                           'task': task,
+                           'grid_search': json.dumps(do_grid_search),
+                           'objectives': "['f1_score_micro']",
+                           'featureset_names': "['f0']",
+                           'learners': '{}'.format(json.dumps(learners)),
+                           'log': output_dir,
+                           'results': output_dir}
+    if task == 'train':
+        values_to_fill_dict['models'] = output_dir
+    elif task == 'cross_validate':
+        values_to_fill_dict['predictions'] = output_dir
+    elif task in ['evaluate', 'predict']:
+        values_to_fill_dict['predictions'] = output_dir
+        values_to_fill_dict['test_file'] = \
+            values_to_fill_dict['train_file']
+
+    # In the case where grid search is on and the task is
+    # learning curve, grid search will automatically be turned
+    # off, so simply turn it off here as well since it should
+    # result in the same situation
+    elif task == 'learning_curve':
+        if do_grid_search:
+            do_grid_search = False
+
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_cv_results.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         task)
+
+    # run the experiment
+    if task in ['train', 'predict']:
+        if do_grid_search:
+            run_configuration(config_path, quiet=True)
+        else:
+            assert_raises(ValueError, run_configuration, config_path, quiet=True)
+            # Short-circuit the test since a ValueError is
+            # expected and is fatal
+            return
+    else:
+        run_configuration(config_path, quiet=True)
+
+    # now make sure that the results json file was produced
+    for learner in learners:
+        results_file_name = ('{}_f0_{}.results.json'
+                             .format(exp_name, learner))
+        actual_results_file_path = join(_my_dir, 'output',
+                                        results_file_name)
+        expected_results_file_path = join(expected_path,
+                                          results_file_name)
+        ok_(exists(actual_results_file_path))
+        with open(expected_results_file_path) as expected, \
+             open(actual_results_file_path) as actual:
+            expected_lines = [json.loads(line) for line in expected][0]
+            actual_lines = [json.loads(line) for line in actual][0]
+            assert len(expected_lines) == len(actual_lines)
+            if task == 'cross_validate':
+                # All but the last line will have grid search-related
+                # results
+                for (expected_gs_cv_results,
+                     actual_gs_cv_results) in zip(expected_lines[:-1],
+                                                  actual_lines[:-1]):
+                    assert len(expected_gs_cv_results) == len(actual_gs_cv_results)
+                    for field in ['grid_score', 'grid_search_cv_results']:
+                        if do_grid_search:
+                            assert (set(expected_gs_cv_results)
+                                    .intersection(actual_gs_cv_results) ==
+                                    set(expected_gs_cv_results))
+                            if field == 'grid_score':
+                                assert expected_gs_cv_results[field] == \
+                                       actual_gs_cv_results[field]
+                            else:
+                                for subfield in expected_gs_cv_results[field]:
+                                    if time_field(subfield): continue
+                                    assert expected_gs_cv_results[field][subfield] == \
+                                           actual_gs_cv_results[field][subfield]
+                        else:
+                            if field == 'grid_score':
+                                assert actual_gs_cv_results[field] == 0.0
+                            else:
+                                assert actual_gs_cv_results[field] is None
+                # The last line should be for the "average" and should
+                # not contain any grid search results
+                assert actual_lines[-1]['fold'] == 'average'
+                for field in ['grid_score', 'grid_search_cv_results']:
+                    assert field not in actual_lines[-1]
+            elif task == 'evaluate':
+                for (expected_gs_cv_results,
+                     actual_gs_cv_results) in zip(expected_lines,
+                                                  actual_lines):
+                    assert len(expected_gs_cv_results) == len(actual_gs_cv_results)
+                    for field in ['grid_score', 'grid_search_cv_results']:
+                        if do_grid_search:
+                            assert (set(expected_gs_cv_results)
+                                    .intersection(actual_gs_cv_results) ==
+                                    set(expected_gs_cv_results))
+                            if field == 'grid_score':
+                                assert expected_gs_cv_results[field] == \
+                                       actual_gs_cv_results[field]
+                            else:
+                                for subfield in expected_gs_cv_results[field]:
+                                    if time_field(subfield): continue
+                                    assert expected_gs_cv_results[field][subfield] == \
+                                           actual_gs_cv_results[field][subfield]
+                        else:
+                            if field == 'grid_score':
+                                assert actual_gs_cv_results[field] == 0.0
+                            else:
+                                assert actual_gs_cv_results[field] is None
+            elif task in ['train', 'predict']:
+                expected_gs_cv_results = expected_lines
+                actual_gs_cv_results = actual_lines
+                assert set(expected_gs_cv_results).intersection(actual_gs_cv_results) == \
+                       set(expected_gs_cv_results)
+                for field in ['grid_score', 'grid_search_cv_results']:
+                    if field == 'grid_score':
+                        assert expected_gs_cv_results[field] == \
+                               actual_gs_cv_results[field]
+                    else:
+                        for subfield in expected_gs_cv_results[field]:
+                            if time_field(subfield): continue
+                            assert expected_gs_cv_results[field][subfield] == \
+                                   actual_gs_cv_results[field][subfield]
+            else:
+                for expected_line, actual_line in zip(expected_lines,
+                                                      actual_lines):
+                    expected_fields = set(list(expected_line))
+                    actual_fields = set(list(actual_line))
+                    assert expected_fields.intersection(actual_fields) == \
+                           expected_fields
+                    assert all(field not in actual_fields
+                               for field in ['grid_score',
+                                             'grid_search_cv_results'])
+
+
+def test_grid_search_cv_results():
+    for task in _VALID_TASKS:
+        for do_grid_search in [True, False]:
+            yield check_grid_search_cv_results, task, do_grid_search
 
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.

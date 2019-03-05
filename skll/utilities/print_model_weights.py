@@ -4,6 +4,7 @@
 Simple script for printing out model weights.
 
 :author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
 
@@ -78,11 +79,7 @@ def main(argv=None):
                 intercept_is_array = False
 
             # now print out the intercepts
-            if intercept_is_array:
-                    intercept_list = ["%.12f" % i for i in model_intercepts]
-                    print("intercept = {}".format(intercept_list))
-            else:
-                print("intercept = {:.12f}".format(model_intercepts))
+            print("intercept = {:.12f}".format(model_intercepts))
         else:
             print("== intercept values ==")
             for (label, val) in intercept.items():

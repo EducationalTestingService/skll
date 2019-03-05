@@ -26,7 +26,6 @@ from os.path import basename, exists, isfile, join
 
 import ruamel.yaml as yaml
 
-from prettytable import PrettyTable, ALL
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn import __version__ as SCIKIT_VERSION
@@ -37,6 +36,7 @@ from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
                           _import_custom_learner)
 from skll.version import __version__
+from tabulate import tabulate
 
 # Check if gridmap is available
 try:
@@ -689,6 +689,7 @@ def _classify_featureset(args):
         logger.info("Cross-validating")
         (task_results,
          grid_scores,
+         grid_search_cv_results_dicts,
          skll_fold_ids) = learner.cross_validate(train_examples,
                                                  shuffle=shuffle,
                                                  stratified=stratified_folds,
@@ -715,14 +716,16 @@ def _classify_featureset(args):
         if not exists(modelfile) or overwrite:
             logger.info("Featurizing and training new {} model".format(learner_name))
 
-            best_score = learner.train(train_examples,
-                                       shuffle=shuffle,
-                                       grid_search=grid_search,
-                                       grid_search_folds=grid_search_folds,
-                                       grid_objective=grid_objective,
-                                       param_grid=param_grid,
-                                       grid_jobs=grid_search_jobs)
+            (best_score,
+             grid_search_cv_results) = learner.train(train_examples,
+                                                     shuffle=shuffle,
+                                                     grid_search=grid_search,
+                                                     grid_search_folds=grid_search_folds,
+                                                     grid_objective=grid_objective,
+                                                     param_grid=param_grid,
+                                                     grid_jobs=grid_search_jobs)
             grid_scores = [best_score]
+            grid_search_cv_results_dicts = [grid_search_cv_results]
 
             # save model
             if model_path:
@@ -736,8 +739,9 @@ def _classify_featureset(args):
                                                                    round(best_score, 3)))
         else:
             grid_scores = [None]
+            grid_search_cv_results_dicts = [None]
 
-        # print out the tuned parameters and best CV score
+        # print out the parameters
         param_out = ('{}: {}'.format(param_name, param_value)
                      for param_name, param_value in
                      iteritems(learner.model.get_params()))
@@ -769,6 +773,7 @@ def _classify_featureset(args):
 
         res = _create_learner_result_dicts(task_results,
                                            grid_scores,
+                                           grid_search_cv_results_dicts,
                                            learner_result_dict_base)
 
         # write out the result dictionary to a json file
@@ -780,6 +785,7 @@ def _classify_featureset(args):
                        '{}.results'.format(job_name)),
                   'w') as output_file:
             _print_fancy_output(res, output_file)
+
     elif task == 'learning_curve':
         results_json_path = join(results_path,
                                  '{}.results.json'.format(job_name))
@@ -801,7 +807,23 @@ def _classify_featureset(args):
         file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(results_json_path, file_mode) as json_file:
             json.dump(res, json_file, cls=NumpyTypeEncoder)
+
+    # For all other tasks, i.e. train or predict
     else:
+        if results_path:
+            results_json_path = join(results_path,
+                                     '{}.results.json'.format(job_name))
+
+            assert len(grid_scores) == 1
+            assert len(grid_search_cv_results_dicts) == 1
+            grid_search_cv_results_dict = {"grid_score": grid_scores[0]}
+            grid_search_cv_results_dict["grid_search_cv_results"] = \
+                grid_search_cv_results_dicts[0]
+            grid_search_cv_results_dict.update(learner_result_dict_base)
+            # write out the result dictionary to a json file
+            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
+            with open(results_json_path, file_mode) as json_file:
+                json.dump(grid_search_cv_results_dict, json_file, cls=NumpyTypeEncoder)
         res = [learner_result_dict_base]
 
     # write out the cv folds if required
@@ -817,6 +839,7 @@ def _classify_featureset(args):
 
 def _create_learner_result_dicts(task_results,
                                  grid_scores,
+                                 grid_search_cv_results_dicts,
                                  learner_result_dict_base):
     """
     Create the learner result dictionaries that are used to create JSON and
@@ -828,6 +851,11 @@ def _create_learner_result_dicts(task_results,
         The task results list.
     grid_scores : list
         The grid scores list.
+    grid_search_cv_results_dicts : list of dicts
+        A list of dictionaries of grid search CV results, one per fold,
+        with keys such as "params", "mean_test_score", etc, that are
+        mapped to lists of values associated with each hyperparameter set
+        combination.
     learner_result_dict_base : dict
         Base dictionary for all learner results.
 
@@ -849,14 +877,18 @@ def _create_learner_result_dicts(task_results,
     f_sum_dict = defaultdict(float)
     result_table = None
 
-    for k, ((conf_matrix,
-             fold_accuracy,
-             result_dict,
-             model_params,
-             score,
-             additional_scores), grid_score) in enumerate(zip(task_results,
-                                                              grid_scores),
-                                                          start=1):
+    for (k,
+         ((conf_matrix,
+           fold_accuracy,
+           result_dict,
+           model_params,
+           score,
+           additional_scores),
+          grid_score,
+          grid_search_cv_results)) in enumerate(zip(task_results,
+                                                    grid_scores,
+                                                    grid_search_cv_results_dicts),
+                                                start=1):
 
         # create a new dict for this fold
         learner_result_dict = {}
@@ -876,14 +908,12 @@ def _create_learner_result_dicts(task_results,
         learner_result_dict['model_params'] = json.dumps(model_params)
         if grid_score is not None:
             learner_result_dict['grid_score'] = grid_score
+            learner_result_dict['grid_search_cv_results'] = grid_search_cv_results
 
         if conf_matrix:
             labels = sorted(iterkeys(task_results[0][2]))
-            result_table = PrettyTable([""] + labels + ["Precision", "Recall",
-                                                        "F-measure"],
-                                       header=True, hrules=ALL)
-            result_table.align = 'r'
-            result_table.float_format = '.3'
+            headers = [""] + labels + ["Precision", "Recall", "F-measure"]
+            rows = []
             for i, actual_label in enumerate(labels):
                 conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
                 label_prec = _get_stat_float(result_dict[actual_label],
@@ -900,8 +930,13 @@ def _create_learner_result_dicts(task_results,
                     f_sum_dict[actual_label] += float(label_f)
                 result_row = ([actual_label] + conf_matrix[i] +
                               [label_prec, label_recall, label_f])
-                result_table.add_row(result_row)
+                rows.append(result_row)
 
+            result_table = tabulate(rows, 
+                                    headers=headers,
+                                    stralign="right",
+                                    floatfmt=".3f",
+                                    tablefmt="grid")
             result_table_str = '{}'.format(result_table)
             result_table_str += '\n(row = reference; column = predicted)'
             learner_result_dict['result_table'] = result_table_str
@@ -935,20 +970,19 @@ def _create_learner_result_dicts(task_results,
         learner_result_dict['fold'] = 'average'
 
         if result_table:
-            result_table = PrettyTable(["Label", "Precision", "Recall",
-                                        "F-measure"],
-                                       header=True)
-            result_table.align = "r"
-            result_table.align["Label"] = "l"
-            result_table.float_format = '.3'
+            headers = ["Label", "Precision", "Recall", "F-measure"]
+            rows = []
             for actual_label in labels:
                 # Convert sums to means
                 prec_mean = prec_sum_dict[actual_label] / num_folds
                 recall_mean = recall_sum_dict[actual_label] / num_folds
                 f_mean = f_sum_dict[actual_label] / num_folds
-                result_table.add_row([actual_label] +
-                                     [prec_mean, recall_mean, f_mean])
+                rows.append([actual_label] + [prec_mean, recall_mean, f_mean])
 
+            result_table = tabulate(rows, 
+                                    headers=headers,
+                                    floatfmt=".3f",
+                                    tablefmt="psql")
             learner_result_dict['result_table'] = '{}'.format(result_table)
             learner_result_dict['accuracy'] = accuracy_sum / num_folds
         else:
@@ -1237,7 +1271,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                     queue=queue))
                 else:
                     _classify_featureset(job_args)
-    test_set_name = basename(test_path)
 
     # submit the jobs (if running on grid)
     if not local and _HAVE_GRIDMAP:

@@ -690,8 +690,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # make sure all the specified paths/files exist
     train_path = _locate_file(train_path, config_dir)
     test_path = _locate_file(test_path, config_dir)
-    train_file = _locate_file(train_file, config_dir)
-    test_file = _locate_file(test_file, config_dir)
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
@@ -814,9 +812,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
                          '{}.'.format(task))
-    if task in ['train', 'predict'] and results_path:
+    if task in ['train', 'predict'] and results_path and not do_grid_search:
         raise ValueError('The results path should not be set when task is '
-                         '{}.'.format(task))
+                         '{} and "grid_search" is set to False.'.format(task))
     if task == 'train' and not model_path:
         raise ValueError('The model path should be set when task is train.')
     if task in ['learning_curve', 'train'] and prediction_dir:
