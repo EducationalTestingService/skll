@@ -186,18 +186,24 @@ def check_linear_models(name,
     # that we got from make_regression_data. Take the
     # ceiling before comparing since just comparing
     # the ceilings should be enough to make sure nothing
-    # catastrophic happened. Note though that we cannot
-    # test feature weights if we are using feature hashing
-    # since model_params is not defined with a featurehasher.
-    if not use_feature_hashing:
+    # catastrophic happened. However, sometimes with
+    # feature hashing, the ceiling is not exactly identical
+    # so when that fails we want to check that the rounded
+    # feature values are the same. One of those two equalities
+    # _must_ be satisified.
 
-        # get the weights for this trained model
-        learned_weights = learner.model_params[0]
+    # get the weights for this trained model
+    learned_weights = learner.model_params[0]
 
-        for feature_name in learned_weights:
-            learned_w = math.ceil(learned_weights[feature_name])
-            given_w = math.ceil(weightdict[feature_name])
-            eq_(learned_w, given_w)
+    for feature_name in learned_weights:
+        learned_w_ceil = math.ceil(learned_weights[feature_name])
+        given_w_ceil = math.ceil(weightdict[feature_name])
+        learned_w_round = round(learned_weights[feature_name], 0)
+        given_w_round = round(weightdict[feature_name], 0)
+        ceil_equal = learned_w_ceil == given_w_ceil
+        round_equal = learned_w_round == given_w_round
+        either_equal = ceil_equal or round_equal
+        assert either_equal
 
     # now generate the predictions on the test FeatureSet
     predictions = learner.predict(test_fs)
@@ -207,9 +213,7 @@ def check_linear_models(name,
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
     cor, _ = pearsonr(predictions, test_fs.labels)
-    expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
-    assert_greater(cor, expected_cor_range[0])
-    assert_less(cor, expected_cor_range[1])
+    assert_greater(cor, 0.95)
 
 
 # the runner function for linear regression models
@@ -272,12 +276,10 @@ def check_non_linear_models(name,
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
     cor, _ = pearsonr(predictions, test_fs.labels)
-    expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
-    assert_greater(cor, expected_cor_range[0])
-    assert_less(cor, expected_cor_range[1])
+    assert_greater(cor, 0.95)
 
 
-# the runner function for linear regression models
+# the runner function for non-linear regression models
 def test_non_linear_models():
 
     for (regressor_name,
@@ -319,25 +321,23 @@ def check_tree_models(name,
 
     # make sure that the feature importances are as expected.
     if name.endswith('DecisionTreeRegressor'):
-        expected_feature_importances = ([0.37483895,
-                                         0.08816508,
-                                         0.25379838,
-                                         0.18337128,
-                                         0.09982631] if use_feature_hashing else
+        expected_feature_importances = ([0.730811,
+                                         0.001834,
+                                         0.247603,
+                                         0.015241,
+                                         0.004511] if use_feature_hashing else
                                         [0.08926899,
                                          0.15585068,
                                          0.75488033])
-        expected_cor_range = [0.5, 0.6] if use_feature_hashing else [0.9, 1.0]
     else:
-        expected_feature_importances = ([0.40195798,
-                                         0.06702903,
-                                         0.25816559,
-                                         0.18185518,
-                                         0.09099222] if use_feature_hashing else
+        expected_feature_importances = ([0.733654,
+                                         0.002528,
+                                         0.245527,
+                                         0.013664,
+                                         0.004627] if use_feature_hashing else
                                         [0.07974267,
                                          0.16121895,
                                          0.75903838])
-        expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
 
     feature_importances = learner.model.feature_importances_
     assert_allclose(feature_importances, expected_feature_importances,
@@ -351,8 +351,7 @@ def check_tree_models(name,
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
     cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, expected_cor_range[0])
-    assert_less(cor, expected_cor_range[1])
+    assert_greater(cor, 0.95)
 
 
 # the runner function for tree-based regression models
@@ -396,19 +395,19 @@ def check_ensemble_models(name,
     # make sure that the feature importances are as expected.
     if name.endswith('AdaBoostRegressor'):
         if use_feature_hashing:
-            expected_feature_importances = [0.33718443,
-                                            0.07810721,
-                                            0.25621769,
-                                            0.19489766,
-                                            0.13359301]
+            expected_feature_importances = [0.749811,
+                                            0.001373,
+                                            0.23357,
+                                            0.011691,
+                                            0.003554]
         else:
             expected_feature_importances = [0.10266744, 0.18681777, 0.71051479]
     else:
-        expected_feature_importances = ([0.471714,
-                                         0.022797,
-                                         0.283377,
-                                         0.170823,
-                                         0.051288] if use_feature_hashing else
+        expected_feature_importances = ([0.735756,
+                                         0.001034,
+                                         0.242734,
+                                         0.015836,
+                                         0.00464] if use_feature_hashing else
                                         [0.082621,
                                          0.166652,
                                          0.750726])
@@ -425,9 +424,7 @@ def check_ensemble_models(name,
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
     cor, _ = pearsonr(predictions, test_fs.labels)
-    expected_cor_range = [0.7, 0.8] if use_feature_hashing else [0.9, 1.0]
-    assert_greater(cor, expected_cor_range[0])
-    assert_less(cor, expected_cor_range[1])
+    assert_greater(cor, 0.95)
 
 
 # the runner function for ensemble regression models
