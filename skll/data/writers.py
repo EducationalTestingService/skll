@@ -16,8 +16,6 @@ import os
 import re
 import sys
 import pandas as pd
-from copy import deepcopy
-from csv import DictWriter
 from decimal import Decimal
 from io import open
 
@@ -183,8 +181,7 @@ class Writer(object):
                               end="\r", file=sys.stderr)
                         sys.stderr.flush()
         else:
-            feat_set = deepcopy(self.feat_set)
-            self._write_data(feat_set, sub_path, filter_features)
+            self._write_data(self.feat_set, sub_path, filter_features)
 
         if not self.quiet:
             print("{}{:<15}".format(self._progress_msg, "done"),
@@ -290,8 +287,7 @@ class Writer(object):
 
         # then, split the names and indexes into separate lists
         column_names, column_indexes = zip(*columns)
-        column_names, column_indexes = list(column_names), list(column_indexes)
-        return column_names, column_indexes
+        return list(column_names), list(column_indexes)
 
     def _create_dataframe(self, feature_set, filter_features=None):
         """
@@ -305,7 +301,7 @@ class Writer(object):
             If only writing a subset of the features in the
             FeatureSet to ``output_file``, these are the
             features to include in this file.
-            Defaults to None
+            Defaults to None.
 
         Returns
         -------
@@ -537,14 +533,14 @@ class ARFFWriter(Writer):
 
         # Open file for writing and write
         file_mode = 'wb' if PY2 else 'w'
-        with open(output_file, file_mode) as output_file:
+        with open(output_file, file_mode) as buff:
 
             # Write out the header
-            self._write_header(feature_set, output_file, filter_features)
+            self._write_header(feature_set, buff, filter_features)
 
             # Write out the data
             mode = 'a'.encode() if PY2 else 'a'
-            df.to_csv(output_file, mode=mode, index=False, header=False)
+            df.to_csv(buff, mode=mode, index=False, header=False)
 
 
 class MegaMWriter(Writer):
