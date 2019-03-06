@@ -20,6 +20,7 @@ import sys
 from collections import Counter, defaultdict
 from functools import wraps
 from importlib import import_module
+from math import floor, log10
 from itertools import combinations
 from multiprocessing import cpu_count
 
@@ -1035,6 +1036,54 @@ class Learner(object):
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
 
+    def _convert_coef_array_to_feature_names(self, coef, feature_name_prefix=''):
+        """
+        A helper method used by `model_params` to convert the model coefficients
+        array into a dictionary with feature names as keys and the coefficients
+        as values.
+
+        Parameters
+        ----------
+        coef : np.array
+            A numpy array with the model coefficients
+        feature_name_prefix : str, optional
+            An optional string that should be prefixed to the feature
+            name, e.g. the name of the class for LogisticRegression
+            or the class pair for SVCs with linear kernels.
+
+        Returns
+        -------
+        res : dict
+            A dictionary of labeled weights
+        """
+        res = {}
+
+        # if we are doing feature hashing, then we need to make up
+        # the feature names
+        if isinstance(self.feat_vectorizer, FeatureHasher):
+            self.logger.warning("No feature names are available since this model was trained on hashed features.")
+            num_features = len(coef)
+            index_width_in_feature_name = int(floor(log10(num_features))) + 1
+            feature_names = []
+            for idx in range(num_features):
+                index_str = str(idx + 1).zfill(index_width_in_feature_name)
+                feature_names.append('hashed_feature_{}'.format(index_str))
+            feature_indices = range(num_features)
+            vocabulary = dict(zip(feature_names, feature_indices))
+
+        # otherwise we can just use the DictVectorizer vocabulary
+        # to get the feature names
+        else:
+            vocabulary = self.feat_vectorizer.vocabulary_
+
+        # create the final result dictionary with the prefixed
+        # feature names and the corresponding coefficient
+        for feat, idx in iteritems(vocabulary):
+            if coef[idx]:
+                res['{}{}'.format(feature_name_prefix, feat)] = coef[idx]
+
+        return res
+
     @property
     def model_params(self):
         """
@@ -1064,16 +1113,19 @@ class Learner(object):
             coef = self.model.coef_
             intercept = {'_intercept_': self.model.intercept_}
 
-            # convert SVR coefficient format (1 x matrix) to array
+            # convert SVR coefficient from a matrix to a 1D array
+            # and convert from sparse to dense also if necessary.
+            # However, this last bit may not be necessary
+            # if we did feature scaling and coef is already dense.
             if isinstance(self._model, SVR):
-                coef = coef.toarray()[0]
+                if sp.issparse(coef):
+                    coef = coef.toarray()
+                coef = coef[0]
 
             # inverse transform to get indices for before feature selection
             coef = coef.reshape(1, -1)
             coef = self.feat_selector.inverse_transform(coef)[0]
-            for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                if coef[idx]:
-                    res[feat] = coef[idx]
+            res = self._convert_coef_array_to_feature_names(coef)
 
         elif isinstance(self._model, LinearSVC) or isinstance(self._model, LogisticRegression):
             label_list = self.label_list
@@ -1084,13 +1136,15 @@ class Learner(object):
             if len(self.label_list) == 2:
                 label_list = self.label_list[-1:]
 
+            if isinstance(self.feat_vectorizer, FeatureHasher):
+                self.logger.warning("No feature names are available since this model was trained on hashed features.")
+
             for i, label in enumerate(label_list):
                 coef = self.model.coef_[i]
                 coef = coef.reshape(1, -1)
                 coef = self.feat_selector.inverse_transform(coef)[0]
-                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                    if coef[idx]:
-                        res['{}\t{}'.format(label, feat)] = coef[idx]
+                label_res = self._convert_coef_array_to_feature_names(coef, feature_name_prefix='{}\t'.format(label))
+                res.update(label_res)
 
             if isinstance(self.model.intercept_, float):
                 intercept = {'_intercept_': self.model.intercept_}
@@ -1109,18 +1163,17 @@ class Learner(object):
         # "0 vs 2", ... "0 vs n", "1 vs 2", "1 vs 3", "1 vs n", ... "n-1 vs n".
         elif isinstance(self._model, SVC) and self._model.kernel == 'linear':
             intercept = {}
+            if isinstance(self.feat_vectorizer, FeatureHasher):
+                self.logger.warning("No feature names are available since this model was trained on hashed features.")
             for i, class_pair in enumerate(combinations(range(len(self.label_list)), 2)):
                 coef = self.model.coef_[i]
                 coef = coef.toarray()
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 class1 = self.label_list[class_pair[0]]
                 class2 = self.label_list[class_pair[1]]
-                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                    if coef[idx]:
-                        res['{}-vs-{}\t{}'.format(class1, class2, feat)] = coef[idx]
-
+                class_pair_res = self._convert_coef_array_to_feature_names(coef, feature_name_prefix='{}-vs-{}\t'.format(class1, class2))
+                res.update(class_pair_res)
                 intercept['{}-vs-{}'.format(class1, class2)] = self.model.intercept_[i]
-
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
@@ -1365,9 +1418,13 @@ class Learner(object):
 
         Returns
         -------
-        grid_score : float
-            The best grid search objective function score, or 0 if we're
-            not doing grid search.
+        tuple : (float, dict)
+            1) The best grid search objective function score, or 0 if
+            we're not doing grid search, and 2) a dictionary of grid
+            search CV results with keys such as "params",
+            "mean_test_score", etc, that are mapped to lists of values
+            associated with each hyperparameter set combination, or
+            None if not doing grid search.
 
         Raises
         ------
@@ -1547,7 +1604,7 @@ class Learner(object):
             # If we're using a correlation metric for doing binary
             # classification, override the estimator's predict function
             if (grid_objective in _CORRELATION_METRICS and
-                    self.model_type._estimator_type == 'classifier'):
+                self.model_type._estimator_type == 'classifier'):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
 
@@ -1565,11 +1622,13 @@ class Learner(object):
             grid_searcher.fit(xtrain, labels)
             self._model = grid_searcher.best_estimator_
             grid_score = grid_searcher.best_score_
+            grid_cv_results = grid_searcher.cv_results_
         else:
             self._model = estimator.fit(xtrain, labels)
             grid_score = 0.0
+            grid_cv_results = None
 
-        return grid_score
+        return grid_score, grid_cv_results
 
     def evaluate(self, examples, prediction_prefix=None, append=False,
                  grid_objective=None, output_metrics=[]):
@@ -2025,6 +2084,11 @@ class Learner(object):
             for each fold.
         grid_search_scores : list of floats
             The grid search scores for each fold.
+        grid_search_cv_results_dicts : list of dicts
+            A list of dictionaries of grid search CV results, one per fold,
+            with keys such as "params", "mean_test_score", etc, that are
+            mapped to lists of values associated with each hyperparameter set
+            combination.
         skll_fold_ids : dict
             A dictionary containing the test-fold number for each id
             if ``save_cv_folds`` is ``True``, otherwise ``None``.
@@ -2046,7 +2110,7 @@ class Learner(object):
         # _will_ work, we want to raise an error in general since it's better
         # to encode the labels as strings anyway.
         if (self.model_type._estimator_type == 'classifier' and
-                type_of_target(examples.labels) not in ['binary', 'multiclass']):
+            type_of_target(examples.labels) not in ['binary', 'multiclass']):
             raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
 
         # check that we have an objective since grid search is on by default
@@ -2129,6 +2193,7 @@ class Learner(object):
         # numbers
         results = []
         grid_search_scores = []
+        grid_search_cv_results_dicts = []
         append_predictions = False
         for train_index, test_index in kfold.split(examples.features,
                                                    examples.labels,
@@ -2140,17 +2205,20 @@ class Learner(object):
                                    labels=examples.labels[train_index],
                                    features=examples.features[train_index],
                                    vectorizer=examples.vectorizer)
+
             # Set run_create_label_dict to False since we already created the
             # label dictionary for the whole dataset above.
-            grid_search_score = self.train(train_set,
-                                           grid_search_folds=grid_search_folds,
-                                           grid_search=grid_search,
-                                           grid_objective=grid_objective,
-                                           param_grid=param_grid,
-                                           grid_jobs=grid_jobs,
-                                           shuffle=grid_search,
-                                           create_label_dict=False)
+            (grid_search_score,
+             grid_search_cv_results) = self.train(train_set,
+                                                  grid_search_folds=grid_search_folds,
+                                                  grid_search=grid_search,
+                                                  grid_objective=grid_objective,
+                                                  param_grid=param_grid,
+                                                  grid_jobs=grid_jobs,
+                                                  shuffle=grid_search,
+                                                  create_label_dict=False)
             grid_search_scores.append(grid_search_score)
+            grid_search_cv_results_dicts.append(grid_search_cv_results)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
 
@@ -2168,7 +2236,10 @@ class Learner(object):
             append_predictions = True
 
         # return list of results for all folds
-        return results, grid_search_scores, skll_fold_ids
+        return (results,
+                grid_search_scores,
+                grid_search_cv_results_dicts,
+                skll_fold_ids)
 
     def learning_curve(self,
                        examples,

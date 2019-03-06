@@ -8,6 +8,7 @@ from __future__ import (absolute_import, division, print_function,
 import re
 
 from collections import OrderedDict
+from math import floor, log10
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
@@ -46,7 +47,7 @@ def fill_in_config_paths(config_template_path):
     if task not in ['cross_validate', 'learning_curve']:
         to_fill_in.append('models')
 
-    if task in ['cross_validate', 'evaluate', 'learning_curve']:
+    if task in ['cross_validate', 'evaluate', 'learning_curve', 'train']:
         to_fill_in.append('results')
 
     for d in to_fill_in:
@@ -312,17 +313,27 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     return (train_fs, test_fs)
 
 
-def make_regression_data(num_examples=100, train_test_ratio=0.5,
-                         num_features=2, sd_noise=1.0,
+def make_regression_data(num_examples=100,
+                         train_test_ratio=0.5,
+                         num_features=2,
+                         sd_noise=1.0,
                          use_feature_hashing=False,
                          feature_bins=4,
                          start_feature_num=1,
                          random_state=1234567890):
 
+    # if we are doing feature hashing and we have asked for more
+    # feature bins than number of total features, we need to
+    # handle that because `make_regression()` doesn't know
+    # about hashing
+    if use_feature_hashing and num_features < feature_bins:
+        num_features = feature_bins
+
     # use sklearn's make_regression to generate the data for us
     X, y, weights = make_regression(n_samples=num_examples,
                                     n_features=num_features,
-                                    noise=sd_noise, random_state=random_state,
+                                    noise=sd_noise,
+                                    random_state=random_state,
                                     coef=True)
 
     # since we want to use SKLL's FeatureSet class, we need to
@@ -330,13 +341,43 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
-    feature_names = ['f{:02d}'.format(n) for n
-                     in range(start_feature_num,
-                              start_feature_num + num_features)]
+    index_width_for_feature_name = int(floor(log10(num_features))) + 1
+    feature_names = []
+    for n in range(start_feature_num, start_feature_num + num_features):
+        index_str = str(n).zfill(index_width_for_feature_name)
+        feature_name = 'f{}'.format(index_str)
+        feature_names.append(feature_name)
     features = [dict(zip(feature_names, row)) for row in X]
 
+    # At this point the labels are generated using unhashed features
+    # even if we want to do feature hashing. `make_regression()` from
+    # sklearn doesn't know anything about feature hashing, so we need
+    # a hack here to compute the updated labels ourselves
+    # using the same command that sklearn uses inside `make_regression()`
+    # which is to generate the X and the weights and then compute the
+    # y as the dot product of the two. This y will then be used as our
+    # labels instead of the original y we got from `make_regression()`.
+    # Note that we only want to use the number of weights that are
+    # equal to the number of feature bins for the hashing
+    if use_feature_hashing:
+        feature_hasher = FeatureHasher(n_features=feature_bins)
+        hashed_X = feature_hasher.fit_transform(features)
+        y = hashed_X.dot(weights[:feature_bins])
+
     # convert the weights array into a dictionary for convenience
-    weightdict = dict(zip(feature_names, weights))
+    # if we are using feature hashing, we need to use the names
+    # that would be output by `model_params()` instead of the
+    # original names since that's what we would get from SKLL
+    if use_feature_hashing:
+        index_width_for_feature_name = int(floor(log10(feature_bins))) + 1
+        hashed_feature_names = []
+        for i in range(feature_bins):
+            index_str = str(i + 1).zfill(index_width_for_feature_name)
+            feature_name = 'hashed_feature_{}'.format(index_str)
+            hashed_feature_names.append(feature_name)
+        weightdict = dict(zip(hashed_feature_names, weights[:feature_bins]))
+    else:
+        weightdict = dict(zip(feature_names, weights))
 
     # split everything into training and testing portions
     num_train_examples = int(round(train_test_ratio * num_examples))

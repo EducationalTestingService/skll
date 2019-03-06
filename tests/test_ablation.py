@@ -194,8 +194,10 @@ def test_ablation_cv_feature_hasher_all_combos():
     run_configuration(config_path, quiet=True, ablation=None)
 
     # read in the summary file and make sure it has
-    # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220
-    # lines
+    #    10 ablated featuresets
+    #      * (10 folds + 1 average line)
+    #      * 2 learners
+    #    = 220 lines in total
     with open(join(_my_dir,
                    'output',
                    'ablation_cv_feature_hasher_all_combos_summary.tsv')) as f:
@@ -206,8 +208,8 @@ def test_ablation_cv_feature_hasher_all_combos():
     # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
     num_result_files = len(glob(join(_my_dir,
-                                    'output',
-                                    'ablation_cv_feature_hasher_all_combos*.results')))
+                                     'output',
+                                     'ablation_cv_feature_hasher_all_combos*.results')))
     eq_(num_result_files, 20)
 
 
@@ -233,8 +235,8 @@ def test_ablation_cv_sampler():
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
     num_result_files = len(glob(join(_my_dir,
-                                    'output',
-                                    'ablation_cv_sampler*.results')))
+                                     'output',
+                                     'ablation_cv_sampler*.results')))
     eq_(num_result_files, 14)
 
 
