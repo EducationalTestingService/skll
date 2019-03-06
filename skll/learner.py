@@ -1680,7 +1680,9 @@ class Learner(object):
             # initialize the list that will hold the pipeline steps
             pipeline_steps = []
 
-            # note that if we had to end up using dense features
+            # note that sometimes we may have to end up using dense
+            # features or if we were using a SkewedChi2Sampler which
+            # requires dense inputs. If this turns out to be the case
             # then let's turn off `sparse` for the vectorizer copy
             # to be stored in the pipeline as well so that it works
             # on the scikit-learn in the same way. However, note that
@@ -1692,7 +1694,8 @@ class Learner(object):
             # once the hashing is done since this is what happens
             # in SKLL.
             vectorizer_copy = copy.deepcopy(self.feat_vectorizer)
-            if self._use_dense_features:
+            if (self._use_dense_features or
+                    isinstance(self.sampler, SkewedChi2Sampler)):
                 if isinstance(self.feat_vectorizer, DictVectorizer):
                     vectorizer_copy.sparse = False
                 else:
