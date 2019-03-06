@@ -386,55 +386,31 @@ class DictListReader(Reader):
     list of example dictionaries instead of a path to a file.
     """
 
-    def read(self):
-        """
-        Read examples from list of dictionaries.
+    def __init__(self, path_or_list, **kwargs):
+        super(DictListReader, self).__init__(path_or_list, **kwargs)
+        self._use_pandas = True
 
-        Returns
-        -------
-        feature_set : skll.FeatureSet
-            FeatureSet representing the list of dictionaries we read in.
-        """
-        ids = []
-        labels = []
-        feat_dicts = []
-        for example_num, example in enumerate(self.path_or_list):
-            curr_id = str(example.get("id",
-                                      "EXAMPLE_{}".format(example_num)))
-            if self.ids_to_floats:
-                try:
-                    curr_id = float(curr_id)
-                except ValueError:
-                    raise ValueError(('You set ids_to_floats to true,' +
-                                      ' but ID {} could not be ' +
-                                      'converted to float in ' +
-                                      '{}').format(curr_id, example))
-            class_name = (safe_float(example['y'],
-                                     replace_dict=self.class_map)
-                          if 'y' in example else None)
-            example = example['x']
-            # Update lists of IDs, labels, and feature dictionaries
-            if self.ids_to_floats:
-                try:
-                    curr_id = float(curr_id)
-                except ValueError:
-                    raise ValueError(('You set ids_to_floats to true, but ID '
-                                      '{} could not be converted to float in '
-                                      '{}').format(curr_id, self.path_or_list))
-            ids.append(curr_id)
-            labels.append(class_name)
-            feat_dicts.append(example)
-            # Print out status
-            if example_num % 100 == 0:
-                self._print_progress(example_num)
+    def _sub_read(self, f):
 
-        # Convert lists to numpy arrays
-        ids = np.array(ids)
-        labels = np.array(labels)
-        features = self.vectorizer.fit_transform(feat_dicts)
+        # create a data frame; if it's empty,
+        # then return `_parse_dataframe()`, which
+        # will raise an error
+        df = pd.DataFrame(f)
+        if df.empty:
+            return self._parse_dataframe(df, None, None)
 
-        return FeatureSet('converted', ids, labels=labels,
-                          features=features, vectorizer=self.vectorizer)
+        # if it's PY2 and `id` is in the
+        # data frame, make sure it's a string
+        if PY2 and 'id' in df:
+            df['id'] = df['id'].astype(str)
+
+        # convert the features to a
+        # list of dictionaries
+        features = df['x'].tolist()
+        return self._parse_dataframe(df,
+                                     'id' if 'id' in df else None,
+                                     'y' if 'y' in df else None,
+                                     features=features)
 
 
 class NDJReader(Reader):
