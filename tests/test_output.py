@@ -941,7 +941,7 @@ def test_pipeline_attribute():
                 'GradientBoostingRegressor']
     use_hashing = [True, False]
     min_feature_counts = [1, 2]
-    samplers = [None, 'RBFSampler']
+    samplers = [None, 'RBFSampler', 'SkewedChi2Sampler']
     scalers = ['none', 'with_mean', 'with_std', 'both']
 
     for (learner_name,
@@ -960,11 +960,19 @@ def test_pipeline_attribute():
             if do_feature_hashing or sampler_name is not None:
                 continue
 
+        # if we are using a SkewedChi2Sampler, we need to set the
+        # some parameters to make sure it works as expected
+        if sampler_name == 'SkewedChi2Sampler':
+            sampler_kwargs = {'skewedness': 15, 'n_components': 10}
+        else:
+            sampler_kwargs = {}
+
         # create a learner instance with the given parameters
         # and with pipeline attribute set to True
         learner = Learner(learner_name,
                           min_feature_count=min_count,
                           sampler=sampler_name,
+                          sampler_kwargs=sampler_kwargs,
                           feature_scaling=scaling_type,
                           pipeline=True)
 
