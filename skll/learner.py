@@ -1583,9 +1583,9 @@ class Learner(object):
             self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
-                xtrain = self.sampler.fit_transform(xtrain.todense())
-            else:
-                xtrain = self.sampler.fit_transform(xtrain)
+                if sp.issparse(xtrain):
+                    xtrain = xtrain.todense()
+            xtrain = self.sampler.fit_transform(xtrain)
 
         # use label dict transformed version of examples.labels if doing
         # classification
@@ -1993,9 +1993,9 @@ class Learner(object):
             self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
-                xtest = self.sampler.fit_transform(xtest.todense())
-            else:
-                xtest = self.sampler.fit_transform(xtest)
+                if sp.issparse(xtest):
+                    xtest = xtest.todense()
+            xtest = self.sampler.fit_transform(xtest)
 
         # make the prediction on the test data
         try:
