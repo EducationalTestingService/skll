@@ -323,7 +323,7 @@ class Writer(object):
         # create the data frame from the feature set;
         # then, select only the columns that we want,
         # and give the columns their correct names
-        df = pd.DataFrame(feature_set.features.todense())
+        df = pd.DataFrame(feature_set.features)
         df = df.iloc[:, column_idxs].copy()
         df.columns = column_names
 
