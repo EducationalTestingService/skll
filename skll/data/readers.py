@@ -11,7 +11,6 @@ Handles loading data from various types of data files.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import json
 import logging
 import re
 import sys
@@ -283,8 +282,9 @@ class Reader(object):
 
         # if the id column exists,
         # get them from the data frame and
-        # delete the column
-        if id_col is not None:
+        # delete the column; otherwise, just
+        # set it to None
+        if id_col is not None and id_col in df:
             ids = df[id_col]
             del df[id_col]
 
@@ -293,11 +293,14 @@ class Reader(object):
             if self.ids_to_floats:
                 ids = ids.astype(float)
             ids = ids.values
+        else:
+            id_col = None
 
         # if the label column exists,
         # get them from the data frame and
-        # delete the column
-        if label_col is not None:
+        # delete the column; otherwise, just
+        # set it to None
+        if label_col is not None and label_col in df:
             labels = df[label_col]
             del df[label_col]
 
@@ -310,6 +313,8 @@ class Reader(object):
             else:
                 labels = labels.apply(safe_float)
             labels = labels.values
+        else:
+            label_col = None
 
         # convert the remaining features to
         # a list of dictionaries, if no
@@ -390,12 +395,22 @@ class DictListReader(Reader):
         super(DictListReader, self).__init__(path_or_list, **kwargs)
         self._use_pandas = True
 
-    def _sub_read(self, f):
+    def _sub_read(self, list_of_dicts):
+        """
+        The function called to create the feature set
+        from a list of dictionaries
+
+        Parameters
+        ----------
+        list_of_dicts : list of dicts
+            A list of dictionaries in DictList
+            format.
+        """
 
         # create a data frame; if it's empty,
         # then return `_parse_dataframe()`, which
         # will raise an error
-        df = pd.DataFrame(f)
+        df = pd.DataFrame(list_of_dicts)
         if df.empty:
             return self._parse_dataframe(df, None, None)
 
@@ -445,14 +460,11 @@ class NDJReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        with open(f, 'r' if PY3 else 'rb') as buff:
-            lines = [json.loads(line.strip()) for line in buff
-                     if line.strip() and not line.startswith('//')]
 
         # create a data frame; if it's empty,
         # then return `_parse_dataframe()`, which
         # will raise an error
-        df = pd.DataFrame(lines)
+        df = pd.read_json(f, lines=True)
         if df.empty:
             return self._parse_dataframe(df, None, None)
 
