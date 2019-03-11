@@ -213,7 +213,7 @@ class Densifier(BaseEstimator, TransformerMixin):
     """
     A custom pipeline stage that will be inserted into the
     learner pipeline attribute to accommodate the situation
-    when SKLL needs to manually converts feature arrays from
+    when SKLL needs to manually convert feature arrays from
     sparse to dense. For example, when features are being hashed
     but we are also doing centering using the feature means.
     """
@@ -1697,8 +1697,18 @@ class Learner(object):
             if (self._use_dense_features or
                     isinstance(self.sampler, SkewedChi2Sampler)):
                 if isinstance(self.feat_vectorizer, DictVectorizer):
+                    self.logger.warning("The `sparse` attribute of the "
+                                        "DictVectorizer stage will be "
+                                        "set to `False` in the pipeline "
+                                        "since dense features are "
+                                        "required when centering.")
                     vectorizer_copy.sparse = False
                 else:
+                    self.logger.warning("A custom pipeline stage "
+                                        "(`Densifier`) will be inserted "
+                                        " in the pipeline since the "
+                                        "current SKLL configuration "
+                                        "requires dense features.")
                     densifier = Densifier()
                     pipeline_steps.append(('densifier', densifier))
             pipeline_steps.insert(0, ('vectorizer', vectorizer_copy))
