@@ -1018,16 +1018,16 @@ Here's an example of how to use this attribute.
     from sklearn.preprocessing import LabelEncoder
 
     from skll import Learner
-    from skll.data import CSVReader, NDJReader
+    from skll.data import Reader
 
     # train a classifier and a regressor using the SKLL API
-    fs1 = NDJReader('examples/iris/train/example_iris_features.jsonlines').read()
+    fs1 = Reader.for_path('examples/iris/train/example_iris_features.jsonlines').read()
     learner1 = Learner('LogisticRegression', pipeline=True)
-    learner1.train(fs1, grid_search=True, grid_objective='f1_score_macro')
+    _ = learner1.train(fs1, grid_search=True, grid_objective='f1_score_macro')
 
-    fs2 = CSVReader('examples/boston/train/example_boston_features.csv').read()
+    fs2 = Reader.for_path('examples/boston/train/example_boston_features.jsonlines').read()
     learner2 = Learner('RescaledSVR', feature_scaling='both', pipeline=True)
-    learner2.train(fs2, grid_search=True, grid_objective='pearson')
+    _ = learner2.train(fs2, grid_search=True, grid_objective='pearson')
     
     # now, we can explore the stored pipelines in sklearn space
     enc = LabelEncoder().fit(fs1.labels)
@@ -1042,9 +1042,15 @@ Here's an example of how to use this attribute.
     pipeline2 = learner2.pipeline
     pipeline2.predict(D2)
 
+    # note that without the `pipeline` attribute, one would have to
+    # do the following for D1, which is much less readable
+    enc.inverse_transform(learner1.model.predict(learner1.scaler.transform(learner1.feat_selector.transform(learner1.feat_vectorizer.transform(D1)))))
+
 
 .. note::
-    For cases where feature hashing is used (via a ``FeatureHasher``) along with centering (via a ``StandardScaler``), a custom pipeline stage :py:mod:`skll.learner.Densifier` is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` only returns sparse vectors and ``StandardScaler`` requires dense vectors when centering.
+    1. When using a `DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__ in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both``, the `sparse` attribute of the vectorizer stage in the pipeline is set to ``False`` since centering requires dense arrays.
+    2. When feature hashing is used (via a `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ ) in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both`` , a custom pipeline stage (:py:mod:`skll.learner.Densifier`) is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` does not have a ``sparse`` attribute to turn off -- it *only* returns sparse vectors. 
+    3. A ``Densifier`` is also inserted in the pipeline when using a `SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html>`__ for feature sampling since this sampler requires dense input and cannot be made to work with sparse arrays.
 
 
 .. _results:
