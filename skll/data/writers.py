@@ -25,7 +25,6 @@ from sklearn.feature_extraction import FeatureHasher
 
 
 class Writer(object):
-
     """
     Helper class for writing out FeatureSets to files on disk.
 

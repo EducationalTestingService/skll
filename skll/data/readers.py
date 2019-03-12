@@ -288,7 +288,6 @@ class Reader(object):
         if id_col is not None and id_col in df:
             ids = df[id_col]
             del df[id_col]
-
             # if `ids_to_floats` is True,
             # then convert the ids to floats
             if self.ids_to_floats:
@@ -305,7 +304,6 @@ class Reader(object):
         if label_col is not None and label_col in df:
             labels = df[label_col]
             del df[label_col]
-
             # if `class_map` exists, then
             # map the new classes to the labels;
             # otherwise, just convert them to floats
