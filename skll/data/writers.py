@@ -368,6 +368,7 @@ class CSVWriter(Writer):
         self.label_col = kwargs.pop('label_col', 'y')
         self.id_col = kwargs.pop('id_col', 'id')
         super(CSVWriter, self).__init__(path, feature_set, **kwargs)
+        self._sep = str(',')
         self._use_pandas = True
 
     def _write_data(self, feature_set, output_file, filter_features):
@@ -386,10 +387,10 @@ class CSVWriter(Writer):
             features to include in this file.
         """
         df = self._create_dataframe(feature_set, filter_features)
-        df.to_csv(output_file, index=False)
+        df.to_csv(output_file, sep=self._sep, index=False)
 
 
-class TSVWriter(Writer):
+class TSVWriter(CSVWriter):
 
     """
     Writer for writing out FeatureSets as TSV files.
@@ -409,29 +410,8 @@ class TSVWriter(Writer):
     """
 
     def __init__(self, path, feature_set, **kwargs):
-        self.label_col = kwargs.pop('label_col', 'y')
-        self.id_col = kwargs.pop('id_col', 'id')
         super(TSVWriter, self).__init__(path, feature_set, **kwargs)
-        self._use_pandas = True
-
-    def _write_data(self, feature_set, output_file, filter_features):
-        """
-        Write the data in TSV format.
-
-        Parameters
-        ----------
-        feature_set : skll.FeatureSet
-            The ``FeatureSet`` instance being written to a file.
-        output_file : file buffer
-            The file being written to.
-        filter_features : set of str
-            If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
-            features to include in this file.
-        """
-        sep = '\t'.encode() if PY2 else '\t'
-        df = self._create_dataframe(feature_set, filter_features)
-        df.to_csv(output_file, sep=sep, index=False)
+        self._sep = str('\t')
 
 
 class ARFFWriter(Writer):

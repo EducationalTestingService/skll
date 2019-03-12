@@ -144,8 +144,10 @@ class Reader(object):
 
         Parameters
         ----------
-        f : file buffer
-            An open file to iterate through.
+        f : file buffer or str
+            Either a file buffer, if ``_sub_read_rows()``
+            is calling this method, or a path to a file,
+            if it is being read with ``pandas``.
 
         Raises
         ------
@@ -294,7 +296,8 @@ class Reader(object):
                 ids = ids.astype(float)
             ids = ids.values
         else:
-            id_col = None
+            # create ids with the prefix `EXAMPLE_`
+            ids = np.array(['EXAMPLE_{}'.format(i) for i in range(df.shape[0])])
 
         # if the label column exists,
         # get them from the data frame and
@@ -314,23 +317,14 @@ class Reader(object):
                 labels = labels.apply(safe_float)
             labels = labels.values
         else:
-            label_col = None
+            # create an array of Nones
+            labels = np.array([None] * df.shape[0])
 
         # convert the remaining features to
         # a list of dictionaries, if no
         # features argument was passed
         if features is None:
             features = df.to_dict(orient='records')
-
-        # if the id column does not exist,
-        # then create ids with the prefix `EXAMPLE_`
-        if id_col is None:
-            ids = np.array(['EXAMPLE_{}'.format(i) for i in range(len(features))])
-
-        # if the label column does not exist,
-        # create an array of Nones
-        if label_col is None:
-            labels = np.array([None] * len(features))
 
         return ids, labels, features
 
@@ -441,15 +435,15 @@ class NDJReader(Reader):
         super(NDJReader, self).__init__(path_or_list, **kwargs)
         self._use_pandas = True
 
-    def _sub_read(self, f):
+    def _sub_read(self, path):
         """
         The function called on the file buffer in the ``read()`` method
         to iterate through rows.
 
         Parameters
         ----------
-        f : file buffer
-            A file buffer for an NDJ file.
+        path : str
+            The path to the NDJ file.
 
         Returns
         -------
@@ -464,7 +458,7 @@ class NDJReader(Reader):
         # create a data frame; if it's empty,
         # then return `_parse_dataframe()`, which
         # will raise an error
-        df = pd.read_json(f, lines=True)
+        df = pd.read_json(path, lines=True)
         if df.empty:
             return self._parse_dataframe(df, None, None)
 
@@ -709,14 +703,15 @@ class CSVReader(Reader):
 
     def __init__(self, path_or_list, **kwargs):
         super(CSVReader, self).__init__(path_or_list, **kwargs)
+        self._sep = str(',')
         self._use_pandas = True
 
-    def _sub_read(self, f):
+    def _sub_read(self, path):
         """
         Parameters
         ----------
-        f : file buffer
-            A file buffer for the CSV file.
+        path : str
+            The path to the CSV file.
 
         Returns
         -------
@@ -728,10 +723,34 @@ class CSVReader(Reader):
             The features for the features set.
         """
         try:
-            df = pd.read_csv(f, engine='c')
+            df = pd.read_csv(path, sep=self._sep, engine='c')
         except CParserError:
-            df = pd.read_csv(f)
+            df = pd.read_csv(path, sep=self._sep)
         return self._parse_dataframe(df, self.id_col, self.label_col)
+
+
+class TSVReader(CSVReader):
+
+    """
+    Reader for creating a ``FeatureSet`` instance from a TSV file.
+
+    If example/instance IDs are included in the files, they
+    must be specified in the ``id`` column.
+
+    Also there must be a column with the name specified by ``label_col``
+    if the data is labeled.
+
+    Parameters
+    ----------
+    path_or_list : str
+        The path to the TSV file.
+    kwargs : dict, optional
+        Other arguments to the Reader object.
+    """
+
+    def __init__(self, path_or_list, **kwargs):
+        super(TSVReader, self).__init__(path_or_list, **kwargs)
+        self._sep = str('\t')
 
 
 class ARFFReader(Reader):
@@ -810,8 +829,8 @@ class ARFFReader(Reader):
         """
         Parameters
         ----------
-        f : file buffer
-            A file buffer for the ARFF file.
+        path : str
+            The path to the ARFF file.
 
         Returns
         -------
@@ -860,50 +879,50 @@ class ARFFReader(Reader):
         return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
-class TSVReader(Reader):
+# class TSVReader(Reader):
 
-    """
-    Reader for creating a ``FeatureSet`` instance from a TSV file.
+#     """
+#     Reader for creating a ``FeatureSet`` instance from a TSV file.
 
-    If example/instance IDs are included in the files, they
-    must be specified in the ``id`` column.
+#     If example/instance IDs are included in the files, they
+#     must be specified in the ``id`` column.
 
-    Also there must be a column with the name specified by ``label_col``
-    if the data is labeled.
+#     Also there must be a column with the name specified by ``label_col``
+#     if the data is labeled.
 
-    Parameters
-    ----------
-    path_or_list : str
-        The path to the TSV file.
-    kwargs : dict, optional
-        Other arguments to the Reader object.
-    """
+#     Parameters
+#     ----------
+#     path_or_list : str
+#         The path to the TSV file.
+#     kwargs : dict, optional
+#         Other arguments to the Reader object.
+#     """
 
-    def __init__(self, path_or_list, **kwargs):
-        super(TSVReader, self).__init__(path_or_list, **kwargs)
-        self._use_pandas = True
+#     def __init__(self, path_or_list, **kwargs):
+#         super(TSVReader, self).__init__(path_or_list, **kwargs)
+#         self._use_pandas = True
 
-    def _sub_read(self, f):
-        """
-        Parameters
-        ----------
-        f : file buffer
-            A file buffer for the TSV file.
+#     def _sub_read(self, f):
+#         """
+#         Parameters
+#         ----------
+#         f : file buffer
+#             A file buffer for the TSV file.
 
-        Returns
-        -------
-        ids : np.array
-            The ids for the feature set.
-        labels : np.array
-            The labels for the feature set.
-        features : list of dicts
-            The features for the features set.
-        """
-        try:
-            df = pd.read_csv(f, sep='\t', engine='c')
-        except CParserError:
-            df = pd.read_csv(f, sep='\t')
-        return self._parse_dataframe(df, self.id_col, self.label_col)
+#         Returns
+#         -------
+#         ids : np.array
+#             The ids for the feature set.
+#         labels : np.array
+#             The labels for the feature set.
+#         features : list of dicts
+#             The features for the features set.
+#         """
+#         try:
+#             df = pd.read_csv(f, sep='\t', engine='c')
+#         except CParserError:
+#             df = pd.read_csv(f, sep='\t')
+#         return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
 def safe_float(text, replace_dict=None, logger=None):
