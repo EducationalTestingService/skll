@@ -30,7 +30,6 @@ from skll.data.dict_vectorizer import DictVectorizer
 
 
 class Reader(object):
-
     """
     A helper class to make picklable iterators out of example
     dictionary generators.
