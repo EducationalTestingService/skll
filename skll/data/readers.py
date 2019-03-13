@@ -876,52 +876,6 @@ class ARFFReader(Reader):
         return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
-# class TSVReader(Reader):
-
-#     """
-#     Reader for creating a ``FeatureSet`` instance from a TSV file.
-
-#     If example/instance IDs are included in the files, they
-#     must be specified in the ``id`` column.
-
-#     Also there must be a column with the name specified by ``label_col``
-#     if the data is labeled.
-
-#     Parameters
-#     ----------
-#     path_or_list : str
-#         The path to the TSV file.
-#     kwargs : dict, optional
-#         Other arguments to the Reader object.
-#     """
-
-#     def __init__(self, path_or_list, **kwargs):
-#         super(TSVReader, self).__init__(path_or_list, **kwargs)
-#         self._use_pandas = True
-
-#     def _sub_read(self, f):
-#         """
-#         Parameters
-#         ----------
-#         f : file buffer
-#             A file buffer for the TSV file.
-
-#         Returns
-#         -------
-#         ids : np.array
-#             The ids for the feature set.
-#         labels : np.array
-#             The labels for the feature set.
-#         features : list of dicts
-#             The features for the features set.
-#         """
-#         try:
-#             df = pd.read_csv(f, sep='\t', engine='c')
-#         except CParserError:
-#             df = pd.read_csv(f, sep='\t')
-#         return self._parse_dataframe(df, self.id_col, self.label_col)
-
-
 def safe_float(text, replace_dict=None, logger=None):
     """
     Attempts to convert a string to an int, and then a float, but if neither is
