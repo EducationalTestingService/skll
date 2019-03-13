@@ -123,7 +123,7 @@ class Writer(object):
         format.
         """
         if isinstance(self.feat_set.vectorizer, FeatureHasher):
-            raise ValueError('Writer cannot write sets that use'
+            raise ValueError('Writer cannot write sets that use a '
                              'FeatureHasher for vectorization.')
 
         # Write one feature file if we weren't given a dict of subsets

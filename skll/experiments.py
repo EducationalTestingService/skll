@@ -501,6 +501,7 @@ def _classify_featureset(args):
     job_log_file = args.pop("log_file")
     job_log_level = args.pop("log_level")
     probability = args.pop("probability")
+    pipeline = args.pop("pipeline")
     results_path = args.pop("results_path")
     fixed_parameters = args.pop("fixed_parameters")
     sampler_parameters = args.pop("sampler_parameters")
@@ -593,6 +594,7 @@ def _classify_featureset(args):
         # initialize a classifer object
         learner = Learner(learner_name,
                           probability=probability,
+                          pipeline=pipeline,
                           feature_scaling=feature_scaling,
                           model_kwargs=fixed_parameters,
                           pos_label_str=pos_label_str,
@@ -601,6 +603,7 @@ def _classify_featureset(args):
                           sampler_kwargs=sampler_parameters,
                           custom_learner_path=custom_learner_path,
                           logger=logger)
+
     # load the model if it already exists
     else:
         # import the custom learner path here in case we are reusing a
@@ -1053,13 +1056,13 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
      hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
      featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
-     probability, results_path, pos_label_str, feature_scaling, min_feature_count,
-     folds_file, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
-     param_grid_list, featureset_names, learners, prediction_dir, log_path, train_path,
-     test_path, ids_to_floats, class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_file,
-                                                                      log_level=log_level)
+     probability, pipeline, results_path, pos_label_str, feature_scaling,
+     min_feature_count, folds_file, grid_search_jobs, grid_search_folds, cv_folds,
+     save_cv_folds, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats, class_map,
+     custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes,
+     output_metrics) = _parse_config_file(config_file, log_level=log_level)
 
     # get the main experiment logger that will already have been
     # created by the configuration parser so we don't need anything
@@ -1221,6 +1224,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["log_file"] = logfile
                 job_args["log_level"] = log_level
                 job_args["probability"] = probability
+                job_args["pipeline"] = pipeline
                 job_args["results_path"] = results_path
                 job_args["sampler_parameters"] = (fixed_sampler_parameters
                                                   if fixed_sampler_parameters

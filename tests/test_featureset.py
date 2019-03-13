@@ -357,6 +357,21 @@ def test_merge_missing_labels():
     assert_array_equal(fs21.labels, fs1.labels)
 
 
+@raises(ValueError)
+def test_write_hashed_featureset():
+    """
+    Test to check that hashed featuresets cannot be written out
+    """
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     use_feature_hashing=True,
+                                     feature_bins=2,
+                                     random_state=1234)
+    output_dir = join(_my_dir, 'output')
+    writer = NDJWriter(join(output_dir, 'foo.jsonlines'), fs)
+    writer.write()
+
+
 def test_subtract():
     """
     Test to ensure that subtraction works
