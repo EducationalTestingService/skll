@@ -10,7 +10,6 @@ Handles loading data from various types of data files.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-import json
 import logging
 import os
 import re
@@ -288,9 +287,10 @@ class Writer(object):
         column_names, column_indexes = zip(*columns)
         return list(column_names), list(column_indexes)
 
-    def _create_dataframe(self, feature_set, filter_features=None):
+    def _build_dataframe_with_features(self, feature_set, filter_features=None):
         """
-        Create the data frame from the feature set.feature
+        Create a data frame with the (possibly filtered) features from the current
+        feature set.
 
         Parameters
         ----------
@@ -304,7 +304,7 @@ class Writer(object):
 
         Returns
         -------
-        df : pd.DataFrame
+        df_features : pd.DataFrame
             The data frame constructed from
             the feature set.
 
@@ -322,26 +322,67 @@ class Writer(object):
         # create the data frame from the feature set;
         # then, select only the columns that we want,
         # and give the columns their correct names
-        df = pd.DataFrame(feature_set.features.todense())
-        df = df.iloc[:, column_idxs].copy()
-        df.columns = column_names
+        df_features = pd.DataFrame(feature_set.features.todense())
+        df_features = df_features.iloc[:, column_idxs].copy()
+        df_features.columns = column_names
+        return df_features
+
+    def _build_dataframe(self, feature_set, filter_features=None, df_features=None):
+        """
+        Create the data frame with the (possibly filtered) features from the current
+        feature set. Then, add the IDs and labels, if applicable. If the data frame
+        with features already exists, pass `df_features`. Then the IDs and labels will
+        simply be added to the existing data frame containing the features.
+
+        Parameters
+        ----------
+        feature_set : skll.FeatureSet
+            The ``FeatureSet`` instance being written to a file.
+        filter_features : set of str or None, optional
+            If only writing a subset of the features in the
+            FeatureSet to ``output_file``, these are the
+            features to include in this file.
+            Defaults to None.
+        df_features : pd.DataFrame or None, optional
+            If the data frame with features already exists,
+            then we use it and add IDs and labels; otherwise,
+            the feature data frame will be created from the feature set.
+            Defaults to None.
+
+        Returns
+        -------
+        df_features : pd.DataFrame
+            The data frame constructed from
+            the feature set.
+
+        Raises
+        ------
+        ValueError
+            If ID column is already used as feature.
+            If label column is already used as feature.
+        """
+        # create the data frame with just the features
+        # from the feature set, at this point
+        if df_features is None:
+            df_features = self._build_dataframe_with_features(feature_set,
+                                                              filter_features)
 
         # if the id column is already in the data frame,
         # then raise an error; otherwise, just add the ids
-        if self.id_col in df:
+        if self.id_col in df_features:
             raise ValueError('ID column name "{}" already used as feature '
                              'name.'.format(self.id_col))
-        df[self.id_col] = feature_set.ids
+        df_features[self.id_col] = feature_set.ids
 
         # if the the labels should exist but the column is already
         # in the data frame, then raise an error; otherwise, just add the labels
         if feature_set.has_labels:
-            if self.label_col in df:
+            if self.label_col in df_features:
                 raise ValueError(('Class column name "{}" already used as '
                                   'feature name.').format(self.label_col))
-            df[self.label_col] = feature_set.labels
+            df_features[self.label_col] = feature_set.labels
 
-        return df
+        return df_features
 
 
 class CSVWriter(Writer):
@@ -385,7 +426,7 @@ class CSVWriter(Writer):
             FeatureSet to ``output_file``, these are the
             features to include in this file.
         """
-        df = self._create_dataframe(feature_set, filter_features)
+        df = self._build_dataframe(feature_set, filter_features)
         df.to_csv(output_file, sep=self._sep, index=False)
 
 
@@ -508,7 +549,7 @@ class ARFFWriter(Writer):
         """
 
         # create the data frame from he feature set
-        df = self._create_dataframe(feature_set, filter_features)
+        df = self._build_dataframe(feature_set, filter_features)
 
         # Open file for writing and write
         file_mode = 'wb' if PY2 else 'w'
@@ -596,43 +637,30 @@ class NDJWriter(Writer):
     """
 
     def __init__(self, path, feature_set, **kwargs):
-        kwargs['requires_binary'] = True
+        self.label_col = kwargs.pop('label_col', 'y')
+        self.id_col = kwargs.pop('id_col', 'id')
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
+        self._use_pandas = True
 
-    def _write_line(self, id_, label_, feat_dict, output_file):
+    def _write_data(self, feature_set, output_file, filter_features):
         """
-        Write the current line in the file in NDJ format.
+        Write the data in NDJ format.
 
         Parameters
         ----------
-        id_ : str
-            The ID for the current instance.
-        label_ : str
-            The label for the current instance.
-        feat_dict : dict
-            The feature dictionary for the current instance.
+        feature_set : skll.FeatureSet
+            The ``FeatureSet`` instance being written to a file.
         output_file : file buffer
             The file being written to.
+        filter_features : set of str
+            If only writing a subset of the features in the
+            FeatureSet to ``output_file``, these are the
+            features to include in this file.
         """
-        example_dict = {}
-        # Don't try to add class column if this is label-less data
-        # Try to convert the label to a scalar assuming it'a numpy
-        # non-scalar type (e.g., int64) but if that doesn't work
-        # then use it as is
-        if self.feat_set.has_labels:
-            try:
-                example_dict['y'] = label_.item()
-            except AttributeError:
-                example_dict['y'] = label_
-        # Try to convert the ID to a scalar assuming it'a numpy
-        # non-scalar type (e.g., int64) but if that doesn't work
-        # then use it as is
-        try:
-            example_dict['id'] = id_.item()
-        except AttributeError:
-            example_dict['id'] = id_
-        example_dict["x"] = feat_dict
-        print(json.dumps(example_dict, sort_keys=True), file=output_file)
+        df = self._build_dataframe_with_features(feature_set, filter_features)
+        df = pd.DataFrame({'x': df.to_dict(orient='records')})
+        df = self._build_dataframe(feature_set, df_features=df)
+        df.to_json(output_file, orient='records', lines=True)
 
 
 class LibSVMWriter(Writer):
