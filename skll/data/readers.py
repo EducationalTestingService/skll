@@ -461,7 +461,7 @@ class NDJReader(Reader):
 
         # if it's PY2 and `id` is in the
         # data frame, make sure it's a string
-        if PY2 and 'id' in df:
+        if 'id' in df:
             df['id'] = df['id'].astype(str)
 
         # convert the features to a
