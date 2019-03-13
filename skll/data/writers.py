@@ -526,8 +526,6 @@ class ARFFWriter(Writer):
                       "{" + ','.join(map(str,
                                          sorted(set(self.feat_set.labels)))) +
                       "}", file=output_file)
-        if self.label_col:
-            column_names.append(self.label_col)
 
         # Finish header and start data section
         print("\n@data", file=output_file)
