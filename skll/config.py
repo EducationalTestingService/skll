@@ -75,6 +75,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'objectives': "[]",
                     'param_grids': '[]',
                     'pos_label_str': '',
+                    'pipeline': 'False',
                     'predictions': '',
                     'probability': 'False',
                     'random_folds': 'False',
@@ -116,6 +117,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'objectives': 'Tuning',
                                    'param_grids': 'Tuning',
                                    'pos_label_str': 'Tuning',
+                                   'pipeline': 'Output',
                                    'predictions': 'Output',
                                    'probability': 'Output',
                                    'random_folds': 'Input',
@@ -362,6 +364,10 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         A list of scoring functions to use for tuning.
     probability : bool
         Whether to output probabilities for each class.
+    pipeline : bool
+        Whether to include the `pipeline` attribute in the
+        trained model. This will increase the size of the
+        model file.
     results_path : str
         Path to store result files in.
     pos_label_str : str
@@ -703,6 +709,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # 3. Output section #
     #####################
     probability = config.getboolean("Output", "probability")
+    pipeline = config.getboolean("Output", "pipeline")
 
     # do we want to keep the predictions?
     # make sure the predictions path exists and if not create it
@@ -897,7 +904,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     return (experiment_name, task, sampler, fixed_sampler_parameters,
             feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
-            do_grid_search, grid_objectives, probability, results_path,
+            do_grid_search, grid_objectives, probability, pipeline, results_path,
             pos_label_str, feature_scaling, min_feature_count, folds_file,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,

@@ -31,6 +31,7 @@ from six import iteritems, itervalues
 from six import string_types
 from six.moves import xrange as range
 from six.moves import zip
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import (GridSearchCV,
                                      KFold,
                                      LeaveOneGroupOut,
@@ -46,6 +47,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_selection import SelectKBest
+from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (Nystroem,
@@ -207,6 +209,25 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
 
 # pylint: disable=W0223,R0903
+class Densifier(BaseEstimator, TransformerMixin):
+    """
+    A custom pipeline stage that will be inserted into the
+    learner pipeline attribute to accommodate the situation
+    when SKLL needs to manually convert feature arrays from
+    sparse to dense. For example, when features are being hashed
+    but we are also doing centering using the feature means.
+    """
+
+    def fit(self, X, y=None):
+        return self
+
+    def fit_transform(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        return X.todense()
+
+
 class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
     """
@@ -764,6 +785,15 @@ class Learner(object):
         Should learner return probabilities of all
         labels (instead of just label with highest probability)?
         Defaults to ``False``.
+    pipeline : bool, optional
+        Should learner contain a pipeline attribute that
+        contains a scikit-learn Pipeline object composed
+        of all steps including the vectorizer, the feature
+        selector, the sampler, the feature scaler, and the
+        actual estimator. Note that this will increase the
+        size of the learner object in memory and also when
+        it is saved to disk.
+        Defaults to ``False``.
     feature_scaling : str, optional
         How to scale the features, if at all. Options are
         -  'with_std': scale features using the standard deviation
@@ -804,10 +834,10 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self, model_type, probability=False, feature_scaling='none',
-                 model_kwargs=None, pos_label_str=None, min_feature_count=1,
-                 sampler=None, sampler_kwargs=None, custom_learner_path=None,
-                 logger=None):
+    def __init__(self, model_type, probability=False, pipeline=False,
+                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
+                 min_feature_count=1, sampler=None, sampler_kwargs=None,
+                 custom_learner_path=None, logger=None):
         """
         Initializes a learner object with the specified settings.
         """
@@ -819,6 +849,7 @@ class Learner(object):
         self.label_list = None
         self.pos_label_str = pos_label_str
         self._model = None
+        self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
         self.feat_selector = None
         self._min_feature_count = min_feature_count
@@ -1530,7 +1561,7 @@ class Learner(object):
 
         if isinstance(self.feat_vectorizer, FeatureHasher) and \
                 issubclass(self._model_type, MultinomialNB):
-            raise ValueError('Cannot use FeatureHasher with MultinomialNB, '
+            raise ValueError('Cannot use FeatureHasher with MultinomialNB '
                              'because MultinomialNB cannot handle negative '
                              'feature values.')
 
@@ -1542,13 +1573,19 @@ class Learner(object):
         self._check_max_feature_value(xtrain)
 
         # Sampler
+        if self.sampler is not None and \
+                issubclass(self._model_type, MultinomialNB):
+            raise ValueError('Cannot use a sampler with MultinomialNB '
+                             'because MultinomialNB cannot handle negative '
+                             'feature values.')
+
         if self.sampler:
             self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
-                xtrain = self.sampler.fit_transform(xtrain.todense())
-            else:
-                xtrain = self.sampler.fit_transform(xtrain)
+                if sp.issparse(xtrain):
+                    xtrain = xtrain.todense()
+            xtrain = self.sampler.fit_transform(xtrain)
 
         # use label dict transformed version of examples.labels if doing
         # classification
@@ -1604,7 +1641,7 @@ class Learner(object):
             # If we're using a correlation metric for doing binary
             # classification, override the estimator's predict function
             if (grid_objective in _CORRELATION_METRICS and
-                self.model_type._estimator_type == 'classifier'):
+                    self.model_type._estimator_type == 'classifier'):
                 estimator.predict_normal = estimator.predict
                 estimator.predict = _predict_binary
 
@@ -1627,6 +1664,71 @@ class Learner(object):
             self._model = estimator.fit(xtrain, labels)
             grid_score = 0.0
             grid_cv_results = None
+
+        # store a scikit-learn Pipeline in the `pipeline` attribute
+        # composed of a copy of the vectorizer, the selector,
+        # the sampler, the scaler, and the estimator. This pipeline
+        # attribute can then be used by someone who wants to take a SKLL
+        # model and then do further analysis using scikit-learn
+        # We are using copies since the user might want to play
+        # around with the pipeline and we want to let her do that
+        # but keep the SKLL model the same
+
+        # start with the vectorizer
+        if self._store_pipeline:
+
+            # initialize the list that will hold the pipeline steps
+            pipeline_steps = []
+
+            # note that sometimes we may have to end up using dense
+            # features or if we were using a SkewedChi2Sampler which
+            # requires dense inputs. If this turns out to be the case
+            # then let's turn off `sparse` for the vectorizer copy
+            # to be stored in the pipeline as well so that it works
+            # on the scikit-learn in the same way. However, note that
+            # this solution will only work for DictVectorizers. For
+            # feature hashers, we manually convert things to dense
+            # when we need in SKLL. Therefore, to handle this case,
+            # we basically need to create a custom intermediate
+            # pipeline stage that will convert the features to dense
+            # once the hashing is done since this is what happens
+            # in SKLL.
+            vectorizer_copy = copy.deepcopy(self.feat_vectorizer)
+            if (self._use_dense_features or
+                    isinstance(self.sampler, SkewedChi2Sampler)):
+                if isinstance(self.feat_vectorizer, DictVectorizer):
+                    self.logger.warning("The `sparse` attribute of the "
+                                        "DictVectorizer stage will be "
+                                        "set to `False` in the pipeline "
+                                        "since dense features are "
+                                        "required when centering.")
+                    vectorizer_copy.sparse = False
+                else:
+                    self.logger.warning("A custom pipeline stage "
+                                        "(`Densifier`) will be inserted "
+                                        " in the pipeline since the "
+                                        "current SKLL configuration "
+                                        "requires dense features.")
+                    densifier = Densifier()
+                    pipeline_steps.append(('densifier', densifier))
+            pipeline_steps.insert(0, ('vectorizer', vectorizer_copy))
+
+            # next add the selector
+            pipeline_steps.append(('selector',
+                                   copy.deepcopy(self.feat_selector)))
+
+            # next, include the scaler
+            pipeline_steps.append(('scaler', copy.deepcopy(self.scaler)))
+
+            # next, include the sampler, if there is one
+            if self.sampler:
+                pipeline_steps.append(('sampler',
+                                       copy.deepcopy(self.sampler)))
+
+            # finish with the estimator
+            pipeline_steps.append(('estimator', copy.deepcopy(self.model)))
+
+            self.pipeline = Pipeline(steps=pipeline_steps)
 
         return grid_score, grid_cv_results
 
@@ -1880,15 +1982,6 @@ class Learner(object):
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
 
-        # Sampler
-        if self.sampler:
-            self.logger.warning('Sampler converts sparse matrix to dense')
-            if isinstance(self.sampler, SkewedChi2Sampler):
-                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
-                xtest = self.sampler.fit_transform(xtest.todense())
-            else:
-                xtest = self.sampler.fit_transform(xtest)
-
         # Convert to dense if necessary
         if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
@@ -1907,6 +2000,15 @@ class Learner(object):
         # Scale xtest if necessary
         if not issubclass(self._model_type, MultinomialNB):
             xtest = self.scaler.transform(xtest)
+
+        # Sampler
+        if self.sampler:
+            self.logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
+                if sp.issparse(xtest):
+                    xtest = xtest.todense()
+            xtest = self.sampler.fit_transform(xtest)
 
         # make the prediction on the test data
         try:
@@ -2110,7 +2212,7 @@ class Learner(object):
         # _will_ work, we want to raise an error in general since it's better
         # to encode the labels as strings anyway.
         if (self.model_type._estimator_type == 'classifier' and
-            type_of_target(examples.labels) not in ['binary', 'multiclass']):
+                type_of_target(examples.labels) not in ['binary', 'multiclass']):
             raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
 
         # check that we have an objective since grid search is on by default
@@ -2210,13 +2312,13 @@ class Learner(object):
             # label dictionary for the whole dataset above.
             (grid_search_score,
              grid_search_cv_results) = self.train(train_set,
-                                                  grid_search_folds=grid_search_folds,
-                                                  grid_search=grid_search,
-                                                  grid_objective=grid_objective,
-                                                  param_grid=param_grid,
-                                                  grid_jobs=grid_jobs,
-                                                  shuffle=grid_search,
-                                                  create_label_dict=False)
+                                           grid_search_folds=grid_search_folds,
+                                           grid_search=grid_search,
+                                           grid_objective=grid_objective,
+                                           param_grid=param_grid,
+                                           grid_jobs=grid_jobs,
+                                           shuffle=grid_search,
+                                           create_label_dict=False)
             grid_search_scores.append(grid_search_score)
             grid_search_cv_results_dicts.append(grid_search_cv_results)
             # note: there is no need to shuffle again within each fold,

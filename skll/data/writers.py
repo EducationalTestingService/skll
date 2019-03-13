@@ -19,7 +19,6 @@ from csv import DictWriter
 from decimal import Decimal
 from io import open
 
-import numpy as np
 from six import iteritems, PY2, string_types, text_type
 from six.moves import map
 from sklearn.feature_extraction import FeatureHasher
@@ -125,7 +124,7 @@ class Writer(object):
         format.
         """
         if isinstance(self.feat_set.vectorizer, FeatureHasher):
-            raise ValueError('Writer cannot write sets that use'
+            raise ValueError('Writer cannot write sets that use a '
                              'FeatureHasher for vectorization.')
 
         # Write one feature file if we weren't given a dict of subsets
