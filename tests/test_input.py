@@ -1714,7 +1714,6 @@ def test_learning_curve_metrics_and_objectives_throw_error():
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(output_metrics, ["accuracy", "f1_score_micro"])
-    eq_(grid_objectives, [])
 
 
 def test_learning_curve_metrics_and_no_objectives():
@@ -1750,7 +1749,6 @@ def test_learning_curve_metrics_and_no_objectives():
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(output_metrics, ["accuracy", "unweighted_kappa"])
-    eq_(grid_objectives, [])
 
 
 def test_learning_curve_metrics():
@@ -1808,7 +1806,7 @@ def test_learning_curve_no_metrics():
                                          values_to_fill_dict,
                                          'learning_curve_default_objectives_and_no_metrics')
 
-    yield check_config_parsing_value_error, config_path
+    yield _parse_config_file, config_path
 
 
 def test_learning_curve_no_metrics_and_no_objectives():

@@ -531,7 +531,7 @@ def test_learning_curve_output_with_objectives():
 
     config_template_path = join(_my_dir,
                                 'configs',
-                                'test_learning_curve_with_objectives.template.cfg')
+                                'test_learning_curve.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
@@ -594,7 +594,7 @@ def test_learning_curve_plots_with_objectives():
 
     config_template_path = join(_my_dir,
                                 'configs',
-                                'test_learning_curve_with_objectives.template.cfg')
+                                'test_learning_curve.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment

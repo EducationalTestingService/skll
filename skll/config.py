@@ -813,9 +813,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if task == 'learning_curve':
         if len(grid_objectives) > 0:
             raise ValueError("The \"objectives\" option "
-                             "is removed from the learning_curve "
-                             "and is not supported any more. "
-                             "Please use the \"metrics\" "
+                             "is no longer supported for the "
+                             "\"learning_curve\" "
+                             "task. Please use the \"metrics\" "
                              "option in the [Output] "
                              "section instead.")
             output_metrics = grid_objectives
@@ -983,7 +983,7 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     # It is replaced by `neg_mean_squared_error`
     if 'mean_squared_error' in metrics:
         raise ValueError("The metric \"mean_squared_error\" "
-                         "is is removed and not supported anymore,"
+                         "is no longer supported."
                          " please use the metric "
                          "\"neg_mean_squared_error\" instead.")
 
