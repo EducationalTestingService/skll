@@ -456,6 +456,7 @@ def check_grid_search_cv_results(task, do_grid_search):
     # off, so simply turn it off here as well since it should
     # result in the same situation
     elif task == 'learning_curve':
+        values_to_fill_dict['metrics'] = values_to_fill_dict.pop('objectives')
         if do_grid_search:
             do_grid_search = False
 
@@ -699,7 +700,7 @@ def test_learning_curve_output_with_objectives():
 
     config_template_path = join(_my_dir,
                                 'configs',
-                                'test_learning_curve_with_objectives.template.cfg')
+                                'test_learning_curve.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
@@ -762,7 +763,7 @@ def test_learning_curve_plots_with_objectives():
 
     config_template_path = join(_my_dir,
                                 'configs',
-                                'test_learning_curve_with_objectives.template.cfg')
+                                'test_learning_curve.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
