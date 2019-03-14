@@ -456,6 +456,7 @@ def check_grid_search_cv_results(task, do_grid_search):
     # off, so simply turn it off here as well since it should
     # result in the same situation
     elif task == 'learning_curve':
+        values_to_fill_dict['metrics'] = values_to_fill_dict.pop('objectives')
         if do_grid_search:
             do_grid_search = False
 
