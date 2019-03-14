@@ -455,7 +455,7 @@ class NDJReader(Reader):
         # create a data frame; if it's empty,
         # then return `_parse_dataframe()`, which
         # will raise an error
-        df = pd.read_json(path, lines=True)
+        df = pd.read_json(path, orient='records', lines=True)
         if df.empty:
             return self._parse_dataframe(df, None, None)
 
