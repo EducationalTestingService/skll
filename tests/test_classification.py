@@ -759,3 +759,18 @@ def test_learner_api_load_into_existing_instance():
     eq_(learner1.model_type, learner2.model_type)
     eq_(learner1.model_params, learner2.model_params)
     eq_(learner1.model_kwargs, learner2.model_kwargs)
+
+
+@raises(ValueError)
+def test_hashing_for_multinomialNB():
+    (train_fs, _) = make_classification_data(num_examples=200,
+                                             use_feature_hashing=True)
+    learner = Learner('MultinomialNB', sampler='RBFSampler')
+    learner.train(train_fs, grid_search=False)
+
+
+@raises(ValueError)
+def test_sampling_for_multinomialNB():
+    (train_fs, _) = make_classification_data(num_examples=200)
+    learner = Learner('MultinomialNB', sampler='RBFSampler')
+    learner.train(train_fs, grid_search=False)

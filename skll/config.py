@@ -75,6 +75,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'objectives': "[]",
                     'param_grids': '[]',
                     'pos_label_str': '',
+                    'pipeline': 'False',
                     'predictions': '',
                     'probability': 'False',
                     'random_folds': 'False',
@@ -116,6 +117,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'objectives': 'Tuning',
                                    'param_grids': 'Tuning',
                                    'pos_label_str': 'Tuning',
+                                   'pipeline': 'Output',
                                    'predictions': 'Output',
                                    'probability': 'Output',
                                    'random_folds': 'Input',
@@ -362,6 +364,10 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         A list of scoring functions to use for tuning.
     probability : bool
         Whether to output probabilities for each class.
+    pipeline : bool
+        Whether to include the `pipeline` attribute in the
+        trained model. This will increase the size of the
+        model file.
     results_path : str
         Path to store result files in.
     pos_label_str : str
@@ -676,8 +682,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # make sure all the specified paths/files exist
     train_path = _locate_file(train_path, config_dir)
     test_path = _locate_file(test_path, config_dir)
-    train_file = _locate_file(train_file, config_dir)
-    test_file = _locate_file(test_file, config_dir)
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
@@ -697,6 +701,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # 3. Output section #
     #####################
     probability = config.getboolean("Output", "probability")
+    pipeline = config.getboolean("Output", "pipeline")
 
     # do we want to keep the predictions?
     # make sure the predictions path exists and if not create it
@@ -799,9 +804,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
                          '{}.'.format(task))
-    if task in ['train', 'predict'] and results_path:
+    if task in ['train', 'predict'] and results_path and not do_grid_search:
         raise ValueError('The results path should not be set when task is '
-                         '{}.'.format(task))
+                         '{} and "grid_search" is set to False.'.format(task))
     if task == 'train' and not model_path:
         raise ValueError('The model path should be set when task is train.')
     if task in ['learning_curve', 'train'] and prediction_dir:
@@ -887,7 +892,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     return (experiment_name, task, sampler, fixed_sampler_parameters,
             feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
-            do_grid_search, grid_objectives, probability, results_path,
+            do_grid_search, grid_objectives, probability, pipeline, results_path,
             pos_label_str, feature_scaling, min_feature_count, folds_file,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,

@@ -46,7 +46,7 @@ requirements:
     - joblib >=0.8
     - setuptools
     - six
-    - prettytable
+    - tabulate
     - beautifulsoup4
     - numpy
     - scipy
@@ -60,7 +60,7 @@ requirements:
     - scikit-learn ==0.20.1
     - joblib >=0.8
     - six
-    - prettytable
+    - tabulate
     - beautifulsoup4
     - numpy
     - scipy

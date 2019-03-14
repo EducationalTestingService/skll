@@ -3,7 +3,7 @@ logutils
 mock
 scikit-learn==0.20.1
 six
-PrettyTable
+tabulate
 beautifulsoup4
 numpy
 scipy

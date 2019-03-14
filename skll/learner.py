@@ -20,6 +20,7 @@ import sys
 from collections import Counter, defaultdict
 from functools import wraps
 from importlib import import_module
+from math import floor, log10
 from itertools import combinations
 from multiprocessing import cpu_count
 
@@ -30,6 +31,7 @@ from six import iteritems, itervalues
 from six import string_types
 from six.moves import xrange as range
 from six.moves import zip
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import (GridSearchCV,
                                      KFold,
                                      LeaveOneGroupOut,
@@ -45,6 +47,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_selection import SelectKBest
+from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (Nystroem,
@@ -206,6 +209,25 @@ MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
 
 # pylint: disable=W0223,R0903
+class Densifier(BaseEstimator, TransformerMixin):
+    """
+    A custom pipeline stage that will be inserted into the
+    learner pipeline attribute to accommodate the situation
+    when SKLL needs to manually convert feature arrays from
+    sparse to dense. For example, when features are being hashed
+    but we are also doing centering using the feature means.
+    """
+
+    def fit(self, X, y=None):
+        return self
+
+    def fit_transform(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        return X.todense()
+
+
 class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
     """
@@ -763,6 +785,15 @@ class Learner(object):
         Should learner return probabilities of all
         labels (instead of just label with highest probability)?
         Defaults to ``False``.
+    pipeline : bool, optional
+        Should learner contain a pipeline attribute that
+        contains a scikit-learn Pipeline object composed
+        of all steps including the vectorizer, the feature
+        selector, the sampler, the feature scaler, and the
+        actual estimator. Note that this will increase the
+        size of the learner object in memory and also when
+        it is saved to disk.
+        Defaults to ``False``.
     feature_scaling : str, optional
         How to scale the features, if at all. Options are
         -  'with_std': scale features using the standard deviation
@@ -803,10 +834,10 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self, model_type, probability=False, feature_scaling='none',
-                 model_kwargs=None, pos_label_str=None, min_feature_count=1,
-                 sampler=None, sampler_kwargs=None, custom_learner_path=None,
-                 logger=None):
+    def __init__(self, model_type, probability=False, pipeline=False,
+                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
+                 min_feature_count=1, sampler=None, sampler_kwargs=None,
+                 custom_learner_path=None, logger=None):
         """
         Initializes a learner object with the specified settings.
         """
@@ -818,6 +849,7 @@ class Learner(object):
         self.label_list = None
         self.pos_label_str = pos_label_str
         self._model = None
+        self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
         self.feat_selector = None
         self._min_feature_count = min_feature_count
@@ -1035,6 +1067,54 @@ class Learner(object):
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
 
+    def _convert_coef_array_to_feature_names(self, coef, feature_name_prefix=''):
+        """
+        A helper method used by `model_params` to convert the model coefficients
+        array into a dictionary with feature names as keys and the coefficients
+        as values.
+
+        Parameters
+        ----------
+        coef : np.array
+            A numpy array with the model coefficients
+        feature_name_prefix : str, optional
+            An optional string that should be prefixed to the feature
+            name, e.g. the name of the class for LogisticRegression
+            or the class pair for SVCs with linear kernels.
+
+        Returns
+        -------
+        res : dict
+            A dictionary of labeled weights
+        """
+        res = {}
+
+        # if we are doing feature hashing, then we need to make up
+        # the feature names
+        if isinstance(self.feat_vectorizer, FeatureHasher):
+            self.logger.warning("No feature names are available since this model was trained on hashed features.")
+            num_features = len(coef)
+            index_width_in_feature_name = int(floor(log10(num_features))) + 1
+            feature_names = []
+            for idx in range(num_features):
+                index_str = str(idx + 1).zfill(index_width_in_feature_name)
+                feature_names.append('hashed_feature_{}'.format(index_str))
+            feature_indices = range(num_features)
+            vocabulary = dict(zip(feature_names, feature_indices))
+
+        # otherwise we can just use the DictVectorizer vocabulary
+        # to get the feature names
+        else:
+            vocabulary = self.feat_vectorizer.vocabulary_
+
+        # create the final result dictionary with the prefixed
+        # feature names and the corresponding coefficient
+        for feat, idx in iteritems(vocabulary):
+            if coef[idx]:
+                res['{}{}'.format(feature_name_prefix, feat)] = coef[idx]
+
+        return res
+
     @property
     def model_params(self):
         """
@@ -1064,16 +1144,19 @@ class Learner(object):
             coef = self.model.coef_
             intercept = {'_intercept_': self.model.intercept_}
 
-            # convert SVR coefficient format (1 x matrix) to array
+            # convert SVR coefficient from a matrix to a 1D array
+            # and convert from sparse to dense also if necessary.
+            # However, this last bit may not be necessary
+            # if we did feature scaling and coef is already dense.
             if isinstance(self._model, SVR):
-                coef = coef.toarray()[0]
+                if sp.issparse(coef):
+                    coef = coef.toarray()
+                coef = coef[0]
 
             # inverse transform to get indices for before feature selection
             coef = coef.reshape(1, -1)
             coef = self.feat_selector.inverse_transform(coef)[0]
-            for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                if coef[idx]:
-                    res[feat] = coef[idx]
+            res = self._convert_coef_array_to_feature_names(coef)
 
         elif isinstance(self._model, LinearSVC) or isinstance(self._model, LogisticRegression):
             label_list = self.label_list
@@ -1084,13 +1167,15 @@ class Learner(object):
             if len(self.label_list) == 2:
                 label_list = self.label_list[-1:]
 
+            if isinstance(self.feat_vectorizer, FeatureHasher):
+                self.logger.warning("No feature names are available since this model was trained on hashed features.")
+
             for i, label in enumerate(label_list):
                 coef = self.model.coef_[i]
                 coef = coef.reshape(1, -1)
                 coef = self.feat_selector.inverse_transform(coef)[0]
-                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                    if coef[idx]:
-                        res['{}\t{}'.format(label, feat)] = coef[idx]
+                label_res = self._convert_coef_array_to_feature_names(coef, feature_name_prefix='{}\t'.format(label))
+                res.update(label_res)
 
             if isinstance(self.model.intercept_, float):
                 intercept = {'_intercept_': self.model.intercept_}
@@ -1109,18 +1194,17 @@ class Learner(object):
         # "0 vs 2", ... "0 vs n", "1 vs 2", "1 vs 3", "1 vs n", ... "n-1 vs n".
         elif isinstance(self._model, SVC) and self._model.kernel == 'linear':
             intercept = {}
+            if isinstance(self.feat_vectorizer, FeatureHasher):
+                self.logger.warning("No feature names are available since this model was trained on hashed features.")
             for i, class_pair in enumerate(combinations(range(len(self.label_list)), 2)):
                 coef = self.model.coef_[i]
                 coef = coef.toarray()
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 class1 = self.label_list[class_pair[0]]
                 class2 = self.label_list[class_pair[1]]
-                for feat, idx in iteritems(self.feat_vectorizer.vocabulary_):
-                    if coef[idx]:
-                        res['{}-vs-{}\t{}'.format(class1, class2, feat)] = coef[idx]
-
+                class_pair_res = self._convert_coef_array_to_feature_names(coef, feature_name_prefix='{}-vs-{}\t'.format(class1, class2))
+                res.update(class_pair_res)
                 intercept['{}-vs-{}'.format(class1, class2)] = self.model.intercept_[i]
-
         else:
             # not supported
             raise ValueError(("{} is not supported by" +
@@ -1365,9 +1449,13 @@ class Learner(object):
 
         Returns
         -------
-        grid_score : float
-            The best grid search objective function score, or 0 if we're
-            not doing grid search.
+        tuple : (float, dict)
+            1) The best grid search objective function score, or 0 if
+            we're not doing grid search, and 2) a dictionary of grid
+            search CV results with keys such as "params",
+            "mean_test_score", etc, that are mapped to lists of values
+            associated with each hyperparameter set combination, or
+            None if not doing grid search.
 
         Raises
         ------
@@ -1473,7 +1561,7 @@ class Learner(object):
 
         if isinstance(self.feat_vectorizer, FeatureHasher) and \
                 issubclass(self._model_type, MultinomialNB):
-            raise ValueError('Cannot use FeatureHasher with MultinomialNB, '
+            raise ValueError('Cannot use FeatureHasher with MultinomialNB '
                              'because MultinomialNB cannot handle negative '
                              'feature values.')
 
@@ -1485,13 +1573,19 @@ class Learner(object):
         self._check_max_feature_value(xtrain)
 
         # Sampler
+        if self.sampler is not None and \
+                issubclass(self._model_type, MultinomialNB):
+            raise ValueError('Cannot use a sampler with MultinomialNB '
+                             'because MultinomialNB cannot handle negative '
+                             'feature values.')
+
         if self.sampler:
             self.logger.warning('Sampler converts sparse matrix to dense')
             if isinstance(self.sampler, SkewedChi2Sampler):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
-                xtrain = self.sampler.fit_transform(xtrain.todense())
-            else:
-                xtrain = self.sampler.fit_transform(xtrain)
+                if sp.issparse(xtrain):
+                    xtrain = xtrain.todense()
+            xtrain = self.sampler.fit_transform(xtrain)
 
         # use label dict transformed version of examples.labels if doing
         # classification
@@ -1565,11 +1659,78 @@ class Learner(object):
             grid_searcher.fit(xtrain, labels)
             self._model = grid_searcher.best_estimator_
             grid_score = grid_searcher.best_score_
+            grid_cv_results = grid_searcher.cv_results_
         else:
             self._model = estimator.fit(xtrain, labels)
             grid_score = 0.0
+            grid_cv_results = None
 
-        return grid_score
+        # store a scikit-learn Pipeline in the `pipeline` attribute
+        # composed of a copy of the vectorizer, the selector,
+        # the sampler, the scaler, and the estimator. This pipeline
+        # attribute can then be used by someone who wants to take a SKLL
+        # model and then do further analysis using scikit-learn
+        # We are using copies since the user might want to play
+        # around with the pipeline and we want to let her do that
+        # but keep the SKLL model the same
+
+        # start with the vectorizer
+        if self._store_pipeline:
+
+            # initialize the list that will hold the pipeline steps
+            pipeline_steps = []
+
+            # note that sometimes we may have to end up using dense
+            # features or if we were using a SkewedChi2Sampler which
+            # requires dense inputs. If this turns out to be the case
+            # then let's turn off `sparse` for the vectorizer copy
+            # to be stored in the pipeline as well so that it works
+            # on the scikit-learn in the same way. However, note that
+            # this solution will only work for DictVectorizers. For
+            # feature hashers, we manually convert things to dense
+            # when we need in SKLL. Therefore, to handle this case,
+            # we basically need to create a custom intermediate
+            # pipeline stage that will convert the features to dense
+            # once the hashing is done since this is what happens
+            # in SKLL.
+            vectorizer_copy = copy.deepcopy(self.feat_vectorizer)
+            if (self._use_dense_features or
+                    isinstance(self.sampler, SkewedChi2Sampler)):
+                if isinstance(self.feat_vectorizer, DictVectorizer):
+                    self.logger.warning("The `sparse` attribute of the "
+                                        "DictVectorizer stage will be "
+                                        "set to `False` in the pipeline "
+                                        "since dense features are "
+                                        "required when centering.")
+                    vectorizer_copy.sparse = False
+                else:
+                    self.logger.warning("A custom pipeline stage "
+                                        "(`Densifier`) will be inserted "
+                                        " in the pipeline since the "
+                                        "current SKLL configuration "
+                                        "requires dense features.")
+                    densifier = Densifier()
+                    pipeline_steps.append(('densifier', densifier))
+            pipeline_steps.insert(0, ('vectorizer', vectorizer_copy))
+
+            # next add the selector
+            pipeline_steps.append(('selector',
+                                   copy.deepcopy(self.feat_selector)))
+
+            # next, include the scaler
+            pipeline_steps.append(('scaler', copy.deepcopy(self.scaler)))
+
+            # next, include the sampler, if there is one
+            if self.sampler:
+                pipeline_steps.append(('sampler',
+                                       copy.deepcopy(self.sampler)))
+
+            # finish with the estimator
+            pipeline_steps.append(('estimator', copy.deepcopy(self.model)))
+
+            self.pipeline = Pipeline(steps=pipeline_steps)
+
+        return grid_score, grid_cv_results
 
     def evaluate(self, examples, prediction_prefix=None, append=False,
                  grid_objective=None, output_metrics=[]):
@@ -1821,15 +1982,6 @@ class Learner(object):
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
 
-        # Sampler
-        if self.sampler:
-            self.logger.warning('Sampler converts sparse matrix to dense')
-            if isinstance(self.sampler, SkewedChi2Sampler):
-                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
-                xtest = self.sampler.fit_transform(xtest.todense())
-            else:
-                xtest = self.sampler.fit_transform(xtest)
-
         # Convert to dense if necessary
         if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
@@ -1848,6 +2000,15 @@ class Learner(object):
         # Scale xtest if necessary
         if not issubclass(self._model_type, MultinomialNB):
             xtest = self.scaler.transform(xtest)
+
+        # Sampler
+        if self.sampler:
+            self.logger.warning('Sampler converts sparse matrix to dense')
+            if isinstance(self.sampler, SkewedChi2Sampler):
+                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
+                if sp.issparse(xtest):
+                    xtest = xtest.todense()
+            xtest = self.sampler.fit_transform(xtest)
 
         # make the prediction on the test data
         try:
@@ -2025,6 +2186,11 @@ class Learner(object):
             for each fold.
         grid_search_scores : list of floats
             The grid search scores for each fold.
+        grid_search_cv_results_dicts : list of dicts
+            A list of dictionaries of grid search CV results, one per fold,
+            with keys such as "params", "mean_test_score", etc, that are
+            mapped to lists of values associated with each hyperparameter set
+            combination.
         skll_fold_ids : dict
             A dictionary containing the test-fold number for each id
             if ``save_cv_folds`` is ``True``, otherwise ``None``.
@@ -2129,6 +2295,7 @@ class Learner(object):
         # numbers
         results = []
         grid_search_scores = []
+        grid_search_cv_results_dicts = []
         append_predictions = False
         for train_index, test_index in kfold.split(examples.features,
                                                    examples.labels,
@@ -2140,9 +2307,11 @@ class Learner(object):
                                    labels=examples.labels[train_index],
                                    features=examples.features[train_index],
                                    vectorizer=examples.vectorizer)
+
             # Set run_create_label_dict to False since we already created the
             # label dictionary for the whole dataset above.
-            grid_search_score = self.train(train_set,
+            (grid_search_score,
+             grid_search_cv_results) = self.train(train_set,
                                            grid_search_folds=grid_search_folds,
                                            grid_search=grid_search,
                                            grid_objective=grid_objective,
@@ -2151,6 +2320,7 @@ class Learner(object):
                                            shuffle=grid_search,
                                            create_label_dict=False)
             grid_search_scores.append(grid_search_score)
+            grid_search_cv_results_dicts.append(grid_search_cv_results)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
 
@@ -2168,7 +2338,10 @@ class Learner(object):
             append_predictions = True
 
         # return list of results for all folds
-        return results, grid_search_scores, skll_fold_ids
+        return (results,
+                grid_search_scores,
+                grid_search_cv_results_dicts,
+                skll_fold_ids)
 
     def learning_curve(self,
                        examples,
