@@ -1843,7 +1843,7 @@ def test_learning_curve_no_metrics():
                                          values_to_fill_dict,
                                          'learning_curve_default_objectives_and_no_metrics')
 
-    yield _parse_config_file, config_path
+    check_config_parsing_value_error, config_path
 
 
 def test_learning_curve_no_metrics_and_no_objectives():
