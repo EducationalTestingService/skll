@@ -78,8 +78,8 @@ def tearDown():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
-
-    for suffix in ['learning_curve', 'summary', 'fancy_xval']:
+    for suffix in ['learning_curve', 'summary', 'fancy_xval',
+                   'warning_multiple_featuresets']:
         if exists(join(train_dir, 'test_{}.jsonlines'.format(suffix))):
             os.unlink(join(train_dir, 'test_{}.jsonlines'.format(suffix)))
 
@@ -96,6 +96,7 @@ def tearDown():
                 os.unlink(join(config_dir, cf))
 
         for output_file in (glob(join(output_dir, 'test_{}_*'.format(suffix))) +
+                            glob(join(output_dir, 'test_{}.log'.format(suffix))) +
                             glob(join(output_dir, 'test_majority_class_custom_learner_*'))):
             os.unlink(output_file)
 
@@ -416,7 +417,7 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
     output_dir = join(_my_dir, 'output')
 
     # make a simple config file for feature hasher warning test
-    values_to_fill_dict = {'experiment_name': 'test_feature_hasher_warning',
+    values_to_fill_dict = {'experiment_name': 'test_warning_multiple_featuresets',
                            'train_directory': train_dir,
                            'task': 'train',
                            'grid_search': 'false',
@@ -424,7 +425,7 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
                            'learners': "['LogisticRegression']",
                            'featuresets': ("[['test_input_3examples_1', "
                                            "'test_input_3examples_2']]"),
-                           "featureset_names": "['test']",
+                           "featureset_names": "['feature_hasher']",
                            'suffix': '.jsonlines',
                            'log': output_dir,
                            'models': output_dir,
@@ -434,11 +435,11 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
 
     config_template_path = join(_my_dir,
                                 'configs',
-                                'test_feature_hasher_warning.template.cfg')
+                                'test_warning_multiple_featuresets.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
-                                         'hasher_test')
+                                         'feature_hasher')
 
     # run the experiment
     print(config_path)
@@ -446,7 +447,7 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
 
     # test if it throws any warning
     logfile_path = join(_my_dir, "output",
-                        "test_feature_hasher_warning_test_LogisticRegression.log")
+                        "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log")
     with open(logfile_path) as f:
         warning_pattern = re.compile('Since there are multiple feature files, '
                                      'feature hashing applies to each '
