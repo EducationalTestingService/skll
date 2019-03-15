@@ -13,6 +13,7 @@ config file.
 from __future__ import print_function, unicode_literals
 
 import logging
+import warnings
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
@@ -118,13 +119,13 @@ def main(argv=None):
     # Run each config file sequentially
     for config_file in args.config_file:
         run_configuration(config_file,
-                          local=args.local,
-                          overwrite=not args.keep_models,
-                          queue=args.queue,
-                          hosts=machines,
-                          ablation=ablation,
-                          resume=args.resume,
-                          log_level=log_level)
+                         local=args.local,
+                         overwrite=not args.keep_models,
+                         queue=args.queue,
+                         hosts=machines,
+                         ablation=ablation,
+                         resume=args.resume,
+                         log_level=log_level)
 
 
 if __name__ == '__main__':

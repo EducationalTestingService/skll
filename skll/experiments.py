@@ -17,6 +17,7 @@ import logging
 import math
 import os
 import sys
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -25,13 +26,14 @@ import ruamel.yaml as yaml
 from collections import defaultdict
 from io import open
 from itertools import combinations
-from os.path import basename, exists, isfile, join
+from os.path import exists, isfile, join
 
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn import __version__ as SCIKIT_VERSION
 
-from skll import get_skll_logger
+from skll import (close_and_remove_logger_handlers,
+                  get_skll_logger, orig_showwarning)
 from skll.config import _munge_featureset_name, _parse_config_file
 from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
@@ -61,6 +63,8 @@ else:
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
+
+logging.basicConfig(level=logging.INFO)
 
 
 class NumpyTypeEncoder(json.JSONEncoder):
@@ -827,6 +831,8 @@ def _classify_featureset(args):
                   file_mode) as output_file:
             _write_skll_folds(skll_fold_ids, output_file)
 
+    close_and_remove_logger_handlers(logger)
+
     return res
 
 
@@ -991,6 +997,15 @@ def _create_learner_result_dicts(task_results,
     return res
 
 
+def warn_once(func):
+    def wrapper(*args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter("once")
+            return func(*args, **kwargs)
+    return wrapper
+
+
+@warn_once
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                       hosts=None, write_summary=True, quiet=False,
                       ablation=0, resume=False, log_level=logging.INFO):
@@ -1298,6 +1313,11 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             logger.warning("Raw data for the learning curve saved in "
                            "{}. No plots were generated since pandas and "
                            "seaborn are not installed. ".format(output_file_path))
+
+    # Reset warnings.showwarning method and close/remove
+    # any logger handlers
+    warnings.showwarning = orig_showwarning
+    close_and_remove_logger_handlers(logger)
 
     return result_json_paths
 

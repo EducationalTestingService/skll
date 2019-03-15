@@ -5,9 +5,11 @@ Functions related to logging in SKLL.
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
-
 import logging
+import warnings
 from logging import FileHandler
+
+orig_showwarning = warnings.showwarning
 
 
 def get_skll_logger(name, filepath=None, log_level=logging.INFO):
@@ -53,5 +55,34 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
             file_handler.setLevel(log_level)
             logger.addHandler(file_handler)
 
+    # Make method for sending warnings to the logger
+    # and replace warnings.showwarning
+    def send_warnings_to_log(message, category, filename, lineno,
+                             file=None, line=None):
+        logger.warning('{}:{}: {}:{}'.format(filename,
+                                             lineno,
+                                             category.__name__,
+                                             message))
+    warnings.showwarning = send_warnings_to_log
+
     # return the logger instance
     return logger
+
+
+def close_and_remove_logger_handlers(logger):
+    """
+    Close and remove any handlers attached to a logger instance.
+
+    Parameters
+    ----------
+    logger : logging.Logger
+        Logger instance
+
+    Returns
+    -------
+    NoneType
+    """
+
+    for handler in logger.handlers:
+        handler.close()
+        logger.removeHandler(handler)
