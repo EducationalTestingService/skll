@@ -1098,11 +1098,13 @@ def test_print_model_weights():
     yield check_print_model_weights, 'classification'
     yield check_print_model_weights, 'classification_with_hashing'
     yield check_print_model_weights, 'multiclass_classification'
+    yield check_print_model_weights, 'multiclass_classification', True
     yield check_print_model_weights, 'multiclass_classification_with_hashing'
+    yield check_print_model_weights, 'multiclass_classification_with_hashing', True
     yield check_print_model_weights, 'multiclass_classification_svc'
-    yield check_print_model_weights, 'multiclass_classification',  True
     yield check_print_model_weights, 'multiclass_classification_svc', True
     yield check_print_model_weights, 'multiclass_classification_svc_with_hashing'
+    yield check_print_model_weights, 'multiclass_classification_svc_with_hashing', True
     yield check_print_model_weights, 'classification_no_intercept'
     yield check_print_model_weights, 'regression'
     yield check_print_model_weights, 'regression_with_hashing'
