@@ -972,12 +972,20 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
                                                safe_float(weight)))
 
         if sort_by_labels:
-            # make sure that the weights are sorted by label
-            # test that they are sorted descending by absolute value
+            # making sure that the weights are sorted by label
+
+            # get the labels
+            labels_list = [line.split("\t")[1] for line in lines_to_parse[3:]]
+
+            # first test that the labels are sorted
+            assert labels_list == sorted(labels_list)
+
+            # then test that weights are sorted descending by absolute value
             # for each label
             for features_and_weights in feature_values:
                 feature_weights = [t[1] for t in features_and_weights]
                 assert feature_weights == sorted(feature_weights, key=lambda x: -abs(x))
+
         for index, weights in enumerate(feature_values):
             feature_values[index] = [t[1] for t in sorted(weights)]
 
@@ -1017,15 +1025,22 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
             parsed_weights_dict['{}'.format(class_pair)][feature_index] = safe_float(weight)
 
         if sort_by_labels:
-            # make sure that the weights are sorted by label
-            # first get the feature weights
+            # making sure that the weights are sorted by label
+
+            # get the feature weights and class pairs
             temp_weights_dict = defaultdict(list)
+            class_pair_list = []
             for ltp in lines_to_parse[3:]:
                 (weight, class_pair, feature) = ltp.split('\t')
+                class_pair_list.append(class_pair)
                 if class_pair not in parsed_weights_dict:
                     parsed_weights_dict[class_pair] = [0] * 10
                 temp_weights_dict[class_pair].append(safe_float(weight))
-            # test that they are sorted descending by absolute value
+
+            # first test that the class pairs are sorted
+            assert class_pair_list == sorted(class_pair_list)
+
+            # then test that weifghts are sorted descending by absolute value
             # for each label
             for class_pair, feature_weights in temp_weights_dict.items():
                 assert feature_weights == sorted(feature_weights,
