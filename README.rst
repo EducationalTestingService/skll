@@ -125,7 +125,7 @@ Requirements
 -  Python 2.7+
 -  `scikit-learn <http://scikit-learn.org/stable/>`__
 -  `six <https://pypi.org/project/six/>`__
--  `PrettyTable <https://pypi.org/project/PrettyTable/>`__
+-  `tabulate <https://pypi.org/project/tabulate/>`__
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `Grid Map <https://pypi.org/project/gridmap/>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)

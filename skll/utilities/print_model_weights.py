@@ -4,6 +4,7 @@
 Simple script for printing out model weights.
 
 :author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
 
@@ -80,12 +81,18 @@ def main(argv=None):
     if intercept is not None:
         # subclass of LinearModel
         if '_intercept_' in intercept:
-            # Some learners (e.g. LinearSVR) may return a list of intercepts
-            if isinstance(intercept['_intercept_'], np.ndarray):
-                intercept_list = ["% .12f" % i for i in intercept['_intercept_']]
-                print("intercept = {}".format(intercept_list))
-            else:
-                print("intercept = {: .12f}".format(intercept['_intercept_']))
+            # Some learners (e.g. LinearSVR) may return an array of intercepts but
+            # sometimes that array is of length 1 so we don't need to print that
+            # as an array/list. First, let's normalize these cases.
+            model_intercepts = intercept['_intercept_']
+            intercept_is_array = isinstance(model_intercepts, np.ndarray)
+            num_intercepts = len(model_intercepts) if intercept_is_array else 1
+            if intercept_is_array and num_intercepts == 1:
+                model_intercepts = model_intercepts[0]
+                intercept_is_array = False
+
+            # now print out the intercepts
+            print("intercept = {:.12f}".format(model_intercepts))
         else:
             print("== intercept values ==")
             for (label, val) in intercept.items():
