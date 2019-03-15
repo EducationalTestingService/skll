@@ -13,6 +13,7 @@ from __future__ import (absolute_import, division, print_function,
 import csv
 import json
 import os
+import re
 import sys
 import warnings
 
@@ -22,7 +23,6 @@ from glob import glob
 from io import open
 from itertools import product
 from os.path import abspath, dirname, exists, join
-import re
 
 import numpy as np
 from numpy.testing import (assert_almost_equal,
