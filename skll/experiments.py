@@ -440,6 +440,10 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                                num_features=num_features,
                                logger=logger).read()
     else:
+        if len(feat_files) > 1 and feature_hasher:
+            logger.warning("Since there are multiple feature files, "
+                           "feature hashing applies to each specified "
+                           "feature file separately.")
         merged_set = None
         for file_name in sorted(join(dir_path, featfile + suffix) for
                                 featfile in feat_files):
@@ -932,7 +936,7 @@ def _create_learner_result_dicts(task_results,
                               [label_prec, label_recall, label_f])
                 rows.append(result_row)
 
-            result_table = tabulate(rows, 
+            result_table = tabulate(rows,
                                     headers=headers,
                                     stralign="right",
                                     floatfmt=".3f",
@@ -979,7 +983,7 @@ def _create_learner_result_dicts(task_results,
                 f_mean = f_sum_dict[actual_label] / num_folds
                 rows.append([actual_label] + [prec_mean, recall_mean, f_mean])
 
-            result_table = tabulate(rows, 
+            result_table = tabulate(rows,
                                     headers=headers,
                                     floatfmt=".3f",
                                     tablefmt="psql")
