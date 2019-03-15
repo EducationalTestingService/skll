@@ -11,11 +11,12 @@ Simple script for printing out model weights.
 from __future__ import print_function, unicode_literals
 
 import argparse
-from collections import defaultdict
 import logging
 import sys
 
+from collections import defaultdict
 from six import iteritems
+
 import numpy as np
 
 from skll import Learner
