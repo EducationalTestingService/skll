@@ -438,7 +438,7 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
-                                         'xval')
+                                         'hasher_test')
 
     # run the experiment
     print(config_path)
