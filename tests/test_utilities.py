@@ -10,11 +10,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import ast
 
+from collections import defaultdict
 import copy
 import csv
 import itertools
 import os
-import scipy.sparse as sp
 import sys
 
 from glob import glob
@@ -52,7 +52,8 @@ from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
                        MegaMWriter, LibSVMReader, safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
-from skll.experiments import _generate_learning_curve_plots, _write_summary_file, run_configuration
+from skll.experiments import (_generate_learning_curve_plots,
+                              _write_summary_file, run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
 from utils import make_classification_data, make_regression_data
@@ -153,8 +154,8 @@ def test_compute_eval_from_predictions():
 
 def test_warning_when_prediction_method_and_no_probabilities():
     """
-    Test compute_eval_from_predictions logs a warning if a prediction method is provided
-    but the predictions file doesn't contain probabilities.
+    Test compute_eval_from_predictions logs a warning if a prediction method
+    is provided but the predictions file doesn't contain probabilities.
     """
     lc = LogCapture()
     lc.begin()
@@ -166,14 +167,15 @@ def test_warning_when_prediction_method_and_no_probabilities():
 
     # we need to capture stdout since that's what main() writes to
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
-                                         'unweighted_kappa', '--method', 'highest']
+                                         'unweighted_kappa',
+                                         '--method', 'highest']
     try:
         old_stdout = sys.stdout
         old_stderr = sys.stderr
         sys.stdout = mystdout = StringIO()
         sys.stderr = mystderr = StringIO()
         cefp.main(compute_eval_from_predictions_cmd)
-        _ = mystdout.getvalue().strip().split('\n')
+        mystdout.getvalue().strip().split('\n')
         err = mystderr.getvalue()
         print(err)
     finally:
@@ -189,8 +191,8 @@ def test_warning_when_prediction_method_and_no_probabilities():
 
 def test_compute_eval_from_predictions_with_probs():
     """
-    Test compute_eval_from_predictions function console script, with probabilities in
-    the predictions file.
+    Test compute_eval_from_predictions function console script,
+    with probabilities in the predictions file.
     """
 
     pred_path = join(_my_dir, 'other',
@@ -225,7 +227,8 @@ def test_compute_eval_from_predictions_with_probs():
     #
     # Test expected value predictions method
     #
-    compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
+    compute_eval_from_predictions_cmd = [input_path, pred_path,
+                                         'explained_variance',
                                          'r2', '--method', 'expected_value']
     try:
         old_stdout = sys.stdout
@@ -377,7 +380,7 @@ def check_generate_predictions_file_headers(use_threshold=False,
     # sure that they are the same as before saving the model
     p = gp.Predictor(model_file, threshold=threshold,
                      all_labels=use_all_labels)
-    _ = p.predict(test_fs)
+    p.predict(test_fs)
 
     if threshold:
         assert (p.output_file_header == ['id', 'prediction'])
@@ -520,7 +523,7 @@ def test_generate_predictions_console_bad_input_ext():
         sys.stdout = mystdout = StringIO()
         sys.stderr = mystderr = StringIO()
         gp.main(generate_cmd)
-        _ = mystdout.getvalue()
+        mystdout.getvalue()
         err = mystderr.getvalue()
     finally:
         sys.stdout = old_stdout
@@ -857,7 +860,8 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
                                                feature_bins=10)
     elif task in ['multiclass_classification',
                   'multiclass_classification_svc']:
-        train_fs, _ = make_classification_data(train_test_ratio=0.8, num_labels=3)
+        train_fs, _ = make_classification_data(train_test_ratio=0.8,
+                                               num_labels=3)
     elif task in ['multiclass_classification_with_hashing',
                   'multiclass_classification_svc_with_hashing']:
         train_fs, _ = make_classification_data(train_test_ratio=0.8,
@@ -883,10 +887,13 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
                 'multiclass_classification',
                 'multiclass_classification_with_hashing']:
         learner = Learner('LogisticRegression')
-        learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
-    elif task in ['multiclass_classification_svc', 'multiclass_classification_svc_with_hashing']:
+        learner.train(train_fs, grid_search=True,
+                      grid_objective='f1_score_micro')
+    elif task in ['multiclass_classification_svc',
+                  'multiclass_classification_svc_with_hashing']:
         learner = Learner('SVC', model_kwargs={'kernel': 'linear'})
-        learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+        learner.train(train_fs, grid_search=True,
+                      grid_objective='f1_score_micro')
     elif task == 'classification_no_intercept':
         learner = Learner('LogisticRegression')
         learner.train(train_fs,
@@ -899,11 +906,13 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
     elif task in ['regression_linearsvr', 'regression_linearsvr_with_hashing']:
         learner = Learner('LinearSVR')
         learner.train(train_fs, grid_search=True, grid_objective='pearson')
-    elif task in ['regression_svr_linear', 'regression_svr_linear_with_hashing']:
+    elif task in ['regression_svr_linear',
+                  'regression_svr_linear_with_hashing']:
         learner = Learner('SVR', model_kwargs={'kernel': 'linear'})
         learner.train(train_fs, grid_search=True, grid_objective='pearson')
     else:
-        learner = Learner('SVR', model_kwargs={'kernel': 'linear'}, feature_scaling='both')
+        learner = Learner('SVR', model_kwargs={'kernel': 'linear'},
+                          feature_scaling='both')
         learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # now save the model to disk
@@ -955,8 +964,16 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
         feature_values = [[], [], []]
         for ltp in lines_to_parse[3:]:
             weight, label, feature_name = ltp.split('\t')
-            feature_values[int(label)].append((feature_name, safe_float(weight)))
+            feature_values[int(label)].append((feature_name,
+                                               safe_float(weight)))
 
+        if sort_by_labels is True:
+            # make sure that the weights are sorted by label
+            # test that they are sorted descending by absolute value
+            # for each label
+            for features_and_weights in feature_values:
+                feature_weights = [t[1] for t in features_and_weights]
+                assert feature_weights == sorted(feature_weights, key=lambda x: -abs(x))
         for index, weights in enumerate(feature_values):
             feature_values[index] = [t[1] for t in sorted(weights)]
 
@@ -994,6 +1011,21 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
             else:
                 feature_index = learner.feat_vectorizer.vocabulary_[feature]
             parsed_weights_dict['{}'.format(class_pair)][feature_index] = safe_float(weight)
+
+        if sort_by_labels is True:
+            # make sure that the weights are sorted by label
+            # first get the feature weights
+            temp_weights_dict = defaultdict(list)
+            for ltp in lines_to_parse[3:]:
+                (weight, class_pair, feature) = ltp.split('\t')
+                if class_pair not in parsed_weights_dict:
+                    parsed_weights_dict[class_pair] = [0] * 10
+                temp_weights_dict[class_pair].append(safe_float(weight))
+            # test that they are sorted descending by absolute value
+            # for each label
+            for class_pair, feature_weights in temp_weights_dict.items():
+                assert feature_weights == sorted(feature_weights,
+                                                 key=lambda x: -abs(x))
 
         # to validate that our coefficients are correct, we will
         # get the coefficient array (for all features) from `coef_`

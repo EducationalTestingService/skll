@@ -11,6 +11,7 @@ Simple script for printing out model weights.
 from __future__ import print_function, unicode_literals
 
 import argparse
+from collections import defaultdict
 import logging
 import sys
 
@@ -19,7 +20,6 @@ import numpy as np
 
 from skll import Learner
 from skll.version import __version__
-from collections import defaultdict
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC, SVC
 
@@ -68,7 +68,8 @@ def main(argv=None):
     multiclass = False
     model = learner._model
     if (isinstance(model, LinearSVC) or
-        isinstance(model, LogisticRegression) or
+        (isinstance(model, LogisticRegression) and
+            len(learner.label_list) > 2) or
         (isinstance(model, SVC) and
             model.kernel == 'linear')):
         multiclass = True
