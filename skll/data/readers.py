@@ -787,15 +787,21 @@ class ARFFReader(Reader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, **kwargs):
+    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
         super(ARFFReader, self).__init__(path_or_list, **kwargs)
         self.dialect = 'arff'
         self.relation = ''
         self.regression = False
+        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
+        self._engine = self._pandas_kwargs.pop('engine', 'c')
+        self._pandas_kwargs.pop('delimiter', None)
+        self._pandas_kwargs.pop('header', None)
+        self._pandas_kwargs.pop('quote_char', None)
+        self._pandas_kwargs.pop('escape_char', None)
         self._use_pandas = True
 
-    @staticmethod
-    def split_with_quotes(s,
+    def split_with_quotes(self,
+                          s,
                           delimiter=' ',
                           header=None,
                           quote_char="'",
@@ -833,8 +839,9 @@ class ARFFReader(Reader):
                   'delimiter': delimiter,
                   'quotechar': quote_char,
                   'escapechar': escape_char}
+        kwargs.update(self._pandas_kwargs)
 
-        df = pd.read_csv(StringIO(s), engine='c', **kwargs)
+        df = pd.read_csv(StringIO(s), engine=self._engine, **kwargs)
         return df
 
     def _sub_read(self, path):
