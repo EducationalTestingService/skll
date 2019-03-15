@@ -227,7 +227,7 @@ class Writer(object):
 
     def _write_data(self, feature_set, output_file, filter_features):
         """
-        Write the the full data set in the Writer's format using pandas,
+        Write the the full data set in the Writer's format using `pandas`,
         rather than writing row-by-row.
 
         Parameters
@@ -404,11 +404,13 @@ class CSVWriter(Writer):
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path, feature_set, **kwargs):
+    def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
         self.label_col = kwargs.pop('label_col', 'y')
         self.id_col = kwargs.pop('id_col', 'id')
         super(CSVWriter, self).__init__(path, feature_set, **kwargs)
-        self._sep = str(',')
+        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
+        self._sep = self._pandas_kwargs.pop('sep', str(','))
+        self._index = self._pandas_kwargs.pop('index', False)
         self._use_pandas = True
 
     def _write_data(self, feature_set, output_file, filter_features):
@@ -427,7 +429,7 @@ class CSVWriter(Writer):
             features to include in this file.
         """
         df = self._build_dataframe(feature_set, filter_features)
-        df.to_csv(output_file, sep=self._sep, index=False)
+        df.to_csv(output_file, sep=self._sep, index=self._index, **self._pandas_kwargs)
 
 
 class TSVWriter(CSVWriter):
@@ -449,8 +451,9 @@ class TSVWriter(CSVWriter):
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path, feature_set, **kwargs):
-        super(TSVWriter, self).__init__(path, feature_set, **kwargs)
+    def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
+
+        super(TSVWriter, self).__init__(path, feature_set, pandas_kwargs, **kwargs)
         self._sep = str('\t')
 
 
@@ -479,12 +482,17 @@ class ARFFWriter(Writer):
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path, feature_set, **kwargs):
+    def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
         self.label_col = kwargs.pop('label_col', 'y')
         self.id_col = kwargs.pop('id_col', 'id')
         self.relation = kwargs.pop('relation', 'skll_relation')
         self.regression = kwargs.pop('regression', False)
         super(ARFFWriter, self).__init__(path, feature_set, **kwargs)
+        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
+        self._index = self._pandas_kwargs.pop('index', False)
+        # remove the mode header arguments, if they exist
+        self._pandas_kwargs.pop('mode', None)
+        self._pandas_kwargs.pop('header', None)
         self._use_pandas = True
 
     def _write_header(self, feature_set, output_file, filter_features):
@@ -556,9 +564,10 @@ class ARFFWriter(Writer):
             # Write out the header
             self._write_header(feature_set, buff, filter_features)
 
-            # Write out the data
-            mode = 'a'.encode() if PY2 else 'a'
-            df.to_csv(buff, mode=mode, index=False, header=False)
+            df.to_csv(buff,
+                      mode='a'.encode() if PY2 else 'a',
+                      index=self._index,
+                      header=False, **self._pandas_kwargs)
 
 
 class MegaMWriter(Writer):
@@ -634,10 +643,14 @@ class NDJWriter(Writer):
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path, feature_set, **kwargs):
+    def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
         self.label_col = kwargs.pop('label_col', 'y')
         self.id_col = kwargs.pop('id_col', 'id')
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
+        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
+        # remove the `lines` and `orient` arguments, if they were passed
+        self._pandas_kwargs.pop('lines', None)
+        self._pandas_kwargs.pop('orient', None)
         self._use_pandas = True
 
     def _write_data(self, feature_set, output_file, filter_features):
@@ -658,7 +671,7 @@ class NDJWriter(Writer):
         df = self._build_dataframe_with_features(feature_set, filter_features)
         df = pd.DataFrame({'x': df.to_dict(orient='records')})
         df = self._build_dataframe(feature_set, df_features=df)
-        df.to_json(output_file, orient='records', lines=True)
+        df.to_json(output_file, orient='records', lines=True, **self._pandas_kwargs)
 
 
 class LibSVMWriter(Writer):

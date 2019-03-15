@@ -83,7 +83,8 @@ class Reader(object):
 
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
                  label_col='y', id_col='id', class_map=None, sparse=True,
-                 feature_hasher=False, num_features=None, logger=None):
+                 feature_hasher=False, num_features=None,
+                 logger=None):
         super(Reader, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
@@ -93,6 +94,7 @@ class Reader(object):
         self.class_map = class_map
         self._progress_msg = ''
         self._use_pandas = False
+
         if feature_hasher:
             self.vectorizer = FeatureHasher(n_features=num_features)
         else:
@@ -139,6 +141,12 @@ class Reader(object):
     def _sub_read(self, f):
         """
         Does the actual reading of the given file or list.
+        For `Reader` objects that do not rely on `pandas`
+        (and therefore read row-by-row), this function will
+        be called by  `_sub_read_rows()` and will take a file
+        buffer rather than a file path. Otherwise, it will
+        take a path and will be called directly in the `read()`
+        method.
 
         Parameters
         ----------
@@ -177,7 +185,12 @@ class Reader(object):
 
     def _sub_read_rows(self, path):
         """
-        Read the file in row-by-row.
+        Read the file in row-by-row. This method is used for
+        `Reader` objects that do not rely on `pandas`, and are
+        instead read line-by-line into a FeatureSet object, unlike
+        pandas-based reader object, which will read everything
+        into memory in a data frame object before converting to
+        a `FeatureSet`.
 
         Parameters
         ----------
@@ -250,8 +263,12 @@ class Reader(object):
 
     def _parse_dataframe(self, df, id_col, label_col, features=None):
         """
-        Parse the data frame into ids,
-        labels, and features.
+        Parse the data frame into ids, labels, and features.
+        For `Reader` objects that rely on `pandas`, this function
+        will be called in the `_sub_read()` method to parse the
+        data frame into the expected format. It will not be used
+        by `Reader` classes that read row-by-row (and therefore
+        use the `_sub_read_rows()` function).
 
         Parameters
         ----------
@@ -381,8 +398,9 @@ class DictListReader(Reader):
     list of example dictionaries instead of a path to a file.
     """
 
-    def __init__(self, path_or_list, **kwargs):
+    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
         super(DictListReader, self).__init__(path_or_list, **kwargs)
+        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
         self._use_pandas = True
 
     def _sub_read(self, list_of_dicts):
@@ -400,7 +418,7 @@ class DictListReader(Reader):
         # create a data frame; if it's empty,
         # then return `_parse_dataframe()`, which
         # will raise an error
-        df = pd.DataFrame(list_of_dicts)
+        df = pd.DataFrame(list_of_dicts, **self._pandas_kwargs)
         if df.empty:
             return self._parse_dataframe(df, None, None)
 
@@ -427,8 +445,12 @@ class NDJReader(Reader):
     must be specified as the  "id" key in each JSON dictionary.
     """
 
-    def __init__(self, path_or_list, **kwargs):
+    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
         super(NDJReader, self).__init__(path_or_list, **kwargs)
+        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
+        # remove the `lines` and `orient` arguments, if they were passed
+        self._pandas_kwargs.pop('lines', None)
+        self._pandas_kwargs.pop('orient', None)
         self._use_pandas = True
 
     def _sub_read(self, path):
@@ -450,11 +472,10 @@ class NDJReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-
         # create a data frame; if it's empty,
         # then return `_parse_dataframe()`, which
         # will raise an error
-        df = pd.read_json(path, orient='records', lines=True)
+        df = pd.read_json(path, orient='records', lines=True, **self._pandas_kwargs)
         if df.empty:
             return self._parse_dataframe(df, None, None)
 
@@ -696,9 +717,11 @@ class CSVReader(Reader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, **kwargs):
+    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
         super(CSVReader, self).__init__(path_or_list, **kwargs)
-        self._sep = str(',')
+        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
+        self._sep = self._pandas_kwargs.pop('sep', str(','))
+        self._engine = self._pandas_kwargs.pop('engine', 'c')
         self._use_pandas = True
 
     def _sub_read(self, path):
@@ -717,7 +740,7 @@ class CSVReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        df = pd.read_csv(path, sep=self._sep, engine='c')
+        df = pd.read_csv(path, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
         return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
@@ -740,8 +763,8 @@ class TSVReader(CSVReader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, **kwargs):
-        super(TSVReader, self).__init__(path_or_list, **kwargs)
+    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
+        super(TSVReader, self).__init__(path_or_list, pandas_kwargs, **kwargs)
         self._sep = str('\t')
 
 
@@ -814,7 +837,7 @@ class ARFFReader(Reader):
         df = pd.read_csv(StringIO(s), engine='c', **kwargs)
         return df
 
-    def _sub_read(self, f):
+    def _sub_read(self, path):
         """
         Parameters
         ----------
@@ -830,7 +853,7 @@ class ARFFReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        with open(f, 'r' if PY3 else 'rb') as buff:
+        with open(path, 'r' if PY3 else 'rb') as buff:
 
             lines = [UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
                      if not isinstance(line, text_type) and PY2
