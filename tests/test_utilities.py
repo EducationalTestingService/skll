@@ -9,14 +9,13 @@ Module for running unit tests related to command line utilities.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import ast
-
-from collections import defaultdict
 import copy
 import csv
 import itertools
 import os
 import sys
 
+from collections import defaultdict
 from glob import glob
 from itertools import combinations, product
 from os.path import abspath, dirname, exists, join
@@ -48,12 +47,17 @@ import skll.utilities.summarize_results as sr
 import skll.utilities.join_features as jf
 import skll.utilities.plot_learning_curves as plc
 
-from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
-                       MegaMWriter, LibSVMReader, safe_float)
+from skll.data import (FeatureSet,
+                       NDJWriter,
+                       LibSVMWriter,
+                       MegaMWriter,
+                       LibSVMReader,
+                       safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
 from skll.experiments import (_generate_learning_curve_plots,
-                              _write_summary_file, run_configuration)
+                              _write_summary_file,
+                              run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
 from utils import make_classification_data, make_regression_data
