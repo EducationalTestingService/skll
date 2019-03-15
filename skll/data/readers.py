@@ -794,6 +794,7 @@ class ARFFReader(Reader):
         self.regression = False
         self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
         self._engine = self._pandas_kwargs.pop('engine', 'c')
+        # remove all the things that the user isn't allowed to set
         self._pandas_kwargs.pop('delimiter', None)
         self._pandas_kwargs.pop('header', None)
         self._pandas_kwargs.pop('quote_char', None)
