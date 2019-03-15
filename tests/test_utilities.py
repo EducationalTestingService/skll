@@ -971,7 +971,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
             feature_values[int(label)].append((feature_name,
                                                safe_float(weight)))
 
-        if sort_by_labels is True:
+        if sort_by_labels:
             # make sure that the weights are sorted by label
             # test that they are sorted descending by absolute value
             # for each label
@@ -1016,7 +1016,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
                 feature_index = learner.feat_vectorizer.vocabulary_[feature]
             parsed_weights_dict['{}'.format(class_pair)][feature_index] = safe_float(weight)
 
-        if sort_by_labels is True:
+        if sort_by_labels:
             # make sure that the weights are sorted by label
             # first get the feature weights
             temp_weights_dict = defaultdict(list)
