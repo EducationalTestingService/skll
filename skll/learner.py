@@ -1094,7 +1094,6 @@ class Learner(object):
         # if we are doing feature hashing, then we need to make up
         # the feature names
         if isinstance(self.feat_vectorizer, FeatureHasher):
-            self.logger.warning("No feature names are available since this model was trained on hashed features.")
             num_features = len(coef)
             index_width_in_feature_name = int(floor(log10(num_features))) + 1
             feature_names = []
