@@ -20,7 +20,6 @@ from io import open, StringIO
 import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
-from pandas.io.common import CParserError
 from six import PY2, PY3, string_types, text_type
 from six.moves import zip
 from sklearn.feature_extraction import FeatureHasher
@@ -459,8 +458,7 @@ class NDJReader(Reader):
         if df.empty:
             return self._parse_dataframe(df, None, None)
 
-        # if it's PY2 and `id` is in the
-        # data frame, make sure it's a string
+        # if `id` is in the data frame, make sure it's a string
         if 'id' in df:
             df['id'] = df['id'].astype(str)
 
@@ -719,10 +717,7 @@ class CSVReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        try:
-            df = pd.read_csv(path, sep=self._sep, engine='c')
-        except CParserError:
-            df = pd.read_csv(path, sep=self._sep)
+        df = pd.read_csv(path, sep=self._sep, engine='c')
         return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
@@ -816,10 +811,7 @@ class ARFFReader(Reader):
                   'quotechar': quote_char,
                   'escapechar': escape_char}
 
-        try:
-            df = pd.read_csv(StringIO(s), engine='c', **kwargs)
-        except CParserError:
-            df = pd.read_csv(StringIO(s), **kwargs)
+        df = pd.read_csv(StringIO(s), engine='c', **kwargs)
         return df
 
     def _sub_read(self, f):
