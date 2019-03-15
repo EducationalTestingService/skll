@@ -179,7 +179,7 @@ def test_warning_when_prediction_method_and_no_probabilities():
         sys.stdout = mystdout = StringIO()
         sys.stderr = mystderr = StringIO()
         cefp.main(compute_eval_from_predictions_cmd)
-        mystdout.getvalue().strip().split('\n')
+        _ = mystdout.getvalue().strip().split('\n')
         err = mystderr.getvalue()
         print(err)
     finally:
@@ -384,7 +384,7 @@ def check_generate_predictions_file_headers(use_threshold=False,
     # sure that they are the same as before saving the model
     p = gp.Predictor(model_file, threshold=threshold,
                      all_labels=use_all_labels)
-    p.predict(test_fs)
+    _ = p.predict(test_fs)
 
     if threshold:
         assert (p.output_file_header == ['id', 'prediction'])
@@ -527,7 +527,7 @@ def test_generate_predictions_console_bad_input_ext():
         sys.stdout = mystdout = StringIO()
         sys.stderr = mystderr = StringIO()
         gp.main(generate_cmd)
-        mystdout.getvalue()
+        _ = mystdout.getvalue()
         err = mystderr.getvalue()
     finally:
         sys.stdout = old_stdout
