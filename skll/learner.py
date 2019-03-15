@@ -1067,11 +1067,13 @@ class Learner(object):
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
 
-    def _convert_coef_array_to_feature_names(self, coef, feature_name_prefix=''):
+    def _convert_coef_array_to_feature_names(self,
+                                             coef,
+                                             feature_name_prefix=''):
         """
-        A helper method used by `model_params` to convert the model coefficients
-        array into a dictionary with feature names as keys and the coefficients
-        as values.
+        A helper method used by `model_params` to convert the model
+        coefficients array into a dictionary with feature names as
+        keys and the coefficients as values.
 
         Parameters
         ----------
