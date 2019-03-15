@@ -51,7 +51,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         # defaults are automatically provided
         defaults = {'class_map': '{}',
                     'custom_learner_path': '',
-                    'cv_folds_file': '',
+                    'folds_file': '',
                     'folds_file': '',
                     'feature_hasher': 'False',
                     'feature_scaling': 'none',
@@ -94,7 +94,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
                                    'folds_file': 'Input',
-                                   'cv_folds_file': 'Input',
+                                   'folds_file': 'Input',
                                    'feature_hasher': 'Input',
                                    'feature_scaling': 'Input',
                                    'featuresets': 'Input',
@@ -379,7 +379,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         The minimum number of examples for which the value of a
         feature must be nonzero to be included in the model.
     folds_file : str
-        The path to the cv_folds_file, if specified.
+        The path to the folds_file, if specified.
     grid_search_jobs : int
         Number of folds to run in parallel when using grid search.
     grid_search_folds : int
@@ -610,14 +610,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
-    # if cv_folds_file is specified, raise a deprecation warning
-    cv_folds_file_value = config.get("Input", "cv_folds_file")
-    if cv_folds_file_value:
-        logger.warning("The parameter \"cv_folds_file\" "
-                       "is deprecated and will be removed in the next "
-                       "release, please use \"folds_file\" instead.")
-        config.set("Input", "folds_file", cv_folds_file_value)
-
     # if an external folds file is specified, then read it into a dictionary
     folds_file = _locate_file(config.get("Input", "folds_file"), config_dir)
     num_cv_folds = config.getint("Input", "num_cv_folds")
@@ -824,22 +816,16 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         raise ValueError('The models path should not be set when task is '
                          '{}.'.format(task))
     if task == 'learning_curve':
-        if len(grid_objectives) > 0 and len(output_metrics) == 0:
-            logger.warning("The \"objectives\" option "
-                           "is deprecated for the learning_curve "
-                           "task and will not be supported "
-                           "after the next release; please "
-                           "use the \"metrics\" option in the [Output] "
-                           "section instead.")
-            output_metrics = grid_objectives
-            grid_objectives = []
-        elif len(grid_objectives) == 0 and len(output_metrics) == 0:
+        if len(grid_objectives) > 0:
+            raise ValueError("The \"objectives\" option "
+                             "is no longer supported for the "
+                             "\"learning_curve\" "
+                             "task. Please use the \"metrics\" "
+                             "option in the [Output] "
+                             "section instead.")
+        if len(output_metrics) == 0:
             raise ValueError('The "metrics" option must be set when '
                              'the task is "learning_curve".')
-        elif len(grid_objectives) > 0 and len(output_metrics) > 0:
-            logger.warning("Ignoring \"objectives\" for the learning_curve "
-                           "task since \"metrics\" is already specified.")
-            grid_objectives = []
     elif task in ['evaluate', 'cross_validate']:
         # for other appropriate tasks, if metrics and objectives have
         # some overlaps - we will assume that the user meant to
@@ -993,20 +979,22 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     # and parse it correctly
     metrics = yaml.safe_load(_fix_json(metrics))
     if not isinstance(metrics, list):
-        raise TypeError("{} should be a list, not a {}.".format(option_name, type(metrics)))
+        raise TypeError("{} should be a list, not a {}.".format(option_name,
+                                                                type(metrics)))
 
-    # `mean_squared_error` should be replaced with `neg_mean_squared_error`
+    # `mean_squared_error` is no more supported.
+    # It is replaced by `neg_mean_squared_error`
     if 'mean_squared_error' in metrics:
-        logger.warning("The metric \"mean_squared_error\" "
-                       "is deprecated and will be removed in the next "
-                       "release, please use the metric "
-                       "\"neg_mean_squared_error\" instead.")
-        metrics[metrics.index('mean_squared_error')] = 'neg_mean_squared_error'
+        raise ValueError("The metric \"mean_squared_error\" "
+                         "is no longer supported."
+                         " please use the metric "
+                         "\"neg_mean_squared_error\" instead.")
 
     invalid_metrics = [metric for metric in metrics if metric not in SCORERS]
     if invalid_metrics:
         raise ValueError('Invalid metric(s) {} '
-                         'specified for {}'.format(invalid_metrics, option_name))
+                         'specified for {}'.format(invalid_metrics,
+                                                   option_name))
 
     return metrics
 
