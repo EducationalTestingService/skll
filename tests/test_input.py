@@ -1595,7 +1595,7 @@ def test_learning_curve_objectives_unsupported_error():
     (experiment_name, task, sampler, fixed_sampler_parameters,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objectives, probability, results_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      use_folds_file_for_grid_search, do_stratified_folds,
@@ -1787,7 +1787,6 @@ def test_learning_curve_metrics():
     eq_(grid_objectives, [])
 
 
-
 def test_learning_curve_pipeline_option():
 
     train_dir = join(_my_dir, 'train')
@@ -1822,6 +1821,7 @@ def test_learning_curve_pipeline_option():
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
     eq_(pipeline, True)
+
 
 
 def test_learning_curve_no_metrics():

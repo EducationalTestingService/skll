@@ -6,7 +6,7 @@ A Helper script to generate learning plots from the learning curve output TSV fi
 This is necessary in scenarios where the plots were not generated as part of the original
 learning curve experiment, e.g. the experiment was run (a) on a remote server where plots
 may not have been generated either due to a crash or incorrect setting of the DISPLAY
-environment variable, or (b) in an environment where seaborn and pandas were't installed.
+environment variable, or (b) in an environment where seaborn wasn't installed.
 
 In these cases, the summary file should always be generated and this script can then be used
 to generate the plots later.
@@ -24,7 +24,7 @@ import sys
 from os import makedirs
 from os.path import basename, exists
 
-from skll.experiments import _HAVE_PANDAS, _HAVE_SEABORN
+from skll.experiments import _HAVE_SEABORN
 from skll.experiments import _generate_learning_curve_plots
 from skll.version import __version__
 
@@ -68,8 +68,8 @@ def main(argv=None):
         makedirs(args.output_dir)
 
     # check that we have pandas and seaborn available
-    if not (_HAVE_PANDAS and _HAVE_SEABORN):
-        logging.error("Error: need pandas and seaborn to generate learning curve plots.")
+    if not _HAVE_SEABORN:
+        logging.error("Error: need seaborn to generate learning curve plots.")
         sys.exit(1)
 
     # get the experiment name from the learning curve TSV file
@@ -77,6 +77,7 @@ def main(argv=None):
     experiment_name = basename(args.tsv_file).rstrip('_summary.tsv')
     logging.info("Generating learning curve(s)")
     _generate_learning_curve_plots(experiment_name, args.output_dir, args.tsv_file)
+
 
 if __name__ == '__main__':
     main()
