@@ -400,6 +400,10 @@ class CSVWriter(Writer):
         type. For example ``/foo/.csv``.
     feature_set : skll.FeatureSet
         The ``FeatureSet`` instance to dump to the output file.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` I/O reader.
+        Defaults to None.
     kwargs : dict, optional
         The arguments to the ``Writer`` object being instantiated.
     """
@@ -447,6 +451,10 @@ class TSVWriter(CSVWriter):
         type. For example ``/foo/.tsv``.
     feature_set : skll.FeatureSet
         The ``FeatureSet`` instance to dump to the output file.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` I/O reader.
+        Defaults to None.
     kwargs : dict, optional
         The arguments to the ``Writer`` object being instantiated.
     """
@@ -478,6 +486,10 @@ class ARFFWriter(Writer):
     regression : bool, optional
         Is this an ARFF file to be used for regression?
         Defaults to ``False``.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` I/O reader.
+        Defaults to None.
     kwargs : dict, optional
         The arguments to the ``Writer`` object being instantiated.
     """
@@ -639,6 +651,10 @@ class NDJWriter(Writer):
         type. For example ``/foo/.ndj``.
     feature_set : skll.FeatureSet
         The ``FeatureSet`` instance to dump to the output file.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` I/O reader.
+        Defaults to None.
     kwargs : dict, optional
         The arguments to the ``Writer`` object being instantiated.
     """

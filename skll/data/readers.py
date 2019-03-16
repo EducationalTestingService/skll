@@ -396,6 +396,17 @@ class DictListReader(Reader):
     ``FeatureSet`` objects as input. It iterates
     over examples in the same way as other ``Reader`` classes, but uses a
     list of example dictionaries instead of a path to a file.
+
+    Parameters
+    ----------
+    path_or_list : str
+        The path to a comma-delimited file.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` data frame constructor.
+        Defaults to None.
+    kwargs : dict, optional
+        Other arguments to the Reader object.
     """
 
     def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
@@ -443,6 +454,17 @@ class NDJReader(Reader):
 
     If example/instance IDs are included in the files, they
     must be specified as the  "id" key in each JSON dictionary.
+
+    Parameters
+    ----------
+    path_or_list : str
+        The path to a comma-delimited file.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` I/O reader.
+        Defaults to None.
+    kwargs : dict, optional
+        Other arguments to the Reader object.
     """
 
     def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
@@ -713,6 +735,10 @@ class CSVReader(Reader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` I/O reader.
+        Defaults to None.
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -758,7 +784,11 @@ class TSVReader(CSVReader):
     Parameters
     ----------
     path_or_list : str
-        The path to the TSV file.
+        The path to a comma-delimited file.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` I/O reader.
+        Defaults to None.
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -782,7 +812,11 @@ class ARFFReader(Reader):
     Parameters
     ----------
     path_or_list : str
-        The path to the ARFF file.
+        The path to a comma-delimited file.
+    pandas_kwargs : dict or None, optional
+        Arguments that will be passed directly
+        to the `pandas` I/O reader.
+        Defaults to None.
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
