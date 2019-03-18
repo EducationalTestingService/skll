@@ -2426,19 +2426,18 @@ class Learner(object):
 
         # Run jobs in parallel that train the model on each subset
         # of the training data and compute train and test scores
-        with joblib.parallel_backend('multiprocessing'):
-            parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
-            out = parallel(joblib.delayed(_train_and_score)(self,
-                                                            train_fs[:n_train_samples],
-                                                            test_fs,
-                                                            metric)
-                           for train_fs, test_fs in featureset_iter
-                           for n_train_samples in train_sizes_abs)
+        parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
+        out = parallel(joblib.delayed(_train_and_score)(self,
+                                                        train_fs[:n_train_samples],
+                                                        test_fs,
+                                                        metric)
+                       for train_fs, test_fs in featureset_iter
+                       for n_train_samples in train_sizes_abs)
 
-            # Reshape the outputs
-            out = np.array(out)
-            n_cv_folds = out.shape[0] // n_unique_ticks
-            out = out.reshape(n_cv_folds, n_unique_ticks, 2)
-            out = np.asarray(out).transpose((2, 1, 0))
+        # Reshape the outputs
+        out = np.array(out)
+        n_cv_folds = out.shape[0] // n_unique_ticks
+        out = out.reshape(n_cv_folds, n_unique_ticks, 2)
+        out = np.asarray(out).transpose((2, 1, 0))
 
         return list(out[0]), list(out[1]), list(train_sizes_abs)

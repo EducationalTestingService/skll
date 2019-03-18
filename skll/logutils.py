@@ -7,6 +7,7 @@ Functions related to logging in SKLL.
 """
 import logging
 import warnings
+from functools import wraps
 from logging import FileHandler
 
 orig_showwarning = warnings.showwarning
@@ -86,3 +87,12 @@ def close_and_remove_logger_handlers(logger):
     for handler in logger.handlers:
         handler.close()
         logger.removeHandler(handler)
+
+
+def warn_once(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter("once")
+            return func(*args, **kwargs)
+    return wrapper
