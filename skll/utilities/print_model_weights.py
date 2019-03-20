@@ -14,11 +14,15 @@ import argparse
 import logging
 import sys
 
+from collections import defaultdict
 from six import iteritems
+
 import numpy as np
 
 from skll import Learner
 from skll.version import __version__
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC, SVC
 
 
 def main(argv=None):
@@ -37,9 +41,12 @@ def main(argv=None):
                                      conflict_handler='resolve',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('model_file', help='model file to load')
-    parser.add_argument('--k',
-                        help='number of top features to print (0 for all)',
-                        type=int, default=50)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--k',
+                       help='number of top features to print (0 for all)',
+                       type=int, default=50)
+    group.add_argument("--sort_by_labels", '-s', action='store_true',
+                       default=False, help="order the features by classes")
     parser.add_argument('--sign',
                         choices=['positive', 'negative', 'all'],
                         default='all',
@@ -59,6 +66,14 @@ def main(argv=None):
     learner = Learner.from_file(args.model_file)
     (weights, intercept) = learner.model_params
 
+    multiclass = False
+    model = learner._model
+    if (isinstance(model, LinearSVC) or
+        (isinstance(model, LogisticRegression) and
+            len(learner.label_list) > 2) or
+        (isinstance(model, SVC) and
+            model.kernel == 'linear')):
+        multiclass = True
     weight_items = iteritems(weights)
     if args.sign == 'positive':
         weight_items = (x for x in weight_items if x[1] > 0)
@@ -83,12 +98,21 @@ def main(argv=None):
         else:
             print("== intercept values ==")
             for (label, val) in intercept.items():
-                print("{:.12f}\t{}".format(val, label))
+                print("{: .12f}\t{}".format(val, label))
         print()
 
     print("Number of nonzero features:", len(weights), file=sys.stderr)
-    for feat, val in sorted(weight_items, key=lambda x: -abs(x[1]))[:k]:
-        print("{:.12f}\t{}".format(val, feat))
+    weight_by_class = defaultdict(dict)
+    if multiclass and args.sort_by_labels:
+        for label_feature, weight in weight_items:
+            label, feature = label_feature.split()
+            weight_by_class[label][feature] = weight
+        for label in sorted(weight_by_class):
+            for feat, val in sorted(weight_by_class[label].items(), key=lambda x: -abs(x[1])):
+                print("{: .12f}\t{}\t{}".format(val, label, feat))
+    else:
+        for feat, val in sorted(weight_items, key=lambda x: -abs(x[1]))[:k]:
+            print("{: .12f}\t{}".format(val, feat))
 
 
 if __name__ == '__main__':
