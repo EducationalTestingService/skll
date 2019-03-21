@@ -24,9 +24,11 @@ from itertools import product
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
+import pandas as pd
 from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
+
 from nose.plugins.attrib import attr
 from nose.tools import eq_, ok_, assert_raises
 
@@ -36,8 +38,7 @@ from sklearn.naive_bayes import MultinomialNB
 
 from skll.data import FeatureSet, NDJWriter, Reader
 from skll.config import _VALID_TASKS
-from skll.experiments import (_HAVE_PANDAS,
-                              _HAVE_SEABORN,
+from skll.experiments import (_HAVE_SEABORN,
                               _compute_ylimits_for_featureset,
                               run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
@@ -683,7 +684,7 @@ def test_learning_curve_output():
 
     # make sure that the two PNG files (one per featureset) are created
     # if the requirements are satisfied
-    if _HAVE_PANDAS and _HAVE_SEABORN:
+    if _HAVE_SEABORN:
         for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
             ok_(exists(join(_my_dir,
                             'output',
@@ -722,7 +723,7 @@ def test_learning_curve_output_with_objectives():
 
     # make sure that the two PNG files (one per featureset) are created
     # if the requirements are satisfied
-    if _HAVE_PANDAS and _HAVE_SEABORN:
+    if _HAVE_SEABORN:
         for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
             ok_(exists(join(_my_dir,
                             'output',
@@ -782,9 +783,6 @@ def test_learning_curve_ylimits():
     """
     Test that the ylimits for learning curves are generated as expected.
     """
-
-    if _HAVE_PANDAS:
-        import pandas as pd
 
     # create a test data frame
     df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694, 1: 0.18556201422712379, 2: 0.15002727816517414, 3: 0.15301923832338646, 4: 0.15589815327205431, 5: 0.68205316443171948, 6: 0.77441075727706354, 7: 0.83838056331276678, 8: 0.84770116657005623, 9: 0.8708014559726478}, 'value': {0: 0.4092496971394447, 1: 0.2820507715115001, 2: 0.24533811547921261, 3: 0.21808651942296109, 4: 0.19767367891431534, 5: -2.3540980769230773, 6: -3.1312445327182394, 7: -3.2956790939674137, 8: -3.4843050005436713, 9: -3.6357879085645455}, 'train_score_std': {0: 0.15950199460682787, 1: 0.090992452273091703, 2: 0.068488654201949981, 3: 0.055223120652733763, 4: 0.03172452509259388, 5: 1.0561586240460523, 6: 0.53955995320300709, 7: 0.40477740983901211, 8: 0.34148185048394258, 9: 0.20791478156554272}, 'variable': {0: 'train_score_mean', 1: 'train_score_mean', 2: 'train_score_mean', 3: 'train_score_mean', 4: 'train_score_mean', 5: 'train_score_mean', 6: 'train_score_mean', 7: 'train_score_mean', 8: 'train_score_mean', 9: 'train_score_mean'}, 'metric': {0: 'r2', 1: 'r2', 2: 'r2', 3: 'r2', 4: 'r2', 5: 'neg_mean_squared_error', 6: 'neg_mean_squared_error', 7: 'neg_mean_squared_error', 8: 'neg_mean_squared_error', 9: 'neg_mean_squared_error'}})

@@ -15,16 +15,17 @@ import datetime
 import json
 import logging
 import math
-import numpy as np
 import os
 import sys
+
+import numpy as np
+import pandas as pd
+import ruamel.yaml as yaml
 
 from collections import defaultdict
 from io import open
 from itertools import combinations
 from os.path import basename, exists, isfile, join
-
-import ruamel.yaml as yaml
 
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
@@ -45,14 +46,6 @@ except ImportError:
     _HAVE_GRIDMAP = False
 else:
     _HAVE_GRIDMAP = True
-
-# Check if pandas is available
-try:
-    import pandas as pd
-except ImportError:
-    _HAVE_PANDAS = False
-else:
-    _HAVE_PANDAS = True
 
 # Check if seaborn (and matplotlib) are available
 try:
@@ -932,7 +925,7 @@ def _create_learner_result_dicts(task_results,
                               [label_prec, label_recall, label_f])
                 rows.append(result_row)
 
-            result_table = tabulate(rows, 
+            result_table = tabulate(rows,
                                     headers=headers,
                                     stralign="right",
                                     floatfmt=".3f",
@@ -979,7 +972,7 @@ def _create_learner_result_dicts(task_results,
                 f_mean = f_sum_dict[actual_label] / num_folds
                 rows.append([actual_label] + [prec_mean, recall_mean, f_mean])
 
-            result_table = tabulate(rows, 
+            result_table = tabulate(rows,
                                     headers=headers,
                                     floatfmt=".3f",
                                     tablefmt="psql")
@@ -1297,7 +1290,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             _write_learning_curve_file(result_json_paths, output_file)
 
         # generate the actual plot if we have the requirements installed
-        if _HAVE_PANDAS and _HAVE_SEABORN:
+        if _HAVE_SEABORN:
             _generate_learning_curve_plots(experiment_name,
                                            results_path,
                                            output_file_path)
@@ -1411,8 +1404,8 @@ def _generate_learning_curve_plots(experiment_name,
     # set up and draw the actual learning curve figures, one for
     # each of the featuresets
     for fs_name, df_fs in df_melted.groupby('featureset_name'):
-        fig = plt.figure();
-        fig.set_size_inches(2.5 * num_learners, 2.5 * num_metrics);
+        fig = plt.figure()
+        fig.set_size_inches(2.5 * num_learners, 2.5 * num_metrics)
 
         # compute ylimits for this feature set for each objective
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
