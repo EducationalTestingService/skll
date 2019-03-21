@@ -213,7 +213,7 @@ def check_zeros(X,
     return zero_values
 
 
-class FeatureTransformer(BaseEstimator, TransformerMixin):
+class Transformer(BaseEstimator, TransformerMixin):
     """
     A class to perform feature transformations.
 
