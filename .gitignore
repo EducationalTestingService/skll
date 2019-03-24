@@ -2,6 +2,7 @@
 *.pyo
 
 *.egg
+cover/
 skll.egg-info/
 dist/
 build/

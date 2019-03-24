@@ -33,6 +33,8 @@ _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
                              'AdditiveChi2Sampler', ''])
 _VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
                                             'none'])
+_VALID_TRANSFORM_OPTIONS = frozenset(['inv', 'sqrt', 'log',
+                                      'addOneInv', 'addOneLn', 'raw'])
 
 
 class SKLLConfigParser(configparser.ConfigParser):
@@ -54,6 +56,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'folds_file': '',
                     'folds_file': '',
                     'feature_hasher': 'False',
+                    'feature_transformation': 'raw',
                     'feature_scaling': 'none',
                     'featuresets': '[]',
                     'featureset_names': '[]',
@@ -96,6 +99,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'folds_file': 'Input',
                                    'folds_file': 'Input',
                                    'feature_hasher': 'Input',
+                                   'feature_transformation': 'Input',
                                    'feature_scaling': 'Input',
                                    'featuresets': 'Input',
                                    'featureset_names': 'Input',
@@ -605,6 +609,13 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         raise ValueError("Invalid value for feature_scaling parameter: {}"
                          .format(feature_scaling))
 
+    # ensure that feature_scaling is specified only as one of the
+    # four available choices
+    feature_transformation = config.get("Input", "feature_transformation")
+    if feature_transformation not in _VALID_TRANSFORM_OPTIONS:
+        raise ValueError("Invalid value for feature transformation parameter: {}"
+                         .format(feature_transformation))
+
     suffix = config.get("Input", "suffix")
     label_col = config.get("Input", "label_col")
     id_col = config.get("Input", "id_col")
@@ -891,8 +902,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objectives, probability, pipeline, results_path,
-            pos_label_str, feature_scaling, min_feature_count, folds_file,
-            grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+            pos_label_str, feature_scaling, feature_transformation, min_feature_count,
+            folds_file, grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
             param_grid_list, featureset_names, learners, prediction_dir,
             log_path, train_path, test_path, ids_to_floats, class_map,

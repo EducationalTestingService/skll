@@ -81,6 +81,7 @@ from sklearn.utils import shuffle as sk_shuffle
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.metrics import _CORRELATION_METRICS, use_score_func
+from skll.transformer import Transformer
 from skll.version import VERSION
 
 # Constants #
@@ -801,6 +802,15 @@ class Learner(object):
         -  'both': do both scaling as well as centering
         -  'none': do neither scaling nor centering
         Defaults to 'none'.
+    feature_transformation : str, optional
+        How to transform the features, if at all. Options are
+        -  'raw': no transformation, use original feature value
+        -  'log': natural log
+        -  'inv': 1/x
+        -  'sqrt': square root
+        -  'addOneInv': 1/(x+1)
+        -  'addOneLn': ln(x+1)
+        Defaults to 'raw'.
     model_kwargs : dict, optional
         A dictionary of keyword arguments to pass to the
         initializer for the specified model.
@@ -835,8 +845,8 @@ class Learner(object):
     """
 
     def __init__(self, model_type, probability=False, pipeline=False,
-                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
-                 min_feature_count=1, sampler=None, sampler_kwargs=None,
+                 feature_scaling='none', feature_transformation='raw', model_kwargs=None,
+                 pos_label_str=None, min_feature_count=1, sampler=None, sampler_kwargs=None,
                  custom_learner_path=None, logger=None):
         """
         Initializes a learner object with the specified settings.
@@ -845,12 +855,14 @@ class Learner(object):
 
         self.feat_vectorizer = None
         self.scaler = None
+        self.transformer = None
         self.label_dict = None
         self.label_list = None
         self.pos_label_str = pos_label_str
         self._model = None
         self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
+        self._feature_transformation = feature_transformation
         self.feat_selector = None
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
@@ -1385,6 +1397,9 @@ class Learner(object):
         self.feat_selector = SelectByMinCount(
             min_count=self._min_feature_count)
 
+        # Create the transformer
+        self.transformer = Transformer(self._feature_transformation)
+
         # Create scaler if we weren't passed one and it's necessary
         if not issubclass(self._model_type, MultinomialNB):
             if self._feature_scaling != 'none':
@@ -1566,6 +1581,9 @@ class Learner(object):
                              'because MultinomialNB cannot handle negative '
                              'feature values.')
 
+        # Transform the data
+        xtrain = self.transformer.fit_transform(xtrain)
+
         # Scale features if necessary
         if not issubclass(self._model_type, MultinomialNB):
             xtrain = self.scaler.fit_transform(xtrain)
@@ -1717,6 +1735,9 @@ class Learner(object):
             # next add the selector
             pipeline_steps.append(('selector',
                                    copy.deepcopy(self.feat_selector)))
+
+            # next, include the transformer
+            pipeline_steps.append(('transformer', copy.deepcopy(self.transformer)))
 
             # next, include the scaler
             pipeline_steps.append(('scaler', copy.deepcopy(self.scaler)))
@@ -1997,6 +2018,12 @@ class Learner(object):
                 raise MemoryError('Ran out of memory when converting test ' +
                                   'data to dense. This was required because ' +
                                   reason)
+
+        # Transformer
+        # we check to see if the attribute exists to ensure
+        # backward compatibility if a v0.9.17 model is loaded
+        if hasattr(self, 'transformer') and self.transformer is not None:
+            xtest = self.transformer.transform(xtest)
 
         # Scale xtest if necessary
         if not issubclass(self._model_type, MultinomialNB):

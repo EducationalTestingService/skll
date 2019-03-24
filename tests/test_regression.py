@@ -531,7 +531,8 @@ def test_fancy_output():
               'r') as resultf:
 
         result_output = resultf.read().strip().split('\n')
-        for desc_stat_line in result_output[26:30]:
+        print(result_output)
+        for desc_stat_line in result_output[27:31]:
             desc_stat_line = desc_stat_line.strip()
             if not desc_stat_line:
                 continue

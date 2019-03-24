@@ -25,7 +25,7 @@ import ruamel.yaml as yaml
 from collections import defaultdict
 from io import open
 from itertools import combinations
-from os.path import basename, exists, isfile, join
+from os.path import exists, isfile, join
 
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
@@ -305,6 +305,8 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         if not lrd['cv_folds'].endswith('folds file'):
             print('Stratified Folds: {}'.format(lrd['stratified_folds']),
                   file=output_file)
+    print('Feature Transformation: {}'.format(lrd['feature_transformation']),
+          file=output_file)
     print('Feature Scaling: {}'.format(lrd['feature_scaling']),
           file=output_file)
     print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
@@ -508,6 +510,7 @@ def _classify_featureset(args):
     param_grid = args.pop("param_grid")
     pos_label_str = args.pop("pos_label_str")
     overwrite = args.pop("overwrite")
+    feature_transformation = args.pop("feature_transformation")
     feature_scaling = args.pop("feature_scaling")
     min_feature_count = args.pop("min_feature_count")
     folds_file = args.pop("folds_file")
@@ -595,6 +598,7 @@ def _classify_featureset(args):
         learner = Learner(learner_name,
                           probability=probability,
                           pipeline=pipeline,
+                          feature_transformation=feature_transformation,
                           feature_scaling=feature_scaling,
                           model_kwargs=fixed_parameters,
                           pos_label_str=pos_label_str,
@@ -663,6 +667,7 @@ def _classify_featureset(args):
                                                          '%S.%f'),
                                 'version': __version__,
                                 'feature_scaling': feature_scaling,
+                                'feature_transformation': feature_transformation,
                                 'folds_file': folds_file,
                                 'grid_search': grid_search,
                                 'grid_objective': grid_objective,
@@ -1056,7 +1061,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
      hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
      featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
-     probability, pipeline, results_path, pos_label_str, feature_scaling,
+     probability, pipeline, results_path, pos_label_str, feature_scaling, feature_transformation,
      min_feature_count, folds_file, grid_search_jobs, grid_search_folds, cv_folds,
      save_cv_folds, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1236,6 +1241,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                           if param_grid_list else None)
                 job_args["pos_label_str"] = pos_label_str
                 job_args["overwrite"] = overwrite
+                job_args["feature_transformation"] = feature_transformation
                 job_args["feature_scaling"] = feature_scaling
                 job_args["min_feature_count"] = min_feature_count
                 job_args["grid_search_jobs"] = grid_search_jobs

@@ -49,7 +49,9 @@ def checklogging(log_msg_txt=None):
 @checklogging('root: WARNING: The ~~TESTING~~ will be '
               'applied to a data set with zero values.')
 def test_check_zero_log_warning():
-
+    """
+    Test that `check_zeros()` logs appropriate warning
+    """
     data = np.random.randn(1000, 10)
     data[45, 4] = 0
     check_zeros(data, raise_error=False, name='~~TESTING~~')
@@ -58,7 +60,9 @@ def test_check_zero_log_warning():
 @checklogging('root: WARNING: The ~~TESTING~~ will be '
               'applied to a data set with positive values.')
 def test_check_positives_log_warning():
-
+    """
+    Test that `check_positives()` logs appropriate warning
+    """
     data = np.random.randn(1000, 10)
     data = np.abs(data)
     check_positives(data, raise_error=False, name='~~TESTING~~')
@@ -67,7 +71,9 @@ def test_check_positives_log_warning():
 @checklogging('root: WARNING: The ~~TESTING~~ will be '
               'applied to a data set with negative values.')
 def test_check_negatives_log_warning():
-
+    """
+    Test that `check_negatives()` logs appropriate warning
+    """
     data = np.random.randn(1000, 10)
     data = -data
     check_negatives(data, raise_error=False, name='~~TESTING~~')
@@ -77,6 +83,10 @@ def test_check_negatives_log_warning():
               "to a features with different signs. This can change "
               "the ranking of the responses")
 def test_inv_transformation_sparse_log_warning():
+    """
+    Test that `Transformer('inv')` logs appropriate warning
+    when a features has different signs, and the input is sparse
+    """
 
     data = np.abs(np.random.randn(1000, 10))
     data[45, 4] = 0
@@ -92,10 +102,33 @@ def test_inv_transformation_sparse_log_warning():
     assert_array_equal(res.todense(), expected)
 
 
+@checklogging("root: WARNING: The inverse transformation was applied "
+              "to a features with different signs. This can change "
+              "the ranking of the responses")
+def test_inv_transformation_array_log_warning():
+    """
+    Test that `Transformer('inv')` logs appropriate warning
+    when a features has different signs, and the input is an array
+    """
+
+    data = np.abs(np.random.randn(1000, 10))
+    data[46, 4] = -1.3
+
+    with np.errstate(invalid='ignore', divide='ignore'):
+        expected = 1.0 / data.copy()
+
+    ft = Transformer('inv', raise_error=False)
+    res = ft.transform(data)
+    assert_array_equal(res, expected)
+
+
 @checklogging("root: WARNING: The floor/ceiling for one of your features "
               "is zero after applying the inverse transformation")
 def test_inv_transformation_sparse_floor_zero_log_warning():
-
+    """
+    Test that `Transformer('inv')` logs appropriate warning
+    when one of the features is zero after inverse transformation
+    """
     data = np.array([[0., 2., 3.],
                      [0., 2., 3.],
                      [0., 2., 3.],

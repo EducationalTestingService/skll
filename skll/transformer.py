@@ -16,8 +16,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn.utils.sparsefuncs import mean_variance_axis, min_max_axis
 
-
-POSSIBLE_TRANSFORMATIONS = {'inv', 'sqrt', 'log', 'addOneInv', 'addOneLn', 'raw'}
+from skll.config import _VALID_TRANSFORM_OPTIONS
 
 
 def check_negatives(X,
@@ -255,11 +254,12 @@ class Transformer(BaseEstimator, TransformerMixin):
                  log_warning=True,
                  copy=True):
 
-        if transformation not in POSSIBLE_TRANSFORMATIONS:
+        if transformation not in _VALID_TRANSFORM_OPTIONS:
             raise ValueError('The transformation you specified, `{}`, is not'
                              'in the list of possible transformations. '
                              'Please choose one of the following:\n \{{}\}'
-                             ''.format(transformation, ', '.join(POSSIBLE_TRANSFORMATIONS)))
+                             ''.format(transformation,
+                                       ', '.join(_VALID_TRANSFORM_OPTIONS)))
 
         self.transformation = transformation
         self.sd_multiplier = sd_multiplier
