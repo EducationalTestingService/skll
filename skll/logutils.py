@@ -5,12 +5,15 @@ Functions related to logging in SKLL.
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
+import re
 import logging
 import warnings
 from functools import wraps
 from logging import FileHandler
+from os.path import sep
 
 orig_showwarning = warnings.showwarning
+SKLEARN_WARNINGS_RE = re.compile(r"{0}sklearn{0}".format(sep))
 
 
 def get_skll_logger(name, filepath=None, log_level=logging.INFO):
@@ -56,15 +59,19 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
             file_handler.setLevel(log_level)
             logger.addHandler(file_handler)
 
-    # Make method for sending warnings to the logger
-    # and replace warnings.showwarning
-    def send_warnings_to_log(message, category, filename, lineno,
-                             file=None, line=None):
-        logger.warning('{}:{}: {}:{}'.format(filename,
-                                             lineno,
-                                             category.__name__,
-                                             message))
-    warnings.showwarning = send_warnings_to_log
+    # Make method for sending sklearn-specific warnings to the
+    # logger that can be used to replace  warnings.showwarning
+    def send_sklearn_warnings_to_log(message, category, filename, lineno,
+                                     file=None, line=None):
+        if SKLEARN_WARNINGS_RE.search(filename):
+            logger.warning('{}:{}: {}:{}'.format(filename,
+                                                 lineno,
+                                                 category.__name__,
+                                                 message))
+        else:
+            orig_showwarning(message, category, filename, lineno,
+                             file=file, line=line)
+    warnings.showwarning = send_sklearn_warnings_to_log
 
     # return the logger instance
     return logger
@@ -87,12 +94,3 @@ def close_and_remove_logger_handlers(logger):
     for handler in logger.handlers:
         handler.close()
         logger.removeHandler(handler)
-
-
-def warn_once(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        with warnings.catch_warnings():
-            warnings.simplefilter("once")
-            return func(*args, **kwargs)
-    return wrapper

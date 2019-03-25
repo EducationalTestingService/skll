@@ -1010,7 +1010,7 @@ def test_send_warnings_to_log():
 
     # Check experiment log output
     # The experiment log file should contain warnings related
-    # to the use of numpy and sklearn
+    # to the use of sklearn
     with open(join(_my_dir,
                    'output',
                    'test_send_warnings_to_log_train_f0.'
@@ -1025,27 +1025,5 @@ def test_send_warnings_to_log():
             re.compile(r"WARNING - [^\n]+sklearn/svm/base\.py:\d+: "
                        r"ConvergenceWarning:Liblinear failed to converge, "
                        r"increase the number of iterations\.")
-        matrix_numpy_warning_re = \
-            re.compile(r"WARNING - [^\n]+numpy/matrixlib/defmatrix\.py:\d+: "
-                       r"PendingDeprecationWarning:the matrix subclass is "
-                       r"not the "r"recommended way to represent matrices or "
-                       r"deal with linear algebra "
-                       r"\(see https://docs\.scipy\.org/doc/numpy/user/numpy-for-"
-                       r"matlab-users\.html\). Please adjust your code to use "
-                       r"regular ndarray\.")
-        double_scalars_scipy_warning_re = \
-            re.compile(r"WARNING - [^\n]+scipy/stats/stats\.py:\d+: "
-                       r"RuntimeWarning:invalid value encountered in "
-                       r"double_scalars")
-        found_undefined_metric_sklearn_warning = \
-            convergence_sklearn_warning_re.search(log_content)
-        found_convergence_sklearn_warning = \
-            undefined_metric_sklearn_warning_re.search(log_content)
-        found_matrix_numpy_warning = \
-            matrix_numpy_warning_re.search(log_content)
-        found_double_scalars_scipy_warning = \
-            double_scalars_scipy_warning_re.search(log_content)
-        assert found_undefined_metric_sklearn_warning is not None
-        assert found_convergence_sklearn_warning is not None
-        assert found_matrix_numpy_warning is not None
-        assert found_double_scalars_scipy_warning is not None
+        assert undefined_metric_sklearn_warning_re.search(log_content) is not None
+        assert convergence_sklearn_warning_re.search(log_content) is not None

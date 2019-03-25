@@ -17,7 +17,6 @@ import logging
 import math
 import os
 import sys
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -32,8 +31,7 @@ from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn import __version__ as SCIKIT_VERSION
 
-from skll import (close_and_remove_logger_handlers,
-                  get_skll_logger, orig_showwarning, warn_once)
+from skll import close_and_remove_logger_handlers, get_skll_logger
 from skll.config import _munge_featureset_name, _parse_config_file
 from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
@@ -454,7 +452,6 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
         return merged_set
 
 
-@warn_once
 def _classify_featureset(args):
     """
     Classification job to be submitted to grid.
@@ -999,7 +996,6 @@ def _create_learner_result_dicts(task_results,
     return res
 
 
-@warn_once
 def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                       hosts=None, write_summary=True, quiet=False,
                       ablation=0, resume=False, log_level=logging.INFO):
@@ -1318,10 +1314,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                .format(output_file_path))
 
     finally:
-        # Close/remove any logger handlers and reset
-        # warnings.showwarning method
+
+        # Close/remove any logger handlers
         close_and_remove_logger_handlers(get_skll_logger('experiment'))
-        warnings.showwarning = orig_showwarning
 
     return result_json_paths
 
@@ -1479,4 +1474,4 @@ def _generate_learning_curve_plots(experiment_name,
                                       ncol=1,
                                       frameon=True)
             g.fig.tight_layout(w_pad=1)
-            plt.savefig(join(output_dir, '{}_{}.png'.format(experiment_name, fs_name)), dpi=300);
+            plt.savefig(join(output_dir, '{}_{}.png'.format(experiment_name, fs_name)), dpi=300)
