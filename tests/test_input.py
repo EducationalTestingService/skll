@@ -466,6 +466,42 @@ def test_config_parsing_bad_scaling():
         yield check_config_parsing_value_error, config_path
 
 
+def test_config_parsing_bad_transformation():
+    # Test to ensure config file parsing raises an error with invalid
+    # transformation types
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has bad scaling information
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'learners': "['LogisticRegression']",
+                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
+                                           "'f6']]"),
+                           'log': output_dir,
+                           'results': output_dir}
+
+    for transform_type, sub_prefix in zip(["none", "foo", "True", "False"],
+                                          ['bad_transformation1',
+                                           'bad_transformation2'
+                                           'bad_transformation3',
+                                           'bad_transformation4']):
+
+        values_to_fill_dict['feature_transformation'] = transform_type
+
+        config_template_path = join(_my_dir, 'configs',
+                                    'test_config_parsing.template.cfg')
+        config_path = fill_in_config_options(config_template_path,
+                                             values_to_fill_dict,
+                                             sub_prefix)
+
+        yield check_config_parsing_value_error, config_path
+
+
 def test_config_parsing_bad_train():
     # Test to ensure config file parsing raises an error with invalid train
     # path specifications

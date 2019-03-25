@@ -18,6 +18,7 @@ import warnings
 
 from ast import literal_eval
 from collections import defaultdict
+from copy import deepcopy
 from glob import glob
 from io import open
 from itertools import product
@@ -785,7 +786,52 @@ def test_learning_curve_ylimits():
     """
 
     # create a test data frame
-    df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694, 1: 0.18556201422712379, 2: 0.15002727816517414, 3: 0.15301923832338646, 4: 0.15589815327205431, 5: 0.68205316443171948, 6: 0.77441075727706354, 7: 0.83838056331276678, 8: 0.84770116657005623, 9: 0.8708014559726478}, 'value': {0: 0.4092496971394447, 1: 0.2820507715115001, 2: 0.24533811547921261, 3: 0.21808651942296109, 4: 0.19767367891431534, 5: -2.3540980769230773, 6: -3.1312445327182394, 7: -3.2956790939674137, 8: -3.4843050005436713, 9: -3.6357879085645455}, 'train_score_std': {0: 0.15950199460682787, 1: 0.090992452273091703, 2: 0.068488654201949981, 3: 0.055223120652733763, 4: 0.03172452509259388, 5: 1.0561586240460523, 6: 0.53955995320300709, 7: 0.40477740983901211, 8: 0.34148185048394258, 9: 0.20791478156554272}, 'variable': {0: 'train_score_mean', 1: 'train_score_mean', 2: 'train_score_mean', 3: 'train_score_mean', 4: 'train_score_mean', 5: 'train_score_mean', 6: 'train_score_mean', 7: 'train_score_mean', 8: 'train_score_mean', 9: 'train_score_mean'}, 'metric': {0: 'r2', 1: 'r2', 2: 'r2', 3: 'r2', 4: 'r2', 5: 'neg_mean_squared_error', 6: 'neg_mean_squared_error', 7: 'neg_mean_squared_error', 8: 'neg_mean_squared_error', 9: 'neg_mean_squared_error'}})
+    df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694,
+                                                         1: 0.18556201422712379,
+                                                         2: 0.15002727816517414,
+                                                         3: 0.15301923832338646,
+                                                         4: 0.15589815327205431,
+                                                         5: 0.68205316443171948,
+                                                         6: 0.77441075727706354,
+                                                         7: 0.83838056331276678,
+                                                         8: 0.84770116657005623,
+                                                         9: 0.8708014559726478},
+                                      'value': {0: 0.4092496971394447,
+                                                1: 0.2820507715115001,
+                                                2: 0.24533811547921261,
+                                                3: 0.21808651942296109,
+                                                4: 0.19767367891431534,
+                                                5: -2.3540980769230773,
+                                                6: -3.1312445327182394,
+                                                7: -3.2956790939674137,
+                                                8: -3.4843050005436713,
+                                                9: -3.6357879085645455},
+                                      'train_score_std': {0: 0.15950199460682787,
+                                                          1: 0.090992452273091703,
+                                                          2: 0.068488654201949981,
+                                                          3: 0.055223120652733763,
+                                                          4: 0.03172452509259388,
+                                                          5: 1.0561586240460523,
+                                                          6: 0.53955995320300709,
+                                                          7: 0.40477740983901211,
+                                                          8: 0.34148185048394258,
+                                                          9: 0.20791478156554272},
+                                      'variable': {0: 'train_score_mean',
+                                                   1: 'train_score_mean',
+                                                   2: 'train_score_mean',
+                                                   3: 'train_score_mean',
+                                                   4: 'train_score_mean',
+                                                   5: 'train_score_mean',
+                                                   6: 'train_score_mean',
+                                                   7: 'train_score_mean',
+                                                   8: 'train_score_mean',
+                                                   9: 'train_score_mean'},
+                                      'metric': {0: 'r2', 1: 'r2', 2: 'r2', 3: 'r2', 4: 'r2',
+                                                 5: 'neg_mean_squared_error',
+                                                 6: 'neg_mean_squared_error',
+                                                 7: 'neg_mean_squared_error',
+                                                 8: 'neg_mean_squared_error',
+                                                 9: 'neg_mean_squared_error'}})
 
     # compute the y-limits
     ylimits_dict = _compute_ylimits_for_featureset(df_test, ['r2', 'neg_mean_squared_error'])
@@ -799,8 +845,10 @@ def test_learning_curve_ylimits():
 
 def check_pipeline_attribute(learner_name,
                              do_feature_hashing,
+                             do_non_negative,
                              min_count,
                              scaling_type,
+                             transform_type,
                              sampler_name,
                              learner,
                              function_args_dict):
@@ -808,7 +856,10 @@ def check_pipeline_attribute(learner_name,
     # look up the arguments that we computed earlier for
     # the current configuration
     estimator_type = learner.model_type._estimator_type
-    train_fs, test_fs, feature_dicts, labels = function_args_dict[estimator_type][do_feature_hashing]
+    (train_fs,
+     test_fs,
+     feature_dicts,
+     labels) = function_args_dict[estimator_type][do_feature_hashing][do_non_negative]
 
     # which metric score are we comparing between SKLL and sklearn
     metric = 'accuracy' if estimator_type == 'classifier' else 'r2'
@@ -869,7 +920,7 @@ def test_pipeline_attribute():
                       {"f01": -1.54, "f02": -2.17, "f03": -4.18, "f04": 1.708, "f05": 0.514,
                        "f06": 0.354, "f07": -3.55, "f08": 2.285, "f09": -3.47, "f10": -0.79},
                       {"f01": 2.162, "f02": -0.71, "f03": -0.448, "f04": 0.326, "f05": 3.384,
-                      "f06": -0.455, "f07": 1.253, "f08": 0.998, "f09": 3.193, "f10": 1.342}]
+                       "f06": -0.455, "f07": 1.253, "f08": 0.998, "f09": 3.193, "f10": 1.342}]
     classes = [1, 1, 0, 2, 1, 2, 0, 1, 2, 1]
 
     rfeature_dicts = [{'f1': 1.351, 'f2': -0.117, 'f3': 0.570, 'f4': 0.0619,
@@ -877,9 +928,9 @@ def test_pipeline_attribute():
                       {'f1': -0.557, 'f2': -1.704, 'f3': 0.0913, 'f4': 0.767,
                        'f5': 1.281, 'f6': -0.803},
                       {'f1': 0.720, 'f2': -0.268, 'f3': 0.760, 'f4': 0.861,
-                      'f5': -0.403, 'f6': 0.814},
+                       'f5': -0.403, 'f6': 0.814},
                       {'f1': 1.737, 'f2': -0.228, 'f3': 1.340, 'f4': 2.031,
-                      'f5': 2.170, 'f6': 1.498},
+                       'f5': 2.170, 'f6': 1.498},
                       {'f1': 0.344, 'f2': 0.340, 'f3': 0.572, 'f4': -1.06,
                        'f5': 1.044, 'f6': 2.065},
                       {'f1': -0.489, 'f2': -0.420, 'f3': 0.428, 'f4': 0.707,
@@ -895,41 +946,62 @@ def test_pipeline_attribute():
     targets = [96.057, -176.017, -182.32, -56.46, -50.14, -84.53, 241.71, -17.84,
                -47.09, 77.65]
 
-    # create training featuresets that we will use to train our estimator
-    function_args_dict = defaultdict(dict)
+    # create training feature sets that we will use to train our estimator
+    function_args_dict = defaultdict(lambda: defaultdict(dict))
     for estimator_type in ['classifier', 'regressor']:
         for do_feature_hashing in [True, False]:
-            if estimator_type == 'classifier':
-                (train_fs, test_fs) = make_classification_data(num_examples=500,
-                                                               num_features=10,
-                                                               num_labels=3,
-                                                               feature_bins=4,
-                                                               non_negative=True,
-                                                               use_feature_hashing=do_feature_hashing)
-                labels = classes
-                feature_dicts = cfeature_dicts
-            else:
-                (train_fs, test_fs, _) = make_regression_data(num_examples=500,
-                                                              num_features=6,
-                                                              feature_bins=4,
-                                                              use_feature_hashing=do_feature_hashing)
-                labels = targets
-                feature_dicts = rfeature_dicts
+            for do_non_negative in [True, False]:
+                if estimator_type == 'classifier':
 
-            # if we are doing feature hashing, we need to transform our test
-            # cases to the same space. If we are not, then we don't need to worry
-            # beacuse we have manually ensured that the number of features are the
-            # same for the non-hashing case (10 for classification, and 6 for
-            # regression)
-            test_fs = FeatureSet('test',
-                                 ids=list(range(1, 11)),
-                                 features=feature_dicts,
-                                 labels=labels,
-                                 vectorizer=train_fs.vectorizer if do_feature_hashing else None)
-            function_args_dict[estimator_type][do_feature_hashing] = [train_fs,
-                                                                      test_fs,
-                                                                      feature_dicts,
-                                                                      labels]
+                    # note that train and test feature sets for classification
+                    # will always be non-negative; the only difference is whether
+                    # the feature_dict is converted to non-negative as well
+                    (train_fs,
+                     test_fs) = make_classification_data(num_examples=500,
+                                                         num_features=10,
+                                                         num_labels=3,
+                                                         feature_bins=4,
+                                                         non_negative=True,
+                                                         use_feature_hashing=do_feature_hashing)
+                    labels = classes
+                    feature_dicts_old = deepcopy(cfeature_dicts)
+                else:
+                    (train_fs,
+                     test_fs,
+                     _) = make_regression_data(num_examples=500,
+                                               num_features=6,
+                                               feature_bins=4,
+                                               non_negative=do_non_negative,
+                                               use_feature_hashing=do_feature_hashing)
+                    labels = targets
+                    feature_dicts_old = deepcopy(rfeature_dicts)
+
+                # if we're using non-negative, then
+                # we need the feature_dict to be converted
+                # to non-negative as well
+                if do_non_negative:
+                    feature_dicts = []
+                    for line in feature_dicts_old:
+                        for key in line.keys():
+                            line[key] = float(abs(line[key]))
+                        feature_dicts.append(line)
+                else:
+                    feature_dicts = feature_dicts_old
+
+                # if we are doing feature hashing, we need to transform our test
+                # cases to the same space. If we are not, then we don't need to worry
+                # because we have manually ensured that the number of features are the
+                # same for the non-hashing case (10 for classification, and 6 for
+                # regression)
+                test_fs = FeatureSet('test',
+                                     ids=list(range(1, 11)),
+                                     features=feature_dicts,
+                                     labels=labels,
+                                     vectorizer=train_fs.vectorizer if do_feature_hashing else None)
+                function_args_dict[estimator_type][do_feature_hashing][do_non_negative] = [train_fs,
+                                                                                           test_fs,
+                                                                                           feature_dicts,
+                                                                                           labels]
     function_args_dict = dict(function_args_dict)
 
     # now set up the test cases
@@ -939,24 +1011,41 @@ def test_pipeline_attribute():
                 'LinearSVR', 'Ridge', 'SVR',
                 'GradientBoostingRegressor']
     use_hashing = [True, False]
+    use_non_negative = [True, False]
     min_feature_counts = [1, 2]
     samplers = [None, 'RBFSampler', 'SkewedChi2Sampler']
     scalers = ['none', 'with_mean', 'with_std', 'both']
+    transformers = ['inv', 'sqrt', 'log', 'raw']
 
     for (learner_name,
          do_feature_hashing,
+         do_non_negative,
          min_count,
          scaling_type,
+         transform_type,
          sampler_name) in product(learners,
                                   use_hashing,
+                                  use_non_negative,
                                   min_feature_counts,
                                   scalers,
+                                  transformers,
                                   samplers):
 
         # skip the case for MultinomialNB with feature hashing
         # or feature sampling since it does not support those
         if learner_name == 'MultinomialNB':
             if do_feature_hashing or sampler_name is not None:
+                continue
+
+        # we skip the transformation if the transformation type is not
+        # `raw`, and the data are non-negative OR either of two other conditions apply:
+        #   - `inv` transformation with `SkewedChi2Sampler` (could create entries < -skewdness)
+        #   - `log` transformation with `MultinomialNB` (could lead to negatives)
+        if transform_type != 'raw':
+            if not do_non_negative or ((transform_type == 'inv' and
+                                        sampler_name == 'SkewedChi2Sampler') or
+                                       (transform_type == 'log' and
+                                        learner_name == 'MultinomialNB')):
                 continue
 
         # if we are using a SkewedChi2Sampler, we need to set the
@@ -973,13 +1062,16 @@ def test_pipeline_attribute():
                           sampler=sampler_name,
                           sampler_kwargs=sampler_kwargs,
                           feature_scaling=scaling_type,
+                          feature_transformation=transform_type,
                           pipeline=True)
 
         yield (check_pipeline_attribute,
                learner_name,
                do_feature_hashing,
+               do_non_negative,
                min_count,
                scaling_type,
+               transform_type,
                sampler_name,
                learner,
                function_args_dict)

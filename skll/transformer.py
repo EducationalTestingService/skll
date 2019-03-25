@@ -320,9 +320,9 @@ class Transformer(BaseEstimator, TransformerMixin):
         # ndarray which contains all the non-zero elements;
         # so we are ignoring zero elements in our transformation
         if issparse(X):
-            X.data = self._transform_feature(X)
+            X.data = self._transform_features(X)
         else:
-            X = self._transform_feature(X)
+            X = self._transform_features(X)
         return X
 
     def _apply_sqrt_transform(self, X):
@@ -437,8 +437,8 @@ class Transformer(BaseEstimator, TransformerMixin):
         # apply this along the feature axis, because different features may have different signs
         all_negatives = ~check_positives(X, axis=0, raise_error=False, log_warning=False)
         all_positives = ~check_negatives(X, axis=0, raise_error=False, log_warning=False)
-        all_positives_or_negatives = np.all(np.any(np.array(zip(all_negatives,
-                                                                all_positives)), axis=1))
+        all_positives_or_negatives = np.all(np.any(np.array(list(zip(all_negatives,
+                                                                     all_positives))), axis=1))
         if not all_positives_or_negatives:
             if self.raise_error:
                 raise ValueError("The inverse transformation should not be "
@@ -517,7 +517,7 @@ class Transformer(BaseEstimator, TransformerMixin):
                 X_new = np.log1p(X)
         return X_new
 
-    def _transform_feature(self, X):
+    def _transform_features(self, X):
         """
         Applies the given transform to all of the values in the given
         numpy array or sparse matrix.

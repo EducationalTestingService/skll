@@ -298,7 +298,7 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
 
     # create a FeatureHasher if we are asked to use feature hashing
     # with the specified number of feature bins
-    vectorizer = (FeatureHasher(n_features=feature_bins)
+    vectorizer = (FeatureHasher(n_features=feature_bins, non_negative=non_negative)
                   if use_feature_hashing else None)
     train_fs = FeatureSet('classification_train', train_ids,
                           labels=train_labels, features=train_features,
@@ -320,6 +320,7 @@ def make_regression_data(num_examples=100,
                          use_feature_hashing=False,
                          feature_bins=4,
                          start_feature_num=1,
+                         non_negative=False,
                          random_state=1234567890):
 
     # if we are doing feature hashing and we have asked for more
@@ -335,6 +336,11 @@ def make_regression_data(num_examples=100,
                                     noise=sd_noise,
                                     random_state=random_state,
                                     coef=True)
+
+    # if we were told to only generate non-negative features, then
+    # we can simply take the absolute values of the generated features
+    if non_negative:
+        X = abs(X)
 
     # since we want to use SKLL's FeatureSet class, we need to
     # create a list of IDs
@@ -360,7 +366,7 @@ def make_regression_data(num_examples=100,
     # Note that we only want to use the number of weights that are
     # equal to the number of feature bins for the hashing
     if use_feature_hashing:
-        feature_hasher = FeatureHasher(n_features=feature_bins)
+        feature_hasher = FeatureHasher(n_features=feature_bins, non_negative=non_negative)
         hashed_X = feature_hasher.fit_transform(features)
         y = hashed_X.dot(weights[:feature_bins])
 
@@ -388,7 +394,7 @@ def make_regression_data(num_examples=100,
 
     # create a FeatureHasher if we are asked to use feature hashing
     # with the specified number of feature bins
-    vectorizer = (FeatureHasher(n_features=feature_bins) if
+    vectorizer = (FeatureHasher(n_features=feature_bins, non_negative=non_negative) if
                   use_feature_hashing else None)
     train_fs = FeatureSet('regression_train', train_ids,
                           labels=train_y, features=train_features,

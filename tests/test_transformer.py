@@ -97,6 +97,7 @@ def test_inv_transformation_sparse_log_warning():
         expected = 1.0 / (data.copy().todense())
         expected[45, 4] = 0
 
+    print(data)
     ft = Transformer('inv', raise_error=False)
     res = ft.transform(data)
     assert_array_equal(res.todense(), expected)
