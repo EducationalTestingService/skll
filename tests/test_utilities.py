@@ -302,13 +302,17 @@ def test_compute_eval_from_predictions_random_choice():
 def check_generate_predictions(use_feature_hashing=False,
                                use_threshold=False,
                                test_on_subset=False,
-                               use_all_labels=False):
+                               use_all_labels=False,
+                               string_labels=False):
 
     # create some simple classification feature sets for training and testing
+    if string_labels:
+        string_label_list = ['a', 'b']
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
                                                  use_feature_hashing=use_feature_hashing,
-                                                 feature_bins=4)
+                                                 feature_bins=4,
+                                                 string_labels=string_label_list)
     enable_probability = use_threshold or use_all_labels
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier', probability=enable_probability)
@@ -322,8 +326,18 @@ def check_generate_predictions(use_feature_hashing=False,
     if test_on_subset and not use_feature_hashing:
         test_fs.filter(features=['f01', 'f02', 'f03', 'f04'])
 
+    # There are two cases where we don't want translate the predictions to
+    # class labels:
+    #   1) If `use_all_labels` is True, a prediction will be a list of
+    #      probabilities.
+    #   2) If `use_threshold` is True, the prediction will be
+    #      either 1 or 0, indicating whether the probability of the positive
+    #      class was greater than or equal to the threshold.
+    use_class_labels = (string_labels and
+                        not (use_all_labels or use_threshold))
+
     # get the predictions on the test featureset
-    predictions = learner.predict(test_fs)
+    predictions = learner.predict(test_fs, class_labels=use_class_labels)
 
     # if we asked for probabilities, then use the threshold
     # to convert them into binary predictions
@@ -403,15 +417,14 @@ def test_generate_predictions_conflicting_params():
 
 
 def test_generate_predictions():
-    for (use_feature_hashing,
-         use_threshold,
-         test_on_subset,
-         all_probabilities) in product([True, False], [True, False],
-                                       [True, False], [True, False]):
+    for (use_feature_hashing, use_threshold, test_on_subset, all_probabilities,
+         string_labels) in product(*[[True, False]] * 5):
+
         if use_threshold and all_probabilities:
             continue
         yield (check_generate_predictions, use_feature_hashing,
-               use_threshold, test_on_subset, all_probabilities)
+               use_threshold, test_on_subset, all_probabilities,
+               string_labels)
 
 
 def test_generate_predictions_file_header():

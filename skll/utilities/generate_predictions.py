@@ -27,7 +27,7 @@ class Predictor(object):
     predictions for feature strings.
     """
 
-    def __init__(self, model_path, threshold=None, positive_label=1,
+    def __init__(self, model_path, threshold=None, positive_label_index=1,
                  all_labels=False, logger=None):
         """
         Initialize the predictor.
@@ -41,7 +41,7 @@ class Predictor(object):
             of the positive label, return 1 if it meets/exceeds
             the given threshold and 0 otherwise.
             Defaults to ``None``.
-        positive_label : int, optional
+        positive_label_index : int, optional
             If the model is only being used to predict the
             probability of a particular class, this
             specifies the index of the class we're
@@ -62,7 +62,7 @@ class Predictor(object):
                              "exclusive. They can not both be set to True.")
 
         self._learner = Learner.from_file(model_path)
-        self._pos_index = positive_label
+        self._pos_index = positive_label_index
         self.threshold = threshold
         self.all_labels = all_labels
         self.output_file_header = None
@@ -91,7 +91,7 @@ class Predictor(object):
             if self.all_labels:
                 self.output_file_header = ["id"] + [str(x) for x in labels]
             elif self.threshold is None:
-                label = self._learner.label_dict[self._pos_index]
+                label = self._learner.label_list[self._pos_index]
                 self.output_file_header = ["id",
                                            "Probability of '{}'".format(label)]
                 preds = [pred[self._pos_index] for pred in preds]
@@ -143,7 +143,7 @@ def main(argv=None):
                              'this must be the final column to count as the '
                              'label.',
                         default='y')
-    parser.add_argument('-p', '--positive_label',
+    parser.add_argument('-p', '--positive_label_index',
                         help="If the model is only being used to predict the "
                              "probability of a particular label, this "
                              "specifies the index of the label we're "
@@ -183,7 +183,7 @@ def main(argv=None):
 
     # Create the classifier and load the model
     predictor = Predictor(args.model_file,
-                          positive_label=args.positive_label,
+                          positive_label_index=args.positive_label_index,
                           threshold=args.threshold,
                           all_labels=args.all_probabilities,
                           logger=logger)
