@@ -306,13 +306,13 @@ def check_generate_predictions(use_feature_hashing=False,
                                string_labels=False):
 
     # create some simple classification feature sets for training and testing
-    if string_labels:
-        string_label_list = ['a', 'b']
+    string_label_list = ['a', 'b'] if string_labels else None
+
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
                                                  use_feature_hashing=use_feature_hashing,
                                                  feature_bins=4,
-                                                 string_labels=string_label_list)
+                                                 string_label_list=string_label_list)
     enable_probability = use_threshold or use_all_labels
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier', probability=enable_probability)
