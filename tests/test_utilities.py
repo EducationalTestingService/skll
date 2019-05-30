@@ -304,7 +304,6 @@ def check_generate_predictions(use_feature_hashing=False,
                                test_on_subset=False,
                                use_all_labels=False,
                                string_labels=False):
-
     # create some simple classification feature sets for training and testing
     string_label_list = ['a', 'b'] if string_labels else None
 
@@ -367,20 +366,26 @@ def check_generate_predictions(use_feature_hashing=False,
 
 
 def check_generate_predictions_file_headers(use_threshold=False,
-                                            use_all_labels=False):
+                                            use_all_labels=False,
+                                            string_labels=False):
+
+    string_label_list = ['a', 'b'] if string_labels else None
     # create some simple classification feature sets for training and testing
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
-                                                 feature_bins=4)
-    enable_probability = use_threshold or use_all_labels
+                                                 feature_bins=4,
+                                                 string_label_list=string_label_list)
+    enable_probability = any([use_threshold, use_all_labels, string_labels])
+
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
     learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
+    use_class_labels = string_labels
     # get the predictions on the test featureset
-    _ = learner.predict(test_fs)
+    _ = learner.predict(test_fs, class_labels=use_class_labels)
 
     # if we asked for probabilities, then use the threshold
     # to convert them into binary predictions
@@ -399,9 +404,13 @@ def check_generate_predictions_file_headers(use_threshold=False,
     p = gp.Predictor(model_file, threshold=threshold,
                      all_labels=use_all_labels)
     _ = p.predict(test_fs)
-
     if threshold:
         assert (p.output_file_header == ['id', 'prediction'])
+    elif string_labels:
+        if use_all_labels:
+            assert (p.output_file_header == ['id', 'a', 'b'])
+        else:
+            assert (p.output_file_header == ['id', "Probability of 'b'"])
     elif use_all_labels:
         assert (p.output_file_header == ['id', '0', '1'])
 
@@ -429,11 +438,11 @@ def test_generate_predictions():
 
 def test_generate_predictions_file_header():
 
-    for (use_threshold, all_probabilities) in ([True, False], [False, True]):
+    for (use_threshold, all_probabilities, string_labels) in product(*[[True, False]] * 3):
         if use_threshold and all_probabilities:
             continue
         yield (check_generate_predictions_file_headers,
-               use_threshold, all_probabilities)
+               use_threshold, all_probabilities, string_labels)
 
 
 def check_generate_predictions_console(use_threshold=False, all_labels=False):
