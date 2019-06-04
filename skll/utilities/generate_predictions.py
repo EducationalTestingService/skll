@@ -143,14 +143,22 @@ def main(argv=None):
                              'this must be the final column to count as the '
                              'label.',
                         default='y')
-    parser.add_argument('-p', '--positive_label_index',
-                        help="If the model is only being used to predict the "
-                             "probability of a particular label, this "
-                             "specifies the index of the label we're "
-                             "predicting. 1 = second label, which is default "
-                             "for binary classification. Keep in mind that "
-                             "labels are sorted lexicographically.",
-                        default=1, type=int)
+
+    pos_label_idx_group = parser.add_mutually_exclusive_group()
+    pos_label_idx_help_mssg = ("If the model is only being used to predict "
+                               "the probability of a particular label, this "
+                               "specifies the index of the label we're "
+                               "predicting. 1 = second label, which is "
+                               "default for binary classification. Keep in "
+                               "mind that labels are sorted "
+                               "lexicographically.")
+    pos_label_idx_group.add_argument('--positive_label',
+                                     help=pos_label_idx_help_mssg,
+                                     type=int)
+    pos_label_idx_group.add_argument('-p', '--positive_label_index',
+                                     help=pos_label_idx_help_mssg,
+                                     default=1, type=int)
+
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
@@ -181,9 +189,16 @@ def main(argv=None):
                                 '%(message)s'))
     logger = logging.getLogger(__name__)
 
+    if args.positive_label:
+        logger.warning("The `positive_label` argument is deprecated. Use "
+                       "`positive_label_index` instead.")
+        positive_label_index = args.positive_label
+    else:
+        positive_label_index = args.positive_label_index
+
     # Create the classifier and load the model
     predictor = Predictor(args.model_file,
-                          positive_label_index=args.positive_label_index,
+                          positive_label_index=positive_label_index,
                           threshold=args.threshold,
                           all_labels=args.all_probabilities,
                           logger=logger)
