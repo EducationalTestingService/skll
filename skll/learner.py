@@ -109,7 +109,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'max_depth': [1, 3, 5]}],
                         HuberRegressor:
                         [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
-                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}],
+                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000]}],
                         KNeighborsClassifier:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
@@ -118,11 +118,11 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                           'weights': ['uniform', 'distance']}],
                         MLPClassifier:
                         [{'activation': ['logistic', 'tanh', 'relu'],
-                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
                           'learning_rate_init': [0.001, 0.01, 0.1]}],
                         MLPRegressor:
                         [{'activation': ['logistic', 'tanh', 'relu'],
-                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
                           'learning_rate_init': [0.001, 0.01, 0.1]}],
                         MultinomialNB:
                         [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
