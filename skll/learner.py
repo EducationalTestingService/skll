@@ -159,7 +159,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         TheilSenRegressor:
                         [{}]}
 
@@ -900,14 +900,14 @@ class Learner(object):
             self._model_kwargs['n_estimators'] = 500
         elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
-            self._model_kwargs['gamma'] = 'auto'
+            self._model_kwargs['gamma'] = 'scale'
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
-            self._model_kwargs['max_iter'] = None
-            self._model_kwargs['tol'] = None
+            self._model_kwargs['max_iter'] = 1000
+            self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, SGDRegressor):
-            self._model_kwargs['max_iter'] = None
-            self._model_kwargs['tol'] = None
+            self._model_kwargs['max_iter'] = 1000
+            self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, RANSACRegressor):
             self._model_kwargs['loss'] = 'squared_loss'
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
