@@ -127,6 +127,7 @@ Requirements
 -  `six <https://pypi.org/project/six/>`__
 -  `tabulate <https://pypi.org/project/tabulate/>`__
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
+-  `pandas <http://pandas.pydata.org>`__
 -  `Grid Map <https://pypi.org/project/gridmap/>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
 -  `joblib <https://pypi.org/project/joblib/>`__
@@ -139,7 +140,6 @@ Requirements
 The following packages can be optionally installed for additional features
 but are not required:
 
--  `pandas <http://pandas.pydata.org>`__ (optional)
 -  `seaborn <http://seaborn.pydata.org>`__ (optional)
 
 Talks

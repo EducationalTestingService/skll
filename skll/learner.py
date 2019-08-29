@@ -109,7 +109,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'max_depth': [1, 3, 5]}],
                         HuberRegressor:
                         [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
-                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}],
+                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000]}],
                         KNeighborsClassifier:
                         [{'n_neighbors': [1, 5, 10, 100],
                           'weights': ['uniform', 'distance']}],
@@ -118,11 +118,11 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                           'weights': ['uniform', 'distance']}],
                         MLPClassifier:
                         [{'activation': ['logistic', 'tanh', 'relu'],
-                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
                           'learning_rate_init': [0.001, 0.01, 0.1]}],
                         MLPRegressor:
                         [{'activation': ['logistic', 'tanh', 'relu'],
-                          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
                           'learning_rate_init': [0.001, 0.01, 0.1]}],
                         MultinomialNB:
                         [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
@@ -1067,11 +1067,13 @@ class Learner(object):
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
 
-    def _convert_coef_array_to_feature_names(self, coef, feature_name_prefix=''):
+    def _convert_coef_array_to_feature_names(self,
+                                             coef,
+                                             feature_name_prefix=''):
         """
-        A helper method used by `model_params` to convert the model coefficients
-        array into a dictionary with feature names as keys and the coefficients
-        as values.
+        A helper method used by `model_params` to convert the model
+        coefficients array into a dictionary with feature names as
+        keys and the coefficients as values.
 
         Parameters
         ----------
@@ -1092,7 +1094,6 @@ class Learner(object):
         # if we are doing feature hashing, then we need to make up
         # the feature names
         if isinstance(self.feat_vectorizer, FeatureHasher):
-            self.logger.warning("No feature names are available since this model was trained on hashed features.")
             num_features = len(coef)
             index_width_in_feature_name = int(floor(log10(num_features))) + 1
             feature_names = []

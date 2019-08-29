@@ -124,6 +124,16 @@ def check_predict(model, use_feature_hashing=False):
     eq_(len(predictions), test_fs.features.shape[0])
 
 
+def test_default_param_grids_no_duplicates():
+    """
+    Verify that the default parameter grids don't contain duplicate values.
+    """
+    for learner, param_list in _DEFAULT_PARAM_GRIDS.items():
+        param_dict = param_list[0]
+        for param_name, values in param_dict.items():
+            assert(len(set(values)) == len(values))
+
+
 # the runner function for the prediction tests
 def test_predict():
     for model, use_feature_hashing in \

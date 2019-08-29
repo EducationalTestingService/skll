@@ -245,7 +245,8 @@ def create_jsonlines_feature_files(path):
 def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              num_features=10, use_feature_hashing=False,
                              feature_bins=4, num_labels=2,
-                             empty_labels=False, feature_prefix='f',
+                             empty_labels=False, string_label_list=None,
+                             feature_prefix='f',
                              class_weights=None, non_negative=False,
                              one_string_feature=False, num_string_values=4,
                              random_state=1234567890):
@@ -259,6 +260,11 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
                                n_redundant=0, n_classes=num_labels,
                                weights=class_weights,
                                random_state=random_state)
+
+    if string_label_list:
+        assert(len(string_label_list) == num_labels)
+        label_to_string = np.vectorize(lambda n: string_label_list[n])
+        y = label_to_string(y)
 
     # if we were told to only generate non-negative features, then
     # we can simply take the absolute values of the generated features
