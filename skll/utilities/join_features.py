@@ -15,7 +15,7 @@ import os
 import sys
 
 from skll.data.readers import EXT_TO_READER
-from skll.data.writers import ARFFWriter, DelimitedFileWriter, EXT_TO_WRITER
+from skll.data.writers import ARFFWriter, CSVWriter, TSVWriter, EXT_TO_WRITER
 from skll.version import __version__
 
 
@@ -105,7 +105,7 @@ def main(argv=None):
     # write out the file in the requested output format
     writer_type = EXT_TO_WRITER[input_extension]
     writer_args = {'quiet': args.quiet}
-    if writer_type is DelimitedFileWriter:
+    if writer_type is CSVWriter or writer_type is TSVWriter:
         writer_args['label_col'] = args.label_col
         writer_args['id_col'] = args.id_col
     elif writer_type is ARFFWriter:

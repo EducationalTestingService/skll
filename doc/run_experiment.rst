@@ -406,6 +406,27 @@ example, if you wanted to collapse the labels ``beagle`` and ``dachsund`` into a
 
 Any labels not included in the dictionary will be left untouched.
 
+One other use case for ``class_map`` is to deal with classification labels that
+would be converted to ``float`` improperly. All ``Reader`` sub-classes use the
+:py:mod:`skll.data.readers.safe_float` function internally to read labels. This function tries to
+convert a single label first to ``int``, then to ``float``. If neither
+conversion is possible, the label remains a ``str``. Thus, care must be taken
+to ensure that labels do not get converted in unexpected ways. For example,
+consider the situation where there are classification labels that are a mixture
+of ``int``-converting and ``float``-converting labels:
+
+.. code-block:: python
+
+    import numpy as np
+    from skll.data.readers import safe_float
+    np.array([safe_float(x) for x in ["2", "2.2", "2.21"]]) # array([2.  , 2.2 , 2.21])
+
+The labels will all be converted to floats and any classification model
+generated with this data will predict labels such as ``2.0``, ``2.2``, etc.,
+not ``str`` values that exactly match the input labels, as might be expected.
+``class_map`` could be used to map the original labels to new values that do
+not have the same characteristics.
+
 .. _num_cv_folds:
 
 num_cv_folds *(Optional)*
@@ -1264,14 +1285,14 @@ learner-featureset combination you have in your configuration file. It is named
 experiments, this summary file will contain training set sizes and the averaged
 scores for all combinations of featuresets, learners, and objectives.
 
-If `pandas <http://pandas.pydata.org>`__ and `seaborn <http://seaborn.pydata.org>`__
-are available when running a :ref:`learning_curve <learning_curve>` experiment,
+If `seaborn <http://seaborn.pydata.org>`__ is available when running 
+a :ref:`learning_curve <learning_curve>` experiment,
 actual learning curves are also generated as PNG files - one for each feature set
 specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURESET.png``
 and contains a faceted learning curve plot for the featureset with objective
 functions on rows and learners on columns. Here's an example of such a plot.
 
-If you didn't have pandas and seaborn available when running the learning curve
+If you didn't have seaborn available when running the learning curve
 experiment, you can always generate the plots later from the learning curve summary
 file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
 
