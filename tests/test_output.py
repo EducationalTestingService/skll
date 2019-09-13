@@ -29,7 +29,6 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 
-from nose.plugins.attrib import attr
 from nose.tools import eq_, ok_, assert_raises
 
 from sklearn.datasets import load_digits
@@ -730,7 +729,6 @@ def test_learning_curve_output_with_objectives():
                             '{}_{}.png'.format(outprefix, featureset_name))))
 
 
-@attr('have_pandas_and_seaborn')
 def test_learning_curve_plots():
     """
     Test learning curve plots for experiment with metrics option
@@ -753,7 +751,6 @@ def test_learning_curve_plots():
                         '{}_{}.png'.format(outprefix, featureset_name))))
 
 
-@attr('have_pandas_and_seaborn')
 def test_learning_curve_plots_with_objectives():
     """
     Test learning curve plots for experiment with objectives option
@@ -778,7 +775,6 @@ def test_learning_curve_plots_with_objectives():
                         '{}_{}.png'.format(outprefix, featureset_name))))
 
 
-@attr('have_pandas_and_seaborn')
 def test_learning_curve_ylimits():
     """
     Test that the ylimits for learning curves are generated as expected.
