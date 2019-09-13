@@ -1261,7 +1261,6 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["custom_learner_path"] = custom_learner_path
                 job_args["learning_curve_cv_folds"] = learning_curve_cv_folds_list[learner_num]
                 job_args["learning_curve_train_sizes"] = learning_curve_train_sizes
-                job_args["beta"] = beta
 
                 if not local:
                     jobs.append(Job(_classify_featureset,
