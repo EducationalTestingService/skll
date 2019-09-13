@@ -5,7 +5,7 @@ Script that filters a given feature file to remove unwanted features, labels,
 or IDs.
 
 :author: Dan Blanchard (dblanchard@ets.org)
-:date: November 2014
+:organization: ETS
 '''
 
 from __future__ import print_function, unicode_literals
@@ -16,18 +16,21 @@ import os
 import sys
 
 from skll.data.readers import EXT_TO_READER
-from skll.data.writers import ARFFWriter, DelimitedFileWriter, EXT_TO_WRITER
+from skll.data.writers import ARFFWriter, CSVWriter, TSVWriter, EXT_TO_WRITER
 from skll.version import __version__
 
 
 def main(argv=None):
-    '''
+    """
     Handles command line arguments and gets things started.
 
-    :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv[1:]`` is used instead.
-    :type argv: list of str
-    '''
+    Parameters
+    ----------
+    argv : list of str
+        List of arguments, as if specified on the command-line.
+        If None, ``sys.argv[1:]`` is used instead.
+    """
+
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Takes an input feature file and removes any instances or\
@@ -116,7 +119,7 @@ def main(argv=None):
     # write out the file in the requested output format
     writer_type = EXT_TO_WRITER[input_extension]
     writer_args = {'quiet': args.quiet}
-    if writer_type is DelimitedFileWriter:
+    if writer_type is CSVWriter or writer_type is TSVWriter:
         writer_args['label_col'] = args.label_col
         writer_args['id_col'] = args.id_col
     elif writer_type is ARFFWriter:

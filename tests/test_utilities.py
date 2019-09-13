@@ -9,14 +9,13 @@ Module for running unit tests related to command line utilities.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import ast
-
 import copy
+import csv
 import itertools
 import os
 import sys
 
-
-from io import open
+from collections import defaultdict
 from glob import glob
 from itertools import combinations, product
 from os.path import abspath, dirname, exists, join
@@ -27,25 +26,38 @@ try:
 except ImportError:
     from mock import create_autospec, patch
 
-from nose.tools import eq_, assert_almost_equal, raises, assert_raises
-from numpy.testing import assert_array_equal, assert_allclose, assert_array_almost_equal
+from nose.plugins.attrib import attr
+from nose.plugins.logcapture import LogCapture
+from nose.tools import eq_, assert_almost_equal, raises
+from numpy.testing import assert_allclose, assert_array_almost_equal
+from numpy import concatenate
 
+from sklearn.feature_extraction import FeatureHasher
+
+import numpy as np
 import skll
 import skll.utilities.compute_eval_from_predictions as cefp
+from skll.utilities.compute_eval_from_predictions import get_prediction_from_probabilities
 import skll.utilities.filter_features as ff
 import skll.utilities.generate_predictions as gp
 import skll.utilities.print_model_weights as pmw
 import skll.utilities.run_experiment as rex
 import skll.utilities.skll_convert as sk
 import skll.utilities.summarize_results as sr
-import skll.utilities.filter_features as ff
 import skll.utilities.join_features as jf
+import skll.utilities.plot_learning_curves as plc
 
-from skll.data import (FeatureSet, NDJWriter, LibSVMWriter,
-                       MegaMWriter, LibSVMReader, safe_float)
+from skll.data import (FeatureSet,
+                       NDJWriter,
+                       LibSVMWriter,
+                       MegaMWriter,
+                       LibSVMReader,
+                       safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
-from skll.experiments import _write_summary_file, run_configuration
+from skll.experiments import (_generate_learning_curve_plots,
+                              _write_summary_file,
+                              run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
 from utils import make_classification_data, make_regression_data
@@ -81,6 +93,9 @@ def tearDown():
     if exists(join(test_dir, 'test_generate_predictions.jsonlines')):
         os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
 
+    for f in glob(join(output_dir, 'output_test_*.tsv')):
+        os.unlink(f)
+
     for model_chunk in glob(join(output_dir,
                                  'test_print_model_weights.model*')):
         os.unlink(model_chunk)
@@ -112,7 +127,7 @@ def test_compute_eval_from_predictions():
     """
 
     pred_path = join(_my_dir, 'other',
-                     'test_compute_eval_from_predictions.predictions')
+                     'test_compute_eval_from_predictions_predictions.tsv')
     input_path = join(_my_dir, 'other',
                       'test_compute_eval_from_predictions.jsonlines')
 
@@ -141,21 +156,190 @@ def test_compute_eval_from_predictions():
     assert_almost_equal(scores['unweighted_kappa'], 0.2)
 
 
-def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
+def test_warning_when_prediction_method_and_no_probabilities():
+    """
+    Test compute_eval_from_predictions logs a warning if a prediction method
+    is provided but the predictions file doesn't contain probabilities.
+    """
+    lc = LogCapture()
+    lc.begin()
 
-    # create some simple classification data without feature hashing
-    train_fs, test_fs = make_classification_data(
-        num_examples=1000, num_features=5,
-        use_feature_hashing=use_feature_hashing, feature_bins=4)
+    pred_path = join(_my_dir, 'other',
+                     'test_compute_eval_from_predictions_predictions.tsv')
+    input_path = join(_my_dir, 'other',
+                      'test_compute_eval_from_predictions.jsonlines')
+
+    # we need to capture stdout since that's what main() writes to
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
+                                         'unweighted_kappa',
+                                         '--method', 'highest']
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        cefp.main(compute_eval_from_predictions_cmd)
+        _ = mystdout.getvalue().strip().split('\n')
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+    log_msg = ("skll.utilities.compute_eval_from_predictions: WARNING: A prediction "
+               "method was provided, but the predictions file doesn't contain "
+               "probabilities. Ignoring prediction method 'highest'.")
+
+    eq_(lc.handler.buffer[-1], log_msg)
+
+
+def test_compute_eval_from_predictions_with_probs():
+    """
+    Test compute_eval_from_predictions function console script,
+    with probabilities in the predictions file.
+    """
+
+    pred_path = join(_my_dir, 'other',
+                     'test_compute_eval_from_predictions_probs_predictions.tsv')
+    input_path = join(_my_dir, 'other',
+                      'test_compute_eval_from_predictions_probs.jsonlines')
+
+    # we need to capture stdout since that's what main() writes to
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
+                                         'unweighted_kappa']
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        cefp.main(compute_eval_from_predictions_cmd)
+        score_rows = mystdout.getvalue().strip().split('\n')
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+    scores = {}
+    for score_row in score_rows:
+        score, metric_name, pred_path = score_row.split('\t')
+        scores[metric_name] = float(score)
+
+    assert_almost_equal(scores['pearson'], 0.6197797868009122)
+    assert_almost_equal(scores['unweighted_kappa'], 0.2)
+
+    #
+    # Test expected value predictions method
+    #
+    compute_eval_from_predictions_cmd = [input_path, pred_path,
+                                         'explained_variance',
+                                         'r2', '--method', 'expected_value']
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        cefp.main(compute_eval_from_predictions_cmd)
+        score_rows = mystdout.getvalue().strip().split('\n')
+        err = mystderr.getvalue()
+        print(err)
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+    scores = {}
+    for score_row in score_rows:
+        score, metric_name, pred_path = score_row.split('\t')
+        scores[metric_name] = float(score)
+
+    assert_almost_equal(scores['r2'], 0.19999999999999996)
+    assert_almost_equal(scores['explained_variance'], 0.23809523809523792)
+
+
+@raises(ValueError)
+def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes():
+    """
+    Make sure compute_eval_from_predictions breaks with ValueError when predictions are
+    calculated via expected_value and the classes are non numeric.
+    """
+
+    pred_path = join(_my_dir, 'other',
+                     'test_compute_eval_from_predictions_nonnumeric_classes_predictions.tsv')
+    input_path = join(_my_dir, 'other',
+                      'test_compute_eval_from_predictions_nonnumeric_classes.jsonlines')
+
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
+                                         'r2', '--method', 'expected_value']
+    cefp.main(compute_eval_from_predictions_cmd)
+
+
+@raises(ValueError)
+def test_conflicting_prediction_and_example_ids():
+    """
+    Make sure compute_eval_from_predictions breaks with ValueError when predictions and
+    examples don't have the same id set in 'compute_eval_from_predictions'.
+    """
+    pred_path = join(_my_dir, 'other',
+                     'test_compute_eval_from_predictions_probs_predictions.tsv')
+    input_path = join(_my_dir, 'other',
+                      'test_compute_eval_from_predictions_different_ids.jsonlines')
+
+    compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson']
+    cefp.main(compute_eval_from_predictions_cmd)
+
+
+def test_compute_eval_from_predictions_random_choice():
+    """
+    Test that the random selection of classes with the same probabilities works.
+    """
+    classes = ['A', 'B', 'C', 'D']
+    probs = ['0.25', '0.25', '0.25', '0.25']
+    prediction_method = 'highest'
+    pred = get_prediction_from_probabilities(classes, probs, prediction_method)
+    eq_(pred, 'C')
+
+
+def check_generate_predictions(use_feature_hashing=False,
+                               use_threshold=False,
+                               test_on_subset=False,
+                               use_all_labels=False,
+                               string_labels=False):
+
+    # create some simple classification feature sets for training and testing
+    string_label_list = ['a', 'b'] if string_labels else None
+
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 use_feature_hashing=use_feature_hashing,
+                                                 feature_bins=4,
+                                                 string_label_list=string_label_list)
+
+    enable_probability = any([use_threshold, use_all_labels])
 
     # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=use_threshold)
+    learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+
+    # if we are asked to use only a subset, then filter out
+    # one of the features if we are not using feature hashing,
+    # do nothing if we are using feature hashing
+    if test_on_subset and not use_feature_hashing:
+        test_fs.filter(features=['f01', 'f02', 'f03', 'f04'])
+
+    # There are two cases where we don't want to translate the predictions to
+    # class labels:
+    #   1) If `use_all_labels` is True, a prediction will be a list of
+    #      probabilities.
+    #   2) If `use_threshold` is True, the prediction will be
+    #      either 1 or 0, indicating whether the probability of the positive
+    #      class was greater than or equal to the threshold.
+    use_class_labels = (string_labels and
+                        not (use_all_labels or use_threshold))
 
     # get the predictions on the test featureset
-    predictions = learner.predict(test_fs)
+    predictions = learner.predict(test_fs, class_labels=use_class_labels)
 
     # if we asked for probabilities, then use the threshold
     # to convert them into binary predictions
@@ -173,24 +357,105 @@ def check_generate_predictions(use_feature_hashing=False, use_threshold=False):
 
     # now use Predictor to generate the predictions and make
     # sure that they are the same as before saving the model
-    p = gp.Predictor(model_file, threshold=threshold)
+    p = gp.Predictor(model_file, threshold=threshold,
+                     all_labels=use_all_labels)
+
+    assert(p._pos_index == 1)
+    assert(p.threshold == threshold)
+
     predictions_after_saving = p.predict(test_fs)
 
     eq_(predictions, predictions_after_saving)
 
 
+def check_generate_predictions_file_headers(use_threshold=False,
+                                            use_all_labels=False,
+                                            string_labels=False):
+
+    string_label_list = ['a', 'b'] if string_labels else None
+
+    # create some simple classification feature sets for training and testing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 feature_bins=4,
+                                                 string_label_list=string_label_list)
+
+    # Unlike in other generate_predictions tests, for the headers test we
+    # want to enable probability when labels are strings in order to verify
+    # that the output header includes the correct label name(s) ("Probability
+    # of <label>", or "id, <label1>, <label2>").
+    enable_probability = any([use_threshold, use_all_labels, string_labels])
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier', probability=enable_probability)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+
+    use_class_labels = string_labels
+    # get the predictions on the test featureset
+    _ = learner.predict(test_fs, class_labels=use_class_labels)
+
+    # if we asked for probabilities, then use the threshold
+    # to convert them into binary predictions
+    if use_threshold:
+        threshold = 0.6
+    else:
+        threshold = None
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions.model')
+    learner.save(model_file)
+
+    # now use Predictor to generate the predictions and make
+    # sure that they are the same as before saving the model
+    p = gp.Predictor(model_file, threshold=threshold,
+                     all_labels=use_all_labels)
+    _ = p.predict(test_fs)
+    if threshold:
+        assert (p.output_file_header == ['id', 'prediction'])
+    elif string_labels:
+        if use_all_labels:
+            assert (p.output_file_header == ['id', 'a', 'b'])
+        else:
+            assert (p.output_file_header == ['id', "Probability of 'b'"])
+    elif use_all_labels:
+        assert (p.output_file_header == ['id', '0', '1'])
+
+
+@raises(ValueError)
+def test_generate_predictions_conflicting_params():
+    """
+    Test that ValueError is raised when `generate_predictions.Predictor` is
+    initialized with both `threshold` and `all_labels` turned on.
+    """
+    model_file = "not/real/model/file.model"
+    gp.Predictor(model_file, threshold=0.6, all_labels=True)
+
+
 def test_generate_predictions():
-    """
-    Test generate predictions API with hashing and a threshold
-    """
+    for (use_feature_hashing, use_threshold, test_on_subset, all_probabilities,
+         string_labels) in product(*[[True, False], [True, False],
+                                     [True, False], [True, False],
+                                     [True, False]]):
+        if use_threshold and all_probabilities:
+            continue
+        yield (check_generate_predictions, use_feature_hashing,
+               use_threshold, test_on_subset, all_probabilities,
+               string_labels)
 
-    yield check_generate_predictions, False, False
-    yield check_generate_predictions, True, False
-    yield check_generate_predictions, False, True
-    yield check_generate_predictions, True, True
+
+def test_generate_predictions_file_header():
+    for (use_threshold, all_probabilities, string_labels) in \
+            product(*[[True, False], [True, False], [True, False]]):
+        if use_threshold and all_probabilities:
+            continue
+        yield (check_generate_predictions_file_headers,
+               use_threshold, all_probabilities, string_labels)
 
 
-def check_generate_predictions_console(use_threshold=False):
+def check_generate_predictions_console(use_threshold=False, all_labels=False):
 
     # create some simple classification data without feature hashing
     train_fs, test_fs = make_classification_data(num_examples=1000,
@@ -202,11 +467,12 @@ def check_generate_predictions_console(use_threshold=False):
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
+    enable_probability = use_threshold or all_labels
     # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=use_threshold)
+    learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True)
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
     # get the predictions on the test featureset
     predictions = learner.predict(test_fs)
@@ -229,6 +495,9 @@ def check_generate_predictions_console(use_threshold=False):
     generate_cmd = []
     if use_threshold:
         generate_cmd.append('-t {}'.format(threshold))
+    elif all_labels:
+        generate_cmd.append('-a')
+
     generate_cmd.extend([model_file, input_file])
 
     # we need to capture stdout since that's what main() writes to
@@ -241,12 +510,116 @@ def check_generate_predictions_console(use_threshold=False):
         gp.main(generate_cmd)
         out = mystdout.getvalue()
         err = mystderr.getvalue()
-        predictions_after_saving = [int(x) for x in out.strip().split('\n')]
-        eq_(predictions, predictions_after_saving)
+        output_lines = out.strip().split('\n')[1:]  # Skip headers
+        if all_labels:
+            # Ignore the id (first column) in output.
+            predictions_after_saving = [[float(p) for p in x.split('\t')[1:]]
+                                        for x in output_lines]
+        else:
+            # Ignore the id (first column) in output.
+            predictions_after_saving = [int(x.split('\t')[1])
+                                        for x in output_lines]
+        if all_labels:
+            assert_array_almost_equal(predictions, predictions_after_saving)
+        else:
+            eq_(predictions, predictions_after_saving)
     finally:
         sys.stdout = old_stdout
         sys.stderr = old_stderr
         print(err)
+
+
+def test_generate_predictions_kw_arg_deprecation_warning():
+    lc = LogCapture()
+    lc.begin()
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test',
+                      'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier')
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+    # get the predictions on the test featureset
+    _ = learner.predict(test_fs)
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, input_file, "--positive_label", "1"]
+
+    # we need to capture stdout since that's what main() writes to
+    err = ''
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        gp.main(generate_cmd)
+        _ = mystdout.getvalue()
+        err = mystderr.getvalue()
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        print(err)
+
+    expected_log_mssg = ("skll.utilities.generate_predictions: WARNING: The "
+                         "`positive_label` argument is deprecated. Use "
+                         "`positive_label_index` instead.")
+    assert expected_log_mssg in lc.handler.buffer
+
+
+def test_generate_predictions_console_bad_input_ext():
+    lc = LogCapture()
+    lc.begin()
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier')
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+    # get the predictions on the test featureset
+    _ = learner.predict(test_fs)
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, "fake_input_file.txt"]
+
+    # we need to capture stdout since that's what main() writes to
+    err = ''
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        gp.main(generate_cmd)
+        _ = mystdout.getvalue()
+        err = mystderr.getvalue()
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        print(err)
+
+    expected_log_mssg = ("skll.utilities.generate_predictions: ERROR: Input "
+                         "file must be in either .arff, .csv, .jsonlines, "
+                         ".libsvm, .megam, .ndj, or .tsv format.  Skipping "
+                         "file fake_input_file.txt")
+
+    eq_(lc.handler.buffer[-1], expected_log_mssg)
 
 
 def test_generate_predictions_console():
@@ -254,8 +627,194 @@ def test_generate_predictions_console():
     Test generate_predictions as a console script with/without a threshold
     """
 
-    yield check_generate_predictions_console, False
-    yield check_generate_predictions_console, True
+    yield check_generate_predictions_console, False, False
+    yield check_generate_predictions_console, False, True
+    yield check_generate_predictions_console, True, False
+
+
+def check_generate_predictions_file_output_multi_infiles(use_threshold=False,
+                                                         all_labels=False):
+    """
+    Make sure generate_predictions works with multiple input files.
+    """
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    enable_probability = use_threshold or all_labels
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier', probability=enable_probability)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+
+    # get the predictions on the test featureset
+    predictions = learner.predict(test_fs)
+    predictions = concatenate([predictions, predictions])
+
+    # if we asked for probabilities, then use the threshold
+    # to convert them into binary predictions
+    if use_threshold:
+        threshold = 0.6
+        predictions = [int(p[1] >= threshold) for p in predictions]
+    else:
+        predictions = predictions.tolist()
+        threshold = None
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = []
+    if use_threshold:
+        generate_cmd.append('-t {}'.format(threshold))
+    elif all_labels:
+        generate_cmd.append('-a')
+
+    output_file_path = join(_my_dir, 'output',
+                            'output_test_{}_{}_MULTI.tsv'
+                            .format(use_threshold, all_labels))
+    generate_cmd.extend(["--output_file", output_file_path])
+
+    generate_cmd.extend([model_file, input_file, input_file])
+
+    gp.main(generate_cmd)
+
+    with open(output_file_path) as saved_predictions_file:
+        predictions_after_saving = []
+        reader = csv.reader(saved_predictions_file, delimiter=str("\t"))
+        next(reader)
+        if all_labels:
+            for row in reader:
+                predictions_after_saving.append([float(r) for r in row[1:]])
+        else:
+            for row in reader:
+                predictions_after_saving.append(float(row[1]))
+
+    assert_array_almost_equal(predictions, predictions_after_saving)
+
+
+def test_generate_predictions_file_output_multi_infiles():
+    """
+    Test generate_predictions file output with/without a threshold
+    """
+
+    yield check_generate_predictions_file_output_multi_infiles, False, False
+    yield check_generate_predictions_file_output_multi_infiles, False, True
+    yield check_generate_predictions_file_output_multi_infiles, True, False
+
+
+def check_generate_predictions_file_output(use_threshold=False,
+                                           all_labels=False):
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    enable_probability = use_threshold or all_labels
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier', probability=enable_probability)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+
+    # get the predictions on the test featureset
+    predictions = learner.predict(test_fs)
+
+    # if we asked for probabilities, then use the threshold
+    # to convert them into binary predictions
+    if use_threshold:
+        threshold = 0.6
+        predictions = [int(p[1] >= threshold) for p in predictions]
+    else:
+        predictions = predictions.tolist()
+        threshold = None
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = []
+    if use_threshold:
+        generate_cmd.append('-t {}'.format(threshold))
+    elif all_labels:
+        generate_cmd.append('-a')
+
+    output_file_path = join(_my_dir, 'output',
+                            'output_test_{}_{}.tsv'
+                            .format(use_threshold, all_labels))
+    generate_cmd.extend(["--output_file", output_file_path])
+
+    generate_cmd.extend([model_file, input_file])
+    gp.main(generate_cmd)
+
+    with open(output_file_path) as saved_predictions_file:
+        predictions_after_saving = []
+        reader = csv.reader(saved_predictions_file, delimiter=str("\t"))
+        next(reader)
+        if all_labels:
+            for row in reader:
+                predictions_after_saving.append([float(r) for r in row[1:]])
+        else:
+            for row in reader:
+                predictions_after_saving.append(float(row[1]))
+
+    assert_array_almost_equal(predictions, predictions_after_saving)
+
+
+def test_generate_predictions_file_output():
+    """
+    Test generate_predictions file output with/without a threshold
+    """
+
+    yield check_generate_predictions_file_output, False, False
+    yield check_generate_predictions_file_output, False, True
+    yield check_generate_predictions_file_output, True, False
+
+
+@raises(SystemExit)
+def test_mutually_exclusive_generate_predictions_args():
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+    threshold = 0.6
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test',
+                      'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier')
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = ['-t {}'.format(threshold), '-a']
+    generate_cmd.extend([model_file, input_file])
+    gp.main(generate_cmd)
 
 
 def check_skll_convert(from_suffix, to_suffix):
@@ -297,7 +856,7 @@ def check_skll_convert(from_suffix, to_suffix):
 
 
 def test_skll_convert():
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines',
                                                           '.megam', '.tsv',
                                                           '.csv', '.arff',
                                                           '.libsvm'], 2):
@@ -365,30 +924,80 @@ def test_skll_convert_libsvm_map():
     eq_(orig_fs, converted_fs)
 
 
-def check_print_model_weights(task='classification'):
+@raises(SystemExit)
+def test_skll_convert_no_labels_with_label_col():
+    """
+    Check that --no_labels/--label_col cannot both be specified for skll_convert
+    """
+    skll_convert_cmd = ['--no_labels', '--label_col', 't', 'foo.tsv', 'foo.libsvm']
+    sk.main(argv=skll_convert_cmd)
+
+
+def check_print_model_weights(task='classification', sort_by_labels=False):
 
     # create some simple classification or regression data
-    if task == 'classification' or task == 'classification_no_intercept':
+    if task in ['classification', 'classification_no_intercept']:
         train_fs, _ = make_classification_data(train_test_ratio=0.8)
-    elif task == 'multiclass_classification':
-        train_fs, _ = make_classification_data(train_test_ratio=0.8, num_labels=3)
+    elif task == 'classification_with_hashing':
+        train_fs, _ = make_classification_data(train_test_ratio=0.8,
+                                               use_feature_hashing=True,
+                                               feature_bins=10)
+    elif task in ['multiclass_classification',
+                  'multiclass_classification_svc']:
+        train_fs, _ = make_classification_data(train_test_ratio=0.8,
+                                               num_labels=3)
+    elif task in ['multiclass_classification_with_hashing',
+                  'multiclass_classification_svc_with_hashing']:
+        train_fs, _ = make_classification_data(train_test_ratio=0.8,
+                                               num_labels=3,
+                                               use_feature_hashing=True,
+                                               feature_bins=10)
+
+    elif task in ['regression_with_hashing',
+                  'regression_linearsvr_with_hashing',
+                  'regression_svr_linear_with_hashing',
+                  'regression_svr_linear_with_scaling_and_hashing']:
+        train_fs, _, _ = make_regression_data(num_features=4,
+                                              train_test_ratio=0.8,
+                                              use_feature_hashing=True,
+                                              feature_bins=2)
     else:
         train_fs, _, _ = make_regression_data(num_features=4,
                                               train_test_ratio=0.8)
 
     # now train the appropriate model
-    if task == 'classification' or task == 'multiclass_classification':
+    if task in ['classification',
+                'classification_with_hashing',
+                'multiclass_classification',
+                'multiclass_classification_with_hashing']:
         learner = Learner('LogisticRegression')
-        learner.train(train_fs, grid_objective='f1_score_micro')
+        learner.train(train_fs, grid_search=True,
+                      grid_objective='f1_score_micro')
+    elif task in ['multiclass_classification_svc',
+                  'multiclass_classification_svc_with_hashing']:
+        learner = Learner('SVC', model_kwargs={'kernel': 'linear'})
+        learner.train(train_fs, grid_search=True,
+                      grid_objective='f1_score_micro')
     elif task == 'classification_no_intercept':
         learner = Learner('LogisticRegression')
-        learner.train(train_fs, grid_objective='f1_score_micro', param_grid=[{'fit_intercept':[False]}])
-    elif task == 'regression':
+        learner.train(train_fs,
+                      grid_search=True,
+                      grid_objective='f1_score_micro',
+                      param_grid=[{'fit_intercept': [False]}])
+    elif task in ['regression', 'regression_with_hashing']:
         learner = Learner('LinearRegression')
-        learner.train(train_fs, grid_objective='pearson')
-    else:
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
+    elif task in ['regression_linearsvr', 'regression_linearsvr_with_hashing']:
         learner = Learner('LinearSVR')
-        learner.train(train_fs, grid_objective='pearson')
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
+    elif task in ['regression_svr_linear',
+                  'regression_svr_linear_with_hashing']:
+        learner = Learner('SVR', model_kwargs={'kernel': 'linear'})
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
+    else:
+        learner = Learner('SVR', model_kwargs={'kernel': 'linear'},
+                          feature_scaling='both')
+        learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # now save the model to disk
     model_file = join(_my_dir, 'output',
@@ -396,7 +1005,10 @@ def check_print_model_weights(task='classification'):
     learner.save(model_file)
 
     # now call print_model_weights main() and capture the output
-    print_model_weights_cmd = [model_file]
+    if sort_by_labels:
+        print_model_weights_cmd = [model_file, "--sort_by_labels"]
+    else:
+        print_model_weights_cmd = [model_file]
     err = ''
     try:
         old_stderr = sys.stderr
@@ -413,17 +1025,18 @@ def check_print_model_weights(task='classification'):
 
     # now parse the output of the print_model_weight command
     # and get the intercept and the feature values
-    if task == 'classification':
+    if task in ['classification', 'classification_with_hashing']:
         lines_to_parse = [l for l in out.split('\n')[1:] if l]
         intercept = safe_float(lines_to_parse[0].split('\t')[0])
         feature_values = []
         for ltp in lines_to_parse[1:]:
-            fields = ltp.split('\t')
-            feature_values.append((fields[2], safe_float(fields[0])))
+            weight, _, feature_name = ltp.split('\t')
+            feature_values.append((feature_name, safe_float(weight)))
         feature_values = [t[1] for t in sorted(feature_values)]
         assert_almost_equal(intercept, learner.model.intercept_[0])
         assert_allclose(learner.model.coef_[0], feature_values)
-    elif task == 'multiclass_classification':
+    elif task in ['multiclass_classification',
+                  'multiclass_classification_with_hashing']:
         # for multiple classes we get an intercept for each class
         # as well as a list of weights for each class
 
@@ -434,8 +1047,24 @@ def check_print_model_weights(task='classification'):
 
         feature_values = [[], [], []]
         for ltp in lines_to_parse[3:]:
-            fields = ltp.split('\t')
-            feature_values[int(fields[1])].append((fields[2], safe_float(fields[0])))
+            weight, label, feature_name = ltp.split('\t')
+            feature_values[int(label)].append((feature_name,
+                                               safe_float(weight)))
+
+        if sort_by_labels:
+            # making sure that the weights are sorted by label
+
+            # get the labels
+            labels_list = [line.split("\t")[1] for line in lines_to_parse[3:]]
+
+            # first test that the labels are sorted
+            assert labels_list == sorted(labels_list)
+
+            # then test that weights are sorted descending by absolute value
+            # for each label
+            for features_and_weights in feature_values:
+                feature_weights = [t[1] for t in features_and_weights]
+                assert feature_weights == sorted(feature_weights, key=lambda x: -abs(x))
 
         for index, weights in enumerate(feature_values):
             feature_values[index] = [t[1] for t in sorted(weights)]
@@ -444,33 +1073,104 @@ def check_print_model_weights(task='classification'):
             assert_array_almost_equal(weights, feature_values[index])
 
         assert_array_almost_equal(intercept, learner.model.intercept_)
+    elif task in ['multiclass_classification_svc',
+                  'multiclass_classification_svc_with_hashing']:
+        # for multiple classes with the SVC with a linear kernel,
+        # we get an intercept for each class pair combination
+        # as well as a list of weights for each class pair
+        # combination
+
+        # save the computed intercept values in a dictionary
+        # with the class oair label as the key
+        lines_to_parse = [l for l in out.split('\n')[1:] if l]
+        parsed_intercepts_dict = {}
+        for intercept_string in lines_to_parse[0:3]:
+            fields = intercept_string.split('\t')
+            parsed_intercepts_dict[fields[1]] = safe_float(fields[0])
+
+        # save the computed feature weights in a dictionary
+        # with the class pair label as the key and the value
+        # being a list; each feature weight for this class pair
+        # is stored at the index of the feature name as given
+        # by the feature vectorizer vocabulary dictionary
+        parsed_weights_dict = {}
+        for ltp in lines_to_parse[3:]:
+            (weight, class_pair, feature) = ltp.split('\t')
+            if class_pair not in parsed_weights_dict:
+                parsed_weights_dict[class_pair] = [0] * 10
+            if isinstance(learner.feat_vectorizer, FeatureHasher):
+                feature_index = int(feature.split('_')[-1]) - 1
+            else:
+                feature_index = learner.feat_vectorizer.vocabulary_[feature]
+            parsed_weights_dict['{}'.format(class_pair)][feature_index] = safe_float(weight)
+
+        if sort_by_labels:
+            # making sure that the weights are sorted by label
+
+            # get the feature weights and class pairs
+            temp_weights_dict = defaultdict(list)
+            class_pair_list = []
+            for ltp in lines_to_parse[3:]:
+                (weight, class_pair, feature) = ltp.split('\t')
+                class_pair_list.append(class_pair)
+                if class_pair not in parsed_weights_dict:
+                    parsed_weights_dict[class_pair] = [0] * 10
+                temp_weights_dict[class_pair].append(safe_float(weight))
+
+            # first test that the class pairs are sorted
+            assert class_pair_list == sorted(class_pair_list)
+
+            # then test that weifghts are sorted descending by absolute value
+            # for each label
+            for class_pair, feature_weights in temp_weights_dict.items():
+                assert feature_weights == sorted(feature_weights,
+                                                 key=lambda x: -abs(x))
+
+        # to validate that our coefficients are correct, we will
+        # get the coefficient array (for all features) from `coef_`
+        # for a particular class pair and then check that this array
+        # is equal to the list that we computed above. We will do
+        # the same for intercepts which are even easier to validate
+        # since they _only_ depend on the class pair
+        for idx, (class1, class2) in enumerate(itertools.combinations([0, 1, 2], 2)):
+            class_pair_label = '{}-vs-{}'.format(class1, class2)
+            computed_coefficients = np.array(parsed_weights_dict[class_pair_label])
+            # we want to remove any extra zeros here for features that ended up
+            # with zero weights since those are never printed out
+            computed_coefficients = computed_coefficients[computed_coefficients.nonzero()]
+            expected_coefficients = learner.model.coef_[idx].toarray()[0]
+            assert_array_almost_equal(computed_coefficients, expected_coefficients)
+
+            computed_intercept = parsed_intercepts_dict[class_pair_label]
+            expected_intercept = learner.model.intercept_[idx]
+            assert_almost_equal(computed_intercept, expected_intercept)
+
     elif task == 'classification_no_intercept':
         lines_to_parse = [l for l in out.split('\n')[0:] if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
-        feature_values = []
+        computed_coefficients = []
         for ltp in lines_to_parse[1:]:
             fields = ltp.split('\t')
-            feature_values.append((fields[2], safe_float(fields[0])))
-        feature_values = [t[1] for t in sorted(feature_values)]
+            computed_coefficients.append((fields[2], safe_float(fields[0])))
+        computed_coefficients = [t[1] for t in sorted(computed_coefficients)]
         assert_almost_equal(intercept, learner.model.intercept_)
-        assert_allclose(learner.model.coef_[0], feature_values)
-    elif task == 'regression':
+        expected_coefficients = learner.model.coef_[0]
+        assert_allclose(expected_coefficients, computed_coefficients)
+    elif task in ['regression', 'regression_with_hashing']:
         lines_to_parse = [l for l in out.split('\n') if l]
         intercept = safe_float(lines_to_parse[0].split('=')[1])
-        feature_values = []
+        computed_coefficients = []
         for ltp in lines_to_parse[1:]:
-            fields = ltp.split('\t')
-            feature_values.append((fields[1], safe_float(fields[0])))
-        feature_values = [t[1] for t in sorted(feature_values)]
+            weight, feature_name = ltp.split('\t')
+            computed_coefficients.append((feature_name, safe_float(weight)))
+        computed_coefficients = [t[1] for t in sorted(computed_coefficients)]
         assert_almost_equal(intercept, learner.model.intercept_)
-        assert_allclose(learner.model.coef_, feature_values)
+        assert_allclose(learner.model.coef_, computed_coefficients)
     else:
         lines_to_parse = [l for l in out.split('\n') if l]
 
         intercept_list = ast.literal_eval(lines_to_parse[0].split('=')[1].strip())
-        intercept = []
-        for intercept_string in intercept_list:
-            intercept.append(safe_float(intercept_string))
+        intercept = safe_float(intercept_list)
 
         feature_values = []
         for ltp in lines_to_parse[1:]:
@@ -479,15 +1179,36 @@ def check_print_model_weights(task='classification'):
         feature_values = [t[1] for t in sorted(feature_values)]
 
         assert_array_almost_equal(intercept, learner.model.intercept_)
-        assert_allclose(learner.model.coef_, feature_values)
+        if task in ['regression_svr_linear', 'regression_svr_linear_with_hashing']:
+            coef = learner.model.coef_.toarray()[0]
+            assert_allclose(coef, feature_values)
+        elif task in ['regression_svr_linear_with_scaling', 'regression_svr_linear_with_scaling_and_hashing']:
+            coef = learner.model.coef_[0]
+            assert_allclose(coef, feature_values)
+        else:
+            assert_allclose(learner.model.coef_, feature_values)
 
 
 def test_print_model_weights():
     yield check_print_model_weights, 'classification'
+    yield check_print_model_weights, 'classification_with_hashing'
     yield check_print_model_weights, 'multiclass_classification'
+    yield check_print_model_weights, 'multiclass_classification', True
+    yield check_print_model_weights, 'multiclass_classification_with_hashing'
+    yield check_print_model_weights, 'multiclass_classification_with_hashing', True
+    yield check_print_model_weights, 'multiclass_classification_svc'
+    yield check_print_model_weights, 'multiclass_classification_svc', True
+    yield check_print_model_weights, 'multiclass_classification_svc_with_hashing'
+    yield check_print_model_weights, 'multiclass_classification_svc_with_hashing', True
     yield check_print_model_weights, 'classification_no_intercept'
     yield check_print_model_weights, 'regression'
-    yield check_print_model_weights, 'regression_linearSVR'
+    yield check_print_model_weights, 'regression_with_hashing'
+    yield check_print_model_weights, 'regression_linearsvr'
+    yield check_print_model_weights, 'regression_linearsvr_with_hashing'
+    yield check_print_model_weights, 'regression_svr_linear'
+    yield check_print_model_weights, 'regression_svr_linear_with_hashing'
+    yield check_print_model_weights, 'regression_svr_linear_with_scaling'
+    yield check_print_model_weights, 'regression_svr_linear_with_scaling_and_hashing'
 
 
 def check_summarize_results_argparse(use_ablation=False):
@@ -522,6 +1243,50 @@ def check_summarize_results_argparse(use_ablation=False):
 def test_summarize_results_argparse():
     yield check_summarize_results_argparse, False
     yield check_summarize_results_argparse, True
+
+
+@attr('have_pandas_and_seaborn')
+def test_plot_learning_curves_argparse():
+    # A utility function to check that we are setting up argument parsing
+    # correctly for plot_learning_curves. We are not checking whether the learning
+    # curves produced are accurate because we have separate tests for that.
+
+    # replace the _generate_learning_curve_plots function that's called
+    # by the main() in plot_learning_curves with a mocked up version
+    generate_learning_curve_plots_mock = create_autospec(_generate_learning_curve_plots)
+    plc._generate_learning_curve_plots = generate_learning_curve_plots_mock
+
+    # now call main with some arguments
+    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
+    experiment_name = 'sample_learning_curve'
+    output_dir_name = join(_my_dir, 'other')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+
+    # now check to make sure that _generate_learning_curve_plots (or our mocked up version
+    # of it) got the arguments that we passed
+    positional_arguments, keyword_arguments = generate_learning_curve_plots_mock.call_args
+    eq_(positional_arguments[0], experiment_name)
+    eq_(positional_arguments[1], output_dir_name)
+    eq_(positional_arguments[2], summary_file_name)
+
+
+@attr('have_pandas_and_seaborn')
+@raises(SystemExit)
+def test_plot_learning_curves_missing_file():
+    summary_file_name = join(_my_dir, 'other', 'non_existent_summary.tsv')
+    output_dir_name = join(_my_dir, 'other')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+
+
+@attr('have_pandas_and_seaborn')
+def test_plot_learning_curves_create_output_directory():
+    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
+    output_dir_name = join(_my_dir, 'other', 'foobar')
+    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc.main(argv=plc_cmd_args)
+    exists(output_dir_name)
 
 
 def check_run_experiments_argparse(multiple_config_files=False,

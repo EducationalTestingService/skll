@@ -89,7 +89,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --version
 
@@ -113,17 +113,27 @@ Positional Arguments
 
     Model file to load and use for generating predictions.
 
-.. option:: input_file
+.. option:: input_file(s)
 
-    A csv file, json file, or megam file (with or without the label column),
-    with the appropriate suffix.
+    One or more csv file(s), jsonlines file(s), or megam file(s) (with or without the
+    label column), with the appropriate suffix.
 
 Optional Arguments
 ^^^^^^^^^^^^^^^^^^
+.. option:: -a, --all_probabilities
+
+    Flag indicating whether to output the probabilities of all labels instead of just
+    the probability of the positive label.
+
+.. option:: -i <id_col>, --id_col <id_col>
+
+    Name of the column which contains the instance IDs in ARFF, CSV, or TSV files.
+    (default: ``id``)
+
 .. option:: -l <label_col>, --label_col <label_col>
 
     Name of the column which contains the labels in ARFF, CSV, or TSV files.
-    For ARFF files, this must be the final column to count as the label.
+    For ARFF files, this must be the final column to count as the label. 
     (default: ``y``)
 
 .. option:: -p <positive_label>, --positive_label <positive_label>
@@ -131,11 +141,12 @@ Optional Arguments
     If the model is only being used to predict the probability of a particular
     label, this specifies the index of the label we're predicting. 1 = second
     label, which is default for binary classification. Keep in mind that labels
-    are sorted lexicographically. (default: 1)
+    are sorted lexicographically. 
+    (default: 1)
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: -t <threshold>, --threshold <threshold>
 
@@ -178,11 +189,32 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --version
 
     Show program's version number and exit.
+
+-------------------------------------------------------------------------------
+
+.. _plot_learning_curves:
+
+plot_learning_curves
+--------------------
+.. program:: plot_learning_curves
+
+Generate learning curve plots from a learning curve output TSV file.
+
+Positional Arguments
+^^^^^^^^^^^^^^^^^^^^
+
+.. option:: tsv_file
+
+    Input learning Curve TSV output file.
+
+.. option:: output_dir
+
+    Output directory to store the learning curve plots.
 
 -------------------------------------------------------------------------------
 
@@ -210,7 +242,7 @@ Optional Arguments
 
 .. option:: sign {positive,negative,all}
 
-    Show only positive, only negative, or all weights (default: all)
+    Show only positive, only negative, or all weights (default: ``all``)
 
 .. option:: --version
 
@@ -251,7 +283,7 @@ Optional Arguments
 
 .. option:: -q, --quiet
 
-    Suppress printing of "Loading..." messages.
+    Suppress printing of ``"Loading..."`` messages.
 
 .. option:: --arff_regression
 
@@ -303,4 +335,6 @@ Optional Arguments
 .. option:: --version
 
     Show program's version number and exit.
+
+
 

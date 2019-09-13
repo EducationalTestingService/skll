@@ -16,17 +16,25 @@ import glob
 import itertools
 import json
 import os
+import re
+import sys
+import warnings
+
 from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import eq_, assert_almost_equal, raises
 
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.metrics import accuracy_score
+
 from skll.data import FeatureSet
+from skll.data.readers import NDJReader
 from skll.data.writers import NDJWriter
 from skll.config import _parse_config_file
 from skll.experiments import run_configuration
-from skll.learner import Learner
+from skll.learner import Learner, _train_and_score
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
 from utils import (make_classification_data, make_regression_data,
@@ -61,18 +69,20 @@ def tearDown():
     if exists(join(test_dir, 'test_single_file.jsonlines')):
         os.unlink(join(test_dir, 'test_single_file.jsonlines'))
 
-    if exists(join(output_dir, 'rare_class.predictions')):
-        os.unlink(join(output_dir, 'rare_class.predictions'))
+    if exists(join(output_dir, 'rare_class_predictions.tsv')):
+        os.unlink(join(output_dir, 'rare_class_predictions.tsv'))
 
-    if exists(join(output_dir, 'float_class.predictions')):
-        os.unlink(join(output_dir, 'float_class.predictions'))
+    if exists(join(output_dir, 'float_class_predictions.tsv')):
+        os.unlink(join(output_dir, 'float_class_predictions.tsv'))
 
     for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
         os.unlink(output_file)
 
-    config_file = join(config_dir, 'test_single_file.cfg')
-    if exists(config_file):
-        os.unlink(config_file)
+    config_files = [join(config_dir, cfgname) for cfgname in ['test_single_file.cfg',
+                                                              'test_single_file_saved_subset']]
+    for config_file in config_files:
+        if exists(config_file):
+            os.unlink(config_file)
 
 
 def check_predict(model, use_feature_hashing=False):
@@ -114,11 +124,85 @@ def check_predict(model, use_feature_hashing=False):
     eq_(len(predictions), test_fs.features.shape[0])
 
 
+def test_default_param_grids_no_duplicates():
+    """
+    Verify that the default parameter grids don't contain duplicate values.
+    """
+    for learner, param_list in _DEFAULT_PARAM_GRIDS.items():
+        param_dict = param_list[0]
+        for param_name, values in param_dict.items():
+            assert(len(set(values)) == len(values))
+
+
 # the runner function for the prediction tests
 def test_predict():
     for model, use_feature_hashing in \
             itertools.product(_ALL_MODELS, [True, False]):
         yield check_predict, model, use_feature_hashing
+
+
+# test predictions when both the model and the data use DictVectorizers
+def test_predict_dict_dict():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file).read()
+    test_fs = NDJReader.for_path(test_file).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(len(predictions), test_fs.features.shape[0])
+
+
+# test predictions when both the model and the data use FeatureHashers
+# and the same number of bins
+def test_predict_hasher_hasher_same_bins():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(len(predictions), test_fs.features.shape[0])
+
+
+# test predictions when both the model and the data use FeatureHashers
+# but different number of bins
+@raises(RuntimeError)
+def test_predict_hasher_hasher_different_bins():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=2).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    _ = learner.predict(test_fs)
+
+
+# test predictions when model uses a FeatureHasher and data
+# uses a DictVectorizer
+def test_predict_hasher_dict():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    test_fs = NDJReader.for_path(test_file).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(len(predictions), test_fs.features.shape[0])
+
+
+# test predictions when model uses a DictVectorizer and data
+# uses a FeatureHasher
+@raises(RuntimeError)
+def test_predict_dict_hasher():
+    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
+    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_fs = NDJReader.for_path(train_file).read()
+    test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    _ = learner.predict(test_fs)
 
 
 # the function to create data with rare labels for cross-validation
@@ -152,7 +236,7 @@ def test_rare_class():
                            grid_objective='unweighted_kappa',
                            prediction_prefix=prediction_prefix)
 
-    with open(prediction_prefix + '.predictions', 'r') as f:
+    with open(prediction_prefix + '_predictions.tsv', 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
@@ -164,7 +248,7 @@ def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False
     train_fs, test_fs = make_sparse_data(
         use_feature_hashing=use_feature_hashing)
 
-    # train a logistic regression classifier on the training
+    # train the given classifier on the training
     # data and evalute on the testing data
     learner = Learner(learner_name)
     learner.train(train_fs, grid_search=False)
@@ -178,13 +262,40 @@ def test_sparse_predict():
                                               'RandomForestClassifier',
                                               'AdaBoostClassifier',
                                               'MultinomialNB',
-                                              'KNeighborsClassifier'],
+                                              'KNeighborsClassifier',
+                                              'RidgeClassifier',
+                                              'MLPClassifier'],
                                              [(0.45, 0.52), (0.52, 0.5),
                                               (0.48, 0.5), (0.49, 0.5),
-                                              (0.43, 0), (0.53, 0.57)]):
+                                              (0.43, 0), (0.53, 0.57),
+                                              (0.49, 0.49), (0.5, 0.49)]):
         yield check_sparse_predict, learner_name, expected_scores[0], False
         if learner_name != 'MultinomialNB':
             yield check_sparse_predict, learner_name, expected_scores[1], True
+
+
+def test_mlp_classification():
+    train_fs, test_fs = make_classification_data(num_examples=600,
+                                                 train_test_ratio=0.8,
+                                                 num_labels=3,
+                                                 num_features=5)
+
+    # train an MLPCLassifier on the training data and evalute on the
+    # testing data
+    learner = Learner('MLPClassifier')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=ConvergenceWarning)
+        learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated
+    accuracy = accuracy_score(predictions, test_fs.labels)
+    assert_almost_equal(accuracy, 0.858, places=3)
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
@@ -210,6 +321,38 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
     assert_almost_equal(test_score, expected_score)
 
 
+def check_dummy_classifier_predict(model_args, train_labels, expected_output):
+
+    # create hard-coded featuresets based with known labels
+    train_fs = FeatureSet('classification_train',
+                          ['TrainExample{}'.format(i) for i in range(20)],
+                          labels=train_labels,
+                          features=[{"feature": i} for i in range(20)])
+
+    test_fs = FeatureSet('classification_test',
+                         ['TestExample{}'.format(i) for i in range(10)],
+                         features=[{"feature": i} for i in range(20, 30)])
+
+    # Ensure predictions are as expectedfor the given strategy
+    learner = Learner('DummyClassifier', model_kwargs=model_args)
+    learner.train(train_fs, grid_search=False)
+    predictions = learner.predict(test_fs)
+    eq_(np.array_equal(expected_output, predictions), True)
+
+
+def test_dummy_classifier_predict():
+
+    # create a known set of labels
+    train_labels = ([0] * 14) + ([1] * 6)
+    for (model_args, expected_output) in zip([{"strategy": "stratified"},
+                                              {"strategy": "most_frequent"},
+                                              {"strategy": "constant", "constant": 1}],
+                                             [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]),
+                                              np.zeros(10),
+                                              np.ones(10)*1]):
+        yield check_dummy_classifier_predict, model_args, train_labels, expected_output
+
+
 def test_sparse_predict_sampler():
     yield check_sparse_predict_sampler, False
     yield check_sparse_predict_sampler, True
@@ -233,6 +376,12 @@ def make_single_file_featureset_data():
 
     # Write test feature set to a file
     test_path = join(_my_dir, 'test', 'test_single_file.jsonlines')
+    writer = NDJWriter(test_path, test_fs)
+    writer.write()
+
+    # Also write another test feature set that has fewer features than the training set
+    test_fs.filter(features=['f01', 'f02'])
+    test_path = join(_my_dir, 'test', 'test_single_file_subset.jsonlines')
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
@@ -273,6 +422,72 @@ def test_train_file_test_file():
                                        '_f1.results.json'))) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['score'], 0.9491525423728813)
+
+
+def test_predict_on_subset_with_existing_model():
+    """
+    Test generating predictions on subset with existing model
+    """
+    # Create data files
+    make_single_file_featureset_data()
+
+    # train and save a model on the training file
+    train_fs = NDJReader.for_path(join(_my_dir, 'train', 'train_single_file.jsonlines')).read()
+    learner = Learner('RandomForestClassifier')
+    learner.train(train_fs, grid_search=True, grid_objective="accuracy")
+    model_filename = join(_my_dir, 'output', ('train_test_single_file_train_train_'
+                                              'single_file.jsonlines_test_test_single'
+                                              '_file_subset.jsonlines_RandomForestClassifier'
+                                              '.model'))
+
+    learner.save(model_filename)
+
+    # Run experiment
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file_saved_subset"
+                                                            ".template.cfg"),
+                                                       join(_my_dir, 'train', 'train_single_file.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file_subset.'
+                                                            'jsonlines'))
+    run_configuration(config_path, quiet=True, overwrite=False)
+
+    # Check results
+    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
+                                       'single_file.jsonlines_test_test_single'
+                                       '_file_subset.jsonlines_RandomForestClassifier'
+                                       '.results.json'))) as f:
+        result_dict = json.load(f)[0]
+    assert_almost_equal(result_dict['accuracy'], 0.7333333)
+
+
+def test_train_file_test_file_ablation():
+    """
+    Test that specifying ablation with train and test file is ignored
+    """
+    # Create data files
+    make_single_file_featureset_data()
+
+    # Run experiment
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_single_file"
+                                                            ".template.cfg"),
+                                                       join(_my_dir, 'train',
+                                                            'train_single_file'
+                                                            '.jsonlines'),
+                                                       join(_my_dir, 'test',
+                                                            'test_single_file.'
+                                                            'jsonlines'))
+    run_configuration(config_path, quiet=True, ablation=None)
+
+    # check that we see the message that ablation was ignored in the experiment log
+    # Check experiment log output
+    with open(join(_my_dir,
+                   'output',
+                   'train_test_single_file.log')) as f:
+        cv_file_pattern = re.compile('Not enough featuresets for ablation. Ignoring.')
+        matches = re.findall(cv_file_pattern, f.read())
+        eq_(len(matches), 1)
 
 
 @raises(ValueError)
@@ -341,11 +556,15 @@ def check_results_with_unseen_labels(res, n_labels, new_label_list):
      score,
      result_dict,
      model_params,
-     grid_score) = res
+     grid_score,
+     additional_scores) = res
 
     # check that the new label is included into the results
     for output in [confusion_matrix, result_dict]:
         eq_(len(output), n_labels)
+
+    # check that any additional metrics are zero
+    eq_(additional_scores, {})
 
     # check that all metrics for new label are 0
     for label in new_label_list:
@@ -376,9 +595,9 @@ def test_new_labels_in_test_set_change_order():
     train_fs, test_fs = make_classification_data(num_labels=3,
                                                  train_test_ratio=0.8)
     # change train labels to create a gap
-    train_fs.labels = train_fs.labels*10
+    train_fs.labels = train_fs.labels * 10
     # add new test labels
-    test_fs.labels = test_fs.labels*10
+    test_fs.labels = test_fs.labels * 10
     test_fs.labels[-3:] = 15
 
     learner = Learner('SVC')
@@ -395,7 +614,7 @@ def test_all_new_labels_in_test():
     train_fs, test_fs = make_classification_data(num_labels=3,
                                                  train_test_ratio=0.8)
     # change all test labels
-    test_fs.labels = test_fs.labels+3
+    test_fs.labels = test_fs.labels + 3
 
     learner = Learner('SVC')
     learner.train(train_fs, grid_search=False)
@@ -405,7 +624,9 @@ def test_all_new_labels_in_test():
 
 
 # the function to create data with labels that look like floats
-def make_float_class_data():
+# that are either encoded as strings or not depending on the
+# keyword argument
+def make_float_class_data(labels_as_strings=False):
     """
     We want to create data that has labels that look like
     floats to make sure they are preserved correctly
@@ -413,6 +634,8 @@ def make_float_class_data():
 
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, 76)]
     y = [1.2] * 25 + [1.5] * 25 + [1.8] * 25
+    if labels_as_strings:
+        y = list(map(str, y))
     X = np.vstack([np.identity(25), np.identity(25), np.identity(25)])
     feature_names = ['f{}'.format(i) for i in range(1, 6)]
     features = []
@@ -422,20 +645,20 @@ def make_float_class_data():
     return FeatureSet('float-classes', ids, features=features, labels=y)
 
 
-def test_float_classes():
+def test_xval_float_classes_as_strings():
     """
-    Test classification with labels that look like floats
-    Make sure that they have been converted to strings as expected
+    Test that classification with float labels encoded as strings works
     """
 
-    float_class_fs = make_float_class_data()
+    float_class_fs = make_float_class_data(labels_as_strings=True)
     prediction_prefix = join(_my_dir, 'output', 'float_class')
     learner = Learner('LogisticRegression')
     learner.cross_validate(float_class_fs,
+                           grid_search=True,
                            grid_objective='accuracy',
                            prediction_prefix=prediction_prefix)
 
-    with open(prediction_prefix + '.predictions', 'r') as f:
+    with open(prediction_prefix + '_predictions.tsv', 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
@@ -443,3 +666,121 @@ def test_float_classes():
             assert p in ['1.2', '1.5', '1.8']
 
 
+@raises(ValueError)
+def check_bad_xval_float_classes(do_stratified_xval):
+
+    float_class_fs = make_float_class_data()
+    prediction_prefix = join(_my_dir, 'output', 'float_class')
+    learner = Learner('LogisticRegression')
+    learner.cross_validate(float_class_fs,
+                           stratified=do_stratified_xval,
+                           grid_search=True,
+                           grid_objective='accuracy',
+                           prediction_prefix=prediction_prefix)
+
+
+def test_bad_xval_float_classes():
+
+    yield check_bad_xval_float_classes, True
+    yield check_bad_xval_float_classes, False
+
+
+def check_train_and_score_function(model_type):
+    """
+    Check that the _train_and_score() function works as expected
+    """
+
+    # create train and test data
+    (train_fs,
+     test_fs) = make_classification_data(num_examples=500,
+                                         train_test_ratio=0.7,
+                                         num_features=5,
+                                         use_feature_hashing=False,
+                                         non_negative=True)
+
+    # call _train_and_score() on this data
+    estimator_name = 'LogisticRegression' if model_type == 'classifier' else 'Ridge'
+    metric = 'accuracy' if model_type == 'classifier' else 'pearson'
+    learner1 = Learner(estimator_name)
+    train_score1, test_score1 = _train_and_score(learner1, train_fs, test_fs, metric)
+
+    # this should yield identical results when training another instance
+    # of the same learner without grid search and shuffling and evaluating
+    # that instance on the train and the test set
+    learner2 = Learner(estimator_name)
+    learner2.train(train_fs, grid_search=False, shuffle=False)
+    train_score2 = learner2.evaluate(train_fs, output_metrics=[metric])[-1][metric]
+    test_score2 = learner2.evaluate(test_fs, output_metrics=[metric])[-1][metric]
+
+    eq_(train_score1, train_score2)
+    eq_(test_score1, test_score2)
+
+
+def test_train_and_score_function():
+    yield check_train_and_score_function, 'classifier'
+    yield check_train_and_score_function, 'regressor'
+
+
+@raises(ValueError)
+def check_learner_api_grid_search_no_objective(task='train'):
+
+    (train_fs,
+     test_fs) = make_classification_data(num_examples=500,
+                                         train_test_ratio=0.7,
+                                         num_features=5,
+                                         use_feature_hashing=False,
+                                         non_negative=True)
+    learner = Learner('LogisticRegression')
+    if task == 'train':
+        _ = learner.train(train_fs)
+    else:
+        _ = learner.cross_validate(train_fs)
+
+
+def test_learner_api_grid_search_no_objective():
+    yield check_learner_api_grid_search_no_objective, 'train'
+    yield check_learner_api_grid_search_no_objective, 'cross_validate'
+
+
+def test_learner_api_load_into_existing_instance():
+    """
+    Check that `Learner.load()` works as expected
+    """
+
+    # create a LinearSVC instance and train it on some data
+    learner1 = Learner('LinearSVC')
+    (train_fs,
+     test_fs) = make_classification_data(num_examples=200,
+                                         num_features=5,
+                                         use_feature_hashing=False,
+                                         non_negative=True)
+    learner1.train(train_fs, grid_search=False)
+
+    # now use `load()` to replace the existing instance with a
+    # different saved learner
+    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.{}.model'.format(sys.version_info[0]))
+    learner1.load(other_model_file)
+
+    # now load the saved model into another instance using the class method
+    # `from_file()`
+    learner2 = Learner.from_file(other_model_file)
+
+    # check that the two instances are now basically the same
+    eq_(learner1.model_type, learner2.model_type)
+    eq_(learner1.model_params, learner2.model_params)
+    eq_(learner1.model_kwargs, learner2.model_kwargs)
+
+
+@raises(ValueError)
+def test_hashing_for_multinomialNB():
+    (train_fs, _) = make_classification_data(num_examples=200,
+                                             use_feature_hashing=True)
+    learner = Learner('MultinomialNB', sampler='RBFSampler')
+    learner.train(train_fs, grid_search=False)
+
+
+@raises(ValueError)
+def test_sampling_for_multinomialNB():
+    (train_fs, _) = make_classification_data(num_examples=200)
+    learner = Learner('MultinomialNB', sampler='RBFSampler')
+    learner.train(train_fs, grid_search=False)

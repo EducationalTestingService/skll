@@ -7,7 +7,9 @@ from __future__ import (absolute_import, division, print_function,
 
 import re
 
-from os.path import abspath, dirname, join
+from collections import OrderedDict
+from math import floor, log10
+from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from numpy.random import RandomState
@@ -15,7 +17,7 @@ from sklearn.datasets.samples_generator import (make_classification,
                                                 make_regression)
 from sklearn.feature_extraction import FeatureHasher
 
-from skll.data import FeatureSet
+from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
 
 _my_dir = abspath(dirname(__file__))
@@ -40,22 +42,21 @@ def fill_in_config_paths(config_template_path):
     to_fill_in = ['log']
 
     if task != 'learning_curve':
-      to_fill_in.append('predictions')
+        to_fill_in.append('predictions')
 
     if task not in ['cross_validate', 'learning_curve']:
         to_fill_in.append('models')
 
-    if task in ['cross_validate', 'evaluate', 'learning_curve']:
+    if task in ['cross_validate', 'evaluate', 'learning_curve', 'train']:
         to_fill_in.append('results')
 
     for d in to_fill_in:
         config.set("Output", d, join(output_dir))
 
     if task == 'cross_validate':
-        cv_folds_file = config.get("Input", "cv_folds_file")
-        if cv_folds_file:
-            config.set("Input", "cv_folds_file",
-                       join(train_dir, cv_folds_file))
+        folds_file = config.get("Input", "folds_file")
+        if folds_file:
+            config.set("Input", "folds_file", join(train_dir, folds_file))
 
     if task == 'predict' or task == 'evaluate':
         config.set("Input", "test_directory", test_dir)
@@ -113,10 +114,10 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
         config.set("Output", d, join(output_dir))
 
     if task == 'cross_validate':
-        cv_folds_file = config.get("Input", "cv_folds_file")
-        if cv_folds_file:
-            config.set("Input", "cv_folds_file",
-                       join(train_dir, cv_folds_file))
+        folds_file = config.get("Input", "folds_file")
+        if folds_file:
+            config.set("Input", "folds_file",
+                       join(train_dir, folds_file))
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
@@ -148,13 +149,14 @@ def fill_in_config_options(config_template_path,
                             'test_file', 'featuresets', 'featureset_names',
                             'feature_hasher', 'hasher_features', 'learners',
                             'sampler', 'shuffle', 'feature_scaling',
-                            'learning_curve_cv_folds_list',
+                            'learning_curve_cv_folds_list', 'folds_file',
                             'learning_curve_train_sizes', 'fixed_parameters',
                             'num_cv_folds', 'bad_option', 'duplicate_option'],
                   'Tuning': ['probability', 'grid_search', 'objective',
+                             'use_folds_file_for_grid_search', 'grid_search_folds',
                              'param_grids', 'objectives', 'duplicate_option'],
-                  'Output': ['results', 'log', 'models',
-                             'predictions']}
+                  'Output': ['results', 'log', 'models', 'metrics',
+                             'predictions', 'pipeline']}
 
     for section in to_fill_in:
         for param_name in to_fill_in[section]:
@@ -201,10 +203,49 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
     return new_config_path
 
 
+def create_jsonlines_feature_files(path):
+
+    # we only need to create the feature files if they
+    # don't already exist under the given path
+    feature_files_to_create = [join(path, 'f{}.jsonlines'.format(i)) for i in range(5)]
+    if all([exists(ff) for ff in feature_files_to_create]):
+        return
+    else:
+        num_examples = 1000
+        np.random.seed(1234567890)
+
+        # Create lists we will write files from
+        ids = []
+        features = []
+        labels = []
+        for j in range(num_examples):
+            y = "dog" if j % 2 == 0 else "cat"
+            ex_id = "{}{}".format(y, j)
+            x = {"f{}".format(feat_num): np.random.randint(0, 4) for feat_num in
+                 range(5)}
+            x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
+            ids.append(ex_id)
+            labels.append(y)
+            features.append(x)
+
+        for i in range(5):
+            file_path = join(path, 'f{}.jsonlines'.format(i))
+            sub_features = []
+            for example_num in range(num_examples):
+                feat_num = i
+                x = {"f{}".format(feat_num):
+                     features[example_num]["f{}".format(feat_num)]}
+                sub_features.append(x)
+            fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels)
+            writer = NDJWriter(file_path, fs)
+            writer.write()
+
+
 def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              num_features=10, use_feature_hashing=False,
                              feature_bins=4, num_labels=2,
-                             empty_labels=False, feature_prefix='f',
+                             empty_labels=False, string_label_list=None,
+                             feature_prefix='f',
                              class_weights=None, non_negative=False,
                              one_string_feature=False, num_string_values=4,
                              random_state=1234567890):
@@ -218,6 +259,11 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
                                n_redundant=0, n_classes=num_labels,
                                weights=class_weights,
                                random_state=random_state)
+
+    if string_label_list:
+        assert(len(string_label_list) == num_labels)
+        label_to_string = np.vectorize(lambda n: string_label_list[n])
+        y = label_to_string(y)
 
     # if we were told to only generate non-negative features, then
     # we can simply take the absolute values of the generated features
@@ -273,17 +319,27 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     return (train_fs, test_fs)
 
 
-def make_regression_data(num_examples=100, train_test_ratio=0.5,
-                         num_features=2, sd_noise=1.0,
+def make_regression_data(num_examples=100,
+                         train_test_ratio=0.5,
+                         num_features=2,
+                         sd_noise=1.0,
                          use_feature_hashing=False,
                          feature_bins=4,
                          start_feature_num=1,
                          random_state=1234567890):
 
+    # if we are doing feature hashing and we have asked for more
+    # feature bins than number of total features, we need to
+    # handle that because `make_regression()` doesn't know
+    # about hashing
+    if use_feature_hashing and num_features < feature_bins:
+        num_features = feature_bins
+
     # use sklearn's make_regression to generate the data for us
     X, y, weights = make_regression(n_samples=num_examples,
                                     n_features=num_features,
-                                    noise=sd_noise, random_state=random_state,
+                                    noise=sd_noise,
+                                    random_state=random_state,
                                     coef=True)
 
     # since we want to use SKLL's FeatureSet class, we need to
@@ -291,13 +347,43 @@ def make_regression_data(num_examples=100, train_test_ratio=0.5,
     ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
-    feature_names = ['f{:02d}'.format(n) for n
-                     in range(start_feature_num,
-                              start_feature_num + num_features)]
+    index_width_for_feature_name = int(floor(log10(num_features))) + 1
+    feature_names = []
+    for n in range(start_feature_num, start_feature_num + num_features):
+        index_str = str(n).zfill(index_width_for_feature_name)
+        feature_name = 'f{}'.format(index_str)
+        feature_names.append(feature_name)
     features = [dict(zip(feature_names, row)) for row in X]
 
+    # At this point the labels are generated using unhashed features
+    # even if we want to do feature hashing. `make_regression()` from
+    # sklearn doesn't know anything about feature hashing, so we need
+    # a hack here to compute the updated labels ourselves
+    # using the same command that sklearn uses inside `make_regression()`
+    # which is to generate the X and the weights and then compute the
+    # y as the dot product of the two. This y will then be used as our
+    # labels instead of the original y we got from `make_regression()`.
+    # Note that we only want to use the number of weights that are
+    # equal to the number of feature bins for the hashing
+    if use_feature_hashing:
+        feature_hasher = FeatureHasher(n_features=feature_bins)
+        hashed_X = feature_hasher.fit_transform(features)
+        y = hashed_X.dot(weights[:feature_bins])
+
     # convert the weights array into a dictionary for convenience
-    weightdict = dict(zip(feature_names, weights))
+    # if we are using feature hashing, we need to use the names
+    # that would be output by `model_params()` instead of the
+    # original names since that's what we would get from SKLL
+    if use_feature_hashing:
+        index_width_for_feature_name = int(floor(log10(feature_bins))) + 1
+        hashed_feature_names = []
+        for i in range(feature_bins):
+            index_str = str(i + 1).zfill(index_width_for_feature_name)
+            feature_name = 'hashed_feature_{}'.format(index_str)
+            hashed_feature_names.append(feature_name)
+        weightdict = dict(zip(hashed_feature_names, weights[:feature_bins]))
+    else:
+        weightdict = dict(zip(feature_names, weights))
 
     # split everything into training and testing portions
     num_train_examples = int(round(train_test_ratio * num_examples))

@@ -22,6 +22,7 @@ class MajorityClassLearner(BaseEstimator, ClassifierMixin):
             if count > max_count:
                 self.majority_class = label
                 max_count = count
+        return self
 
     def predict(self, X):
         return np.array([self.majority_class for x in range(X.shape[0])])

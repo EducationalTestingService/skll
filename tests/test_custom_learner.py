@@ -19,10 +19,11 @@ from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
+from nose.tools import raises
 from numpy.testing import assert_array_equal
 from skll.data import NDJWriter
 from skll.experiments import run_configuration
-from skll.learner import _DEFAULT_PARAM_GRIDS
+from skll.learner import _DEFAULT_PARAM_GRIDS, Learner
 
 from utils import fill_in_config_paths, make_classification_data
 
@@ -119,7 +120,7 @@ def test_majority_class_custom_learner():
     outprefix = 'test_majority_class_custom_learner'
 
     preds = read_predictions(join(_my_dir, 'output',
-                                  ('{}_{}_MajorityClassLearner.predictions'
+                                  ('{}_{}_MajorityClassLearner_predictions.tsv'
                                    .format(outprefix, outprefix))))
     expected = np.array([float(num_labels - 1) for x in preds])
     assert_array_equal(preds, expected)
@@ -158,11 +159,11 @@ def test_logistic_custom_learner():
     outprefix = 'test_logistic_custom_learner'
     preds = read_predictions(join(_my_dir, 'output',
                                   ('{}_{}_CustomLogisticRegressionWrapper'
-                                   '.predictions'.format(outprefix,
-                                                         outprefix))))
+                                   '_predictions.tsv'.format(outprefix,
+                                                             outprefix))))
 
     expected = read_predictions(join(_my_dir, 'output',
-                                     ('{}_{}_LogisticRegression.predictions'
+                                     ('{}_{}_LogisticRegression_predictions.tsv'
                                       .format(outprefix, outprefix))))
 
     assert_array_equal(preds, expected)
@@ -204,8 +205,7 @@ def test_custom_learner_model_loading():
     outprefix = 'test_model_custom_learner'
     pred_file = join(_my_dir, 'output',
                      '{}_{}_CustomLogisticRegressionWrapper'
-                     '.predictions'.format(outprefix,
-                                           outprefix))
+                     '_predictions.tsv'.format(outprefix, outprefix))
     preds1 = read_predictions(pred_file)
     os.unlink(pred_file)
 
@@ -222,3 +222,14 @@ def test_custom_learner_model_loading():
 
     # make sure that they are the same as before
     assert_array_equal(preds1, preds2)
+
+
+@raises(ValueError)
+def test_custom_learner_api_missing_file():
+    _ = Learner('CustomType')
+
+
+@raises(ValueError)
+def test_custom_learner_api_bad_extension():
+    other_dir = join(_my_dir, 'other')
+    _ = Learner('_CustomLogisticRegressionWrapper', custom_learner_path=join(other_dir, 'custom_learner.txt'))

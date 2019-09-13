@@ -3,6 +3,8 @@
 Classes related to storing/merging feature sets.
 
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
+:author: Jeremy Biggs (jbiggs@ets.org)
 :organization: ETS
 """
 
@@ -23,30 +25,39 @@ class FeatureSet(object):
 
     """
     Encapsulation of all of the features, values, and metadata about a given
-    set of data.
+    set of data. This replaces `ExamplesTuple` from older versions of SKLL.
 
-    .. warning::
-        FeatureSets can only be equal if the order of the instances is
-        identical because these are stored as lists/arrays.
+    Parameters
+    ----------
+    name : str
+        The name of this feature set.
+    ids : np.array
+        Example IDs for this set.
+    labels : np.array, optional
+        labels for this set.
+        Defaults to ``None``.
+    feature : list of dict or array-like, optional
+        The features for each instance represented as either a
+        list of dictionaries or an array-like (if `vectorizer` is
+        also specified).
+        Defaults to ``None``.
+    vectorizer : DictVectorizer or FeatureHasher, optional
+        Vectorizer which will be used to generate the feature matrix.
+        Defaults to ``None``.
 
-    This replaces ``ExamplesTuple`` from older versions.
+    Warnings
+    --------
+    FeatureSets can only be equal if the order of the instances is
+    identical because these are stored as lists/arrays. Since scikit-learn's
+    `DictVectorizer` automatically sorts the underlying feature matrix
+    if it is sparse, we do not do any sorting before checking for equality.
+    This is not a problem because we _always_ use sparse matrices with
+    `DictVectorizer` when creating FeatureSets.
 
-    :param name: The name of this feature set.
-    :type name: str
-    :param ids: Example IDs for this set.
-    :type ids: np.array
-    :param labels: labels for this set.
-    :type labels: np.array
-    :param features: The features for each instance represented as either a
-                     list of dictionaries or an array-like (if `vectorizer` is
-                     also specified).
-    :type features: list of dict or array-like
-    :param vectorizer: Vectorizer which will be used to generate the feature matrix.
-    :type vectorizer: DictVectorizer or FeatureHasher
-
-    .. note::
-       If ids, labels, and/or features are not None, the number of rows in
-       each array must be equal.
+    Notes
+    -----
+    If ids, labels, and/or features are not None, the number of rows in
+    each array must be equal.
     """
 
     def __init__(self, name, ids, labels=None, features=None,
@@ -86,7 +97,12 @@ class FeatureSet(object):
 
     def __contains__(self, value):
         """
-        Check if example ID is in set
+        Check if example ID is in the FeatureSet.
+
+        Parameters
+        ----------
+        value
+            The value to check.
         """
         return value in self.ids
 
@@ -94,18 +110,16 @@ class FeatureSet(object):
         """
         Check whether two featuresets are the same.
 
-        .. note::
-           We consider feature values to be equal if any differences are in the
-           sixth decimal place or higher.
-        """
+        Parameters
+        ----------
+        other : skll.FeatureSet
+            The other ``FeatureSet`` to check equivalence with.
 
-        # We need to sort the indices for the underlying
-        # feature sparse matrix in case we haven't done
-        # so already.
-        if not self.features.has_sorted_indices:
-            self.features.sort_indices()
-        if not other.features.has_sorted_indices:
-            other.features.sort_indices()
+        Note
+        ----
+        We consider feature values to be equal if any differences are in the
+        sixth decimal place or higher.
+        """
 
         return (self.ids.shape == other.ids.shape and
                 self.labels.shape == other.labels.shape and
@@ -127,23 +141,45 @@ class FeatureSet(object):
                 raise ValueError('FeatureSets can only be iterated through if '
                                  'they use a DictVectorizer for their feature '
                                  'vectorizer.')
-            for id_, label_, feats in zip(self.ids, self.labels,
-                                          self.features):
+            for id_, label_, feats in zip(self.ids, self.labels, self.features):
+
+                # reshape to a 2D matrix if we are not using a sparse matrix
+                # to store the features
+                feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
+
                 # When calling inverse_transform we have to add [0] to get the
                 # results for the current instance because it always returns a
                 # 2D array
-                yield (id_, label_,
-                       self.vectorizer.inverse_transform(feats)[0])
+                yield (id_, label_, self.vectorizer.inverse_transform(feats)[0])
         else:
             return
 
     def __len__(self):
+        """
+        The number of rows in the ``FeatureSet`` instance.
+        """
         return self.features.shape[0]
 
     def __add__(self, other):
         """
         Combine two feature sets to create a new one.  This is done assuming
         they both have the same instances with the same IDs in the same order.
+
+        Parameters
+        ----------
+        other : skll.FeatureSet
+            The other ``FeatureSet`` to add to this one.
+
+        Raises
+        ------
+        ValueError
+            If IDs are not in the same order in each ``FeatureSet`` instance.
+        ValueError
+            If vectorizers are different between the two ``FeatureSet`` instances.
+        ValueError
+            If there are duplicate feature names.
+        ValueError
+            If there are conflicting labels.
         """
 
         # Check that the sets of IDs are equal
@@ -206,28 +242,40 @@ class FeatureSet(object):
 
     def filter(self, ids=None, labels=None, features=None, inverse=False):
         """
-        Removes or keeps features and/or examples from the Featureset depending
-        on the passed in parameters.
+        Removes or keeps features and/or examples from the `Featureset` depending
+        on the parameters. Filtering is done in-place.
 
-        :param ids: Examples to keep in the FeatureSet. If `None`, no ID
-                    filtering takes place.
-        :type ids: list of str/float
-        :param labels: labels that we want to retain examples for. If `None`,
-                        no label filtering takes place.
-        :type labels: list of str/float
-        :param features: Features to keep in the FeatureSet. To help with
-                         filtering string-valued features that were converted
-                         to sequences of boolean features when read in, any
-                         features in the FeatureSet that contain a `=` will be
-                         split on the first occurrence and the prefix will be
-                         checked to see if it is in `features`.
-                         If `None`, no feature filtering takes place.
-                         Cannot be used if FeatureSet uses a FeatureHasher for
-                         vectorization.
-        :type features: list of str
-        :param inverse: Instead of keeping features and/or examples in lists,
-                        remove them.
-        :type inverse: bool
+        Parameters
+        ----------
+        ids : list of str/float, optional
+            Examples to keep in the FeatureSet. If `None`, no ID
+            filtering takes place.
+            Defaults to ``None``.
+        labels : list of str/float, optional
+            Labels that we want to retain examples for. If `None`,
+            no label filtering takes place.
+            Defaults to ``None``.
+        features : list of str, optional
+            Features to keep in the FeatureSet. To help with
+            filtering string-valued features that were converted
+            to sequences of boolean features when read in, any
+            features in the FeatureSet that contain a `=` will be
+            split on the first occurrence and the prefix will be
+            checked to see if it is in `features`.
+            If `None`, no feature filtering takes place.
+            Cannot be used if FeatureSet uses a FeatureHasher for
+            vectorization.
+            Defaults to ``None``.
+        inverse : bool, optional
+            Instead of keeping features and/or examples in lists,
+            remove them.
+            Defaults to ``False``.
+
+        Raises
+        ------
+        ValueError
+            If attempting to use features to filter a ``FeatureSet`` that
+            uses a ``FeatureHasher`` vectorizer.
         """
         # Construct mask that indicates which examples to keep
         mask = np.ones(len(self), dtype=bool)
@@ -264,28 +312,49 @@ class FeatureSet(object):
     def filtered_iter(self, ids=None, labels=None, features=None,
                       inverse=False):
         """
-        A version of ``__iter__`` that retains only the specified features
+        A version of `__iter__` that retains only the specified features
         and/or examples from the output.
 
-        :param ids: Examples in the FeatureSet to keep. If `None`, no ID
-                    filtering takes place.
-        :type ids: list of str/float
-        :param labels: labels that we want to retain examples for. If `None`,
-                       no label filtering takes place.
-        :type labels: list of str/float
-        :param features: Features in the FeatureSet to keep. To help with
-                         filtering string-valued features that were converted
-                         to sequences of boolean features when read in, any
-                         features in the FeatureSet that contain a `=` will be
-                         split on the first occurrence and the prefix will be
-                         checked to see if it is in `features`.
-                         If `None`, no feature filtering takes place.
-                         Cannot be used if FeatureSet uses a FeatureHasher for
-                         vectorization.
-        :type features: list of str
-        :param inverse: Instead of keeping features and/or examples in lists,
-                        remove them.
-        :type inverse: bool
+        Parameters
+        ----------
+        ids : list of str/float, optional
+            Examples to keep in the ``FeatureSet``. If ``None``, no ID
+            filtering takes place.
+            Defaults to ``None``.
+        labels : list of str/float, optional
+            Labels that we want to retain examples for. If ``None``,
+            no label filtering takes place.
+            Defaults to ``None``.
+        features : list of str, optional
+            Features to keep in the ``FeatureSet``. To help with
+            filtering string-valued features that were converted
+            to sequences of boolean features when read in, any
+            features in the ``FeatureSet`` that contain a `=` will be
+            split on the first occurrence and the prefix will be
+            checked to see if it is in ``features``.
+            If `None`, no feature filtering takes place.
+            Cannot be used if ``FeatureSet`` uses a FeatureHasher for
+            vectorization.
+            Defaults to ``None``.
+        inverse : bool, optional
+            Instead of keeping features and/or examples in lists,
+            remove them.
+            Defaults to ``False``.
+
+        Yields
+        ------
+        id_ : str
+            The ID of the example.
+        label_ : str
+            The label of the example.
+        feat_dict : dict
+            The feature dictionary, with feature name as the key
+            and example value as the value.
+
+        Raises
+        ------
+        ValueError
+            If the vectorizer is not a `DictVectorizer`.
         """
         if self.features is not None and not isinstance(self.vectorizer,
                                                         DictVectorizer):
@@ -300,6 +369,10 @@ class FeatureSet(object):
             # Skip instances with labels not in filter
             if labels is not None and (label_ in labels) == inverse:
                 continue
+
+            # reshape to a 2D matrix if we are not using a sparse matrix
+            # to store the features
+            feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
             feat_dict = self.vectorizer.inverse_transform(feats)[0]
             if features is not None:
                 feat_dict = {name: value for name, value in
@@ -312,7 +385,18 @@ class FeatureSet(object):
 
     def __sub__(self, other):
         """
-        :returns: a copy of ``self`` with all features in ``other`` removed.
+        Subset ``FeatureSet`` instance by removing all the features from the
+        other ``FeatureSet`` instance.
+
+        Parameters
+        ----------
+        other : skll.FeatureSet
+            The other ``FeatureSet`` containing the features that should
+            be removed from this ``FeatureSet``.
+
+        Returns
+        -------
+        A copy of `self` with all features in `other` removed.
         """
         new_set = deepcopy(self)
         new_set.filter(features=other.vectorizer.feature_names_,
@@ -322,30 +406,48 @@ class FeatureSet(object):
     @property
     def has_labels(self):
         """
-        :returns: Whether or not this FeatureSet has any finite labels.
+        Check if ``FeatureSet`` has finite labels.
+
+        Returns
+        -------
+        has_labels : bool
+            Whether or not this FeatureSet has any finite labels.
         """
-        if self.labels is not None:
-            return not (np.issubdtype(self.labels.dtype, float) and
+        # make sure that labels is not None or a list of Nones
+        if self.labels is not None and not all(label is None for label in self.labels):
+            # then check that they are not a list of NaNs
+            return not (np.issubdtype(self.labels.dtype, np.floating) and
                         np.isnan(np.min(self.labels)))
         else:
             return False
 
     def __str__(self):
         """
-        :returns: a string representation of FeatureSet
+        Returns
+        -------
+        A string representation of ``FeatureSet``.
         """
         return str(self.__dict__)
 
     def __repr__(self):
         """
-        :returns:  a string representation of FeatureSet
+        Returns
+        -------
+        A string representation of ``FeatureSet``.
         """
         return repr(self.__dict__)
 
     def __getitem__(self, value):
         """
-        :returns: A specific example by row number, or if given a slice,
-                  a new FeatureSet containing a subset of the data.
+        Parameters
+        ----------
+        value
+            The value to retrieve.
+
+        Returns
+        -------
+        A specific example by row number or, if given a slice,
+        a new ``FeatureSet`` instance containing a subset of the data.
         """
         # Check if we're slicing
         if isinstance(value, slice):
@@ -367,24 +469,34 @@ class FeatureSet(object):
     @staticmethod
     def split_by_ids(fs, ids_for_split1, ids_for_split2=None):
         """
-        Split the given FeatureSet into two new FeatureSet instances based on
+        Split the ``FeatureSet`` into two new ``FeatureSet`` instances based on
         the given IDs for the two splits.
 
-        :param fs: The FeatureSet instance to split.
-        :type fs: FeatureSet
-        :param ids_for_split1: A list of example IDs which will be split out into
-                               the first FeatureSet instance. Note that the
-                               FeatureSet instance will respect the order of the
-                               specified IDs.
-        :type ids_for_split1: list of int
-        :param ids_for_split2: An optional ist of example IDs which will be
-                               split out into the second FeatureSet instance.
-                               Note that the FeatureSet instance will respect
-                               the order of the specified IDs. If this is
-                               not specified, then the second FeatureSet
-                               instance will contain the complement of the
-                               first set of IDs sorted in ascending order.
-        :type ids_for_split2: list of int, optional
+        Parameters
+        ----------
+        fs : skll.FeatureSet
+            The ``FeatureSet`` instance to split.
+        ids_for_split1 : list of int
+            A list of example IDs which will be split out into
+            the first ``FeatureSet`` instance. Note that the
+            FeatureSet instance will respect the order of the
+            specified IDs.
+        ids_for_split2 : list of int, optional
+            An optional ist of example IDs which will be
+            split out into the second ``FeatureSet`` instance.
+            Note that the ``FeatureSet`` instance will respect
+            the order of the specified IDs. If this is
+            not specified, then the second ``FeatureSet``
+            instance will contain the complement of the
+            first set of IDs sorted in ascending order.
+            Defaults to ``None``.
+
+        Returns
+        -------
+        fs1 : skll.FeatureSet
+            The first ``FeatureSet``.
+        fs2 : skll.FeatureSet
+            The second ``FeatureSet``.
         """
 
         # Note: an alternative way to implement this is to make copies
@@ -420,18 +532,27 @@ class FeatureSet(object):
     @staticmethod
     def from_data_frame(df, name, labels_column=None, vectorizer=None):
         """
-        Helper function to create a FeatureSet object from a `pandas.DataFrame`.
+        Helper function to create a ``FeatureSet`` instance from a `pandas.DataFrame`.
         Will raise an Exception if pandas is not installed in your environment.
-        `FeatureSet` `ids` will be the index on `df`.
+        The ``ids`` in the ``FeatureSet`` will be the index from the given frame.
 
-        :param df: The pandas.DataFrame object you'd like to use as a feature set.
-        :type df: pandas.DataFrame
-        :param name: The name of this feature set.
-        :type name: str
-        :param labels_column: The name of the column containing the labels (data to predict).
-        :type labels_column: str or None
-        :param vectorizer: Vectorizer which will be used to generate the feature matrix.
-        :type vectorizer: DictVectorizer or FeatureHasher
+        Parameters
+        ----------
+        df : pd.DataFrame
+            The pandas.DataFrame object to use as a ``FeatureSet``.
+        name : str
+            The name of the output ``FeatureSet`` instance.
+        labels_column : str, optional
+            The name of the column containing the labels (data to predict).
+            Defaults to ``None``.
+        vectorizer : DictVectorizer or FeatureHasher, optional
+            Vectorizer which will be used to generate the feature matrix.
+            Defaults to ``None``.
+
+        Returns
+        -------
+        feature_set : skll.FeatureSet
+            A ``FeatureSet`` instance generated from from the given data frame.
         """
         if labels_column:
             feature_columns = [column for column in df.columns if column != labels_column]

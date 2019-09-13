@@ -4,7 +4,7 @@
 Script that converts feature files from one format to another
 
 :author: Nitin Madnani (nmadnani@ets.org)
-:date: September 2013
+:organization: ETS
 """
 
 from __future__ import print_function, unicode_literals
@@ -19,14 +19,14 @@ from six import PY2
 
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import EXT_TO_READER
-from skll.data.writers import (ARFFWriter, DelimitedFileWriter, LibSVMWriter,
+from skll.data.writers import (ARFFWriter, CSVWriter, TSVWriter, LibSVMWriter,
                                EXT_TO_WRITER)
 from skll.version import __version__
 
 
 def _pair_to_dict_tuple(pair):
     """
-    Little helper method for constructing mappings from feature/class names to
+    A helper function for constructing mappings from feature/class names to
     numbers.
     """
     number, name = pair.split('=')
@@ -40,10 +40,13 @@ def main(argv=None):
     """
     Handles command line arguments and gets things started.
 
-    :param argv: List of arguments, as if specified on the command-line.
-                 If None, ``sys.argv[1:]`` is used instead.
-    :type argv: list of str
+    Parameters
+    ----------
+    argv : list of str
+        List of arguments, as if specified on the command-line.
+        If None, ``sys.argv[1:]`` is used instead.
     """
+
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Takes an input feature file and converts it to another \
@@ -60,12 +63,18 @@ def main(argv=None):
                         help='Name of the column which contains the instance \
                               IDs in ARFF, CSV, or TSV files.',
                         default='id')
-    parser.add_argument('-l', '--label_col',
-                        help='Name of the column which contains the class \
-                              labels in ARFF, CSV, or TSV files. For ARFF \
-                              files, this must be the final column to count as\
-                              the label.',
-                        default='y')
+    label_group = parser.add_mutually_exclusive_group(required=False)
+    label_group.add_argument('-l',
+                             '--label_col',
+                             help='Name of the column which contains the class \
+                                   labels in ARFF, CSV, or TSV files. For ARFF \
+                                   files, this must be the final column to count as\
+                                   the label.',
+                             default='y')
+    label_group.add_argument('--no_labels',
+                             action='store_true',
+                             default=False,
+                             help='Used to indicate that the input data has no labels.')
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
@@ -129,19 +138,22 @@ def main(argv=None):
         feat_vectorizer = None
         label_map = None
 
+    label_col = None if args.no_labels else args.label_col
+
     # Iterate through input file and collect the information we need
-    reader = EXT_TO_READER[input_extension](args.infile, quiet=args.quiet,
-                                            label_col=args.label_col,
+    reader = EXT_TO_READER[input_extension](args.infile,
+                                            quiet=args.quiet,
+                                            label_col=label_col,
                                             id_col=args.id_col)
     feature_set = reader.read()
     # write out the file in the requested output format
     writer_type = EXT_TO_WRITER[output_extension]
     writer_args = {'quiet': args.quiet}
-    if writer_type is DelimitedFileWriter:
-        writer_args['label_col'] = args.label_col
+    if writer_type is CSVWriter or writer_type is TSVWriter:
+        writer_args['label_col'] = label_col
         writer_args['id_col'] = args.id_col
     elif writer_type is ARFFWriter:
-        writer_args['label_col'] = args.label_col
+        writer_args['label_col'] = label_col
         writer_args['id_col'] = args.id_col
         writer_args['regression'] = args.arff_regression
         writer_args['relation'] = args.arff_relation

@@ -18,13 +18,15 @@ from collections import OrderedDict
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
+import pandas as pd
 from nose.tools import eq_, raises, assert_not_equal
 from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 
-from skll.data import FeatureSet, Writer, Reader
+import skll
+from skll.data import FeatureSet, Writer, Reader, NDJReader, NDJWriter
 from skll.data.readers import DictListReader
 from skll.experiments import _load_featureset
 from skll.learner import _DEFAULT_PARAM_GRIDS
@@ -52,6 +54,28 @@ def setup():
         os.makedirs(output_dir)
 
 
+def tearDown():
+    """
+    Clean up files created during testing.
+    """
+    for filetype in ['csv', 'jsonlines', 'libsvm', 'megam', 'tsv']:
+        filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
+        if exists(filepath):
+            os.unlink(filepath)
+
+    filepaths = [join(_my_dir, 'other', '{}.jsonlines'.format(x)) for x in ['test_string_ids', 'test_string_ids_df', 'test_string_labels_df']]
+    for filepath in filepaths:
+        if exists(filepath):
+            os.unlink(filepath)
+
+
+def _create_empty_file(filetype):
+    filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
+    with open(filepath, 'w'):
+        pass
+    return filepath
+
+
 @raises(ValueError)
 def test_empty_ids():
     """
@@ -71,6 +95,21 @@ def test_empty_ids():
 
     # create a feature set with ids set to None and raise ValueError
     FeatureSet('test', None, features=features, labels=y)
+
+
+@raises(ValueError)
+def check_empty_file_read(filetype, reader_type):
+    empty_filepath = _create_empty_file(filetype)
+    reader = getattr(skll.data, reader_type).for_path(empty_filepath)
+    _ = reader.read()
+
+
+def test_empty_file_read():
+    for filetype, reader_type in zip(['csv',  'jsonlines',
+                                      'libsvm', 'megam', 'tsv'],
+                                     ['CSVReader', 'NDJReader',
+                                      'LibSVMReader', 'MegaMReader', 'TSVReader']):
+        yield check_empty_file_read, filetype, reader_type
 
 
 def test_empty_labels():
@@ -103,8 +142,7 @@ def test_length():
 
 def test_string_feature():
     """
-    Test to make sure that string-valued features are properly
-    encoded as binary features
+    Test that string-valued features are properly encoded as binary features
     """
     # create a featureset that is derived from an original
     # set of features containing 3 numeric features and
@@ -317,6 +355,21 @@ def test_merge_missing_labels():
     # make sure that the labels are the same after merging
     assert_array_equal(fs12.labels, fs1.labels)
     assert_array_equal(fs21.labels, fs1.labels)
+
+
+@raises(ValueError)
+def test_write_hashed_featureset():
+    """
+    Test to check that hashed featuresets cannot be written out
+    """
+    fs, _ = make_classification_data(num_examples=100,
+                                     num_features=4,
+                                     use_feature_hashing=True,
+                                     feature_bins=2,
+                                     random_state=1234)
+    output_dir = join(_my_dir, 'output')
+    writer = NDJWriter(join(output_dir, 'foo.jsonlines'), fs)
+    writer.write()
 
 
 def test_subtract():
@@ -724,7 +777,7 @@ def test_dict_list_reader():
 
 
 # Tests related to converting featuresets
-def make_conversion_data(num_feat_files, from_suffix, to_suffix):
+def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=True):
     num_examples = 500
     num_feats_per_file = 7
 
@@ -737,33 +790,49 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
     # Create lists we will write files from
     ids = []
     features = []
-    labels = []
+    labels = [] if with_labels else None
     for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, j)
-        x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num
+        # if we are not using labels, we do not want zero-valued features
+        # because it may be the case that some subset of features end up
+        # being all 0 and if this subset ends up being written out to a file
+        # below, then for some formats (e.g., megam) nothing will get written
+        # out which can cause issues when reading this file
+        lowest_feature_value = 0 if with_labels else 1
+        x = {"f{:03d}".format(feat_num): np.random.randint(lowest_feature_value, 4 + lowest_feature_value) for feat_num
              in range(num_feat_files * num_feats_per_file)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
         ids.append(ex_id)
-        labels.append(y)
+        if with_labels:
+            labels.append(y)
         features.append(x)
+
     # Create vectorizers/maps for libsvm subset writing
     feat_vectorizer = DictVectorizer()
     feat_vectorizer.fit(features)
-    label_map = {label: num for num, label in
-                 enumerate(sorted({label for label in labels if
-                                   not isinstance(label, (int, float))}))}
-    # Add fake item to vectorizer for None
-    label_map[None] = '00000'
+    if with_labels:
+        label_map = {label: num for num, label in
+                     enumerate(sorted({label for label in labels if
+                                       not isinstance(label, (int, float))}))}
+        # Add fake item to vectorizer for None
+        label_map[None] = '00000'
+    else:
+        label_map = None
 
     # get the feature name prefix
     feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'),
                                             to_suffix.lstrip('.'))
 
+    # use '_unlabeled' as part of any file names when not using labels
+    with_labels_part = '' if with_labels else '_unlabeled'
+
     # Write out unmerged features in the `from_suffix` file format
     for i in range(num_feat_files):
-        train_path = join(convert_dir, '{}_{}{}'.format(feature_name_prefix,
-                                                        i, from_suffix))
+        train_path = join(convert_dir, '{}_{}{}{}'.format(feature_name_prefix,
+                                                          i,
+                                                          with_labels_part,
+                                                          from_suffix))
         sub_features = []
         for example_num in range(num_examples):
             feat_num = i * num_feats_per_file
@@ -777,26 +846,43 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix):
         if from_suffix == '.libsvm':
             Writer.for_path(train_path, train_fs,
                             label_map=label_map).write()
+        elif from_suffix in ['.arff', '.csv', '.tsv']:
+            label_col = 'y' if with_labels else None
+            Writer.for_path(train_path, train_fs, label_col=label_col).write()
         else:
             Writer.for_path(train_path, train_fs).write()
 
     # Write out the merged features in the `to_suffix` file format
-    train_path = join(convert_dir, '{}_all{}'.format(feature_name_prefix,
-                                                     to_suffix))
+    train_path = join(convert_dir, '{}{}_all{}'.format(feature_name_prefix,
+                                                       with_labels_part,
+                                                       to_suffix))
     train_fs = FeatureSet('train', ids, labels=labels, features=features,
                           vectorizer=feat_vectorizer)
+
+    # we need to do this to get around the FeatureSet using NaNs
+    # instead of None when there are no labels which causes problems
+    # later when comparing featuresets
+    if not with_labels:
+        train_fs.labels = [None] * len(train_fs.labels)
+
     if to_suffix == '.libsvm':
         Writer.for_path(train_path, train_fs,
                         label_map=label_map).write()
+    elif to_suffix in ['.arff', '.csv', '.tsv']:
+        label_col = 'y' if with_labels else None
+        Writer.for_path(train_path, train_fs, label_col=label_col).write()
     else:
         Writer.for_path(train_path, train_fs).write()
 
 
-def check_convert_featureset(from_suffix, to_suffix):
+def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
     num_feat_files = 5
 
     # Create test data
-    make_conversion_data(num_feat_files, from_suffix, to_suffix)
+    make_conversion_data(num_feat_files,
+                         from_suffix,
+                         to_suffix,
+                         with_labels=with_labels)
 
     # the path to the unmerged feature files
     dirpath = join(_my_dir, 'train', 'test_conversion')
@@ -805,30 +891,48 @@ def check_convert_featureset(from_suffix, to_suffix):
     feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'),
                                             to_suffix.lstrip('.'))
 
+    # use '_unlabeled' as part of any file names when not using labels
+    with_labels_part = '' if with_labels else '_unlabeled'
+
     # Load each unmerged feature file in the `from_suffix` format and convert
     # it to the `to_suffix` format
     for feature in range(num_feat_files):
-        input_file_path = join(dirpath, '{}_{}{}'.format(feature_name_prefix,
-                                                         feature,
-                                                         from_suffix))
-        output_file_path = join(dirpath, '{}_{}{}'.format(feature_name_prefix,
-                                                          feature, to_suffix))
-        skll_convert.main(['--quiet', input_file_path, output_file_path])
+        input_file_path = join(dirpath, '{}_{}{}{}'.format(feature_name_prefix,
+                                                           feature,
+                                                           with_labels_part,
+                                                           from_suffix))
+        output_file_path = join(dirpath, '{}_{}{}{}'.format(feature_name_prefix,
+                                                            feature,
+                                                            with_labels_part,
+                                                            to_suffix))
+        skll_convert_args = ['--quiet', input_file_path, output_file_path]
+        if not with_labels:
+            skll_convert_args.append('--no_labels')
+        skll_convert.main(skll_convert_args)
 
     # now load and merge all unmerged, converted features in the `to_suffix`
     # format
-    featureset = ['{}_{}'.format(feature_name_prefix, i) for i in
+    featureset = ['{}_{}{}'.format(feature_name_prefix, i, with_labels_part) for i in
                   range(num_feat_files)]
-    merged_exs = _load_featureset(dirpath, featureset, to_suffix,
+    label_col = 'y' if with_labels else None
+    merged_exs = _load_featureset(dirpath,
+                                  featureset,
+                                  to_suffix,
+                                  label_col=label_col,
                                   quiet=True)
 
     # Load pre-merged data in the `to_suffix` format
-    featureset = ['{}_all'.format(feature_name_prefix)]
-    premerged_exs = _load_featureset(dirpath, featureset, to_suffix,
+    featureset = ['{}{}_all'.format(feature_name_prefix, with_labels_part)]
+    premerged_exs = _load_featureset(dirpath,
+                                     featureset,
+                                     to_suffix,
+                                     label_col=label_col,
                                      quiet=True)
 
     # make sure that the pre-generated merged data in the to_suffix format
     # is the same as the converted, merged data in the to_suffix format
+
+    # first check the IDs
     assert_array_equal(merged_exs.ids, premerged_exs.ids)
     assert_array_equal(merged_exs.labels, premerged_exs.labels)
     for (_, _, merged_feats), (_, _, premerged_feats) in zip(merged_exs,
@@ -840,11 +944,13 @@ def check_convert_featureset(from_suffix, to_suffix):
 
 def test_convert_featureset():
     # Test the conversion from every format to every other format
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines', '.ndj',
+    # with and without labels
+    for from_suffix, to_suffix in itertools.permutations(['.jsonlines',
                                                           '.megam', '.tsv',
                                                           '.csv', '.arff',
                                                           '.libsvm'], 2):
-        yield check_convert_featureset, from_suffix, to_suffix
+        yield check_convert_featureset, from_suffix, to_suffix, True
+        yield check_convert_featureset, from_suffix, to_suffix, False
 
 
 def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
@@ -852,7 +958,6 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
     Helper function for the two unit tests for FeatureSet.from_data_frame().
     Since labels are optional, run two tests, one with, one without.
     """
-    import pandas
 
     # First, setup the test data.
     # get a 100 instances with 4 features each
@@ -886,7 +991,7 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
                               vectorizer=vectorizer)
 
     # Also create a DataFrame and then create a FeatureSet from it.
-    df = pandas.DataFrame(features, index=ids)
+    df = pd.DataFrame(features, index=ids)
     if with_labels:
         df['y'] = y
         current = FeatureSet.from_data_frame(df, featureset_name, labels_column='y',
@@ -941,3 +1046,75 @@ def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
                         rtol=1e-6) and
             np.all(np.isnan(expected.labels)) and
             np.all(np.isnan(current.labels)))
+
+
+def test_writing_ndj_featureset_with_string_ids():
+    test_dict_vectorizer = DictVectorizer()
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
+    fs_test = FeatureSet('test',
+                         ids=['1', '2'],
+                         labels=[1, 2],
+                         features=Xtest,
+                         vectorizer=test_dict_vectorizer)
+    output_path = join(_my_dir, "other", "test_string_ids.jsonlines")
+    test_writer = NDJWriter(output_path, fs_test)
+    test_writer.write()
+
+    # read in the written file into a featureset and confirm that the
+    # two featuresets are equal
+    fs_test2 = NDJReader.for_path(output_path).read()
+
+    assert fs_test == fs_test2
+
+
+@attr('have_pandas_and_seaborn')
+def test_featureset_creation_from_dataframe_with_string_ids():
+
+    dftest = pd.DataFrame({"id": ['1', '2'],
+                           "score": [1, 2],
+                           "text": ["a b", "b c"]})
+    dftest.set_index("id", inplace=True)
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    test_dict_vectorizer = DictVectorizer()
+    Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
+    fs_test = FeatureSet('test',
+                         ids=dftest.index.values,
+                         labels=dftest['score'].values,
+                         features=Xtest,
+                         vectorizer=test_dict_vectorizer)
+    output_path = join(_my_dir, "other", "test_string_ids_df.jsonlines")
+    test_writer = NDJWriter(output_path, fs_test)
+    test_writer.write()
+
+    # read in the written file into a featureset and confirm that the
+    # two featuresets are equal
+    fs_test2 = NDJReader.for_path(output_path).read()
+
+    assert fs_test == fs_test2
+
+
+@attr('have_pandas_and_seaborn')
+def test_featureset_creation_from_dataframe_with_string_labels():
+
+    dftest = pd.DataFrame({"id": [1, 2],
+                           "score": ['yes', 'no'],
+                           "text": ["a b", "b c"]})
+    dftest.set_index("id", inplace=True)
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    test_dict_vectorizer = DictVectorizer()
+    Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
+    fs_test = FeatureSet('test',
+                         ids=dftest.index.values,
+                         labels=dftest['score'].values,
+                         features=Xtest,
+                         vectorizer=test_dict_vectorizer)
+    output_path = join(_my_dir, "other", "test_string_labels_df.jsonlines")
+    test_writer = NDJWriter(output_path, fs_test)
+    test_writer.write()
+
+    # read in the written file into a featureset and confirm that the
+    # two featuresets are equal
+    fs_test2 = NDJReader.for_path(output_path, ids_to_floats=True).read()
+
+    assert fs_test == fs_test2

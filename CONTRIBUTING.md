@@ -24,8 +24,7 @@ GitHub:
 
           $ git checkout -b feature/my-new-addition
 
-   and start making changes. Never work in the ``master`` or ``stable``
-   branches!
+   and start making changes. Never work in the ``master`` branch!
 
 4. Work on this copy on your computer using Git to do the version
    control. When you're done editing, do:
@@ -115,5 +114,10 @@ documentation without the example gallery. The resulting HTML files will
 be placed in _build/html/ and are viewable in a web browser. See the
 README file in the doc/ directory for more information.
 
-For building the documentation, you will need [sphinx](http://sphinx.pocoo.org/).
+For building the documentation, you will need [sphinx](http://sphinx.pocoo.org/) as well as the readthedocs sphinx theme. To install both, just run:
+
+      conda install sphinx sphinx_rtd_theme
+
+in your existing conda environment.
+
 

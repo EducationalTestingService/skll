@@ -27,7 +27,8 @@ import skll
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.mathjax']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx.ext.mathjax',
+              'sphinx.ext.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -43,7 +44,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'SciKit-Learn Laboratory'
-copyright = u'2012-2017, Educational Testing Service'
+copyright = u'2012-2019, Educational Testing Service'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -252,7 +253,7 @@ texinfo_documents = [
 epub_title = u'SciKit-Learn Laboratory'
 epub_author = u'Daniel Blanchard, Michael Heilman, and Nitin Madnani'
 epub_publisher = u'Educational Testing Service'
-epub_copyright = u'2012-2014, Educational Testing Service'
+epub_copyright = u'2012-2019, Educational Testing Service'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
