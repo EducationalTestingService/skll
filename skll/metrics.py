@@ -15,7 +15,7 @@ import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from six import string_types
 from six.moves import xrange as range
-from sklearn.metrics import confusion_matrix, f1_score, SCORERS
+from sklearn.metrics import confusion_matrix, fbeta_score, SCORERS
 
 
 # Constants
@@ -233,7 +233,7 @@ def f1_score_least_frequent(y_true, y_pred):
         F1 score of the least frequent label.
     """
     least_frequent = np.bincount(y_true).argmin()
-    return f1_score(y_true, y_pred, average=None)[least_frequent]
+    return fbeta_score(y_true, y_pred, beta=1, average=None)[least_frequent]
 
 
 def use_score_func(func_name, y_true, y_pred):
