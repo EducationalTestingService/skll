@@ -11,6 +11,8 @@ The preferred way to contribute to SKLL is to fork the
 [main repository](http://github.com/EducationalTestingService/skll/) on
 GitHub:
 
+(NOTE: Contributors internal to ETS can skip step 1 and clone the SKLL repository directly.)
+
 1. Fork the [project repository](http://github.com/EducationalTestingService/skll/):
    click on the 'Fork' button near the top of the page. This creates
    a copy of the code under your account on the GitHub server.
@@ -54,6 +56,9 @@ following rules before submitting a pull request:
 
 -  All new functionality must be covered by unit tests.
 
+-  Every pull request description should contain a link to the issue that it is
+   trying to address. This is easily done by just typing `#` and then picking the issue from the dropdown. If the issue is not visible, then you type a few characters from the issue title and the dropdown should update.
+
 
 You can also check for common programming errors with the following
 tools:
@@ -79,11 +84,15 @@ tools:
            $ autopep8 path/to/pep8.py
 
 
+After submitting a pull request, it is recommended to add at least 2-3 reviewers to 
+review it. See [Requesting a pull request review](https://help.github.com/en/articles/requesting-a-pull-request-review) for more details. 
+
+
 Easy Issues
 -----------
 
 A great way to start contributing to SKLL is to pick an item
-from the list of issues labelled with the [easy](https://github.com/EducationalTestingService/skll/labels/easy)
+from the list of issues labelled with the [`good first issue`](https://github.com/EducationalTestingService/skll/labels/good%20first%20issue)
 tag. Resolving these issues allow you to start contributing to the project
 without much prior knowledge. Your assistance in this area will be greatly
 appreciated by the more experienced developers as it helps free up their time

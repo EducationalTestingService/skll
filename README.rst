@@ -158,3 +158,8 @@ Changelog
 ~~~~~~~~~
 
 See `GitHub releases <https://github.com/EducationalTestingService/skll/releases>`__.
+
+Contribute
+~~~~~~~~~~
+
+Thank you for your interest in contributing to SKLL! See `CONTRIBUTING.md <https://github.com/EducationalTestingService/skll/blob/master/CONTRIBUTING.md>`__ for instructions on how to get started.
