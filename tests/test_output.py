@@ -96,9 +96,9 @@ def tearDown():
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
 
-        for output_file in (glob(join(output_dir, 'test_{}_*'.format(suffix))) +
-                            glob(join(output_dir, 'test_{}.log'.format(suffix))) +
-                            glob(join(output_dir, 'test_majority_class_custom_learner_*'))):
+        for output_file in (glob(join(output_dir, 'test_{}_*'.format(suffix)))
+                            + glob(join(output_dir, 'test_{}.log'.format(suffix)))
+                            + glob(join(output_dir, 'test_majority_class_custom_learner_*'))):
             os.unlink(output_file)
 
     for suffix in _VALID_TASKS:
@@ -369,7 +369,7 @@ def check_xval_fancy_results_file(do_grid_search,
     with open(results_file_path, 'r') as resultsf:
         results_lines = resultsf.readlines()
         end_idx = [results_lines.index(l) for l in results_lines if l.startswith('Total Time:')][0]
-        results_lines = results_lines[:end_idx+1]
+        results_lines = results_lines[:end_idx + 1]
 
         # read in the "keys" and "values" separated by colons into a dictionary
         results_dict = dict([rl.strip().split(': ') for rl in results_lines])
@@ -475,7 +475,10 @@ def test_xval_fancy_results_file():
 def check_grid_search_cv_results(task, do_grid_search):
     learners = ['LogisticRegression', 'SVC']
     expected_path = join(_my_dir, 'other', 'cv_results')
-    time_field = lambda x: x.endswith('_time')
+
+    def time_field(x):
+        return x.endswith('_time')
+
     train_path = join(_my_dir, 'train', 'f0.jsonlines')
     output_dir = join(_my_dir, 'output')
 
@@ -540,7 +543,7 @@ def check_grid_search_cv_results(task, do_grid_search):
                                           results_file_name)
         ok_(exists(actual_results_file_path))
         with open(expected_results_file_path) as expected, \
-             open(actual_results_file_path) as actual:
+                open(actual_results_file_path) as actual:
             expected_lines = [json.loads(line) for line in expected][0]
             actual_lines = [json.loads(line) for line in actual][0]
             assert len(expected_lines) == len(actual_lines)
@@ -553,17 +556,17 @@ def check_grid_search_cv_results(task, do_grid_search):
                     assert len(expected_gs_cv_results) == len(actual_gs_cv_results)
                     for field in ['grid_score', 'grid_search_cv_results']:
                         if do_grid_search:
-                            assert (set(expected_gs_cv_results)
-                                    .intersection(actual_gs_cv_results) ==
-                                    set(expected_gs_cv_results))
+                            assert set(expected_gs_cv_results).intersection(actual_gs_cv_results) == \
+                                set(expected_gs_cv_results)
                             if field == 'grid_score':
                                 assert expected_gs_cv_results[field] == \
-                                       actual_gs_cv_results[field]
+                                    actual_gs_cv_results[field]
                             else:
                                 for subfield in expected_gs_cv_results[field]:
-                                    if time_field(subfield): continue
+                                    if time_field(subfield):
+                                        continue
                                     assert expected_gs_cv_results[field][subfield] == \
-                                           actual_gs_cv_results[field][subfield]
+                                        actual_gs_cv_results[field][subfield]
                         else:
                             if field == 'grid_score':
                                 assert actual_gs_cv_results[field] == 0.0
@@ -581,17 +584,17 @@ def check_grid_search_cv_results(task, do_grid_search):
                     assert len(expected_gs_cv_results) == len(actual_gs_cv_results)
                     for field in ['grid_score', 'grid_search_cv_results']:
                         if do_grid_search:
-                            assert (set(expected_gs_cv_results)
-                                    .intersection(actual_gs_cv_results) ==
-                                    set(expected_gs_cv_results))
+                            assert set(expected_gs_cv_results).intersection(actual_gs_cv_results) == \
+                                set(expected_gs_cv_results)
                             if field == 'grid_score':
                                 assert expected_gs_cv_results[field] == \
-                                       actual_gs_cv_results[field]
+                                    actual_gs_cv_results[field]
                             else:
                                 for subfield in expected_gs_cv_results[field]:
-                                    if time_field(subfield): continue
+                                    if time_field(subfield):
+                                        continue
                                     assert expected_gs_cv_results[field][subfield] == \
-                                           actual_gs_cv_results[field][subfield]
+                                        actual_gs_cv_results[field][subfield]
                         else:
                             if field == 'grid_score':
                                 assert actual_gs_cv_results[field] == 0.0
@@ -601,23 +604,24 @@ def check_grid_search_cv_results(task, do_grid_search):
                 expected_gs_cv_results = expected_lines
                 actual_gs_cv_results = actual_lines
                 assert set(expected_gs_cv_results).intersection(actual_gs_cv_results) == \
-                       set(expected_gs_cv_results)
+                    set(expected_gs_cv_results)
                 for field in ['grid_score', 'grid_search_cv_results']:
                     if field == 'grid_score':
                         assert expected_gs_cv_results[field] == \
-                               actual_gs_cv_results[field]
+                            actual_gs_cv_results[field]
                     else:
                         for subfield in expected_gs_cv_results[field]:
-                            if time_field(subfield): continue
+                            if time_field(subfield):
+                                continue
                             assert expected_gs_cv_results[field][subfield] == \
-                                   actual_gs_cv_results[field][subfield]
+                                actual_gs_cv_results[field][subfield]
             else:
                 for expected_line, actual_line in zip(expected_lines,
                                                       actual_lines):
                     expected_fields = set(list(expected_line))
                     actual_fields = set(list(actual_line))
                     assert expected_fields.intersection(actual_fields) == \
-                           expected_fields
+                        expected_fields
                     assert all(field not in actual_fields
                                for field in ['grid_score',
                                              'grid_search_cv_results'])
@@ -834,7 +838,56 @@ def test_learning_curve_ylimits():
     """
 
     # create a test data frame
-    df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694, 1: 0.18556201422712379, 2: 0.15002727816517414, 3: 0.15301923832338646, 4: 0.15589815327205431, 5: 0.68205316443171948, 6: 0.77441075727706354, 7: 0.83838056331276678, 8: 0.84770116657005623, 9: 0.8708014559726478}, 'value': {0: 0.4092496971394447, 1: 0.2820507715115001, 2: 0.24533811547921261, 3: 0.21808651942296109, 4: 0.19767367891431534, 5: -2.3540980769230773, 6: -3.1312445327182394, 7: -3.2956790939674137, 8: -3.4843050005436713, 9: -3.6357879085645455}, 'train_score_std': {0: 0.15950199460682787, 1: 0.090992452273091703, 2: 0.068488654201949981, 3: 0.055223120652733763, 4: 0.03172452509259388, 5: 1.0561586240460523, 6: 0.53955995320300709, 7: 0.40477740983901211, 8: 0.34148185048394258, 9: 0.20791478156554272}, 'variable': {0: 'train_score_mean', 1: 'train_score_mean', 2: 'train_score_mean', 3: 'train_score_mean', 4: 'train_score_mean', 5: 'train_score_mean', 6: 'train_score_mean', 7: 'train_score_mean', 8: 'train_score_mean', 9: 'train_score_mean'}, 'metric': {0: 'r2', 1: 'r2', 2: 'r2', 3: 'r2', 4: 'r2', 5: 'neg_mean_squared_error', 6: 'neg_mean_squared_error', 7: 'neg_mean_squared_error', 8: 'neg_mean_squared_error', 9: 'neg_mean_squared_error'}})
+    df_test = pd.DataFrame.from_dict({'test_score_std': {0: 0.16809136190418694,
+                                                         1: 0.18556201422712379,
+                                                         2: 0.15002727816517414,
+                                                         3: 0.15301923832338646,
+                                                         4: 0.15589815327205431,
+                                                         5: 0.68205316443171948,
+                                                         6: 0.77441075727706354,
+                                                         7: 0.83838056331276678,
+                                                         8: 0.84770116657005623,
+                                                         9: 0.8708014559726478},
+                                      'value': {0: 0.4092496971394447,
+                                                1: 0.2820507715115001,
+                                                2: 0.24533811547921261,
+                                                3: 0.21808651942296109,
+                                                4: 0.19767367891431534,
+                                                5: -2.3540980769230773,
+                                                6: -3.1312445327182394,
+                                                7: -3.2956790939674137,
+                                                8: -3.4843050005436713,
+                                                9: -3.6357879085645455},
+                                      'train_score_std': {0: 0.15950199460682787,
+                                                          1: 0.090992452273091703,
+                                                          2: 0.068488654201949981,
+                                                          3: 0.055223120652733763,
+                                                          4: 0.03172452509259388,
+                                                          5: 1.0561586240460523,
+                                                          6: 0.53955995320300709,
+                                                          7: 0.40477740983901211,
+                                                          8: 0.34148185048394258,
+                                                          9: 0.20791478156554272},
+                                      'variable': {0: 'train_score_mean',
+                                                   1: 'train_score_mean',
+                                                   2: 'train_score_mean',
+                                                   3: 'train_score_mean',
+                                                   4: 'train_score_mean',
+                                                   5: 'train_score_mean',
+                                                   6: 'train_score_mean',
+                                                   7: 'train_score_mean',
+                                                   8: 'train_score_mean',
+                                                   9: 'train_score_mean'},
+                                      'metric': {0: 'r2',
+                                                 1: 'r2',
+                                                 2: 'r2',
+                                                 3: 'r2',
+                                                 4: 'r2',
+                                                 5: 'neg_mean_squared_error',
+                                                 6: 'neg_mean_squared_error',
+                                                 7: 'neg_mean_squared_error',
+                                                 8: 'neg_mean_squared_error',
+                                                 9: 'neg_mean_squared_error'}})
 
     # compute the y-limits
     ylimits_dict = _compute_ylimits_for_featureset(df_test, ['r2', 'neg_mean_squared_error'])
