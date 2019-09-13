@@ -31,6 +31,7 @@ from os.path import basename, exists, isfile, join
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn import __version__ as SCIKIT_VERSION
+from sklearn.metrics import fbeta_score
 
 from skll import get_skll_logger
 from skll.config import _munge_featureset_name, _parse_config_file
