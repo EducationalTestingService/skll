@@ -6,8 +6,6 @@ Module for running unit tests related to command line utilities.
 :author: Dan Blanchard (dblanchard@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 import ast
 import copy
 import csv
@@ -19,7 +17,7 @@ from collections import defaultdict
 from glob import glob
 from itertools import combinations, product
 from os.path import abspath, dirname, exists, join
-from six import StringIO
+from io import StringIO
 
 try:
     from unittest.mock import create_autospec, patch

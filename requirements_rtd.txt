@@ -2,7 +2,6 @@ configparser==3.5.0b2
 logutils
 mock
 scikit-learn==0.20.1
-six
 tabulate
 beautifulsoup4
 numpy
