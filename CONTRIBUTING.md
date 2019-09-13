@@ -83,7 +83,7 @@ Easy Issues
 -----------
 
 A great way to start contributing to SKLL is to pick an item
-from the list of issues labelled with the [easy](https://github.com/EducationalTestingService/skll/labels/easy)
+from the list of issues labelled with the [good first issue](https://github.com/EducationalTestingService/skll/labels/good%20first%20issues)
 tag. Resolving these issues allow you to start contributing to the project
 without much prior knowledge. Your assistance in this area will be greatly
 appreciated by the more experienced developers as it helps free up their time
