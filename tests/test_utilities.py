@@ -303,14 +303,20 @@ def test_compute_eval_from_predictions_random_choice():
 def check_generate_predictions(use_feature_hashing=False,
                                use_threshold=False,
                                test_on_subset=False,
-                               use_all_labels=False):
+                               use_all_labels=False,
+                               string_labels=False):
 
     # create some simple classification feature sets for training and testing
+    string_label_list = ['a', 'b'] if string_labels else None
+
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
                                                  use_feature_hashing=use_feature_hashing,
-                                                 feature_bins=4)
-    enable_probability = use_threshold or use_all_labels
+                                                 feature_bins=4,
+                                                 string_label_list=string_label_list)
+
+    enable_probability = any([use_threshold, use_all_labels])
+
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier', probability=enable_probability)
 
@@ -323,8 +329,18 @@ def check_generate_predictions(use_feature_hashing=False,
     if test_on_subset and not use_feature_hashing:
         test_fs.filter(features=['f01', 'f02', 'f03', 'f04'])
 
+    # There are two cases where we don't want to translate the predictions to
+    # class labels:
+    #   1) If `use_all_labels` is True, a prediction will be a list of
+    #      probabilities.
+    #   2) If `use_threshold` is True, the prediction will be
+    #      either 1 or 0, indicating whether the probability of the positive
+    #      class was greater than or equal to the threshold.
+    use_class_labels = (string_labels and
+                        not (use_all_labels or use_threshold))
+
     # get the predictions on the test featureset
-    predictions = learner.predict(test_fs)
+    predictions = learner.predict(test_fs, class_labels=use_class_labels)
 
     # if we asked for probabilities, then use the threshold
     # to convert them into binary predictions
@@ -354,20 +370,32 @@ def check_generate_predictions(use_feature_hashing=False,
 
 
 def check_generate_predictions_file_headers(use_threshold=False,
-                                            use_all_labels=False):
+                                            use_all_labels=False,
+                                            string_labels=False):
+
+    string_label_list = ['a', 'b'] if string_labels else None
+
     # create some simple classification feature sets for training and testing
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5,
-                                                 feature_bins=4)
-    enable_probability = use_threshold or use_all_labels
+                                                 feature_bins=4,
+                                                 string_label_list=string_label_list)
+
+    # Unlike in other generate_predictions tests, for the headers test we
+    # want to enable probability when labels are strings in order to verify
+    # that the output header includes the correct label name(s) ("Probability
+    # of <label>", or "id, <label1>, <label2>").
+    enable_probability = any([use_threshold, use_all_labels, string_labels])
+
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier', probability=enable_probability)
 
     # train the learner with grid search
     learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
 
+    use_class_labels = string_labels
     # get the predictions on the test featureset
-    _ = learner.predict(test_fs)
+    _ = learner.predict(test_fs, class_labels=use_class_labels)
 
     # if we asked for probabilities, then use the threshold
     # to convert them into binary predictions
@@ -386,9 +414,13 @@ def check_generate_predictions_file_headers(use_threshold=False,
     p = gp.Predictor(model_file, threshold=threshold,
                      all_labels=use_all_labels)
     _ = p.predict(test_fs)
-
     if threshold:
         assert (p.output_file_header == ['id', 'prediction'])
+    elif string_labels:
+        if use_all_labels:
+            assert (p.output_file_header == ['id', 'a', 'b'])
+        else:
+            assert (p.output_file_header == ['id', "Probability of 'b'"])
     elif use_all_labels:
         assert (p.output_file_header == ['id', '0', '1'])
 
@@ -404,24 +436,24 @@ def test_generate_predictions_conflicting_params():
 
 
 def test_generate_predictions():
-    for (use_feature_hashing,
-         use_threshold,
-         test_on_subset,
-         all_probabilities) in product([True, False], [True, False],
-                                       [True, False], [True, False]):
+    for (use_feature_hashing, use_threshold, test_on_subset, all_probabilities,
+         string_labels) in product(*[[True, False], [True, False],
+                                     [True, False], [True, False],
+                                     [True, False]]):
         if use_threshold and all_probabilities:
             continue
         yield (check_generate_predictions, use_feature_hashing,
-               use_threshold, test_on_subset, all_probabilities)
+               use_threshold, test_on_subset, all_probabilities,
+               string_labels)
 
 
 def test_generate_predictions_file_header():
-
-    for (use_threshold, all_probabilities) in ([True, False], [False, True]):
+    for (use_threshold, all_probabilities, string_labels) in \
+            product(*[[True, False], [True, False], [True, False]]):
         if use_threshold and all_probabilities:
             continue
         yield (check_generate_predictions_file_headers,
-               use_threshold, all_probabilities)
+               use_threshold, all_probabilities, string_labels)
 
 
 def check_generate_predictions_console(use_threshold=False, all_labels=False):
@@ -496,6 +528,54 @@ def check_generate_predictions_console(use_threshold=False, all_labels=False):
         sys.stdout = old_stdout
         sys.stderr = old_stderr
         print(err)
+
+
+def test_generate_predictions_kw_arg_deprecation_warning():
+    lc = LogCapture()
+    lc.begin()
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5)
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test',
+                      'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier')
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+    # get the predictions on the test featureset
+    _ = learner.predict(test_fs)
+    # save the learner to a file
+    model_file = join(_my_dir, 'output',
+                      'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, input_file, "--positive_label", "1"]
+
+    # we need to capture stdout since that's what main() writes to
+    err = ''
+    try:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = mystdout = StringIO()
+        sys.stderr = mystderr = StringIO()
+        gp.main(generate_cmd)
+        _ = mystdout.getvalue()
+        err = mystderr.getvalue()
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        print(err)
+
+    expected_log_mssg = ("skll.utilities.generate_predictions: WARNING: The "
+                         "`positive_label` argument is deprecated. Use "
+                         "`positive_label_index` instead.")
+    assert expected_log_mssg in lc.handler.buffer
 
 
 def test_generate_predictions_console_bad_input_ext():
