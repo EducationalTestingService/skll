@@ -131,10 +131,6 @@ Requirements
    to run things in parallel on a DRMAA-compatible cluster)
 -  `joblib <https://pypi.org/project/joblib/>`__
 -  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
--  `configparser <https://pypi.org/project/configparser/>`__ (only required for
-   Python 2.7)
--  `logutils <https://pypi.org/project/logutils/>`__ (only required for Python 2.7)
--  `mock <https://pypi.org/project/mock/>`__ (only required for Python 2.7)
 
 The following packages can be optionally installed for additional features
 but are not required:
