@@ -650,7 +650,9 @@ LinearSVC and LinearSVR
 LogisticRegression
     .. code-block:: python
 
-       {'random_state': 123456789}
+        {'random_state': 123456789}
+
+    .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
 
 MLPClassifier and MLPRegressor:
     .. code-block:: python

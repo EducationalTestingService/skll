@@ -12,6 +12,7 @@ import csv
 import itertools
 import os
 import sys
+import scipy as sp
 
 from collections import defaultdict
 from glob import glob
@@ -848,8 +849,12 @@ def check_skll_convert(from_suffix, to_suffix):
     reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
     converted_fs = reader.read()
 
-    # ensure that the original and the converted feature sets
-    # are the same
+    # TODO : For now, we are converting these to dense, and then back to sparse.
+    # The reason for this is that DictVectorizers now retain any explicit zeros,
+    # but we convert these to dense when we write them out. This will be fixed.
+    orig_fs.features = sp.sparse.csr_matrix(orig_fs.features.todense())
+    converted_fs.features = sp.sparse.csr_matrix(converted_fs.features.todense())
+
     eq_(orig_fs, converted_fs)
 
 
