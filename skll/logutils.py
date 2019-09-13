@@ -8,7 +8,6 @@ Functions related to logging in SKLL.
 import re
 import logging
 import warnings
-from functools import wraps
 from logging import FileHandler
 from os.path import sep
 
@@ -60,7 +59,7 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
             logger.addHandler(file_handler)
 
     # Make method for sending sklearn-specific warnings to the
-    # logger that can be used to replace  warnings.showwarning
+    # logger that can be used to replace warnings.showwarning
     def send_sklearn_warnings_to_log(message, category, filename, lineno,
                                      file=None, line=None):
         if SKLEARN_WARNINGS_RE.search(filename):
@@ -91,6 +90,6 @@ def close_and_remove_logger_handlers(logger):
     NoneType
     """
 
-    for handler in logger.handlers:
+    for handler in logger.handlers[:]:
         handler.close()
         logger.removeHandler(handler)
