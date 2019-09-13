@@ -11,6 +11,8 @@ The preferred way to contribute to SKLL is to fork the
 [main repository](http://github.com/EducationalTestingService/skll/) on
 GitHub:
 
+(NOTE: Contributors internal to ETS can skip step 1 and clone the skll repository directly.)
+
 1. Fork the [project repository](http://github.com/EducationalTestingService/skll/):
    click on the 'Fork' button near the top of the page. This creates
    a copy of the code under your account on the GitHub server.
