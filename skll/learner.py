@@ -189,6 +189,7 @@ _CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
                                             'f1_score_macro',
                                             'f1_score_weighted',
                                             'f1_score_least_frequent',
+                                            'fbeta_score',
                                             'average_precision',
                                             'roc_auc',
                                             'neg_log_loss'])
