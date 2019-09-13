@@ -54,6 +54,9 @@ following rules before submitting a pull request:
 
 -  All new functionality must be covered by unit tests.
 
+-  Every pull request description should contain a link to the issue that it is
+   trying to address
+
 
 You can also check for common programming errors with the following
 tools:
