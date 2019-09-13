@@ -1158,7 +1158,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         grid_objectives = output_metrics
 
     if 'fbeta_score' in output_metrics:
-        output_metrics[output_metrics.index('fbeta_score')] = partial(fbeta_score, beta=beta)
+        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
 
     # if there were no grid objectives provided, just set it to
     # a list containing a single None so as to allow the parallelization
@@ -1167,7 +1167,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if not grid_objectives:
         grid_objectives = [None]
     elif 'fbeta_score' in grid_objectives:
-        grid_objectives[grid_objectives.index('fbeta_score')] = partial(fbeta_score, beta=beta)
+        if 'fbeta_score' not in SCORERS.keys():
+        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
 
 
     # Run each featureset-learner-objective combination
