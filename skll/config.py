@@ -49,7 +49,8 @@ class SKLLConfigParser(configparser.ConfigParser):
 
         # these are the optional config options for which#
         # defaults are automatically provided
-        defaults = {'class_map': '{}',
+        defaults = {'beta': '1',
+                    'class_map': '{}',
                     'custom_learner_path': '',
                     'folds_file': '',
                     'folds_file': '',
@@ -91,7 +92,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'train_file': '',
                     'use_folds_file_for_grid_search': 'True'}
 
-        correct_section_mapping = {'class_map': 'Input',
+        correct_section_mapping = {'beta': 'Input',
+                                   'class_map': 'Input',
                                    'custom_learner_path': 'Input',
                                    'folds_file': 'Input',
                                    'folds_file': 'Input',
@@ -324,6 +326,11 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     Returns
     -------
+    beta: float
+        0 - inf
+        The beta parameter determines the weight of recall in the combined score. 
+        beta < 1 lends more weight to precision, while beta > 1 favors recall 
+        (beta -> 0 considers only precision, beta -> inf only recall).
     experiment_name : str
         A string used to identify this particular experiment configuration.
         When generating result summary files, this name helps prevent
@@ -697,9 +704,23 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     else:
         class_map = None
 
+    beta = config.getfloat("Iutput", "beta")
+
+    # if not specify beta for fbeta_score
+    # fbeta_score will use default value beta=1
+    # same as f1_score
+    if "fbeta_score" in output_metrics and beta==1:
+        logger.warning('beta is default value 1.'
+                       'fbeta_score is working as f1 now.')
+
+    # if not fbeta but beta specified, beta will be ignored
+    if "fbeta_score" not in output_metrics and beta!=1:
+        logger.warning('beta is ignored since no fbeta_score function is called')
+
     #####################
     # 3. Output section #
     #####################
+    
     probability = config.getboolean("Output", "probability")
     pipeline = config.getboolean("Output", "pipeline")
 
@@ -734,6 +755,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     output_metrics = _parse_and_validate_metrics(output_metrics,
                                                  'metrics',
                                                  logger=logger)
+
 
     #####################
     # 4. Tuning section #
@@ -897,7 +919,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             param_grid_list, featureset_names, learners, prediction_dir,
             log_path, train_path, test_path, ids_to_floats, class_map,
             custom_learner_path, learning_curve_cv_folds_list,
-            learning_curve_train_sizes, output_metrics)
+            learning_curve_train_sizes, output_metrics, beta)
 
 
 def _munge_featureset_name(featureset):
