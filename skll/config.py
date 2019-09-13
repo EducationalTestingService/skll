@@ -706,17 +706,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     beta = config.getfloat("Input", "beta")
 
-    # if not specify beta for fbeta_score
-    # fbeta_score will use default value beta=1
-    # same as f1_score
-    if "fbeta_score" in output_metrics and beta==1:
-        logger.warning('beta is default value 1.'
-                       'fbeta_score is working as f1 now.')
-
-    # if not fbeta but beta specified, beta will be ignored
-    if "fbeta_score" not in output_metrics and beta!=1:
-        logger.warning('beta is ignored since no fbeta_score function is called')
-
     #####################
     # 3. Output section #
     #####################
@@ -756,6 +745,10 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                                                  'metrics',
                                                  logger=logger)
 
+    # fbeta_score work same as f1 is beta is not specified 
+    if 'fbeta_score' in output_metrics and beta==1:
+        logger.warning('beta is default value 1.'
+                       'fbeta_score is working as f1_score now for evaluation.')
 
     #####################
     # 4. Tuning section #
@@ -770,6 +763,17 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     grid_objectives = _parse_and_validate_metrics(grid_objectives,
                                                   'objectives',
                                                   logger=logger)
+
+    # fbeta_score work same as f1 is beta is not specified 
+    if 'fbeta_score' in grid_objectives and beta==1:
+        logger.warning('beta is default value 1.'
+                       'fbeta_score is working as f1_score now for tuning.')
+
+    # if beta is specified but fbeta_score is not called,
+    # beta will be ignored
+    if ('fbeta_score' not in output_metrics) and ('fbeta_score' not in grid_objectives):
+        if beta!=1:
+            logger.warning('fbeta_score is not called. beta is default value 1.')
 
     # if we are doing learning curves , we don't care about
     # grid search
