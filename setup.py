@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-import sys
 from setuptools import find_packages, setup
 
 # Get version without importing, which avoids dependency issues
