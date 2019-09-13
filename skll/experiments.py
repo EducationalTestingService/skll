@@ -1062,7 +1062,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats, class_map,
      custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes,
-     output_metrics) = _parse_config_file(config_file, log_level=log_level)
+     output_metrics, beta) = _parse_config_file(config_file, log_level=log_level)
 
     # get the main experiment logger that will already have been
     # created by the configuration parser so we don't need anything
@@ -1155,12 +1155,18 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if task == 'learning_curve' and len(output_metrics) > 0:
         grid_objectives = output_metrics
 
+    if 'fbeta_score' in output_metrics:
+        output_metrics[output_metrics.index('fbeta_score')] = partial(fbeta_score, beta=beta)
+
     # if there were no grid objectives provided, just set it to
     # a list containing a single None so as to allow the parallelization
     # to proceeed and to pass the correct default value of grid_objective
     # down to _classify_featureset().
     if not grid_objectives:
         grid_objectives = [None]
+    else if 'fbeta_score' in grid_objectives:
+        grid_objectives[grid_objectives.index('fbeta_score')] = partial(fbeta_score, beta=beta)
+
 
     # Run each featureset-learner-objective combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
@@ -1253,6 +1259,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 job_args["custom_learner_path"] = custom_learner_path
                 job_args["learning_curve_cv_folds"] = learning_curve_cv_folds_list[learner_num]
                 job_args["learning_curve_train_sizes"] = learning_curve_train_sizes
+                job_args["beta"] = beta
 
                 if not local:
                     jobs.append(Job(_classify_featureset,
