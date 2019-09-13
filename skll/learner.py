@@ -2118,6 +2118,7 @@ class Learner(object):
                        param_grid=None,
                        shuffle=False,
                        save_cv_folds=False,
+                       save_cv_models=False,
                        use_custom_folds_for_grid_search=True):
         """
         Cross-validates a given model on the training examples.
@@ -2172,6 +2173,9 @@ class Learner(object):
         save_cv_folds : bool, optional
              Whether to save the cv fold ids or not?
              Defaults to ``False``.
+        save_cv_models : bool, optional
+            Whether to save the cv models or not?
+            Defaults to ``False``.
         use_custom_folds_for_grid_search : bool, optional
             If ``cv_folds`` is a custom dictionary, but
             ``grid_search_folds`` is not, perhaps due to user
@@ -2196,6 +2200,9 @@ class Learner(object):
         skll_fold_ids : dict
             A dictionary containing the test-fold number for each id
             if ``save_cv_folds`` is ``True``, otherwise ``None``.
+        models : list of skll.learner.Learner
+            A list of skll.learner.Learners, one for each fold if
+            ``save_cv_models`` is ``True``, otherwise ``None``.
 
         Raises
         ------
@@ -2299,7 +2306,7 @@ class Learner(object):
         grid_search_scores = []
         grid_search_cv_results_dicts = []
         append_predictions = False
-        models = []
+        models = [] if save_cv_models else None
         for train_index, test_index in kfold.split(examples.features,
                                                    examples.labels,
                                                    cv_groups):
@@ -2323,7 +2330,8 @@ class Learner(object):
                                            shuffle=grid_search,
                                            create_label_dict=False)
             grid_search_scores.append(grid_search_score)
-            models.append(deepcopy(self))
+            if save_cv_models:
+                models.append(deepcopy(self))
             grid_search_cv_results_dicts.append(grid_search_cv_results)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
