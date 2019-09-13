@@ -45,28 +45,24 @@ requirements:
     - scikit-learn ==0.20.1
     - joblib >=0.8
     - setuptools
-    - six
     - tabulate
     - beautifulsoup4
     - numpy
     - scipy
     - ruamel.yaml
     - configparser [py2k]
-    - futures [py2k]
     - mock [py2k]
 
   run:
     - python
     - scikit-learn ==0.20.1
     - joblib >=0.8
-    - six
     - tabulate
     - beautifulsoup4
     - numpy
     - scipy
     - ruamel.yaml
     - configparser [py2k]
-    - futures [py2k]
     - mock [py2k]
 
 test:

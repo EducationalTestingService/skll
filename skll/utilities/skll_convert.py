@@ -7,15 +7,12 @@ Script that converts feature files from one format to another
 :organization: ETS
 """
 
-from __future__ import print_function, unicode_literals
-
 import argparse
 import logging
 import os
 import sys
 
 from bs4 import UnicodeDammit
-from six import PY2
 
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import EXT_TO_READER
@@ -30,8 +27,6 @@ def _pair_to_dict_tuple(pair):
     numbers.
     """
     number, name = pair.split('=')
-    if PY2:
-        name = name.encode('utf-8')
     number = int(number)
     return (name, number)
 
@@ -161,6 +156,7 @@ def main(argv=None):
         writer_args['label_map'] = label_map
     writer = writer_type(args.outfile, feature_set, **writer_args)
     writer.write()
+
 
 if __name__ == '__main__':
     main()
