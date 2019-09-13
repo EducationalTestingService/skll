@@ -1164,7 +1164,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # down to _classify_featureset().
     if not grid_objectives:
         grid_objectives = [None]
-    else if 'fbeta_score' in grid_objectives:
+    elif 'fbeta_score' in grid_objectives:
         grid_objectives[grid_objectives.index('fbeta_score')] = partial(fbeta_score, beta=beta)
 
 
