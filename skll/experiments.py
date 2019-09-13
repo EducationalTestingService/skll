@@ -679,7 +679,7 @@ def _classify_featureset(args):
     # models when we're not.
     task_results = None
     if task == 'cross_validate':
-        logger.info('\tcross-validating')
+        logger.info('Cross-validating')
         (task_results,
          grid_scores,
          grid_search_cv_results_dicts,
@@ -710,7 +710,6 @@ def _classify_featureset(args):
                                                               grid_objective,
                                                               cv_folds=learning_curve_cv_folds,
                                                               train_sizes=learning_curve_train_sizes)
-
     else:
         # if we have do not have a saved model, we need to train one.
         if not exists(modelfile) or overwrite:
