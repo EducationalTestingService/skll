@@ -11,7 +11,7 @@ common scikit-learn experiments with pre-generated features.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from sklearn.metrics import f1_score, fbeta_score, make_scorer, SCORERS
+from sklearn.metrics import fbeta_score, make_scorer, SCORERS
 from .logutils import get_skll_logger
 from .data import FeatureSet, Reader, Writer
 from .experiments import run_configuration
@@ -26,11 +26,11 @@ __all__ = ['FeatureSet', 'Learner', 'Reader', 'kappa', 'kendall_tau',
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll
-_scorers = {'f1_score_micro': make_scorer(f1_score,
+_scorers = {'f1_score_micro': make_scorer(fbeta_score, beta=1,
                                           average='micro'),
-            'f1_score_macro': make_scorer(f1_score,
+            'f1_score_macro': make_scorer(fbeta_score, beta=1,,
                                           average='macro'),
-            'f1_score_weighted': make_scorer(f1_score,
+            'f1_score_weighted': make_scorer(fbeta_score, beta=1,,
                                              average='weighted'),
             'f1_score_least_frequent': make_scorer(f1_score_least_frequent),
             'fbeta_score': make_scorer(fbeta_score),
