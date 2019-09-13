@@ -11,7 +11,7 @@ common scikit-learn experiments with pre-generated features.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from sklearn.metrics import f1_score, make_scorer, SCORERS
+from sklearn.metrics import f1_score, fbeta_score, make_scorer, SCORERS
 from .logutils import get_skll_logger
 from .data import FeatureSet, Reader, Writer
 from .experiments import run_configuration
@@ -33,6 +33,7 @@ _scorers = {'f1_score_micro': make_scorer(f1_score,
             'f1_score_weighted': make_scorer(f1_score,
                                              average='weighted'),
             'f1_score_least_frequent': make_scorer(f1_score_least_frequent),
+            'fbeta_score': make_scorer(fbeta_score),
             'pearson': make_scorer(pearson),
             'spearman': make_scorer(spearman),
             'kendall_tau': make_scorer(kendall_tau),
