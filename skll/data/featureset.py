@@ -8,10 +8,14 @@ Classes related to storing/merging feature sets.
 :organization: ETS
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 from copy import deepcopy
 
 import numpy as np
 import scipy.sparse as sp
+from six import iteritems
+from six.moves import zip
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
@@ -294,7 +298,7 @@ class FeatureSet(object):
                 raise ValueError('FeatureSets with FeatureHasher vectorizers'
                                  ' cannot be filtered by feature.')
             columns = np.array(sorted({feat_num for feat_name, feat_num in
-                                       self.vectorizer.vocabulary_.items()
+                                       iteritems(self.vectorizer.vocabulary_)
                                        if (feat_name in features or
                                            feat_name.split('=', 1)[0] in
                                            features)}))
@@ -372,7 +376,7 @@ class FeatureSet(object):
             feat_dict = self.vectorizer.inverse_transform(feats)[0]
             if features is not None:
                 feat_dict = {name: value for name, value in
-                             feat_dict.items() if
+                             iteritems(feat_dict) if
                              (inverse != (name in features or
                                           name.split('=', 1)[0] in features))}
             elif not inverse:

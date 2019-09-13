@@ -7,6 +7,9 @@ Tests related to output from run_experiment
 :author: Dan Blanchard (dblanchard@ets.org)
 """
 
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import csv
 import json
 import os
@@ -40,6 +43,8 @@ from skll.experiments import (_HAVE_SEABORN,
                               _compute_ylimits_for_featureset,
                               run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
+
+from six import PY2
 
 from utils import (create_jsonlines_feature_files,
                    fill_in_config_options,
@@ -340,7 +345,10 @@ def check_xval_fancy_results_file(do_grid_search,
     values_to_fill_dict['use_folds_file_for_grid_search'] = str(use_folds_file_for_grid_search)
 
     if use_additional_metrics:
-        values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
+        if PY2:
+            values_to_fill_dict['metrics'] = str([b"accuracy", b"unweighted_kappa"])
+        else:
+            values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
 
     config_template_path = join(_my_dir,
                                 'configs',
@@ -396,7 +404,7 @@ def check_xval_fancy_results_file(do_grid_search,
             eq_(results_dict['Grid Search Folds'], '4')
 
     if use_additional_metrics:
-        expected_metrics = ["accuracy", "unweighted_kappa"]
+        expected_metrics = [b"accuracy", b"unweighted_kappa"] if PY2 else ["accuracy", "unweighted_kappa"]
 
         eq_(sorted(literal_eval(results_dict['Additional Evaluation Metrics'])),
             sorted(expected_metrics))

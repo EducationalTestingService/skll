@@ -9,6 +9,8 @@ sklearn.datasets.
 :organization: ETS
 """
 
+from __future__ import print_function, unicode_literals
+
 import json
 import os
 import sys

@@ -24,7 +24,7 @@ before_install:
   - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda update --yes conda
 install:
-  - conda install --yes --channel defaults --channel conda-forge python=$TRAVIS_PYTHON_VERSION numpy scipy pandas beautifulsoup4 scikit-learn==0.20.1 joblib tabulate python-coveralls ruamel.yaml
+  - conda install --yes --channel defaults --channel conda-forge python=$TRAVIS_PYTHON_VERSION numpy scipy pandas beautifulsoup4 six scikit-learn==0.20.1 joblib tabulate python-coveralls ruamel.yaml
   - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then conda install --yes --channel defaults seaborn; fi
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov

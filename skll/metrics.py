@@ -9,8 +9,12 @@ evaluate the performance of learners.
 :organization: ETS
 """
 
+from __future__ import print_function, unicode_literals
+
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
+from six import string_types
+from six.moves import xrange as range
 from sklearn.metrics import confusion_matrix, f1_score, SCORERS
 
 
@@ -110,7 +114,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     num_scored_items = float(len(y_true))
 
     # Build weight array if weren't passed one
-    if isinstance(weights, str):
+    if isinstance(weights, string_types):
         wt_scheme = weights
         weights = None
     else:

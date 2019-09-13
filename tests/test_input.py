@@ -8,6 +8,9 @@ Tests for SKLL inputs, mainly configuration files.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import os
 import re
 import tempfile
@@ -18,6 +21,8 @@ import numpy as np
 
 from nose.tools import eq_, ok_, raises
 from sklearn.utils.testing import assert_equal
+
+from six import string_types, PY2
 
 from skll.config import (_parse_config_file,
                          _load_cv_folds,
@@ -1235,6 +1240,8 @@ def test_config_parsing_metrics_and_objectives_overlap():
                                              [["f1_score_micro", "unweighted_kappa"],
                                               ["accuracy", "unweighted_kappa"]],
                                              [[], ["accuracy"]]):
+        metrics = [str(m) for m in metrics] if PY2 else metrics
+        objectives = [str(o) for o in objectives] if PY2 else objectives
         yield (check_config_parsing_metrics_and_objectives_overlap,
                task, metrics, objectives)
 
@@ -1360,7 +1367,7 @@ def check_cv_folds_and_grid_search_folds(task,
     # now add the various fields that are passed in
     if isinstance(cv_folds_or_file, int):
         values_to_fill_dict['num_cv_folds'] = str(cv_folds_or_file)
-    elif isinstance(cv_folds_or_file, str):
+    elif isinstance(cv_folds_or_file, string_types):
         values_to_fill_dict['folds_file'] = cv_folds_or_file
 
     if isinstance(grid_search_folds, int):

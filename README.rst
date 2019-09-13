@@ -122,8 +122,9 @@ happens.
 Requirements
 ~~~~~~~~~~~~
 
--  Python 3.6+
+-  Python 2.7+
 -  `scikit-learn <http://scikit-learn.org/stable/>`__
+-  `six <https://pypi.org/project/six/>`__
 -  `tabulate <https://pypi.org/project/tabulate/>`__
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `pandas <http://pandas.pydata.org>`__

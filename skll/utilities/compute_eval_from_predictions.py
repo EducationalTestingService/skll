@@ -5,6 +5,7 @@ script for computing additional evaluation metrics
 
 :author: Michael Heilman (mheilman@ets.org)
 """
+from __future__ import print_function, unicode_literals
 
 import argparse
 import csv

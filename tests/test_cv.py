@@ -9,6 +9,9 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import csv
 import itertools
 from io import open
@@ -20,6 +23,7 @@ import re
 
 import numpy as np
 from nose.tools import eq_, raises
+from six import PY2
 
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
@@ -186,7 +190,7 @@ def test_load_cv_folds():
 
     # write the generated CV folds to a CSV file
     fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
-    with open(fold_file_path, 'w') as foldf:
+    with open(fold_file_path, 'wb' if PY2 else 'w') as foldf:
         w = csv.writer(foldf)
         w.writerow(['id', 'fold'])
         for example_id, fold_label in custom_cv_folds.items():
@@ -209,7 +213,7 @@ def test_load_cv_folds_non_float_ids():
 
     # write the generated CV folds to a CSV file
     fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
-    with open(fold_file_path, 'w') as foldf:
+    with open(fold_file_path, 'wb' if PY2 else 'w') as foldf:
         w = csv.writer(foldf)
         w.writerow(['id', 'fold'])
         for example_id, fold_label in custom_cv_folds.items():

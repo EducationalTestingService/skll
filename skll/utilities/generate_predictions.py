@@ -9,6 +9,8 @@ Loads a trained model and outputs predictions based on input feature files.
 :date: February 2013
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import argparse
 import logging
 import os
