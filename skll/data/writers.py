@@ -38,10 +38,6 @@ class Writer(object):
     quiet : bool
         Do not print "Writing..." status message to stderr.
         Defaults to ``True``.
-    requires_binary : bool
-        Whether or not the Writer must open the
-        file in binary mode for writing with Python 2.
-        Defaults to ``False``.
     subsets : dict (str to list of str)
         A mapping from subset names to lists of feature names
         that are included in those sets. If given, a feature
@@ -63,7 +59,6 @@ class Writer(object):
 
     def __init__(self, path, feature_set, **kwargs):
         super(Writer, self).__init__()
-        self.requires_binary = kwargs.pop('requires_binary', False)
         self.quiet = kwargs.pop('quiet', True)
         self.path = path
         self.feat_set = feature_set

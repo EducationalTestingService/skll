@@ -86,7 +86,6 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     # If it is a str like "1", then it will be converted to a (rounded) int.
     # If it is a str that can't be typecast, then the user is
     # given a hopefully useful error message.
-    # Note: numpy and python 3.3 use bankers' rounding.
     try:
         y_true = [int(np.round(float(y))) for y in y_true]
         y_pred = [int(np.round(float(y))) for y in y_pred]

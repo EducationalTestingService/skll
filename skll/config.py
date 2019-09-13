@@ -17,7 +17,7 @@ from io import open
 from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 
-import configparser  # Backported version from Python 3
+import configparser
 import numpy as np
 import ruamel.yaml as yaml
 
