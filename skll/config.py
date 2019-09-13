@@ -704,7 +704,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     else:
         class_map = None
 
-    beta = config.getfloat("Iutput", "beta")
+    beta = config.getfloat("Input", "beta")
 
     # if not specify beta for fbeta_score
     # fbeta_score will use default value beta=1
