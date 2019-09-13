@@ -5,11 +5,11 @@ Functions related to logging in SKLL.
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
-import re
 import logging
-import warnings
 from logging import FileHandler
 from os.path import sep
+import re
+import warnings
 
 orig_showwarning = warnings.showwarning
 SKLEARN_WARNINGS_RE = re.compile(r"{0}sklearn{0}".format(sep))
