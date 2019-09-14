@@ -30,7 +30,7 @@ install:
 
 # Run test
 script:
-  - MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG ${TESTFILES}; else nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a '!have_pandas_and_seaborn' ${TESTFILES}; fi
+  - MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG ${TESTFILES}
 
 # Calculate coverage
 after_success:
