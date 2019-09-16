@@ -47,8 +47,7 @@ def main(argv=None):
     parser.add_argument('--sign',
                         choices=['positive', 'negative', 'all'],
                         default='all',
-                        help=('show only positive, only negative, '
-                              'or all weights'))
+                        help='show only positive, only negative or all weights')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args(argv)
