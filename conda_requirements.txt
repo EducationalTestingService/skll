@@ -1,5 +1,4 @@
 scikit-learn==0.20.1
-six
 PrettyTable
 beautifulsoup4
 tabulate

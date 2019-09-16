@@ -9,8 +9,6 @@ common scikit-learn experiments with pre-generated features.
 :organization: ETS
 """
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 from sklearn.metrics import f1_score, make_scorer, SCORERS
 from .logutils import (close_and_remove_logger_handlers,
                        get_skll_logger, orig_showwarning)

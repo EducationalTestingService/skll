@@ -2,11 +2,11 @@
 
 Installation
 ============
-SKLL can be installed via ``pip`` for any Python version::
+SKLL can be installed via ``pip``::
 
     pip install skll
 
-or via ``conda`` (only for Python 3.6)::
+or via ``conda``::
 
     conda install -c defaults -c conda-forge -c desilinguist python=3.6 skll
 

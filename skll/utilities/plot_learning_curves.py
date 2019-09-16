@@ -15,8 +15,6 @@ to generate the plots later.
 :organization: ETS
 """
 
-from __future__ import print_function, unicode_literals
-
 import argparse
 import logging
 import sys

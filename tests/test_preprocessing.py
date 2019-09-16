@@ -6,9 +6,6 @@ Tests related to data preprocessing options with run_experiment.
 :author: Nitin Madnani (nmadnani@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import glob
 import json
 import os

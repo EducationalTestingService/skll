@@ -8,8 +8,6 @@ Handles loading data from various types of data files.
 :organization: ETS
 """
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 import logging
 import os
 import re
@@ -18,8 +16,6 @@ import pandas as pd
 from decimal import Decimal
 from io import open
 
-from six import iteritems, PY2, string_types, text_type
-from six.moves import map
 from sklearn.feature_extraction import FeatureHasher
 
 
@@ -42,10 +38,6 @@ class Writer(object):
     quiet : bool
         Do not print "Writing..." status message to stderr.
         Defaults to ``True``.
-    requires_binary : bool
-        Whether or not the Writer must open the
-        file in binary mode for writing with Python 2.
-        Defaults to ``False``.
     subsets : dict (str to list of str)
         A mapping from subset names to lists of feature names
         that are included in those sets. If given, a feature
@@ -67,7 +59,6 @@ class Writer(object):
 
     def __init__(self, path, feature_set, **kwargs):
         super(Writer, self).__init__()
-        self.requires_binary = kwargs.pop('requires_binary', False)
         self.quiet = kwargs.pop('quiet', True)
         self.path = path
         self.feat_set = feature_set
@@ -132,7 +123,7 @@ class Writer(object):
 
         # Otherwise write one feature file per subset
         else:
-            for subset_name, filter_features in iteritems(self.subsets):
+            for subset_name, filter_features in self.subsets.items():
                 self.logger.debug('Subset ({}) features: {}'.format(subset_name,
                                                                     filter_features))
                 sub_path = os.path.join(self.root, '{}{}'.format(subset_name,
@@ -167,8 +158,7 @@ class Writer(object):
                             if filter_features is not None else self.feat_set)
 
             # Open file for writing and write each line
-            file_mode = 'wb' if (self.requires_binary and PY2) else 'w'
-            with open(sub_path, file_mode) as output_file:
+            with open(sub_path, 'w') as output_file:
                 # Write out the header if this format requires it
                 self._write_header(filtered_set, output_file, filter_features)
                 # Write individual lines
@@ -570,14 +560,13 @@ class ARFFWriter(Writer):
         df = self._build_dataframe(feature_set, filter_features)
 
         # Open file for writing and write
-        file_mode = 'wb' if PY2 else 'w'
-        with open(output_file, file_mode) as buff:
+        with open(output_file, 'w') as buff:
 
             # Write out the header
             self._write_header(feature_set, buff, filter_features)
 
             df.to_csv(buff,
-                      mode='a'.encode() if PY2 else 'a',
+                      mode='a',
                       index=self._index,
                       header=False, **self._pandas_kwargs)
 
@@ -747,7 +736,7 @@ class LibSVMWriter(Writer):
         name : str
             The class names with unicode equivalent replacements.
         """
-        if isinstance(name, string_types):
+        if isinstance(name, str):
             for orig, replacement in LibSVMWriter.LIBSVM_REPLACE_DICT.items():
                 name = name.replace(orig, replacement)
         return name
@@ -769,7 +758,7 @@ class LibSVMWriter(Writer):
         """
         field_values = sorted([(self.feat_set.vectorizer.vocabulary_[field] +
                                 1, value) for field, value in
-                               iteritems(feat_dict) if Decimal(value) != 0])
+                               feat_dict.items() if Decimal(value) != 0])
         # Print label
         if label_ in self.label_map:
             print('{}'.format(self.label_map[label_]), end=' ',
@@ -784,9 +773,7 @@ class LibSVMWriter(Writer):
         print(self._sanitize('{}'.format(id_)), end='',
               file=output_file)
         print(' |', end=' ', file=output_file)
-        if (PY2 and self.feat_set.has_labels and isinstance(label_,
-                                                            text_type)):
-            label_ = label_.encode('utf-8')
+
         if label_ in self.label_map:
             print('%s=%s' % (self._sanitize(self.label_map[label_]),
                              self._sanitize(label_)),
