@@ -17,7 +17,6 @@ from os.path import abspath, dirname, exists, join
 import numpy as np
 import pandas as pd
 from nose.tools import eq_, raises, assert_not_equal
-from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
@@ -102,7 +101,7 @@ def check_empty_file_read(filetype, reader_type):
 
 
 def test_empty_file_read():
-    for filetype, reader_type in zip(['csv',  'jsonlines',
+    for filetype, reader_type in zip(['csv', 'jsonlines',
                                       'libsvm', 'megam', 'tsv'],
                                      ['CSVReader', 'NDJReader',
                                       'LibSVMReader', 'MegaMReader', 'TSVReader']):
@@ -999,13 +998,11 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
     return (expected, current)
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_labels():
     (expected, current) = featureset_creation_from_dataframe_helper(True, False)
     assert expected == current
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_without_labels():
     (expected, current) = featureset_creation_from_dataframe_helper(False, False)
     # Directly comparing FeatureSet objects fails here because both sets
@@ -1022,13 +1019,11 @@ def test_featureset_creation_from_dataframe_without_labels():
             np.all(np.isnan(current.labels)))
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_labels_and_vectorizer():
     (expected, current) = featureset_creation_from_dataframe_helper(True, True)
     assert expected == current
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
     (expected, current) = featureset_creation_from_dataframe_helper(False, True)
     # Directly comparing FeatureSet objects fails here because both sets
@@ -1066,7 +1061,6 @@ def test_writing_ndj_featureset_with_string_ids():
     assert fs_test == fs_test2
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_string_ids():
 
     dftest = pd.DataFrame({"id": ['1', '2'],
@@ -1093,7 +1087,6 @@ def test_featureset_creation_from_dataframe_with_string_ids():
     assert fs_test == fs_test2
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_string_labels():
 
     dftest = pd.DataFrame({"id": [1, 2],
