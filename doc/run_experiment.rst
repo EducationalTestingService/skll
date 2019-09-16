@@ -127,7 +127,7 @@ to/from this MegaM format and for adding/removing features from the files.
 Creating configuration files
 ----------------------------
 The experiment configuration files that run_experiment accepts are standard
-`Python configuration files <https://docs.python.org/3.6/library/configparser.html>`__
+`Python configuration files <https://docs.python.org/3/library/configparser.html>`__
 that are similar in format to Windows INI files. [#]_
 There are four expected sections in a configuration file: :ref:`General`,
 :ref:`Input`, :ref:`Tuning`, and :ref:`Output`.  A detailed description of each

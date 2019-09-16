@@ -50,8 +50,6 @@ requirements:
     - numpy
     - scipy
     - ruamel.yaml
-    - configparser [py2k]
-    - mock [py2k]
 
   run:
     - python
@@ -62,8 +60,6 @@ requirements:
     - numpy
     - scipy
     - ruamel.yaml
-    - configparser [py2k]
-    - mock [py2k]
 
 test:
   # Python imports

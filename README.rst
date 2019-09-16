@@ -131,11 +131,7 @@ Requirements
    to run things in parallel on a DRMAA-compatible cluster)
 -  `joblib <https://pypi.org/project/joblib/>`__
 -  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
-
-The following packages can be optionally installed for additional features
-but are not required:
-
--  `seaborn <http://seaborn.pydata.org>`__ (optional)
+-  `seaborn <http://seaborn.pydata.org>`__
 
 Talks
 ~~~~~
