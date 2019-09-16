@@ -433,6 +433,10 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                                num_features=num_features,
                                logger=logger).read()
     else:
+        if len(feat_files) > 1 and feature_hasher:
+            logger.warning("Since there are multiple feature files, "
+                           "feature hashing applies to each specified "
+                           "feature file separately.")
         merged_set = None
         for file_name in sorted(join(dir_path, featfile + suffix) for
                                 featfile in feat_files):
