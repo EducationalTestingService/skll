@@ -5,8 +5,8 @@ SciKit-Learn Laboratory
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
-.. image:: https://img.shields.io/coveralls/EducationalTestingService/skll/master.svg
-    :target: https://coveralls.io/r/EducationalTestingService/skll
+.. image:: https://codecov.io/gh/EducationalTestingService/skll/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/EducationalTestingService/skll
 
 .. image:: https://img.shields.io/pypi/v/skll.svg
    :target: https://pypi.org/project/skll/
