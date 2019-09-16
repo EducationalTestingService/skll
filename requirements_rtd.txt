@@ -8,5 +8,7 @@ beautifulsoup4
 numpy
 scipy
 pandas
+seaborn
+tabulate
 joblib>=0.8
 ruamel.yaml
