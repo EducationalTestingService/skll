@@ -15,9 +15,12 @@ import logging
 import math
 import sys
 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import ruamel.yaml as yaml
+import seaborn as sns
 
 from collections import defaultdict
 from io import open
@@ -42,16 +45,9 @@ except ImportError:
 else:
     _HAVE_GRIDMAP = True
 
-# Check if seaborn (and matplotlib) are available
-try:
-    import matplotlib
-    import seaborn as sns
-except ImportError:
-    _HAVE_SEABORN = False
-else:
-    import matplotlib.pyplot as plt
-    plt.ioff()
-    _HAVE_SEABORN = True
+# Turn off interactive plotting for matplotlib
+plt.ioff()
+
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
@@ -1282,14 +1278,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             _write_learning_curve_file(result_json_paths, output_file)
 
         # generate the actual plot if we have the requirements installed
-        if _HAVE_SEABORN:
-            _generate_learning_curve_plots(experiment_name,
-                                           results_path,
-                                           output_file_path)
-        else:
-            logger.warning("Raw data for the learning curve saved in "
-                           "{}. No plots were generated since pandas and "
-                           "seaborn are not installed. ".format(output_file_path))
+        _generate_learning_curve_plots(experiment_name,
+                                       results_path,
+                                       output_file_path)
 
     return result_json_paths
 
