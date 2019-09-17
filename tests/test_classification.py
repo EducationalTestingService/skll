@@ -755,7 +755,7 @@ def test_learner_api_load_into_existing_instance():
 
     # now use `load()` to replace the existing instance with a
     # different saved learner
-    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.{}.model'.format(sys.version_info[0]))
+    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.model')
     learner1.load(other_model_file)
 
     # now load the saved model into another instance using the class method

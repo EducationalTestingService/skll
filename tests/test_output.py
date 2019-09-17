@@ -628,13 +628,14 @@ def test_backward_compatibility():
     """
     Test to validate backward compatibility
     """
-    predict_path = join(_my_dir, 'backward_compatibility',
-                        ('v0.9.17_test_summary_test_summary_'
-                         'LogisticRegression.predictions'))
-    model_path = join(_my_dir, 'backward_compatibility',
-                      ('v0.9.17_test_summary_test_summary_LogisticRegression.'
-                       '{}.model').format(sys.version_info[0]))
-    test_path = join(_my_dir, 'backward_compatibility',
+    predict_path = join(_my_dir,
+                        'backward_compatibility',
+                        'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
+    model_path = join(_my_dir,
+                      'backward_compatibility',
+                      'v0.9.17_test_summary_test_summary_LogisticRegression.model')
+    test_path = join(_my_dir,
+                     'backward_compatibility',
                      'v0.9.17_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
