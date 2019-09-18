@@ -8,14 +8,11 @@ Simple script for printing out model weights.
 :organization: ETS
 """
 
-from __future__ import print_function, unicode_literals
-
 import argparse
 import logging
 import sys
 
 from collections import defaultdict
-from six import iteritems
 
 import numpy as np
 
@@ -50,15 +47,14 @@ def main(argv=None):
     parser.add_argument('--sign',
                         choices=['positive', 'negative', 'all'],
                         default='all',
-                        help='show only positive, only negative, ' +
-                             'or all weights')
+                        help='show only positive, only negative or all weights')
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
     args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
                                 '%(message)s'))
 
     k = args.k if args.k > 0 else None
@@ -68,13 +64,13 @@ def main(argv=None):
 
     multiclass = False
     model = learner._model
-    if (isinstance(model, LinearSVC) or
-        (isinstance(model, LogisticRegression) and
-            len(learner.label_list) > 2) or
-        (isinstance(model, SVC) and
-            model.kernel == 'linear')):
+    if (isinstance(model, LinearSVC)
+        or (isinstance(model, LogisticRegression)
+            and len(learner.label_list) > 2)
+        or (isinstance(model, SVC)
+            and model.kernel == 'linear')):
         multiclass = True
-    weight_items = iteritems(weights)
+    weight_items = weights.items()
     if args.sign == 'positive':
         weight_items = (x for x in weight_items if x[1] > 0)
     elif args.sign == 'negative':

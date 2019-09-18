@@ -1,42 +1,38 @@
 language: python
 python:
-  - 2.7
   - 3.6
 notifications:
   email: false
   slack:
     secure: d+NSaR+cfRkcJfX/uEVwdyQDlayZO6c8QV96grl1stmWxG3XOXvXg1tM6v7EBeb9VRw5T4VglnnJGNJA62j1ReEJ0XyWr5XtaNWiF6Lc4UOty/TTG36IQdkWS1vQA8v2Hre73YbvOhtBb6biNneVAk+rrfRSgomEa+ec22cjgUo=
 env:
-  - WITH_PANDAS_AND_SEABORN=true TESTFILES="tests/test_featureset.py"
-  - WITH_PANDAS_AND_SEABORN=true TESTFILES="tests/test_output.py"
-  - WITH_PANDAS_AND_SEABORN=true TESTFILES="tests/test_utilities.py"
-  - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_regression.py"
-  - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_featureset.py"
-  - WITH_PANDAS_AND_SEABORN=false TESTFILES="tests/test_output.py tests/test_input.py tests/test_preprocessing.py tests/test_cv.py tests/test_metrics.py tests/test_ablation.py tests/test_classification.py tests/test_custom_learner.py tests/test_utilities.py"
+  - TESTFILES="tests/test_featureset.py tests/test_utilities.py"
+  - TESTFILES="tests/test_output.py"
+  - TESTFILES="tests/test_regression.py"
+  - TESTFILES="tests/test_input.py tests/test_preprocessing.py tests/test_metrics.py tests/test_custom_learner.py"
+  - TESTFILES="tests/test_classification.py tests/test_cv.py tests/test_ablation.py"
 
 # run on the new Travis infrastructure
 sudo: false
 
 # Install stuff
 before_install:
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; fi
+  - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then export PATH=/home/travis/miniconda2/bin:$PATH; else export PATH=/home/travis/miniconda3/bin:$PATH; fi
+  - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda update --yes conda
 install:
-  - conda install --yes --channel defaults --channel conda-forge python=$TRAVIS_PYTHON_VERSION numpy scipy pandas beautifulsoup4 six scikit-learn==0.20.1 joblib tabulate python-coveralls ruamel.yaml
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes --channel defaults configparser mock; fi
-  - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then conda install --yes --channel defaults seaborn; fi
+  - conda install --yes --channel defaults --channel conda-forge python=$TRAVIS_PYTHON_VERSION numpy scipy seaborn pandas beautifulsoup4 scikit-learn==0.20.1 joblib tabulate codecov ruamel.yaml
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
   - python setup.py install
 
 # Run test
 script:
-  - if [ ${WITH_PANDAS_AND_SEABORN} == "true" ]; then MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a have_pandas_and_seaborn ${TESTFILES}; else nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG -a '!have_pandas_and_seaborn' ${TESTFILES}; fi
+  - MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG ${TESTFILES}
 
 # Calculate coverage
 after_success:
-  - coveralls --config_file .coveragerc
+  - codecov
 
