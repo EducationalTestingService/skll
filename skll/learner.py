@@ -74,6 +74,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MaxAbsScaler
 from sklearn.svm import LinearSVC, SVC, LinearSVR, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import shuffle as sk_shuffle
@@ -798,7 +799,8 @@ class Learner(object):
         How to scale the features, if at all. Options are
         -  'with_std': scale features using the standard deviation
         -  'with_mean': center features using the mean
-        -  'both': do both scaling as well as centering
+        -  'both': do standard deviation as well as centering
+        -  'with_max_abs': do scaling each feature by its maximum absolute value
         -  'none': do neither scaling nor centering
         Defaults to 'none'.
     model_kwargs : dict, optional
@@ -851,6 +853,13 @@ class Learner(object):
         self._model = None
         self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
+        
+        if self._feature_scaling == 'both':
+        
+            logger.warning("The parameter \"feature_scaling\" "       
+                "with value = 'both' is deprecated and will be removed in the next "        
+                "release, please use \"with_std_mean\" instead.")    
+        
         self.feat_selector = None
         self._min_feature_count = min_feature_count
         self._model_kwargs = {}
@@ -1388,12 +1397,15 @@ class Learner(object):
         # Create scaler if we weren't passed one and it's necessary
         if not issubclass(self._model_type, MultinomialNB):
             if self._feature_scaling != 'none':
-                scale_with_mean = self._feature_scaling in {
+                if self._feature_scaling != 'with_max_abs':
+                    scale_with_mean = self._feature_scaling in {
                     'with_mean', 'both'}
-                scale_with_std = self._feature_scaling in {'with_std', 'both'}
-                self.scaler = StandardScaler(copy=True,
+                    scale_with_std = self._feature_scaling in {'with_std', 'both'}
+                    self.scaler = StandardScaler(copy=True,
                                              with_mean=scale_with_mean,
                                              with_std=scale_with_std)
+                else:
+                    self.scaler = MaxAbsScaler(copy=True)
             else:
                 # Doing this is to prevent any modification of feature values
                 # using a dummy transformation

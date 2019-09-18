@@ -73,7 +73,8 @@ def tearDown():
     for cf in config_files:
         if exists(join(config_dir, cf)):
             os.unlink(join(config_dir, cf))
-
+            
+            
 
 def test_SelectByMinCount():
     """ Test SelectByMinCount feature selector """
@@ -150,6 +151,31 @@ def make_class_map_data():
                          labels=labels)
     writer = NDJWriter(test_path, test_fs)
     writer.write()
+    
+
+def test_scaling():
+    
+    '''
+     check_scaling_features, False, False, 'none'
+    yield check_scaling_features, True, False, 'none'
+
+    yield check_scaling_features, False, True,'with_max_abs'
+    yield check_scaling_features, True, True,'with_max_abs'
+    '''
+    print('hello yield?')
+
+    #yield check_scaling_features, False, False, 'none'
+    
+    check_scaling_features(True, False, 'none')
+    check_scaling_features(False, True, 'none')
+    check_scaling_features(True, True, 'none')
+    check_scaling_features(False, False, 'none')
+    
+    
+
+    check_scaling_features(False, True,'with_max_abs')
+    check_scaling_features(True, True,'with_max_abs')
+
 
 
 def test_class_map():
@@ -238,11 +264,22 @@ def make_scaling_data(use_feature_hashing=False):
     return (train_fs, test_fs)
 
 
-def check_scaling_features(use_feature_hashing=False, use_scaling=False):
+def check_scaling_features(use_feature_hashing=False, use_scaling=False,feature_scaling='none'):
     train_fs, test_fs = make_scaling_data(use_feature_hashing=use_feature_hashing)
 
     # create a Linear SVM with the value of scaling as specified
-    feature_scaling = 'both' if use_scaling else 'none'
+    
+    #if not use_scaling:
+    #    feature_scaling = 'none'
+        
+    
+    #if use_scaling and feature_scaling is None:
+    #    feature_scaling = 'both'
+    
+    feature_scaling = 'both' if use_scaling and feature_scaling is 'none' else feature_scaling
+    
+    
+    #feature_scaling = 'both' if use_scaling else 'none'
     learner = Learner('SGDClassifier', feature_scaling=feature_scaling,
                       pos_label_str=1)
 
@@ -254,19 +291,25 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_fmeasures = ([0.55276381909547745, 0.55721393034825872] if
+        
+        if feature_scaling == 'with_max_abs':
+             expected_fmeasures = [0.55276381909547745, 0.55721393034825872] 
+        else:
+            expected_fmeasures = ([0.55276381909547745, 0.55721393034825872] if
                               not use_scaling else
                               [0.65217391304347827, 0.70370370370370372])
     else:
-        expected_fmeasures = ([0.54255319148936176, 0.59433962264150941] if
+        
+        if feature_scaling == 'with_max_abs':
+             expected_fmeasures = [0.54255319148936176, 0.59433962264150941] 
+        else:
+            expected_fmeasures = ([0.54255319148936176, 0.59433962264150941] if
                               not use_scaling else
                               [0.69950738916256161, 0.69035532994923865])
 
     assert_almost_equal(expected_fmeasures, fmeasures)
 
 
-def test_scaling():
-    yield check_scaling_features, False, False
-    yield check_scaling_features, False, True
-    yield check_scaling_features, True, False
-    yield check_scaling_features, True, True
+
+
+

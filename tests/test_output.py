@@ -941,7 +941,7 @@ def test_pipeline_attribute():
     use_hashing = [True, False]
     min_feature_counts = [1, 2]
     samplers = [None, 'RBFSampler', 'SkewedChi2Sampler']
-    scalers = ['none', 'with_mean', 'with_std', 'both']
+    scalers = ['none', 'with_mean', 'with_std', 'both', 'with_max_abs']
 
     for (learner_name,
          do_feature_hashing,
