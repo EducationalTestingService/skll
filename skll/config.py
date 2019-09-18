@@ -13,7 +13,6 @@ import errno
 import itertools
 import logging
 import os
-from io import open
 from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 

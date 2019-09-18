@@ -16,7 +16,6 @@ import warnings
 from ast import literal_eval
 from collections import defaultdict
 from glob import glob
-from io import open
 from itertools import product
 from os.path import abspath, dirname, exists, join
 

@@ -10,8 +10,6 @@ files.
 
 import argparse
 import logging
-import sys
-from io import open
 
 from skll.experiments import _write_summary_file
 from skll.version import __version__

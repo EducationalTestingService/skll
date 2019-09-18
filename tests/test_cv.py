@@ -11,16 +11,16 @@ the future.
 
 import csv
 import itertools
-from io import open
-import os
-from os.path import abspath, dirname, join, exists
 import json
-from glob import glob
+import os
 import re
 
-import numpy as np
-from nose.tools import eq_, raises
+from glob import glob
+from os.path import abspath, dirname, join, exists
 
+import numpy as np
+
+from nose.tools import eq_, raises
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
 from sklearn.utils.testing import (assert_greater,

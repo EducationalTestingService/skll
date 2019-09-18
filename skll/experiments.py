@@ -23,7 +23,6 @@ import ruamel.yaml as yaml
 import seaborn as sns
 
 from collections import defaultdict
-from io import open
 from itertools import combinations
 from os.path import exists, isfile, join, getsize
 

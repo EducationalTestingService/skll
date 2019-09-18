@@ -38,7 +38,7 @@ import logging
 import re
 import sys
 from itertools import islice
-from io import open, StringIO
+from io import StringIO
 
 import numpy as np
 import pandas as pd

@@ -16,7 +16,6 @@ import os
 import re
 import warnings
 
-from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
