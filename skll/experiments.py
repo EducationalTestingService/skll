@@ -304,9 +304,9 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
               file=output_file)
         print('Grid Objective Function: {}'.format(lrd['grid_objective']),
               file=output_file)
-    if (lrd['task'] == 'cross_validate'
-            and lrd['grid_search']
-            and lrd['cv_folds'].endswith('folds file')):
+    if (lrd['task'] == 'cross_validate' and
+            lrd['grid_search'] and
+            lrd['cv_folds'].endswith('folds file')):
         print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
               file=output_file)
     if lrd['task'] in ['evaluate', 'cross_validate'] and lrd['additional_scores']:
@@ -568,9 +568,9 @@ def _classify_featureset(args):
     # check whether a trained model on the same data with the same
     # featureset already exists if so, load it and then use it on test data
     modelfile = join(model_path, '{}.model'.format(job_name))
-    if (task in ['cross_validate', 'learning_curve']
-            or not exists(modelfile)
-            or overwrite):
+    if (task in ['cross_validate', 'learning_curve'] or
+            not exists(modelfile) or
+            overwrite):
         train_examples = _load_featureset(train_path,
                                           featureset,
                                           suffix,
@@ -909,8 +909,8 @@ def _create_learner_result_dicts(task_results,
                     recall_sum_dict[actual_label] += float(label_recall)
                 if not math.isnan(label_f):
                     f_sum_dict[actual_label] += float(label_f)
-                result_row = ([actual_label] + conf_matrix[i]
-                              + [label_prec, label_recall, label_f])
+                result_row = ([actual_label] + conf_matrix[i] +
+                              [label_prec, label_recall, label_f])
                 rows.append(result_row)
 
             result_table = tabulate(rows,
@@ -1091,19 +1091,19 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
             if ablation is None:
                 for i in range(1, len(features)):
                     for excluded_features in combinations(features, i):
-                        expanded_fs.append(sorted(featureset
-                                                  - set(excluded_features)))
-                        expanded_fs_names.append(featureset_name
-                                                 + '_minus_'
-                                                 + _munge_featureset_name(excluded_features))
+                        expanded_fs.append(sorted(featureset -
+                                                  set(excluded_features)))
+                        expanded_fs_names.append(featureset_name +
+                                                 '_minus_' +
+                                                 _munge_featureset_name(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
                                               set(excluded_features)))
-                    expanded_fs_names.append(featureset_name
-                                             + '_minus_'
-                                             + _munge_featureset_name(excluded_features))
+                    expanded_fs_names.append(featureset_name +
+                                             '_minus_' +
+                                             _munge_featureset_name(excluded_features))
             # Also add version with nothing removed as baseline
             expanded_fs.append(features)
             expanded_fs_names.append(featureset_name + '_all')
@@ -1406,12 +1406,12 @@ def _generate_learning_curve_plots(experiment_name,
                 for j, col_name in enumerate(g.col_names):
                     ax = g.axes[i][j]
                     ax.set(ylim=ylimits[row_name])
-                    df_ax_train = df_fs[(df_fs['learner_name'] == col_name)
-                                        & (df_fs['metric'] == row_name)
-                                        & (df_fs['variable'] == 'train_score_mean')]
-                    df_ax_test = df_fs[(df_fs['learner_name'] == col_name)
-                                       & (df_fs['metric'] == row_name)
-                                       & (df_fs['variable'] == 'test_score_mean')]
+                    df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
+                                        (df_fs['metric'] == row_name) &
+                                        (df_fs['variable'] == 'train_score_mean')]
+                    df_ax_test = df_fs[(df_fs['learner_name'] == col_name) &
+                                       (df_fs['metric'] == row_name) &
+                                       (df_fs['variable'] == 'test_score_mean')]
                     ax.fill_between(list(range(len(df_ax_train))),
                                     df_ax_train['value'] - df_ax_train['train_score_std'],
                                     df_ax_train['value'] + df_ax_train['train_score_std'],

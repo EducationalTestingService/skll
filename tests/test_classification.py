@@ -14,7 +14,6 @@ import itertools
 import json
 import os
 import re
-import sys
 import warnings
 
 from io import open
@@ -346,7 +345,7 @@ def test_dummy_classifier_predict():
                                               {"strategy": "constant", "constant": 1}],
                                              [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]),
                                               np.zeros(10),
-                                              np.ones(10)*1]):
+                                              np.ones(10) * 1]):
         yield check_dummy_classifier_predict, model_args, train_labels, expected_output
 
 

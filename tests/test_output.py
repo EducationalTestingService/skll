@@ -11,7 +11,6 @@ import csv
 import json
 import os
 import re
-import sys
 import warnings
 
 from ast import literal_eval

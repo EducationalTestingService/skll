@@ -543,8 +543,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # ensure that featureset_names is a list of strings, if specified
     if featureset_names:
-        if (not isinstance(featureset_names, list)
-            or not all([isinstance(fs, str) for fs in
+        if (not isinstance(featureset_names, list) or
+                not all([isinstance(fs, str) for fs in
                         featureset_names])):
             raise ValueError("The featureset_names parameter should be a list "
                              "of strings. You specified: {}"
