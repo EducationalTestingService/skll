@@ -14,10 +14,8 @@ import itertools
 import json
 import os
 import re
-import sys
 import warnings
 
-from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
@@ -346,7 +344,7 @@ def test_dummy_classifier_predict():
                                               {"strategy": "constant", "constant": 1}],
                                              [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]),
                                               np.zeros(10),
-                                              np.ones(10)*1]):
+                                              np.ones(10) * 1]):
         yield check_dummy_classifier_predict, model_args, train_labels, expected_output
 
 
@@ -755,7 +753,7 @@ def test_learner_api_load_into_existing_instance():
 
     # now use `load()` to replace the existing instance with a
     # different saved learner
-    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.{}.model'.format(sys.version_info[0]))
+    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.model')
     learner1.load(other_model_file)
 
     # now load the saved model into another instance using the class method

@@ -14,7 +14,6 @@ import re
 import sys
 import pandas as pd
 from decimal import Decimal
-from io import open
 
 from sklearn.feature_extraction import FeatureHasher
 

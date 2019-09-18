@@ -12,7 +12,6 @@ the future.
 import csv
 import os
 from glob import glob
-from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np

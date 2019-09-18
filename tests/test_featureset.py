@@ -638,8 +638,8 @@ def test_feature_merging_order_invariance():
     merged_fs_shuf = train_fs1 + train_fs2_shuf
 
     # check that the two merged versions are the same
-    feature_names = (train_fs1.vectorizer.get_feature_names()
-                     + train_fs2.vectorizer.get_feature_names())
+    feature_names = (train_fs1.vectorizer.get_feature_names() +
+                     train_fs2.vectorizer.get_feature_names())
     assert_array_equal(merged_fs.vectorizer.get_feature_names(), feature_names)
     assert_array_equal(merged_fs_shuf.vectorizer.get_feature_names(),
                        feature_names)
@@ -659,8 +659,7 @@ def test_feature_merging_order_invariance():
     assert_array_equal(merged_fs.features.todense(),
                        merged_fs_shuf.features.todense())
 
-    assert not np.all(merged_fs.features[:, 0:2].todense()
-                      == merged_fs.features[:, 2:4].todense())
+    assert not np.all(merged_fs.features[:, 0:2].todense() == merged_fs.features[:, 2:4].todense())
 
 
 # Tests related to loading featuresets and merging them
