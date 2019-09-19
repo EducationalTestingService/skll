@@ -1,23 +1,23 @@
 # License: BSD 3 clause
 """
 Handles loading data from various types of data files.
-
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
 
-from __future__ import absolute_import, print_function, unicode_literals
-
+import json
 import logging
 import os
 import re
 import sys
 import pandas as pd
+from csv import DictWriter
 from decimal import Decimal
 from io import open
 
+import numpy as np
 from six import iteritems, PY2, string_types, text_type
 from six.moves import map
 from sklearn.feature_extraction import FeatureHasher
@@ -26,7 +26,6 @@ from sklearn.feature_extraction import FeatureHasher
 class Writer(object):
     """
     Helper class for writing out FeatureSets to files on disk.
-
     Parameters
     ----------
     path : str
@@ -42,10 +41,6 @@ class Writer(object):
     quiet : bool
         Do not print "Writing..." status message to stderr.
         Defaults to ``True``.
-    requires_binary : bool
-        Whether or not the Writer must open the
-        file in binary mode for writing with Python 2.
-        Defaults to ``False``.
     subsets : dict (str to list of str)
         A mapping from subset names to lists of feature names
         that are included in those sets. If given, a feature
@@ -89,7 +84,6 @@ class Writer(object):
         """
         Retrieve object of ``Writer`` sub-class that is
         appropriate for given path.
-
         Parameters
         ----------
         path : str
@@ -106,7 +100,6 @@ class Writer(object):
         kwargs : dict
             The keyword arguments for ``for_path`` are the same as
             the initializer for the desired ``Writer`` subclass.
-
         Returns
         -------
         writer : skll.data.writers.Writer
@@ -132,7 +125,7 @@ class Writer(object):
 
         # Otherwise write one feature file per subset
         else:
-            for subset_name, filter_features in iteritems(self.subsets):
+            for subset_name, filter_features in self.subsets.items():
                 self.logger.debug('Subset ({}) features: {}'.format(subset_name,
                                                                     filter_features))
                 sub_path = os.path.join(self.root, '{}{}'.format(subset_name,
@@ -142,7 +135,6 @@ class Writer(object):
     def _write_subset(self, sub_path, filter_features):
         """
         Writes out the given ``FeatureSet`` instance to a file in this class's format.
-
         Parameters
         ----------
         sub_path : str
@@ -190,7 +182,6 @@ class Writer(object):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
-
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -207,7 +198,6 @@ class Writer(object):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in this Writer's format.
-
         Parameters
         ----------
         id_ : str
@@ -218,7 +208,6 @@ class Writer(object):
             The feature dictionary for the current instance.
         output_file : file buff
              The file being written to.
-
         Raises
         ------
         NotImplementedError
@@ -229,7 +218,6 @@ class Writer(object):
         """
         Write the the full data set in the Writer's format using `pandas`,
         rather than writing row-by-row.
-
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -240,7 +228,6 @@ class Writer(object):
             If only writing a subset of the features in the
             FeatureSet to ``output_file``, these are the
             features to include in this file.
-
         Raises
         ------
         NotImplementedError
@@ -251,7 +238,6 @@ class Writer(object):
         """
         Get the names of the columns and the associated
         index numbers for the (possibly filtered) features.
-
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -260,7 +246,6 @@ class Writer(object):
             If only writing a subset of the features in the
             FeatureSet to ``output_file``, these are the
             features to include in this file.
-
         Returns
         -------
         column_names : list of str
@@ -272,6 +257,7 @@ class Writer(object):
         """
         # if we're not doing filtering,
         # then just take all the feature names
+        self.logger.debug(feature_set)
         if filter_features is None:
             filter_features = feature_set.vectorizer.feature_names_
 
@@ -291,7 +277,6 @@ class Writer(object):
         """
         Create a data frame with the (possibly filtered) features from the current
         feature set.
-
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -301,13 +286,11 @@ class Writer(object):
             FeatureSet to ``output_file``, these are the
             features to include in this file.
             Defaults to None.
-
         Returns
         -------
         df_features : pd.DataFrame
             The data frame constructed from
             the feature set.
-
         Raises
         ------
         ValueError
@@ -333,7 +316,6 @@ class Writer(object):
         feature set. Then, add the IDs and labels, if applicable. If the data frame
         with features already exists, pass `df_features`. Then the IDs and labels will
         simply be added to the existing data frame containing the features.
-
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -348,13 +330,11 @@ class Writer(object):
             then we use it and add IDs and labels; otherwise,
             the feature data frame will be created from the feature set.
             Defaults to None.
-
         Returns
         -------
         df_features : pd.DataFrame
             The data frame constructed from
             the feature set.
-
         Raises
         ------
         ValueError
@@ -389,7 +369,6 @@ class CSVWriter(Writer):
 
     """
     Writer for writing out ``FeatureSet`` instances as CSV files.
-
     Parameters
     ----------
     path : str
@@ -420,7 +399,6 @@ class CSVWriter(Writer):
     def _write_data(self, feature_set, output_file, filter_features):
         """
         Write the data in CSV format.
-
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -440,7 +418,6 @@ class TSVWriter(CSVWriter):
 
     """
     Writer for writing out FeatureSets as TSV files.
-
     Parameters
     ----------
     path : str
@@ -469,7 +446,6 @@ class ARFFWriter(Writer):
 
     """
     Writer for writing out FeatureSets as ARFF files.
-
     Parameters
     ----------
     path : str
@@ -486,32 +462,24 @@ class ARFFWriter(Writer):
     regression : bool, optional
         Is this an ARFF file to be used for regression?
         Defaults to ``False``.
-    pandas_kwargs : dict or None, optional
-        Arguments that will be passed directly
-        to the `pandas` I/O reader.
-        Defaults to None.
     kwargs : dict, optional
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
-        self.label_col = kwargs.pop('label_col', 'y')
-        self.id_col = kwargs.pop('id_col', 'id')
+    def __init__(self, path, feature_set, **kwargs):
         self.relation = kwargs.pop('relation', 'skll_relation')
         self.regression = kwargs.pop('regression', False)
+        self.dialect = kwargs.pop('dialect', 'excel-tab')
+        self.label_col = kwargs.pop('label_col', 'y')
+        self.id_col = kwargs.pop('id_col', 'id')
+        kwargs['requires_binary'] = True
         super(ARFFWriter, self).__init__(path, feature_set, **kwargs)
-        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        self._index = self._pandas_kwargs.pop('index', False)
-        # remove the mode header arguments, if they exist
-        self._pandas_kwargs.pop('mode', None)
-        self._pandas_kwargs.pop('header', None)
-        self._use_pandas = True
+        self._dict_writer = None
 
     def _write_header(self, feature_set, output_file, filter_features):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
-
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -523,15 +491,14 @@ class ARFFWriter(Writer):
             FeatureSet to ``output_file``, these are the
             features to include in this file.
         """
-
-        column_names, _ = self._get_column_names_and_indexes(feature_set, filter_features)
-        column_names.append(self.id_col)
+        fieldnames, _ = self._get_column_names_and_indexes(self.feat_set, filter_features)
+        fieldnames.append(self.id_col)
 
         # Add relation to header
         print("@relation '{}'\n".format(self.relation), file=output_file)
 
         # Loop through fields writing the header info for the ARFF file
-        for field in column_names:
+        for field in fieldnames:
             print("@attribute '{}' numeric".format(field.replace('\\', '\\\\')
                                                    .replace("'", "\\'")),
                   file=output_file)
@@ -546,40 +513,52 @@ class ARFFWriter(Writer):
                       "{" + ','.join(map(str,
                                          sorted(set(self.feat_set.labels)))) +
                       "}", file=output_file)
+        if self.label_col:
+            fieldnames.append(self.label_col)
+
+        # Create CSV writer to handle missing values for lines in data section
+        # and to ignore the instance values for non-numeric attributes
+        self._dict_writer = DictWriter(output_file, fieldnames, restval=0,
+                                       extrasaction='ignore', dialect='arff')
 
         # Finish header and start data section
         print("\n@data", file=output_file)
 
-    def _write_data(self, feature_set, output_file, filter_features):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
-        Write the data in ARFF format.
-
+        Write the current line in the file in this Writer's format.
         Parameters
         ----------
-        feature_set : skll.FeatureSet
-            The ``FeatureSet`` instance being written to a file.
+        id_ : str
+            The ID for the current instance.
+        label_ : str
+            The label for the current instance.
+        feat_dict : dict
+            The feature dictionary for the current instance.
         output_file : file buffer
             The file being written to.
-        filter_features : set of str
-            If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
-            features to include in this file.
+        Raises
+        ------
+        ValueError
+            If class column name is already use as a feature
+        ValueError
+            If ID column name is already used as a feature.
         """
-
-        # create the data frame from he feature set
-        df = self._build_dataframe(feature_set, filter_features)
-
-        # Open file for writing and write
-        file_mode = 'wb' if PY2 else 'w'
-        with open(output_file, file_mode) as buff:
-
-            # Write out the header
-            self._write_header(feature_set, buff, filter_features)
-
-            df.to_csv(buff,
-                      mode='a'.encode() if PY2 else 'a',
-                      index=self._index,
-                      header=False, **self._pandas_kwargs)
+        # Add class column to feat_dict (unless this is unlabelled data)
+        if self.label_col not in feat_dict:
+            if self.feat_set.has_labels:
+                feat_dict[self.label_col] = label_
+        else:
+            raise ValueError(('Class column name "{}" already used as feature '
+                              'name.').format(self.label_col))
+        # Add id column to feat_dict if id is provided
+        if self.id_col not in feat_dict:
+            feat_dict[self.id_col] = id_
+        else:
+            raise ValueError('ID column name "{}" already used as feature '
+                             'name.'.format(self.id_col))
+        # Write out line
+        self._dict_writer.writerow(feat_dict)
 
 
 class MegaMWriter(Writer):
@@ -595,7 +574,6 @@ class MegaMWriter(Writer):
         ----------
         line : str
             The line to clean up.
-
         Returns
         -------
         char_list : str
@@ -612,7 +590,6 @@ class MegaMWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
-
         Parameters
         ----------
         id_ : str
@@ -640,7 +617,6 @@ class NDJWriter(Writer):
 
     """
     Writer for writing out FeatureSets as .jsonlines/.ndj files.
-
     Parameters
     ----------
     path : str
@@ -672,7 +648,6 @@ class NDJWriter(Writer):
     def _write_data(self, feature_set, output_file, filter_features):
         """
         Write the data in NDJ format.
-
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -694,7 +669,6 @@ class LibSVMWriter(Writer):
 
     """
     Writer for writing out FeatureSets as LibSVM/SVMLight files.
-
     Parameters
     ----------
     path : str
@@ -736,18 +710,16 @@ class LibSVMWriter(Writer):
         Replace illegal characters in class names with close unicode
         equivalents to make things loadable in by LibSVM, LibLinear, or
         SVMLight.
-
         Parameters
         ----------
         name : str
             The class names to replace with unicode equivalents.
-
         Returns
         -------
         name : str
             The class names with unicode equivalent replacements.
         """
-        if isinstance(name, string_types):
+        if isinstance(name, str):
             for orig, replacement in LibSVMWriter.LIBSVM_REPLACE_DICT.items():
                 name = name.replace(orig, replacement)
         return name
@@ -755,7 +727,6 @@ class LibSVMWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
-
         Parameters
         ----------
         id_ : str
@@ -769,7 +740,7 @@ class LibSVMWriter(Writer):
         """
         field_values = sorted([(self.feat_set.vectorizer.vocabulary_[field] +
                                 1, value) for field, value in
-                               iteritems(feat_dict) if Decimal(value) != 0])
+                               feat_dict.items() if Decimal(value) != 0])
         # Print label
         if label_ in self.label_map:
             print('{}'.format(self.label_map[label_]), end=' ',
@@ -784,9 +755,7 @@ class LibSVMWriter(Writer):
         print(self._sanitize('{}'.format(id_)), end='',
               file=output_file)
         print(' |', end=' ', file=output_file)
-        if (PY2 and self.feat_set.has_labels and isinstance(label_,
-                                                            text_type)):
-            label_ = label_.encode('utf-8')
+
         if label_ in self.label_map:
             print('%s=%s' % (self._sanitize(self.label_map[label_]),
                              self._sanitize(label_)),
