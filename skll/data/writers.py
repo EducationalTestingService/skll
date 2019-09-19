@@ -15,7 +15,6 @@ import sys
 import pandas as pd
 from csv import DictWriter
 from decimal import Decimal
-from io import open
 
 import numpy as np
 from six import iteritems, PY2, string_types, text_type

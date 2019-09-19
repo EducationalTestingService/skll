@@ -43,6 +43,7 @@ import pandas as pd
 from bs4 import UnicodeDammit
 from six import iteritems, PY2, PY3, string_types, text_type
 from six.moves import zip
+
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
@@ -547,7 +548,7 @@ class MegaMReader(Reader):
         curr_id = 'EXAMPLE_0'
         for line in f:
             # Process encoding
-            if not isinstance(line, text_type):
+            if not isinstance(line, str):
                 line = UnicodeDammit(line, ['utf-8',
                                             'windows-1252']).unicode_markup
             line = line.strip()
@@ -913,10 +914,6 @@ class ARFFReader(DelimitedReader):
             The escape character.
             Defaults to ``'\\'``.
         """
-        if PY2:
-            delimiter = delimiter.encode()
-            quote_char = quote_char.encode()
-            escape_char = escape_char.encode()
         return next(csv.reader([s], delimiter=delimiter, quotechar=quote_char,
                                escapechar=escape_char))
 
@@ -926,6 +923,7 @@ class ARFFReader(DelimitedReader):
         ----------
         f : file buffer
             A file buffer for the ARFF file.
+
         Yields
         ------
         curr_id : str
@@ -970,10 +968,7 @@ class ARFFReader(DelimitedReader):
                 # Skip other types of rows (relations)
 
         # Create header for CSV
-        if PY2:
-            io_type = BytesIO
-        else:
-            io_type = StringIO
+        io_type = StringIO
         with io_type() as field_buffer:
             csv.writer(field_buffer, dialect='arff').writerow(field_names)
             field_str = field_buffer.getvalue()

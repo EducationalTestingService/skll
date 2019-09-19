@@ -8,22 +8,18 @@ Functions related to parsing configuration files.
 :author: Chee Wee Leong (cleong@ets.org)
 """
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 import csv
 import errno
 import itertools
 import logging
 import os
-from io import open
 from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 
-import configparser  # Backported version from Python 3
+import configparser
 import numpy as np
 import ruamel.yaml as yaml
 
-from six import string_types, iteritems  # Python 2/3
 from skll import get_skll_logger
 from sklearn.metrics import SCORERS
 
@@ -547,8 +543,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # ensure that featureset_names is a list of strings, if specified
     if featureset_names:
         if (not isinstance(featureset_names, list) or
-                not all([isinstance(fs, string_types) for fs in
-                         featureset_names])):
+                not all([isinstance(fs, str) for fs in
+                        featureset_names])):
             raise ValueError("The featureset_names parameter should be a list "
                              "of strings. You specified: {}"
                              .format(featureset_names))
@@ -690,7 +686,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         # Change class_map to map from originals to replacements instead of
         # from replacement to list of originals
         class_map = {}
-        for replacement, original_list in iteritems(original_class_map):
+        for replacement, original_list in original_class_map.items():
             for original in original_list:
                 class_map[original] = replacement
         del original_class_map
@@ -915,7 +911,7 @@ def _munge_featureset_name(featureset):
     res : str
         feature_set names joined with '+', if feature_set is not a string.
     """
-    if isinstance(featureset, string_types):
+    if isinstance(featureset, str):
         return featureset
 
     res = '+'.join(sorted(featureset))

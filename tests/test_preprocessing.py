@@ -6,18 +6,16 @@ Tests related to data preprocessing options with run_experiment.
 :author: Nitin Madnani (nmadnani@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import glob
 import json
 import os
 import re
-from io import open
+
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
 import scipy.sparse as sp
+
 from numpy.testing import assert_array_equal, assert_almost_equal
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification

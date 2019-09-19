@@ -8,14 +8,13 @@ titanic.cfg expects.
 :organization: ETS
 """
 
-from __future__ import division, print_function, unicode_literals
-
 import logging
 import os
 import sys
 from itertools import chain
 
 from skll import Writer, Reader
+
 
 def main():
     """
