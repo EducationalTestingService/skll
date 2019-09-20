@@ -31,7 +31,7 @@ from os.path import basename, exists, isfile, join
 from six import iterkeys, iteritems  # Python 2/3
 from six.moves import zip
 from sklearn import __version__ as SCIKIT_VERSION
-from sklearn.metrics import make_scorer, fbeta_score
+#from sklearn.metrics import make_scorer, fbeta_score
 
 from skll import get_skll_logger
 from skll.config import _munge_featureset_name, _parse_config_file
@@ -1159,6 +1159,8 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
     if 'fbeta_score' in output_metrics:
         SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
+        print(SCORERS.keys())
+        print(len(SCORERS.keys()))
 
     # if there were no grid objectives provided, just set it to
     # a list containing a single None so as to allow the parallelization
@@ -1167,8 +1169,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if not grid_objectives:
         grid_objectives = [None]
     elif 'fbeta_score' in grid_objectives:
-        if 'fbeta_score' not in SCORERS.keys():
-            SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
+        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
+        print(SCORERS.keys())
+        print(len(SCORERS.keys()))
 
 
     # Run each featureset-learner-objective combination
