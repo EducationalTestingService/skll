@@ -10,8 +10,6 @@ files.
 
 import argparse
 import logging
-import sys
-from io import open
 
 from skll.experiments import _write_summary_file
 from skll.version import __version__
@@ -50,8 +48,7 @@ def main(argv=None):
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
                                 '%(message)s'))
 
-    file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-    with open(args.summary_file, file_mode) as output_file:
+    with open(args.summary_file, 'w') as output_file:
         _write_summary_file(args.json_file, output_file,
                             ablation=int(args.ablation))
 

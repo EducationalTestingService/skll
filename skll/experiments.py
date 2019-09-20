@@ -15,12 +15,14 @@ import logging
 import math
 import sys
 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import ruamel.yaml as yaml
+import seaborn as sns
 
 from collections import defaultdict
-from io import open
 from itertools import combinations
 from os.path import exists, isfile, join, getsize
 
@@ -42,16 +44,9 @@ except ImportError:
 else:
     _HAVE_GRIDMAP = True
 
-# Check if seaborn (and matplotlib) are available
-try:
-    import matplotlib
-    import seaborn as sns
-except ImportError:
-    _HAVE_SEABORN = False
-else:
-    import matplotlib.pyplot as plt
-    plt.ioff()
-    _HAVE_SEABORN = True
+# Turn off interactive plotting for matplotlib
+plt.ioff()
+
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
@@ -308,9 +303,9 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
               file=output_file)
         print('Grid Objective Function: {}'.format(lrd['grid_objective']),
               file=output_file)
-    if (lrd['task'] == 'cross_validate'
-            and lrd['grid_search']
-            and lrd['cv_folds'].endswith('folds file')):
+    if (lrd['task'] == 'cross_validate' and
+            lrd['grid_search'] and
+            lrd['cv_folds'].endswith('folds file')):
         print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
               file=output_file)
     if lrd['task'] in ['evaluate', 'cross_validate'] and lrd['additional_scores']:
@@ -771,8 +766,7 @@ def _classify_featureset(args):
                                                learner_result_dict_base)
 
             # write out the result dictionary to a json file
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(results_json_path, file_mode) as json_file:
+            with open(results_json_path, 'w') as json_file:
                 json.dump(res, json_file, cls=NumpyTypeEncoder)
 
             with open(join(results_path,
@@ -798,8 +792,7 @@ def _classify_featureset(args):
             res = [res]
 
             # write out the result dictionary to a json file
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(results_json_path, file_mode) as json_file:
+            with open(results_json_path, 'w') as json_file:
                 json.dump(res, json_file, cls=NumpyTypeEncoder)
 
         # For all other tasks, i.e. train or predict
@@ -815,17 +808,15 @@ def _classify_featureset(args):
                     grid_search_cv_results_dicts[0]
                 grid_search_cv_results_dict.update(learner_result_dict_base)
                 # write out the result dictionary to a json file
-                file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-                with open(results_json_path, file_mode) as json_file:
+                with open(results_json_path, 'w') as json_file:
                     json.dump(grid_search_cv_results_dict, json_file, cls=NumpyTypeEncoder)
             res = [learner_result_dict_base]
 
         # write out the cv folds if required
         if task == 'cross_validate' and save_cv_folds:
             skll_fold_ids_file = experiment_name + '_skll_fold_ids.csv'
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
             with open(join(results_path, skll_fold_ids_file),
-                      file_mode) as output_file:
+                      'w') as output_file:
                 _write_skll_folds(skll_fold_ids, output_file)
 
     finally:
@@ -925,8 +916,8 @@ def _create_learner_result_dicts(task_results,
                     recall_sum_dict[actual_label] += float(label_recall)
                 if not math.isnan(label_f):
                     f_sum_dict[actual_label] += float(label_f)
-                result_row = ([actual_label] + conf_matrix[i]
-                              + [label_prec, label_recall, label_f])
+                result_row = ([actual_label] + conf_matrix[i] +
+                              [label_prec, label_recall, label_f])
                 rows.append(result_row)
 
             result_table = tabulate(rows,
@@ -1287,28 +1278,20 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         # write out the summary results file
         if (task == 'cross_validate' or task == 'evaluate') and write_summary:
             summary_file_name = experiment_name + '_summary.tsv'
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(join(results_path, summary_file_name), file_mode) as output_file:
+            with open(join(results_path, summary_file_name), 'w') as output_file:
                 _write_summary_file(result_json_paths,
                                     output_file,
                                     ablation=ablation)
         elif task == 'learning_curve':
             output_file_name = experiment_name + '_summary.tsv'
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
             output_file_path = join(results_path, output_file_name)
-            with open(output_file_path, file_mode) as output_file:
+            with open(output_file_path, 'w') as output_file:
                 _write_learning_curve_file(result_json_paths, output_file)
 
             # generate the actual plot if we have the requirements installed
-            if _HAVE_SEABORN:
-                _generate_learning_curve_plots(experiment_name,
-                                               results_path,
-                                               output_file_path)
-            else:
-                logger.warning("Raw data for the learning curve saved in "
-                               "{}. No plots were generated since pandas and "
-                               "seaborn are not installed."
-                               .format(output_file_path))
+            _generate_learning_curve_plots(experiment_name,
+                                           results_path,
+                                           output_file_path)
 
     finally:
 
@@ -1445,12 +1428,12 @@ def _generate_learning_curve_plots(experiment_name,
                 for j, col_name in enumerate(g.col_names):
                     ax = g.axes[i][j]
                     ax.set(ylim=ylimits[row_name])
-                    df_ax_train = df_fs[(df_fs['learner_name'] == col_name)
-                                        & (df_fs['metric'] == row_name)
-                                        & (df_fs['variable'] == 'train_score_mean')]
-                    df_ax_test = df_fs[(df_fs['learner_name'] == col_name)
-                                       & (df_fs['metric'] == row_name)
-                                       & (df_fs['variable'] == 'test_score_mean')]
+                    df_ax_train = df_fs[(df_fs['learner_name'] == col_name) &
+                                        (df_fs['metric'] == row_name) &
+                                        (df_fs['variable'] == 'train_score_mean')]
+                    df_ax_test = df_fs[(df_fs['learner_name'] == col_name) &
+                                       (df_fs['metric'] == row_name) &
+                                       (df_fs['variable'] == 'test_score_mean')]
                     ax.fill_between(list(range(len(df_ax_train))),
                                     df_ax_train['value'] - df_ax_train['train_score_std'],
                                     df_ax_train['value'] + df_ax_train['train_score_std'],

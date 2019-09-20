@@ -11,13 +11,11 @@ import csv
 import json
 import os
 import re
-import sys
 import warnings
 
 from ast import literal_eval
 from collections import defaultdict
 from glob import glob
-from io import open
 from itertools import product
 from os.path import abspath, dirname, exists, join
 
@@ -35,8 +33,7 @@ from sklearn.naive_bayes import MultinomialNB
 
 from skll.data import FeatureSet, NDJWriter, Reader
 from skll.config import _VALID_TASKS
-from skll.experiments import (_HAVE_SEABORN,
-                              _compute_ylimits_for_featureset,
+from skll.experiments import (_compute_ylimits_for_featureset,
                               run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
@@ -636,13 +633,14 @@ def test_backward_compatibility():
     """
     Test to validate backward compatibility
     """
-    predict_path = join(_my_dir, 'backward_compatibility',
-                        ('v0.9.17_test_summary_test_summary_'
-                         'LogisticRegression.predictions'))
-    model_path = join(_my_dir, 'backward_compatibility',
-                      ('v0.9.17_test_summary_test_summary_LogisticRegression.'
-                       '{}.model').format(sys.version_info[0]))
-    test_path = join(_my_dir, 'backward_compatibility',
+    predict_path = join(_my_dir,
+                        'backward_compatibility',
+                        'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
+    model_path = join(_my_dir,
+                      'backward_compatibility',
+                      'v0.9.17_test_summary_test_summary_LogisticRegression.model')
+    test_path = join(_my_dir,
+                     'backward_compatibility',
                      'v0.9.17_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
@@ -734,12 +732,10 @@ def test_learning_curve_output():
         eq_(num_rows, 60)
 
     # make sure that the two PNG files (one per featureset) are created
-    # if the requirements are satisfied
-    if _HAVE_SEABORN:
-        for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-            ok_(exists(join(_my_dir,
-                            'output',
-                            '{}_{}.png'.format(outprefix, featureset_name))))
+    for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+        ok_(exists(join(_my_dir,
+                        'output',
+                        '{}_{}.png'.format(outprefix, featureset_name))))
 
 
 def test_learning_curve_output_with_objectives():
@@ -773,12 +769,10 @@ def test_learning_curve_output_with_objectives():
         eq_(num_rows, 60)
 
     # make sure that the two PNG files (one per featureset) are created
-    # if the requirements are satisfied
-    if _HAVE_SEABORN:
-        for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-            ok_(exists(join(_my_dir,
-                            'output',
-                            '{}_{}.png'.format(outprefix, featureset_name))))
+    for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+        ok_(exists(join(_my_dir,
+                        'output',
+                        '{}_{}.png'.format(outprefix, featureset_name))))
 
 
 def test_learning_curve_plots():
