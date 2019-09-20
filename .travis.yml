@@ -24,6 +24,7 @@ before_install:
   - conda update --yes conda
 install:
   - conda install --yes --channel defaults --channel conda-forge python=$TRAVIS_PYTHON_VERSION numpy scipy seaborn pandas beautifulsoup4 scikit-learn==0.20.1 intel-openmp==2019.4 joblib tabulate codecov ruamel.yaml
+  - conda install --yes --channel conda-forge python=$TRAVIS_PYTHON_VERSION codecov --file conda_requirements.txt
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
   - python setup.py install
