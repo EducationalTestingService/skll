@@ -7,12 +7,31 @@ Functions related to logging in SKLL.
 """
 import logging
 from logging import FileHandler
+from functools import partial
 from os.path import sep
 import re
 import warnings
 
 orig_showwarning = warnings.showwarning
 SKLEARN_WARNINGS_RE = re.compile(r"{0}sklearn{0}".format(sep))
+
+
+def send_sklearn_warnings_to_logger(logger, message, category, filename,
+                                    lineno, file=None, line=None):
+    """
+    Return method that sends `sklearn`-specific warnings to a logger
+    that can be used to replace warnings.showwarning (via `partial`,
+    specifying a `logger` instance).
+    """
+
+    if SKLEARN_WARNINGS_RE.search(filename):
+        logger.warning('{}:{}: {}:{}'.format(filename,
+                                             lineno,
+                                             category.__name__,
+                                             message))
+    else:
+        orig_showwarning(message, category, filename, lineno,
+                         file=file, line=line)
 
 
 def get_skll_logger(name, filepath=None, log_level=logging.INFO):
@@ -58,19 +77,7 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
             file_handler.setLevel(log_level)
             logger.addHandler(file_handler)
 
-    # Make method for sending sklearn-specific warnings to the
-    # logger that can be used to replace warnings.showwarning
-    def send_sklearn_warnings_to_log(message, category, filename, lineno,
-                                     file=None, line=None):
-        if SKLEARN_WARNINGS_RE.search(filename):
-            logger.warning('{}:{}: {}:{}'.format(filename,
-                                                 lineno,
-                                                 category.__name__,
-                                                 message))
-        else:
-            orig_showwarning(message, category, filename, lineno,
-                             file=file, line=line)
-    warnings.showwarning = send_sklearn_warnings_to_log
+    warnings.showwarning = partial(send_sklearn_warnings_to_logger, logger)
 
     # return the logger instance
     return logger
