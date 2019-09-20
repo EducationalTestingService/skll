@@ -24,13 +24,7 @@ __all__ = ['FeatureSet', 'Learner', 'Reader', 'kappa', 'kendall_tau',
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll
-_scorers = {'f1_score_micro': make_scorer(fbeta_score, beta=1,
-                                          average='micro'),
-            'f1_score_macro': make_scorer(fbeta_score, beta=1,
-                                          average='macro'),
-            'f1_score_weighted': make_scorer(fbeta_score, beta=1,
-                                             average='weighted'),
-            'f1_score_least_frequent': make_scorer(f1_score_least_frequent),
+_scorers = {'f1_score_least_frequent': make_scorer(f1_score_least_frequent),
             'pearson': make_scorer(pearson),
             'spearman': make_scorer(spearman),
             'kendall_tau': make_scorer(kendall_tau),

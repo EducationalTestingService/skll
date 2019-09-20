@@ -28,7 +28,6 @@ from itertools import combinations
 from os.path import exists, isfile, join, getsize
 
 from sklearn import __version__ as SCIKIT_VERSION
-#from sklearn.metrics import make_scorer, fbeta_score
 
 from skll import get_skll_logger
 from skll.config import _munge_featureset_name, _parse_config_file
@@ -1051,7 +1050,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats, class_map,
      custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes,
-     output_metrics, beta) = _parse_config_file(config_file, log_level=log_level)
+     output_metrics) = _parse_config_file(config_file, log_level=log_level)
 
     # get the main experiment logger that will already have been
     # created by the configuration parser so we don't need anything

@@ -13,6 +13,7 @@ import errno
 import itertools
 import logging
 import os
+import re
 from os.path import (basename, dirname, exists,
                      isabs, join, normpath, realpath)
 
@@ -45,8 +46,7 @@ class SKLLConfigParser(configparser.ConfigParser):
 
         # these are the optional config options for which#
         # defaults are automatically provided
-        defaults = {'beta': '1',
-                    'class_map': '{}',
+        defaults = {'class_map': '{}',
                     'custom_learner_path': '',
                     'folds_file': '',
                     'folds_file': '',
@@ -88,8 +88,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'train_file': '',
                     'use_folds_file_for_grid_search': 'True'}
 
-        correct_section_mapping = {'beta': 'Input',
-                                   'class_map': 'Input',
+        correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
                                    'folds_file': 'Input',
                                    'folds_file': 'Input',
@@ -322,11 +321,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     Returns
     -------
-    beta: float
-        0 - inf
-        The beta parameter determines the weight of recall in the combined score. 
-        beta < 1 lends more weight to precision, while beta > 1 favors recall 
-        (beta -> 0 considers only precision, beta -> inf only recall).
     experiment_name : str
         A string used to identify this particular experiment configuration.
         When generating result summary files, this name helps prevent
@@ -700,8 +694,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     else:
         class_map = None
 
-    beta = config.getfloat("Input", "beta")
-
     #####################
     # 3. Output section #
     #####################
@@ -737,16 +729,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # what are the output metrics?
     output_metrics = config.get("Output", "metrics")
-
-# fbeta_score added
-    # fbeta_score works same as f1 is beta is not specified  
-    if 'fbeta_score' in output_metrics:
-        print(beta)
-        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
-        if beta == 1:
-            logger.warning('beta is default value 1.'
-                       'fbeta_score is working as f1_score now for evaluation.')
-
     output_metrics = _parse_and_validate_metrics(output_metrics,
                                                  'metrics',
                                                  logger=logger)
@@ -761,20 +743,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # parse any provided grid objective functions
     grid_objectives = config.get("Tuning", "objectives")
-    
-    # fbeta_score work same as f1 is beta is not specified 
-    if 'fbeta_score' in grid_objectives:
-        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
-        if beta==1:
-            logger.warning('beta is default value 1.'
-                       'fbeta_score is working as f1_score now for tuning.')
-
-    # if beta is specified but fbeta_score is not called,
-    # beta will be ignored
-    if ('fbeta_score' not in output_metrics) and ('fbeta_score' not in grid_objectives):
-        if beta!=1:
-            logger.warning('fbeta_score is not called. beta is default value 1.')
-
     grid_objectives = _parse_and_validate_metrics(grid_objectives,
                                                   'objectives',
                                                   logger=logger)
@@ -927,7 +895,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             param_grid_list, featureset_names, learners, prediction_dir,
             log_path, train_path, test_path, ids_to_floats, class_map,
             custom_learner_path, learning_curve_cv_folds_list,
-            learning_curve_train_sizes, output_metrics, beta)
+            learning_curve_train_sizes, output_metrics)
 
 
 def _munge_featureset_name(featureset):
@@ -972,6 +940,36 @@ def _fix_json(json_string):
     json_string = json_string.replace("'", '"')
     return json_string
 
+def _normalize_fbeta_metrics(metrics):
+    """
+    Given a list of metrics, this function converts 'f1' to 'f1_score_binary',
+    and find all fbeta_score_average style functions,
+    extract fbeta_score_average parameters and 
+    add all fbeta_score_average functions into SCORERS.
+
+    Parameters
+    ----------
+    metrics: list of str
+        A list of metrics
+
+    Returns
+    -------
+    metrics: list of str
+        A list of metrics for the given option.
+    """
+    f1simp_pt = re.compile(r'^f1$')
+    fbeta_pt = re.compile(r'f[0-9/.]+_score_[a-z]+')
+    metrics = [re.sub(f1simp_pt, 'f1_score_binary', func) for func in metrics]
+    fbeta_funcs = list(filter(fbeta_pt.match, metrics))
+    if fbeta_funcs:
+        for i in range(len(fbeta_funcs)):
+            if fbeta_funcs[i] not in SCORERS.keys():
+                beta, _, average =  fbeta_funcs[i][1:].split('_')
+                beta = float(beta)
+                SCORERS[fbeta_funcs[i]] = make_scorer(fbeta_score, beta=beta, average=average)
+    
+    return metrics
+
 
 def _parse_and_validate_metrics(metrics, option_name, logger=None):
     """
@@ -1011,6 +1009,8 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     if not isinstance(metrics, list):
         raise TypeError("{} should be a list, not a {}.".format(option_name,
                                                                 type(metrics)))
+
+    metrics = _normalize_fbeta_metrics(metrics)
 
     # `mean_squared_error` is no more supported.
     # It is replaced by `neg_mean_squared_error`
