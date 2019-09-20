@@ -7,20 +7,15 @@ Tests related to output from run_experiment
 :author: Dan Blanchard (dblanchard@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import csv
 import json
 import os
 import re
-import sys
 import warnings
 
 from ast import literal_eval
 from collections import defaultdict
 from glob import glob
-from io import open
 from itertools import product
 from os.path import abspath, dirname, exists, join
 
@@ -30,7 +25,6 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 
-from nose.plugins.attrib import attr
 from nose.tools import eq_, ok_, assert_raises
 
 from sklearn.datasets import load_digits
@@ -39,12 +33,9 @@ from sklearn.naive_bayes import MultinomialNB
 
 from skll.data import FeatureSet, NDJWriter, Reader
 from skll.config import _VALID_TASKS
-from skll.experiments import (_HAVE_SEABORN,
-                              _compute_ylimits_for_featureset,
+from skll.experiments import (_compute_ylimits_for_featureset,
                               run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
-
-from six import PY2
 
 from utils import (create_jsonlines_feature_files,
                    fill_in_config_options,
@@ -96,9 +87,9 @@ def tearDown():
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
 
-        for output_file in (glob(join(output_dir, 'test_{}_*'.format(suffix)))
-                            + glob(join(output_dir, 'test_{}.log'.format(suffix)))
-                            + glob(join(output_dir, 'test_majority_class_custom_learner_*'))):
+        for output_file in glob(join(output_dir, 'test_{}_*'.format(suffix))) \
+            + glob(join(output_dir, 'test_{}.log'.format(suffix))) \
+                + glob(join(output_dir, 'test_majority_class_custom_learner_*')):
             os.unlink(output_file)
 
     for suffix in _VALID_TASKS:
@@ -345,10 +336,7 @@ def check_xval_fancy_results_file(do_grid_search,
     values_to_fill_dict['use_folds_file_for_grid_search'] = str(use_folds_file_for_grid_search)
 
     if use_additional_metrics:
-        if PY2:
-            values_to_fill_dict['metrics'] = str([b"accuracy", b"unweighted_kappa"])
-        else:
-            values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
+        values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
 
     config_template_path = join(_my_dir,
                                 'configs',
@@ -404,7 +392,7 @@ def check_xval_fancy_results_file(do_grid_search,
             eq_(results_dict['Grid Search Folds'], '4')
 
     if use_additional_metrics:
-        expected_metrics = [b"accuracy", b"unweighted_kappa"] if PY2 else ["accuracy", "unweighted_kappa"]
+        expected_metrics = ["accuracy", "unweighted_kappa"]
 
         eq_(sorted(literal_eval(results_dict['Additional Evaluation Metrics'])),
             sorted(expected_metrics))
@@ -638,13 +626,14 @@ def test_backward_compatibility():
     """
     Test to validate backward compatibility
     """
-    predict_path = join(_my_dir, 'backward_compatibility',
-                        ('v0.9.17_test_summary_test_summary_'
-                         'LogisticRegression.predictions'))
-    model_path = join(_my_dir, 'backward_compatibility',
-                      ('v0.9.17_test_summary_test_summary_LogisticRegression.'
-                       '{}.model').format(sys.version_info[0]))
-    test_path = join(_my_dir, 'backward_compatibility',
+    predict_path = join(_my_dir,
+                        'backward_compatibility',
+                        'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
+    model_path = join(_my_dir,
+                      'backward_compatibility',
+                      'v0.9.17_test_summary_test_summary_LogisticRegression.model')
+    test_path = join(_my_dir,
+                     'backward_compatibility',
                      'v0.9.17_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
@@ -736,12 +725,10 @@ def test_learning_curve_output():
         eq_(num_rows, 60)
 
     # make sure that the two PNG files (one per featureset) are created
-    # if the requirements are satisfied
-    if _HAVE_SEABORN:
-        for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-            ok_(exists(join(_my_dir,
-                            'output',
-                            '{}_{}.png'.format(outprefix, featureset_name))))
+    for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+        ok_(exists(join(_my_dir,
+                        'output',
+                        '{}_{}.png'.format(outprefix, featureset_name))))
 
 
 def test_learning_curve_output_with_objectives():
@@ -775,15 +762,12 @@ def test_learning_curve_output_with_objectives():
         eq_(num_rows, 60)
 
     # make sure that the two PNG files (one per featureset) are created
-    # if the requirements are satisfied
-    if _HAVE_SEABORN:
-        for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-            ok_(exists(join(_my_dir,
-                            'output',
-                            '{}_{}.png'.format(outprefix, featureset_name))))
+    for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
+        ok_(exists(join(_my_dir,
+                        'output',
+                        '{}_{}.png'.format(outprefix, featureset_name))))
 
 
-@attr('have_pandas_and_seaborn')
 def test_learning_curve_plots():
     """
     Test learning curve plots for experiment with metrics option
@@ -806,7 +790,6 @@ def test_learning_curve_plots():
                         '{}_{}.png'.format(outprefix, featureset_name))))
 
 
-@attr('have_pandas_and_seaborn')
 def test_learning_curve_plots_with_objectives():
     """
     Test learning curve plots for experiment with objectives option
@@ -831,7 +814,6 @@ def test_learning_curve_plots_with_objectives():
                         '{}_{}.png'.format(outprefix, featureset_name))))
 
 
-@attr('have_pandas_and_seaborn')
 def test_learning_curve_ylimits():
     """
     Test that the ylimits for learning curves are generated as expected.

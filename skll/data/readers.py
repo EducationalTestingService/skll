@@ -34,20 +34,15 @@ original labels to labels that convert only to ``str``.
 :organization: ETS
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import logging
 import re
 import sys
 from itertools import islice
-from io import open, StringIO
+from io import StringIO
 
 import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
-from six import PY2, PY3, string_types, text_type
-from six.moves import zip
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
@@ -152,7 +147,7 @@ class Reader(object):
         ValueError
             If file does not have a valid extension.
         """
-        if not isinstance(path_or_list, string_types):
+        if not isinstance(path_or_list, str):
             return DictListReader(path_or_list)
         else:
             # Get lowercase extension for file extension checking
@@ -245,7 +240,7 @@ class Reader(object):
         ids = []
         labels = []
         ex_num = 0
-        with open(path, 'r' if PY3 else 'rb') as f:
+        with open(path, 'r') as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
 
                 # Update lists of IDs, classes, and features
@@ -275,7 +270,7 @@ class Reader(object):
         labels = np.array(labels)
 
         def feat_dict_generator():
-            with open(self.path_or_list, 'r' if PY3 else 'rb') as f:
+            with open(self.path_or_list, 'r') as f:
                 for ex_num, (_, _, feat_dict) in enumerate(self._sub_read(f)):
                     yield feat_dict
                     if ex_num % 100 == 0:
@@ -459,13 +454,7 @@ class DictListReader(Reader):
         if df.empty:
             return self._parse_dataframe(df, None, None)
 
-        # if it's PY2 and `id` is in the
-        # data frame, make sure it's a string
-        if PY2 and 'id' in df:
-            df['id'] = df['id'].astype(str)
-
-        # convert the features to a
-        # list of dictionaries
+        # convert the features to a list of dictionaries
         features = df['x'].tolist()
         return self._parse_dataframe(df,
                                      'id' if 'id' in df else None,
@@ -575,7 +564,7 @@ class MegaMReader(Reader):
         curr_id = 'EXAMPLE_0'
         for line in f:
             # Process encoding
-            if not isinstance(line, text_type):
+            if not isinstance(line, str):
                 line = UnicodeDammit(line, ['utf-8',
                                             'windows-1252']).unicode_markup
             line = line.strip()
@@ -889,11 +878,6 @@ class ARFFReader(Reader):
             The escape character.
             Defaults to ``'\\'``.
         """
-        if PY2:
-            delimiter = delimiter.encode()
-            quote_char = quote_char.encode()
-            escape_char = escape_char.encode()
-
         # additional arguments we want
         # to pass to the `pd.read_csv()` function
         kwargs = {'header': header,
@@ -921,12 +905,10 @@ class ARFFReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        with open(path, 'r' if PY3 else 'rb') as buff:
-
+        with open(path, 'r') as buff:
             lines = [UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
-                     if not isinstance(line, text_type) and PY2
-                     else line.strip()
-                     for line in buff if line.strip()]
+                     if not isinstance(line, str)
+                     else line.strip() for line in buff if line.strip()]
 
         # find the row index starting with data; the line below this
         # is where the data should actually begin
@@ -986,8 +968,8 @@ def safe_float(text, replace_dict=None, logger=None):
         The text value converted to int or float, if possible
     """
 
-    # convert to text to be "Safe"!
-    text = text_type(text)
+    # convert to str to be "Safe"!
+    text = str(text)
 
     # get a logger unless we are passed one
     if not logger:
@@ -1005,7 +987,7 @@ def safe_float(text, replace_dict=None, logger=None):
         try:
             return float(text)
         except ValueError:
-            return text.decode('utf-8') if PY2 else text
+            return text
         except TypeError:
             return 0.0
     except TypeError:

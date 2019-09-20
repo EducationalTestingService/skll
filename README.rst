@@ -5,8 +5,8 @@ SciKit-Learn Laboratory
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
-.. image:: https://img.shields.io/coveralls/EducationalTestingService/skll/master.svg
-    :target: https://coveralls.io/r/EducationalTestingService/skll
+.. image:: https://codecov.io/gh/EducationalTestingService/skll/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/EducationalTestingService/skll
 
 .. image:: https://img.shields.io/pypi/v/skll.svg
    :target: https://pypi.org/project/skll/
@@ -122,9 +122,8 @@ happens.
 Requirements
 ~~~~~~~~~~~~
 
--  Python 2.7+
+-  Python 3.6+
 -  `scikit-learn <http://scikit-learn.org/stable/>`__
--  `six <https://pypi.org/project/six/>`__
 -  `tabulate <https://pypi.org/project/tabulate/>`__
 -  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `pandas <http://pandas.pydata.org>`__
@@ -132,15 +131,7 @@ Requirements
    to run things in parallel on a DRMAA-compatible cluster)
 -  `joblib <https://pypi.org/project/joblib/>`__
 -  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
--  `configparser <https://pypi.org/project/configparser/>`__ (only required for
-   Python 2.7)
--  `logutils <https://pypi.org/project/logutils/>`__ (only required for Python 2.7)
--  `mock <https://pypi.org/project/mock/>`__ (only required for Python 2.7)
-
-The following packages can be optionally installed for additional features
-but are not required:
-
--  `seaborn <http://seaborn.pydata.org>`__ (optional)
+-  `seaborn <http://seaborn.pydata.org>`__
 
 Talks
 ~~~~~

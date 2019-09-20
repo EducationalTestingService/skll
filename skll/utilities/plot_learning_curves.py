@@ -15,8 +15,6 @@ to generate the plots later.
 :organization: ETS
 """
 
-from __future__ import print_function, unicode_literals
-
 import argparse
 import logging
 import sys
@@ -24,7 +22,6 @@ import sys
 from os import makedirs
 from os.path import basename, exists
 
-from skll.experiments import _HAVE_SEABORN
 from skll.experiments import _generate_learning_curve_plots
 from skll.version import __version__
 
@@ -66,11 +63,6 @@ def main(argv=None):
     # create the output directory if it doesn't already exist
     if not exists(args.output_dir):
         makedirs(args.output_dir)
-
-    # check that we have pandas and seaborn available
-    if not _HAVE_SEABORN:
-        logging.error("Error: need seaborn to generate learning curve plots.")
-        sys.exit(1)
 
     # get the experiment name from the learning curve TSV file
     # output_file_name = experiment_name + '_summary.tsv'
