@@ -543,7 +543,7 @@ class ARFFWriter(Writer):
         ValueError
             If ID column name is already used as a feature.
         """
-        # Add class column to feat_dict (unless this is unlabelled data)
+        # Add class column to feat_dict (unless this is unlabeled data)
         if self.label_col not in feat_dict:
             if self.feat_set.has_labels:
                 feat_dict[self.label_col] = label_
@@ -626,42 +626,47 @@ class NDJWriter(Writer):
         type. For example ``/foo/.ndj``.
     feature_set : skll.FeatureSet
         The ``FeatureSet`` instance to dump to the output file.
-    pandas_kwargs : dict or None, optional
-        Arguments that will be passed directly
-        to the `pandas` I/O reader.
-        Defaults to None.
     kwargs : dict, optional
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
-        self.label_col = kwargs.pop('label_col', 'y')
-        self.id_col = kwargs.pop('id_col', 'id')
+    def __init__(self, path, feature_set, **kwargs):
+        kwargs['requires_binary'] = True
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
-        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        # remove the `lines` and `orient` arguments, if they were passed
-        self._pandas_kwargs.pop('lines', None)
-        self._pandas_kwargs.pop('orient', None)
-        self._use_pandas = True
 
-    def _write_data(self, feature_set, output_file, filter_features):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
-        Write the data in NDJ format.
+        Write the current line in the file in NDJ format.
         Parameters
         ----------
-        feature_set : skll.FeatureSet
-            The ``FeatureSet`` instance being written to a file.
+        id_ : str
+            The ID for the current instance.
+        label_ : str
+            The label for the current instance.
+        feat_dict : dict
+            The feature dictionary for the current instance.
         output_file : file buffer
             The file being written to.
-        filter_features : set of str
-            If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
-            features to include in this file.
         """
-        df = self._build_dataframe_with_features(feature_set, filter_features)
-        df = pd.DataFrame({'x': df.to_dict(orient='records')})
-        df = self._build_dataframe(feature_set, df_features=df)
-        df.to_json(output_file, orient='records', lines=True, **self._pandas_kwargs)
+        example_dict = {}
+        # Don't try to add class column if this is label-less data
+        # Try to convert the label to a scalar assuming it'a numpy
+        # non-scalar type (e.g., int64) but if that doesn't work
+        # then use it as is
+        if self.feat_set.has_labels:
+            try:
+                example_dict['y'] = label_.item()
+            except AttributeError:
+                example_dict['y'] = label_
+        # Try to convert the ID to a scalar assuming it'a numpy
+        # non-scalar type (e.g., int64) but if that doesn't work
+        # then use it as is
+        try:
+            example_dict['id'] = id_.item()
+        except AttributeError:
+            example_dict['id'] = id_
+        example_dict["x"] = feat_dict
+        print(json.dumps(example_dict, sort_keys=True), file=output_file)
 
 
 class LibSVMWriter(Writer):

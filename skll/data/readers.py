@@ -41,6 +41,7 @@ from io import open, BytesIO, StringIO
 import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
+
 from six import iteritems, PY2, PY3, string_types, text_type
 from six.moves import zip
 
