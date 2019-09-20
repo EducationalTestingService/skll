@@ -990,7 +990,7 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
                          " please use the metric "
                          "\"neg_mean_squared_error\" instead.")
 
-    # micro averaged F1 score same as accuracy for multi-class classification 
+    # micro averaged F1 score same as accuracy for multi-class classification
     if 'f1_score_micro' in metrics:
         logger.warning("The metric \"f1_score_micro\" is the same as "
                        "\"accuracy\" for multi-class classification")
