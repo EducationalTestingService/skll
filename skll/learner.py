@@ -10,8 +10,6 @@ Provides easy-to-use wrapper around scikit-learn.
 """
 # pylint: disable=F0401,W0622,E1002,E1101
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 import copy
 import inspect
 import logging
@@ -27,10 +25,6 @@ from multiprocessing import cpu_count
 import joblib
 import numpy as np
 import scipy.sparse as sp
-from six import iteritems, itervalues
-from six import string_types
-from six.moves import xrange as range
-from six.moves import zip
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import (GridSearchCV,
                                      KFold,
@@ -1002,7 +996,7 @@ class Learner(object):
         learner.logger = logger if logger else logging.getLogger(__name__)
 
         # For backward compatibility, convert string model types to labels.
-        if isinstance(learner._model_type, string_types):
+        if isinstance(learner._model_type, str):
             learner._model_type = globals()[learner._model_type]
 
         # Check that we've actually loaded a Learner (or sub-class)
@@ -1111,7 +1105,7 @@ class Learner(object):
 
         # create the final result dictionary with the prefixed
         # feature names and the corresponding coefficient
-        for feat, idx in iteritems(vocabulary):
+        for feat, idx in vocabulary.items():
             if coef[idx]:
                 res['{}{}'.format(feature_name_prefix, feat)] = coef[idx]
 
@@ -1312,14 +1306,14 @@ class Learner(object):
         # Make sure the labels for a regression task are not strings.
         if self.model_type._estimator_type == 'regressor':
             for label in examples.labels:
-                if isinstance(label, string_types):
+                if isinstance(label, str):
                     raise TypeError("You are doing regression with string "
                                     "labels.  Convert them to integers or "
                                     "floats.")
 
         # make sure that feature values are not strings
         for val in examples.features.data:
-            if isinstance(val, string_types):
+            if isinstance(val, str):
                 raise TypeError("You have feature values that are strings.  "
                                 "Convert them to floats.")
 
@@ -1634,7 +1628,7 @@ class Learner(object):
                 else:
                     grid_jobs = min(num_specified_folds, grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
-                dummy_label = next(itervalues(grid_search_folds))
+                dummy_label = next(iter(grid_search_folds.values()))
                 fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
                                curr_id in examples.ids]
                 kfold = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids)
@@ -2266,7 +2260,7 @@ class Learner(object):
             # training fold.  Note that this means that the grid search
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
-            dummy_label = next(itervalues(cv_folds))
+            dummy_label = next(iter(cv_folds.values()))
             fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
             # Only retain IDs within folds if they're in cv_folds
             kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)

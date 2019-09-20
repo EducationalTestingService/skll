@@ -127,7 +127,7 @@ to/from this MegaM format and for adding/removing features from the files.
 Creating configuration files
 ----------------------------
 The experiment configuration files that run_experiment accepts are standard
-`Python configuration files <https://docs.python.org/2/library/configparser.html>`__
+`Python configuration files <https://docs.python.org/3/library/configparser.html>`__
 that are similar in format to Windows INI files. [#]_
 There are four expected sections in a configuration file: :ref:`General`,
 :ref:`Input`, :ref:`Tuning`, and :ref:`Output`.  A detailed description of each
@@ -650,7 +650,9 @@ LinearSVC and LinearSVR
 LogisticRegression
     .. code-block:: python
 
-       {'random_state': 123456789}
+        {'random_state': 123456789}
+
+    .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
 
 MLPClassifier and MLPRegressor:
     .. code-block:: python
@@ -1016,20 +1018,20 @@ of copies of each of the following steps of training the learner:
 
     * feature vectorization (`vectorizer`)
     * feature selection (`selector`)
-    * feature sampling (`sampler`) 
+    * feature sampling (`sampler`)
     * feature scaling (`scaler`)
     * main estimator (`estimator`)
 
 The strings in the parentheses represent the name given to each
-step in the pipeline. 
+step in the pipeline.
 
-The goal of this attribute is to allow better interoperability 
-between SKLL learner objects and scikit-learn. The user can 
-train the model in SKLL and then further tweak or analyze 
-the pipeline in scikit-learn, if needed. Each component of the 
-pipeline is a (deep) copy of the component that was fit as part 
-of the SKLL model training process. We use copies since we do 
-not want the  original SKLL model to be affected if the user 
+The goal of this attribute is to allow better interoperability
+between SKLL learner objects and scikit-learn. The user can
+train the model in SKLL and then further tweak or analyze
+the pipeline in scikit-learn, if needed. Each component of the
+pipeline is a (deep) copy of the component that was fit as part
+of the SKLL model training process. We use copies since we do
+not want the  original SKLL model to be affected if the user
 modifies the components of the pipeline in scikit-learn space.
 
 Here's an example of how to use this attribute.
@@ -1049,7 +1051,7 @@ Here's an example of how to use this attribute.
     fs2 = Reader.for_path('examples/boston/train/example_boston_features.jsonlines').read()
     learner2 = Learner('RescaledSVR', feature_scaling='both', pipeline=True)
     _ = learner2.train(fs2, grid_search=True, grid_objective='pearson')
-    
+
     # now, we can explore the stored pipelines in sklearn space
     enc = LabelEncoder().fit(fs1.labels)
 
@@ -1070,7 +1072,7 @@ Here's an example of how to use this attribute.
 
 .. note::
     1. When using a `DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__ in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both``, the `sparse` attribute of the vectorizer stage in the pipeline is set to ``False`` since centering requires dense arrays.
-    2. When feature hashing is used (via a `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ ) in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both`` , a custom pipeline stage (:py:mod:`skll.learner.Densifier`) is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` does not have a ``sparse`` attribute to turn off -- it *only* returns sparse vectors. 
+    2. When feature hashing is used (via a `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ ) in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both`` , a custom pipeline stage (:py:mod:`skll.learner.Densifier`) is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` does not have a ``sparse`` attribute to turn off -- it *only* returns sparse vectors.
     3. A ``Densifier`` is also inserted in the pipeline when using a `SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html>`__ for feature sampling since this sampler requires dense input and cannot be made to work with sparse arrays.
 
 
@@ -1285,7 +1287,7 @@ learner-featureset combination you have in your configuration file. It is named
 experiments, this summary file will contain training set sizes and the averaged
 scores for all combinations of featuresets, learners, and objectives.
 
-If `seaborn <http://seaborn.pydata.org>`__ is available when running 
+If `seaborn <http://seaborn.pydata.org>`__ is available when running
 a :ref:`learning_curve <learning_curve>` experiment,
 actual learning curves are also generated as PNG files - one for each feature set
 specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURESET.png``

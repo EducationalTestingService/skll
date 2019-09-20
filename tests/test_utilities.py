@@ -6,27 +6,25 @@ Module for running unit tests related to command line utilities.
 :author: Dan Blanchard (dblanchard@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 import ast
 import copy
 import csv
 import itertools
 import os
 import sys
+import scipy as sp
 
 from collections import defaultdict
 from glob import glob
 from itertools import combinations, product
 from os.path import abspath, dirname, exists, join
-from six import StringIO
+from io import StringIO
 
 try:
     from unittest.mock import create_autospec, patch
 except ImportError:
     from mock import create_autospec, patch
 
-from nose.plugins.attrib import attr
 from nose.plugins.logcapture import LogCapture
 from nose.tools import eq_, assert_almost_equal, raises
 from numpy.testing import assert_allclose, assert_array_almost_equal
@@ -850,8 +848,12 @@ def check_skll_convert(from_suffix, to_suffix):
     reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
     converted_fs = reader.read()
 
-    # ensure that the original and the converted feature sets
-    # are the same
+    # TODO : For now, we are converting these to dense, and then back to sparse.
+    # The reason for this is that DictVectorizers now retain any explicit zeros,
+    # but we convert these to dense when we write them out. This will be fixed.
+    orig_fs.features = sp.sparse.csr_matrix(orig_fs.features.todense())
+    converted_fs.features = sp.sparse.csr_matrix(converted_fs.features.todense())
+
     eq_(orig_fs, converted_fs)
 
 
@@ -1245,7 +1247,6 @@ def test_summarize_results_argparse():
     yield check_summarize_results_argparse, True
 
 
-@attr('have_pandas_and_seaborn')
 def test_plot_learning_curves_argparse():
     # A utility function to check that we are setting up argument parsing
     # correctly for plot_learning_curves. We are not checking whether the learning
@@ -1271,7 +1272,6 @@ def test_plot_learning_curves_argparse():
     eq_(positional_arguments[2], summary_file_name)
 
 
-@attr('have_pandas_and_seaborn')
 @raises(SystemExit)
 def test_plot_learning_curves_missing_file():
     summary_file_name = join(_my_dir, 'other', 'non_existent_summary.tsv')
@@ -1280,7 +1280,6 @@ def test_plot_learning_curves_missing_file():
     plc.main(argv=plc_cmd_args)
 
 
-@attr('have_pandas_and_seaborn')
 def test_plot_learning_curves_create_output_directory():
     summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
     output_dir_name = join(_my_dir, 'other', 'foobar')

@@ -8,11 +8,7 @@ Handles reading and writing data from various types of data files.
 :organization: ETS
 """
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 import csv
-
-from six import PY2
 
 from .featureset import FeatureSet
 from .readers import (ARFFReader, CSVReader, LibSVMReader, MegaMReader,
@@ -22,14 +18,9 @@ from .writers import (ARFFWriter, Writer, TSVWriter, CSVWriter,
 
 
 # Register dialect for handling ARFF files
-if PY2:
-    csv.register_dialect('arff', delimiter=b',', quotechar=b"'",
-                         escapechar=b'\\', doublequote=False,
-                         lineterminator=b'\n', skipinitialspace=True)
-else:
-    csv.register_dialect('arff', delimiter=',', quotechar="'",
-                         escapechar='\\', doublequote=False,
-                         lineterminator='\n', skipinitialspace=True)
+csv.register_dialect('arff', delimiter=',', quotechar="'",
+                     escapechar='\\', doublequote=False,
+                     lineterminator='\n', skipinitialspace=True)
 
 
 __all__ = ['Reader', 'safe_float', 'FeatureSet', 'ARFFReader',

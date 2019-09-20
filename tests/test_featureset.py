@@ -9,9 +9,6 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import itertools
 import os
 from collections import OrderedDict
@@ -20,7 +17,6 @@ from os.path import abspath, dirname, exists, join
 import numpy as np
 import pandas as pd
 from nose.tools import eq_, raises, assert_not_equal
-from nose.plugins.attrib import attr
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
@@ -105,7 +101,7 @@ def check_empty_file_read(filetype, reader_type):
 
 
 def test_empty_file_read():
-    for filetype, reader_type in zip(['csv',  'jsonlines',
+    for filetype, reader_type in zip(['csv', 'jsonlines',
                                       'libsvm', 'megam', 'tsv'],
                                      ['CSVReader', 'NDJReader',
                                       'LibSVMReader', 'MegaMReader', 'TSVReader']):
@@ -642,8 +638,8 @@ def test_feature_merging_order_invariance():
     merged_fs_shuf = train_fs1 + train_fs2_shuf
 
     # check that the two merged versions are the same
-    feature_names = (train_fs1.vectorizer.get_feature_names()
-                     + train_fs2.vectorizer.get_feature_names())
+    feature_names = (train_fs1.vectorizer.get_feature_names() +
+                     train_fs2.vectorizer.get_feature_names())
     assert_array_equal(merged_fs.vectorizer.get_feature_names(), feature_names)
     assert_array_equal(merged_fs_shuf.vectorizer.get_feature_names(),
                        feature_names)
@@ -663,8 +659,7 @@ def test_feature_merging_order_invariance():
     assert_array_equal(merged_fs.features.todense(),
                        merged_fs_shuf.features.todense())
 
-    assert not np.all(merged_fs.features[:, 0:2].todense()
-                      == merged_fs.features[:, 2:4].todense())
+    assert not np.all(merged_fs.features[:, 0:2].todense() == merged_fs.features[:, 2:4].todense())
 
 
 # Tests related to loading featuresets and merging them
@@ -1002,13 +997,11 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
     return (expected, current)
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_labels():
     (expected, current) = featureset_creation_from_dataframe_helper(True, False)
     assert expected == current
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_without_labels():
     (expected, current) = featureset_creation_from_dataframe_helper(False, False)
     # Directly comparing FeatureSet objects fails here because both sets
@@ -1025,13 +1018,11 @@ def test_featureset_creation_from_dataframe_without_labels():
             np.all(np.isnan(current.labels)))
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_labels_and_vectorizer():
     (expected, current) = featureset_creation_from_dataframe_helper(True, True)
     assert expected == current
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
     (expected, current) = featureset_creation_from_dataframe_helper(False, True)
     # Directly comparing FeatureSet objects fails here because both sets
@@ -1050,7 +1041,8 @@ def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
 
 def test_writing_ndj_featureset_with_string_ids():
     test_dict_vectorizer = DictVectorizer()
-    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0, 'c': 0.0},
+                           {'a': 0.0, 'b': 1.0, 'c': 1.0}]
     Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
     fs_test = FeatureSet('test',
                          ids=['1', '2'],
@@ -1068,14 +1060,14 @@ def test_writing_ndj_featureset_with_string_ids():
     assert fs_test == fs_test2
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_string_ids():
 
     dftest = pd.DataFrame({"id": ['1', '2'],
                            "score": [1, 2],
                            "text": ["a b", "b c"]})
     dftest.set_index("id", inplace=True)
-    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0, 'c': 0.0},
+                           {'a': 0.0, 'b': 1.0, 'c': 1.0}]
     test_dict_vectorizer = DictVectorizer()
     Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
     fs_test = FeatureSet('test',
@@ -1094,14 +1086,14 @@ def test_featureset_creation_from_dataframe_with_string_ids():
     assert fs_test == fs_test2
 
 
-@attr('have_pandas_and_seaborn')
 def test_featureset_creation_from_dataframe_with_string_labels():
 
     dftest = pd.DataFrame({"id": [1, 2],
                            "score": ['yes', 'no'],
                            "text": ["a b", "b c"]})
     dftest.set_index("id", inplace=True)
-    test_feat_dict_list = [{'a': 1.0, 'b': 1.0}, {'b': 1.0, 'c': 1.0}]
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0, 'c': 0.0},
+                           {'a': 0.0, 'b': 1.0, 'c': 1.0}]
     test_dict_vectorizer = DictVectorizer()
     Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
     fs_test = FeatureSet('test',
@@ -1109,6 +1101,7 @@ def test_featureset_creation_from_dataframe_with_string_labels():
                          labels=dftest['score'].values,
                          features=Xtest,
                          vectorizer=test_dict_vectorizer)
+
     output_path = join(_my_dir, "other", "test_string_labels_df.jsonlines")
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()

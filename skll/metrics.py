@@ -9,12 +9,8 @@ evaluate the performance of learners.
 :organization: ETS
 """
 
-from __future__ import print_function, unicode_literals
-
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
-from six import string_types
-from six.moves import xrange as range
 from sklearn.metrics import confusion_matrix, fbeta_score, SCORERS
 
 
@@ -90,7 +86,6 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     # If it is a str like "1", then it will be converted to a (rounded) int.
     # If it is a str that can't be typecast, then the user is
     # given a hopefully useful error message.
-    # Note: numpy and python 3.3 use bankers' rounding.
     try:
         y_true = [int(np.round(float(y))) for y in y_true]
         y_pred = [int(np.round(float(y))) for y in y_pred]
@@ -114,7 +109,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     num_scored_items = float(len(y_true))
 
     # Build weight array if weren't passed one
-    if isinstance(weights, string_types):
+    if isinstance(weights, str):
         wt_scheme = weights
         weights = None
     else:

@@ -8,28 +8,25 @@ Functions related to running experiments and parsing configuration files.
 :author: Chee Wee Leong (cleong@ets.org)
 """
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 import csv
 import datetime
 import json
 import logging
 import math
-import os
 import sys
 from functools import partial
 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import ruamel.yaml as yaml
+import seaborn as sns
 
 from collections import defaultdict
-from io import open
 from itertools import combinations
-from os.path import basename, exists, isfile, join
+from os.path import exists, isfile, join, getsize
 
-from six import iterkeys, iteritems  # Python 2/3
-from six.moves import zip
 from sklearn import __version__ as SCIKIT_VERSION
 #from sklearn.metrics import make_scorer, fbeta_score
 
@@ -49,16 +46,9 @@ except ImportError:
 else:
     _HAVE_GRIDMAP = True
 
-# Check if seaborn (and matplotlib) are available
-try:
-    import matplotlib
-    import seaborn as sns
-except ImportError:
-    _HAVE_SEABORN = False
-else:
-    import matplotlib.pyplot as plt
-    plt.ioff()
-    _HAVE_SEABORN = True
+# Turn off interactive plotting for matplotlib
+plt.ioff()
+
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate', 'cross_validate'])
 _VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
@@ -435,6 +425,10 @@ def _load_featureset(dir_path, feat_files, suffix, id_col='id', label_col='y',
                                num_features=num_features,
                                logger=logger).read()
     else:
+        if len(feat_files) > 1 and feature_hasher:
+            logger.warning("Since there are multiple feature files, "
+                           "feature hashing applies to each specified "
+                           "feature file separately.")
         merged_set = None
         for file_name in sorted(join(dir_path, featfile + suffix) for
                                 featfile in feat_files):
@@ -727,9 +721,6 @@ def _classify_featureset(args):
                 learner.save(modelfile)
 
             if grid_search:
-                # note: bankers' rounding is used in python 3,
-                # so these scores may be different between runs in
-                # python 2 and 3 at the final decimal place.
                 logger.info("Best {} grid search score: {}".format(grid_objective,
                                                                    round(best_score, 3)))
         else:
@@ -737,9 +728,9 @@ def _classify_featureset(args):
             grid_search_cv_results_dicts = [None]
 
         # print out the parameters
-        param_out = ('{}: {}'.format(param_name, param_value)
-                     for param_name, param_value in
-                     iteritems(learner.model.get_params()))
+        param_out = ('{}: {}'.format(param_name, param_value) for
+                     param_name, param_value in
+                     learner.model.get_params().items())
         logger.info("Hyperparameters: {}".format(', '.join(param_out)))
 
         # run on test set or cross-validate on training data,
@@ -772,8 +763,7 @@ def _classify_featureset(args):
                                            learner_result_dict_base)
 
         # write out the result dictionary to a json file
-        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(results_json_path, file_mode) as json_file:
+        with open(results_json_path, 'w') as json_file:
             json.dump(res, json_file, cls=NumpyTypeEncoder)
 
         with open(join(results_path,
@@ -799,8 +789,7 @@ def _classify_featureset(args):
         res = [res]
 
         # write out the result dictionary to a json file
-        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(results_json_path, file_mode) as json_file:
+        with open(results_json_path, 'w') as json_file:
             json.dump(res, json_file, cls=NumpyTypeEncoder)
 
     # For all other tasks, i.e. train or predict
@@ -816,17 +805,15 @@ def _classify_featureset(args):
                 grid_search_cv_results_dicts[0]
             grid_search_cv_results_dict.update(learner_result_dict_base)
             # write out the result dictionary to a json file
-            file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-            with open(results_json_path, file_mode) as json_file:
+            with open(results_json_path, 'w') as json_file:
                 json.dump(grid_search_cv_results_dict, json_file, cls=NumpyTypeEncoder)
         res = [learner_result_dict_base]
 
     # write out the cv folds if required
     if task == 'cross_validate' and save_cv_folds:
         skll_fold_ids_file = experiment_name + '_skll_fold_ids.csv'
-        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         with open(join(results_path, skll_fold_ids_file),
-                  file_mode) as output_file:
+                  'w') as output_file:
             _write_skll_folds(skll_fold_ids, output_file)
 
     return res
@@ -906,7 +893,7 @@ def _create_learner_result_dicts(task_results,
             learner_result_dict['grid_search_cv_results'] = grid_search_cv_results
 
         if conf_matrix:
-            labels = sorted(iterkeys(task_results[0][2]))
+            labels = sorted(task_results[0][2].keys())
             headers = [""] + labels + ["Precision", "Recall", "F-measure"]
             rows = []
             for i, actual_label in enumerate(labels):
@@ -1107,19 +1094,17 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                     for excluded_features in combinations(features, i):
                         expanded_fs.append(sorted(featureset -
                                                   set(excluded_features)))
-                        expanded_fs_names.append(
-                            featureset_name +
-                            '_minus_' +
-                            _munge_featureset_name(excluded_features))
+                        expanded_fs_names.append(featureset_name +
+                                                 '_minus_' +
+                                                 _munge_featureset_name(excluded_features))
             # Otherwise, just expand removing the specified number at a time
             else:
                 for excluded_features in combinations(features, ablation):
                     expanded_fs.append(sorted(featureset -
                                               set(excluded_features)))
-                    expanded_fs_names.append(
-                        featureset_name +
-                        '_minus_' +
-                        _munge_featureset_name(excluded_features))
+                    expanded_fs_names.append(featureset_name +
+                                             '_minus_' +
+                                             _munge_featureset_name(excluded_features))
             # Also add version with nothing removed as baseline
             expanded_fs.append(features)
             expanded_fs_names.append(featureset_name + '_all')
@@ -1205,8 +1190,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                 result_json_paths.append(result_json_path)
 
                 # If result file already exists and we're resuming, move on
-                if resume and (exists(result_json_path) and
-                               os.path.getsize(result_json_path)):
+                if resume and (exists(result_json_path) and getsize(result_json_path)):
                     logger.info('Running in resume mode and %s exists, '
                                 'so skipping job.', result_json_path)
                     continue
@@ -1270,8 +1254,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                     jobs.append(Job(_classify_featureset,
                                     [job_args],
                                     num_slots=(MAX_CONCURRENT_PROCESSES if
-                                               (do_grid_search or
-                                                task == 'learning_curve') else 1),
+                                               (do_grid_search or task == 'learning_curve') else 1),
                                     name=job_name,
                                     queue=queue))
                 else:
@@ -1289,27 +1272,20 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     # write out the summary results file
     if (task == 'cross_validate' or task == 'evaluate') and write_summary:
         summary_file_name = experiment_name + '_summary.tsv'
-        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
-        with open(join(results_path, summary_file_name), file_mode) as output_file:
+        with open(join(results_path, summary_file_name), 'w') as output_file:
             _write_summary_file(result_json_paths,
                                 output_file,
                                 ablation=ablation)
     elif task == 'learning_curve':
         output_file_name = experiment_name + '_summary.tsv'
-        file_mode = 'w' if sys.version_info >= (3, 0) else 'wb'
         output_file_path = join(results_path, output_file_name)
-        with open(output_file_path, file_mode) as output_file:
+        with open(output_file_path, 'w') as output_file:
             _write_learning_curve_file(result_json_paths, output_file)
 
         # generate the actual plot if we have the requirements installed
-        if _HAVE_SEABORN:
-            _generate_learning_curve_plots(experiment_name,
-                                           results_path,
-                                           output_file_path)
-        else:
-            logger.warning("Raw data for the learning curve saved in "
-                           "{}. No plots were generated since pandas and "
-                           "seaborn are not installed. ".format(output_file_path))
+        _generate_learning_curve_plots(experiment_name,
+                                       results_path,
+                                       output_file_path)
 
     return result_json_paths
 
