@@ -21,7 +21,7 @@ import numpy as np
 import ruamel.yaml as yaml
 
 from skll import get_skll_logger
-from sklearn.metrics import SCORERS
+from sklearn.metrics import fbeta_score, SCORERS, make_scorer
 
 _VALID_TASKS = frozenset(['predict', 'train', 'evaluate',
                           'cross_validate', 'learning_curve'])
@@ -737,14 +737,19 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # what are the output metrics?
     output_metrics = config.get("Output", "metrics")
+
+# fbeta_score added
+    # fbeta_score works same as f1 is beta is not specified  
+    if 'fbeta_score' in output_metrics:
+        print(beta)
+        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
+        if beta == 1:
+            logger.warning('beta is default value 1.'
+                       'fbeta_score is working as f1_score now for evaluation.')
+
     output_metrics = _parse_and_validate_metrics(output_metrics,
                                                  'metrics',
                                                  logger=logger)
-
-    # fbeta_score work same as f1 is beta is not specified 
-    if 'fbeta_score' in output_metrics and beta==1:
-        logger.warning('beta is default value 1.'
-                       'fbeta_score is working as f1_score now for evaluation.')
 
     #####################
     # 4. Tuning section #
@@ -756,13 +761,12 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # parse any provided grid objective functions
     grid_objectives = config.get("Tuning", "objectives")
-    grid_objectives = _parse_and_validate_metrics(grid_objectives,
-                                                  'objectives',
-                                                  logger=logger)
-
+    
     # fbeta_score work same as f1 is beta is not specified 
-    if 'fbeta_score' in grid_objectives and beta==1:
-        logger.warning('beta is default value 1.'
+    if 'fbeta_score' in grid_objectives:
+        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
+        if beta==1:
+            logger.warning('beta is default value 1.'
                        'fbeta_score is working as f1_score now for tuning.')
 
     # if beta is specified but fbeta_score is not called,
@@ -770,6 +774,10 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if ('fbeta_score' not in output_metrics) and ('fbeta_score' not in grid_objectives):
         if beta!=1:
             logger.warning('fbeta_score is not called. beta is default value 1.')
+
+    grid_objectives = _parse_and_validate_metrics(grid_objectives,
+                                                  'objectives',
+                                                  logger=logger)
 
     # if we are doing learning curves , we don't care about
     # grid search

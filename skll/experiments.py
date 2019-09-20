@@ -1142,22 +1142,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
     if task == 'learning_curve' and len(output_metrics) > 0:
         grid_objectives = output_metrics
 
-    if 'fbeta_score' in output_metrics:
-        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
-        print(SCORERS.keys())
-        print(len(SCORERS.keys()))
-
     # if there were no grid objectives provided, just set it to
     # a list containing a single None so as to allow the parallelization
     # to proceeed and to pass the correct default value of grid_objective
     # down to _classify_featureset().
     if not grid_objectives:
         grid_objectives = [None]
-    elif 'fbeta_score' in grid_objectives:
-        SCORERS['fbeta_score'] = make_scorer(fbeta_score, beta=beta)
-        print(SCORERS.keys())
-        print(len(SCORERS.keys()))
-
 
     # Run each featureset-learner-objective combination
     for featureset, featureset_name in zip(featuresets, featureset_names):
