@@ -7,4 +7,3 @@ pandas
 seaborn
 joblib>=0.8
 ruamel.yaml
-intel-openmp==2019.0
