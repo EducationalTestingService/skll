@@ -16,8 +16,8 @@ import pandas as pd
 from csv import DictWriter
 from decimal import Decimal
 
-import numpy as np
-from six import iteritems, PY2, string_types, text_type
+from scipy.sparse import issparse
+from six import PY2
 from six.moves import map
 from sklearn.feature_extraction import FeatureHasher
 
@@ -304,7 +304,10 @@ class Writer(object):
         # create the data frame from the feature set;
         # then, select only the columns that we want,
         # and give the columns their correct names
-        df_features = pd.DataFrame(feature_set.features.todense())
+        if issparse(feature_set.features):
+            df_features = pd.DataFrame(feature_set.features.todense())
+        else:
+            df_features = pd.DataFrame(feature_set.features)
         df_features = df_features.iloc[:, column_idxs].copy()
         df_features.columns = column_names
         return df_features

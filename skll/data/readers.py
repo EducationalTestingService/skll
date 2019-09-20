@@ -36,13 +36,13 @@ import re
 import sys
 from csv import DictReader
 from itertools import chain, islice
-from io import open, BytesIO, StringIO
+from io import open, StringIO
 
 import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
 
-from six import iteritems, PY2, PY3, string_types, text_type
+from six import iteritems, PY2, text_type
 from six.moves import zip
 
 from sklearn.feature_extraction import FeatureHasher
