@@ -93,7 +93,7 @@ There are three main entry points into the SKLL codebase:
    ``run_experiment <config_file>``, the following happens (at a high level):
 
    -  the configuration file is handed off to the
-      `run_configuration() <https://github.com/EducationalTestingService/skll/blob/master/skll/experiments.py#L981>`__ function in ``experiments.py``.
+      `run_configuration() <https://github.com/EducationalTestingService/skll/blob/master/skll/experiments.py#L989>`__ function in ``experiments.py``.
    -  a `SKLLConfigParser <https://github.com/EducationalTestingService/skll/blob/master/skll/config.py#L34>`__ object is instantiated from ``config.py``
       that parses all of the relevant fields out of the given
       configuration file.
