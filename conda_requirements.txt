@@ -1,7 +1,6 @@
 scikit-learn==0.20.1
 beautifulsoup4
 tabulate
-intel-openmp==2019.4
 numpy
 scipy
 pandas
