@@ -580,7 +580,7 @@ def test_new_labels_in_test_set():
     learner.train(train_fs, grid_search=False)
     res = learner.evaluate(test_fs)
     yield check_results_with_unseen_labels, res, 4, [3]
-    yield assert_almost_equal, res[1], 0.3
+    yield assert_almost_equal, res[1], 0.55
 
 
 def test_new_labels_in_test_set_change_order():
