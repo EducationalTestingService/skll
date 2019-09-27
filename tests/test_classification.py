@@ -779,3 +779,63 @@ def test_sampling_for_multinomialNB():
     (train_fs, _) = make_classification_data(num_examples=200)
     learner = Learner('MultinomialNB', sampler='RBFSampler')
     learner.train(train_fs, grid_search=False)
+
+
+@raises(ValueError)
+def test_invalid_classifier_grid_objective1():
+    """ all string labels, class 2"""
+    (train_fs, _) = make_classification_data(num_examples=200, string_label_list=['a', 'b', 'c'], num_labels=3)
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=True, grid_objective="quadratic_weighted_kappa")
+
+@raises(ValueError)
+def test_invalid_classifier_grid_objective2():
+    """ all string labels, class 3"""
+    (train_fs, _) = make_classification_data(num_examples=200, string_label_list=['a', 'b', 'c'], num_labels=3)
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=True, grid_objective="pearson")
+
+@raises(ValueError)
+def test_invalid_classifier_grid_objective3():
+    """ all string labels, class 4"""
+    (train_fs, _) = make_classification_data(num_examples=200, string_label_list=['a', 'b', 'c'], num_labels=3)
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=True, grid_objective="r2")
+
+
+@raises(ValueError)
+def test_invalid_classifier_grid_objective4():
+    """ int labels, class 3"""
+    (train_fs, _) = make_classification_data(num_examples=200, num_labels=3)
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=True, grid_objective="pearson")
+
+
+@raises(ValueError)
+def test_invalid_classifier_grid_objective5():
+    """ int labels, class 4"""
+    (train_fs, _) = make_classification_data(num_examples=200, num_labels=3)
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=True, grid_objective="r2")
+
+
+@raises(ValueError)
+def test_invalid_classifier_grid_objective6():
+    """ binary labels, class 2"""
+    (train_fs, _) = make_classification_data(num_examples=200, num_labels=2)
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=True, grid_objective="quadratic_weighted_kappa")
+
+@raises(ValueError)
+def test_invalid_classifier_grid_objective7():
+    """ binary labels, class 4"""
+    (train_fs, _) = make_classification_data(num_examples=200, num_labels=2)
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=True, grid_objective="r2")
+
+@raises(ValueError)
+def test_invalid_classifier_grid_objective8():
+    """ mixed labels, class 4"""
+    (train_fs, _) = make_classification_data(num_examples=200, num_labels=5, string_label_list=['a', 'b', 2, 3, 4])
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=True, grid_objective="r2")
