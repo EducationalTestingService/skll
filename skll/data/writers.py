@@ -24,6 +24,7 @@ from sklearn.feature_extraction import FeatureHasher
 class Writer(object):
     """
     Helper class for writing out FeatureSets to files on disk.
+
     Parameters
     ----------
     path : str
@@ -82,6 +83,7 @@ class Writer(object):
         """
         Retrieve object of ``Writer`` sub-class that is
         appropriate for given path.
+
         Parameters
         ----------
         path : str
@@ -98,6 +100,7 @@ class Writer(object):
         kwargs : dict
             The keyword arguments for ``for_path`` are the same as
             the initializer for the desired ``Writer`` subclass.
+
         Returns
         -------
         writer : skll.data.writers.Writer
@@ -133,6 +136,7 @@ class Writer(object):
     def _write_subset(self, sub_path, filter_features):
         """
         Writes out the given ``FeatureSet`` instance to a file in this class's format.
+
         Parameters
         ----------
         sub_path : str
@@ -180,6 +184,7 @@ class Writer(object):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
+
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -196,6 +201,7 @@ class Writer(object):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in this Writer's format.
+
         Parameters
         ----------
         id_ : str
@@ -206,6 +212,7 @@ class Writer(object):
             The feature dictionary for the current instance.
         output_file : file buff
              The file being written to.
+
         Raises
         ------
         NotImplementedError
@@ -216,6 +223,7 @@ class Writer(object):
         """
         Write the the full data set in the Writer's format using `pandas`,
         rather than writing row-by-row.
+
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -226,6 +234,7 @@ class Writer(object):
             If only writing a subset of the features in the
             FeatureSet to ``output_file``, these are the
             features to include in this file.
+
         Raises
         ------
         NotImplementedError
@@ -236,6 +245,7 @@ class Writer(object):
         """
         Get the names of the columns and the associated
         index numbers for the (possibly filtered) features.
+
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -244,6 +254,7 @@ class Writer(object):
             If only writing a subset of the features in the
             FeatureSet to ``output_file``, these are the
             features to include in this file.
+
         Returns
         -------
         column_names : list of str
@@ -275,6 +286,7 @@ class Writer(object):
         """
         Create a data frame with the (possibly filtered) features from the current
         feature set.
+
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -284,11 +296,13 @@ class Writer(object):
             FeatureSet to ``output_file``, these are the
             features to include in this file.
             Defaults to None.
+
         Returns
         -------
         df_features : pd.DataFrame
             The data frame constructed from
             the feature set.
+
         Raises
         ------
         ValueError
@@ -317,6 +331,7 @@ class Writer(object):
         feature set. Then, add the IDs and labels, if applicable. If the data frame
         with features already exists, pass `df_features`. Then the IDs and labels will
         simply be added to the existing data frame containing the features.
+
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -331,11 +346,13 @@ class Writer(object):
             then we use it and add IDs and labels; otherwise,
             the feature data frame will be created from the feature set.
             Defaults to None.
+
         Returns
         -------
         df_features : pd.DataFrame
             The data frame constructed from
             the feature set.
+
         Raises
         ------
         ValueError
@@ -370,6 +387,7 @@ class CSVWriter(Writer):
 
     """
     Writer for writing out ``FeatureSet`` instances as CSV files.
+
     Parameters
     ----------
     path : str
@@ -400,6 +418,7 @@ class CSVWriter(Writer):
     def _write_data(self, feature_set, output_file, filter_features):
         """
         Write the data in CSV format.
+
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -419,6 +438,7 @@ class TSVWriter(CSVWriter):
 
     """
     Writer for writing out FeatureSets as TSV files.
+
     Parameters
     ----------
     path : str
@@ -447,6 +467,7 @@ class ARFFWriter(Writer):
 
     """
     Writer for writing out FeatureSets as ARFF files.
+
     Parameters
     ----------
     path : str
@@ -481,6 +502,7 @@ class ARFFWriter(Writer):
         """
         Called before lines are written to file, so that headers can be written
         for files that need them.
+
         Parameters
         ----------
         feature_set : skll.FeatureSet
@@ -528,6 +550,7 @@ class ARFFWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in this Writer's format.
+
         Parameters
         ----------
         id_ : str
@@ -538,6 +561,7 @@ class ARFFWriter(Writer):
             The feature dictionary for the current instance.
         output_file : file buffer
             The file being written to.
+
         Raises
         ------
         ValueError
@@ -575,6 +599,7 @@ class MegaMWriter(Writer):
         ----------
         line : str
             The line to clean up.
+
         Returns
         -------
         char_list : str
@@ -591,6 +616,7 @@ class MegaMWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
+
         Parameters
         ----------
         id_ : str
@@ -618,6 +644,7 @@ class NDJWriter(Writer):
 
     """
     Writer for writing out FeatureSets as .jsonlines/.ndj files.
+
     Parameters
     ----------
     path : str
@@ -639,6 +666,7 @@ class NDJWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in NDJ format.
+
         Parameters
         ----------
         id_ : str
@@ -675,6 +703,7 @@ class LibSVMWriter(Writer):
 
     """
     Writer for writing out FeatureSets as LibSVM/SVMLight files.
+
     Parameters
     ----------
     path : str
@@ -716,6 +745,7 @@ class LibSVMWriter(Writer):
         Replace illegal characters in class names with close unicode
         equivalents to make things loadable in by LibSVM, LibLinear, or
         SVMLight.
+
         Parameters
         ----------
         name : str
@@ -733,6 +763,7 @@ class LibSVMWriter(Writer):
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
         Write the current line in the file in MegaM format.
+
         Parameters
         ----------
         id_ : str

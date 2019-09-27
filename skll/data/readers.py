@@ -130,6 +130,7 @@ class Reader(object):
         Instantiate the appropriate Reader sub-class based on the
         file extension of the given path. Or use a dictionary reader
         if the input is a list of dictionaries.
+
         Parameters
         ----------
         path_or_list : str or list of dicts
@@ -141,6 +142,7 @@ class Reader(object):
         reader : skll.Reader
             A new instance of the Reader sub-class that is
             appropriate for the given path.
+
         Raises
         ------
         ValueError
@@ -167,12 +169,14 @@ class Reader(object):
         buffer rather than a file path. Otherwise, it will
         take a path and will be called directly in the `read()`
         method.
+
         Parameters
         ----------
         f : file buffer or str
             Either a file buffer, if ``_sub_read_rows()``
             is calling this method, or a path to a file,
             if it is being read with ``pandas``.
+
         Raises
         ------
         NotImplementedError
@@ -183,6 +187,7 @@ class Reader(object):
         """
         Helper method to print out progress numbers in proper format.
         Nothing gets printed if ``self.quiet`` is ``True``.
+
         Parameters
         ----------
         progress_num
@@ -207,6 +212,7 @@ class Reader(object):
         pandas-based reader object, which will read everything
         into memory in a data frame object before converting to
         a `FeatureSet`.
+
         Parameters
         ----------
         path : str
@@ -219,6 +225,7 @@ class Reader(object):
             The labels array.
         features : list of dicts
             The features dictionary.
+
         Raises
         ------
         ValueError
@@ -282,6 +289,7 @@ class Reader(object):
         data frame into the expected format. It will not be used
         by `Reader` classes that read row-by-row (and therefore
         use the `_sub_read_rows()` function).
+
         Parameters
         ----------
         df : pd.DataFrame
@@ -295,6 +303,7 @@ class Reader(object):
             if not, then they will be extracted
             from the data frame.
             Defaults to None.
+
         Returns
         -------
         ids : np.array
@@ -356,10 +365,12 @@ class Reader(object):
         """
         Loads examples in the `.arff`, `.csv`, `.jsonlines`, `.libsvm`,
         `.megam`, `.ndj`, or `.tsv` formats.
+
         Returns
         -------
         feature_set : skll.FeatureSet
             ``FeatureSet`` instance representing the input file.
+
         Raises
         ------
         ValueError
@@ -410,6 +421,7 @@ class DictListReader(Reader):
     def read(self):
         """
         Read examples from list of dictionaries.
+
         Returns
         -------
         feature_set : skll.FeatureSet
@@ -433,6 +445,7 @@ class DictListReader(Reader):
                                      replace_dict=self.class_map)
                           if 'y' in example else None)
             example = example['x']
+
             # Update lists of IDs, labels, and feature dictionaries
             if self.ids_to_floats:
                 try:
@@ -444,9 +457,11 @@ class DictListReader(Reader):
             ids.append(curr_id)
             labels.append(class_name)
             feat_dicts.append(example)
+
             # Print out status
             if example_num % 100 == 0:
                 self._print_progress(example_num)
+
         # Convert lists to numpy arrays
         ids = np.array(ids)
         labels = np.array(labels)
@@ -468,10 +483,12 @@ class NDJReader(Reader):
         """
         The function called on the file buffer in the ``read()`` method
         to iterate through rows.
+
         Parameters
         ----------
         f : file buffer
             A file buffer for an NDJ file.
+
         Yields
         ------
         curr_id : str
@@ -481,6 +498,7 @@ class NDJReader(Reader):
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
+
         Raises
         ------
         ValueError
@@ -531,6 +549,7 @@ class MegaMReader(Reader):
         ----------
         f : file buffer
             A file buffer for an MegaM file.
+
         Yields
         ------
         curr_id : str
@@ -540,6 +559,7 @@ class MegaMReader(Reader):
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
+
         Raises
         ------
         ValueError
@@ -628,10 +648,12 @@ class LibSVMReader(Reader):
         """
         Split a feature-value pair separated by a colon into a tuple.  Also
         do safe_float conversion on the value.
+
         Parameters
         ----------
         feat_map : str
             A feature-value pair to split.
+
         Returns
         -------
         name : str
@@ -651,6 +673,7 @@ class LibSVMReader(Reader):
         ----------
         f : file buffer
             A file buffer for an LibSVM file.
+
         Yields
         ------
         curr_id : str
@@ -660,6 +683,7 @@ class LibSVMReader(Reader):
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
+
         Raises
         ------
         ValueError
@@ -722,6 +746,7 @@ class CSVReader(Reader):
     must be specified in the ``id`` column.
     Also, there must be a column with the name specified by ``label_col`` if the
     data is labeled.
+
     Parameters
     ----------
     path_or_list : str
@@ -747,6 +772,7 @@ class CSVReader(Reader):
         ----------
         path : str
             The path to the CSV file.
+
         Returns
         -------
         ids : np.array
@@ -768,6 +794,7 @@ class TSVReader(CSVReader):
     must be specified in the ``id`` column.
     Also there must be a column with the name specified by ``label_col``
     if the data is labeled.
+
     Parameters
     ----------
     path_or_list : str
@@ -794,6 +821,7 @@ class DelimitedReader(Reader):
     For ARFF, CSV, and TSV files, there must be a column with the
     name specified by ``label_col`` if the data is labeled. For ARFF files,
     this column must also be the final one (as it is in Weka).
+
     Parameters
     ----------
     path_or_list : str
@@ -815,6 +843,7 @@ class DelimitedReader(Reader):
         ----------
         f : file buffer
             A file buffer for an delimited file.
+
         Yields
         ------
         curr_id : str
@@ -868,6 +897,7 @@ class ARFFReader(DelimitedReader):
     must be specified in the ``id`` column.
     Also, there must be a column with the name specified by ``label_col`` if the
     data is labeled, and this column must be the final one (as it is in Weka).
+
     Parameters
     ----------
     path_or_list : str
@@ -887,6 +917,7 @@ class ARFFReader(DelimitedReader):
         """
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
+
         Parameters
         ----------
         s : str
@@ -973,6 +1004,7 @@ def safe_float(text, replace_dict=None, logger=None):
     """
     Attempts to convert a string to an int, and then a float, but if neither is
     possible, returns the original string value.
+
     Parameters
     ----------
     text : str
@@ -988,6 +1020,7 @@ def safe_float(text, replace_dict=None, logger=None):
         The Logger instance to use to log messages. Used instead of
         creating a new Logger instance by default.
         Defaults to ``None``.
+
     Returns
     -------
     text : int or float or str
