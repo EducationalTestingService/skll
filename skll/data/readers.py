@@ -42,7 +42,7 @@ import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
 
-from six import iteritems, PY2, text_type
+from six import iteritems, text_type
 from six.moves import zip
 
 from sklearn.feature_extraction import FeatureHasher
@@ -845,31 +845,17 @@ class DelimitedReader(Reader):
             # delete it later since we don't need to explicitly
             # store zeros in the feature hash
             columns_to_delete = []
-            if PY2:
-                columns_to_convert_to_unicode = []
             for fname, fval in iteritems(row):
                 fval_float = safe_float(fval)
                 # we don't need to explicitly store zeros
                 if fval_float:
                     row[fname] = fval_float
-                    if PY2:
-                        columns_to_convert_to_unicode.append(fname)
                 else:
                     columns_to_delete.append(fname)
 
             # remove the columns with zero values
             for cname in columns_to_delete:
                 del row[cname]
-
-            # convert the names of all the other columns to
-            # unicode for python 2
-            if PY2:
-                for cname in columns_to_convert_to_unicode:
-                    fval = row[cname]
-                    del row[cname]
-                    row[cname.decode('utf-8')] = fval
-                if not self.ids_to_floats:
-                    curr_id = curr_id.decode('utf-8')
 
             yield curr_id, class_name, row
 

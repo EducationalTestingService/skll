@@ -17,7 +17,6 @@ from csv import DictWriter
 from decimal import Decimal
 
 from scipy.sparse import issparse
-from six import PY2
 from six.moves import map
 from sklearn.feature_extraction import FeatureHasher
 
@@ -158,7 +157,7 @@ class Writer(object):
                             if filter_features is not None else self.feat_set)
 
             # Open file for writing and write each line
-            file_mode = 'wb' if (self.requires_binary and PY2) else 'w'
+            file_mode = 'wb' if self.requires_binary else 'w'
             with open(sub_path, file_mode) as output_file:
                 # Write out the header if this format requires it
                 self._write_header(filtered_set, output_file, filter_features)
