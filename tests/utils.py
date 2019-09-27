@@ -99,7 +99,9 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
     if test_directory:
         config.set("Input", "test_directory", join(test_dir, test_directory))
 
-    to_fill_in = ['log', 'predictions']
+    to_fill_in = ['log']
+    if task != 'train':
+        to_fill_in.append('predictions')
 
     if task == 'cross_validate':
         if config.get("Output", "save_cv_models"):

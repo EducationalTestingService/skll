@@ -40,6 +40,7 @@ from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 from utils import (create_jsonlines_feature_files,
                    fill_in_config_options,
                    fill_in_config_paths,
+                   fill_in_config_paths_for_single_file,
                    make_classification_data,
                    make_regression_data)
 
@@ -97,6 +98,12 @@ def tearDown():
         for cf in config_files:
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
+
+    if exists(join(config_dir, 'test_send_warnings_to_log.cfg')):
+        os.unlink(join(config_dir, 'test_send_warnings_to_log.cfg'))
+    for output_file in glob(join(output_dir,
+                                 'test_send_warnings_to_log*')):
+        os.unlink(output_file)
 
 
 # Generate and write out data for the test that checks summary scores
@@ -215,7 +222,7 @@ def check_summary_score(use_feature_hashing,
             # the learner results dictionaries should have 34 rows,
             # and all of these except results_table
             # should be printed (though some columns will be blank).
-            eq_(len(row), 34)
+            eq_(len(row), 35)
             assert row['model_params']
             assert row['grid_score']
             assert row['score']
@@ -1067,3 +1074,39 @@ def test_pipeline_attribute():
                sampler_name,
                learner,
                function_args_dict)
+
+
+def test_send_warnings_to_log():
+    """
+    Test that warnings get correctly sent to the logger.
+    """
+    # Run experiment
+    suffix = '.jsonlines'
+    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
+                                                            "configs",
+                                                            "test_send_warnings_to_log"
+                                                            ".template.cfg"),
+                                                       train_path,
+                                                       None)
+    run_configuration(config_path, quiet=True, local=True)
+
+    # Check experiment log output
+    # The experiment log file should contain warnings related
+    # to the use of sklearn
+    with open(join(_my_dir,
+                   'output',
+                   'test_send_warnings_to_log_train_f0.'
+                   'jsonlines_LinearSVC.log')) as f:
+        log_content = f.read()
+        undefined_metric_sklearn_warning_re = \
+            re.compile(r"WARNING - [^\n]+sklearn/metrics/classification\.py:\d+:"
+                       r" UndefinedMetricWarning:Precision and F-score are "
+                       r"ill-defined and being set to 0\.0 in labels with no "
+                       r"predicted samples\.")
+        convergence_sklearn_warning_re = \
+            re.compile(r"WARNING - [^\n]+sklearn/svm/base\.py:\d+: "
+                       r"ConvergenceWarning:Liblinear failed to converge, "
+                       r"increase the number of iterations\.")
+        assert undefined_metric_sklearn_warning_re.search(log_content) is not None
+        assert convergence_sklearn_warning_re.search(log_content) is not None

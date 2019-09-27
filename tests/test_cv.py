@@ -163,7 +163,7 @@ def test_specified_cv_folds():
         cv_fs, custom_cv_folds = make_cv_folds_data(
             use_feature_hashing=use_hashing)
         folds = custom_cv_folds if not use_hashing else 10
-        (grid_scores, _, _, _) = \
+        (grid_scores, _, _, _, _) = \
             learner.cross_validate(cv_fs,
                                    cv_folds=folds,
                                    grid_search=True,

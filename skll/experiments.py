@@ -28,7 +28,7 @@ from os.path import exists, isfile, join, getsize
 
 from sklearn import __version__ as SCIKIT_VERSION
 
-from skll import get_skll_logger
+from skll import close_and_remove_logger_handlers, get_skll_logger
 from skll.config import _munge_featureset_name, _parse_config_file
 from skll.data.readers import Reader
 from skll.learner import (Learner, MAX_CONCURRENT_PROCESSES,
@@ -640,7 +640,8 @@ def _classify_featureset(args):
             cv_folds_to_print = str(cv_folds)
 
         if isinstance(grid_search_folds, dict):
-            grid_search_folds_to_print = '{} via folds file'.format(len(set(grid_search_folds.values())))
+            grid_search_folds_to_print = \
+                '{} via folds file'.format(len(set(grid_search_folds.values())))
         else:
             grid_search_folds_to_print = str(grid_search_folds)
 
@@ -666,7 +667,8 @@ def _classify_featureset(args):
                                     'grid_search_folds': grid_search_folds_to_print,
                                     'min_feature_count': min_feature_count,
                                     'cv_folds': cv_folds_to_print,
-                                    'using_folds_file': isinstance(cv_folds, dict) or isinstance(grid_search_folds, dict),
+                                    'using_folds_file':
+                                        isinstance(cv_folds, dict) or isinstance(grid_search_folds, dict),
                                     'save_cv_folds': save_cv_folds,
                                     'save_cv_models': save_cv_models,
                                     'use_folds_file_for_grid_search': use_folds_file_for_grid_search,
@@ -700,7 +702,6 @@ def _classify_featureset(args):
                 for index, m in enumerate(models):
                     modelfile = join(model_path, '{}_fold{}.model'.format(job_name, index))
                     m.save(modelfile)
-
         elif task == 'learning_curve':
             logger.info("Generating learning curve(s)")
             (curve_train_scores,
@@ -1109,17 +1110,19 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                         for excluded_features in combinations(features, i):
                             expanded_fs.append(sorted(featureset -
                                                       set(excluded_features)))
-                            expanded_fs_names.append(featureset_name +
-                                                     '_minus_' +
-                                                     _munge_featureset_name(excluded_features))
+                            expanded_fs_names.append(
+                                featureset_name
+                                + '_minus_'
+                                + _munge_featureset_name(excluded_features))
                 # Otherwise, just expand removing the specified number at a time
                 else:
                     for excluded_features in combinations(features, ablation):
                         expanded_fs.append(sorted(featureset -
                                                   set(excluded_features)))
-                        expanded_fs_names.append(featureset_name +
-                                                 '_minus_' +
-                                                 _munge_featureset_name(excluded_features))
+                        expanded_fs_names.append(
+                            featureset_name
+                            + '_minus_'
+                            + _munge_featureset_name(excluded_features))
                 # Also add version with nothing removed as baseline
                 expanded_fs.append(features)
                 expanded_fs_names.append(featureset_name + '_all')
@@ -1265,6 +1268,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                                         queue=queue))
                     else:
                         _classify_featureset(job_args)
+
+        # Call get_skll_logger again after _classify_featureset
+        # calls are finished so that any warnings that may
+        # happen after this point get correctly logged to the
+        # main logger
+        logger = get_skll_logger('experiment')
 
         # submit the jobs (if running on grid)
         if not local and _HAVE_GRIDMAP:
@@ -1447,11 +1456,12 @@ def _generate_learning_curve_plots(experiment_name,
                     if j == 0:
                         ax.set_ylabel(row_name)
                         if i == 0:
-                            ax.legend(handles=[matplotlib.lines.Line2D([], [], color=c, label=l, linestyle='-') for c, l in zip(colors, ['Training', 'Cross-validation'])],
+                            ax.legend(handles=[matplotlib.lines.Line2D([], [], color=c, label=l, linestyle='-')
+                                               for c, l in zip(colors, ['Training', 'Cross-validation'])],
                                       loc=4,
                                       fancybox=True,
                                       fontsize='x-small',
                                       ncol=1,
                                       frameon=True)
             g.fig.tight_layout(w_pad=1)
-            plt.savefig(join(output_dir, '{}_{}.png'.format(experiment_name, fs_name)), dpi=300);
+            plt.savefig(join(output_dir, '{}_{}.png'.format(experiment_name, fs_name)), dpi=300)
