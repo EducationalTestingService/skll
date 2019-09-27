@@ -58,7 +58,7 @@ from skll.experiments import (_generate_learning_curve_plots,
                               run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
-from utils import make_classification_data, make_regression_data
+from tests.utils import make_classification_data, make_regression_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())

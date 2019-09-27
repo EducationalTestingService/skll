@@ -33,8 +33,8 @@ from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.experiments import _load_featureset
 from sklearn.model_selection import StratifiedKFold
-from utils import (create_jsonlines_feature_files,
-                   fill_in_config_paths_for_single_file)
+from tests.utils import (create_jsonlines_feature_files,
+                         fill_in_config_paths_for_single_file)
 from skll.experiments import run_configuration
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
