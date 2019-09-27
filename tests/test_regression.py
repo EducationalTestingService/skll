@@ -9,9 +9,6 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import math
 import os
 import re

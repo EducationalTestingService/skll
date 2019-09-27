@@ -9,13 +9,9 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import csv
 import os
 from glob import glob
-from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np

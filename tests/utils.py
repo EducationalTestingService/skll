@@ -2,9 +2,6 @@
 Utilities functions to make SKLL testing simpler
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import re
 
 from collections import OrderedDict
@@ -102,7 +99,9 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
     if test_directory:
         config.set("Input", "test_directory", join(test_dir, test_directory))
 
-    to_fill_in = ['log', 'predictions']
+    to_fill_in = ['log']
+    if task != 'train':
+        to_fill_in.append('predictions')
 
     if task != 'cross_validate':
         to_fill_in.append('models')
@@ -151,7 +150,8 @@ def fill_in_config_options(config_template_path,
                             'sampler', 'shuffle', 'feature_scaling',
                             'learning_curve_cv_folds_list', 'folds_file',
                             'learning_curve_train_sizes', 'fixed_parameters',
-                            'num_cv_folds', 'bad_option', 'duplicate_option'],
+                            'num_cv_folds', 'bad_option', 'duplicate_option',
+                            'suffix'],
                   'Tuning': ['probability', 'grid_search', 'objective',
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'param_grids', 'objectives', 'duplicate_option'],

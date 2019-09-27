@@ -8,15 +8,11 @@ Tests related to ablation experiments.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import csv
 import json
 import os
 
 from glob import glob
-from io import open
 from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_

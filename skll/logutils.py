@@ -5,9 +5,33 @@ Functions related to logging in SKLL.
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
-
 import logging
 from logging import FileHandler
+from functools import partial
+from os.path import sep
+import re
+import warnings
+
+orig_showwarning = warnings.showwarning
+SKLEARN_WARNINGS_RE = re.compile(r"{0}sklearn{0}".format(sep))
+
+
+def send_sklearn_warnings_to_logger(logger, message, category, filename,
+                                    lineno, file=None, line=None):
+    """
+    Return method that sends `sklearn`-specific warnings to a logger
+    that can be used to replace warnings.showwarning (via `partial`,
+    specifying a `logger` instance).
+    """
+
+    if SKLEARN_WARNINGS_RE.search(filename):
+        logger.warning('{}:{}: {}:{}'.format(filename,
+                                             lineno,
+                                             category.__name__,
+                                             message))
+    else:
+        orig_showwarning(message, category, filename, lineno,
+                         file=file, line=line)
 
 
 def get_skll_logger(name, filepath=None, log_level=logging.INFO):
@@ -53,5 +77,26 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
             file_handler.setLevel(log_level)
             logger.addHandler(file_handler)
 
+    warnings.showwarning = partial(send_sklearn_warnings_to_logger, logger)
+
     # return the logger instance
     return logger
+
+
+def close_and_remove_logger_handlers(logger):
+    """
+    Close and remove any handlers attached to a logger instance.
+
+    Parameters
+    ----------
+    logger : logging.Logger
+        Logger instance
+
+    Returns
+    -------
+    NoneType
+    """
+
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)
