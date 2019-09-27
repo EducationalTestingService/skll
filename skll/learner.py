@@ -132,7 +132,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVC:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         RandomForestClassifier:
                         [{'max_depth': [1, 5, 10, None]}],
                         RandomForestRegressor:
@@ -881,7 +881,7 @@ class Learner(object):
         if issubclass(self._model_type, SVC):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
-            self._model_kwargs['gamma'] = 'auto'
+            self._model_kwargs['gamma'] = 'scale'
             if self.probability:
                 self.logger.warning('Because LibSVM does an internal '
                                     'cross-validation to produce probabilities, '
