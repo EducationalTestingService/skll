@@ -1152,7 +1152,7 @@ Defaults to ``False``.
 .. _run_experiment:
 
 save_cv_models *(Optional)*
-""""""""""""""""""""""""""
+"""""""""""""""""""""""""""
 
 Whether to save the fold models that were generated during the
 cross-validation experiment to the :ref:`models` directory. Beware when using
