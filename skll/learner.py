@@ -908,6 +908,7 @@ class Learner(object):
             self._model_kwargs['learning_rate'] = 'invscaling'
             self._model_kwargs['max_iter'] = 500
         elif issubclass(self._model_type, LogisticRegression):
+            self._model_kwargs['max_iter'] = 1000
             self._model_kwargs['solver'] = 'liblinear'
             self._model_kwargs['multi_class'] = 'auto'
 
