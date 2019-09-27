@@ -1481,7 +1481,7 @@ class Learner(object):
                 # This is a classifier. Valid objective functions depend on
                 # type of label (int, string, binary)
 
-                if issubclass(examples.labels.dtype.type, int):
+                if np.issubdtype(examples.labels.dtype, np.dtype(int).type):
                     # If they're ints, class 1 and 2 are valid for classifiers,
                     if grid_objective not in _INT_CLASS_OBJ_FUNCS:
                         raise ValueError("{} is not a valid grid objective "
@@ -1489,15 +1489,6 @@ class Learner(object):
                                          "integer labels"
                                          .format(grid_objective,
                                                  self._model_type.__name__))
-
-                elif issubclass(examples.labels.dtype.type, str):
-                    # if all of the labels are strings, only class 1 objectives
-                    # are valid (with a classifier).
-                    raise ValueError("{} is not a valid grid objective "
-                                     "function for the {} learner with string "
-                                     "labels".format(grid_objective,
-                                                     self._model_type.__name__))
-
                 elif len(set(examples.labels)) == 2:
                     # If there are two labels, class 3 objectives are valid for
                     # classifiers regardless of the type of the label.
@@ -1507,6 +1498,13 @@ class Learner(object):
                                          "binary labels"
                                          .format(grid_objective,
                                                  self._model_type.__name__))
+                elif issubclass(examples.labels.dtype.type, str):
+                    # if all of the labels are strings, only class 1 objectives
+                    # are valid (with a classifier).
+                    raise ValueError("{} is not a valid grid objective "
+                                     "function for the {} learner with string "
+                                     "labels".format(grid_objective,
+                                                     self._model_type.__name__))
                 elif grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
                     # simple backoff check for mixed-type labels
                     raise ValueError("{} is not a valid grid objective "
