@@ -31,7 +31,6 @@ setup(name='skll',
       license='BSD 3 clause',
       packages=find_packages(exclude=['tests']),
       include_package_data=True,
-      test_suite='tests',
       entry_points={'console_scripts':
                     ['filter_features = skll.utilities.filter_features:main',
                      'generate_predictions = skll.utilities.generate_predictions:main',
