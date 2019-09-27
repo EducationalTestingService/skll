@@ -1155,10 +1155,13 @@ save_cv_models *(Optional)*
 """""""""""""""""""""""""""
 
 Whether to save the fold models that were generated during the
-cross-validation experiment to the :ref:`models` directory. Beware when using
-a grid engine that transferring lots of large model objects over the network,
-which this option would require, could be prolematic. Only set this option to
-``True`` if you understand the implications.
+cross-validation experiment to the :ref:`models` directory. Beware that using
+this option will result in an increase of RAM usage since the fold models will
+need to be kept in memory during execution. The eventual saving of fold models
+to disk is also a considersation in terms of disk space. Furthermore, if using
+a grid engine, transferring lots of large model objects over a network could
+also be problematic. Only set this option to ``True`` if you understand the
+implications.
 Defaults to ``False``.
 
 .. _run_experiment:
