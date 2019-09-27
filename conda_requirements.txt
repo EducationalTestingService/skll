@@ -1,9 +1,10 @@
-scikit-learn==0.20.1
 beautifulsoup4
-tabulate
-numpy
-scipy
-pandas
-seaborn
 joblib>=0.8
+numpy
+pandas
+python>=3.6
 ruamel.yaml
+scikit-learn==0.20.1
+scipy
+seaborn
+tabulate
