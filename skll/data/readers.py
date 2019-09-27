@@ -3,6 +3,7 @@
 This module handles loading data from various types of data files. A
 base ``Reader`` class is provided that is sub-classed for each data
 file type that is supported, e.g. ``CSVReader``.
+
 Notes about Label Conversion
 ----------------------------
 All ``Reader`` sub-classes use the ``safe_float`` function internally
@@ -14,15 +15,18 @@ one of the ``Reader`` sub-classes, care must be taken to ensure that
 labels do not get converted in unexpected ways. For example,
 classification labels should not be a mixture of ``int``-converting
 and ``float``-converting labels. Consider the situation below:
+
 >>> import numpy as np
 >>> from skll.data.readers import safe_float
 >>> np.array([safe_float(x) for x in ["2", "2.2", "2.21"]]) # array([2.  , 2.2 , 2.21])
+
 The labels will all be converted to floats and any classification
 model generated with this data will predict labels such as ``2.0``,
 ``2.2``, etc., not ``str`` values that exactly match the input
 labels, as might be expected. Be aware that it may be best to make
 use of the ``class_map`` keyword argument in such cases to map
 original labels to labels that convert only to ``str``.
+
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
@@ -137,6 +141,7 @@ class Reader(object):
             A path or list of example dictionaries.
         kwargs : dict, optional
             The arguments to the Reader object being instantiated.
+
         Returns
         -------
         reader : skll.Reader
@@ -217,6 +222,7 @@ class Reader(object):
         ----------
         path : str
             The path to the file.
+
         Returns
         -------
         ids : np.array
@@ -629,6 +635,7 @@ class LibSVMReader(Reader):
     and feature names, which are normally not supported by the format.  The
     comment is not mandatory, but without it, your labels and features will
     not have names.  The comment is structured as follows::
+
         ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
     """
 

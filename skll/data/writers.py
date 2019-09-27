@@ -1,6 +1,7 @@
 # License: BSD 3 clause
 """
 Handles loading data from various types of data files.
+
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
@@ -13,6 +14,8 @@ import os
 import re
 import sys
 import pandas as pd
+import warnings
+
 from csv import DictWriter
 from decimal import Decimal
 
@@ -61,7 +64,7 @@ class Writer(object):
 
     def __init__(self, path, feature_set, **kwargs):
         super(Writer, self).__init__()
-        self.requires_binary = kwargs.pop('requires_binary', False)
+
         self.quiet = kwargs.pop('quiet', True)
         self.path = path
         self.feat_set = feature_set
@@ -161,8 +164,7 @@ class Writer(object):
                             if filter_features is not None else self.feat_set)
 
             # Open file for writing and write each line
-            file_mode = 'wb' if self.requires_binary else 'w'
-            with open(sub_path, file_mode) as output_file:
+            with open(sub_path, 'w') as output_file:
                 # Write out the header if this format requires it
                 self._write_header(filtered_set, output_file, filter_features)
                 # Write individual lines
@@ -494,7 +496,6 @@ class ARFFWriter(Writer):
         self.dialect = kwargs.pop('dialect', 'excel-tab')
         self.label_col = kwargs.pop('label_col', 'y')
         self.id_col = kwargs.pop('id_col', 'id')
-        kwargs['requires_binary'] = True
         super(ARFFWriter, self).__init__(path, feature_set, **kwargs)
         self._dict_writer = None
 
@@ -660,7 +661,6 @@ class NDJWriter(Writer):
     """
 
     def __init__(self, path, feature_set, **kwargs):
-        kwargs['requires_binary'] = True
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
 
     def _write_line(self, id_, label_, feat_dict, output_file):
@@ -750,6 +750,7 @@ class LibSVMWriter(Writer):
         ----------
         name : str
             The class names to replace with unicode equivalents.
+
         Returns
         -------
         name : str
