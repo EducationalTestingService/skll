@@ -954,9 +954,9 @@ class Learner(object):
                                              'tol': None,
                                              'random_state': 123456789}
                 elif base_estimator_name == 'SVR':
-                    base_estimator_kwargs = {'gamma': 'auto'}
+                    base_estimator_kwargs = {'gamma': 'scale'}
                 elif base_estimator_name == 'SVC':
-                    base_estimator_kwargs = {'gamma': 'auto', 'random_state': 123456789}
+                    base_estimator_kwargs = {'gamma': 'scale', 'random_state': 123456789}
                 else:
                     base_estimator_kwargs = {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
