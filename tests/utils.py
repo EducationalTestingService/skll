@@ -207,7 +207,7 @@ def create_jsonlines_feature_files(path):
 
     # we only need to create the feature files if they
     # don't already exist under the given path
-    feature_files_to_create = [join(path, 'f{}.jsonlines'.format(i)) for i in range(6)]
+    feature_files_to_create = [join(path, 'f{}.jsonlines'.format(i)) for i in range(5)]
     if all([exists(ff) for ff in feature_files_to_create]):
         return
     else:
@@ -218,20 +218,17 @@ def create_jsonlines_feature_files(path):
         ids = []
         features = []
         labels = []
-        labels_num = []
         for j in range(num_examples):
             y = "dog" if j % 2 == 0 else "cat"
-            y_num = 1.0 if j % 2 == 0 else 2.0
             ex_id = "{}{}".format(y, j)
             x = {"f{}".format(feat_num): np.random.randint(0, 4) for feat_num in
-                 range(6)}
+                 range(5)}
             x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
             ids.append(ex_id)
             labels.append(y)
-            labels_num.append(y_num)
             features.append(x)
 
-        for i in range(6):
+        for i in range(5):
             file_path = join(path, 'f{}.jsonlines'.format(i))
             sub_features = []
             for example_num in range(num_examples):
@@ -239,10 +236,7 @@ def create_jsonlines_feature_files(path):
                 x = {"f{}".format(feat_num):
                      features[example_num]["f{}".format(feat_num)]}
                 sub_features.append(x)
-            if i == 5:
-                fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels_num)
-            else:
-                fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels)
+            fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels)
             writer = NDJWriter(file_path, fs)
             writer.write()
 
