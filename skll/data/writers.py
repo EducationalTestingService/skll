@@ -14,13 +14,11 @@ import os
 import re
 import sys
 import pandas as pd
-import warnings
 
 from csv import DictWriter
 from decimal import Decimal
 
 from scipy.sparse import issparse
-from six.moves import map
 from sklearn.feature_extraction import FeatureHasher
 
 
@@ -534,8 +532,8 @@ class ARFFWriter(Writer):
         else:
             if self.feat_set.has_labels:
                 print("@attribute {} ".format(self.label_col) +
-                      "{" + ','.join(map(str,
-                                         sorted(set(self.feat_set.labels)))) +
+                      "{" + ','.join(list(map(str,
+                                              sorted(set(self.feat_set.labels))))) +
                       "}", file=output_file)
         if self.label_col:
             fieldnames.append(self.label_col)

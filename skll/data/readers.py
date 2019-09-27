@@ -46,9 +46,6 @@ import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
 
-from six import iteritems, text_type
-from six.moves import zip
-
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
@@ -881,7 +878,7 @@ class DelimitedReader(Reader):
             # delete it later since we don't need to explicitly
             # store zeros in the feature hash
             columns_to_delete = []
-            for fname, fval in iteritems(row):
+            for fname, fval in row.items():
                 fval_float = safe_float(fval)
                 # we don't need to explicitly store zeros
                 if fval_float:
@@ -963,7 +960,7 @@ class ARFFReader(DelimitedReader):
         # Process ARFF header
         for line in f:
             # Process encoding
-            if not isinstance(line, text_type):
+            if not isinstance(line, str):
                 decoded_line = UnicodeDammit(line,
                                              ['utf-8',
                                               'windows-1252']).unicode_markup
