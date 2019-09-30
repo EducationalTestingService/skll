@@ -37,12 +37,12 @@ from skll.experiments import (_compute_ylimits_for_featureset,
                               run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
-from utils import (create_jsonlines_feature_files,
-                   fill_in_config_options,
-                   fill_in_config_paths,
-                   fill_in_config_paths_for_single_file,
-                   make_classification_data,
-                   make_regression_data)
+from tests.utils import (create_jsonlines_feature_files,
+                         fill_in_config_options,
+                         fill_in_config_paths,
+                         fill_in_config_paths_for_single_file,
+                         make_classification_data,
+                         make_regression_data)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())

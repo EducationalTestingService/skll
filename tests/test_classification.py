@@ -32,8 +32,8 @@ from skll.experiments import run_configuration
 from skll.learner import Learner, _train_and_score
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import (make_classification_data, make_regression_data,
-                   make_sparse_data, fill_in_config_paths_for_single_file)
+from tests.utils import (make_classification_data, make_regression_data,
+                         make_sparse_data, fill_in_config_paths_for_single_file)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())

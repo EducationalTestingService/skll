@@ -25,8 +25,8 @@ from skll.config import (_parse_config_file,
 from skll.data.readers import safe_float
 from skll.experiments import _load_featureset
 
-from utils import (create_jsonlines_feature_files,
-                   fill_in_config_options)
+from tests.utils import (create_jsonlines_feature_files,
+                         fill_in_config_options)
 
 _my_dir = abspath(dirname(__file__))
 
