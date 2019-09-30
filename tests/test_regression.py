@@ -33,7 +33,8 @@ from skll.experiments import run_configuration
 from skll.learner import Learner, rescaled
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import make_regression_data, fill_in_config_paths_for_fancy_output
+from tests.utils import (make_regression_data,
+                         fill_in_config_paths_for_fancy_output)
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))

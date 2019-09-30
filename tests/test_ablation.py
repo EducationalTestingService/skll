@@ -19,8 +19,8 @@ from nose.tools import eq_
 from skll.experiments import run_configuration
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import (create_jsonlines_feature_files,
-                   fill_in_config_paths)
+from tests.utils import (create_jsonlines_feature_files,
+                         fill_in_config_paths)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())

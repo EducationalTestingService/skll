@@ -28,7 +28,7 @@ from skll.experiments import _load_featureset
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.utilities import skll_convert
 
-from utils import make_classification_data, make_regression_data
+from tests.utils import make_classification_data, make_regression_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
