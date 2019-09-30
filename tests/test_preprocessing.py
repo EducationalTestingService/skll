@@ -24,7 +24,7 @@ from skll.experiments import run_configuration
 from skll.learner import Learner, SelectByMinCount
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import fill_in_config_paths
+from tests.utils import fill_in_config_paths
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
