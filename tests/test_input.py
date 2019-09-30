@@ -865,6 +865,36 @@ def test_config_parsing_bad_cv_folds():
     yield check_config_parsing_value_error, config_path
 
 
+def test_config_parsing_save_cv_models_no_models_path():
+    """
+    Test to ensure config file parsing raises an error when save_cv_folds
+    is set to true but no models output path is provided.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad value for cv_folds
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'save_cv_models': 'True',
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objectives': "['f1_score_macro']"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'save_cv_folds_true_no_models_path')
+
+    yield check_config_parsing_value_error, config_path
+
+
 def test_config_parsing_invalid_option():
 
     train_dir = join(_my_dir, 'train')
