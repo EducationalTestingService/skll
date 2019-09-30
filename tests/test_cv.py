@@ -404,6 +404,6 @@ def test_cross_validate_task_save_cv_models():
     output_dir = join(_my_dir, 'output')
     cv_model_prefix = \
         "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
-    for i in range(10):
+    for i in range(1, 11):
         assert exists(join(output_dir,
                            "{}{}.model".format(cv_model_prefix, i))) is True

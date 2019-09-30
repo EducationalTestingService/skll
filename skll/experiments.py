@@ -699,7 +699,7 @@ def _classify_featureset(args):
                                               save_cv_models=save_cv_models,
                                               use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
             if models:
-                for index, m in enumerate(models):
+                for index, m in enumerate(models, start=1):
                     modelfile = join(model_path, '{}_fold{}.model'.format(job_name, index))
                     m.save(modelfile)
         elif task == 'learning_curve':
