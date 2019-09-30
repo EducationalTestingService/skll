@@ -1056,8 +1056,6 @@ def test_writing_ndj_featureset_with_string_ids():
     # read in the written file into a featureset and confirm that the
     # two featuresets are equal
     fs_test2 = NDJReader.for_path(output_path).read()
-    print(fs_test)
-    print(fs_test2)
 
     assert fs_test == fs_test2
 
@@ -1068,7 +1066,7 @@ def test_featureset_creation_from_dataframe_with_string_ids():
                            "score": [1, 2],
                            "text": ["a b", "b c"]})
     dftest.set_index("id", inplace=True)
-    test_feat_dict_list = [{'a': 1.0, 'b': 1.0,},
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0},
                            {'b': 1.0, 'c': 1.0}]
     test_dict_vectorizer = DictVectorizer()
     Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
