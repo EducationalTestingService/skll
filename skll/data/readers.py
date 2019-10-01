@@ -325,7 +325,7 @@ class Reader(object):
         # delete the column; otherwise, just
         # set it to None
         if id_col is not None and id_col in df:
-            ids = df[id_col]
+            ids = df[id_col].astype(str)
             del df[id_col]
             # if `ids_to_floats` is True,
             # then convert the ids to floats
