@@ -815,11 +815,12 @@ def test_mutually_exclusive_generate_predictions_args():
     gp.main(generate_cmd)
 
 
-def check_skll_convert(from_suffix, to_suffix):
+def check_skll_convert(from_suffix, to_suffix, id_type):
 
     # create some simple classification data
     orig_fs, _ = make_classification_data(train_test_ratio=1.0,
-                                          one_string_feature=True)
+                                          one_string_feature=True,
+                                          id_type=id_type)
 
     # now write out this feature set in the given suffix
     from_suffix_file = join(_my_dir, 'other',
@@ -844,13 +845,17 @@ def check_skll_convert(from_suffix, to_suffix):
         sys.stderr = old_stderr
         print(err)
 
-    # now read the converted file
-    reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
+    # now read the converted file and appropriately set `ids_to_floats`
+    # depending on the ID types that we generated earlier
+    ids_to_floats = True if id_type in ['float', 'integer'] else False
+    reader = EXT_TO_READER[to_suffix](to_suffix_file, ids_to_floats=ids_to_floats, quiet=True)
     converted_fs = reader.read()
 
-    # TODO : For now, we are converting these to dense, and then back to sparse.
-    # The reason for this is that DictVectorizers now retain any explicit zeros,
-    # but we convert these to dense when we write them out. This will be fixed.
+    # TODO : For now, we are converting feature arrays to dense, and then back to sparse.
+    # The reason for this is that scikit-learn DictVectorizers now retain any
+    # explicit zeros that are in files (e.g., in CSVs and TSVs). There's an issue
+    # open on scikit-learn: https://github.com/scikit-learn/scikit-learn/issues/14718
+
     orig_fs.features = sp.sparse.csr_matrix(orig_fs.features.todense())
     converted_fs.features = sp.sparse.csr_matrix(converted_fs.features.todense())
 
@@ -858,11 +863,17 @@ def check_skll_convert(from_suffix, to_suffix):
 
 
 def test_skll_convert():
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines',
-                                                          '.megam', '.tsv',
-                                                          '.csv', '.arff',
-                                                          '.libsvm'], 2):
-        yield check_skll_convert, from_suffix, to_suffix
+    for (from_suffix,
+         to_suffix) in itertools.permutations(['.arff',
+                                               '.csv',
+                                               '.jsonlines',
+                                               '.libsvm',
+                                               '.megam',
+                                               '.tsv'], 2):
+        yield check_skll_convert, from_suffix, to_suffix, 'string'
+        yield check_skll_convert, from_suffix, to_suffix, 'integer_string'
+        yield check_skll_convert, from_suffix, to_suffix, 'float'
+        yield check_skll_convert, from_suffix, to_suffix, 'integer'
 
 
 def test_skll_convert_libsvm_map():
