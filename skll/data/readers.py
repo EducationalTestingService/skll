@@ -6,7 +6,6 @@ file type that is supported, e.g. ``CSVReader``.
 
 Notes about Label Conversion
 ----------------------------
-
 All ``Reader`` sub-classes use the ``safe_float`` function internally
 to read in labels. This function tries to convert a single label
 first to ``int``, then to ``float``. If neither conversion is
@@ -34,15 +33,19 @@ original labels to labels that convert only to ``str``.
 :organization: ETS
 """
 
+import csv
+import json
 import logging
 import re
 import sys
-from itertools import islice
-from io import StringIO
+from csv import DictReader
+from itertools import chain, islice
+from io import open, StringIO
 
 import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
+
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
@@ -192,7 +195,6 @@ class Reader(object):
         progress_num
             Progress indicator value. Usually either a line
             number or a percentage. Must be able to convert to string.
-
         end : str, optional
             The string to put at the end of the line.  "\\r" should be
             used for every update except for the final one.
@@ -417,123 +419,129 @@ class DictListReader(Reader):
     ``FeatureSet`` objects as input. It iterates
     over examples in the same way as other ``Reader`` classes, but uses a
     list of example dictionaries instead of a path to a file.
-
-    Parameters
-    ----------
-    path_or_list : str
-        The path to a comma-delimited file.
-    pandas_kwargs : dict or None, optional
-        Arguments that will be passed directly
-        to the `pandas` data frame constructor.
-        Defaults to None.
-    kwargs : dict, optional
-        Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
-        super(DictListReader, self).__init__(path_or_list, **kwargs)
-        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        self._use_pandas = True
-
-    def _sub_read(self, list_of_dicts):
+    def read(self):
         """
-        The function called to create the feature set
-        from a list of dictionaries
+        Read examples from list of dictionaries.
 
-        Parameters
-        ----------
-        list_of_dicts : list of dicts
-            A list of dictionaries in DictList
-            format.
+        Returns
+        -------
+        feature_set : skll.FeatureSet
+            FeatureSet representing the list of dictionaries we read in.
         """
+        ids = []
+        labels = []
+        feat_dicts = []
+        for example_num, example in enumerate(self.path_or_list):
+            curr_id = str(example.get("id",
+                                      "EXAMPLE_{}".format(example_num)))
+            if self.ids_to_floats:
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true,' +
+                                      ' but ID {} could not be ' +
+                                      'converted to float in ' +
+                                      '{}').format(curr_id, example))
+            class_name = (safe_float(example['y'],
+                                     replace_dict=self.class_map)
+                          if 'y' in example else None)
+            example = example['x']
 
-        # create a data frame; if it's empty,
-        # then return `_parse_dataframe()`, which
-        # will raise an error
-        df = pd.DataFrame(list_of_dicts, **self._pandas_kwargs)
-        if df.empty:
-            return self._parse_dataframe(df, None, None)
+            # Update lists of IDs, labels, and feature dictionaries
+            if self.ids_to_floats:
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true, but ID '
+                                      '{} could not be converted to float in '
+                                      '{}').format(curr_id, self.path_or_list))
+            ids.append(curr_id)
+            labels.append(class_name)
+            feat_dicts.append(example)
 
-        # convert the features to a list of dictionaries
-        features = df['x'].tolist()
-        return self._parse_dataframe(df,
-                                     'id' if 'id' in df else None,
-                                     'y' if 'y' in df else None,
-                                     features=features)
+            # Print out status
+            if example_num % 100 == 0:
+                self._print_progress(example_num)
+
+        # Convert lists to numpy arrays
+        ids = np.array(ids)
+        labels = np.array(labels)
+        features = self.vectorizer.fit_transform(feat_dicts)
+
+        return FeatureSet('converted', ids, labels=labels,
+                          features=features, vectorizer=self.vectorizer)
 
 
 class NDJReader(Reader):
 
     """
     Reader to create a ``FeatureSet`` instance from a JSONlines/NDJ file.
-
     If example/instance IDs are included in the files, they
     must be specified as the  "id" key in each JSON dictionary.
-
-    Parameters
-    ----------
-    path_or_list : str
-        The path to a comma-delimited file.
-    pandas_kwargs : dict or None, optional
-        Arguments that will be passed directly
-        to the `pandas` I/O reader.
-        Defaults to None.
-    kwargs : dict, optional
-        Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
-        super(NDJReader, self).__init__(path_or_list, **kwargs)
-        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        # remove the `lines` and `orient` arguments, if they were passed
-        self._pandas_kwargs.pop('lines', None)
-        self._pandas_kwargs.pop('orient', None)
-        self._use_pandas = True
-
-    def _sub_read(self, path):
+    def _sub_read(self, f):
         """
         The function called on the file buffer in the ``read()`` method
         to iterate through rows.
 
         Parameters
         ----------
-        path : str
-            The path to the NDJ file.
+        f : file buffer
+            A file buffer for an NDJ file.
 
-        Returns
-        -------
-        ids : np.array
-            The ids for the feature set.
-        labels : np.array
-            The labels for the feature set.
-        features : list of dicts
-            The features for the features set.
+        Yields
+        ------
+        curr_id : str
+            The current ID for the example.
+        class_name : float or str
+            The name of the class label for the example.
+        example : dict
+            The example valued in dictionary format, with 'x'
+            as list of features.
+
+        Raises
+        ------
+        ValueError
+            If IDs cannot be converted to floats, and ``ids_to_floats``
+            is ``True``.
         """
-        # create a data frame; if it's empty,
-        # then return `_parse_dataframe()`, which
-        # will raise an error
-        df = pd.read_json(path, orient='records', lines=True, **self._pandas_kwargs)
-        if df.empty:
-            return self._parse_dataframe(df, None, None)
+        for example_num, line in enumerate(f):
+            # Remove extraneous whitespace
+            line = line.strip()
 
-        # if `id` is in the data frame, make sure it's a string
-        if 'id' in df:
-            df['id'] = df['id'].astype(str)
+            # If this is a comment line or a blank line, move on
+            if line.startswith('//') or not line:
+                continue
 
-        # convert the features to a
-        # list of dictionaries
-        features = df['x'].tolist()
-        return self._parse_dataframe(df,
-                                     'id' if 'id' in df else None,
-                                     'y' if 'y' in df else None,
-                                     features=features)
+            # Process good lines
+            example = json.loads(line)
+            # Convert all IDs to strings initially,
+            # for consistency with csv and megam formats.
+            curr_id = str(example.get("id",
+                                      "EXAMPLE_{}".format(example_num)))
+            class_name = (safe_float(example['y'],
+                                     replace_dict=self.class_map)
+                          if 'y' in example else None)
+            example = example["x"]
+
+            if self.ids_to_floats:
+                try:
+                    curr_id = float(curr_id)
+                except ValueError:
+                    raise ValueError(('You set ids_to_floats to true, but' +
+                                      ' ID {} could not be converted to ' +
+                                      'float').format(curr_id))
+
+            yield curr_id, class_name, example
 
 
 class MegaMReader(Reader):
 
     """
     Reader to create a ``FeatureSet`` instance from  a MegaM -fvals file.
-
     If example/instance IDs are included in the files, they must be specified
     as a comment line directly preceding the line with feature values.
     """
@@ -620,7 +628,6 @@ class LibSVMReader(Reader):
 
     """
     Reader to create a ``FeatureSet`` instance from a LibSVM/LibLinear/SVMLight file.
-
     We use a specially formatted comment for storing example IDs, class names,
     and feature names, which are normally not supported by the format.  The
     comment is not mandatory, but without it, your labels and features will
@@ -739,10 +746,8 @@ class CSVReader(Reader):
 
     """
     Reader for creating a ``FeatureSet`` instance from a CSV file.
-
     If example/instance IDs are included in the files, they
     must be specified in the ``id`` column.
-
     Also, there must be a column with the name specified by ``label_col`` if the
     data is labeled.
 
@@ -789,10 +794,8 @@ class TSVReader(CSVReader):
 
     """
     Reader for creating a ``FeatureSet`` instance from a TSV file.
-
     If example/instance IDs are included in the files, they
     must be specified in the ``id`` column.
-
     Also there must be a column with the name specified by ``label_col``
     if the data is labeled.
 
@@ -813,49 +816,108 @@ class TSVReader(CSVReader):
         self._sep = str('\t')
 
 
-class ARFFReader(Reader):
+class DelimitedReader(Reader):
+
+    """
+    Reader for creating a ``FeatureSet`` instance from a delimited (CSV/TSV) file.
+    If example/instance IDs are included in the files, they
+    must be specified in the ``id`` column.
+    For ARFF, CSV, and TSV files, there must be a column with the
+    name specified by ``label_col`` if the data is labeled. For ARFF files,
+    this column must also be the final one (as it is in Weka).
+
+    Parameters
+    ----------
+    path_or_list : str
+        The path to a delimited file.
+    dialect : str
+        The dialect of to pass on to the underlying CSV reader.
+        Defaults to ``'excel-tab'``.
+    kwargs : dict, optional
+        Other arguments to the Reader object.
+    """
+
+    def __init__(self, path_or_list, **kwargs):
+        self.dialect = kwargs.pop('dialect', 'excel-tab')
+        super(DelimitedReader, self).__init__(path_or_list, **kwargs)
+
+    def _sub_read(self, f):
+        """
+        Parameters
+        ----------
+        f : file buffer
+            A file buffer for an delimited file.
+
+        Yields
+        ------
+        curr_id : str
+            The current ID for the example.
+        class_name : float or str
+            The name of the class label for the example.
+        example : dict
+            The example valued in dictionary format, with 'x'
+            as list of features.
+        """
+        reader = DictReader(f, dialect=self.dialect)
+        for example_num, row in enumerate(reader):
+            if self.label_col is not None and self.label_col in row:
+                class_name = safe_float(row[self.label_col],
+                                        replace_dict=self.class_map)
+                del row[self.label_col]
+            else:
+                class_name = None
+
+            if self.id_col not in row:
+                curr_id = "EXAMPLE_{}".format(example_num)
+            else:
+                curr_id = row[self.id_col]
+                del row[self.id_col]
+
+            # Convert features to floats and if a feature is 0
+            # then store the name of the feature so we can
+            # delete it later since we don't need to explicitly
+            # store zeros in the feature hash
+            columns_to_delete = []
+            for fname, fval in row.items():
+                fval_float = safe_float(fval)
+                # we don't need to explicitly store zeros
+                if fval_float:
+                    row[fname] = fval_float
+                else:
+                    columns_to_delete.append(fname)
+
+            # remove the columns with zero values
+            for cname in columns_to_delete:
+                del row[cname]
+
+            yield curr_id, class_name, row
+
+
+class ARFFReader(DelimitedReader):
 
     """
     Reader for creating a ``FeatureSet`` instance from an ARFF file.
-
     If example/instance IDs are included in the files, they
     must be specified in the ``id`` column.
-
     Also, there must be a column with the name specified by ``label_col`` if the
     data is labeled, and this column must be the final one (as it is in Weka).
 
     Parameters
     ----------
     path_or_list : str
-        The path to a comma-delimited file.
-    pandas_kwargs : dict or None, optional
-        Arguments that will be passed directly
-        to the `pandas` I/O reader.
-        Defaults to None.
+        The path to the ARFF file.
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
+    def __init__(self, path_or_list, **kwargs):
+        kwargs['dialect'] = 'arff'
         super(ARFFReader, self).__init__(path_or_list, **kwargs)
-        self.dialect = 'arff'
         self.relation = ''
         self.regression = False
-        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        self._engine = self._pandas_kwargs.pop('engine', 'c')
-        # remove all the things that the user isn't allowed to set
-        self._pandas_kwargs.pop('delimiter', None)
-        self._pandas_kwargs.pop('header', None)
-        self._pandas_kwargs.pop('quote_char', None)
-        self._pandas_kwargs.pop('escape_char', None)
-        self._use_pandas = True
 
-    def split_with_quotes(self,
-                          s,
-                          delimiter=' ',
-                          header=None,
-                          quote_char="'",
-                          escape_char='\\'):
+    @staticmethod
+    def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
         """
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
@@ -864,10 +926,6 @@ class ARFFReader(Reader):
         ----------
         s : str
             The string with quotes to split
-        header : list or None, optional
-            The names of the header columns
-            or None.
-            Defaults to ``None``.
         delimiter : str, optional
             The delimiter to split on.
             Defaults to ``' '``.
@@ -878,67 +936,72 @@ class ARFFReader(Reader):
             The escape character.
             Defaults to ``'\\'``.
         """
-        # additional arguments we want
-        # to pass to the `pd.read_csv()` function
-        kwargs = {'header': header,
-                  'delimiter': delimiter,
-                  'quotechar': quote_char,
-                  'escapechar': escape_char}
-        kwargs.update(self._pandas_kwargs)
+        return next(csv.reader([s], delimiter=delimiter, quotechar=quote_char,
+                               escapechar=escape_char))
 
-        df = pd.read_csv(StringIO(s), engine=self._engine, **kwargs)
-        return df
-
-    def _sub_read(self, path):
+    def _sub_read(self, f):
         """
         Parameters
         ----------
-        path : str
-            The path to the ARFF file.
+        f : file buffer
+            A file buffer for the ARFF file.
 
-        Returns
-        -------
-        ids : np.array
-            The ids for the feature set.
-        labels : np.array
-            The labels for the feature set.
-        features : list of dicts
-            The features for the features set.
+        Yields
+        ------
+        curr_id : str
+            The current ID for the example.
+        class_name : float or str
+            The name of the class label for the example.
+        example : dict
+            The example valued in dictionary format, with 'x'
+            as list of features.
         """
-        with open(path, 'r') as buff:
-            lines = [UnicodeDammit(line.strip(), ['utf-8', 'windows-1252']).unicode_markup
-                     if not isinstance(line, str)
-                     else line.strip() for line in buff if line.strip()]
+        field_names = []
+        # Process ARFF header
+        for line in f:
+            # Process encoding
+            if not isinstance(line, str):
+                decoded_line = UnicodeDammit(line,
+                                             ['utf-8',
+                                              'windows-1252']).unicode_markup
+            else:
+                decoded_line = line
+            line = decoded_line.strip()
+            # Skip empty lines
+            if line:
+                # Split the line using CSV reader because it can handle
+                # quoted delimiters.
+                split_header = self.split_with_quotes(line)
+                row_type = split_header[0].lower()
+                if row_type == '@attribute':
+                    # Add field name to list
+                    field_name = split_header[1]
+                    field_names.append(field_name)
+                    # Check if we're doing regression
+                    if field_name == self.label_col:
+                        self.regression = (len(split_header) > 2 and
+                                           split_header[2] == 'numeric')
+                # Save relation if specified
+                elif row_type == '@relation':
+                    self.relation = split_header[1]
+                # Stop at data
+                elif row_type == '@data':
+                    break
+                # Skip other types of rows (relations)
 
-        # find the row index starting with data; the line below this
-        # is where the data should actually begin
-        data_idx = lines.index('@data')
+        # Create header for CSV
+        io_type = StringIO
+        with io_type() as field_buffer:
+            csv.writer(field_buffer, dialect='arff').writerow(field_names)
+            field_str = field_buffer.getvalue()
 
-        df = self.split_with_quotes('\n'.join(lines[data_idx + 1:]), delimiter=',')
+        # Set label_col to be the name of the last field, since that's standard
+        # for ARFF files
+        if self.label_col != field_names[-1]:
+            self.label_col = None
 
-        # get the column names from the attribute
-        # rows, and add them to the columns list
-        columns = []
-        for row in lines[:data_idx]:
-
-            row_series = self.split_with_quotes(row)
-            if row_series.loc[0, 0] == '@attribute':
-                column = row_series.loc[0, 1]
-                columns.append(column)
-
-                # if the column is the label column,
-                # and the type is 'numeric', set regression
-                # to True; otherwise False
-                if column == self.label_col:
-                    self.regression = row_series.loc[0, 2] == 'numeric'
-
-            # if the relation attribute exists, then
-            # add it to the relation instance variable
-            elif row_series.loc[0, 0] == '@relation':
-                self.relation = row_series.loc[0, 1]
-
-        df.columns = columns
-        return self._parse_dataframe(df, self.id_col, self.label_col)
+        # Process data as CSV file
+        return super(ARFFReader, self)._sub_read(chain([field_str], f))
 
 
 def safe_float(text, replace_dict=None, logger=None):

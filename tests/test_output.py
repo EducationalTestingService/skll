@@ -1085,7 +1085,7 @@ def test_send_warnings_to_log():
     """
     # Run experiment
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+    train_path = join(_my_dir, 'train', 'test_send_warnings{}'.format(suffix))
     config_path = fill_in_config_paths_for_single_file(join(_my_dir,
                                                             "configs",
                                                             "test_send_warnings_to_log"
@@ -1099,7 +1099,7 @@ def test_send_warnings_to_log():
     # to the use of sklearn
     with open(join(_my_dir,
                    'output',
-                   'test_send_warnings_to_log_train_f0.'
+                   'test_send_warnings_to_log_train_test_send_warnings.'
                    'jsonlines_LinearSVC.log')) as f:
         log_content = f.read()
         undefined_metric_sklearn_warning_re = \
