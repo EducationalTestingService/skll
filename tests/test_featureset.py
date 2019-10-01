@@ -1041,8 +1041,8 @@ def test_featureset_creation_from_dataframe_without_labels_with_vectorizer():
 
 def test_writing_ndj_featureset_with_string_ids():
     test_dict_vectorizer = DictVectorizer()
-    test_feat_dict_list = [{'a': 1.0, 'b': 1.0, 'c': 0.0},
-                           {'a': 0.0, 'b': 1.0, 'c': 1.0}]
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0},
+                           {'b': 1.0, 'c': 1.0}]
     Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
     fs_test = FeatureSet('test',
                          ids=['1', '2'],
@@ -1066,8 +1066,8 @@ def test_featureset_creation_from_dataframe_with_string_ids():
                            "score": [1, 2],
                            "text": ["a b", "b c"]})
     dftest.set_index("id", inplace=True)
-    test_feat_dict_list = [{'a': 1.0, 'b': 1.0, 'c': 0.0},
-                           {'a': 0.0, 'b': 1.0, 'c': 1.0}]
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0},
+                           {'b': 1.0, 'c': 1.0}]
     test_dict_vectorizer = DictVectorizer()
     Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
     fs_test = FeatureSet('test',
@@ -1092,8 +1092,8 @@ def test_featureset_creation_from_dataframe_with_string_labels():
                            "score": ['yes', 'no'],
                            "text": ["a b", "b c"]})
     dftest.set_index("id", inplace=True)
-    test_feat_dict_list = [{'a': 1.0, 'b': 1.0, 'c': 0.0},
-                           {'a': 0.0, 'b': 1.0, 'c': 1.0}]
+    test_feat_dict_list = [{'a': 1.0, 'b': 1.0},
+                           {'b': 1.0, 'c': 1.0}]
     test_dict_vectorizer = DictVectorizer()
     Xtest = test_dict_vectorizer.fit_transform(test_feat_dict_list)
     fs_test = FeatureSet('test',
