@@ -40,7 +40,7 @@ import re
 import sys
 from csv import DictReader
 from itertools import chain, islice
-from io import open, StringIO
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -162,7 +162,7 @@ class Reader(object):
                                   '{}').format(path_or_list))
         return EXT_TO_READER[ext](path_or_list, **kwargs)
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Does the actual reading of the given file or list.
         For `Reader` objects that do not rely on `pandas`
@@ -174,7 +174,7 @@ class Reader(object):
 
         Parameters
         ----------
-        f : file buffer or str
+        file : file buffer or str
             Either a file buffer, if ``_sub_read_rows()``
             is calling this method, or a path to a file,
             if it is being read with ``pandas``.
@@ -206,7 +206,7 @@ class Reader(object):
                   end=end, file=sys.stderr)
             sys.stderr.flush()
 
-    def _sub_read_rows(self, path):
+    def _sub_read_rows(self, file):
         """
         Read the file in row-by-row. This method is used for
         `Reader` objects that do not rely on `pandas`, and are
@@ -217,8 +217,8 @@ class Reader(object):
 
         Parameters
         ----------
-        path : str
-            The path to the file.
+        file : str
+            The path to a file.
 
         Returns
         -------
@@ -242,7 +242,7 @@ class Reader(object):
         ids = []
         labels = []
         ex_num = 0
-        with open(path, 'r') as f:
+        with open(file, 'r') as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
 
                 # Update lists of IDs, classes, and features
@@ -482,14 +482,14 @@ class NDJReader(Reader):
     must be specified as the  "id" key in each JSON dictionary.
     """
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         The function called on the file buffer in the ``read()`` method
         to iterate through rows.
 
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for an NDJ file.
 
         Yields
@@ -508,7 +508,7 @@ class NDJReader(Reader):
             If IDs cannot be converted to floats, and ``ids_to_floats``
             is ``True``.
         """
-        for example_num, line in enumerate(f):
+        for example_num, line in enumerate(file):
             # Remove extraneous whitespace
             line = line.strip()
 
@@ -546,11 +546,11 @@ class MegaMReader(Reader):
     as a comment line directly preceding the line with feature values.
     """
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for an MegaM file.
 
         Yields
@@ -570,7 +570,7 @@ class MegaMReader(Reader):
         """
         example_num = 0
         curr_id = 'EXAMPLE_0'
-        for line in f:
+        for line in file:
             # Process encoding
             if not isinstance(line, str):
                 line = UnicodeDammit(line, ['utf-8',
@@ -671,11 +671,11 @@ class LibSVMReader(Reader):
         value = safe_float(value)
         return (name, value)
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for an LibSVM file.
 
         Yields
@@ -693,7 +693,7 @@ class LibSVMReader(Reader):
         ValueError
             If line does not look like valid libsvm format.
         """
-        for example_num, line in enumerate(f):
+        for example_num, line in enumerate(file):
             curr_id = ''
             # Decode line if it's not already str
             if isinstance(line, bytes):
@@ -770,11 +770,11 @@ class CSVReader(Reader):
         self._engine = self._pandas_kwargs.pop('engine', 'c')
         self._use_pandas = True
 
-    def _sub_read(self, path):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        path : str
+        file : str
             The path to the CSV file.
 
         Returns
@@ -786,7 +786,7 @@ class CSVReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        df = pd.read_csv(path, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
+        df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
         return self._parse_dataframe(df, self.id_col, self.label_col)
 
 
@@ -841,11 +841,11 @@ class DelimitedReader(Reader):
         self.dialect = kwargs.pop('dialect', 'excel-tab')
         super(DelimitedReader, self).__init__(path_or_list, **kwargs)
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for an delimited file.
 
         Yields
@@ -858,7 +858,7 @@ class DelimitedReader(Reader):
             The example valued in dictionary format, with 'x'
             as list of features.
         """
-        reader = DictReader(f, dialect=self.dialect)
+        reader = DictReader(file, dialect=self.dialect)
         for example_num, row in enumerate(reader):
             if self.label_col is not None and self.label_col in row:
                 class_name = safe_float(row[self.label_col],
@@ -917,14 +917,14 @@ class ARFFReader(DelimitedReader):
         self.regression = False
 
     @staticmethod
-    def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
+    def split_with_quotes(string, delimiter=' ', quote_char="'", escape_char='\\'):
         """
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
 
         Parameters
         ----------
-        s : str
+        string : str
             The string with quotes to split
         delimiter : str, optional
             The delimiter to split on.
@@ -936,14 +936,16 @@ class ARFFReader(DelimitedReader):
             The escape character.
             Defaults to ``'\\'``.
         """
-        return next(csv.reader([s], delimiter=delimiter, quotechar=quote_char,
+        return next(csv.reader([string],
+                               delimiter=delimiter,
+                               quotechar=quote_char,
                                escapechar=escape_char))
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for the ARFF file.
 
         Yields
@@ -958,7 +960,7 @@ class ARFFReader(DelimitedReader):
         """
         field_names = []
         # Process ARFF header
-        for line in f:
+        for line in file:
             # Process encoding
             if not isinstance(line, str):
                 decoded_line = UnicodeDammit(line,
@@ -1001,7 +1003,7 @@ class ARFFReader(DelimitedReader):
             self.label_col = None
 
         # Process data as CSV file
-        return super(ARFFReader, self)._sub_read(chain([field_str], f))
+        return super(ARFFReader, self)._sub_read(chain([field_str], file))
 
 
 def safe_float(text, replace_dict=None, logger=None):
