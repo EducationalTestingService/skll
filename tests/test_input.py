@@ -1242,7 +1242,7 @@ def test_config_parsing_metrics_and_objectives_overlap():
 def test_cv_folds_and_grid_search_folds():
 
     # we want to test all possible combinations of the following variables:
-    #  task = train, evaluate, cross_validate
+    #  task = train, evaluate, predict, cross_validate
     #  cv_folds/folds_file = not specified, number, csv file
     #  grid_search_folds = not specified, number
     #  use_folds_file_for_grid_search = not specified, True, False
