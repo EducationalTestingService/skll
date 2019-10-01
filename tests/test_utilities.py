@@ -823,10 +823,14 @@ def check_skll_convert(from_suffix, to_suffix, id_type):
                                           id_type=id_type)
 
     # now write out this feature set in the given suffix
-    from_suffix_file = join(_my_dir, 'other',
-                            'test_skll_convert_in{}'.format(from_suffix))
-    to_suffix_file = join(_my_dir, 'other',
-                          'test_skll_convert_out{}'.format(to_suffix))
+    from_suffix_file = join(_my_dir,
+                            'other',
+                            'test_skll_convert_{}_ids_in{}'.format(id_type,
+                                                                   from_suffix))
+    to_suffix_file = join(_my_dir,
+                          'other',
+                          'test_skll_convert_{}_ids_out{}'.format(id_type,
+                                                                  to_suffix))
 
     writer = EXT_TO_WRITER[from_suffix](from_suffix_file, orig_fs, quiet=True)
     writer.write()
