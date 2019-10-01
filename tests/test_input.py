@@ -1287,6 +1287,24 @@ def test_cv_folds_and_grid_search_folds():
     # ('evaluate', 'train/folds_file_test.csv', 7, None) ->  (None, fold_mapping)
     # ('evaluate', 'train/folds_file_test.csv', 7, True) ->  (None, fold_mapping)
     # ('evaluate', 'train/folds_file_test.csv', 7, False) ->  (None, fold_mapping)
+    # ('predict', None, None, None) ->  (None, 3)
+    # ('predict', None, None, True) ->  (None, 3)
+    # ('predict', None, None, False) ->  (None, 3)
+    # ('predict', None, 7, None) ->  (None, 7)
+    # ('predict', None, 7, True) ->  (None, 7)
+    # ('predict', None, 7, False) ->  (None, 7)
+    # ('predict', 5, None, None) ->  (None, 3)
+    # ('predict', 5, None, True) ->  (None, 3)
+    # ('predict', 5, None, False) ->   (None, 3)
+    # ('predict', 5, 7, None) ->  (None, 7)
+    # ('predict', 5, 7, True) ->  (None, 7)
+    # ('predict', 5, 7, False) ->  (None, 7)
+    # ('predict', 'train/folds_file_test.csv', None, None) ->  (None, fold_mapping)
+    # ('predict', 'train/folds_file_test.csv', None, True) ->  (None, fold_mapping)
+    # ('predict', 'train/folds_file_test.csv', None, False) ->  (None, fold_mapping)
+    # ('predict', 'train/folds_file_test.csv', 7, None) ->  (None, fold_mapping)
+    # ('predict', 'train/folds_file_test.csv', 7, True) ->  (None, fold_mapping)
+    # ('predict', 'train/folds_file_test.csv', 7, False) ->  (None, fold_mapping)
     # ('cross_validate', None, None, None) ->  (10, 3)
     # ('cross_validate', None, None, True) ->  (10, 3)
     # ('cross_validate', None, None, False) ->  (10, 3)
@@ -1314,11 +1332,18 @@ def test_cv_folds_and_grid_search_folds():
           grid_search_folds,
           use_folds_file_for_grid_search),
          (chosen_cv_folds,
-          chosen_grid_search_folds)) in zip(product(['train', 'evaluate', 'cross_validate'],
+          chosen_grid_search_folds)) in zip(product(['train', 'evaluate', 'predict', 'cross_validate'],
                                                     [None, 5, join(_my_dir, 'train/folds_file_test.csv')],
                                                     [None, 7],
                                                     [None, True, False]),
                                             [(None, 3), (None, 3), (None, 3),
+                                             (None, 7), (None, 7), (None, 7),
+                                             (None, 3), (None, 3), (None, 3),
+                                             (None, 7), (None, 7), (None, 7),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 3), (None, 3), (None, 3),
                                              (None, 7), (None, 7), (None, 7),
                                              (None, 3), (None, 3), (None, 3),
                                              (None, 7), (None, 7), (None, 7),
@@ -1380,7 +1405,7 @@ def check_cv_folds_and_grid_search_folds(task,
     # when cross-validating
     if task == 'train':
         values_to_fill_dict['models'] = output_dir
-    elif task == 'evaluate':
+    elif task in ['evaluate', 'predict']:
         values_to_fill_dict['test_directory'] = test_dir
     elif task == 'cross_validate':
         values_to_fill_dict['results'] = output_dir
