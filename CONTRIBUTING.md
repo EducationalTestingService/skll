@@ -13,6 +13,8 @@ GitHub:
 
 (NOTE: Contributors internal to ETS can skip step 1 and clone the SKLL repository directly.)
 
+0. Read the [part of the documentation](https://skll.readthedocs.io/en/latest/contributing.html) that provides an overview of the SKLL codebase, run the tutorial and examples, and get familiar with the SKLL outputs.
+
 1. Fork the [project repository](http://github.com/EducationalTestingService/skll/):
    click on the 'Fork' button near the top of the page. This creates
    a copy of the code under your account on the GitHub server.

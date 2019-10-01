@@ -132,7 +132,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVC:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         RandomForestClassifier:
                         [{'max_depth': [1, 5, 10, None]}],
                         RandomForestRegressor:
@@ -153,7 +153,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         TheilSenRegressor:
                         [{}]}
 
@@ -881,7 +881,7 @@ class Learner(object):
         if issubclass(self._model_type, SVC):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
-            self._model_kwargs['gamma'] = 'auto'
+            self._model_kwargs['gamma'] = 'scale'
             if self.probability:
                 self.logger.warning('Because LibSVM does an internal '
                                     'cross-validation to produce probabilities, '
@@ -894,20 +894,21 @@ class Learner(object):
             self._model_kwargs['n_estimators'] = 500
         elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
-            self._model_kwargs['gamma'] = 'auto'
+            self._model_kwargs['gamma'] = 'scale'
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
-            self._model_kwargs['max_iter'] = None
-            self._model_kwargs['tol'] = None
+            self._model_kwargs['max_iter'] = 1000
+            self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, SGDRegressor):
-            self._model_kwargs['max_iter'] = None
-            self._model_kwargs['tol'] = None
+            self._model_kwargs['max_iter'] = 1000
+            self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, RANSACRegressor):
             self._model_kwargs['loss'] = 'squared_loss'
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
             self._model_kwargs['learning_rate'] = 'invscaling'
             self._model_kwargs['max_iter'] = 500
         elif issubclass(self._model_type, LogisticRegression):
+            self._model_kwargs['max_iter'] = 1000
             self._model_kwargs['solver'] = 'liblinear'
             self._model_kwargs['multi_class'] = 'auto'
 
@@ -954,9 +955,9 @@ class Learner(object):
                                              'tol': None,
                                              'random_state': 123456789}
                 elif base_estimator_name == 'SVR':
-                    base_estimator_kwargs = {'gamma': 'auto'}
+                    base_estimator_kwargs = {'gamma': 'scale'}
                 elif base_estimator_name == 'SVC':
-                    base_estimator_kwargs = {'gamma': 'auto', 'random_state': 123456789}
+                    base_estimator_kwargs = {'gamma': 'scale', 'random_state': 123456789}
                 else:
                     base_estimator_kwargs = {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
@@ -1646,6 +1647,7 @@ class Learner(object):
 
             grid_searcher = GridSearchCV(estimator, param_grid,
                                          scoring=grid_objective,
+                                         iid=False,
                                          cv=folds,
                                          n_jobs=grid_jobs,
                                          pre_dispatch=grid_jobs)

@@ -99,6 +99,9 @@ def tearDown():
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
 
+    for grid_search_cv_results_file in glob(join(output_dir, 'test_grid_search_cv_results_*.*')):
+        os.unlink(grid_search_cv_results_file)
+
     if exists(join(config_dir, 'test_send_warnings_to_log.cfg')):
         os.unlink(join(config_dir, 'test_send_warnings_to_log.cfg'))
     for output_file in glob(join(output_dir,

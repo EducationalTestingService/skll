@@ -43,7 +43,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         # file and no defaults are provided
         required = ['experiment_name', 'task', 'learners']
 
-        # these are the optional config options for which#
+        # these are the optional config options for which
         # defaults are automatically provided
         defaults = {'class_map': '{}',
                     'custom_learner_path': '',
