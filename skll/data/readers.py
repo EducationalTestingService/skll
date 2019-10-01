@@ -4,9 +4,15 @@ This module handles loading data from various types of data files. A
 base ``Reader`` class is provided that is sub-classed for each data
 file type that is supported, e.g. ``CSVReader``.
 
-Notes about Label Conversion
-----------------------------
-All ``Reader`` sub-classes use the ``safe_float`` function internally
+Notes about IDs & Label Conversion
+-----------------------------------
+All ``Reader`` sub-classes are designed to read in example IDs
+as strings unless ``ids_to_floats`` is set to ``True`` in which
+case they will be read in as floats, if possible. In the latter
+case, an exception will be raised if they cannot be converted to
+floats.
+
+All ``Reader`` sub-classes also use the ``safe_float`` function internally
 to read in labels. This function tries to convert a single label
 first to ``int``, then to ``float``. If neither conversion is
 possible, the label remains a ``str``. It should be noted that, if
