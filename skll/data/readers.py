@@ -291,7 +291,7 @@ class Reader(object):
 
         return ids, labels, features
 
-    def _parse_dataframe(self, df, id_col, label_col, features=None):
+    def _parse_dataframe(self, df, id_col, label_col, ignore_blanks=False):
         """
         Parse the data frame into ids, labels, and features.
         For `Reader` objects that rely on `pandas`, this function
@@ -308,11 +308,10 @@ class Reader(object):
             The id column.
         label_col : str or None
             The label column.
-        features : list of dict or None
-            The features, if they already exist;
-            if not, then they will be extracted
-            from the data frame.
-            Defaults to None.
+        ignore_blanks : bool, optional
+            If True, remove lines that have any NaN
+            values.
+            Defaults to False.
 
         Returns
         -------
@@ -326,6 +325,10 @@ class Reader(object):
         if df.empty:
             raise ValueError("No features found in possibly "
                              "empty file '{}'.".format(self.path_or_list))
+
+        # should we remove lines that are all NaN?
+        if ignore_blanks:
+            df = df.dropna().reset_index(drop=True)
 
         # if the id column exists,
         # get them from the data frame and
@@ -354,8 +357,7 @@ class Reader(object):
             # map the new classes to the labels;
             # otherwise, just convert them to floats
             if self.class_map is not None:
-                labels = labels.apply(safe_float,
-                                      replace_dict=self.class_map)
+                labels = labels.apply(safe_float, replace_dict=self.class_map)
             else:
                 labels = labels.apply(safe_float)
             labels = labels.values
@@ -364,10 +366,8 @@ class Reader(object):
             labels = np.array([None] * df.shape[0])
 
         # convert the remaining features to
-        # a list of dictionaries, if no
-        # features argument was passed
-        if features is None:
-            features = df.to_dict(orient='records')
+        # a list of dictionaries
+        features = df.to_dict(orient='records')
 
         return ids, labels, features
 
@@ -762,6 +762,11 @@ class CSVReader(Reader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
+    ignore_blanks : bool, optional
+        If True, remove lines that have any NaN
+        values. These lines are removed after the
+        the data set is read into a `pd.DataFrame`.
+        Defaults to False.
     pandas_kwargs : dict or None, optional
         Arguments that will be passed directly
         to the `pandas` I/O reader.
@@ -770,8 +775,9 @@ class CSVReader(Reader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
+    def __init__(self, path_or_list, ignore_blanks=False, pandas_kwargs=None, **kwargs):
         super(CSVReader, self).__init__(path_or_list, **kwargs)
+        self._ignore_blanks = ignore_blanks
         self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
         self._sep = self._pandas_kwargs.pop('sep', str(','))
         self._engine = self._pandas_kwargs.pop('engine', 'c')
@@ -794,7 +800,7 @@ class CSVReader(Reader):
             The features for the features set.
         """
         df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
-        return self._parse_dataframe(df, self.id_col, self.label_col)
+        return self._parse_dataframe(df, self.id_col, self.label_col, self._ignore_blanks)
 
 
 class TSVReader(CSVReader):
@@ -810,6 +816,11 @@ class TSVReader(CSVReader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
+    ignore_blanks : bool, optional
+        If True, remove lines that have any NaN
+        values. These lines are removed after the
+        the data set is read into a `pd.DataFrame`.
+        Defaults to False.
     pandas_kwargs : dict or None, optional
         Arguments that will be passed directly
         to the `pandas` I/O reader.
@@ -818,8 +829,8 @@ class TSVReader(CSVReader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
-        super(TSVReader, self).__init__(path_or_list, pandas_kwargs, **kwargs)
+    def __init__(self, path_or_list, ignore_blanks=False, pandas_kwargs=None, **kwargs):
+        super(TSVReader, self).__init__(path_or_list, ignore_blanks, pandas_kwargs, **kwargs)
         self._sep = str('\t')
 
 
