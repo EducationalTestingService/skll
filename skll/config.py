@@ -852,7 +852,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     #      instead of the value contained in `grid_search_folds`.
     #  (b) if the task is `cross_validate` and an external fold mapping is specified
     #      then use that mapping for the outer CV loop and for the inner grid-search
-    #      loop. However, if  `use_folds_file_for_grid_search` is `False, do not
+    #      loop. However, if  `use_folds_file_for_grid_search` is `False`, do not
     #      use the fold mapping for the inner loop.
     cv_folds = None
     if task in ['train', 'evaluate', 'predict'] and specified_folds_mapping:
