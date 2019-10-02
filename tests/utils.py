@@ -249,7 +249,7 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              num_features=10, use_feature_hashing=False,
                              feature_bins=4, num_labels=2,
                              empty_labels=False, string_label_list=None,
-                             feature_prefix='f',
+                             feature_prefix='f', id_type='string',
                              class_weights=None, non_negative=False,
                              one_string_feature=False, num_string_values=4,
                              random_state=1234567890):
@@ -275,8 +275,16 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
         X = abs(X)
 
     # since we want to use SKLL's FeatureSet class, we need to
-    # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+    # create a list of IDs; we create IDs that either can also
+    # be numbers or pure strings
+    if id_type == 'string':
+        ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+    elif id_type == 'integer_string':
+        ids = ['{}'.format(n) for n in range(1, num_examples + 1)]
+    elif id_type == 'float':
+        ids = [float(n) for n in range(1, num_examples + 1)]
+    elif id_type == 'integer':
+        ids = list(range(1, num_examples + 1))
 
     # create a string feature that has four possible values
     # 'a', 'b', 'c' and 'd' and add it to X at the end
