@@ -326,7 +326,7 @@ class Reader(object):
             raise ValueError("No features found in possibly "
                              "empty file '{}'.".format(self.path_or_list))
 
-        # should we remove lines that are all NaN?
+        # should we remove lines that have any NaNs?
         if ignore_blanks:
             df = df.dropna().reset_index(drop=True)
 
