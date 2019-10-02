@@ -65,6 +65,7 @@ def tearDown():
     if exists(fold_file_path):
         os.unlink(fold_file_path)
 
+    train_dir = join(_my_dir, "train")
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
 
@@ -85,6 +86,9 @@ def tearDown():
                         glob(join(output_dir,
                                   'test_folds_file*'))):
         os.unlink(output_file)
+
+    for i in range(6):
+        os.unlink(join(train_dir, "f{}.jsonlines".format(i)))
 
 
 def make_cv_folds_data(num_examples_per_fold=100,
@@ -325,7 +329,7 @@ def test_folds_file_with_fewer_ids_than_featureset():
     """
     # Run experiment with a special featureset that has extra IDs
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'f0_extra{}'.format(suffix))
+    train_path = join(_my_dir, 'train', 'f5{}'.format(suffix))
 
     config_path = fill_in_config_paths_for_single_file(join(_my_dir,
                                                             "configs",
@@ -338,7 +342,7 @@ def test_folds_file_with_fewer_ids_than_featureset():
     # Check job log output
     with open(join(_my_dir,
                    'output',
-                   'test_folds_file_logging_train_f0_extra.'
+                   'test_folds_file_logging_train_f5.'
                    'jsonlines_LogisticRegression.log')) as f:
         cv_file_pattern = re.compile('Feature set contains IDs that are not in folds dictionary. Skipping those IDs.')
         matches = re.findall(cv_file_pattern, f.read())
