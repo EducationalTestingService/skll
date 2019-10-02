@@ -103,7 +103,10 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
     if task != 'train':
         to_fill_in.append('predictions')
 
-    if task != 'cross_validate':
+    if task == 'cross_validate':
+        if config.get("Output", "save_cv_models"):
+            to_fill_in.append('models')
+    else:
         to_fill_in.append('models')
 
     if task == 'evaluate' or task == 'cross_validate':
@@ -156,7 +159,8 @@ def fill_in_config_options(config_template_path,
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'param_grids', 'objectives', 'duplicate_option'],
                   'Output': ['results', 'log', 'models', 'metrics',
-                             'predictions', 'pipeline']}
+                             'predictions', 'pipeline', 'save_cv_folds',
+                             'save_cv_models']}
 
     for section in to_fill_in:
         for param_name in to_fill_in[section]:
