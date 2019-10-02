@@ -77,11 +77,13 @@ def tearDown():
             os.unlink(cfg_file)
 
     for output_file in (glob(join(output_dir,
-                                  'test_save_cv_folds_*')) +
+                                  'test_save_cv_folds*')) +
                         glob(join(output_dir,
                                   'test_int_labels_cv_*')) +
                         glob(join(output_dir,
-                                  'test_save_cv_models*'))):
+                                  'test_save_cv_models*')) +
+                        glob(join(output_dir,
+                                  'test_folds_file*'))):
         os.unlink(output_file)
 
 
@@ -314,6 +316,32 @@ def test_folds_file_logging_num_folds():
                    'jsonlines_LogisticRegression.log')) as f:
         cv_folds_pattern = re.compile("(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds\))")
         matches = re.findall(cv_folds_pattern, f.read())
+        assert_equal(len(matches), 1)
+
+
+def test_folds_file_with_fewer_ids_than_featureset():
+    """
+    Test when using `folds_file`, log shows warning for extra IDs in featureset.
+    """
+    # Run experiment with a special featureset that has extra IDs
+    suffix = '.jsonlines'
+    train_path = join(_my_dir, 'train', 'f0_extra{}'.format(suffix))
+
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
+                                                            "configs",
+                                                            "test_folds_file"
+                                                            ".template.cfg"),
+                                                       train_path,
+                                                       None)
+    run_configuration(config_path, quiet=True)
+
+    # Check job log output
+    with open(join(_my_dir,
+                   'output',
+                   'test_folds_file_logging_train_f0_extra.'
+                   'jsonlines_LogisticRegression.log')) as f:
+        cv_file_pattern = re.compile('Feature set contains IDs that are not in folds dictionary. Skipping those IDs.')
+        matches = re.findall(cv_file_pattern, f.read())
         assert_equal(len(matches), 1)
 
 
