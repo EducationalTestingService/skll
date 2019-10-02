@@ -309,9 +309,9 @@ class Reader(object):
         label_col : str or None
             The label column.
         ignore_blanks : bool, optional
-            If True, remove lines that have any NaN
+            If ``True``, remove lines/rows that have any blank
             values.
-            Defaults to False.
+            Defaults to ``False``.
 
         Returns
         -------
@@ -763,10 +763,10 @@ class CSVReader(Reader):
     path_or_list : str
         The path to a comma-delimited file.
     ignore_blanks : bool, optional
-        If True, remove lines that have any NaN
-        values. These lines are removed after the
+        If ``True``, remove lines/rows that have any blank
+        values. These lines/rows are removed after the
         the data set is read into a `pd.DataFrame`.
-        Defaults to False.
+        Defaults to ``False``.
     pandas_kwargs : dict or None, optional
         Arguments that will be passed directly
         to the `pandas` I/O reader.
@@ -800,7 +800,8 @@ class CSVReader(Reader):
             The features for the features set.
         """
         df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
-        return self._parse_dataframe(df, self.id_col, self.label_col, self._ignore_blanks)
+        return self._parse_dataframe(df, self.id_col, self.label_col,
+                                     ignore_blanks=self._ignore_blanks)
 
 
 class TSVReader(CSVReader):
@@ -817,10 +818,10 @@ class TSVReader(CSVReader):
     path_or_list : str
         The path to a comma-delimited file.
     ignore_blanks : bool, optional
-        If True, remove lines that have any NaN
-        values. These lines are removed after the
+        If ``True``, remove lines/rows that have any blank
+        values. These lines/rows are removed after the
         the data set is read into a `pd.DataFrame`.
-        Defaults to False.
+        Defaults to ``False``.
     pandas_kwargs : dict or None, optional
         Arguments that will be passed directly
         to the `pandas` I/O reader.
@@ -830,7 +831,10 @@ class TSVReader(CSVReader):
     """
 
     def __init__(self, path_or_list, ignore_blanks=False, pandas_kwargs=None, **kwargs):
-        super(TSVReader, self).__init__(path_or_list, ignore_blanks, pandas_kwargs, **kwargs)
+        super(TSVReader, self).__init__(path_or_list, 
+                                        ignore_blanks=ignore_blanks,
+                                        pandas_kwargs=pandas_kwargs,
+                                        **kwargs)
         self._sep = str('\t')
 
 
