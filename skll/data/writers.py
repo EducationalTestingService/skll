@@ -5,21 +5,21 @@ Handles loading data from various types of data files.
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Jeremy Biggs (jbiggs@ets.org)
 :organization: ETS
 """
 
-from __future__ import absolute_import, print_function, unicode_literals
-
+import json
 import logging
 import os
 import re
 import sys
 import pandas as pd
-from decimal import Decimal
-from io import open
 
-from six import iteritems, PY2, string_types, text_type
-from six.moves import map
+from csv import DictWriter
+from decimal import Decimal
+
+from scipy.sparse import issparse
 from sklearn.feature_extraction import FeatureHasher
 
 
@@ -42,10 +42,6 @@ class Writer(object):
     quiet : bool
         Do not print "Writing..." status message to stderr.
         Defaults to ``True``.
-    requires_binary : bool
-        Whether or not the Writer must open the
-        file in binary mode for writing with Python 2.
-        Defaults to ``False``.
     subsets : dict (str to list of str)
         A mapping from subset names to lists of feature names
         that are included in those sets. If given, a feature
@@ -67,7 +63,7 @@ class Writer(object):
 
     def __init__(self, path, feature_set, **kwargs):
         super(Writer, self).__init__()
-        self.requires_binary = kwargs.pop('requires_binary', False)
+
         self.quiet = kwargs.pop('quiet', True)
         self.path = path
         self.feat_set = feature_set
@@ -132,7 +128,7 @@ class Writer(object):
 
         # Otherwise write one feature file per subset
         else:
-            for subset_name, filter_features in iteritems(self.subsets):
+            for subset_name, filter_features in self.subsets.items():
                 self.logger.debug('Subset ({}) features: {}'.format(subset_name,
                                                                     filter_features))
                 sub_path = os.path.join(self.root, '{}{}'.format(subset_name,
@@ -167,8 +163,7 @@ class Writer(object):
                             if filter_features is not None else self.feat_set)
 
             # Open file for writing and write each line
-            file_mode = 'wb' if (self.requires_binary and PY2) else 'w'
-            with open(sub_path, file_mode) as output_file:
+            with open(sub_path, 'w') as output_file:
                 # Write out the header if this format requires it
                 self._write_header(filtered_set, output_file, filter_features)
                 # Write individual lines
@@ -272,6 +267,7 @@ class Writer(object):
         """
         # if we're not doing filtering,
         # then just take all the feature names
+        self.logger.debug(feature_set)
         if filter_features is None:
             filter_features = feature_set.vectorizer.feature_names_
 
@@ -322,7 +318,10 @@ class Writer(object):
         # create the data frame from the feature set;
         # then, select only the columns that we want,
         # and give the columns their correct names
-        df_features = pd.DataFrame(feature_set.features.todense())
+        if issparse(feature_set.features):
+            df_features = pd.DataFrame(feature_set.features.todense())
+        else:
+            df_features = pd.DataFrame(feature_set.features)
         df_features = df_features.iloc[:, column_idxs].copy()
         df_features.columns = column_names
         return df_features
@@ -486,26 +485,18 @@ class ARFFWriter(Writer):
     regression : bool, optional
         Is this an ARFF file to be used for regression?
         Defaults to ``False``.
-    pandas_kwargs : dict or None, optional
-        Arguments that will be passed directly
-        to the `pandas` I/O reader.
-        Defaults to None.
     kwargs : dict, optional
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
-        self.label_col = kwargs.pop('label_col', 'y')
-        self.id_col = kwargs.pop('id_col', 'id')
+    def __init__(self, path, feature_set, **kwargs):
         self.relation = kwargs.pop('relation', 'skll_relation')
         self.regression = kwargs.pop('regression', False)
+        self.dialect = kwargs.pop('dialect', 'excel-tab')
+        self.label_col = kwargs.pop('label_col', 'y')
+        self.id_col = kwargs.pop('id_col', 'id')
         super(ARFFWriter, self).__init__(path, feature_set, **kwargs)
-        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        self._index = self._pandas_kwargs.pop('index', False)
-        # remove the mode header arguments, if they exist
-        self._pandas_kwargs.pop('mode', None)
-        self._pandas_kwargs.pop('header', None)
-        self._use_pandas = True
+        self._dict_writer = None
 
     def _write_header(self, feature_set, output_file, filter_features):
         """
@@ -523,15 +514,14 @@ class ARFFWriter(Writer):
             FeatureSet to ``output_file``, these are the
             features to include in this file.
         """
-
-        column_names, _ = self._get_column_names_and_indexes(feature_set, filter_features)
-        column_names.append(self.id_col)
+        fieldnames, _ = self._get_column_names_and_indexes(self.feat_set, filter_features)
+        fieldnames.append(self.id_col)
 
         # Add relation to header
         print("@relation '{}'\n".format(self.relation), file=output_file)
 
         # Loop through fields writing the header info for the ARFF file
-        for field in column_names:
+        for field in fieldnames:
             print("@attribute '{}' numeric".format(field.replace('\\', '\\\\')
                                                    .replace("'", "\\'")),
                   file=output_file)
@@ -543,43 +533,57 @@ class ARFFWriter(Writer):
         else:
             if self.feat_set.has_labels:
                 print("@attribute {} ".format(self.label_col) +
-                      "{" + ','.join(map(str,
-                                         sorted(set(self.feat_set.labels)))) +
+                      "{" + ','.join(list(map(str,
+                                              sorted(set(self.feat_set.labels))))) +
                       "}", file=output_file)
+        if self.label_col:
+            fieldnames.append(self.label_col)
+
+        # Create CSV writer to handle missing values for lines in data section
+        # and to ignore the instance values for non-numeric attributes
+        self._dict_writer = DictWriter(output_file, fieldnames, restval=0,
+                                       extrasaction='ignore', dialect='arff')
 
         # Finish header and start data section
         print("\n@data", file=output_file)
 
-    def _write_data(self, feature_set, output_file, filter_features):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
-        Write the data in ARFF format.
+        Write the current line in the file in this Writer's format.
 
         Parameters
         ----------
-        feature_set : skll.FeatureSet
-            The ``FeatureSet`` instance being written to a file.
+        id_ : str
+            The ID for the current instance.
+        label_ : str
+            The label for the current instance.
+        feat_dict : dict
+            The feature dictionary for the current instance.
         output_file : file buffer
             The file being written to.
-        filter_features : set of str
-            If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
-            features to include in this file.
+
+        Raises
+        ------
+        ValueError
+            If class column name is already use as a feature
+        ValueError
+            If ID column name is already used as a feature.
         """
-
-        # create the data frame from he feature set
-        df = self._build_dataframe(feature_set, filter_features)
-
-        # Open file for writing and write
-        file_mode = 'wb' if PY2 else 'w'
-        with open(output_file, file_mode) as buff:
-
-            # Write out the header
-            self._write_header(feature_set, buff, filter_features)
-
-            df.to_csv(buff,
-                      mode='a'.encode() if PY2 else 'a',
-                      index=self._index,
-                      header=False, **self._pandas_kwargs)
+        # Add class column to feat_dict (unless this is unlabeled data)
+        if self.label_col not in feat_dict:
+            if self.feat_set.has_labels:
+                feat_dict[self.label_col] = label_
+        else:
+            raise ValueError(('Class column name "{}" already used as feature '
+                              'name.').format(self.label_col))
+        # Add id column to feat_dict if id is provided
+        if self.id_col not in feat_dict:
+            feat_dict[self.id_col] = id_
+        else:
+            raise ValueError('ID column name "{}" already used as feature '
+                             'name.'.format(self.id_col))
+        # Write out line
+        self._dict_writer.writerow(feat_dict)
 
 
 class MegaMWriter(Writer):
@@ -651,43 +655,47 @@ class NDJWriter(Writer):
         type. For example ``/foo/.ndj``.
     feature_set : skll.FeatureSet
         The ``FeatureSet`` instance to dump to the output file.
-    pandas_kwargs : dict or None, optional
-        Arguments that will be passed directly
-        to the `pandas` I/O reader.
-        Defaults to None.
     kwargs : dict, optional
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
-        self.label_col = kwargs.pop('label_col', 'y')
-        self.id_col = kwargs.pop('id_col', 'id')
+    def __init__(self, path, feature_set, **kwargs):
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
-        self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        # remove the `lines` and `orient` arguments, if they were passed
-        self._pandas_kwargs.pop('lines', None)
-        self._pandas_kwargs.pop('orient', None)
-        self._use_pandas = True
 
-    def _write_data(self, feature_set, output_file, filter_features):
+    def _write_line(self, id_, label_, feat_dict, output_file):
         """
-        Write the data in NDJ format.
+        Write the current line in the file in NDJ format.
 
         Parameters
         ----------
-        feature_set : skll.FeatureSet
-            The ``FeatureSet`` instance being written to a file.
+        id_ : str
+            The ID for the current instance.
+        label_ : str
+            The label for the current instance.
+        feat_dict : dict
+            The feature dictionary for the current instance.
         output_file : file buffer
             The file being written to.
-        filter_features : set of str
-            If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
-            features to include in this file.
         """
-        df = self._build_dataframe_with_features(feature_set, filter_features)
-        df = pd.DataFrame({'x': df.to_dict(orient='records')})
-        df = self._build_dataframe(feature_set, df_features=df)
-        df.to_json(output_file, orient='records', lines=True, **self._pandas_kwargs)
+        example_dict = {}
+        # Don't try to add class column if this is label-less data
+        # Try to convert the label to a scalar assuming it'a numpy
+        # non-scalar type (e.g., int64) but if that doesn't work
+        # then use it as is
+        if self.feat_set.has_labels:
+            try:
+                example_dict['y'] = label_.item()
+            except AttributeError:
+                example_dict['y'] = label_
+        # Try to convert the ID to a scalar assuming it'a numpy
+        # non-scalar type (e.g., int64) but if that doesn't work
+        # then use it as is
+        try:
+            example_dict['id'] = id_.item()
+        except AttributeError:
+            example_dict['id'] = id_
+        example_dict["x"] = feat_dict
+        print(json.dumps(example_dict, sort_keys=True), file=output_file)
 
 
 class LibSVMWriter(Writer):
@@ -747,7 +755,7 @@ class LibSVMWriter(Writer):
         name : str
             The class names with unicode equivalent replacements.
         """
-        if isinstance(name, string_types):
+        if isinstance(name, str):
             for orig, replacement in LibSVMWriter.LIBSVM_REPLACE_DICT.items():
                 name = name.replace(orig, replacement)
         return name
@@ -769,7 +777,7 @@ class LibSVMWriter(Writer):
         """
         field_values = sorted([(self.feat_set.vectorizer.vocabulary_[field] +
                                 1, value) for field, value in
-                               iteritems(feat_dict) if Decimal(value) != 0])
+                               feat_dict.items() if Decimal(value) != 0])
         # Print label
         if label_ in self.label_map:
             print('{}'.format(self.label_map[label_]), end=' ',
@@ -784,9 +792,7 @@ class LibSVMWriter(Writer):
         print(self._sanitize('{}'.format(id_)), end='',
               file=output_file)
         print(' |', end=' ', file=output_file)
-        if (PY2 and self.feat_set.has_labels and isinstance(label_,
-                                                            text_type)):
-            label_ = label_.encode('utf-8')
+
         if label_ in self.label_map:
             print('%s=%s' % (self._sanitize(self.label_map[label_]),
                              self._sanitize(label_)),

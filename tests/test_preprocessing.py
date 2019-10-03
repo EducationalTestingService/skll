@@ -6,18 +6,16 @@ Tests related to data preprocessing options with run_experiment.
 :author: Nitin Madnani (nmadnani@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import glob
 import json
 import os
 import re
-from io import open
+
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
 import scipy.sparse as sp
+
 from numpy.testing import assert_array_equal, assert_almost_equal
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets.samples_generator import make_classification
@@ -26,7 +24,7 @@ from skll.experiments import run_configuration
 from skll.learner import Learner, SelectByMinCount
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import fill_in_config_paths
+from tests.utils import fill_in_config_paths
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -254,13 +252,13 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_fmeasures = ([0.55276381909547745, 0.55721393034825872] if
+        expected_fmeasures = ([0.4688995215311005, 0.41884816753926707] if
                               not use_scaling else
-                              [0.65217391304347827, 0.70370370370370372])
+                              [0.6919431279620853, 0.656084656084656])
     else:
-        expected_fmeasures = ([0.54255319148936176, 0.59433962264150941] if
+        expected_fmeasures = ([0.5728155339805824, 0.5463917525773198] if
                               not use_scaling else
-                              [0.69950738916256161, 0.69035532994923865])
+                              [0.6896551724137931, 0.6802030456852792])
 
     assert_almost_equal(expected_fmeasures, fmeasures)
 

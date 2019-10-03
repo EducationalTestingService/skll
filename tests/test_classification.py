@@ -8,19 +8,14 @@ Tests related to classification experiments.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import csv
 import glob
 import itertools
 import json
 import os
 import re
-import sys
 import warnings
 
-from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
@@ -37,8 +32,8 @@ from skll.experiments import run_configuration
 from skll.learner import Learner, _train_and_score
 from skll.learner import _DEFAULT_PARAM_GRIDS
 
-from utils import (make_classification_data, make_regression_data,
-                   make_sparse_data, fill_in_config_paths_for_single_file)
+from tests.utils import (make_classification_data, make_regression_data,
+                         make_sparse_data, fill_in_config_paths_for_single_file)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -349,7 +344,7 @@ def test_dummy_classifier_predict():
                                               {"strategy": "constant", "constant": 1}],
                                              [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]),
                                               np.zeros(10),
-                                              np.ones(10)*1]):
+                                              np.ones(10) * 1]):
         yield check_dummy_classifier_predict, model_args, train_labels, expected_output
 
 
@@ -585,7 +580,7 @@ def test_new_labels_in_test_set():
     learner.train(train_fs, grid_search=False)
     res = learner.evaluate(test_fs)
     yield check_results_with_unseen_labels, res, 4, [3]
-    yield assert_almost_equal, res[1], 0.3
+    yield assert_almost_equal, res[1], 0.55
 
 
 def test_new_labels_in_test_set_change_order():
@@ -604,7 +599,7 @@ def test_new_labels_in_test_set_change_order():
     learner.train(train_fs, grid_search=False)
     res = learner.evaluate(test_fs)
     yield check_results_with_unseen_labels, res, 4, [15]
-    yield assert_almost_equal, res[1], 0.3
+    yield assert_almost_equal, res[1], 0.55
 
 
 def test_all_new_labels_in_test():
@@ -758,7 +753,7 @@ def test_learner_api_load_into_existing_instance():
 
     # now use `load()` to replace the existing instance with a
     # different saved learner
-    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.{}.model'.format(sys.version_info[0]))
+    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.model')
     learner1.load(other_model_file)
 
     # now load the saved model into another instance using the class method

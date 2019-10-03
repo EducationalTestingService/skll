@@ -127,7 +127,7 @@ to/from this MegaM format and for adding/removing features from the files.
 Creating configuration files
 ----------------------------
 The experiment configuration files that run_experiment accepts are standard
-`Python configuration files <https://docs.python.org/2/library/configparser.html>`__
+`Python configuration files <https://docs.python.org/3/library/configparser.html>`__
 that are similar in format to Windows INI files. [#]_
 There are four expected sections in a configuration file: :ref:`General`,
 :ref:`Input`, :ref:`Tuning`, and :ref:`Output`.  A detailed description of each
@@ -447,31 +447,31 @@ folds_file *(Optional)*
 """"""""""""""""""""""""""""""
 
 Path to a csv file specifying the mapping of instances in the training data
-to folds. This can be specified when the :ref:`task` is either ``train`` or
-``cross_validate``. For the ``train`` task, if :ref:`grid_search <grid_search>`
-is ``True``, this file, if specified, will be used to define the
-cross-validation used for the grid search (leave one fold ID out at a time).
-Otherwise, it will be ignored.
+to folds. This can be specified for the ``train``, ``evaluate``, ``predict``,
+and ``cross_validate`` tasks. For the  ``train``/``evaluate``/``predict`` tasks, 
+if :ref:`grid_search <grid_search>` is ``True``, this file, if specified, will be 
+used to define the cross-validation used for the grid search (leave one fold ID out 
+at a time). Otherwise, it will be ignored.
 
 For the ``cross_validate`` task, this file will be used to define the outer
-cross-validation loop and, if :ref:`grid_search <grid_search>` is ``True``, also for the
-inner grid-search cross-validation loop. If the goal of specifiying the folds
-file is to ensure that the model does not learn to differentiate based on a confound:
-e.g. the data from the same person is always in the same fold, it makes sense to
-keep the same folds for both the outer and the inner cross-validation loops.
+cross-validation loop and also for the inner grid-search cross-validation loop. 
+If the goal of specifiying the folds file is to ensure that the model does not 
+learn to differentiate based on a confound: e.g. the data from the same person 
+is always in the same fold, it makes sense to keep the same folds for both the 
+outer and the inner cross-validation loops.
 
-However, sometimes the goal of specifying the folds file is simply for the
-purpose of comparison to another existing experiment or another context
-in which maintaining the constitution of the folds in the inner
-grid-search loop is not required. In this case, users may set the parameter
+However, sometimes the goal of specifying the folds file is simply to
+compare to another existing experiment or in another context where 
+maintaining the constitution of the folds in the inner
+grid-search loop is not required. In this case, users may set the option
 :ref:`use_folds_file_for_grid_search <use_folds_file_for_grid_search>`
-to ``False`` which will then direct the inner grid-search cross-validation loop
-to simply use the number specified via :ref:`grid_search_folds <grid_search_folds>`
-instead of using the folds file. This will likely lead to shorter execution times as
-well depending on how many folds are in the folds file and the value
-of :ref:`grid_search_folds <grid_search_folds>`.
+in the configuration file to ``False`` which will then direct the inner 
+grid-search cross-validation loop to simply use the number specified via 
+:ref:`grid_search_folds <grid_search_folds>` instead of using the folds file. 
+This can also likely lead to shorter execution times depending on how many
+folds are in the folds file and the value of :ref:`grid_search_folds <grid_search_folds>`.
 
-The format of this file must be as follows: the first row must be a header.
+The format of this file should be as follows: the first row must be a header.
 This header row is ignored, so it doesn't matter what the header row contains,
 but it must be there. If there is no header row, whatever row is in its place
 will be ignored. The first column should consist of training set IDs and the
@@ -1018,20 +1018,20 @@ of copies of each of the following steps of training the learner:
 
     * feature vectorization (`vectorizer`)
     * feature selection (`selector`)
-    * feature sampling (`sampler`) 
+    * feature sampling (`sampler`)
     * feature scaling (`scaler`)
     * main estimator (`estimator`)
 
 The strings in the parentheses represent the name given to each
-step in the pipeline. 
+step in the pipeline.
 
-The goal of this attribute is to allow better interoperability 
-between SKLL learner objects and scikit-learn. The user can 
-train the model in SKLL and then further tweak or analyze 
-the pipeline in scikit-learn, if needed. Each component of the 
-pipeline is a (deep) copy of the component that was fit as part 
-of the SKLL model training process. We use copies since we do 
-not want the  original SKLL model to be affected if the user 
+The goal of this attribute is to allow better interoperability
+between SKLL learner objects and scikit-learn. The user can
+train the model in SKLL and then further tweak or analyze
+the pipeline in scikit-learn, if needed. Each component of the
+pipeline is a (deep) copy of the component that was fit as part
+of the SKLL model training process. We use copies since we do
+not want the  original SKLL model to be affected if the user
 modifies the components of the pipeline in scikit-learn space.
 
 Here's an example of how to use this attribute.
@@ -1051,7 +1051,7 @@ Here's an example of how to use this attribute.
     fs2 = Reader.for_path('examples/boston/train/example_boston_features.jsonlines').read()
     learner2 = Learner('RescaledSVR', feature_scaling='both', pipeline=True)
     _ = learner2.train(fs2, grid_search=True, grid_objective='pearson')
-    
+
     # now, we can explore the stored pipelines in sklearn space
     enc = LabelEncoder().fit(fs1.labels)
 
@@ -1072,7 +1072,7 @@ Here's an example of how to use this attribute.
 
 .. note::
     1. When using a `DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__ in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both``, the `sparse` attribute of the vectorizer stage in the pipeline is set to ``False`` since centering requires dense arrays.
-    2. When feature hashing is used (via a `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ ) in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both`` , a custom pipeline stage (:py:mod:`skll.learner.Densifier`) is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` does not have a ``sparse`` attribute to turn off -- it *only* returns sparse vectors. 
+    2. When feature hashing is used (via a `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ ) in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both`` , a custom pipeline stage (:py:mod:`skll.learner.Densifier`) is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` does not have a ``sparse`` attribute to turn off -- it *only* returns sparse vectors.
     3. A ``Densifier`` is also inserted in the pipeline when using a `SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html>`__ for feature sampling since this sampler requires dense input and cannot be made to work with sparse arrays.
 
 
@@ -1147,6 +1147,21 @@ save_cv_folds *(Optional)*
 Whether to save the folds that were used for a cross-validation experiment
 to a CSV file named ``EXPERIMENT_skll_fold_ids.csv`` in the :ref:`results`
 directory, where ``EXPERIMENT`` refers to the :ref:`experiment_name`.
+Defaults to ``False``.
+
+.. _run_experiment:
+
+save_cv_models *(Optional)*
+"""""""""""""""""""""""""""
+
+Whether to save the fold models that were generated during the
+cross-validation experiment to the :ref:`models` directory. Beware that using
+this option will result in an increase of RAM usage since the fold models will
+need to be kept in memory during execution. The eventual saving of fold models
+to disk is also a considersation in terms of disk space. Furthermore, if using
+a grid engine, transferring lots of large model objects over a network could
+also be problematic. Only set this option to ``True`` if you understand the
+implications.
 Defaults to ``False``.
 
 .. _run_experiment:
@@ -1287,7 +1302,7 @@ learner-featureset combination you have in your configuration file. It is named
 experiments, this summary file will contain training set sizes and the averaged
 scores for all combinations of featuresets, learners, and objectives.
 
-If `seaborn <http://seaborn.pydata.org>`__ is available when running 
+If `seaborn <http://seaborn.pydata.org>`__ is available when running
 a :ref:`learning_curve <learning_curve>` experiment,
 actual learning curves are also generated as PNG files - one for each feature set
 specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURESET.png``

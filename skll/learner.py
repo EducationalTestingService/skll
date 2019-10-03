@@ -10,8 +10,6 @@ Provides easy-to-use wrapper around scikit-learn.
 """
 # pylint: disable=F0401,W0622,E1002,E1101
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 import copy
 import inspect
 import logging
@@ -27,10 +25,6 @@ from multiprocessing import cpu_count
 import joblib
 import numpy as np
 import scipy.sparse as sp
-from six import iteritems, itervalues
-from six import string_types
-from six.moves import xrange as range
-from six.moves import zip
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import (GridSearchCV,
                                      KFold,
@@ -138,7 +132,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVC:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         RandomForestClassifier:
                         [{'max_depth': [1, 5, 10, None]}],
                         RandomForestRegressor:
@@ -159,7 +153,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
                         SVR:
                         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
                         TheilSenRegressor:
                         [{}]}
 
@@ -242,11 +236,12 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         A list of example IDs.
     """
 
-    def __init__(self, keep, example_ids):
+    def __init__(self, keep, example_ids, logger=None):
         super(FilteredLeaveOneGroupOut, self).__init__()
         self.keep = keep
         self.example_ids = example_ids
         self._warned = False
+        self.logger = logger if logger else logging.getLogger(__name__)
 
     def split(self, X, y, groups):
         """
@@ -887,7 +882,7 @@ class Learner(object):
         if issubclass(self._model_type, SVC):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['probability'] = self.probability
-            self._model_kwargs['gamma'] = 'auto'
+            self._model_kwargs['gamma'] = 'scale'
             if self.probability:
                 self.logger.warning('Because LibSVM does an internal '
                                     'cross-validation to produce probabilities, '
@@ -900,20 +895,21 @@ class Learner(object):
             self._model_kwargs['n_estimators'] = 500
         elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
-            self._model_kwargs['gamma'] = 'auto'
+            self._model_kwargs['gamma'] = 'scale'
         elif issubclass(self._model_type, SGDClassifier):
             self._model_kwargs['loss'] = 'log'
-            self._model_kwargs['max_iter'] = None
-            self._model_kwargs['tol'] = None
+            self._model_kwargs['max_iter'] = 1000
+            self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, SGDRegressor):
-            self._model_kwargs['max_iter'] = None
-            self._model_kwargs['tol'] = None
+            self._model_kwargs['max_iter'] = 1000
+            self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, RANSACRegressor):
             self._model_kwargs['loss'] = 'squared_loss'
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
             self._model_kwargs['learning_rate'] = 'invscaling'
             self._model_kwargs['max_iter'] = 500
         elif issubclass(self._model_type, LogisticRegression):
+            self._model_kwargs['max_iter'] = 1000
             self._model_kwargs['solver'] = 'liblinear'
             self._model_kwargs['multi_class'] = 'auto'
 
@@ -960,9 +956,9 @@ class Learner(object):
                                              'tol': None,
                                              'random_state': 123456789}
                 elif base_estimator_name == 'SVR':
-                    base_estimator_kwargs = {'gamma': 'auto'}
+                    base_estimator_kwargs = {'gamma': 'scale'}
                 elif base_estimator_name == 'SVC':
-                    base_estimator_kwargs = {'gamma': 'auto', 'random_state': 123456789}
+                    base_estimator_kwargs = {'gamma': 'scale', 'random_state': 123456789}
                 else:
                     base_estimator_kwargs = {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
@@ -1001,7 +997,7 @@ class Learner(object):
         learner.logger = logger if logger else logging.getLogger(__name__)
 
         # For backward compatibility, convert string model types to labels.
-        if isinstance(learner._model_type, string_types):
+        if isinstance(learner._model_type, str):
             learner._model_type = globals()[learner._model_type]
 
         # Check that we've actually loaded a Learner (or sub-class)
@@ -1110,7 +1106,7 @@ class Learner(object):
 
         # create the final result dictionary with the prefixed
         # feature names and the corresponding coefficient
-        for feat, idx in iteritems(vocabulary):
+        for feat, idx in vocabulary.items():
             if coef[idx]:
                 res['{}{}'.format(feature_name_prefix, feat)] = coef[idx]
 
@@ -1311,14 +1307,14 @@ class Learner(object):
         # Make sure the labels for a regression task are not strings.
         if self.model_type._estimator_type == 'regressor':
             for label in examples.labels:
-                if isinstance(label, string_types):
+                if isinstance(label, str):
                     raise TypeError("You are doing regression with string "
                                     "labels.  Convert them to integers or "
                                     "floats.")
 
         # make sure that feature values are not strings
         for val in examples.features.data:
-            if isinstance(val, string_types):
+            if isinstance(val, str):
                 raise TypeError("You have feature values that are strings.  "
                                 "Convert them to floats.")
 
@@ -1633,10 +1629,12 @@ class Learner(object):
                 else:
                     grid_jobs = min(num_specified_folds, grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
-                dummy_label = next(itervalues(grid_search_folds))
+                dummy_label = next(iter(grid_search_folds.values()))
                 fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
                                curr_id in examples.ids]
-                kfold = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids)
+                kfold = FilteredLeaveOneGroupOut(grid_search_folds,
+                                                 examples.ids,
+                                                 logger=self.logger)
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # If we're using a correlation metric for doing binary
@@ -1652,6 +1650,7 @@ class Learner(object):
 
             grid_searcher = GridSearchCV(estimator, param_grid,
                                          scoring=grid_objective,
+                                         iid=False,
                                          cv=folds,
                                          n_jobs=grid_jobs,
                                          pre_dispatch=grid_jobs)
@@ -2117,6 +2116,7 @@ class Learner(object):
                        param_grid=None,
                        shuffle=False,
                        save_cv_folds=False,
+                       save_cv_models=False,
                        use_custom_folds_for_grid_search=True):
         """
         Cross-validates a given model on the training examples.
@@ -2171,6 +2171,9 @@ class Learner(object):
         save_cv_folds : bool, optional
              Whether to save the cv fold ids or not?
              Defaults to ``False``.
+        save_cv_models : bool, optional
+            Whether to save the cv models or not?
+            Defaults to ``False``.
         use_custom_folds_for_grid_search : bool, optional
             If ``cv_folds`` is a custom dictionary, but
             ``grid_search_folds`` is not, perhaps due to user
@@ -2195,6 +2198,9 @@ class Learner(object):
         skll_fold_ids : dict
             A dictionary containing the test-fold number for each id
             if ``save_cv_folds`` is ``True``, otherwise ``None``.
+        models : list of skll.learner.Learner
+            A list of skll.learner.Learners, one for each fold if
+            ``save_cv_models`` is ``True``, otherwise ``None``.
 
         Raises
         ------
@@ -2265,10 +2271,12 @@ class Learner(object):
             # training fold.  Note that this means that the grid search
             # will use K-1 folds because the Kth will be the test fold for
             # the outer cross-validation.
-            dummy_label = next(itervalues(cv_folds))
+            dummy_label = next(iter(cv_folds.values()))
             fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
             # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
+            kfold = FilteredLeaveOneGroupOut(cv_folds,
+                                             examples.ids,
+                                             logger=self.logger)
             cv_groups = fold_groups
 
             # If we are planning to do grid search, set the grid search folds
@@ -2298,6 +2306,7 @@ class Learner(object):
         grid_search_scores = []
         grid_search_cv_results_dicts = []
         append_predictions = False
+        models = [] if save_cv_models else None
         for train_index, test_index in kfold.split(examples.features,
                                                    examples.labels,
                                                    cv_groups):
@@ -2321,6 +2330,8 @@ class Learner(object):
                                            shuffle=grid_search,
                                            create_label_dict=False)
             grid_search_scores.append(grid_search_score)
+            if save_cv_models:
+                models.append(copy.deepcopy(self))
             grid_search_cv_results_dicts.append(grid_search_cv_results)
             # note: there is no need to shuffle again within each fold,
             # regardless of what the shuffle keyword argument is set to.
@@ -2338,11 +2349,12 @@ class Learner(object):
                                          output_metrics=output_metrics))
             append_predictions = True
 
-        # return list of results for all folds
+        # return list of results/outputs for all folds
         return (results,
                 grid_search_scores,
                 grid_search_cv_results_dicts,
-                skll_fold_ids)
+                skll_fold_ids,
+                models)
 
     def learning_curve(self,
                        examples,

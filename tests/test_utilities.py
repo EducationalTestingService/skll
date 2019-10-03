@@ -6,27 +6,25 @@ Module for running unit tests related to command line utilities.
 :author: Dan Blanchard (dblanchard@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 import ast
 import copy
 import csv
 import itertools
 import os
 import sys
+import scipy as sp
 
 from collections import defaultdict
 from glob import glob
 from itertools import combinations, product
 from os.path import abspath, dirname, exists, join
-from six import StringIO
+from io import StringIO
 
 try:
     from unittest.mock import create_autospec, patch
 except ImportError:
     from mock import create_autospec, patch
 
-from nose.plugins.attrib import attr
 from nose.plugins.logcapture import LogCapture
 from nose.tools import eq_, assert_almost_equal, raises
 from numpy.testing import assert_allclose, assert_array_almost_equal
@@ -60,7 +58,7 @@ from skll.experiments import (_generate_learning_curve_plots,
                               run_configuration)
 from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
 
-from utils import make_classification_data, make_regression_data
+from tests.utils import make_classification_data, make_regression_data
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -817,17 +815,22 @@ def test_mutually_exclusive_generate_predictions_args():
     gp.main(generate_cmd)
 
 
-def check_skll_convert(from_suffix, to_suffix):
+def check_skll_convert(from_suffix, to_suffix, id_type):
 
     # create some simple classification data
     orig_fs, _ = make_classification_data(train_test_ratio=1.0,
-                                          one_string_feature=True)
+                                          one_string_feature=True,
+                                          id_type=id_type)
 
     # now write out this feature set in the given suffix
-    from_suffix_file = join(_my_dir, 'other',
-                            'test_skll_convert_in{}'.format(from_suffix))
-    to_suffix_file = join(_my_dir, 'other',
-                          'test_skll_convert_out{}'.format(to_suffix))
+    from_suffix_file = join(_my_dir,
+                            'other',
+                            'test_skll_convert_{}_ids_in{}'.format(id_type,
+                                                                   from_suffix))
+    to_suffix_file = join(_my_dir,
+                          'other',
+                          'test_skll_convert_{}_ids_out{}'.format(id_type,
+                                                                  to_suffix))
 
     writer = EXT_TO_WRITER[from_suffix](from_suffix_file, orig_fs, quiet=True)
     writer.write()
@@ -846,21 +849,35 @@ def check_skll_convert(from_suffix, to_suffix):
         sys.stderr = old_stderr
         print(err)
 
-    # now read the converted file
-    reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
+    # now read the converted file and appropriately set `ids_to_floats`
+    # depending on the ID types that we generated earlier
+    ids_to_floats = True if id_type in ['float', 'integer'] else False
+    reader = EXT_TO_READER[to_suffix](to_suffix_file, ids_to_floats=ids_to_floats, quiet=True)
     converted_fs = reader.read()
 
-    # ensure that the original and the converted feature sets
-    # are the same
+    # TODO : For now, we are converting feature arrays to dense, and then back to sparse.
+    # The reason for this is that scikit-learn DictVectorizers now retain any
+    # explicit zeros that are in files (e.g., in CSVs and TSVs). There's an issue
+    # open on scikit-learn: https://github.com/scikit-learn/scikit-learn/issues/14718
+
+    orig_fs.features = sp.sparse.csr_matrix(orig_fs.features.todense())
+    converted_fs.features = sp.sparse.csr_matrix(converted_fs.features.todense())
+
     eq_(orig_fs, converted_fs)
 
 
 def test_skll_convert():
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines',
-                                                          '.megam', '.tsv',
-                                                          '.csv', '.arff',
-                                                          '.libsvm'], 2):
-        yield check_skll_convert, from_suffix, to_suffix
+    for (from_suffix,
+         to_suffix) in itertools.permutations(['.arff',
+                                               '.csv',
+                                               '.jsonlines',
+                                               '.libsvm',
+                                               '.megam',
+                                               '.tsv'], 2):
+        yield check_skll_convert, from_suffix, to_suffix, 'string'
+        yield check_skll_convert, from_suffix, to_suffix, 'integer_string'
+        yield check_skll_convert, from_suffix, to_suffix, 'float'
+        yield check_skll_convert, from_suffix, to_suffix, 'integer'
 
 
 def test_skll_convert_libsvm_map():
@@ -1245,7 +1262,6 @@ def test_summarize_results_argparse():
     yield check_summarize_results_argparse, True
 
 
-@attr('have_pandas_and_seaborn')
 def test_plot_learning_curves_argparse():
     # A utility function to check that we are setting up argument parsing
     # correctly for plot_learning_curves. We are not checking whether the learning
@@ -1271,7 +1287,6 @@ def test_plot_learning_curves_argparse():
     eq_(positional_arguments[2], summary_file_name)
 
 
-@attr('have_pandas_and_seaborn')
 @raises(SystemExit)
 def test_plot_learning_curves_missing_file():
     summary_file_name = join(_my_dir, 'other', 'non_existent_summary.tsv')
@@ -1280,7 +1295,6 @@ def test_plot_learning_curves_missing_file():
     plc.main(argv=plc_cmd_args)
 
 
-@attr('have_pandas_and_seaborn')
 def test_plot_learning_curves_create_output_directory():
     summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
     output_dir_name = join(_my_dir, 'other', 'foobar')

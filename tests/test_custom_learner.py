@@ -9,13 +9,9 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import csv
 import os
 from glob import glob
-from io import open
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
@@ -25,7 +21,7 @@ from skll.data import NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import _DEFAULT_PARAM_GRIDS, Learner
 
-from utils import fill_in_config_paths, make_classification_data
+from tests.utils import fill_in_config_paths, make_classification_data
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))

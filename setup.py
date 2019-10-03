@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
-import sys
 from setuptools import find_packages, setup
 
 # Get version without importing, which avoids dependency issues
@@ -14,12 +13,7 @@ def readme():
 
 
 def requirements():
-    # Use backported requirements for 2.7
-    if sys.version_info < (3, 0):
-        req_path = 'requirements_rtd.txt'
-    # Use 3.x requirements
-    else:
-        req_path = 'requirements.txt'
+    req_path = 'requirements.txt'
     with open(req_path) as f:
         reqs = f.read().splitlines()
     return reqs
@@ -35,7 +29,7 @@ setup(name='skll',
       author='Nitin Madnani',
       author_email='nmadnani@ets.org',
       license='BSD 3 clause',
-      packages=find_packages(),
+      packages=find_packages(exclude=['tests']),
       include_package_data=True,
       entry_points={'console_scripts':
                     ['filter_features = skll.utilities.filter_features:main',
@@ -58,8 +52,6 @@ setup(name='skll',
                    'Operating System :: POSIX',
                    'Operating System :: Unix',
                    'Operating System :: MacOS',
-                   'Programming Language :: Python :: 2',
-                   'Programming Language :: Python :: 2.7',
                    'Programming Language :: Python :: 3',
                    'Programming Language :: Python :: 3.6',
                    ],

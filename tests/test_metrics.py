@@ -9,9 +9,6 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import os
 from os.path import abspath, dirname, exists, join
 
@@ -22,7 +19,7 @@ from skll.learner import Learner
 from skll.learner import _DEFAULT_PARAM_GRIDS
 from skll.metrics import kappa
 
-from utils import make_regression_data
+from tests.utils import make_regression_data
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
