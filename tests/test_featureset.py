@@ -1166,3 +1166,10 @@ def test_reading_csv_and_tsv_with_fill_blanks():
 
     eq_(fs_csv, fs_expected)
     eq_(fs_tsv, fs_expected)
+
+
+@raises(ValueError)
+def test_ignore_blanks_and_replace_blanks_with_raises_error():
+
+    test_csv = '1,1,6\n2,,2\n3,9,3\n,,\n,5,\n,,\n2,7,7'
+    CSVReader(StringIO(test_csv), replace_blanks_with=4.5, ignore_blanks=True).read()
