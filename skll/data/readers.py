@@ -347,7 +347,7 @@ class Reader(object):
 
         # should we replace blank values with something?
         if replace_blanks_with is not None:
-            self.logger.info('Values that are blank will replaced with the '
+            self.logger.info('Values that are blank will be replaced with '
                              'user-specified value(s).')
             df = df.fillna(replace_blanks_with)
 
