@@ -48,7 +48,6 @@ class SKLLConfigParser(configparser.ConfigParser):
         defaults = {'class_map': '{}',
                     'custom_learner_path': '',
                     'folds_file': '',
-                    'folds_file': '',
                     'feature_hasher': 'False',
                     'feature_scaling': 'none',
                     'featuresets': '[]',
@@ -79,6 +78,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'sampler': '',
                     'sampler_parameters': '[]',
                     'save_cv_folds': 'False',
+                    'save_cv_models': 'False',
                     'shuffle': 'False',
                     'suffix': '',
                     'test_directory': '',
@@ -120,6 +120,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'sampler': 'Input',
                                    'sampler_parameters': 'Input',
                                    'save_cv_folds': 'Output',
+                                   'save_cv_models': 'Output',
                                    'shuffle': 'Input',
                                    'suffix': 'Input',
                                    'test_directory': 'Input',
@@ -383,6 +384,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         The specified folds mapping, or the number of folds.
     save_cv_folds : bool
         Whether to save CV Folds to file.
+    save_cv_models : bool
+        Whether to save CV models.
     use_folds_file_for_grid_search : bool
         Whether to use folds file for grid search.
     do_stratified_folds : bool
@@ -616,8 +619,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         # if no file is specified, then set the number of folds for cross-validation
         specified_num_folds = num_cv_folds if num_cv_folds else 10
 
-    # whether or not to save the cv fold ids
-    save_cv_folds = config.get("Output", "save_cv_folds")
+    # whether or not to save the cv fold ids/models
+    save_cv_folds = config.getboolean("Output", "save_cv_folds")
+    save_cv_models = config.getboolean("Output", "save_cv_models")
 
     # whether or not to do stratified cross validation
     random_folds = config.getboolean("Input", "random_folds")
@@ -807,9 +811,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if task in ['learning_curve', 'train'] and prediction_dir:
         raise ValueError('The predictions path should not be set when task is '
                          '{}.'.format(task))
-    if task in ['cross_validate', 'learning_curve'] and model_path:
+    if task == 'learning_curve' and model_path:
         raise ValueError('The models path should not be set when task is '
-                         '{}.'.format(task))
+                         'learning_curve.')
     if task == 'learning_curve':
         if len(grid_objectives) > 0:
             raise ValueError("The \"objectives\" option "
@@ -848,7 +852,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     #      instead of the value contained in `grid_search_folds`.
     #  (b) if the task is `cross_validate` and an external fold mapping is specified
     #      then use that mapping for the outer CV loop and for the inner grid-search
-    #      loop. However, if  `use_folds_file_for_grid_search` is `False, do not
+    #      loop. However, if  `use_folds_file_for_grid_search` is `False`, do not
     #      use the fold mapping for the inner loop.
     cv_folds = None
     if task in ['train', 'evaluate', 'predict'] and specified_folds_mapping:
@@ -869,6 +873,9 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                 if do_grid_search:
                     logger.warning("The specified \"folds_file\" will "
                                    "not be used for inner grid search.")
+        if save_cv_models is True and not model_path:
+            raise ValueError("Output directory for models must be set if "
+                             "\"save_cv_models\" is set to true.")
 
     # Create feature set names if unspecified
     if not featureset_names:
@@ -888,10 +895,10 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             do_grid_search, grid_objectives, probability, pipeline, results_path,
             pos_label_str, feature_scaling, min_feature_count, folds_file,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-            use_folds_file_for_grid_search, do_stratified_folds, fixed_parameter_list,
-            param_grid_list, featureset_names, learners, prediction_dir,
-            log_path, train_path, test_path, ids_to_floats, class_map,
-            custom_learner_path, learning_curve_cv_folds_list,
+            save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+            fixed_parameter_list, param_grid_list, featureset_names, learners,
+            prediction_dir, log_path, train_path, test_path, ids_to_floats,
+            class_map, custom_learner_path, learning_curve_cv_folds_list,
             learning_curve_train_sizes, output_metrics)
 
 

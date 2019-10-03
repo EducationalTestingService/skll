@@ -865,6 +865,36 @@ def test_config_parsing_bad_cv_folds():
     yield check_config_parsing_value_error, config_path
 
 
+def test_config_parsing_save_cv_models_no_models_path():
+    """
+    Test to ensure config file parsing raises an error when save_cv_folds
+    is set to true but no models output path is provided.
+    """
+
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file that has a bad value for cv_folds
+    # but everything else is correct
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'cross_validate',
+                           'train_directory': train_dir,
+                           'save_cv_models': 'True',
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'results': output_dir,
+                           'objectives': "['f1_score_macro']"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'save_cv_folds_true_no_models_path')
+
+    yield check_config_parsing_value_error, config_path
+
+
 def test_config_parsing_invalid_option():
 
     train_dir = join(_my_dir, 'train')
@@ -995,18 +1025,7 @@ def test_config_parsing_mse_throws_exception():
                                          values_to_fill_dict,
                                          'mse_to_neg_mse')
 
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes,
-     output_metrics) = _parse_config_file(config_path)
+    _parse_config_file(config_path)
 
 
 def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
@@ -1039,7 +1058,7 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1078,7 +1097,7 @@ def test_config_parsing_relative_input_path():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1110,17 +1129,7 @@ def test_config_parsing_relative_input_paths():
                                          values_to_fill_dict,
                                          'relative_paths')
 
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+    _parse_config_file(config_path)
 
 
 def test_config_parsing_automatic_output_directory_creation():
@@ -1158,17 +1167,7 @@ def test_config_parsing_automatic_output_directory_creation():
                                          values_to_fill_dict,
                                          'auto_dir_creation')
 
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+    _parse_config_file(config_path)
 
     ok_(exists(new_log_path))
     ok_(exists(new_results_path))
@@ -1215,11 +1214,12 @@ def check_config_parsing_metrics_and_objectives_overlap(task,
      do_grid_search, parsed_objectives, probability, pipeline,
      results_path, pos_label_str, feature_scaling, min_feature_count,
      folds_file, grid_search_jobs, grid_search_folds, cv_folds,
-     save_cv_folds, use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, parsed_metrics) = _parse_config_file(config_path)
+     save_cv_folds, save_cv_models, use_folds_file_for_grid_search,
+     do_stratified_folds, fixed_parameter_list, param_grid_list,
+     featureset_names, learners, prediction_dir, log_path, train_path,
+     test_path, ids_to_floats, class_map, custom_learner_path,
+     learning_curve_cv_folds_list, learning_curve_train_sizes,
+     parsed_metrics) = _parse_config_file(config_path)
 
     if not objectives:
         objectives = []
@@ -1435,7 +1435,7 @@ def check_cv_folds_and_grid_search_folds(task,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1474,7 +1474,7 @@ def test_default_number_of_cv_folds():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1512,7 +1512,7 @@ def test_setting_number_of_cv_folds():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1553,7 +1553,7 @@ def test_setting_param_grids():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1599,7 +1599,7 @@ def test_setting_fixed_parameters():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1638,17 +1638,7 @@ def test_learning_curve_objectives_unsupported_error():
                                          values_to_fill_dict,
                                          'default_learning_curve')
 
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+    _parse_config_file(config_path)
 
 
 def test_default_learning_curve_options():
@@ -1678,7 +1668,7 @@ def test_default_learning_curve_options():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1716,7 +1706,7 @@ def test_setting_learning_curve_options():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1753,7 +1743,7 @@ def test_learning_curve_metrics_and_objectives_throw_error():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1788,7 +1778,7 @@ def test_learning_curve_metrics_and_no_objectives():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1823,7 +1813,7 @@ def test_learning_curve_metrics():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -1860,7 +1850,7 @@ def test_learning_curve_pipeline_option():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,
@@ -2005,7 +1995,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label_str, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     use_folds_file_for_grid_search, do_stratified_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, learning_curve_cv_folds_list,

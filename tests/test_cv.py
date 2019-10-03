@@ -69,6 +69,7 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
 
     cfg_files = [join(config_dir, 'test_save_cv_folds.cfg'),
+                 join(config_dir, 'test_save_cv_models.cfg'),
                  join(config_dir, 'test_folds_file.cfg'),
                  join(config_dir, 'test_folds_file_grid.cfg')]
     for cfg_file in cfg_files:
@@ -78,7 +79,9 @@ def tearDown():
     for output_file in (glob(join(output_dir,
                                   'test_save_cv_folds_*')) +
                         glob(join(output_dir,
-                                  'test_int_labels_cv_*'))):
+                                  'test_int_labels_cv_*')) +
+                        glob(join(output_dir,
+                                  'test_save_cv_models*'))):
         os.unlink(output_file)
 
 
@@ -160,7 +163,7 @@ def test_specified_cv_folds():
         cv_fs, custom_cv_folds = make_cv_folds_data(
             use_feature_hashing=use_hashing)
         folds = custom_cv_folds if not use_hashing else 10
-        (grid_scores, _, _, _) = \
+        (grid_scores, _, _, _, _) = \
             learner.cross_validate(cv_fs,
                                    cv_folds=folds,
                                    grid_search=True,
@@ -240,23 +243,23 @@ def test_retrieve_cv_folds():
                          'EXAMPLE_7': '0',
                          'EXAMPLE_8': '4',
                          'EXAMPLE_9': '3'}
-    _, _, _, skll_fold_ids = learner.cross_validate(cv_fs,
-                                                    stratified=True,
-                                                    cv_folds=num_folds,
-                                                    grid_search=True,
-                                                    grid_objective='f1_score_micro',
-                                                    shuffle=False,
-                                                    save_cv_folds=True)
+    _, _, _, skll_fold_ids, _ = learner.cross_validate(cv_fs,
+                                                       stratified=True,
+                                                       cv_folds=num_folds,
+                                                       grid_search=True,
+                                                       grid_objective='f1_score_micro',
+                                                       shuffle=False,
+                                                       save_cv_folds=True)
     assert_equal(skll_fold_ids, expected_fold_ids)
 
     # Test 2: if we pass in custom fold ids, those are also preserved.
-    _, _, _, skll_fold_ids = learner.cross_validate(cv_fs,
-                                                    stratified=True,
-                                                    cv_folds=custom_cv_folds,
-                                                    grid_search=True,
-                                                    grid_objective='f1_score_micro',
-                                                    shuffle=False,
-                                                    save_cv_folds=True)
+    _, _, _, skll_fold_ids, _ = learner.cross_validate(cv_fs,
+                                                       stratified=True,
+                                                       cv_folds=custom_cv_folds,
+                                                       grid_search=True,
+                                                       grid_objective='f1_score_micro',
+                                                       shuffle=False,
+                                                       save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
 
     # Test 3: when learner.cross_validate() makes the folds but stratified=False
@@ -271,12 +274,12 @@ def test_retrieve_cv_folds():
                          'EXAMPLE_7': '3',
                          'EXAMPLE_8': '4',
                          'EXAMPLE_9': '4'}
-    _, _, _, skll_fold_ids = learner.cross_validate(cv_fs,
-                                                    stratified=False,
-                                                    cv_folds=num_folds,
-                                                    grid_search=False,
-                                                    shuffle=False,
-                                                    save_cv_folds=True)
+    _, _, _, skll_fold_ids, _ = learner.cross_validate(cv_fs,
+                                                       stratified=False,
+                                                       cv_folds=num_folds,
+                                                       grid_search=False,
+                                                       shuffle=False,
+                                                       save_cv_folds=True)
     assert_equal(skll_fold_ids, custom_cv_folds)
 
 
@@ -382,3 +385,25 @@ def test_cross_validate_task():
     expected_skll_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(expected_skll_ids.items()))
 
     assert_equal(skll_fold_ids_str, expected_skll_ids_str)
+
+
+def test_cross_validate_task_save_cv_models():
+    """
+    Test that 10-fold cross_validate experiments work and that CV models
+    are correctly saved.
+    """
+
+    suffix = '.jsonlines'
+    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+    config_path = \
+        fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                  "test_save_cv_models.template.cfg"),
+                                             train_path,
+                                             None)
+    run_configuration(config_path, quiet=True)
+    output_dir = join(_my_dir, 'output')
+    cv_model_prefix = \
+        "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
+    for i in range(1, 11):
+        assert exists(join(output_dir,
+                           "{}{}.model".format(cv_model_prefix, i))) is True
