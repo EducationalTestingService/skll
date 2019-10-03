@@ -1847,10 +1847,10 @@ def test_join_features_unmatched_output_format():
         yield check_join_features_raises_system_exit, jf_cmd_args
 
 
-def test_filter_features_with_ignore_blanks():
+def test_filter_features_with_drop_blanks():
     """
     Test filter features with CSV and TSV readers
-    using the ignore_blanks option
+    using the `drop_blanks` option
     """
     df = pd.DataFrame({'A': [1, 2, 3, np.nan, 5, 6],
                        'B': [5, 9, np.nan, 2, 9, 1],
@@ -1871,8 +1871,8 @@ def test_filter_features_with_ignore_blanks():
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep='\t')
 
-    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L', '--ignore_blanks']
-    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L', '--ignore_blanks']
+    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L', '--drop_blanks']
+    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L', '--drop_blanks']
 
     ff.main(filter_features_csv_cmd)
     ff.main(filter_features_tsv_cmd)
@@ -1886,7 +1886,7 @@ def test_filter_features_with_ignore_blanks():
 def test_filter_features_with_replace_blanks_with():
     """
     Test filter features with CSV and TSV readers
-    using the replace_blanks_with option
+    using the `replace_blanks_with` option
     """
     df = pd.DataFrame({'A': [1, 2, 3, np.nan, 5, 6],
                        'B': [5, 9, np.nan, 2, 9, 1],
@@ -1918,3 +1918,21 @@ def test_filter_features_with_replace_blanks_with():
 
     assert_frame_equal(df_csv_output, df_expected)
     assert_frame_equal(df_tsv_output, df_expected)
+
+
+@raises(ValueError)
+def test_filter_features_with_replace_blanks_with_and_drop_blanks_raises_error():
+
+
+    df = pd.DataFrame(np.random.randn(5, 10))
+
+    csv_infile = join(_my_dir, 'other', 'features', 'features_drop_and_replace_error.csv')
+    csv_outfile = join(_my_dir, 'other', 'features', 'features_drop_and_replace_error_out.csv')
+
+    df.to_csv(csv_infile, index=False)
+
+    filter_features_csv_cmd = [csv_infile, csv_outfile,
+                               '--drop_blanks',
+                               '--replace_blanks_with', '4.5']
+
+    ff.main(filter_features_csv_cmd)

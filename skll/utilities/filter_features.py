@@ -68,12 +68,12 @@ def main(argv=None):
                              'files, this must be the final column to count as '
                              'the label.',
                         default='y')
-    parser.add_argument('-r', '--replace_blanks_with',
+    parser.add_argument('-rb', '--replace_blanks_with',
                         help='Specifies a new value with which to replace blank values.',
                         default=None)
-    parser.add_argument('-d', '--ignore_blanks',
+    parser.add_argument('-db', '--drop_blanks',
                         action='store_true',
-                        help='Delete/ignore all lines/rows that have any blank values.',
+                        help='Drop all lines/rows that have any blank values.',
                         default=False)
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
@@ -113,14 +113,15 @@ def main(argv=None):
 
     if input_extension == '.csv' or input_extension == '.tsv':
         replace_blanks_with = args.replace_blanks_with
-        ignore_blanks = args.ignore_blanks
-        if ignore_blanks and replace_blanks_with is not None:
-            raise ValueError("You cannot pass a value for 'replace_blanks_with' "
-                             "and set 'ignore_blanks' to True.")
+        drop_blanks = args.drop_blanks
+        if drop_blanks and replace_blanks_with is not None:
+            raise ValueError("You cannot both drop blanks and replace them. "
+                             "'replace_blanks_with' can only have a value when "
+                             "'drop_blanks' is `False`.")
         replace_blanks_with = (None if replace_blanks_with is None
                                else safe_float(replace_blanks_with))
         kwargs = {'replace_blanks_with': replace_blanks_with,
-                  'ignore_blanks': ignore_blanks}
+                  'drop_blanks': drop_blanks}
     else:
         kwargs = {}
 

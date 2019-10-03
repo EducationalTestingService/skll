@@ -1115,7 +1115,7 @@ def test_featureset_creation_from_dataframe_with_string_labels():
     assert fs_test == fs_test2
 
 
-def test_reading_csv_and_tsv_with_ignore_blanks():
+def test_reading_csv_and_tsv_with_drop_blanks():
 
     # create CSV and TSV strings with blanks
     test_csv = '1,1,6\n2,,2\n3,9,3\n,,\n,5,\n,,\n2,7,7'
@@ -1130,10 +1130,10 @@ def test_reading_csv_and_tsv_with_ignore_blanks():
 
     fs_expected = FeatureSet.from_data_frame(expected, 'test', labels_column='L')
 
-    fs_csv = CSVReader(StringIO(test_csv), ignore_blanks=True, pandas_kwargs=kwargs).read()
+    fs_csv = CSVReader(StringIO(test_csv), drop_blanks=True, pandas_kwargs=kwargs).read()
     fs_csv.name = 'test'
 
-    fs_tsv = TSVReader(StringIO(test_tsv), ignore_blanks=True, pandas_kwargs=kwargs).read()
+    fs_tsv = TSVReader(StringIO(test_tsv), drop_blanks=True, pandas_kwargs=kwargs).read()
     fs_tsv.name = 'test'
 
     eq_(fs_csv, fs_expected)
@@ -1169,7 +1169,7 @@ def test_reading_csv_and_tsv_with_fill_blanks():
 
 
 @raises(ValueError)
-def test_ignore_blanks_and_replace_blanks_with_raises_error():
+def test_drop_blanks_and_replace_blanks_with_raises_error():
 
     test_csv = '1,1,6\n2,,2\n3,9,3\n,,\n,5,\n,,\n2,7,7'
-    CSVReader(StringIO(test_csv), replace_blanks_with=4.5, ignore_blanks=True).read()
+    CSVReader(StringIO(test_csv), replace_blanks_with=4.5, drop_blanks=True).read()

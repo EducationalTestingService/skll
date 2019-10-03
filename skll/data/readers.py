@@ -296,7 +296,7 @@ class Reader(object):
                          id_col,
                          label_col,
                          replace_blanks_with=None,
-                         ignore_blanks=False):
+                         drop_blanks=False):
         """
         Parse the data frame into ids, labels, and features.
         For `Reader` objects that rely on `pandas`, this function
@@ -322,7 +322,7 @@ class Reader(object):
                 -  ``None`` = Blank values will be left as blanks, and not replaced.
 
             Defaults to ``None``.
-        ignore_blanks : bool, optional
+        drop_blanks : bool, optional
             If ``True``, remove lines/rows that have any blank
             values.
             Defaults to ``False``.
@@ -340,20 +340,20 @@ class Reader(object):
             raise ValueError("No features found in possibly "
                              "empty file '{}'.".format(self.path_or_list))
 
-        if ignore_blanks and replace_blanks_with is not None:
-            raise ValueError("You have set `ignore_blanks=True`, but 'replace_blanks_with' "
-                             "is not `None`; 'replace_blanks_with' can only have a value "
-                             "when 'ignore_blanks' is set to `False`.")
+        if drop_blanks and replace_blanks_with is not None:
+            raise ValueError("You cannot both drop blanks and replace them. "
+                             "'replace_blanks_with' can only have a value when "
+                             "'drop_blanks' is `False`.")
 
         # should we replace blank values with something?
         if replace_blanks_with is not None:
-            self.logger.info('Values that are blank will be replaced with '
+            self.logger.info('Blank values in all rows/lines will be replaced with '
                              'user-specified value(s).')
             df = df.fillna(replace_blanks_with)
 
         # should we remove lines that have any NaNs?
-        if ignore_blanks:
-            self.logger.info('Rows/lines with any blank values will be ignored.')
+        if drop_blanks:
+            self.logger.info('Rows/lines with any blank values will be dropped.')
             df = df.dropna().reset_index(drop=True)
 
         # if the id column exists,
@@ -798,7 +798,7 @@ class CSVReader(Reader):
 
         The replacement occurs after the data set is read into a `pd.DataFrame`.
         Defaults to ``None``.
-    ignore_blanks : bool, optional
+    drop_blanks : bool, optional
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
         the data set is read into a `pd.DataFrame`.
@@ -814,12 +814,12 @@ class CSVReader(Reader):
     def __init__(self,
                  path_or_list,
                  replace_blanks_with=None,
-                 ignore_blanks=False,
+                 drop_blanks=False,
                  pandas_kwargs=None,
                  **kwargs):
         super(CSVReader, self).__init__(path_or_list, **kwargs)
         self._replace_blanks_with = replace_blanks_with
-        self._ignore_blanks = ignore_blanks
+        self._drop_blanks = drop_blanks
         self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
         self._sep = self._pandas_kwargs.pop('sep', str(','))
         self._engine = self._pandas_kwargs.pop('engine', 'c')
@@ -846,7 +846,7 @@ class CSVReader(Reader):
                                      self.id_col,
                                      self.label_col,
                                      replace_blanks_with=self._replace_blanks_with,
-                                     ignore_blanks=self._ignore_blanks)
+                                     drop_blanks=self._drop_blanks)
 
 
 class TSVReader(CSVReader):
@@ -872,7 +872,7 @@ class TSVReader(CSVReader):
 
         The replacement occurs after the data set is read into a `pd.DataFrame`.
         Defaults to ``None``.
-    ignore_blanks : bool, optional
+    drop_blanks : bool, optional
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
         the data set is read into a `pd.DataFrame`.
@@ -888,12 +888,12 @@ class TSVReader(CSVReader):
     def __init__(self,
                  path_or_list,
                  replace_blanks_with=None,
-                 ignore_blanks=False,
+                 drop_blanks=False,
                  pandas_kwargs=None,
                  **kwargs):
         super(TSVReader, self).__init__(path_or_list,
                                         replace_blanks_with=replace_blanks_with,
-                                        ignore_blanks=ignore_blanks,
+                                        drop_blanks=drop_blanks,
                                         pandas_kwargs=pandas_kwargs,
                                         **kwargs)
         self._sep = str('\t')
