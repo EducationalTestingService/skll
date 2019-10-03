@@ -347,10 +347,13 @@ class Reader(object):
 
         # should we replace blank values with something?
         if replace_blanks_with is not None:
+            self.logger.info('Values that are blank will replaced with the '
+                             'user-specified value(s).')
             df = df.fillna(replace_blanks_with)
 
         # should we remove lines that have any NaNs?
         if ignore_blanks:
+            self.logger.info('Rows/lines with any blank values will be ignored.')
             df = df.dropna().reset_index(drop=True)
 
         # if the id column exists,
