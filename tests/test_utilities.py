@@ -13,6 +13,8 @@ import itertools
 import os
 import sys
 import scipy as sp
+import numpy as np
+import pandas as pd
 
 from collections import defaultdict
 from glob import glob
@@ -30,6 +32,7 @@ from nose.tools import eq_, assert_almost_equal, raises
 from numpy.testing import assert_allclose, assert_array_almost_equal
 from numpy import concatenate
 
+from pandas.testing import assert_frame_equal
 from sklearn.feature_extraction import FeatureHasher
 
 import numpy as np
@@ -78,6 +81,9 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+    features_dir = join(_my_dir, 'other', 'features')
+    if not exists(features_dir):
+        os.makedirs(features_dir)
 
 
 def tearDown():
@@ -116,6 +122,9 @@ def tearDown():
         os.unlink(join(other_dir, 'test_filter_features_input.arff'))
     for ffile in glob(join(other_dir,
                            'test_join_features*')):
+        os.unlink(ffile)
+
+    for ffile in glob(join(other_dir, 'features', 'features*')):
         os.unlink(ffile)
 
 
@@ -1836,3 +1845,76 @@ def test_join_features_unmatched_output_format():
         jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1),
                        'baz{}'.format(ext2)]
         yield check_join_features_raises_system_exit, jf_cmd_args
+
+
+def test_filter_features_with_ignore_blanks():
+    """
+    Test filter features with CSV and TSV readers
+    using the ignore_blanks option
+    """
+    df = pd.DataFrame({'A': [1, 2, 3, np.nan, 5, 6],
+                       'B': [5, 9, np.nan, 2, 9, 1],
+                       'C': [1.0, 1.0, 1.0, 1.0, 1.0, 1.1],
+                       'L': [1, 2, 1, 2, 1, 2]})
+
+    # create the expected results
+    df_expected = df.copy().dropna().reset_index(drop=True)
+    df_expected['id'] = ['EXAMPLE_{}'.format(i) for i in range(4)]
+    df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
+
+    csv_infile = join(_my_dir, 'other', 'features', 'features_ignore_blanks.csv')
+    tsv_infile = join(_my_dir, 'other', 'features', 'features_ignore_blanks.tsv')
+
+    csv_outfile = join(_my_dir, 'other', 'features', 'features_ignore_blanks_out.csv')
+    tsv_outfile = join(_my_dir, 'other', 'features', 'features_ignore_blanks_out.tsv')
+
+    df.to_csv(csv_infile, index=False)
+    df.to_csv(tsv_infile, index=False, sep='\t')
+
+    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L', '--ignore_blanks']
+    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L', '--ignore_blanks']
+
+    ff.main(filter_features_csv_cmd)
+    ff.main(filter_features_tsv_cmd)
+
+    df_csv_output = pd.read_csv(csv_outfile)
+    df_tsv_output = pd.read_csv(tsv_outfile, sep="\t")
+
+    assert_frame_equal(df_csv_output, df_expected)
+    assert_frame_equal(df_tsv_output, df_expected)
+
+def test_filter_features_with_replace_blanks_with():
+    """
+    Test filter features with CSV and TSV readers
+    using the replace_blanks_with option
+    """
+    df = pd.DataFrame({'A': [1, 2, 3, np.nan, 5, 6],
+                       'B': [5, 9, np.nan, 2, 9, 1],
+                       'C': [1.0, 1.0, 1.0, 1.0, 1.0, 1.1],
+                       'L': [1, 2, 1, 2, 1, 2]})
+
+    # create the expected results
+    df_expected = df.fillna(4.5).copy()
+    df_expected['id'] = ['EXAMPLE_{}'.format(i) for i in range(6)]
+    df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
+
+    csv_infile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with.csv')
+    tsv_infile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with.tsv')
+
+    csv_outfile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with_out.csv')
+    tsv_outfile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with_out.tsv')
+
+    df.to_csv(csv_infile, index=False)
+    df.to_csv(tsv_infile, index=False, sep='\t')
+
+    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L', '--replace_blanks_with', '4.5']
+    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L', '--replace_blanks_with', '4.5']
+
+    ff.main(filter_features_csv_cmd)
+    ff.main(filter_features_tsv_cmd)
+
+    df_csv_output = pd.read_csv(csv_outfile)
+    df_tsv_output = pd.read_csv(tsv_outfile, sep="\t")
+
+    assert_frame_equal(df_csv_output, df_expected)
+    assert_frame_equal(df_tsv_output, df_expected)

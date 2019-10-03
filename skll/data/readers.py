@@ -291,7 +291,12 @@ class Reader(object):
 
         return ids, labels, features
 
-    def _parse_dataframe(self, df, id_col, label_col, ignore_blanks=False):
+    def _parse_dataframe(self,
+                         df,
+                         id_col,
+                         label_col,
+                         replace_blanks_with=None,
+                         ignore_blanks=False):
         """
         Parse the data frame into ids, labels, and features.
         For `Reader` objects that rely on `pandas`, this function
@@ -308,6 +313,15 @@ class Reader(object):
             The id column.
         label_col : str or None
             The label column.
+        replace_blanks_with : value, ``dict``, or ``None``, optional
+            Specifies a new value with which to replace blank values.
+            Options are ::
+
+                -  value = A (numeric) value with which to replace blank values.
+                -  ``dict`` = A dictionary specifying the replacement value for each row/line.
+                -  ``None`` = Blank values will be left as blanks, and not replaced.
+
+            Defaults to ``None``.
         ignore_blanks : bool, optional
             If ``True``, remove lines/rows that have any blank
             values.
@@ -325,6 +339,15 @@ class Reader(object):
         if df.empty:
             raise ValueError("No features found in possibly "
                              "empty file '{}'.".format(self.path_or_list))
+
+        if ignore_blanks and replace_blanks_with is not None:
+            raise ValueError("You have set `ignore_blanks=True`, but 'replace_blanks_with' "
+                             "is not `None`; 'replace_blanks_with' can only have a value "
+                             "when 'ignore_blanks' is set to `False`.")
+
+        # should we replace blank values with something?
+        if replace_blanks_with is not None:
+            df = df.fillna(replace_blanks_with)
 
         # should we remove lines that have any NaNs?
         if ignore_blanks:
@@ -762,6 +785,16 @@ class CSVReader(Reader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
+    replace_blanks_with : value, ``dict``, or ``None``, optional
+        Specifies a new value with which to replace blank values.
+        Options are ::
+
+            -  value = A (numeric) value with which to replace blank values.
+            -  ``dict`` = A dictionary specifying the replacement value for each row/line.
+            -  ``None`` = Blank values will be left as blanks, and not replaced.
+
+        The replacement occurs after the data set is read into a `pd.DataFrame`.
+        Defaults to ``None``.
     ignore_blanks : bool, optional
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
@@ -775,8 +808,14 @@ class CSVReader(Reader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, ignore_blanks=False, pandas_kwargs=None, **kwargs):
+    def __init__(self,
+                 path_or_list,
+                 replace_blanks_with=None,
+                 ignore_blanks=False,
+                 pandas_kwargs=None,
+                 **kwargs):
         super(CSVReader, self).__init__(path_or_list, **kwargs)
+        self._replace_blanks_with = replace_blanks_with
         self._ignore_blanks = ignore_blanks
         self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
         self._sep = self._pandas_kwargs.pop('sep', str(','))
@@ -800,7 +839,10 @@ class CSVReader(Reader):
             The features for the features set.
         """
         df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
-        return self._parse_dataframe(df, self.id_col, self.label_col,
+        return self._parse_dataframe(df,
+                                     self.id_col,
+                                     self.label_col,
+                                     replace_blanks_with=self._replace_blanks_with,
                                      ignore_blanks=self._ignore_blanks)
 
 
@@ -817,6 +859,16 @@ class TSVReader(CSVReader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
+    replace_blanks_with : value, ``dict``, or ``None``, optional
+        Specifies a new value with which to replace blank values.
+        Options are ::
+
+            -  value = A (numeric) value with which to replace blank values.
+            -  ``dict`` = A dictionary specifying the replacement value for each row/line.
+            -  ``None`` = Blank values will be left as blanks, and not replaced.
+
+        The replacement occurs after the data set is read into a `pd.DataFrame`.
+        Defaults to ``None``.
     ignore_blanks : bool, optional
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
@@ -830,8 +882,14 @@ class TSVReader(CSVReader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, ignore_blanks=False, pandas_kwargs=None, **kwargs):
-        super(TSVReader, self).__init__(path_or_list, 
+    def __init__(self,
+                 path_or_list,
+                 replace_blanks_with=None,
+                 ignore_blanks=False,
+                 pandas_kwargs=None,
+                 **kwargs):
+        super(TSVReader, self).__init__(path_or_list,
+                                        replace_blanks_with=replace_blanks_with,
                                         ignore_blanks=ignore_blanks,
                                         pandas_kwargs=pandas_kwargs,
                                         **kwargs)

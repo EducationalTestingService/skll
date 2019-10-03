@@ -1138,3 +1138,31 @@ def test_reading_csv_and_tsv_with_ignore_blanks():
 
     eq_(fs_csv, fs_expected)
     eq_(fs_tsv, fs_expected)
+
+
+def test_reading_csv_and_tsv_with_fill_blanks():
+
+    # create CSV and TSV strings with blanks
+    test_csv = '1,1,6\n2,,2\n3,9,3\n,,\n,5,\n,,\n2,7,7'
+    test_tsv = test_csv.replace(',', '\t')
+
+    # specify pandas_kwargs for CSV and TSV readers
+    kwargs = {'header': None, 'names': ['A', 'B', 'C']}
+
+    expected = pd.DataFrame({'A': [1, 2, 3, 4.5, 4.5, 4.5, 2],
+                             'B': [1, 4.5, 9, 4.5, 5, 4.5, 7],
+                             'C': [6, 2, 3, 4.5, 4.5, 4.5, 7],
+                             'L': [None, None, None, None, None, None, None]},
+                            index=['EXAMPLE_0', 'EXAMPLE_1', 'EXAMPLE_2',
+                                   'EXAMPLE_3', 'EXAMPLE_4', 'EXAMPLE_5', 'EXAMPLE_6'])
+
+    fs_expected = FeatureSet.from_data_frame(expected, 'test', labels_column='L')
+
+    fs_csv = CSVReader(StringIO(test_csv), replace_blanks_with=4.5, pandas_kwargs=kwargs).read()
+    fs_csv.name = 'test'
+
+    fs_tsv = TSVReader(StringIO(test_tsv), replace_blanks_with=4.5, pandas_kwargs=kwargs).read()
+    fs_tsv.name = 'test'
+
+    eq_(fs_csv, fs_expected)
+    eq_(fs_tsv, fs_expected)
