@@ -226,18 +226,13 @@ def create_jsonlines_feature_files(path):
             y = "dog" if j % 2 == 0 else "cat"
             ex_id = "{}{}".format(y, j)
             x = {"f{}".format(feat_num): np.random.randint(0, 4) for feat_num in
-                 range(6)}
+                 range(5)}
             x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
             ids.append(ex_id)
             labels.append(y)
             features.append(x)
-            # one of the files needs to have 2 more instances
-            # than the other files
-            extra_ids = ids + ['cat{}'.format(num_examples),
-                               'dog{}'.format(num_examples + 1)]
-            extra_labels = labels + ['cat', 'dog']
 
-        for i in range(6):
+        for i in range(5):
             file_path = join(path, 'f{}.jsonlines'.format(i))
             sub_features = []
             for example_num in range(num_examples):
@@ -245,14 +240,22 @@ def create_jsonlines_feature_files(path):
                 x = {"f{}".format(feat_num):
                      features[example_num]["f{}".format(feat_num)]}
                 sub_features.append(x)
-            # the first 5 files have the same 1000 instances
-            if i <= 4:
-                fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels)
-            # the last file has two extra instances
-            else:
-                fs = FeatureSet('ablation_cv', extra_ids, features=sub_features + [{}, {}], labels=extra_labels)
+            fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels)
+
             writer = NDJWriter(file_path, fs)
             writer.write()
+
+        # now write out the last file which is basically
+        # identical to the last featureset we wrote
+        # except that it has two extra instances
+        fs = FeatureSet('extra',
+                        ids + ['cat{}'.format(num_examples),
+                               'dog{}'.format(num_examples + 1)],
+                        features=sub_features + [{}, {}],
+                        labels=labels + ['cat', 'dog'])
+        file_path = join(path, 'f5.jsonlines')
+        writer = NDJWriter(file_path, fs)
+        writer.write()
 
 
 def make_classification_data(num_examples=100, train_test_ratio=0.5,
