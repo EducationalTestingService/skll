@@ -236,11 +236,12 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         A list of example IDs.
     """
 
-    def __init__(self, keep, example_ids):
+    def __init__(self, keep, example_ids, logger=None):
         super(FilteredLeaveOneGroupOut, self).__init__()
         self.keep = keep
         self.example_ids = example_ids
         self._warned = False
+        self.logger = logger if logger else logging.getLogger(__name__)
 
     def split(self, X, y, groups):
         """
@@ -1631,7 +1632,9 @@ class Learner(object):
                 dummy_label = next(iter(grid_search_folds.values()))
                 fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
                                curr_id in examples.ids]
-                kfold = FilteredLeaveOneGroupOut(grid_search_folds, examples.ids)
+                kfold = FilteredLeaveOneGroupOut(grid_search_folds,
+                                                 examples.ids,
+                                                 logger=self.logger)
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # If we're using a correlation metric for doing binary
@@ -2271,7 +2274,9 @@ class Learner(object):
             dummy_label = next(iter(cv_folds.values()))
             fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
             # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids)
+            kfold = FilteredLeaveOneGroupOut(cv_folds,
+                                             examples.ids,
+                                             logger=self.logger)
             cv_groups = fold_groups
 
             # If we are planning to do grid search, set the grid search folds
