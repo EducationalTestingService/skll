@@ -211,7 +211,7 @@ def create_jsonlines_feature_files(path):
 
     # we only need to create the feature files if they
     # don't already exist under the given path
-    feature_files_to_create = [join(path, 'f{}.jsonlines'.format(i)) for i in range(5)]
+    feature_files_to_create = [join(path, 'f{}.jsonlines'.format(i)) for i in range(6)]
     if all([exists(ff) for ff in feature_files_to_create]):
         return
     else:
@@ -241,8 +241,21 @@ def create_jsonlines_feature_files(path):
                      features[example_num]["f{}".format(feat_num)]}
                 sub_features.append(x)
             fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels)
+
             writer = NDJWriter(file_path, fs)
             writer.write()
+
+        # now write out the last file which is basically
+        # identical to the last featureset we wrote
+        # except that it has two extra instances
+        fs = FeatureSet('extra',
+                        ids + ['cat{}'.format(num_examples),
+                               'dog{}'.format(num_examples + 1)],
+                        features=sub_features + [{}, {}],
+                        labels=labels + ['cat', 'dog'])
+        file_path = join(path, 'f5.jsonlines')
+        writer = NDJWriter(file_path, fs)
+        writer.write()
 
 
 def make_classification_data(num_examples=100, train_test_ratio=0.5,
