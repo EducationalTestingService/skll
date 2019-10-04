@@ -5,17 +5,14 @@ Run the examples, just to make sure they are all still working
 :author: Jeremy Biggs (jbiggs@@ets.org)
 """
 
-import sys
 from glob import glob
 from os import chdir, getcwd, listdir, makedirs
-from os.path import abspath, basename, dirname, exists, join
+from os.path import abspath, basename, dirname, join
 from shutil import copyfile, rmtree
 
 from examples import make_titanic_example_data as mtd
 from examples import make_boston_example_data as mbd
 from examples import make_iris_example_data as mid
-
-from tests.utils import fill_in_config_paths
 
 from skll.experiments import run_configuration
 
@@ -23,7 +20,6 @@ from skll.experiments import run_configuration
 _my_cwd = getcwd()
 _my_dir = abspath(dirname(__file__))
 _examples_dir = join(_my_dir, '..', 'examples')
-
 
 _old_titanic_dir = join(_examples_dir, 'titanic')
 _old_boston_dir = join(_examples_dir, 'boston')
