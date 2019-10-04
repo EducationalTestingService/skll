@@ -51,10 +51,19 @@ def main():
         logger.info('Creating titanic/test directory')
         os.makedirs('titanic/test')
 
+    # We only want to specific columns from the data,
+    # so that when we delete rows with null values we
+    # are not deleting rows based on irrelevant columns
+    usecols = ['Survived', 'PassengerId']
+    for feats in subset_dict.values():
+        usecols.extend(feats)
+
     # Read and write training FeatureSet
     train_fs = Reader.for_path('train.csv',
                                label_col='Survived',
                                id_col='PassengerId',
+                               drop_blanks=True,
+                               pandas_kwargs={'usecols': usecols},
                                quiet=False,
                                sparse=False).read()
 
