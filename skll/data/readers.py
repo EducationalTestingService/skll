@@ -793,8 +793,8 @@ class CSVReader(Reader):
         Options are ::
 
             -  value = A (numeric) value with which to replace blank values.
-            -  ``dict`` = A dictionary specifying the replacement value for each column.
-            -  ``None`` = Blank values will be left as blanks, and not replaced.
+            -  dict = A dictionary specifying the replacement value for each column.
+            -  None = Blank values will be left as blanks, and not replaced.
 
         The replacement occurs after the data set is read into a `pd.DataFrame`.
         Defaults to ``None``.
@@ -867,8 +867,8 @@ class TSVReader(CSVReader):
         Options are ::
 
             -  value = A (numeric) value with which to replace blank values.
-            -  ``dict`` = A dictionary specifying the replacement value for each column.
-            -  ``None`` = Blank values will be left as blanks, and not replaced.
+            -  dict = A dictionary specifying the replacement value for each column.
+            -  None = Blank values will be left as blanks, and not replaced.
 
         The replacement occurs after the data set is read into a `pd.DataFrame`.
         Defaults to ``None``.
