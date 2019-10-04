@@ -57,7 +57,16 @@ A simple comma or tab-delimited format with the following restrictions:
 *   If the data has instance IDs, there should be a column with the name
     specified by :ref:`id_col <id_col>` in the :ref:`Input` section of the configuration file you create for your experiment. This defaults to ``id``.  If there is no such column, IDs will be generated automatically.
 *   All other columns contain feature values, and every feature value
-    must be specified (making this a poor choice for sparse data).
+    must be specified (making this a poor choice for sparse data). 
+    
+.. warning:: 
+ 
+    SKLL will raise an error if there are blank values in *any* of the
+    columns. You must either drop all rows with blank values in any column
+    or replace the blanks with a value you specify. To drop or replace via
+    the command line, use the :ref:`filter_features <filter_features>` script.
+    You can also drop/replace via the SKLL Reader API, specifically :py:mod:`skll.data.readers.CSVReader` and :py:mod:`skll.data.readers.TSVReader`.
+
 
 .. _ndj:
 

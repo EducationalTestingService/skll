@@ -76,17 +76,33 @@ Optional Arguments
 
     Instead of keeping features and/or examples in lists, remove them.
 
+.. option:: --id_col <id_col>
+
+    Name of the column which contains the instance IDs in ARFF, CSV, or TSV files.
+    (default: ``id``)
+
 .. option:: -L <label <label ...>>, --label <label <label ...>>
 
     A label in the feature file you would like to keep. If unspecified, no
     instances are removed based on their labels.
 
-.. option:: -l label_col, --label_col label_col
+.. option:: -l <label_col>, --label_col <label_col>
 
     Name of the column which contains the class labels in ARFF, CSV, or TSV
     files. For ARFF files, this must be the final column to count as the label.
     (default: ``y``)
 
+.. option:: -db, --drop-blanks
+    
+    Drop all lines/rows that have any blank values.
+    (default: ``False``)
+
+.. option:: -rb <replacement>, --replace-blanks-with <replacement>
+
+    Specifies a new value with which to replace blank values in all columns in the
+    file. To replace blanks differently in each column, use the SKLL Reader API directly.
+    (default: ``None``)
+      
 .. option:: -q, --quiet
 
     Suppress printing of ``"Loading..."`` messages.
