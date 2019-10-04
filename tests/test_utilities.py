@@ -1862,11 +1862,11 @@ def test_filter_features_with_drop_blanks():
     df_expected['id'] = ['EXAMPLE_{}'.format(i) for i in range(4)]
     df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
 
-    csv_infile = join(_my_dir, 'other', 'features', 'features_ignore_blanks.csv')
-    tsv_infile = join(_my_dir, 'other', 'features', 'features_ignore_blanks.tsv')
+    csv_infile = join(_my_dir, 'other', 'features', 'features_drop_blanks.csv')
+    tsv_infile = join(_my_dir, 'other', 'features', 'features_drop_blanks.tsv')
 
-    csv_outfile = join(_my_dir, 'other', 'features', 'features_ignore_blanks_out.csv')
-    tsv_outfile = join(_my_dir, 'other', 'features', 'features_ignore_blanks_out.tsv')
+    csv_outfile = join(_my_dir, 'other', 'features', 'features_drop_blanks_out.csv')
+    tsv_outfile = join(_my_dir, 'other', 'features', 'features_drop_blanks_out.tsv')
 
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep='\t')
