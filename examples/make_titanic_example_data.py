@@ -56,6 +56,13 @@ def main():
                                label_col='Survived',
                                id_col='PassengerId',
                                quiet=False,
+                               drop_blanks=True,
+                               pandas_kwargs={'usecols': ['Sex', 'Age',
+                                                          'Pclass', 'Fare',
+                                                          'SibSp', 'Parch',
+                                                          'Embarked',
+                                                          'PassengerId',
+                                                          'Survived']},
                                sparse=False).read()
 
     train_fs.filter(features=features_to_keep)
@@ -92,6 +99,11 @@ def main():
     test_fs = Reader.for_path('test.csv',
                               label_col='Survived',
                               quiet=False,
+                              drop_blanks=True,
+                              pandas_kwargs={'usecols': ['Sex', 'Age',
+                                                         'Pclass', 'Fare',
+                                                         'SibSp', 'Parch',
+                                                         'Embarked']},
                               sparse=False).read()
 
     test_fs.filter(features=features_to_keep)
