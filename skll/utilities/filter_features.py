@@ -69,7 +69,9 @@ def main(argv=None):
                              'the label.',
                         default='y')
     parser.add_argument('-rb', '--replace_blanks_with',
-                        help='Specifies a new value with which to replace blank values.',
+                        help='Specifies a new value with which to replace blank values '
+                             'in all columns in the file. To replace blanks differently '
+                             'in each column, use the SKLL Reader API directly.',
                         default=None)
     parser.add_argument('-db', '--drop_blanks',
                         action='store_true',

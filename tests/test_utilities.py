@@ -1883,6 +1883,7 @@ def test_filter_features_with_drop_blanks():
     assert_frame_equal(df_csv_output, df_expected)
     assert_frame_equal(df_tsv_output, df_expected)
 
+
 def test_filter_features_with_replace_blanks_with():
     """
     Test filter features with CSV and TSV readers
@@ -1922,7 +1923,6 @@ def test_filter_features_with_replace_blanks_with():
 
 @raises(ValueError)
 def test_filter_features_with_replace_blanks_with_and_drop_blanks_raises_error():
-
 
     df = pd.DataFrame(np.random.randn(5, 10))
 
