@@ -85,8 +85,7 @@ For more information about getting started with ``run_experiment``, please check
 out `our tutorial <https://skll.readthedocs.org/en/latest/tutorial.html>`__, or
 `our config file specs <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
 
-You can also follow this `interactive Jupyter tutorial <https://mybinder.org/v2/gh/AVajpayeeJr/skll/feature/448-interactive-binder?filepath=examples
->`__. 
+You can also follow this `interactive Jupyter tutorial <https://mybinder.org/v2/gh/AVajpayeeJr/skll/feature/448-interactive-binder?filepath=examples>`__. 
 
 We also provide utilities for:
 
