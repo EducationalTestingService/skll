@@ -11,11 +11,69 @@ evaluate the performance of learners.
 
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
-from sklearn.metrics import confusion_matrix, f1_score, SCORERS
+from sklearn.metrics import (confusion_matrix,
+                             f1_score,
+                             make_scorer,
+                             SCORERS)
 
 
-# Constants
-_CORRELATION_METRICS = frozenset(['kendall_tau', 'spearman', 'pearson'])
+# Useful constants
+_CORRELATION_METRICS = set(['kendall_tau', 'pearson', 'spearman'])
+
+_REGRESSION_ONLY_METRICS = set(['explained_variance',
+                                'max_error',
+                                'neg_mean_squared_error',
+                                'neg_mean_absolute_error',
+                                'r2'])
+
+_CLASSIFICATION_ONLY_METRICS = set(['accuracy',
+                                    'average_precision',
+                                    'balanced_accuracy',
+                                    'f1',
+                                    'f1_score_least_frequent',
+                                    'f1_score_macro',
+                                    'f1_score_micro',
+                                    'f1_score_weighted',
+                                    'neg_log_loss',
+                                    'precision',
+                                    'recall',
+                                    'roc_auc'])
+
+_UNWEIGHTED_KAPPA_METRICS = set(['unweighted_kappa', 'uwk_off_by_one'])
+
+_WEIGHTED_KAPPA_METRICS = set(['linear_weighted_kappa',
+                               'lwk_off_by_one',
+                               'quadratic_weighted_kappa',
+                               'qwk_off_by_one'])
+
+
+def _add_correlation_probability_scorer(metric_name):
+    """
+    A helper function that dynamically modifies the scoring
+    functions associated with the correlation metrics such
+    that those functions now receive probabilities rather
+    than just the most likely labels.
+    This allows us to use ``GridSearchCV`` with objective functions
+    like Kendall's tau for binary classification problems (where the
+    probability of the true class is used as the input to the objective
+    function).
+
+    Parameters
+    ----------
+    metric_name : str
+        The name of the metric to update. If any metric other than
+        a correlation metric is passed, no changes are made.
+    probabilities : bool, optional
+        If ``True`, modify the correlation scoring function
+        to require probabilties and if ``False``, modify it to
+        do the opposite.
+
+    """
+    pass
+    # if metric_name in _CORRELATION_METRICS:
+    #     metric_func = globals()[metric_name]
+    #     SCORERS['{}_with_probabilities' metric_name] = make_scorer(metric_func,
+    #                                        needs_proba=probabilities)
 
 
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
@@ -150,7 +208,14 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
 def kendall_tau(y_true, y_pred):
     """
-    Calculate Kendall's tau between ``y_true`` and ``y_pred``.
+    Calculate Kendall's tau between ``y_true`` and ``y_pred``. ``y_true``
+    can be multi-dimensional. If ``y_true`` is 1-dimensional, it may either
+    contain probabilities, most-likely classification labels, or regressor
+    predictions. In that case, we simply return the pearson correlation
+    between ``y_true`` and ``y_pred``. If ``y_true`` is multi-dimensional,
+    it contains probabiltiies for multiple classes in which case, we infer
+    the most likely labels and then compute the correlation between those
+    and ``y_true``.
 
     Parameters
     ----------
@@ -164,14 +229,25 @@ def kendall_tau(y_true, y_pred):
     ret_score : float
         Kendall's tau if well-defined, else 0.0
     """
-    ret_score = kendalltau(y_true, y_pred)[0]
+    if y_true.ndim > 1:
+        labels = np.argmax(y_true)
+        ret_score = kendalltau(labels, y_pred)[0]
+    else:
+        ret_score = kendalltau(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def spearman(y_true, y_pred):
     """
     Calculate Spearman's rank correlation coefficient between ``y_true`` and
-    ``y_pred``.
+    ``y_pred``. ``y_true`` can be multi-dimensional. If ``y_true`` is
+    1-dimensional, it may either contain probabilities, most-likely
+    classification labels, or regressor predictions. In that case, we
+    simply return the pearson correlation between ``y_true`` and ``y_pred``.
+    If ``y_true`` is multi-dimensional, it contains probabiltiies for multiple
+    classes in which case, we infer the most likely labels and then compute
+    the correlation between those and ``y_true``.
+
 
     Parameters
     ----------
@@ -185,14 +261,24 @@ def spearman(y_true, y_pred):
     ret_score : float
         Spearman's rank correlation coefficient if well-defined, else 0.0
     """
-    ret_score = spearmanr(y_true, y_pred)[0]
+    if y_true.ndim > 1:
+        labels = np.argmax(y_true)
+        ret_score = spearmanr(labels, y_pred)[0]
+    else:
+        ret_score = spearmanr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
 def pearson(y_true, y_pred):
     """
-    Calculate Pearson product-moment correlation coefficient between ``y_true``
-    and ``y_pred``.
+    Calculate Pearson product-moment correlation coefficient between
+    ``y_true`` and ``y_pred``. ``y_pred`` can be multi-dimensional. If
+    ``y_pred`` is 1-dimensional, it may either contain probabilities,
+    most-likely classification labels, or regressor predictions. In that
+    case, we simply return the pearson correlation between ``y_true`` and
+    ``y_pred``. If ``y_true`` is multi-dimensional, it contains
+    probabiltiies for multiple classes in which case, we infer the most
+    likely labels and then compute the correlation between those and ``y_true``.
 
     Parameters
     ----------
@@ -206,7 +292,11 @@ def pearson(y_true, y_pred):
     ret_score : float
         Pearson product-moment correlation coefficient if well-defined, else 0.0
     """
-    ret_score = pearsonr(y_true, y_pred)[0]
+    if y_pred.ndim > 1:
+        labels = np.argmax(y_pred)
+        ret_score = pearsonr(y_true, labels)[0]
+    else:
+        ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 

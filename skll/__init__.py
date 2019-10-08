@@ -18,10 +18,9 @@ from .learner import Learner
 from .metrics import (kappa, kendall_tau, spearman, pearson,
                       f1_score_least_frequent)
 
-__all__ = ['FeatureSet', 'Learner', 'Reader', 'kappa', 'kendall_tau',
-           'spearman', 'pearson', 'f1_score_least_frequent',
-           'get_skll_logger', 'orig_showwarning',
-           'close_and_remove_logger_handlers', 'run_configuration', 'Writer']
+__all__ = ['FeatureSet', 'Learner', 'Reader', 'get_skll_logger',
+           'orig_showwarning', 'close_and_remove_logger_handlers',
+           'run_configuration', 'Writer']
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll

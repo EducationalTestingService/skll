@@ -15,10 +15,11 @@ import inspect
 import logging
 import os
 import sys
+
 from collections import Counter, defaultdict
 from functools import wraps
-from importlib import import_module
 from math import floor, log10
+from importlib import import_module
 from itertools import combinations
 from multiprocessing import cpu_count
 
@@ -41,6 +42,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_selection import SelectKBest
+from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
@@ -74,7 +76,13 @@ from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
-from skll.metrics import _CORRELATION_METRICS, use_score_func
+from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
+                          _CORRELATION_METRICS,
+                          _REGRESSION_ONLY_METRICS,
+                          _UNWEIGHTED_KAPPA_METRICS,
+                          _WEIGHTED_KAPPA_METRICS,
+                          SCORERS,
+                          use_score_func)
 from skll.version import VERSION
 
 # Constants #
@@ -157,47 +165,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         TheilSenRegressor:
                         [{}]}
 
-
-# list of valid grid objective functions for regression and classification
-# models depending on type of labels
-
-_BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
-                                     'linear_weighted_kappa',
-                                     'quadratic_weighted_kappa',
-                                     'uwk_off_by_one',
-                                     'lwk_off_by_one',
-                                     'qwk_off_by_one',
-                                     'kendall_tau',
-                                     'pearson',
-                                     'spearman',
-                                     'neg_log_loss'])
-
-_REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
-                                        'neg_mean_squared_error'])
-
-_CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
-                                            'precision',
-                                            'recall',
-                                            'f1',
-                                            'f1_score_micro',
-                                            'f1_score_macro',
-                                            'f1_score_weighted',
-                                            'f1_score_least_frequent',
-                                            'average_precision',
-                                            'roc_auc',
-                                            'neg_log_loss'])
-
-_INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
-                                  'linear_weighted_kappa',
-                                  'quadratic_weighted_kappa',
-                                  'uwk_off_by_one',
-                                  'lwk_off_by_one',
-                                  'qwk_off_by_one',
-                                  'neg_log_loss'])
-
-_REQUIRES_DENSE = (BayesianRidge,
-                   Lars,
-                   TheilSenRegressor)
+_REQUIRES_DENSE = (BayesianRidge, Lars, TheilSenRegressor)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
@@ -395,35 +363,6 @@ def _train_and_score(learner,
     train_score = use_score_func(metric, train_labels, train_predictions)
     test_score = use_score_func(metric, test_labels, test_predictions)
     return train_score, test_score
-
-
-def _predict_binary(self, X):
-    """
-    A helper function to allow us to use ``GridSearchCV`` with objective
-    functions like Kendall's tau for binary classification problems (where the
-    probability of the true class is used as the input to the objective
-    function).
-
-    This only works if we've also taken the step of storing the old predict
-    function for ``self`` as ``predict_normal``. It's kind of a hack, but it saves
-    us from having to override ``GridSearchCV`` to change one little line.
-
-    Parameters
-    ----------
-    X : array-like
-        A set of examples to predict values for.
-
-    Returns
-    -------
-    res : array-like
-        The prediction results.
-    """
-
-    if self.coef_.shape[0] == 1:
-        res = self.predict_proba(X)[:, 1]
-    else:
-        res = self.predict_normal(X)
-    return res
 
 
 class SelectByMinCount(SelectKBest):
@@ -1469,52 +1408,76 @@ class Learner(object):
         # is specified and that the specified function is valid for the
         # selected learner
         if grid_search:
+
             if not grid_objective:
                 raise ValueError("Grid search is on by default. You must either "
                                  "specify a grid objective or turn off grid search.")
+
+            allowed_objectives = set()
+
             if self.model_type._estimator_type == 'regressor':
-                # types 2-4 are valid for all regression models
-                if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
-                    raise ValueError("{} is not a valid grid objective "
-                                     "function for the {} learner"
-                                     .format(grid_objective,
-                                             self._model_type.__name__))
-            elif grid_objective not in _CLASSIFICATION_ONLY_OBJ_FUNCS:
-                # This is a classifier. Valid objective functions depend on
-                # type of label (int, string, binary)
+                # this is a regressor so we should allow the
+                # regression-only metrics plus all kappas and
+                # correlation metrics
+                allowed_objectives.update(_REGRESSION_ONLY_METRICS,
+                                          _UNWEIGHTED_KAPPA_METRICS,
+                                          _WEIGHTED_KAPPA_METRICS,
+                                          _CORRELATION_METRICS)
 
-                if issubclass(examples.labels.dtype.type, int):
-                    # If they're ints, class 1 and 2 are valid for classifiers,
-                    if grid_objective not in _INT_CLASS_OBJ_FUNCS:
-                        raise ValueError("{} is not a valid grid objective "
-                                         "function for the {} learner with "
-                                         "integer labels"
-                                         .format(grid_objective,
-                                                 self._model_type.__name__))
+            else:
+                # this is a classifier so the allowed objective
+                # functions definitely include those metrics that
+                # are specifically for classification
+                allowed_objectives = _CLASSIFICATION_ONLY_METRICS
 
-                elif issubclass(examples.labels.dtype.type, str):
-                    # if all of the labels are strings, only class 1 objectives
-                    # are valid (with a classifier).
-                    raise ValueError("{} is not a valid grid objective "
-                                     "function for the {} learner with string "
-                                     "labels".format(grid_objective,
-                                                     self._model_type.__name__))
+                # now let us consider which other metrics may also
+                # be allowed depending one whether we have string
+                # or binary labels.
+                label_type = examples.labels.dtype.type
 
-                elif len(set(examples.labels)) == 2:
-                    # If there are two labels, class 3 objectives are valid for
-                    # classifiers regardless of the type of the label.
-                    if grid_objective not in _BINARY_CLASS_OBJ_FUNCS:
-                        raise ValueError("{} is not a valid grid objective "
-                                         "function for the {} learner with "
-                                         "binary labels"
-                                         .format(grid_objective,
-                                                 self._model_type.__name__))
-                elif grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
-                    # simple backoff check for mixed-type labels
-                    raise ValueError("{} is not a valid grid objective "
-                                     "function for the {} learner"
-                                     .format(grid_objective,
-                                             self._model_type.__name__))
+                # CASE 1: labels are strings, then unweighted kappas
+                # should be allowed
+                if (issubclass(label_type, np.object_) or
+                        issubclass(label_type, str)):
+                    allowed_objectives.update(_UNWEIGHTED_KAPPA_METRICS)
+
+                # CASE 2: labels are integers; this is the case that
+                # includes ordinal classification, so we can allow
+                # all kappas and correlation metrics too
+                elif (issubclass(label_type, np.int64) or
+                        issubclass(label_type, int)):
+                    allowed_objectives.update(_CORRELATION_METRICS,
+                                              _UNWEIGHTED_KAPPA_METRICS,
+                                              _WEIGHTED_KAPPA_METRICS)
+
+            # at this point we can raise an exception if the specified
+            # grid objective is not in the list of allowed objectives
+            # that we have compiled
+            if grid_objective not in allowed_objectives:
+                raise ValueError("{} is not a valid grid objective "
+                                 "function for the {} learner."
+                                 .format(grid_objective,
+                                         self._model_type.__name__))
+
+            # If we're using a correlation metric for doing binary
+            # classification and probability is set to true, we assume
+            # that the user actually wants the `_with_probabilities`
+            # version of the metric
+            if (grid_objective in _CORRELATION_METRICS and
+                    self.model_type._estimator_type == 'classifier' and
+                    self.probability):
+                self.logger.info('You specified "{}" as the objective with '
+                                 '"probability" set to "true". If this is '
+                                 'a binary classification task with integer '
+                                 'labels, the probabilies for the positive '
+                                 'class will be used to compute the correlation.')
+                old_grid_objective = grid_objective
+                new_grid_objective = '{}_probs'.format(grid_objective)
+                metrics_module = import_module('skll.metrics')
+                metric_func = getattr(metrics_module, grid_objective)
+                SCORERS[new_grid_objective] = make_scorer(metric_func,
+                                                          needs_proba=True)
+                grid_objective = new_grid_objective
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1637,18 +1600,11 @@ class Learner(object):
                                                  logger=self.logger)
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
-            # If we're using a correlation metric for doing binary
-            # classification, override the estimator's predict function
-            if (grid_objective in _CORRELATION_METRICS and
-                    self.model_type._estimator_type == 'classifier'):
-                estimator.predict_normal = estimator.predict
-                estimator.predict = _predict_binary
-
             # limit the number of grid_jobs to be no higher than five or the
             # number of cores for the machine, whichever is lower
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
-
-            grid_searcher = GridSearchCV(estimator, param_grid,
+            grid_searcher = GridSearchCV(estimator,
+                                         param_grid,
                                          scoring=grid_objective,
                                          iid=False,
                                          cv=folds,
@@ -1796,8 +1752,8 @@ class Learner(object):
         else:
             ytest = examples.labels
 
-        # compute all of the metrics that we need to but save the original
-        # predictions since we will need to use those for each metric
+        # save the original predictions and use them to compute
+        # each specified additional
         original_yhat = yhat
         for metric in metrics_to_compute:
 
@@ -1805,6 +1761,11 @@ class Learner(object):
             if self.probability:
                 # if we're using a correlation grid objective, calculate it here
                 if metric and metric in _CORRELATION_METRICS:
+                    self.logger.info('If this is a binary classification task '
+                                     'with integer labels, computing {} with '
+                                     '"probability" set to "true"  will use the'
+                                     'probabilities for the positive class to '
+                                     'compute the correlation.')
                     try:
                         metric_scores[metric] = use_score_func(metric, ytest, yhat[:, 1])
                     except ValueError:
@@ -1816,6 +1777,8 @@ class Learner(object):
 
             # calculate grid search objective function score, if specified
             if (metric and (metric not in _CORRELATION_METRICS or not self.probability)):
+                import ipdb
+                ipdb.set_trace()
                 try:
                     metric_scores[metric] = use_score_func(metric, ytest, yhat)
                 except ValueError:
@@ -2322,13 +2285,13 @@ class Learner(object):
             # label dictionary for the whole dataset above.
             (grid_search_score,
              grid_search_cv_results) = self.train(train_set,
-                                           grid_search_folds=grid_search_folds,
-                                           grid_search=grid_search,
-                                           grid_objective=grid_objective,
-                                           param_grid=param_grid,
-                                           grid_jobs=grid_jobs,
-                                           shuffle=grid_search,
-                                           create_label_dict=False)
+                                                  grid_search_folds=grid_search_folds,
+                                                  grid_search=grid_search,
+                                                  grid_objective=grid_objective,
+                                                  param_grid=param_grid,
+                                                  grid_jobs=grid_jobs,
+                                                  shuffle=grid_search,
+                                                  create_label_dict=False)
             grid_search_scores.append(grid_search_score)
             if save_cv_models:
                 models.append(copy.deepcopy(self))

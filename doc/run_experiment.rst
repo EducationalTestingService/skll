@@ -52,7 +52,7 @@ A simple comma or tab-delimited format with the following restrictions:
 
 *   If the data is labelled, there must be a column with the name
     specified by :ref:`label_col <label_col>` in the :ref:`Input` section of the
-    configuartion file you create for your experiment. This defaults to
+    configuration file you create for your experiment. This defaults to
     ``y``.
 *   If the data has instance IDs, there should be a column with the name
     specified by :ref:`id_col <id_col>` in the :ref:`Input` section of the configuration file you create for your experiment. This defaults to ``id``.  If there is no such column, IDs will be generated automatically.
@@ -61,11 +61,45 @@ A simple comma or tab-delimited format with the following restrictions:
     
 .. warning:: 
  
-    SKLL will raise an error if there are blank values in *any* of the
-    columns. You must either drop all rows with blank values in any column
-    or replace the blanks with a value you specify. To drop or replace via
-    the command line, use the :ref:`filter_features <filter_features>` script.
-    You can also drop/replace via the SKLL Reader API, specifically :py:mod:`skll.data.readers.CSVReader` and :py:mod:`skll.data.readers.TSVReader`.
+    1. SKLL will raise an error if there are blank values in **any** of the
+       columns. You must either drop all rows with blank values in any column
+       or replace the blanks with a value you specify. To drop or replace via
+       the command line, use the :ref:`filter_features <filter_features>` script.
+       You can also drop/replace via the SKLL Reader API, specifically :py:mod:`skll.data.readers.CSVReader` and :py:mod:`skll.data.readers.TSVReader`.
+
+    2. Dropping blanks will drop **all** rows with blanks in **any** of
+       the columns. If you care only about **some** of the columns in the file
+       and do not want to rows to be dropped due to blanks in the other columns,
+       you should remove the columns you do not care about before dropping the
+       blanks. For example, consider a hypothetical file ``in.csv`` that contains
+       feature columns named ``A`` through ``G`` with the IDs stored in a column
+       named ``ID`` and the labels stored in a column named ``CLASS``. You only
+       care about columns ``A``, ``C``, and ``F`` and want to drop all rows in
+       the file that have blanks in any of these 3 columns but **do not** want
+       to lose data due to there being blanks in any of the other columns. On
+       the command line, you can run the following two commands:
+
+        .. code-block:: bash
+
+            $ filter_features -f A C F --id_col ID --label_col class in.csv temp.csv
+            $ filter_features --id_col ID --label_col CLASS --drop_blanks temp.csv out.csv
+
+       If you are using the SKLL Reader API, you can accomplish the same in a
+       single step by also passing using the keyword argument ``pandas_kwargs`` 
+       when instantiating either a :py:mod:`skll.data.readers.CSVReader` or a 
+       :py:mod:`skll.data.readers.TSVReader`. For our example:
+
+        .. code-block:: python
+
+            r = CSVReader.for_path('/path/to/in.csv',
+                                   label_col='CLASS',
+                                   id_col='ID',
+                                   drop_blanks=True,
+                                   pandas_kwargs={'usecols': ['A', 'C', 'F', 'ID', 'CLASS']})
+            fs = r.read()
+
+       Make sure to include the ID and label columns in the `usecols` list 
+       otherwise ``pandas`` will drop them too.
 
 
 .. _ndj:
@@ -246,7 +280,7 @@ Classifiers:
     *   **MLPClassifier**: `Multi-layer Perceptron Classification <https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier>`__
     *   **MultinomialNB**: `Multinomial Naive Bayes Classification <https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
     *   **RandomForestClassifier**: `Random Forest Classification <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
-    *   **RidgeClassifier**: `Classification using Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
+    *   **RidgeClassifier**: `Classification using Ridge Regression <https://scikit-learn.org/stable/moduleclears/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
     *   **SGDClassifier**: `Stochastic Gradient Descent Classification <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
     *   **SVC**: `Support Vector Classification using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
 

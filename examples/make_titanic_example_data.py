@@ -103,7 +103,9 @@ def main():
                               pandas_kwargs={'usecols': ['Sex', 'Age',
                                                          'Pclass', 'Fare',
                                                          'SibSp', 'Parch',
-                                                         'Embarked']},
+                                                         'Embarked',
+                                                         'PassengerId',
+                                                         'Survived']},
                               sparse=False).read()
 
     test_fs.filter(features=features_to_keep)
