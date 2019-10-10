@@ -211,12 +211,12 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
 def kendall_tau(y_true, y_pred):
     """
-    Calculate Kendall's tau between ``y_true`` and ``y_pred``. ``y_true``
-    can be multi-dimensional. If ``y_true`` is 1-dimensional, it may either
+    Calculate Kendall's tau between ``y_true`` and ``y_pred``. ``y_pred``
+    can be multi-dimensional. If ``y_pred`` is 1-dimensional, it may either
     contain probabilities, most-likely classification labels, or regressor
     predictions. In that case, we simply return the pearson correlation
-    between ``y_true`` and ``y_pred``. If ``y_true`` is multi-dimensional,
-    it contains probabiltiies for multiple classes in which case, we infer
+    between ``y_true`` and ``y_pred``. If ``y_pred`` is multi-dimensional,
+    it contains probabilties for multiple classes in which case, we infer
     the most likely labels and then compute the correlation between those
     and ``y_true``.
 
@@ -232,9 +232,9 @@ def kendall_tau(y_true, y_pred):
     ret_score : float
         Kendall's tau if well-defined, else 0.0
     """
-    if y_true.ndim > 1:
-        labels = np.argmax(y_true)
-        ret_score = kendalltau(labels, y_pred)[0]
+    if y_pred.ndim > 1:
+        labels = np.argmax(y_pred, axis=1)
+        ret_score = kendalltau(y_true, labels)[0]
     else:
         ret_score = kendalltau(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -243,11 +243,11 @@ def kendall_tau(y_true, y_pred):
 def spearman(y_true, y_pred):
     """
     Calculate Spearman's rank correlation coefficient between ``y_true`` and
-    ``y_pred``. ``y_true`` can be multi-dimensional. If ``y_true`` is
+    ``y_pred``. ``y_pred`` can be multi-dimensional. If ``y_pred`` is
     1-dimensional, it may either contain probabilities, most-likely
     classification labels, or regressor predictions. In that case, we
     simply return the pearson correlation between ``y_true`` and ``y_pred``.
-    If ``y_true`` is multi-dimensional, it contains probabiltiies for multiple
+    If ``y_pred`` is multi-dimensional, it contains probabilties for multiple
     classes in which case, we infer the most likely labels and then compute
     the correlation between those and ``y_true``.
 
@@ -264,9 +264,9 @@ def spearman(y_true, y_pred):
     ret_score : float
         Spearman's rank correlation coefficient if well-defined, else 0.0
     """
-    if y_true.ndim > 1:
-        labels = np.argmax(y_true)
-        ret_score = spearmanr(labels, y_pred)[0]
+    if y_pred.ndim > 1:
+        labels = np.argmax(y_pred, axis=1)
+        ret_score = spearmanr(y_true, labels)[0]
     else:
         ret_score = spearmanr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -279,8 +279,8 @@ def pearson(y_true, y_pred):
     ``y_pred`` is 1-dimensional, it may either contain probabilities,
     most-likely classification labels, or regressor predictions. In that
     case, we simply return the pearson correlation between ``y_true`` and
-    ``y_pred``. If ``y_true`` is multi-dimensional, it contains
-    probabiltiies for multiple classes in which case, we infer the most
+    ``y_pred``. If ``y_pred`` is multi-dimensional, it contains
+    probabilties for multiple classes in which case, we infer the most
     likely labels and then compute the correlation between those and ``y_true``.
 
     Parameters
@@ -296,7 +296,7 @@ def pearson(y_true, y_pred):
         Pearson product-moment correlation coefficient if well-defined, else 0.0
     """
     if y_pred.ndim > 1:
-        labels = np.argmax(y_pred)
+        labels = np.argmax(y_pred, axis=1)
         ret_score = pearsonr(y_true, labels)[0]
     else:
         ret_score = pearsonr(y_true, y_pred)[0]
