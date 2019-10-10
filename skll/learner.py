@@ -79,6 +79,7 @@ from skll.data.dict_vectorizer import DictVectorizer
 from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
                           _CORRELATION_METRICS,
                           _REGRESSION_ONLY_METRICS,
+                          _PROBABILISTIC_METRICS,
                           _UNWEIGHTED_KAPPA_METRICS,
                           _WEIGHTED_KAPPA_METRICS,
                           SCORERS,
@@ -1476,51 +1477,19 @@ class Learner(object):
                 raise ValueError("Grid search is on by default. You must either "
                                  "specify a grid objective or turn off grid search.")
 
-            allowed_objectives = set()
+            # get the list of objectives that are acceptable in the current
+            # prediction scenario and raise an exception if the current
+            # objective is not in this allowed list
+            label_type = examples.labels.dtype.type
+            allowed_objectives = _get_acceptable_metrics(label_type,
+                                                         self.model_type._estimator_type)
 
-            if self.model_type._estimator_type == 'regressor':
-                # this is a regressor so we should allow the
-                # regression-only metrics plus all kappas and
-                # correlation metrics
-                allowed_objectives.update(_REGRESSION_ONLY_METRICS,
-                                          _UNWEIGHTED_KAPPA_METRICS,
-                                          _WEIGHTED_KAPPA_METRICS,
-                                          _CORRELATION_METRICS)
-
-            else:
-                # this is a classifier so the allowed objective
-                # functions definitely include those metrics that
-                # are specifically for classification
-                allowed_objectives = _CLASSIFICATION_ONLY_METRICS
-
-                # now let us consider which other metrics may also
-                # be allowed depending one whether we have string
-                # or binary labels.
-                label_type = examples.labels.dtype.type
-
-                # CASE 1: labels are strings, then unweighted kappas
-                # should be allowed
-                if (issubclass(label_type, np.object_) or
-                        issubclass(label_type, str)):
-                    allowed_objectives.update(_UNWEIGHTED_KAPPA_METRICS)
-
-                # CASE 2: labels are integers; this is the case that
-                # includes ordinal classification, so we can allow
-                # all kappas and correlation metrics too
-                elif (issubclass(label_type, np.int64) or
-                        issubclass(label_type, int)):
-                    allowed_objectives.update(_CORRELATION_METRICS,
-                                              _UNWEIGHTED_KAPPA_METRICS,
-                                              _WEIGHTED_KAPPA_METRICS)
-
-            # at this point we can raise an exception if the specified
-            # grid objective is not in the list of allowed objectives
-            # that we have compiled
             if grid_objective not in allowed_objectives:
-                raise ValueError("{} is not a valid grid objective "
-                                 "function for the {} learner."
-                                 .format(grid_objective,
-                                         self._model_type.__name__))
+                raise ValueError("'{}' is not a valid objective "
+                                 "function for {} with "
+                                 "labels of type {}.".format(grid_objective,
+                                                             self._model_type.__name__,
+                                                             label_type.__name__))
 
             # If we're using a correlation metric for doing binary
             # classification and probability is set to true, we assume
@@ -1684,6 +1653,13 @@ class Learner(object):
             grid_score = 0.0
             grid_cv_results = None
 
+        # restore the original of the grid objective if we
+        # had futzed with the it to handle correlation
+        # objectives and probability outputs
+        if 'old_grid_objective' in locals():
+            grid_objective = old_grid_objective
+            del SCORERS[new_grid_objective]
+
         # store a scikit-learn Pipeline in the `pipeline` attribute
         # composed of a copy of the vectorizer, the selector,
         # the sampler, the scaler, and the estimator. This pipeline
@@ -1692,12 +1668,12 @@ class Learner(object):
         # We are using copies since the user might want to play
         # around with the pipeline and we want to let her do that
         # but keep the SKLL model the same
-
-        # start with the vectorizer
         if self._store_pipeline:
 
             # initialize the list that will hold the pipeline steps
             pipeline_steps = []
+
+            # start with the vectorizer
 
             # note that sometimes we may have to end up using dense
             # features or if we were using a SkewedChi2Sampler which
@@ -1788,21 +1764,34 @@ class Learner(object):
         # initialize a dictionary that will hold all of the metric scores
         metric_scores = {metric: None for metric in output_metrics}
 
-        # make the prediction on the test data
+        # are we in a regressor or a classifier
+        estimator_type = self.model_type._estimator_type
+
+        # make the prediction on the test data; note that these
+        # are either class indices or class probabilities
         yhat = self.predict(examples,
                             prediction_prefix=prediction_prefix,
                             append=append)
 
-        # make a single list of metrics including the grid objective
-        # since it's easier to compute everything together
-        metrics_to_compute = [grid_objective] + output_metrics
+        # if we are a classifier and in probability mode, then
+        # `yhat` are probabilities so we need to compute the
+        # class indices separately and save them too
+        if self.probability and estimator_type == 'classifier':
+            yhat_probs = yhat
+            yhat = np.argmax(yhat_probs, axis=1)
+        # if we are a regressor or classifier not in probability
+        # mode, then we have the class indices already and there
+        # are no probabilities
+        else:
+            yhat_probs = None
 
-        # extract actual labels (transformed for classification tasks)
-        if self.model_type._estimator_type == 'classifier':
+        # convert the true class labels to indices too for consistency
+        # if we are a classifier
+        if estimator_type == 'classifier':
             test_label_list = np.unique(examples.labels).tolist()
 
-            # identify unseen test labels if any and add a new dictionary for these
-            # labels
+            # identify unseen test labels if any and add a new dictionary
+            # for these  labels
             unseen_test_label_list = [label for label in test_label_list
                                       if label not in self.label_list]
             unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
@@ -1812,40 +1801,67 @@ class Learner(object):
             train_and_test_label_dict.update(unseen_label_dict)
             ytest = np.array([train_and_test_label_dict[label]
                               for label in examples.labels])
+        # we are a regressor, so we do not need to do anything else
         else:
             ytest = examples.labels
 
-        # save the original predictions and use them to compute
-        # each specified additional
-        original_yhat = yhat
+        # compute the acceptable metrics for our current prediction scenario
+        label_type = examples.labels.dtype.type
+        acceptable_metrics = _get_acceptable_metrics(label_type, estimator_type)
+
+        # check that all of the output metrics are acceptable
+        unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
+        if unacceptable_metrics:
+            raise ValueError("The following metrics are not valid "
+                             "for {} with labels of "
+                             "type {}: {}".format(self._model_type.__name__,
+                                                  label_type.__name__,
+                                                  list(unacceptable_metrics)))
+
+        # make a single list of metrics including the grid objective
+        # since it's easier to compute everything together
+        metrics_to_compute = [grid_objective] + output_metrics
         for metric in metrics_to_compute:
 
-            # if run in probability mode, convert yhat to list of labels predicted
+            # skip the None if we are not doing grid search
+            if not metric:
+                continue
+
+            # CASE 1: in probability mode for classification which means we
+            # need to either use the probabilities directly or infer the labels
+            # from them depending on the metric
             if self.probability:
-                # if we're using a correlation grid objective, calculate it here
-                if metric and metric in _CORRELATION_METRICS:
-                    self.logger.info('If this is a binary classification task '
-                                     'with integer labels, computing {} with '
-                                     '"probability" set to "true"  will use the'
-                                     'probabilities for the positive class to '
-                                     'compute the correlation.')
-                    try:
-                        metric_scores[metric] = use_score_func(metric, ytest, yhat[:, 1])
-                    except ValueError:
-                        metric_scores[metric] = float('NaN')
 
-                yhat = np.array([max(range(len(row)),
-                                     key=lambda i: row[i])
-                                 for row in original_yhat])
+                # there are three possible cases here:
+                # (a) if we are using a correlation metric or
+                #     `average_precision` or `roc_auc` in a binary
+                #      classification scenario, then we need to explicitly
+                #     pass in the probabilities of the positive class.
+                # (b) if we are using `neg_log_loss`, then we
+                #     just pass in the full probability array
+                # (c) we compute the most likely labels from the
+                #     probabilities via argmax and use those
+                #     for the metrics
+                if (len(self.label_list) == 2 and
+                    (metric in _CORRELATION_METRICS or
+                     metric in ['average_precision', 'roc_auc'])):
+                    self.logger.info('using probabilities for the positive class to '
+                                     'compute {} for evaluation'.format(metric))
+                    yhat_for_metric = yhat_probs[:, 1]
+                elif metric == 'neg_log_loss':
+                    yhat_for_metric = yhat_probs
+                else:
+                    yhat_for_metric = yhat
 
-            # calculate grid search objective function score, if specified
-            if (metric and (metric not in _CORRELATION_METRICS or not self.probability)):
-                import ipdb
-                ipdb.set_trace()
-                try:
-                    metric_scores[metric] = use_score_func(metric, ytest, yhat)
-                except ValueError:
-                    metric_scores[metric] = float('NaN')
+            # CASE 2: no probability mode for classifier or regressor
+            # in which case we just use the predictions as they are
+            else:
+                yhat_for_metric = yhat
+
+            try:
+                metric_scores[metric] = use_score_func(metric, ytest, yhat_for_metric)
+            except ValueError:
+                metric_scores[metric] = float('NaN')
 
         # now separate out the grid objective score from the additional metric scores
         # if a grid objective was actually passed in. If no objective was passed in
