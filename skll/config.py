@@ -852,11 +852,13 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                 output_metrics = [metric for metric in output_metrics
                                   if metric not in common_metrics_and_objectives]
 
-    # if the grid objectives contains `neg_log_loss`, then probability
-    # must be specified as true since that's needed to compute the loss
-    if 'neg_log_loss' in grid_objectives and not probability:
-        raise ValueError("The 'probability' option must be true in order "
-                         "to use `neg_log_loss` as the objective.")
+    # if any of the objectives or metrics require probabilities to be output,
+    # probability must be specified as true
+    specified_probabilistic_metrics = _PROBABILISTIC_METRICS.intersection(grid_objectives + output_metrics)
+    if specified_probabilistic_metrics and not probability:
+        raise ValueError("The 'probability' option must be 'true' "
+                         " to compute the following: "
+                         "{}.".format(specified_probabilistic_metrics))
 
     # set the folds appropriately based on the task:
     #  (a) if the task is `train`/`evaluate`/`predict` and if an external
