@@ -232,9 +232,14 @@ def kendall_tau(y_true, y_pred):
     ret_score : float
         Kendall's tau if well-defined, else 0.0
     """
+    # convert to numpy array in case we are passed a list
+    y_pred = np.array(y_pred)
+
+    # multi-dimensional -> probability array -> get label
     if y_pred.ndim > 1:
         labels = np.argmax(y_pred, axis=1)
         ret_score = kendalltau(y_true, labels)[0]
+    # 1-dimensional -> probabilities/labels -> use as is
     else:
         ret_score = kendalltau(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -264,9 +269,14 @@ def spearman(y_true, y_pred):
     ret_score : float
         Spearman's rank correlation coefficient if well-defined, else 0.0
     """
+    # convert to numpy array in case we are passed a list
+    y_pred = np.array(y_pred)
+
+    # multi-dimensional -> probability array -> get label
     if y_pred.ndim > 1:
         labels = np.argmax(y_pred, axis=1)
         ret_score = spearmanr(y_true, labels)[0]
+    # 1-dimensional -> probabilities/labels -> use as is
     else:
         ret_score = spearmanr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
@@ -295,9 +305,15 @@ def pearson(y_true, y_pred):
     ret_score : float
         Pearson product-moment correlation coefficient if well-defined, else 0.0
     """
+
+    # convert to numpy array in case we are passed a list
+    y_pred = np.array(y_pred)
+
+    # multi-dimensional -> probability array -> get label
     if y_pred.ndim > 1:
         labels = np.argmax(y_pred, axis=1)
         ret_score = pearsonr(y_true, labels)[0]
+    # 1-dimensional -> probabilities/labels -> use as is
     else:
         ret_score = pearsonr(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
