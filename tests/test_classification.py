@@ -840,7 +840,7 @@ def test_invalid_classification_grid_objective():
             yield check_invalid_classification_grid_objective, learner, train_fs, metric
 
 
-# @raises(ValueError)
+@raises(ValueError)
 def check_invalid_classification_metric(learner,
                                         train_fs,
                                         test_fs,
