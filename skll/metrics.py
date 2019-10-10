@@ -13,7 +13,6 @@ import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn.metrics import (confusion_matrix,
                              f1_score,
-                             make_scorer,
                              SCORERS)
 
 
@@ -37,6 +36,10 @@ _CLASSIFICATION_ONLY_METRICS = set(['accuracy',
                                     'neg_log_loss',
                                     'precision',
                                     'recall',
+                                    'roc_auc'])
+
+_PROBABILISTIC_METRICS = frozenset(['average_precision',
+                                    'neg_log_loss',
                                     'roc_auc'])
 
 _UNWEIGHTED_KAPPA_METRICS = set(['unweighted_kappa', 'uwk_off_by_one'])
