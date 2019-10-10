@@ -1883,7 +1883,9 @@ class Learner(object):
             res = (None, None, result_dict, self._model.get_params(), objective_score,
                    additional_scores)
         else:
-            # compute the confusion matrix
+            # compute the confusion matrix and precision/recall/f1
+            # note that we are using the labels indices here
+            # and not the actual class labels themselves
             num_labels = len(train_and_test_label_dict)
             conf_mat = confusion_matrix(ytest, yhat,
                                         labels=list(range(num_labels)))
@@ -1922,7 +1924,9 @@ class Learner(object):
             Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
         class_labels : bool, optional
-            For classifier, should we convert class indices to their (str) labels?
+            For classifier, should we convert class indices to their (str) labels
+            for the returned array? Note that class labels are always written out
+            to disk.
             Defaults to ``False``.
 
         Returns
