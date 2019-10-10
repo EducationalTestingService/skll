@@ -365,6 +365,69 @@ def _train_and_score(learner,
     return train_score, test_score
 
 
+def _get_acceptable_metrics(label_type, estimator_type):
+    """
+    Return the set of metrics that are acceptable given the
+    prediction scenario as defined by the estimator type
+    and the data type of the labels that we are predicting.
+
+    Parameters
+    ----------
+    label_type : type
+        data type of the labels that we are predicting
+    estimator_type : str, optional
+        Whether the estimator is a regressor or a classifier.
+        Acceptable values are ``regressor`` and ``classifier``.
+
+    Returns
+    -------
+    acceptable_metrics : set
+        A set of metric names that are acceptable
+        for the given scenario.
+    """
+
+    acceptable_metrics = set()
+
+    if estimator_type == 'regressor':
+        acceptable_metrics.update(_REGRESSION_ONLY_METRICS,
+                                  _UNWEIGHTED_KAPPA_METRICS,
+                                  _WEIGHTED_KAPPA_METRICS,
+                                  _CORRELATION_METRICS)
+
+    elif estimator_type == 'classifier':
+
+        # this is a classifier so the acceptable objective
+        # functions definitely include those metrics that
+        # are specifically for classification
+        acceptable_metrics.update(_CLASSIFICATION_ONLY_METRICS)
+
+        # now let us consider which other metrics may also
+        # be acceptable depending one whether we have string
+        # or binary labels.
+
+        # CASE 1: labels are strings, then no other metrics
+        # are acceptable.
+        # TODO: unweighted kappas may be allowed here in the futer
+        # if we fix SKLL's kappa implementation to work with strings
+        if (issubclass(label_type, np.object_) or
+                issubclass(label_type, str)):
+            pass
+
+        # CASE 2: labels are integers; this is the case that
+        # includes ordinal classification, so we can allow
+        # all kappas and correlation metrics too
+        elif (issubclass(label_type, np.int64) or
+                issubclass(label_type, int)):
+            acceptable_metrics.update(_CORRELATION_METRICS,
+                                      _UNWEIGHTED_KAPPA_METRICS,
+                                      _WEIGHTED_KAPPA_METRICS)
+    else:
+        raise ValueError("Cannot infer acceptable metrics for "
+                         "invalid estimator type: {}".format(estimator_type))
+
+    return acceptable_metrics
+
+
 class SelectByMinCount(SelectKBest):
 
     """
