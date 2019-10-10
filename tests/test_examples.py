@@ -99,7 +99,7 @@ def test_boston_configs():
 
 def test_iris_configs():
     """
-    Run all of the configuration files for the boston example
+    Run all of the configuration files for the iris example
     """
     for config_path in glob(join(_new_iris_dir, 'iris', '*.cfg')):
         run_configuration(config_path, quiet=True)
