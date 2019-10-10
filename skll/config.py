@@ -20,15 +20,27 @@ import configparser
 import numpy as np
 import ruamel.yaml as yaml
 
-from skll import get_skll_logger
 from sklearn.metrics import SCORERS
 
-_VALID_TASKS = frozenset(['predict', 'train', 'evaluate',
-                          'cross_validate', 'learning_curve'])
-_VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
-                             'AdditiveChi2Sampler', ''])
-_VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
-                                            'none'])
+from skll import get_skll_logger
+from skll.metrics import _PROBABILISTIC_METRICS
+
+_VALID_TASKS = frozenset(['cross_validate',
+                          'evaluate',
+                          'learning_curve',
+                          'predict',
+                          'train'])
+
+_VALID_SAMPLERS = frozenset(['Nystroem',
+                             'RBFSampler',
+                             'SkewedChi2Sampler',
+                             'AdditiveChi2Sampler',
+                             ''])
+
+_VALID_FEATURE_SCALING_OPTIONS = frozenset(['both',
+                                            'none',
+                                            'with_std',
+                                            'with_mean'])
 
 
 class SKLLConfigParser(configparser.ConfigParser):
