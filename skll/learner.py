@@ -1841,7 +1841,7 @@ class Learner(object):
                 #     just pass in the full probability array
                 # (c) we compute the most likely labels from the
                 #     probabilities via argmax and use those
-                #     for the metrics
+                #     for all other metrics
                 if (len(self.label_list) == 2 and
                     (metric in _CORRELATION_METRICS or
                      metric in ['average_precision', 'roc_auc'])):
