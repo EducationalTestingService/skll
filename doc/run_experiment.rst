@@ -52,55 +52,12 @@ A simple comma or tab-delimited format with the following restrictions:
 
 *   If the data is labelled, there must be a column with the name
     specified by :ref:`label_col <label_col>` in the :ref:`Input` section of the
-    configuration file you create for your experiment. This defaults to
+    configuartion file you create for your experiment. This defaults to
     ``y``.
 *   If the data has instance IDs, there should be a column with the name
     specified by :ref:`id_col <id_col>` in the :ref:`Input` section of the configuration file you create for your experiment. This defaults to ``id``.  If there is no such column, IDs will be generated automatically.
 *   All other columns contain feature values, and every feature value
-    must be specified (making this a poor choice for sparse data). 
-    
-.. warning:: 
- 
-    1. SKLL will raise an error if there are blank values in **any** of the
-       columns. You must either drop all rows with blank values in any column
-       or replace the blanks with a value you specify. To drop or replace via
-       the command line, use the :ref:`filter_features <filter_features>` script.
-       You can also drop/replace via the SKLL Reader API, specifically :py:mod:`skll.data.readers.CSVReader` and :py:mod:`skll.data.readers.TSVReader`.
-
-    2. Dropping blanks will drop **all** rows with blanks in **any** of
-       the columns. If you care only about **some** of the columns in the file
-       and do not want to rows to be dropped due to blanks in the other columns,
-       you should remove the columns you do not care about before dropping the
-       blanks. For example, consider a hypothetical file ``in.csv`` that contains
-       feature columns named ``A`` through ``G`` with the IDs stored in a column
-       named ``ID`` and the labels stored in a column named ``CLASS``. You only
-       care about columns ``A``, ``C``, and ``F`` and want to drop all rows in
-       the file that have blanks in any of these 3 columns but **do not** want
-       to lose data due to there being blanks in any of the other columns. On
-       the command line, you can run the following two commands:
-
-        .. code-block:: bash
-
-            $ filter_features -f A C F --id_col ID --label_col class in.csv temp.csv
-            $ filter_features --id_col ID --label_col CLASS --drop_blanks temp.csv out.csv
-
-       If you are using the SKLL Reader API, you can accomplish the same in a
-       single step by also passing using the keyword argument ``pandas_kwargs`` 
-       when instantiating either a :py:mod:`skll.data.readers.CSVReader` or a 
-       :py:mod:`skll.data.readers.TSVReader`. For our example:
-
-        .. code-block:: python
-
-            r = CSVReader.for_path('/path/to/in.csv',
-                                   label_col='CLASS',
-                                   id_col='ID',
-                                   drop_blanks=True,
-                                   pandas_kwargs={'usecols': ['A', 'C', 'F', 'ID', 'CLASS']})
-            fs = r.read()
-
-       Make sure to include the ID and label columns in the `usecols` list 
-       otherwise ``pandas`` will drop them too.
-
+    must be specified (making this a poor choice for sparse data).
 
 .. _ndj:
 
@@ -280,7 +237,7 @@ Classifiers:
     *   **MLPClassifier**: `Multi-layer Perceptron Classification <https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html#sklearn.neural_network.MLPClassifier>`__
     *   **MultinomialNB**: `Multinomial Naive Bayes Classification <https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB>`__
     *   **RandomForestClassifier**: `Random Forest Classification <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier>`__
-    *   **RidgeClassifier**: `Classification using Ridge Regression <https://scikit-learn.org/stable/moduleclears/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
+    *   **RidgeClassifier**: `Classification using Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
     *   **SGDClassifier**: `Stochastic Gradient Descent Classification <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
     *   **SVC**: `Support Vector Classification using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
 
@@ -490,31 +447,31 @@ folds_file *(Optional)*
 """"""""""""""""""""""""""""""
 
 Path to a csv file specifying the mapping of instances in the training data
-to folds. This can be specified for the ``train``, ``evaluate``, ``predict``,
-and ``cross_validate`` tasks. For the  ``train``/``evaluate``/``predict`` tasks, 
-if :ref:`grid_search <grid_search>` is ``True``, this file, if specified, will be 
-used to define the cross-validation used for the grid search (leave one fold ID out 
-at a time). Otherwise, it will be ignored.
+to folds. This can be specified when the :ref:`task` is either ``train`` or
+``cross_validate``. For the ``train`` task, if :ref:`grid_search <grid_search>`
+is ``True``, this file, if specified, will be used to define the
+cross-validation used for the grid search (leave one fold ID out at a time).
+Otherwise, it will be ignored.
 
 For the ``cross_validate`` task, this file will be used to define the outer
-cross-validation loop and also for the inner grid-search cross-validation loop. 
-If the goal of specifiying the folds file is to ensure that the model does not 
-learn to differentiate based on a confound: e.g. the data from the same person 
-is always in the same fold, it makes sense to keep the same folds for both the 
-outer and the inner cross-validation loops.
+cross-validation loop and, if :ref:`grid_search <grid_search>` is ``True``, also for the
+inner grid-search cross-validation loop. If the goal of specifiying the folds
+file is to ensure that the model does not learn to differentiate based on a confound:
+e.g. the data from the same person is always in the same fold, it makes sense to
+keep the same folds for both the outer and the inner cross-validation loops.
 
-However, sometimes the goal of specifying the folds file is simply to
-compare to another existing experiment or in another context where 
-maintaining the constitution of the folds in the inner
-grid-search loop is not required. In this case, users may set the option
+However, sometimes the goal of specifying the folds file is simply for the
+purpose of comparison to another existing experiment or another context
+in which maintaining the constitution of the folds in the inner
+grid-search loop is not required. In this case, users may set the parameter
 :ref:`use_folds_file_for_grid_search <use_folds_file_for_grid_search>`
-in the configuration file to ``False`` which will then direct the inner 
-grid-search cross-validation loop to simply use the number specified via 
-:ref:`grid_search_folds <grid_search_folds>` instead of using the folds file. 
-This can also likely lead to shorter execution times depending on how many
-folds are in the folds file and the value of :ref:`grid_search_folds <grid_search_folds>`.
+to ``False`` which will then direct the inner grid-search cross-validation loop
+to simply use the number specified via :ref:`grid_search_folds <grid_search_folds>`
+instead of using the folds file. This will likely lead to shorter execution times as
+well depending on how many folds are in the folds file and the value
+of :ref:`grid_search_folds <grid_search_folds>`.
 
-The format of this file should be as follows: the first row must be a header.
+The format of this file must be as follows: the first row must be a header.
 This header row is ignored, so it doesn't matter what the header row contains,
 but it must be there. If there is no header row, whatever row is in its place
 will be ignored. The first column should consist of training set IDs and the
@@ -845,15 +802,16 @@ to be included in the model. Defaults to 1.
 objectives *(Optional)*
 """""""""""""""""""""""
 
-The objective functions to use for tuning. This is a list of one or more objective functions. Valid options are:
+A list of one or more metrics to use as objective functions for tuning the learner
+hyperparameters. Available metrics are:
 
 .. _classification_obj:
 
-Classification:
+    **Classification:** The following objectives can be used for classification problems although some are restricted by problem type (binary/multiclass) and label type (integer/string). Please read carefully.
 
-    *   **accuracy**: Overall `accuracy <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__
-    *   **precision**: `Precision <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`__
-    *   **recall**: `Recall <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`__
+    *   **accuracy**: Overall `accuracy <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__ 
+    *   **average_precision**: `Area under PR curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__ . To use this metric, :ref:`probability <probability>` must be set to ``True``. (*Binary classification only*).
+    *   **balanced_accuracy**: A version of accuracy `specifically designed <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html#sklearn.metrics.balanced_accuracy_score>`__ for imbalanced binary and multi-class scenarios.
     *   **f1**: The default scikit-learn |F1 link|_
         (F\ :sub:`1` of the positive class for binary classification, or the weighted average F\ :sub:`1` for multiclass classification)
     *   **f1_score_micro**: Micro-averaged |F1 link|_
@@ -862,54 +820,48 @@ Classification:
     *   **f1_score_least_frequent**: F:\ :sub:`1` score of the least frequent
         class. The least frequent class may vary from fold to fold for certain
         data distributions.
-    * **neg_log_loss**: The negative of the classification `log loss <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this as the objective, :ref:`probability <probability>` must be set to ``True``.
-    *   **average_precision**: `Area under PR curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
-        (for binary classification)
-    *   **roc_auc**: `Area under ROC curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__
-        (for binary classification)
+    *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__ . When using this metric with ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. (*Integer labels only*).
+    *   **linear_weighted_kappa**: `Linear weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Integer labels only*).
+    *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
+        ranking differences are discounted by one. (*Integer labels only*).
+    *   **neg_log_loss**: The negative of the classification `log loss <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this metric, :ref:`probability <probability>` must be set to ``True``.
+    *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__ . When using this metric with ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. (*Integer labels only*). 
+    *   **precision**: `Precision <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`__
+    *   **quadratic_weighted_kappa**: `Quadratic weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Integer labels only*). 
+    *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
+        ranking differences are discounted by one. (*Integer labels only*). 
+    *   **recall**: `Recall <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`__
+    *   **roc_auc**: `Area under ROC curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__ .To use this metric, :ref:`probability <probability>` must be set to ``True``. (*Binary classification only*).
+    *   **spearman**: `Spearman rank-correlation <https://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__. When using this metric with ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. (*Integer labels only*).
+    *   **unweighted_kappa**: Unweighted `Cohen's kappa <https://en.wikipedia.org/wiki/Cohen's_kappa>`__. (*Integer labels only*). 
+    *   **uwk_off_by_one**: Same as ``unweighted_kappa``, but all ranking
+        differences are discounted by one. In other words, a ranking of
+        1 and a ranking of 2 would be considered equal. (*Integer labels only*). 
 
 .. |F1 link| replace:: F\ :sub:`1` score
 .. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 
-.. _int_label_classification_obj:
+    **Regression:** The following objectives can be used for regression problems. 
 
-Regression or classification with integer labels:
-
-    *   **unweighted_kappa**: Unweighted `Cohen's kappa <https://en.wikipedia.org/wiki/Cohen's_kappa>`__ (any floating point
-        values are rounded to ints)
-    *   **linear_weighted_kappa**: Linear weighted kappa (any floating
-        point values are rounded to ints)
-    *   **quadratic_weighted_kappa**: Quadratic weighted kappa (any
-        floating point values are rounded to ints)
+    *   **explained_variance**: A `score <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.explained_variance_score.html#sklearn.metrics.explained_variance_score>`__ indicating how much of the variance in the given data can be by the model.
+    *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__ 
+    *   **linear_weighted_kappa**: Linear weighted kappa (any floating point values are rounded to ints)
+    *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
+        ranking differences are discounted by one.
+    *   **max_error**: The `maximum residual error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.max_error.html#sklearn.metrics.max_error>`__.
+    *   **neg_mean_absolute_error**: The negative of the `mean absolute error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_absolute_error.html#sklearn.metrics.mean_absolute_error>`__ regression loss. Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
+    *   **neg_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
+    *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__
+    *   **quadratic_weighted_kappa**: Quadratic weighted kappa (any floating point values are rounded to ints)
+    *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
+        ranking differences are discounted by one.
+    *   **r2**: `R2 <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
+    *   **spearman**: `Spearman rank-correlation <https://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__
+    *   **unweighted_kappa**: Unweighted `Cohen's kappa <https://en.wikipedia.org/wiki/Cohen's_kappa>`__ (any floating point values are rounded to ints)
     *   **uwk_off_by_one**: Same as ``unweighted_kappa``, but all ranking
         differences are discounted by one. In other words, a ranking of
         1 and a ranking of 2 would be considered equal.
-    *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
-        ranking differences are discounted by one.
-    *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
-        ranking differences are discounted by one.
-
-.. _binary_label_classification_obj:
-
-Regression or classification with binary labels:
-
-    *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__
-    *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__
-    *   **spearman**: `Spearman rank-correlation <https://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__
-
-.. _regression_obj:
-
-Regression:
-
-    *   **r2**: `R2 <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html>`__
-    *   **neg_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
-
-
-Defaults to ``['f1_score_micro']``.
-
-.. note::
-    1. Using ``objective=x`` instead of ``objectives=['x']`` is also acceptable, for backward-compatibility.
-    2. Also see the :ref:`metrics <metrics>` option below.
+    
 
 .. _param_grids:
 
@@ -1190,21 +1142,6 @@ save_cv_folds *(Optional)*
 Whether to save the folds that were used for a cross-validation experiment
 to a CSV file named ``EXPERIMENT_skll_fold_ids.csv`` in the :ref:`results`
 directory, where ``EXPERIMENT`` refers to the :ref:`experiment_name`.
-Defaults to ``False``.
-
-.. _run_experiment:
-
-save_cv_models *(Optional)*
-"""""""""""""""""""""""""""
-
-Whether to save the fold models that were generated during the
-cross-validation experiment to the :ref:`models` directory. Beware that using
-this option will result in an increase of RAM usage since the fold models will
-need to be kept in memory during execution. The eventual saving of fold models
-to disk is also a considersation in terms of disk space. Furthermore, if using
-a grid engine, transferring lots of large model objects over a network could
-also be problematic. Only set this option to ``True`` if you understand the
-implications.
 Defaults to ``False``.
 
 .. _run_experiment:
