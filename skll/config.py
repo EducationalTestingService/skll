@@ -858,7 +858,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     if specified_probabilistic_metrics and not probability:
         raise ValueError("The 'probability' option must be 'true' "
                          " to compute the following: "
-                         "{}.".format(specified_probabilistic_metrics))
+                         "{}.".format(list(specified_probabilistic_metrics)))
 
     # set the folds appropriately based on the task:
     #  (a) if the task is `train`/`evaluate`/`predict` and if an external
