@@ -337,7 +337,6 @@ def check_xval_fancy_results_file(do_grid_search,
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
                            'predictions': output_dir,
-                           'probability': 'true',
                            'results': output_dir}
 
     folds_file_path = join(_my_dir, 'train', 'folds_file_test.csv')
@@ -347,7 +346,7 @@ def check_xval_fancy_results_file(do_grid_search,
     values_to_fill_dict['use_folds_file_for_grid_search'] = str(use_folds_file_for_grid_search)
 
     if use_additional_metrics:
-        values_to_fill_dict['metrics'] = str(["accuracy", "roc_auc"])
+        values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
 
     config_template_path = join(_my_dir,
                                 'configs',
@@ -355,8 +354,7 @@ def check_xval_fancy_results_file(do_grid_search,
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
-                                         'xval',
-                                         good_probability_option=True)
+                                         'xval')
 
     # run the experiment
     run_configuration(config_path, quiet=True)
@@ -404,7 +402,7 @@ def check_xval_fancy_results_file(do_grid_search,
             eq_(results_dict['Grid Search Folds'], '4')
 
     if use_additional_metrics:
-        expected_metrics = ["accuracy", "roc_auc"]
+        expected_metrics = ["accuracy", "unweighted_kappa"]
 
         eq_(sorted(literal_eval(results_dict['Additional Evaluation Metrics'])),
             sorted(expected_metrics))
