@@ -251,6 +251,44 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
             yield train_index, test_index
 
 
+def _contiguous_ints_or_floats(numbers):
+    """
+    Summary
+
+    Parameters
+    ----------
+    numbers : array-like of ints or floats
+        The numbers we want to check.
+
+    Returns
+    -------
+    answer : bool
+        True if the numbers are contiguous integers
+        or contiguous integer-like floats (1.0, 2.0, etc.)
+
+    Raises
+    ------
+    TypeError
+        If ``numbers`` does not contain integers or floating
+        point values.
+    """
+
+    try:
+        # first check that the numbers are all integers
+        # or integer-like floats (e.g., 1.0, 2.0 etc.)
+        ints_or_int_like_floats = np.all(np.mod(numbers, 1) == 0)
+
+        # next check that the successive differences between
+        # the numbers are all 1, i.e., they are nuermicontiguous
+        contiguous = np.all(np.diff(numbers) == 1)
+
+    except TypeError:
+        raise TypeError('Input should only contain numbers.')
+
+    # we need both comditions to be true
+    return ints_or_int_like_floats and contiguous
+
+
 def _find_default_param_grid(cls):
     """
     Finds the default parameter grid for the specified classifier.
