@@ -42,7 +42,8 @@ _PROBABILISTIC_METRICS = frozenset(['average_precision',
                                     'neg_log_loss',
                                     'roc_auc'])
 
-_UNWEIGHTED_KAPPA_METRICS = set(['unweighted_kappa', 'uwk_off_by_one'])
+_UNWEIGHTED_KAPPA_METRICS = set(['unweighted_kappa',
+                                 'uwk_off_by_one'])
 
 _WEIGHTED_KAPPA_METRICS = set(['linear_weighted_kappa',
                                'lwk_off_by_one',
