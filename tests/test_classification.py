@@ -20,7 +20,7 @@ from itertools import product
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import assert_almost_equal, eq_, raises
+from nose.tools import assert_almost_equal, assert_raises, eq_, raises, set_trace
 from numpy.testing import assert_array_equal
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
@@ -39,6 +39,7 @@ from skll.data import FeatureSet, NDJReader, NDJWriter
 from skll.learner import (_DEFAULT_PARAM_GRIDS,
                           FilteredLeaveOneGroupOut,
                           Learner,
+                          _contiguous_ints_or_floats,
                           _train_and_score)
 from skll.metrics import (_CORRELATION_METRICS,
                           _PROBABILISTIC_METRICS,
@@ -91,7 +92,7 @@ def tearDown():
     for output_file in glob(join(output_dir, 'train_test_single_file_*')):
         os.unlink(output_file)
 
-    for output_file in glob(join(output_dir, 'clf_*_metric_LogisticRegression*')):
+    for output_file in glob(join(output_dir, 'clf_metric_value_*')):
         os.unlink(output_file)
 
     config_files = [join(config_dir,
@@ -103,6 +104,58 @@ def tearDown():
     for config_file in config_files:
         if exists(config_file):
             os.unlink(config_file)
+
+
+def test_contiguous_int_or_float_labels():
+    """
+    Test that we can accurately detect contiguous int/float labels
+    """
+    eq_(_contiguous_ints_or_floats([1, 2, 3, 4]), True)
+    eq_(_contiguous_ints_or_floats([0, 1]), True)
+    eq_(_contiguous_ints_or_floats([1.0, 2.0]), True)
+    eq_(_contiguous_ints_or_floats([0, 1.0]), True)
+    eq_(_contiguous_ints_or_floats([-2, -1, 0, 1, 2]), True)
+    eq_(_contiguous_ints_or_floats([1.0, 2.0, 3.0, 4.0]), True)
+    eq_(_contiguous_ints_or_floats([4, 5, 6]), True)
+    eq_(_contiguous_ints_or_floats([1, 2, 3, 4.0]), True)
+    eq_(_contiguous_ints_or_floats([-1, 1]), False)
+    eq_(_contiguous_ints_or_floats([2, 4, 6]), False)
+    eq_(_contiguous_ints_or_floats([3, 6, 11]), False)
+    eq_(_contiguous_ints_or_floats([-2.0, -1.0, 1.0, 2.0]), False)
+    eq_(_contiguous_ints_or_floats([1.0, 1.1, 1.2]), False)
+    assert_raises(TypeError, _contiguous_ints_or_floats, ['a', 'b', 'c'])
+    assert_raises(TypeError, _contiguous_ints_or_floats, np.array([1, 2, 3, 'a']))
+
+
+def test_label_index_order():
+    """
+    Test that label indices are created after first sorting the labels
+    """
+    train_fs, _ = make_classification_data()
+    prng = np.random.RandomState(123456789)
+    for (unique_label_list,
+         correct_order) in zip([['B', 'C', 'A'],
+                                [3, 1, 2],
+                                [1.0, 2.5, 1.4],
+                                [4, 5, 6],
+                                [1.0, 3.0, 2.0, 4.0],
+                                [1, 2, 3, 4.0]],
+                               [['A', 'B', 'C'],
+                                [1, 2, 3],
+                                [1.0, 1.4, 2.5],
+                                [4, 5, 6],
+                                [1.0, 2.0, 3.0, 4.0],
+                                [1.0, 2.0, 3.0, 4.0]]):
+        labels = prng.choice(unique_label_list, size=len(train_fs))
+        train_fs.labels = labels
+
+        clf = Learner('LogisticRegression')
+        clf.train(train_fs, grid_search=False)
+        reverse_label_dict = {y: x for x, y in clf.label_dict.items()}
+        label_order_from_dict = [reverse_label_dict[x] for x in range(len(unique_label_list))]
+
+        eq_(clf.label_list, correct_order)
+        eq_(label_order_from_dict, correct_order)
 
 
 def check_predict(model, use_feature_hashing=False):
@@ -807,48 +860,70 @@ def test_sampling_for_multinomialNB():
 
 
 @raises(ValueError)
-def check_invalid_classification_grid_objective(learner, fs, grid_objective):
+def check_invalid_classification_grid_objective(learner, grid_objective, label_array):
     """
     Checks that an invalid classification objective raises an exception
     """
+
+    # initialize a random number generator
+    prng = np.random.RandomState(123456789)
+
+    # make a feature set
+    train_fs, _ = make_classification_data()
+
+    # generate the labels by randomly sampling repeatedly from
+    # the given label array
+    train_fs.labels = prng.choice(label_array, size=len(train_fs))
+
     clf = Learner(learner)
-    clf.train(fs, grid_objective=grid_objective)
+    clf.train(train_fs, grid_objective=grid_objective)
 
 
 def test_invalid_classification_grid_objective():
+
     for (learner,
-         num_labels,
-         label_type) in product(['AdaBoostClassifier', 'DecisionTreeClassifier',
-                                 'GradientBoostingClassifier', 'KNeighborsClassifier',
-                                 'MLPClassifier', 'MultinomialNB',
-                                 'RandomForestClassifier', 'LogisticRegression',
-                                 'LinearSVC', 'SVC', 'SGDClassifier'],
-                                [2, 4],
-                                ['string', 'integer']):
+         (label_array,
+          bad_objectives)) in product(['AdaBoostClassifier', 'DecisionTreeClassifier',
+                                       'GradientBoostingClassifier', 'KNeighborsClassifier',
+                                       'MLPClassifier', 'MultinomialNB',
+                                       'RandomForestClassifier', 'LogisticRegression',
+                                       'LinearSVC', 'SVC', 'SGDClassifier'],
+                                      zip([np.array(['A', 'B', 'C']),
+                                           np.array([2, 4, 6]),
+                                           np.array(['yes', 'no']),
+                                           np.array([1, 2, 4.0]),
+                                           np.array(['A', 'B', 1, 2])],
+                                          [_CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS])):
 
-        bad_objectives = set(_REGRESSION_ONLY_METRICS)
-        if label_type == 'string':
-            bad_objectives.update(_CORRELATION_METRICS,
-                                  _UNWEIGHTED_KAPPA_METRICS,
-                                  _WEIGHTED_KAPPA_METRICS)
-
-        string_label_list = ['yes', 'no'] if num_labels == 2 else ['A', 'B', 'C', 'D']
-
-        train_fs, _ = make_classification_data(num_labels=num_labels,
-                                               string_label_list=string_label_list)
+        # check each bad objective
         for metric in bad_objectives:
-            yield check_invalid_classification_grid_objective, learner, train_fs, metric
+            yield check_invalid_classification_grid_objective, learner, metric, label_array
 
 
 @raises(ValueError)
 def check_invalid_classification_metric(learner,
-                                        train_fs,
-                                        test_fs,
                                         metric,
+                                        label_array,
                                         by_itself=True):
     """
     Checks that an invalid classification metric raises an exception
     """
+    # initialize a random number generator
+    prng = np.random.RandomState(123456789)
+
+    # make a feature set
+    train_fs, test_fs = make_classification_data()
+
+    # generate the labels for the two sets by randomly sampling
+    # repeatedly from the given label array
+    train_fs.labels = prng.choice(label_array, size=len(train_fs))
+    test_fs.labels = prng.choice(label_array, size=len(test_fs))
+
+    # instantiate a learner
     clf = Learner(learner)
     clf.train(train_fs, grid_search=False)
     output_metrics = [metric] if by_itself else ['accuracy', metric]
@@ -857,55 +932,44 @@ def check_invalid_classification_metric(learner,
 
 def test_invalid_classification_metric():
     for (learner,
-         num_labels,
-         label_type) in product(['AdaBoostClassifier', 'DecisionTreeClassifier',
-                                 'GradientBoostingClassifier', 'KNeighborsClassifier',
-                                 'MLPClassifier', 'MultinomialNB',
-                                 'RandomForestClassifier', 'LogisticRegression',
-                                 'LinearSVC', 'SVC', 'SGDClassifier'],
-                                [2, 4],
-                                ['integer', 'string']):
+         (label_array,
+          bad_objectives)) in product(['AdaBoostClassifier', 'DecisionTreeClassifier',
+                                       'GradientBoostingClassifier', 'KNeighborsClassifier',
+                                       'MLPClassifier', 'MultinomialNB',
+                                       'RandomForestClassifier', 'LogisticRegression',
+                                       'LinearSVC', 'SVC', 'SGDClassifier'],
+                                      zip([np.array(['A', 'B', 'C']),
+                                           np.array([2, 4, 6]),
+                                           np.array(['yes', 'no']),
+                                           np.array([1, 2, 4.0]),
+                                           np.array(['A', 'B', 1, 2])],
+                                          [_CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS])):
 
-        bad_objectives = set(_REGRESSION_ONLY_METRICS)
-        if label_type == 'string':
-            bad_objectives.update(_CORRELATION_METRICS,
-                                  _UNWEIGHTED_KAPPA_METRICS,
-                                  _WEIGHTED_KAPPA_METRICS, )
-
-        string_label_list = ['yes', 'no'] if num_labels == 2 else ['A', 'B', 'C', 'D']
-
-        train_fs, test_fs = make_classification_data(num_labels=num_labels,
-                                                     string_label_list=string_label_list)
+        # check each bad objective
         for metric in bad_objectives:
-            yield (check_invalid_classification_metric,
-                   learner,
-                   train_fs,
-                   test_fs,
-                   metric,
-                   True)
-            yield (check_invalid_classification_metric,
-                   learner,
-                   train_fs,
-                   test_fs,
-                   metric,
-                   False)
+            yield check_invalid_classification_metric, learner, metric, label_array, True
+            yield check_invalid_classification_metric, learner, metric, label_array, False
 
 
 def check_objective_values_for_classification(metric_name,
-                                              num_labels,
-                                              label_type,
+                                              label_array,
                                               use_probabilities):
 
-    # make up a list of string labels
-    if label_type == 'string':
-        string_label_list = ['yes', 'no'] if num_labels == 2 else ['A', 'B', 'C', 'D']
-    else:
-        string_label_list = None
+    # instantiate a random number generator
+    prng = np.random.RandomState(123456789)
 
     # create our training set
-    train_fs, _ = make_classification_data(num_examples=200,
-                                           num_labels=num_labels,
-                                           string_label_list=string_label_list)
+    train_fs, _ = make_classification_data(num_examples=200)
+
+    # create our labels by repeatedly sampling from the given label array
+    train_fs.labels = prng.choice(label_array, size=len(train_fs))
+
+    # get the label type
+    label_type = train_fs.labels.dtype.type
 
     # create a dictionary of folds that assign half the IDs to one fold
     # and the other half to the second fold
@@ -999,27 +1063,27 @@ def check_objective_values_for_classification(metric_name,
             # indices rather than the class labels themselves
 
             # 1. Correlation metrics are only computed for integer
-            #    labels; they use probability values if available
-            #    only in the binary case.
+            #    or float labels; they use probability values if
+            #    available only in the binary case.
             if metric_name == 'pearson':
-                if label_type == 'integer':
-                    if num_labels == 2 and use_probabilities:
+                if issubclass(label_type, (np.int64, np.float64)):
+                    if len(label_array) == 2 and use_probabilities:
                         metric_value = pearsonr(y_fold_test_indices,
                                                 sklearn_fold_test_probs[:, 1])[0]
                     else:
                         metric_value = pearsonr(y_fold_test_indices,
                                                 sklearn_fold_test_labels)[0]
             elif metric_name == 'spearman':
-                if label_type == 'integer':
-                    if num_labels == 2 and use_probabilities:
+                if issubclass(label_type, (np.int64, np.float64)):
+                    if len(label_array) == 2 and use_probabilities:
                         metric_value = spearmanr(y_fold_test_indices,
                                                  sklearn_fold_test_probs[:, 1])[0]
                     else:
                         metric_value = spearmanr(y_fold_test_indices,
                                                  sklearn_fold_test_labels)[0]
             elif metric_name == 'kendall_tau':
-                if label_type == 'integer':
-                    if num_labels == 2 and use_probabilities:
+                if issubclass(label_type, (np.int64, np.float64)):
+                    if len(label_array) == 2 and use_probabilities:
                         metric_value = kendalltau(y_fold_test_indices,
                                                   sklearn_fold_test_probs[:, 1])[0]
                     else:
@@ -1035,25 +1099,29 @@ def check_objective_values_for_classification(metric_name,
             #    and `roc_auc` only work with positive class probabilities
             #    and only for the binary case
             elif metric_name == 'average_precision':
-                if num_labels == 2 and use_probabilities:
+                if len(label_array) == 2 and use_probabilities:
                     metric_value = average_precision_score(y_fold_test_indices,
                                                            sklearn_fold_test_probs[:, 1])
             elif metric_name == 'roc_auc':
-                if num_labels == 2 and use_probabilities:
+                if len(label_array) == 2 and use_probabilities:
                     metric_value = roc_auc_score(y_fold_test_indices,
                                                  sklearn_fold_test_probs[:, 1])
 
-            # 4. Accuracy should work no matter what and use the labels
+            # 4. Accuracy and unweighted kappas should work no matter what
+            #    and use the labels; kappas are not in scikit-learn so
+            #    we have to use the SKLL implementation
             elif metric_name == 'accuracy':
                 metric_value = accuracy_score(y_fold_test_indices,
                                               sklearn_fold_test_labels)
+            elif metric_name in _UNWEIGHTED_KAPPA_METRICS:
+                metric_value = use_score_func(metric_name,
+                                              y_fold_test_indices,
+                                              sklearn_fold_test_labels)
 
-            # 5. The only ones left are the kapps and they are not in sklearn
-            #    so we are forced to use the SKLL implementations; both types
-            #    require integer labels
-            elif (metric_name in _UNWEIGHTED_KAPPA_METRICS or
-                  metric_name in _WEIGHTED_KAPPA_METRICS):
-                if label_type == 'integer':
+            # 5. The only ones left are the weighted kapps;
+            #    these require contiguous ints or floats
+            elif metric_name in _WEIGHTED_KAPPA_METRICS:
+                if _contiguous_ints_or_floats(label_array):
                     metric_value = use_score_func(metric_name,
                                                   y_fold_test_indices,
                                                   sklearn_fold_test_labels)
@@ -1079,10 +1147,9 @@ def test_objective_values_for_classification():
     #    labels.
     # 2. Correlation metrics: pearson, spearman, and kendall_tau. We want to test
     #    that they work as expected for {binary, multi-class} x {probabilities, no
-    #    probabilities}. Only work for integer labels.
-    # 3. Unweighted kappa metrics. Work for both int and string labels
-    # 4. Weighted kappa metrics. Work for only int labels.
-    # 5. Regular metrics: accuracy. Want to test for {probabilities, no
+    #    probabilities}. Only work for integer/float labels.
+    # 3. Weighted kappa metrics. Work for only int labels.
+    # 4. Accuracy and unweighted kappa metrics. Want to test for {probabilities, no
     #    probabilities}. Works for both int and string labels.
 
     # Here's how the test works:
@@ -1114,24 +1181,38 @@ def test_objective_values_for_classification():
     metrics_to_test = sorted(metrics_to_test)
 
     for (metric,
-         num_labels,
-         label_type,
+         label_array,
          use_probabilities) in product(metrics_to_test,
-                                       [2, 4],
-                                       ['integer', 'string'],
+                                       [np.array([1, 2, 3]),
+                                        np.array(['A', 'B', 'C']),
+                                        np.array([-2, -1, 0, 1, 2]),
+                                        np.array([2, 4, 6]),
+                                        np.array([0, 1]),
+                                        np.array([-1, 1]),
+                                        np.array(['yes', 'no']),
+                                        np.array([1.0, 2.0]),
+                                        np.array([-1.0, 1]),
+                                        np.array([1.0, 1.1, 1.2]),
+                                        np.array([3, 5, 10]),
+                                        np.array([1.0, 2.0, 3.0]),
+                                        np.array([1, 2, 3, 4.0]),
+                                        np.array([4, 5, 6]),
+                                        np.array(['A', 'B', 'C', 1, 2, 3])],
                                        [True, False]):
 
         # skip following configurations that would raise an exception
         # during grid search either from SKLL or from sklearn:
         # (a) average_precision/roc_auc and non-binary classification
-        # (b) kappa/correlation metrics and non-integer labels
-        # (c) probabilistic metrics and no probabilities
+        # (b) correlation/weighted kappa metrics and non-integer labels
+        # (c) weighted kappa metrics and non-contiguous integer/float labels
+        # (d) probabilistic metrics and no probabilities
         skipped_conditions = ((metric in ['average_precision', 'roc_auc'] and
-                               num_labels != 2) or
-                              ((metric in _UNWEIGHTED_KAPPA_METRICS or
-                                metric in _WEIGHTED_KAPPA_METRICS or
+                               len(label_array) != 2) or
+                              ((metric in _WEIGHTED_KAPPA_METRICS or
                                 metric in _CORRELATION_METRICS) and
-                               label_type == 'string') or
+                               issubclass(label_array.dtype.type, str)) or
+                              (metric in _WEIGHTED_KAPPA_METRICS and
+                               not _contiguous_ints_or_floats(label_array)) or
                               (metric in _PROBABILISTIC_METRICS and
                                not use_probabilities))
         if skipped_conditions:
@@ -1139,14 +1220,12 @@ def test_objective_values_for_classification():
         else:
             yield (check_objective_values_for_classification,
                    metric,
-                   num_labels,
-                   label_type,
+                   label_array,
                    use_probabilities)
 
 
 def check_metric_values_for_classification(metric_name,
-                                           num_labels,
-                                           label_type,
+                                           label_array,
                                            use_probabilities):
 
     # define some dictionaries
@@ -1158,16 +1237,18 @@ def check_metric_values_for_classification(metric_name,
                                 'configs',
                                 'test_metric_values_for_classification.template.cfg')
 
-    # make up a list of string labels
-    if label_type == 'string':
-        string_label_list = ['yes', 'no'] if num_labels == 2 else ['A', 'B', 'C', 'D']
-    else:
-        string_label_list = None
+    # instantiate a random number generator
+    prng = np.random.RandomState(123456789)
 
     # create our training and test sets
-    train_fs, test_fs = make_classification_data(num_examples=200,
-                                                 num_labels=num_labels,
-                                                 string_label_list=string_label_list)
+    train_fs, test_fs = make_classification_data(num_examples=200)
+
+    # create the labels by repeatedly sampling from the given label array
+    train_fs.labels = prng.choice(label_array, size=len(train_fs))
+    test_fs.labels = prng.choice(label_array, size=len(test_fs))
+
+    # get the label type of the test set
+    label_type = test_fs.labels.dtype.type
 
     # write out the train and test sets to disk so that we can use them
     # when we run the configuration file
@@ -1176,10 +1257,10 @@ def check_metric_values_for_classification(metric_name,
     NDJWriter.for_path(train_file, train_fs).write()
     NDJWriter.for_path(test_file, test_fs).write()
 
-    experiment_name = 'clf_{}_{}_{}_{}'.format(use_probabilities,
-                                               num_labels,
-                                               label_type,
-                                               metric_name)
+    experiment_name = 'clf_metric_value_{}_{}_{}_{}'.format(use_probabilities,
+                                                            len(label_array),
+                                                            label_type.__name__,
+                                                            metric_name)
 
     values_to_fill_dict = {'experiment_name': experiment_name,
                            'train_file': train_file,
@@ -1242,27 +1323,27 @@ def check_metric_values_for_classification(metric_name,
     # indices rather than the class labels themselves
 
     # 1. Correlation metrics are only computed for integer
-    #    labels; they use probability values if available
-    #    only in the binary case.
+    #    or float labels; they use probability values if
+    #    available only in the binary case.
     if metric_name == 'pearson':
-        if label_type == 'integer':
-            if num_labels == 2 and use_probabilities:
+        if issubclass(label_type, (np.int64, np.float64)):
+            if len(label_array) == 2 and use_probabilities:
                 sklearn_metric_value = pearsonr(y_test,
                                                 sklearn_test_probs[:, 1])[0]
             else:
                 sklearn_metric_value = pearsonr(y_test,
                                                 sklearn_test_labels)[0]
     elif metric_name == 'spearman':
-        if label_type == 'integer':
-            if num_labels == 2 and use_probabilities:
+        if issubclass(label_type, (np.int64, np.float64)):
+            if len(label_array) == 2 and use_probabilities:
                 sklearn_metric_value = spearmanr(y_test,
                                                  sklearn_test_probs[:, 1])[0]
             else:
                 sklearn_metric_value = spearmanr(y_test,
                                                  sklearn_test_labels)[0]
     elif metric_name == 'kendall_tau':
-        if label_type == 'integer':
-            if num_labels == 2 and use_probabilities:
+        if issubclass(label_type, (np.int64, np.float64)):
+            if len(label_array) == 2 and use_probabilities:
                 sklearn_metric_value = kendalltau(y_test,
                                                   sklearn_test_probs[:, 1])[0]
             else:
@@ -1278,25 +1359,30 @@ def check_metric_values_for_classification(metric_name,
     #    and `roc_auc` only work with positive class probabilities
     #    and only for the binary case
     elif metric_name == 'average_precision':
-        if num_labels == 2 and use_probabilities:
+        if len(label_array) == 2 and use_probabilities:
             sklearn_metric_value = average_precision_score(y_test,
                                                            sklearn_test_probs[:, 1])
     elif metric_name == 'roc_auc':
-        if num_labels == 2 and use_probabilities:
+        if len(label_array) == 2 and use_probabilities:
             sklearn_metric_value = roc_auc_score(y_test,
                                                  sklearn_test_probs[:, 1])
 
-    # 4. Accuracy should work no matter what and use the labels
+    # 4. Accuracy and unweighted kappas should work no matter what
+    #    and use the labels; kappas are not in scikit-learn so
+    #    we have to use the SKLL implementation
     elif metric_name == 'accuracy':
         sklearn_metric_value = accuracy_score(y_test,
                                               sklearn_test_labels)
+    elif metric_name in _UNWEIGHTED_KAPPA_METRICS:
+        sklearn_metric_value = use_score_func(metric_name,
+                                              y_test,
+                                              sklearn_test_labels)
 
-    # 5. The only ones left are the kapps and they are not in sklearn
+    # 5. The only ones left are the weighted kappas and they are not in sklearn
     #    so we are forced to use the SKLL implementations; both types
     #    require integer labels
-    elif (metric_name in _UNWEIGHTED_KAPPA_METRICS or
-          metric_name in _WEIGHTED_KAPPA_METRICS):
-        if label_type == 'integer':
+    elif metric_name in _WEIGHTED_KAPPA_METRICS:
+        if _contiguous_ints_or_floats(label_array):
             sklearn_metric_value = use_score_func(metric_name,
                                                   y_test,
                                                   sklearn_test_labels)
@@ -1347,24 +1433,38 @@ def test_metric_values_for_classification():
     metrics_to_test = sorted(metrics_to_test)
 
     for (metric,
-         num_labels,
-         label_type,
+         label_array,
          use_probabilities) in product(metrics_to_test,
-                                       [2, 4],
-                                       ['integer', 'string'],
+                                       [np.array([1, 2, 3]),
+                                        np.array(['A', 'B', 'C']),
+                                        np.array([-2, -1, 0, 1, 2]),
+                                        np.array([2, 4, 6]),
+                                        np.array([0, 1]),
+                                        np.array([-1, 1]),
+                                        np.array(['yes', 'no']),
+                                        np.array([1.0, 2.0]),
+                                        np.array([-1.0, 1]),
+                                        np.array([1.0, 1.1, 1.2]),
+                                        np.array([3, 5, 10]),
+                                        np.array([1.0, 2.0, 3.0]),
+                                        np.array([1, 2, 3, 4.0]),
+                                        np.array([4, 5, 6]),
+                                        np.array(['A', 'B', 'C', 1, 2, 3])],
                                        [True, False]):
 
         # skip following configurations that would raise an exception
         # during grid search either from SKLL or from sklearn:
         # (a) average_precision/roc_auc and non-binary classification
-        # (b) kappa/correlation metrics and non-integer labels
-        # (c) probabilistic metrics and no probabilities
+        # (b) correlation/weighted kappa metrics and non-integer labels
+        # (c) weighted kappa metrics and non-contiguous integer/float labels
+        # (d) probabilistic metrics and no probabilities
         skipped_conditions = ((metric in ['average_precision', 'roc_auc'] and
-                               num_labels != 2) or
-                              ((metric in _UNWEIGHTED_KAPPA_METRICS or
-                                metric in _WEIGHTED_KAPPA_METRICS or
+                               len(label_array) != 2) or
+                              ((metric in _WEIGHTED_KAPPA_METRICS or
                                 metric in _CORRELATION_METRICS) and
-                               label_type == 'string') or
+                               issubclass(label_array.dtype.type, str)) or
+                              (metric in _WEIGHTED_KAPPA_METRICS and
+                               not _contiguous_ints_or_floats(label_array)) or
                               (metric in _PROBABILISTIC_METRICS and
                                not use_probabilities))
         if skipped_conditions:
@@ -1372,6 +1472,5 @@ def test_metric_values_for_classification():
         else:
             yield (check_metric_values_for_classification,
                    metric,
-                   num_labels,
-                   label_type,
+                   label_array,
                    use_probabilities)
