@@ -79,7 +79,6 @@ from skll.data.dict_vectorizer import DictVectorizer
 from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
                           _CORRELATION_METRICS,
                           _REGRESSION_ONLY_METRICS,
-                          _PROBABILISTIC_METRICS,
                           _UNWEIGHTED_KAPPA_METRICS,
                           _WEIGHTED_KAPPA_METRICS,
                           SCORERS,
@@ -404,65 +403,76 @@ def _train_and_score(learner,
     return train_score, test_score
 
 
-def _get_acceptable_metrics(label_type, estimator_type):
+def _get_acceptable_regression_metrics():
+    """
+    Return the set of metrics that are acceptable for regression.
+    """
+
+    # it's fairly straightforward for regression since
+    # we do not have to check the labels
+    acceptable_metrics = (_REGRESSION_ONLY_METRICS |
+                          _UNWEIGHTED_KAPPA_METRICS |
+                          _WEIGHTED_KAPPA_METRICS |
+                          _CORRELATION_METRICS)
+    return acceptable_metrics
+
+
+def _get_acceptable_classification_metrics(label_array):
     """
     Return the set of metrics that are acceptable given the
-    prediction scenario as defined by the estimator type
-    and the data type of the labels that we are predicting.
+    the unique set of labels that we are classifying.
 
     Parameters
     ----------
-    label_type : type
-        data type of the labels that we are predicting
-    estimator_type : str, optional
-        Whether the estimator is a regressor or a classifier.
-        Acceptable values are ``regressor`` and ``classifier``.
+    label_array : numpy.ndarray
+        A sorted numpy array containing the unique labels
+        that we are trying to predict. Optional for regressors
+        but required for classifiers.
 
     Returns
     -------
     acceptable_metrics : set
         A set of metric names that are acceptable
-        for the given scenario.
+        for the given classification scenario.
     """
 
-    acceptable_metrics = set()
+    # this is a classifier so the acceptable objective
+    # functions definitely include those metrics that
+    # are specifically for classification and also
+    # the unweighted kappa metrics
+    acceptable_metrics = _CLASSIFICATION_ONLY_METRICS | _UNWEIGHTED_KAPPA_METRICS
 
-    if estimator_type == 'regressor':
-        acceptable_metrics.update(_REGRESSION_ONLY_METRICS,
-                                  _UNWEIGHTED_KAPPA_METRICS,
-                                  _WEIGHTED_KAPPA_METRICS,
-                                  _CORRELATION_METRICS)
+    # now let us consider which other metrics may also
+    # be acceptable depending one whether the labels
+    # are strings or (contiguous) integers/floats
+    label_type = label_array.dtype.type
 
-    elif estimator_type == 'classifier':
+    # CASE 1: labels are strings, then no other metrics
+    # are acceptable
+    if issubclass(label_type, (np.object_, str)):
+        pass
 
-        # this is a classifier so the acceptable objective
-        # functions definitely include those metrics that
-        # are specifically for classification
-        acceptable_metrics.update(_CLASSIFICATION_ONLY_METRICS)
+    # CASE 2: labels are integers or floats; the way
+    # it works in SKLL, it's guaranteed that
+    # class indices will be sorted in the same order
+    # as the class labels therefore, ranking metrics
+    # such as various correlations should work fine.
+    elif issubclass(label_type, (int, np.int64, float, np.float64)):
+        acceptable_metrics.update(_CORRELATION_METRICS)
 
-        # now let us consider which other metrics may also
-        # be acceptable depending one whether we have string
-        # or binary labels.
-
-        # CASE 1: labels are strings, then no other metrics
-        # are acceptable.
-        # TODO: unweighted kappas may be allowed here in the futer
-        # if we fix SKLL's kappa implementation to work with strings
-        if (issubclass(label_type, np.object_) or
-                issubclass(label_type, str)):
-            pass
-
-        # CASE 2: labels are integers; this is the case that
-        # includes ordinal classification, so we can allow
-        # all kappas and correlation metrics too
-        elif (issubclass(label_type, np.int64) or
-                issubclass(label_type, int)):
-            acceptable_metrics.update(_CORRELATION_METRICS,
-                                      _UNWEIGHTED_KAPPA_METRICS,
-                                      _WEIGHTED_KAPPA_METRICS)
-    else:
-        raise ValueError("Cannot infer acceptable metrics for "
-                         "invalid estimator type: {}".format(estimator_type))
+        # CASE 3; labels are numerically contiguous integers
+        # this is a special sub-case of CASE 2 which
+        # represents ordinal classification. Only in this
+        # case, weighted kappas -- where the distance
+        # between the class labels has a special
+        # meaning -- can be allowed. This is because
+        # class indices are always contiguous and all
+        # metrics in SKLL are computed in the index
+        # space, not the label space. Note that floating
+        # point numbers that are equivalent to integers
+        # (e.g., [1.0, 2.0, 3.0]) are also acceptable.
+        if _contiguous_ints_or_floats(label_array):
+            acceptable_metrics.update(_WEIGHTED_KAPPA_METRICS)
 
     return acceptable_metrics
 
@@ -1506,6 +1516,9 @@ class Learner(object):
             If FeatureHasher is used with MultinomialNB.
         """
 
+        # get the estimator type since we need it in multiple places below
+        estimator_type = self.model_type._estimator_type
+
         # if we are asked to do grid search, check that the grid objective
         # is specified and that the specified function is valid for the
         # selected learner
@@ -1519,8 +1532,11 @@ class Learner(object):
             # prediction scenario and raise an exception if the current
             # objective is not in this allowed list
             label_type = examples.labels.dtype.type
-            allowed_objectives = _get_acceptable_metrics(label_type,
-                                                         self.model_type._estimator_type)
+            if estimator_type == 'classifier':
+                sorted_unique_labels = np.unique(examples.labels)
+                allowed_objectives = _get_acceptable_classification_metrics(sorted_unique_labels)
+            else:
+                allowed_objectives = _get_acceptable_regression_metrics()
 
             if grid_objective not in allowed_objectives:
                 raise ValueError("'{}' is not a valid objective "
@@ -1534,7 +1550,7 @@ class Learner(object):
             # that the user actually wants the `_with_probabilities`
             # version of the metric
             if (grid_objective in _CORRELATION_METRICS and
-                    self.model_type._estimator_type == 'classifier' and
+                    estimator_type == 'classifier' and
                     self.probability):
                 self.logger.info('You specified "{}" as the objective with '
                                  '"probability" set to "true". If this is '
@@ -1619,7 +1635,7 @@ class Learner(object):
 
         # use label dict transformed version of examples.labels if doing
         # classification
-        if self.model_type._estimator_type == 'classifier':
+        if estimator_type == 'classifier':
             labels = np.array([self.label_dict[label] for label in
                                examples.labels])
         else:
@@ -1845,13 +1861,17 @@ class Learner(object):
 
         # compute the acceptable metrics for our current prediction scenario
         label_type = examples.labels.dtype.type
-        acceptable_metrics = _get_acceptable_metrics(label_type, estimator_type)
+        if estimator_type == 'classifier':
+            sorted_unique_labels = np.unique(examples.labels)
+            acceptable_metrics = _get_acceptable_classification_metrics(sorted_unique_labels)
+        else:
+            acceptable_metrics = _get_acceptable_regression_metrics()
 
         # check that all of the output metrics are acceptable
         unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
         if unacceptable_metrics:
             raise ValueError("The following metrics are not valid "
-                             "for {} with labels of "
+                             "for this learner ({}) with these labels of "
                              "type {}: {}".format(self._model_type.__name__,
                                                   label_type.__name__,
                                                   list(unacceptable_metrics)))
@@ -1910,7 +1930,7 @@ class Learner(object):
             objective_score = metric_scores[grid_objective]
             del additional_scores[grid_objective]
 
-        if self.model_type._estimator_type == 'regressor':
+        if estimator_type == 'regressor':
             result_dict = {'descriptive': defaultdict(dict)}
             for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
                 result_dict['descriptive'][table_label]['min'] = min(y)
