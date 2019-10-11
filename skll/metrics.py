@@ -51,35 +51,6 @@ _WEIGHTED_KAPPA_METRICS = set(['linear_weighted_kappa',
                                'qwk_off_by_one'])
 
 
-def _add_correlation_probability_scorer(metric_name):
-    """
-    A helper function that dynamically modifies the scoring
-    functions associated with the correlation metrics such
-    that those functions now receive probabilities rather
-    than just the most likely labels.
-    This allows us to use ``GridSearchCV`` with objective functions
-    like Kendall's tau for binary classification problems (where the
-    probability of the true class is used as the input to the objective
-    function).
-
-    Parameters
-    ----------
-    metric_name : str
-        The name of the metric to update. If any metric other than
-        a correlation metric is passed, no changes are made.
-    probabilities : bool, optional
-        If ``True`, modify the correlation scoring function
-        to require probabilties and if ``False``, modify it to
-        do the opposite.
-
-    """
-    pass
-    # if metric_name in _CORRELATION_METRICS:
-    #     metric_func = globals()[metric_name]
-    #     SCORERS['{}_with_probabilities' metric_name] = make_scorer(metric_func,
-    #                                        needs_proba=probabilities)
-
-
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     """
     Calculates the kappa inter-rater agreement between two the gold standard
