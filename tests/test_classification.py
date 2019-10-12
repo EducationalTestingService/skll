@@ -20,7 +20,7 @@ from itertools import product
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import assert_almost_equal, assert_raises, eq_, raises, set_trace
+from nose.tools import assert_almost_equal, assert_raises, eq_, raises
 from numpy.testing import assert_array_equal
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
