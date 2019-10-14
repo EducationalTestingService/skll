@@ -27,6 +27,9 @@ SciKit-Learn Laboratory
    :target: http://dx.doi.org/10.5281/zenodo.12825
    :alt: DOI for citing SKLL 1.0.0
 
+.. image:: https://mybinder.org/badge_logo.svg
+ :target: https://mybinder.org/v2/gh/AVajpayeeJr/skll/feature/448-interactive-binder?filepath=examples
+
 This Python package provides command-line utilities to make it easier to run
 machine learning experiments with scikit-learn.  One of the primary goals of
 our project is to make it so that you can run scikit-learn experiments without
@@ -81,6 +84,8 @@ like:
 For more information about getting started with ``run_experiment``, please check
 out `our tutorial <https://skll.readthedocs.org/en/latest/tutorial.html>`__, or
 `our config file specs <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
+
+You can also follow this `interactive Jupyter tutorial <https://mybinder.org/v2/gh/AVajpayeeJr/skll/feature/448-interactive-binder?filepath=examples>`__. 
 
 We also provide utilities for:
 
