@@ -733,6 +733,35 @@ def test_config_parsing_log_loss_no_probability():
     yield check_config_parsing_value_error, config_path
 
 
+def test_config_parsing_roc_auc_no_probability():
+    """
+    Test that config parsing raises an error if roc_auc is used without probability
+    """
+
+    train_dir = join(_my_dir, 'train')
+    test_dir = join(_my_dir, 'test')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'grid_search': 'false',
+                           'log': output_dir,
+                           'results': output_dir,
+                           'metrics': "['roc_auc']"}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'roc_auc_no_probability')
+
+    yield check_config_parsing_value_error, config_path
+
+
 def test_config_parsing_bad_task_paths():
 
     # Test to ensure config file parsing raises an error with various

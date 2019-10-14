@@ -9,31 +9,50 @@ Tests related to classification experiments.
 """
 
 import csv
-import glob
 import itertools
 import json
 import os
 import re
 import warnings
 
+from glob import glob
+from itertools import product
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import eq_, assert_almost_equal, raises
+from nose.tools import assert_almost_equal, assert_raises, eq_, raises
+from numpy.testing import assert_array_equal
+
+from scipy.stats import kendalltau, pearsonr, spearmanr
 
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (accuracy_score,
+                             average_precision_score,
+                             log_loss,
+                             roc_auc_score)
+from sklearn.utils import shuffle as sk_shuffle
 
-from skll.data import FeatureSet
-from skll.data.readers import NDJReader
-from skll.data.writers import NDJWriter
+from skll import run_configuration
 from skll.config import _parse_config_file
-from skll.experiments import run_configuration
-from skll.learner import Learner, _train_and_score
-from skll.learner import _DEFAULT_PARAM_GRIDS
+from skll.data import FeatureSet, NDJReader, NDJWriter
+from skll.learner import (_DEFAULT_PARAM_GRIDS,
+                          FilteredLeaveOneGroupOut,
+                          Learner,
+                          _contiguous_ints_or_floats,
+                          _train_and_score)
+from skll.metrics import (_CORRELATION_METRICS,
+                          _PROBABILISTIC_METRICS,
+                          _REGRESSION_ONLY_METRICS,
+                          _UNWEIGHTED_KAPPA_METRICS,
+                          _WEIGHTED_KAPPA_METRICS,
+                          use_score_func)
 
-from tests.utils import (make_classification_data, make_regression_data,
-                         make_sparse_data, fill_in_config_paths_for_single_file)
+from tests.utils import (make_classification_data,
+                         make_regression_data,
+                         make_sparse_data,
+                         fill_in_config_options,
+                         fill_in_config_paths_for_single_file)
 
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
@@ -70,14 +89,75 @@ def tearDown():
     if exists(join(output_dir, 'float_class_predictions.tsv')):
         os.unlink(join(output_dir, 'float_class_predictions.tsv'))
 
-    for output_file in glob.glob(join(output_dir, 'train_test_single_file_*')):
+    for output_file in glob(join(output_dir, 'train_test_single_file_*')):
         os.unlink(output_file)
 
-    config_files = [join(config_dir, cfgname) for cfgname in ['test_single_file.cfg',
-                                                              'test_single_file_saved_subset']]
+    for output_file in glob(join(output_dir, 'clf_metric_value_*')):
+        os.unlink(output_file)
+
+    config_files = [join(config_dir,
+                         cfgname) for cfgname in ['test_single_file.cfg',
+                                                  'test_single_file_saved_subset.cfg']]
+    config_files.extend(glob(join(config_dir,
+                                  'test_metric_values_for_classification_*.cfg')))
+
     for config_file in config_files:
         if exists(config_file):
             os.unlink(config_file)
+
+
+def test_contiguous_int_or_float_labels():
+    """
+    Test that we can accurately detect contiguous int/float labels
+    """
+    eq_(_contiguous_ints_or_floats([1, 2, 3, 4]), True)
+    eq_(_contiguous_ints_or_floats([0, 1]), True)
+    eq_(_contiguous_ints_or_floats([1.0, 2.0]), True)
+    eq_(_contiguous_ints_or_floats([0, 1.0]), True)
+    eq_(_contiguous_ints_or_floats([-2, -1, 0, 1, 2]), True)
+    eq_(_contiguous_ints_or_floats([1.0, 2.0, 3.0, 4.0]), True)
+    eq_(_contiguous_ints_or_floats([4, 5, 6]), True)
+    eq_(_contiguous_ints_or_floats([1, 2, 3, 4.0]), True)
+    eq_(_contiguous_ints_or_floats([-1, 1]), False)
+    eq_(_contiguous_ints_or_floats([2, 4, 6]), False)
+    eq_(_contiguous_ints_or_floats([3, 6, 11]), False)
+    eq_(_contiguous_ints_or_floats([-2.0, -1.0, 1.0, 2.0]), False)
+    eq_(_contiguous_ints_or_floats([1.0, 1.1, 1.2]), False)
+    assert_raises(TypeError, _contiguous_ints_or_floats, ['a', 'b', 'c'])
+    assert_raises(TypeError, _contiguous_ints_or_floats, np.array([1, 2, 3, 'a']))
+    assert_raises(ValueError, _contiguous_ints_or_floats, [])
+    assert_raises(ValueError, _contiguous_ints_or_floats, np.array([]))
+
+
+def test_label_index_order():
+    """
+    Test that label indices are created after first sorting the labels
+    """
+    train_fs, _ = make_classification_data()
+    prng = np.random.RandomState(123456789)
+    for (unique_label_list,
+         correct_order) in zip([['B', 'C', 'A'],
+                                [3, 1, 2],
+                                [1.0, 2.5, 1.4],
+                                [4, 5, 6],
+                                [1.0, 3.0, 2.0, 4.0],
+                                [1, 2, 3, 4.0]],
+                               [['A', 'B', 'C'],
+                                [1, 2, 3],
+                                [1.0, 1.4, 2.5],
+                                [4, 5, 6],
+                                [1.0, 2.0, 3.0, 4.0],
+                                [1.0, 2.0, 3.0, 4.0]]):
+        labels = prng.choice(unique_label_list, size=len(train_fs))
+        train_fs.labels = labels
+
+        clf = Learner('LogisticRegression')
+        clf.train(train_fs, grid_search=False)
+        reverse_label_dict = {y: x for x, y in clf.label_dict.items()}
+        label_order_from_dict = [reverse_label_dict[x] for x in range(len(unique_label_list))]
+
+        eq_(clf.label_list, correct_order)
+        eq_(label_order_from_dict, correct_order)
 
 
 def check_predict(model, use_feature_hashing=False):
@@ -779,3 +859,603 @@ def test_sampling_for_multinomialNB():
     (train_fs, _) = make_classification_data(num_examples=200)
     learner = Learner('MultinomialNB', sampler='RBFSampler')
     learner.train(train_fs, grid_search=False)
+
+
+@raises(ValueError)
+def check_invalid_classification_grid_objective(learner, grid_objective, label_array):
+    """
+    Checks that an invalid classification objective raises an exception
+    """
+
+    # initialize a random number generator
+    prng = np.random.RandomState(123456789)
+
+    # make a feature set
+    train_fs, _ = make_classification_data()
+
+    # generate the labels by randomly sampling repeatedly from
+    # the given label array
+    train_fs.labels = prng.choice(label_array, size=len(train_fs))
+
+    clf = Learner(learner)
+    clf.train(train_fs, grid_objective=grid_objective)
+
+
+def test_invalid_classification_grid_objective():
+
+    for (learner,
+         (label_array,
+          bad_objectives)) in product(['AdaBoostClassifier', 'DecisionTreeClassifier',
+                                       'GradientBoostingClassifier', 'KNeighborsClassifier',
+                                       'MLPClassifier', 'MultinomialNB',
+                                       'RandomForestClassifier', 'LogisticRegression',
+                                       'LinearSVC', 'SVC', 'SGDClassifier'],
+                                      zip([np.array(['A', 'B', 'C']),
+                                           np.array([2, 4, 6]),
+                                           np.array(['yes', 'no']),
+                                           np.array([1, 2, 4.0]),
+                                           np.array(['A', 'B', 1, 2])],
+                                          [_CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS])):
+
+        # check each bad objective
+        for metric in bad_objectives:
+            yield check_invalid_classification_grid_objective, learner, metric, label_array
+
+
+@raises(ValueError)
+def check_invalid_classification_metric(learner,
+                                        metric,
+                                        label_array,
+                                        by_itself=True):
+    """
+    Checks that an invalid classification metric raises an exception
+    """
+    # initialize a random number generator
+    prng = np.random.RandomState(123456789)
+
+    # make a feature set
+    train_fs, test_fs = make_classification_data()
+
+    # generate the labels for the two sets by randomly sampling
+    # repeatedly from the given label array
+    train_fs.labels = prng.choice(label_array, size=len(train_fs))
+    test_fs.labels = prng.choice(label_array, size=len(test_fs))
+
+    # instantiate a learner
+    clf = Learner(learner)
+    clf.train(train_fs, grid_search=False)
+    output_metrics = [metric] if by_itself else ['accuracy', metric]
+    clf.evaluate(test_fs, output_metrics=output_metrics)
+
+
+def test_invalid_classification_metric():
+    for (learner,
+         (label_array,
+          bad_objectives)) in product(['AdaBoostClassifier', 'DecisionTreeClassifier',
+                                       'GradientBoostingClassifier', 'KNeighborsClassifier',
+                                       'MLPClassifier', 'MultinomialNB',
+                                       'RandomForestClassifier', 'LogisticRegression',
+                                       'LinearSVC', 'SVC', 'SGDClassifier'],
+                                      zip([np.array(['A', 'B', 'C']),
+                                           np.array([2, 4, 6]),
+                                           np.array(['yes', 'no']),
+                                           np.array([1, 2, 4.0]),
+                                           np.array(['A', 'B', 1, 2])],
+                                          [_CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
+                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS])):
+
+        # check each bad objective
+        for metric in bad_objectives:
+            yield check_invalid_classification_metric, learner, metric, label_array, True
+            yield check_invalid_classification_metric, learner, metric, label_array, False
+
+
+def check_objective_values_for_classification(metric_name,
+                                              label_array,
+                                              use_probabilities):
+
+    # instantiate a random number generator
+    prng = np.random.RandomState(123456789)
+
+    # create our training set
+    train_fs, _ = make_classification_data(num_examples=200)
+
+    # create our labels by repeatedly sampling from the given label array
+    train_fs.labels = prng.choice(label_array, size=len(train_fs))
+
+    # get the label type
+    label_type = train_fs.labels.dtype.type
+
+    # create a dictionary of folds that assign half the IDs to one fold
+    # and the other half to the second fold
+    folds_dict = dict(zip(train_fs.ids, itertools.cycle([0, 1])))
+
+    # instantiate our logistic regression learner and run grid search
+    # using the folds dictionary
+    clf = Learner('LogisticRegression', probability=use_probabilities)
+    _, grid_search_results = clf.train(train_fs,
+                                       grid_objective=metric_name,
+                                       grid_search_folds=folds_dict,
+                                       grid_jobs=1,
+                                       param_grid=[{'C': [1.0, 10.0]}])
+
+    # load in the featureset to get the feature matrix (X) and the
+    # labels array (y) we need to pass to scikit-learn; we also need
+    # to shuffle after we load in the matrix since that's what SKLL does
+    ids, labels, features = sk_shuffle(train_fs.ids,
+                                       train_fs.labels,
+                                       train_fs.features,
+                                       random_state=123456789)
+    shuffled_fs = FeatureSet(train_fs.name,
+                             ids,
+                             labels=labels,
+                             features=features,
+                             vectorizer=train_fs.vectorizer)
+    X = shuffled_fs.features
+    y = shuffled_fs.labels
+
+    # instantiate and save two different sklearn LogisticRegression
+    # models for each value of C that was in the SKLL grid and with the
+    # same other fixed parameters that we used for SKLL
+    models_with_C_values = {}
+    for param_value in grid_search_results['params']:
+        model_kwargs = param_value
+        model_kwargs.update({'max_iter': 1000,
+                             'solver': 'liblinear',
+                             'multi_class': 'auto',
+                             'random_state': 123456789})
+        sklearn_learner = LogisticRegression(**model_kwargs)
+        models_with_C_values[param_value['C']] = sklearn_learner
+
+    # now let's split the featureset the same way SKLL would have
+    # done using the folds file
+    dummy_label = next(iter(folds_dict.values()))
+    fold_groups = [folds_dict.get(curr_id, dummy_label) for curr_id in shuffled_fs.ids]
+    kfold = FilteredLeaveOneGroupOut(folds_dict, shuffled_fs.ids)
+    fold_train_test_ids = list(kfold.split(shuffled_fs.features, shuffled_fs.labels, fold_groups))
+
+    # generate predictions on the test split of the each fold, and
+    # then compute the objectives appropriately (using either the
+    # labels or the probabilities) and store them for comparison
+    metric_values_dict = {}
+
+    # compute values for each fold
+    for fold_id in [0, 1]:
+
+        metric_values_dict[fold_id] = []
+
+        fold_train_ids = fold_train_test_ids[fold_id][0]
+        fold_test_ids = fold_train_test_ids[fold_id][1]
+
+        X_fold_train = X[fold_train_ids, :]
+        X_fold_test = X[fold_test_ids, :]
+
+        y_fold_train = y[fold_train_ids, ]
+        y_fold_test = y[fold_test_ids, ]
+
+        # let's also compute the class/label indices
+        # since we will need them later
+        y_fold_train_indices = [clf.label_dict[label] for label in y_fold_train]
+        y_fold_test_indices = [clf.label_dict[label] for label in y_fold_test]
+
+        # iterate over the two trained sklearn models;
+        # one for each point on the C grid
+        for C_value in models_with_C_values:
+
+            # for training, we use the class indices
+            # rather than the class labels like SKLL does
+            # so that our predictions are in the index
+            # space rather than label space
+            sklearn_learner = models_with_C_values[C_value]
+            sklearn_learner.fit(X_fold_train, y_fold_train_indices)
+
+            # compute both labels and probabilities via sklearn
+            sklearn_fold_test_labels = sklearn_learner.predict(X_fold_test)
+            sklearn_fold_test_probs = sklearn_learner.predict_proba(X_fold_test)
+
+            # now let's proceed on a metric by metric basis
+            # and note that we are again using the class
+            # indices rather than the class labels themselves
+
+            # 1. Correlation metrics are only computed for integer
+            #    or float labels; they use probability values if
+            #    available only in the binary case.
+            if metric_name in ['pearson', 'spearman', 'kendall_tau']:
+                if metric_name == 'pearson':
+                    corr_metric_func = pearsonr
+                elif metric_name == 'spearman':
+                    corr_metric_func = spearmanr
+                elif metric_name == 'kendall_tau':
+                    corr_metric_func = kendalltau
+
+                if issubclass(label_type, (np.int32, np.int64, np.float64)):
+                    if len(label_array) == 2 and use_probabilities:
+                        metric_value = corr_metric_func(y_fold_test_indices,
+                                                        sklearn_fold_test_probs[:, 1])[0]
+                    else:
+                        metric_value = corr_metric_func(y_fold_test_indices,
+                                                        sklearn_fold_test_labels)[0]
+            # 2. `neg_log_loss` requires probability values irrespective
+            #     of label types and number of labels
+            elif metric_name == 'neg_log_loss':
+                if use_probabilities:
+                    metric_value = -1 * log_loss(y_fold_test_indices,
+                                                 sklearn_fold_test_probs)
+            # 3. The other probabilistic metrics `average_precision`
+            #    and `roc_auc` only work with positive class probabilities
+            #    and only for the binary case
+            elif metric_name == 'average_precision':
+                if len(label_array) == 2 and use_probabilities:
+                    metric_value = average_precision_score(y_fold_test_indices,
+                                                           sklearn_fold_test_probs[:, 1])
+            elif metric_name == 'roc_auc':
+                if len(label_array) == 2 and use_probabilities:
+                    metric_value = roc_auc_score(y_fold_test_indices,
+                                                 sklearn_fold_test_probs[:, 1])
+
+            # 4. Accuracy and unweighted kappas should work no matter what
+            #    and use the labels; kappas are not in scikit-learn so
+            #    we have to use the SKLL implementation
+            elif metric_name == 'accuracy':
+                metric_value = accuracy_score(y_fold_test_indices,
+                                              sklearn_fold_test_labels)
+            elif metric_name in _UNWEIGHTED_KAPPA_METRICS:
+                metric_value = use_score_func(metric_name,
+                                              y_fold_test_indices,
+                                              sklearn_fold_test_labels)
+
+            # 5. The only ones left are the weighted kapps;
+            #    these require contiguous ints or floats
+            elif metric_name in _WEIGHTED_KAPPA_METRICS:
+                if _contiguous_ints_or_floats(label_array):
+                    metric_value = use_score_func(metric_name,
+                                                  y_fold_test_indices,
+                                                  sklearn_fold_test_labels)
+
+            # save computed metric value for the fold, if any
+            metric_values_dict[fold_id].append(metric_value)
+
+    # compare SKLL grid-search values with sklearn values for each fold
+    skll_fold_values = (grid_search_results['split0_test_score'],
+                        grid_search_results['split1_test_score'])
+    sklearn_fold_values = (metric_values_dict[0], metric_values_dict[1])
+    assert_array_equal(skll_fold_values[0], sklearn_fold_values[0])
+    assert_array_equal(skll_fold_values[1], sklearn_fold_values[1])
+
+
+def test_objective_values_for_classification():
+
+    # Test that the objectives for classifications yield expected results.
+    # We need a special test here since in some cases we use the probabilities
+    # and in others we use the labels. Specific cases to test:
+    # 1. Probabilistic metrics: neg_log_loss, average_precision, roc_auc. The
+    #    last two only work for the binary case. Work for both string and integer
+    #    labels.
+    # 2. Correlation metrics: pearson, spearman, and kendall_tau. We want to test
+    #    that they work as expected for {binary, multi-class} x {probabilities, no
+    #    probabilities}. Only work for integer/float labels.
+    # 3. Weighted kappa metrics. Work for only int labels.
+    # 4. Accuracy and unweighted kappa metrics. Want to test for {probabilities, no
+    #    probabilities}. Works for both int and string labels.
+
+    # Here's how the test works:
+    # 1. We train a LogisticRegression classifier via the SKLL API on
+    #    an artificial training set with:
+    #    (a) each metric as the tuning objective
+    #    (b) only two points on the grid for a single hyperparameter
+    #    (b) 2 externally specified grid search folds via a dictionary
+    #    (c) ``probability`` either True or False
+    #
+    # 2. We get the specific values of the objective for each point
+    #    on the grid and for each of the grid search test splits, by
+    #    using the results JSON file.
+    #
+    # 3. We run a separate experiment in scikit-learn space where:
+    #    (a) for of the two points on the grid, we explicitly train
+    #        the same model on the train split
+    #    (b) compute the two trained model's predictions on the respective
+    #        test splits
+    #    (c) compute the two values of the objective using these predictions
+    #
+    # 4. We then compare values in 2 and 3 to verify that they are equal.
+
+    metrics_to_test = set(['accuracy'])
+    metrics_to_test.update(_CORRELATION_METRICS,
+                           _PROBABILISTIC_METRICS,
+                           _UNWEIGHTED_KAPPA_METRICS,
+                           _WEIGHTED_KAPPA_METRICS)
+    metrics_to_test = sorted(metrics_to_test)
+
+    for (metric,
+         label_array,
+         use_probabilities) in product(metrics_to_test,
+                                       [np.array([1, 2, 3]),
+                                        np.array(['A', 'B', 'C']),
+                                        np.array([-2, -1, 0, 1, 2]),
+                                        np.array([2, 4, 6]),
+                                        np.array([0, 1]),
+                                        np.array([-1, 1]),
+                                        np.array(['yes', 'no']),
+                                        np.array([1.0, 2.0]),
+                                        np.array([-1.0, 1]),
+                                        np.array([1.0, 1.1, 1.2]),
+                                        np.array([3, 5, 10]),
+                                        np.array([1.0, 2.0, 3.0]),
+                                        np.array([1, 2, 3, 4.0]),
+                                        np.array([4, 5, 6]),
+                                        np.array(['A', 'B', 'C', 1, 2, 3])],
+                                       [True, False]):
+
+        # skip following configurations that would raise an exception
+        # during grid search either from SKLL or from sklearn:
+        # (a) average_precision/roc_auc and non-binary classification
+        # (b) correlation/weighted kappa metrics and non-integer labels
+        # (c) weighted kappa metrics and non-contiguous integer/float labels
+        # (d) probabilistic metrics and no probabilities
+        skipped_conditions = ((metric in ['average_precision', 'roc_auc'] and
+                               len(label_array) != 2) or
+                              ((metric in _WEIGHTED_KAPPA_METRICS or
+                                metric in _CORRELATION_METRICS) and
+                               issubclass(label_array.dtype.type, str)) or
+                              (metric in _WEIGHTED_KAPPA_METRICS and
+                               not _contiguous_ints_or_floats(label_array)) or
+                              (metric in _PROBABILISTIC_METRICS and
+                               not use_probabilities))
+        if skipped_conditions:
+            continue
+        else:
+            yield (check_objective_values_for_classification,
+                   metric,
+                   label_array,
+                   use_probabilities)
+
+
+def check_metric_values_for_classification(metric_name,
+                                           label_array,
+                                           use_probabilities):
+
+    # define some dictionaries
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # get the config template
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_metric_values_for_classification.template.cfg')
+
+    # instantiate a random number generator
+    prng = np.random.RandomState(123456789)
+
+    # create our training and test sets
+    train_fs, test_fs = make_classification_data(num_examples=200)
+
+    # create the labels by repeatedly sampling from the given label array
+    train_fs.labels = prng.choice(label_array, size=len(train_fs))
+    test_fs.labels = prng.choice(label_array, size=len(test_fs))
+
+    # get the label type of the test set
+    label_type = test_fs.labels.dtype.type
+
+    # write out the train and test sets to disk so that we can use them
+    # when we run the configuration file
+    train_file = join(train_dir, 'metric_values_train.jsonlines')
+    test_file = join(train_dir, 'metric_values_test.jsonlines')
+    NDJWriter.for_path(train_file, train_fs).write()
+    NDJWriter.for_path(test_file, test_fs).write()
+
+    experiment_name = 'clf_metric_value_{}_{}_{}_{}'.format(use_probabilities,
+                                                            len(label_array),
+                                                            label_type.__name__,
+                                                            metric_name)
+
+    values_to_fill_dict = {'experiment_name': experiment_name,
+                           'train_file': train_file,
+                           'test_file': test_file,
+                           'log': output_dir,
+                           'models': output_dir,
+                           'results': output_dir,
+                           'predictions': output_dir,
+                           'probability': 'true' if use_probabilities else 'false',
+                           'metrics': "['{}']".format(metric_name)}
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         '{}_{}'.format(metric_name, use_probabilities),
+                                         good_probability_option=True)
+
+    # run this experiment and load the results_json and the SKLL model
+    results_json_path = run_configuration(config_path, local=True, quiet=True)[0]
+    results_obj = json.load(open(results_json_path, 'r'))[0]
+    model_file_path = join(output_dir,
+                           '{}_metric_{}.model'.format(experiment_name,
+                                                       results_obj['learner_name']))
+    clf = Learner.from_file(model_file_path)
+
+    # get the value of the metric from SKLL
+    skll_metric_value = results_obj['additional_scores'][metric_name]
+
+    # get the feature matrix (X) and the labels array (y) for both
+    # the training and test set to pass to scikit-learn; note that
+    # we want y to be class indices since those are what we need
+    # when computing the metrics to match what SKLL does
+    X_train = train_fs.features
+    y_train = [clf.label_dict[label] for label in train_fs.labels]
+    X_test = test_fs.features
+    y_test = [clf.label_dict[label] for label in test_fs.labels]
+
+    # instantiate a LogisticRegression models with the default
+    # parameters that are used in SKLL
+    model_kwargs = {'max_iter': 1000,
+                    'solver': 'liblinear',
+                    'multi_class': 'auto',
+                    'random_state': 123456789}
+
+    sklearn_learner = LogisticRegression(**model_kwargs)
+
+    # now generate predictions on the test set from sklearn and
+    # then compute the metrics appropriately (using either the
+    # labels or the probabilities) and store them for comparison
+    # for training, we use the class indices rather than the class
+    # labels like SKLL does so that our predictions are in the index
+    # space rather than label space
+    sklearn_learner.fit(X_train, y_train)
+
+    # compute both labels and probabilities via sklearn
+    sklearn_test_labels = sklearn_learner.predict(X_test)
+    sklearn_test_probs = sklearn_learner.predict_proba(X_test)
+
+    # now let's proceed on a metric by metric basis
+    # and note that we are again using the class
+    # indices rather than the class labels themselves
+
+    # 1. Correlation metrics are only computed for integer
+    #    or float labels; they use probability values if
+    #    available only in the binary case.
+    if metric_name in ['pearson', 'spearman', 'kendall_tau']:
+        if metric_name == 'pearson':
+            corr_metric_func = pearsonr
+        elif metric_name == 'spearman':
+            corr_metric_func = spearmanr
+        elif metric_name == 'kendall_tau':
+            corr_metric_func = kendalltau
+
+        if issubclass(label_type, (np.int32, np.int64, np.float64)):
+            if len(label_array) == 2 and use_probabilities:
+                sklearn_metric_value = corr_metric_func(y_test,
+                                                        sklearn_test_probs[:, 1])[0]
+            else:
+                sklearn_metric_value = corr_metric_func(y_test,
+                                                        sklearn_test_labels)[0]
+
+    # 2. `neg_log_loss` requires probability values irrespective
+    #     of label types and number of labels
+    elif metric_name == 'neg_log_loss':
+        if use_probabilities:
+            sklearn_metric_value = -1 * log_loss(y_test,
+                                                 sklearn_test_probs)
+    # 3. The other probabilistic metrics `average_precision`
+    #    and `roc_auc` only work with positive class probabilities
+    #    and only for the binary case
+    elif metric_name == 'average_precision':
+        if len(label_array) == 2 and use_probabilities:
+            sklearn_metric_value = average_precision_score(y_test,
+                                                           sklearn_test_probs[:, 1])
+    elif metric_name == 'roc_auc':
+        if len(label_array) == 2 and use_probabilities:
+            sklearn_metric_value = roc_auc_score(y_test,
+                                                 sklearn_test_probs[:, 1])
+
+    # 4. Accuracy and unweighted kappas should work no matter what
+    #    and use the labels; kappas are not in scikit-learn so
+    #    we have to use the SKLL implementation
+    elif metric_name == 'accuracy':
+        sklearn_metric_value = accuracy_score(y_test,
+                                              sklearn_test_labels)
+    elif metric_name in _UNWEIGHTED_KAPPA_METRICS:
+        sklearn_metric_value = use_score_func(metric_name,
+                                              y_test,
+                                              sklearn_test_labels)
+
+    # 5. The only ones left are the weighted kappas and they are not in sklearn
+    #    so we are forced to use the SKLL implementations; both types
+    #    require integer labels
+    elif metric_name in _WEIGHTED_KAPPA_METRICS:
+        if _contiguous_ints_or_floats(label_array):
+            sklearn_metric_value = use_score_func(metric_name,
+                                                  y_test,
+                                                  sklearn_test_labels)
+
+    eq_(skll_metric_value, sklearn_metric_value)
+
+
+def test_metric_values_for_classification():
+
+    # Test that the metrics for classifications yield expected results.
+    # We need a special test here since in some cases we use the probabilities
+    # and in others we use the labels. Specific cases to test:
+    # 1. Probabilistic metrics: neg_log_loss, average_precision, roc_auc. The
+    #    last two only work for the binary case. Work for both string and integer
+    #    labels.
+    # 2. Correlation metrics: pearson, spearman, and kendall_tau. We want to test
+    #    that they work as expected for {binary, multi-class} x {probabilities, no
+    #    probabilities}. Only works for integer labels.
+    # 3. Unweighted kappa metrics. Work for both int and string labels
+    # 4. Weighted kappa metrics. Works for only int labels.
+    # 5. Regular metrics: accuracy. Want to test for {probabilities, no
+    #    probabilities}. Works for both int and string labels.
+
+    # Here's how the test works:
+    # 1. We first run SKLL "evaluate" experiments by training
+    #    a LogisticRegression classifier on an artificial training set
+    #    with:
+    #    (a) no grid search
+    #    (b) each metric specified as an output metric
+    #    (c) probability either true or false
+    #
+    # 2. We get the values of the metric(s) on the test set from
+    #    the results JSON file.
+    #
+    # 3. We run a separate experiment in scikit-learn space where:
+    #    (a) we explicitly train a LogisticRegression model on the
+    #        training set
+    #    (b) we compute the trained model's predictions on the test set
+    #    (c) we compute the metric value using these predictions
+    #
+    # 4. We then compare values in 2 and 3 to verify that they are equal.
+
+    metrics_to_test = set(['accuracy'])
+    metrics_to_test.update(_CORRELATION_METRICS,
+                           _PROBABILISTIC_METRICS,
+                           _UNWEIGHTED_KAPPA_METRICS,
+                           _WEIGHTED_KAPPA_METRICS)
+    metrics_to_test = sorted(metrics_to_test)
+
+    for (metric,
+         label_array,
+         use_probabilities) in product(metrics_to_test,
+                                       [np.array([1, 2, 3]),
+                                        np.array(['A', 'B', 'C']),
+                                        np.array([-2, -1, 0, 1, 2]),
+                                        np.array([2, 4, 6]),
+                                        np.array([0, 1]),
+                                        np.array([-1, 1]),
+                                        np.array(['yes', 'no']),
+                                        np.array([1.0, 2.0]),
+                                        np.array([-1.0, 1]),
+                                        np.array([1.0, 1.1, 1.2]),
+                                        np.array([3, 5, 10]),
+                                        np.array([1.0, 2.0, 3.0]),
+                                        np.array([1, 2, 3, 4.0]),
+                                        np.array([4, 5, 6]),
+                                        np.array(['A', 'B', 'C', 1, 2, 3])],
+                                       [True, False]):
+
+        # skip following configurations that would raise an exception
+        # during grid search either from SKLL or from sklearn:
+        # (a) average_precision/roc_auc and non-binary classification
+        # (b) correlation/weighted kappa metrics and non-integer labels
+        # (c) weighted kappa metrics and non-contiguous integer/float labels
+        # (d) probabilistic metrics and no probabilities
+        skipped_conditions = ((metric in ['average_precision', 'roc_auc'] and
+                               len(label_array) != 2) or
+                              ((metric in _WEIGHTED_KAPPA_METRICS or
+                                metric in _CORRELATION_METRICS) and
+                               issubclass(label_array.dtype.type, str)) or
+                              (metric in _WEIGHTED_KAPPA_METRICS and
+                               not _contiguous_ints_or_floats(label_array)) or
+                              (metric in _PROBABILISTIC_METRICS and
+                               not use_probabilities))
+        if skipped_conditions:
+            continue
+        else:
+            yield (check_metric_values_for_classification,
+                   metric,
+                   label_array,
+                   use_probabilities)
