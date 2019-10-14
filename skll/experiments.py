@@ -509,6 +509,7 @@ def _classify_featureset(args):
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
     save_cv_folds = args.pop("save_cv_folds")
+    save_cv_models = args.pop("save_cv_models")
     use_folds_file_for_grid_search = args.pop("use_folds_file_for_grid_search")
     stratified_folds = args.pop("do_stratified_folds")
     label_col = args.pop("label_col")
@@ -639,7 +640,8 @@ def _classify_featureset(args):
             cv_folds_to_print = str(cv_folds)
 
         if isinstance(grid_search_folds, dict):
-            grid_search_folds_to_print = '{} via folds file'.format(len(set(grid_search_folds.values())))
+            grid_search_folds_to_print = \
+                '{} via folds file'.format(len(set(grid_search_folds.values())))
         else:
             grid_search_folds_to_print = str(grid_search_folds)
 
@@ -655,8 +657,8 @@ def _classify_featureset(args):
                                     'learner_name': learner_name,
                                     'task': task,
                                     'start_timestamp':
-                                    start_timestamp.strftime('%d %b %Y %H:%M:'
-                                                             '%S.%f'),
+                                        start_timestamp.strftime('%d %b %Y %H:%M:'
+                                                                 '%S.%f'),
                                     'version': __version__,
                                     'feature_scaling': feature_scaling,
                                     'folds_file': folds_file,
@@ -665,8 +667,10 @@ def _classify_featureset(args):
                                     'grid_search_folds': grid_search_folds_to_print,
                                     'min_feature_count': min_feature_count,
                                     'cv_folds': cv_folds_to_print,
-                                    'using_folds_file': isinstance(cv_folds, dict) or isinstance(grid_search_folds, dict),
+                                    'using_folds_file':
+                                        isinstance(cv_folds, dict) or isinstance(grid_search_folds, dict),
                                     'save_cv_folds': save_cv_folds,
+                                    'save_cv_models': save_cv_models,
                                     'use_folds_file_for_grid_search': use_folds_file_for_grid_search,
                                     'stratified_folds': stratified_folds,
                                     'scikit_learn_version': SCIKIT_VERSION}
@@ -675,23 +679,29 @@ def _classify_featureset(args):
         # models when we're not.
         task_results = None
         if task == 'cross_validate':
-            logger.info("Cross-validating")
+            logger.info('Cross-validating')
             (task_results,
              grid_scores,
              grid_search_cv_results_dicts,
-             skll_fold_ids) = learner.cross_validate(train_examples,
-                                                     shuffle=shuffle,
-                                                     stratified=stratified_folds,
-                                                     prediction_prefix=prediction_prefix,
-                                                     grid_search=grid_search,
-                                                     grid_search_folds=grid_search_folds,
-                                                     cv_folds=cv_folds,
-                                                     grid_objective=grid_objective,
-                                                     output_metrics=output_metrics,
-                                                     param_grid=param_grid,
-                                                     grid_jobs=grid_search_jobs,
-                                                     save_cv_folds=save_cv_folds,
-                                                     use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
+             skll_fold_ids,
+             models) = learner.cross_validate(train_examples,
+                                              shuffle=shuffle,
+                                              stratified=stratified_folds,
+                                              prediction_prefix=prediction_prefix,
+                                              grid_search=grid_search,
+                                              grid_search_folds=grid_search_folds,
+                                              cv_folds=cv_folds,
+                                              grid_objective=grid_objective,
+                                              output_metrics=output_metrics,
+                                              param_grid=param_grid,
+                                              grid_jobs=grid_search_jobs,
+                                              save_cv_folds=save_cv_folds,
+                                              save_cv_models=save_cv_models,
+                                              use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
+            if models:
+                for index, m in enumerate(models, start=1):
+                    modelfile = join(model_path, '{}_fold{}.model'.format(job_name, index))
+                    m.save(modelfile)
         elif task == 'learning_curve':
             logger.info("Generating learning curve(s)")
             (curve_train_scores,
@@ -721,9 +731,6 @@ def _classify_featureset(args):
                     learner.save(modelfile)
 
                 if grid_search:
-                    # note: bankers' rounding is used in python 3,
-                    # so these scores may be different between runs in
-                    # python 2 and 3 at the final decimal place.
                     logger.info("Best {} grid search score: {}".format(grid_objective,
                                                                        round(best_score, 3)))
             else:
@@ -1055,11 +1062,12 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
          featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
          probability, pipeline, results_path, pos_label_str, feature_scaling,
          min_feature_count, folds_file, grid_search_jobs, grid_search_folds, cv_folds,
-         save_cv_folds, use_folds_file_for_grid_search, do_stratified_folds,
-         fixed_parameter_list, param_grid_list, featureset_names, learners,
-         prediction_dir, log_path, train_path, test_path, ids_to_floats, class_map,
-         custom_learner_path, learning_curve_cv_folds_list, learning_curve_train_sizes,
-         output_metrics) = _parse_config_file(config_file, log_level=log_level)
+         save_cv_folds, save_cv_models, use_folds_file_for_grid_search,
+         do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
+         learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
+         class_map, custom_learner_path, learning_curve_cv_folds_list,
+         learning_curve_train_sizes, output_metrics) = _parse_config_file(config_file,
+                                                                          log_level=log_level)
 
         # get the main experiment logger that will already have been
         # created by the configuration parser so we don't need anything
@@ -1239,6 +1247,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                     job_args["folds_file"] = folds_file
                     job_args["cv_folds"] = cv_folds
                     job_args["save_cv_folds"] = save_cv_folds
+                    job_args["save_cv_models"] = save_cv_models
                     job_args["use_folds_file_for_grid_search"] = use_folds_file_for_grid_search
                     job_args["do_stratified_folds"] = do_stratified_folds
                     job_args["label_col"] = label_col
@@ -1447,7 +1456,8 @@ def _generate_learning_curve_plots(experiment_name,
                     if j == 0:
                         ax.set_ylabel(row_name)
                         if i == 0:
-                            ax.legend(handles=[matplotlib.lines.Line2D([], [], color=c, label=l, linestyle='-') for c, l in zip(colors, ['Training', 'Cross-validation'])],
+                            ax.legend(handles=[matplotlib.lines.Line2D([], [], color=c, label=l, linestyle='-')
+                                               for c, l in zip(colors, ['Training', 'Cross-validation'])],
                                       loc=4,
                                       fancybox=True,
                                       fontsize='x-small',

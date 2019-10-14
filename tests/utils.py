@@ -103,7 +103,10 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
     if task != 'train':
         to_fill_in.append('predictions')
 
-    if task != 'cross_validate':
+    if task == 'cross_validate':
+        if config.get("Output", "save_cv_models"):
+            to_fill_in.append('models')
+    else:
         to_fill_in.append('models')
 
     if task == 'evaluate' or task == 'cross_validate':
@@ -156,7 +159,8 @@ def fill_in_config_options(config_template_path,
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'param_grids', 'objectives', 'duplicate_option'],
                   'Output': ['results', 'log', 'models', 'metrics',
-                             'predictions', 'pipeline']}
+                             'predictions', 'pipeline', 'save_cv_folds',
+                             'save_cv_models']}
 
     for section in to_fill_in:
         for param_name in to_fill_in[section]:
@@ -207,7 +211,7 @@ def create_jsonlines_feature_files(path):
 
     # we only need to create the feature files if they
     # don't already exist under the given path
-    feature_files_to_create = [join(path, 'f{}.jsonlines'.format(i)) for i in range(5)]
+    feature_files_to_create = [join(path, 'f{}.jsonlines'.format(i)) for i in range(6)]
     if all([exists(ff) for ff in feature_files_to_create]):
         return
     else:
@@ -237,15 +241,28 @@ def create_jsonlines_feature_files(path):
                      features[example_num]["f{}".format(feat_num)]}
                 sub_features.append(x)
             fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels)
+
             writer = NDJWriter(file_path, fs)
             writer.write()
+
+        # now write out the last file which is basically
+        # identical to the last featureset we wrote
+        # except that it has two extra instances
+        fs = FeatureSet('extra',
+                        ids + ['cat{}'.format(num_examples),
+                               'dog{}'.format(num_examples + 1)],
+                        features=sub_features + [{}, {}],
+                        labels=labels + ['cat', 'dog'])
+        file_path = join(path, 'f5.jsonlines')
+        writer = NDJWriter(file_path, fs)
+        writer.write()
 
 
 def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              num_features=10, use_feature_hashing=False,
                              feature_bins=4, num_labels=2,
                              empty_labels=False, string_label_list=None,
-                             feature_prefix='f',
+                             feature_prefix='f', id_type='string',
                              class_weights=None, non_negative=False,
                              one_string_feature=False, num_string_values=4,
                              random_state=1234567890):
@@ -271,8 +288,16 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
         X = abs(X)
 
     # since we want to use SKLL's FeatureSet class, we need to
-    # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+    # create a list of IDs; we create IDs that either can also
+    # be numbers or pure strings
+    if id_type == 'string':
+        ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+    elif id_type == 'integer_string':
+        ids = ['{}'.format(n) for n in range(1, num_examples + 1)]
+    elif id_type == 'float':
+        ids = [float(n) for n in range(1, num_examples + 1)]
+    elif id_type == 'integer':
+        ids = list(range(1, num_examples + 1))
 
     # create a string feature that has four possible values
     # 'a', 'b', 'c' and 'd' and add it to X at the end

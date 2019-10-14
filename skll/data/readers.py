@@ -4,9 +4,15 @@ This module handles loading data from various types of data files. A
 base ``Reader`` class is provided that is sub-classed for each data
 file type that is supported, e.g. ``CSVReader``.
 
-Notes about Label Conversion
-----------------------------
-All ``Reader`` sub-classes use the ``safe_float`` function internally
+Notes about IDs & Label Conversion
+-----------------------------------
+All ``Reader`` sub-classes are designed to read in example IDs
+as strings unless ``ids_to_floats`` is set to ``True`` in which
+case they will be read in as floats, if possible. In the latter
+case, an exception will be raised if they cannot be converted to
+floats.
+
+All ``Reader`` sub-classes also use the ``safe_float`` function internally
 to read in labels. This function tries to convert a single label
 first to ``int``, then to ``float``. If neither conversion is
 possible, the label remains a ``str``. It should be noted that, if
@@ -30,6 +36,7 @@ original labels to labels that convert only to ``str``.
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Jeremy Biggs (jbiggs@ets.org)
 :organization: ETS
 """
 
@@ -40,7 +47,7 @@ import re
 import sys
 from csv import DictReader
 from itertools import chain, islice
-from io import open, StringIO
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -162,7 +169,7 @@ class Reader(object):
                                   '{}').format(path_or_list))
         return EXT_TO_READER[ext](path_or_list, **kwargs)
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Does the actual reading of the given file or list.
         For `Reader` objects that do not rely on `pandas`
@@ -174,7 +181,7 @@ class Reader(object):
 
         Parameters
         ----------
-        f : file buffer or str
+        file : file buffer or str
             Either a file buffer, if ``_sub_read_rows()``
             is calling this method, or a path to a file,
             if it is being read with ``pandas``.
@@ -206,7 +213,7 @@ class Reader(object):
                   end=end, file=sys.stderr)
             sys.stderr.flush()
 
-    def _sub_read_rows(self, path):
+    def _sub_read_rows(self, file):
         """
         Read the file in row-by-row. This method is used for
         `Reader` objects that do not rely on `pandas`, and are
@@ -217,8 +224,8 @@ class Reader(object):
 
         Parameters
         ----------
-        path : str
-            The path to the file.
+        file : str
+            The path to a file.
 
         Returns
         -------
@@ -242,7 +249,7 @@ class Reader(object):
         ids = []
         labels = []
         ex_num = 0
-        with open(path, 'r') as f:
+        with open(file, 'r') as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
 
                 # Update lists of IDs, classes, and features
@@ -284,7 +291,12 @@ class Reader(object):
 
         return ids, labels, features
 
-    def _parse_dataframe(self, df, id_col, label_col, features=None):
+    def _parse_dataframe(self,
+                         df,
+                         id_col,
+                         label_col,
+                         replace_blanks_with=None,
+                         drop_blanks=False):
         """
         Parse the data frame into ids, labels, and features.
         For `Reader` objects that rely on `pandas`, this function
@@ -301,11 +313,19 @@ class Reader(object):
             The id column.
         label_col : str or None
             The label column.
-        features : list of dict or None
-            The features, if they already exist;
-            if not, then they will be extracted
-            from the data frame.
-            Defaults to None.
+        replace_blanks_with : value, ``dict``, or ``None``, optional
+            Specifies a new value with which to replace blank values.
+            Options are ::
+
+                -  value = A (numeric) value with which to replace blank values.
+                -  ``dict`` = A dictionary specifying the replacement value for each column.
+                -  ``None`` = Blank values will be left as blanks, and not replaced.
+
+            Defaults to ``None``.
+        drop_blanks : bool, optional
+            If ``True``, remove lines/rows that have any blank
+            values.
+            Defaults to ``False``.
 
         Returns
         -------
@@ -320,12 +340,28 @@ class Reader(object):
             raise ValueError("No features found in possibly "
                              "empty file '{}'.".format(self.path_or_list))
 
+        if drop_blanks and replace_blanks_with is not None:
+            raise ValueError("You cannot both drop blanks and replace them. "
+                             "'replace_blanks_with' can only have a value when "
+                             "'drop_blanks' is `False`.")
+
+        # should we replace blank values with something?
+        if replace_blanks_with is not None:
+            self.logger.info('Blank values in all rows/lines will be replaced with '
+                             'user-specified value(s).')
+            df = df.fillna(replace_blanks_with)
+
+        # should we remove lines that have any NaNs?
+        if drop_blanks:
+            self.logger.info('Rows/lines with any blank values will be dropped.')
+            df = df.dropna().reset_index(drop=True)
+
         # if the id column exists,
         # get them from the data frame and
         # delete the column; otherwise, just
         # set it to None
         if id_col is not None and id_col in df:
-            ids = df[id_col]
+            ids = df[id_col].astype(str)
             del df[id_col]
             # if `ids_to_floats` is True,
             # then convert the ids to floats
@@ -347,8 +383,7 @@ class Reader(object):
             # map the new classes to the labels;
             # otherwise, just convert them to floats
             if self.class_map is not None:
-                labels = labels.apply(safe_float,
-                                      replace_dict=self.class_map)
+                labels = labels.apply(safe_float, replace_dict=self.class_map)
             else:
                 labels = labels.apply(safe_float)
             labels = labels.values
@@ -357,10 +392,8 @@ class Reader(object):
             labels = np.array([None] * df.shape[0])
 
         # convert the remaining features to
-        # a list of dictionaries, if no
-        # features argument was passed
-        if features is None:
-            features = df.to_dict(orient='records')
+        # a list of dictionaries
+        features = df.to_dict(orient='records')
 
         return ids, labels, features
 
@@ -482,14 +515,14 @@ class NDJReader(Reader):
     must be specified as the  "id" key in each JSON dictionary.
     """
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         The function called on the file buffer in the ``read()`` method
         to iterate through rows.
 
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for an NDJ file.
 
         Yields
@@ -508,7 +541,7 @@ class NDJReader(Reader):
             If IDs cannot be converted to floats, and ``ids_to_floats``
             is ``True``.
         """
-        for example_num, line in enumerate(f):
+        for example_num, line in enumerate(file):
             # Remove extraneous whitespace
             line = line.strip()
 
@@ -546,11 +579,11 @@ class MegaMReader(Reader):
     as a comment line directly preceding the line with feature values.
     """
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for an MegaM file.
 
         Yields
@@ -570,7 +603,7 @@ class MegaMReader(Reader):
         """
         example_num = 0
         curr_id = 'EXAMPLE_0'
-        for line in f:
+        for line in file:
             # Process encoding
             if not isinstance(line, str):
                 line = UnicodeDammit(line, ['utf-8',
@@ -671,11 +704,11 @@ class LibSVMReader(Reader):
         value = safe_float(value)
         return (name, value)
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for an LibSVM file.
 
         Yields
@@ -693,7 +726,7 @@ class LibSVMReader(Reader):
         ValueError
             If line does not look like valid libsvm format.
         """
-        for example_num, line in enumerate(f):
+        for example_num, line in enumerate(file):
             curr_id = ''
             # Decode line if it's not already str
             if isinstance(line, bytes):
@@ -755,6 +788,21 @@ class CSVReader(Reader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
+    replace_blanks_with : value, ``dict``, or ``None``, optional
+        Specifies a new value with which to replace blank values.
+        Options are ::
+
+            -  value = A (numeric) value with which to replace blank values.
+            -  dict = A dictionary specifying the replacement value for each column.
+            -  None = Blank values will be left as blanks, and not replaced.
+
+        The replacement occurs after the data set is read into a `pd.DataFrame`.
+        Defaults to ``None``.
+    drop_blanks : bool, optional
+        If ``True``, remove lines/rows that have any blank
+        values. These lines/rows are removed after the
+        the data set is read into a `pd.DataFrame`.
+        Defaults to ``False``.
     pandas_kwargs : dict or None, optional
         Arguments that will be passed directly
         to the `pandas` I/O reader.
@@ -763,18 +811,25 @@ class CSVReader(Reader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
+    def __init__(self,
+                 path_or_list,
+                 replace_blanks_with=None,
+                 drop_blanks=False,
+                 pandas_kwargs=None,
+                 **kwargs):
         super(CSVReader, self).__init__(path_or_list, **kwargs)
+        self._replace_blanks_with = replace_blanks_with
+        self._drop_blanks = drop_blanks
         self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
         self._sep = self._pandas_kwargs.pop('sep', str(','))
         self._engine = self._pandas_kwargs.pop('engine', 'c')
         self._use_pandas = True
 
-    def _sub_read(self, path):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        path : str
+        file : str
             The path to the CSV file.
 
         Returns
@@ -786,8 +841,12 @@ class CSVReader(Reader):
         features : list of dicts
             The features for the features set.
         """
-        df = pd.read_csv(path, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
-        return self._parse_dataframe(df, self.id_col, self.label_col)
+        df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
+        return self._parse_dataframe(df,
+                                     self.id_col,
+                                     self.label_col,
+                                     replace_blanks_with=self._replace_blanks_with,
+                                     drop_blanks=self._drop_blanks)
 
 
 class TSVReader(CSVReader):
@@ -803,6 +862,21 @@ class TSVReader(CSVReader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
+    replace_blanks_with : value, ``dict``, or ``None``, optional
+        Specifies a new value with which to replace blank values.
+        Options are ::
+
+            -  value = A (numeric) value with which to replace blank values.
+            -  dict = A dictionary specifying the replacement value for each column.
+            -  None = Blank values will be left as blanks, and not replaced.
+
+        The replacement occurs after the data set is read into a `pd.DataFrame`.
+        Defaults to ``None``.
+    drop_blanks : bool, optional
+        If ``True``, remove lines/rows that have any blank
+        values. These lines/rows are removed after the
+        the data set is read into a `pd.DataFrame`.
+        Defaults to ``False``.
     pandas_kwargs : dict or None, optional
         Arguments that will be passed directly
         to the `pandas` I/O reader.
@@ -811,8 +885,17 @@ class TSVReader(CSVReader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, pandas_kwargs=None, **kwargs):
-        super(TSVReader, self).__init__(path_or_list, pandas_kwargs, **kwargs)
+    def __init__(self,
+                 path_or_list,
+                 replace_blanks_with=None,
+                 drop_blanks=False,
+                 pandas_kwargs=None,
+                 **kwargs):
+        super(TSVReader, self).__init__(path_or_list,
+                                        replace_blanks_with=replace_blanks_with,
+                                        drop_blanks=drop_blanks,
+                                        pandas_kwargs=pandas_kwargs,
+                                        **kwargs)
         self._sep = str('\t')
 
 
@@ -841,11 +924,11 @@ class DelimitedReader(Reader):
         self.dialect = kwargs.pop('dialect', 'excel-tab')
         super(DelimitedReader, self).__init__(path_or_list, **kwargs)
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for an delimited file.
 
         Yields
@@ -858,7 +941,7 @@ class DelimitedReader(Reader):
             The example valued in dictionary format, with 'x'
             as list of features.
         """
-        reader = DictReader(f, dialect=self.dialect)
+        reader = DictReader(file, dialect=self.dialect)
         for example_num, row in enumerate(reader):
             if self.label_col is not None and self.label_col in row:
                 class_name = safe_float(row[self.label_col],
@@ -917,14 +1000,14 @@ class ARFFReader(DelimitedReader):
         self.regression = False
 
     @staticmethod
-    def split_with_quotes(s, delimiter=' ', quote_char="'", escape_char='\\'):
+    def split_with_quotes(string, delimiter=' ', quote_char="'", escape_char='\\'):
         """
         A replacement for string.split that won't split delimiters enclosed in
         quotes.
 
         Parameters
         ----------
-        s : str
+        string : str
             The string with quotes to split
         delimiter : str, optional
             The delimiter to split on.
@@ -936,14 +1019,16 @@ class ARFFReader(DelimitedReader):
             The escape character.
             Defaults to ``'\\'``.
         """
-        return next(csv.reader([s], delimiter=delimiter, quotechar=quote_char,
+        return next(csv.reader([string],
+                               delimiter=delimiter,
+                               quotechar=quote_char,
                                escapechar=escape_char))
 
-    def _sub_read(self, f):
+    def _sub_read(self, file):
         """
         Parameters
         ----------
-        f : file buffer
+        file : file buffer
             A file buffer for the ARFF file.
 
         Yields
@@ -958,7 +1043,7 @@ class ARFFReader(DelimitedReader):
         """
         field_names = []
         # Process ARFF header
-        for line in f:
+        for line in file:
             # Process encoding
             if not isinstance(line, str):
                 decoded_line = UnicodeDammit(line,
@@ -1001,7 +1086,7 @@ class ARFFReader(DelimitedReader):
             self.label_col = None
 
         # Process data as CSV file
-        return super(ARFFReader, self)._sub_read(chain([field_str], f))
+        return super(ARFFReader, self)._sub_read(chain([field_str], file))
 
 
 def safe_float(text, replace_dict=None, logger=None):

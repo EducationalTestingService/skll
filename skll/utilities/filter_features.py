@@ -13,7 +13,7 @@ import logging
 import os
 import sys
 
-from skll.data.readers import EXT_TO_READER
+from skll.data.readers import EXT_TO_READER, safe_float
 from skll.data.writers import ARFFWriter, CSVWriter, TSVWriter, EXT_TO_WRITER
 from skll.version import __version__
 
@@ -31,43 +31,52 @@ def main(argv=None):
 
     # Get command line arguments
     parser = argparse.ArgumentParser(
-        description="Takes an input feature file and removes any instances or\
-                     features that do not match the specified patterns.",
+        description="Takes an input feature file and removes any instances or "
+                    "features that do not match the specified patterns.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .arff, .csv, \
-                              .jsonlines, .megam, .ndj, or .tsv)')
+                        help='input feature file (ends in .arff, .csv, '
+                             '.jsonlines, .megam, .ndj, or .tsv)')
     parser.add_argument('outfile',
-                        help='output feature file (must have same extension as\
-                              input file)')
+                        help='output feature file (must have same extension as '
+                             'input file)')
     parser.add_argument('-f', '--feature',
-                        help='A feature in the feature file you would like to \
-                              keep.  If unspecified, no features are removed.',
+                        help='A feature in the feature file you would like to '
+                             'keep.  If unspecified, no features are removed.',
                         nargs='*')
     parser.add_argument('-I', '--id',
-                        help='An instance ID in the feature file you would \
-                              like to keep.  If unspecified, no instances are \
-                              removed based on their IDs.',
+                        help='An instance ID in the feature file you would '
+                             'like to keep.  If unspecified, no instances are '
+                             'removed based on their IDs.',
                         nargs='*')
     parser.add_argument('--id_col',
-                        help='Name of the column which contains the instance \
-                              IDs in ARFF, CSV, or TSV files.',
+                        help='Name of the column which contains the instance '
+                             'IDs in ARFF, CSV, or TSV files.',
                         default='id')
     parser.add_argument('-i', '--inverse',
-                        help='Instead of keeping features and/or examples in \
-                              lists, remove them.',
+                        help='Instead of keeping features and/or examples in '
+                             'lists, remove them.',
                         action='store_true')
     parser.add_argument('-L', '--label',
-                        help='A label in the feature file you would like to \
-                              keep.  If unspecified, no instances are removed \
-                              based on their labels.',
+                        help='A label in the feature file you would like to '
+                             'keep.  If unspecified, no instances are removed '
+                             'based on their labels.',
                         nargs='*')
     parser.add_argument('-l', '--label_col',
-                        help='Name of the column which contains the class \
-                              labels in ARFF, CSV, or TSV files. For ARFF \
-                              files, this must be the final column to count as\
-                              the label.',
+                        help='Name of the column which contains the class '
+                             'labels in ARFF, CSV, or TSV files. For ARFF '
+                             'files, this must be the final column to count as '
+                             'the label.',
                         default='y')
+    parser.add_argument('-rb', '--replace_blanks_with',
+                        help='Specifies a new value with which to replace blank values '
+                             'in all columns in the file. To replace blanks differently '
+                             'in each column, use the SKLL Reader API directly.',
+                        default=None)
+    parser.add_argument('-db', '--drop_blanks',
+                        action='store_true',
+                        help='Drop all lines/rows that have any blank values.',
+                        default=False)
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
@@ -104,10 +113,26 @@ def main(argv=None):
                       'file.  You specified: {}').format(output_extension))
         sys.exit(1)
 
+    if input_extension == '.csv' or input_extension == '.tsv':
+        replace_blanks_with = args.replace_blanks_with
+        drop_blanks = args.drop_blanks
+        if drop_blanks and replace_blanks_with is not None:
+            raise ValueError("You cannot both drop blanks and replace them. "
+                             "'replace_blanks_with' can only have a value when "
+                             "'drop_blanks' is `False`.")
+        replace_blanks_with = (None if replace_blanks_with is None
+                               else safe_float(replace_blanks_with))
+        kwargs = {'replace_blanks_with': replace_blanks_with,
+                  'drop_blanks': drop_blanks}
+    else:
+        kwargs = {}
+
     # Read input file
-    reader = EXT_TO_READER[input_extension](args.infile, quiet=args.quiet,
+    reader = EXT_TO_READER[input_extension](args.infile,
+                                            quiet=args.quiet,
                                             label_col=args.label_col,
-                                            id_col=args.id_col)
+                                            id_col=args.id_col,
+                                            **kwargs)
     feature_set = reader.read()
 
     # Do the actual filtering

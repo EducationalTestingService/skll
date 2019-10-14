@@ -13,6 +13,8 @@ import itertools
 import os
 import sys
 import scipy as sp
+import numpy as np
+import pandas as pd
 
 from collections import defaultdict
 from glob import glob
@@ -30,6 +32,7 @@ from nose.tools import eq_, assert_almost_equal, raises
 from numpy.testing import assert_allclose, assert_array_almost_equal
 from numpy import concatenate
 
+from pandas.testing import assert_frame_equal
 from sklearn.feature_extraction import FeatureHasher
 
 import numpy as np
@@ -78,6 +81,9 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+    features_dir = join(_my_dir, 'other', 'features')
+    if not exists(features_dir):
+        os.makedirs(features_dir)
 
 
 def tearDown():
@@ -116,6 +122,9 @@ def tearDown():
         os.unlink(join(other_dir, 'test_filter_features_input.arff'))
     for ffile in glob(join(other_dir,
                            'test_join_features*')):
+        os.unlink(ffile)
+
+    for ffile in glob(join(other_dir, 'features', 'features*')):
         os.unlink(ffile)
 
 
@@ -815,17 +824,22 @@ def test_mutually_exclusive_generate_predictions_args():
     gp.main(generate_cmd)
 
 
-def check_skll_convert(from_suffix, to_suffix):
+def check_skll_convert(from_suffix, to_suffix, id_type):
 
     # create some simple classification data
     orig_fs, _ = make_classification_data(train_test_ratio=1.0,
-                                          one_string_feature=True)
+                                          one_string_feature=True,
+                                          id_type=id_type)
 
     # now write out this feature set in the given suffix
-    from_suffix_file = join(_my_dir, 'other',
-                            'test_skll_convert_in{}'.format(from_suffix))
-    to_suffix_file = join(_my_dir, 'other',
-                          'test_skll_convert_out{}'.format(to_suffix))
+    from_suffix_file = join(_my_dir,
+                            'other',
+                            'test_skll_convert_{}_ids_in{}'.format(id_type,
+                                                                   from_suffix))
+    to_suffix_file = join(_my_dir,
+                          'other',
+                          'test_skll_convert_{}_ids_out{}'.format(id_type,
+                                                                  to_suffix))
 
     writer = EXT_TO_WRITER[from_suffix](from_suffix_file, orig_fs, quiet=True)
     writer.write()
@@ -844,13 +858,17 @@ def check_skll_convert(from_suffix, to_suffix):
         sys.stderr = old_stderr
         print(err)
 
-    # now read the converted file
-    reader = EXT_TO_READER[to_suffix](to_suffix_file, quiet=True)
+    # now read the converted file and appropriately set `ids_to_floats`
+    # depending on the ID types that we generated earlier
+    ids_to_floats = True if id_type in ['float', 'integer'] else False
+    reader = EXT_TO_READER[to_suffix](to_suffix_file, ids_to_floats=ids_to_floats, quiet=True)
     converted_fs = reader.read()
 
-    # TODO : For now, we are converting these to dense, and then back to sparse.
-    # The reason for this is that DictVectorizers now retain any explicit zeros,
-    # but we convert these to dense when we write them out. This will be fixed.
+    # TODO : For now, we are converting feature arrays to dense, and then back to sparse.
+    # The reason for this is that scikit-learn DictVectorizers now retain any
+    # explicit zeros that are in files (e.g., in CSVs and TSVs). There's an issue
+    # open on scikit-learn: https://github.com/scikit-learn/scikit-learn/issues/14718
+
     orig_fs.features = sp.sparse.csr_matrix(orig_fs.features.todense())
     converted_fs.features = sp.sparse.csr_matrix(converted_fs.features.todense())
 
@@ -858,11 +876,17 @@ def check_skll_convert(from_suffix, to_suffix):
 
 
 def test_skll_convert():
-    for from_suffix, to_suffix in itertools.permutations(['.jsonlines',
-                                                          '.megam', '.tsv',
-                                                          '.csv', '.arff',
-                                                          '.libsvm'], 2):
-        yield check_skll_convert, from_suffix, to_suffix
+    for (from_suffix,
+         to_suffix) in itertools.permutations(['.arff',
+                                               '.csv',
+                                               '.jsonlines',
+                                               '.libsvm',
+                                               '.megam',
+                                               '.tsv'], 2):
+        yield check_skll_convert, from_suffix, to_suffix, 'string'
+        yield check_skll_convert, from_suffix, to_suffix, 'integer_string'
+        yield check_skll_convert, from_suffix, to_suffix, 'float'
+        yield check_skll_convert, from_suffix, to_suffix, 'integer'
 
 
 def test_skll_convert_libsvm_map():
@@ -1821,3 +1845,94 @@ def test_join_features_unmatched_output_format():
         jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1),
                        'baz{}'.format(ext2)]
         yield check_join_features_raises_system_exit, jf_cmd_args
+
+
+def test_filter_features_with_drop_blanks():
+    """
+    Test filter features with CSV and TSV readers
+    using the `drop_blanks` option
+    """
+    df = pd.DataFrame({'A': [1, 2, 3, np.nan, 5, 6],
+                       'B': [5, 9, np.nan, 2, 9, 1],
+                       'C': [1.0, 1.0, 1.0, 1.0, 1.0, 1.1],
+                       'L': [1, 2, 1, 2, 1, 2]})
+
+    # create the expected results
+    df_expected = df.copy().dropna().reset_index(drop=True)
+    df_expected['id'] = ['EXAMPLE_{}'.format(i) for i in range(4)]
+    df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
+
+    csv_infile = join(_my_dir, 'other', 'features', 'features_drop_blanks.csv')
+    tsv_infile = join(_my_dir, 'other', 'features', 'features_drop_blanks.tsv')
+
+    csv_outfile = join(_my_dir, 'other', 'features', 'features_drop_blanks_out.csv')
+    tsv_outfile = join(_my_dir, 'other', 'features', 'features_drop_blanks_out.tsv')
+
+    df.to_csv(csv_infile, index=False)
+    df.to_csv(tsv_infile, index=False, sep='\t')
+
+    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L', '--drop_blanks']
+    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L', '--drop_blanks']
+
+    ff.main(filter_features_csv_cmd)
+    ff.main(filter_features_tsv_cmd)
+
+    df_csv_output = pd.read_csv(csv_outfile)
+    df_tsv_output = pd.read_csv(tsv_outfile, sep="\t")
+
+    assert_frame_equal(df_csv_output, df_expected)
+    assert_frame_equal(df_tsv_output, df_expected)
+
+
+def test_filter_features_with_replace_blanks_with():
+    """
+    Test filter features with CSV and TSV readers
+    using the `replace_blanks_with` option
+    """
+    df = pd.DataFrame({'A': [1, 2, 3, np.nan, 5, 6],
+                       'B': [5, 9, np.nan, 2, 9, 1],
+                       'C': [1.0, 1.0, 1.0, 1.0, 1.0, 1.1],
+                       'L': [1, 2, 1, 2, 1, 2]})
+
+    # create the expected results
+    df_expected = df.fillna(4.5).copy()
+    df_expected['id'] = ['EXAMPLE_{}'.format(i) for i in range(6)]
+    df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
+
+    csv_infile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with.csv')
+    tsv_infile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with.tsv')
+
+    csv_outfile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with_out.csv')
+    tsv_outfile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with_out.tsv')
+
+    df.to_csv(csv_infile, index=False)
+    df.to_csv(tsv_infile, index=False, sep='\t')
+
+    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L', '--replace_blanks_with', '4.5']
+    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L', '--replace_blanks_with', '4.5']
+
+    ff.main(filter_features_csv_cmd)
+    ff.main(filter_features_tsv_cmd)
+
+    df_csv_output = pd.read_csv(csv_outfile)
+    df_tsv_output = pd.read_csv(tsv_outfile, sep="\t")
+
+    assert_frame_equal(df_csv_output, df_expected)
+    assert_frame_equal(df_tsv_output, df_expected)
+
+
+@raises(ValueError)
+def test_filter_features_with_replace_blanks_with_and_drop_blanks_raises_error():
+
+    df = pd.DataFrame(np.random.randn(5, 10))
+
+    csv_infile = join(_my_dir, 'other', 'features', 'features_drop_and_replace_error.csv')
+    csv_outfile = join(_my_dir, 'other', 'features', 'features_drop_and_replace_error_out.csv')
+
+    df.to_csv(csv_infile, index=False)
+
+    filter_features_csv_cmd = [csv_infile, csv_outfile,
+                               '--drop_blanks',
+                               '--replace_blanks_with', '4.5']
+
+    ff.main(filter_features_csv_cmd)

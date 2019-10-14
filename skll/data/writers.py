@@ -5,6 +5,7 @@ Handles loading data from various types of data files.
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Jeremy Biggs (jbiggs@ets.org)
 :organization: ETS
 """
 

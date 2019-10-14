@@ -57,7 +57,16 @@ A simple comma or tab-delimited format with the following restrictions:
 *   If the data has instance IDs, there should be a column with the name
     specified by :ref:`id_col <id_col>` in the :ref:`Input` section of the configuration file you create for your experiment. This defaults to ``id``.  If there is no such column, IDs will be generated automatically.
 *   All other columns contain feature values, and every feature value
-    must be specified (making this a poor choice for sparse data).
+    must be specified (making this a poor choice for sparse data). 
+    
+.. warning:: 
+ 
+    SKLL will raise an error if there are blank values in *any* of the
+    columns. You must either drop all rows with blank values in any column
+    or replace the blanks with a value you specify. To drop or replace via
+    the command line, use the :ref:`filter_features <filter_features>` script.
+    You can also drop/replace via the SKLL Reader API, specifically :py:mod:`skll.data.readers.CSVReader` and :py:mod:`skll.data.readers.TSVReader`.
+
 
 .. _ndj:
 
@@ -447,31 +456,31 @@ folds_file *(Optional)*
 """"""""""""""""""""""""""""""
 
 Path to a csv file specifying the mapping of instances in the training data
-to folds. This can be specified when the :ref:`task` is either ``train`` or
-``cross_validate``. For the ``train`` task, if :ref:`grid_search <grid_search>`
-is ``True``, this file, if specified, will be used to define the
-cross-validation used for the grid search (leave one fold ID out at a time).
-Otherwise, it will be ignored.
+to folds. This can be specified for the ``train``, ``evaluate``, ``predict``,
+and ``cross_validate`` tasks. For the  ``train``/``evaluate``/``predict`` tasks, 
+if :ref:`grid_search <grid_search>` is ``True``, this file, if specified, will be 
+used to define the cross-validation used for the grid search (leave one fold ID out 
+at a time). Otherwise, it will be ignored.
 
 For the ``cross_validate`` task, this file will be used to define the outer
-cross-validation loop and, if :ref:`grid_search <grid_search>` is ``True``, also for the
-inner grid-search cross-validation loop. If the goal of specifiying the folds
-file is to ensure that the model does not learn to differentiate based on a confound:
-e.g. the data from the same person is always in the same fold, it makes sense to
-keep the same folds for both the outer and the inner cross-validation loops.
+cross-validation loop and also for the inner grid-search cross-validation loop. 
+If the goal of specifiying the folds file is to ensure that the model does not 
+learn to differentiate based on a confound: e.g. the data from the same person 
+is always in the same fold, it makes sense to keep the same folds for both the 
+outer and the inner cross-validation loops.
 
-However, sometimes the goal of specifying the folds file is simply for the
-purpose of comparison to another existing experiment or another context
-in which maintaining the constitution of the folds in the inner
-grid-search loop is not required. In this case, users may set the parameter
+However, sometimes the goal of specifying the folds file is simply to
+compare to another existing experiment or in another context where 
+maintaining the constitution of the folds in the inner
+grid-search loop is not required. In this case, users may set the option
 :ref:`use_folds_file_for_grid_search <use_folds_file_for_grid_search>`
-to ``False`` which will then direct the inner grid-search cross-validation loop
-to simply use the number specified via :ref:`grid_search_folds <grid_search_folds>`
-instead of using the folds file. This will likely lead to shorter execution times as
-well depending on how many folds are in the folds file and the value
-of :ref:`grid_search_folds <grid_search_folds>`.
+in the configuration file to ``False`` which will then direct the inner 
+grid-search cross-validation loop to simply use the number specified via 
+:ref:`grid_search_folds <grid_search_folds>` instead of using the folds file. 
+This can also likely lead to shorter execution times depending on how many
+folds are in the folds file and the value of :ref:`grid_search_folds <grid_search_folds>`.
 
-The format of this file must be as follows: the first row must be a header.
+The format of this file should be as follows: the first row must be a header.
 This header row is ignored, so it doesn't matter what the header row contains,
 but it must be there. If there is no header row, whatever row is in its place
 will be ignored. The first column should consist of training set IDs and the
@@ -1147,6 +1156,21 @@ save_cv_folds *(Optional)*
 Whether to save the folds that were used for a cross-validation experiment
 to a CSV file named ``EXPERIMENT_skll_fold_ids.csv`` in the :ref:`results`
 directory, where ``EXPERIMENT`` refers to the :ref:`experiment_name`.
+Defaults to ``False``.
+
+.. _run_experiment:
+
+save_cv_models *(Optional)*
+"""""""""""""""""""""""""""
+
+Whether to save the fold models that were generated during the
+cross-validation experiment to the :ref:`models` directory. Beware that using
+this option will result in an increase of RAM usage since the fold models will
+need to be kept in memory during execution. The eventual saving of fold models
+to disk is also a considersation in terms of disk space. Furthermore, if using
+a grid engine, transferring lots of large model objects over a network could
+also be problematic. Only set this option to ``True`` if you understand the
+implications.
 Defaults to ``False``.
 
 .. _run_experiment:
