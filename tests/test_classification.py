@@ -125,6 +125,8 @@ def test_contiguous_int_or_float_labels():
     eq_(_contiguous_ints_or_floats([1.0, 1.1, 1.2]), False)
     assert_raises(TypeError, _contiguous_ints_or_floats, ['a', 'b', 'c'])
     assert_raises(TypeError, _contiguous_ints_or_floats, np.array([1, 2, 3, 'a']))
+    assert_raises(ValueError, _contiguous_ints_or_floats, [])
+    assert_raises(ValueError, _contiguous_ints_or_floats, np.array([]))
 
 
 def test_label_index_order():

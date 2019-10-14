@@ -273,9 +273,15 @@ def _contiguous_ints_or_floats(numbers):
     TypeError
         If ``numbers`` does not contain integers or floating
         point values.
+    ValueError
+        If ``numbers`` is empty.
     """
 
     try:
+
+        # make sure that number is not empty
+        assert len(numbers) > 0
+
         # first check that the numbers are all integers
         # or integer-like floats (e.g., 1.0, 2.0 etc.)
         ints_or_int_like_floats = np.all(np.mod(numbers, 1) == 0)
@@ -283,6 +289,9 @@ def _contiguous_ints_or_floats(numbers):
         # next check that the successive differences between
         # the numbers are all 1, i.e., they are nuermicontiguous
         contiguous = np.all(np.diff(numbers) == 1)
+
+    except AssertionError:
+        raise ValueError('Input cannot be empty.')
 
     except TypeError:
         raise TypeError('Input should only contain numbers.')
