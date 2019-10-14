@@ -460,7 +460,12 @@ def _get_acceptable_classification_metrics(label_array):
     # class indices will be sorted in the same order
     # as the class labels therefore, ranking metrics
     # such as various correlations should work fine.
-    elif issubclass(label_type, (int, np.int64, float, np.float64)):
+    elif issubclass(label_type, (int,
+                                 np.int32,
+                                 np.int64,
+                                 float,
+                                 np.float32,
+                                 np.float64)):
         acceptable_metrics.update(_CORRELATION_METRICS)
 
         # CASE 3; labels are numerically contiguous integers

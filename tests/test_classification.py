@@ -1066,7 +1066,7 @@ def check_objective_values_for_classification(metric_name,
             #    or float labels; they use probability values if
             #    available only in the binary case.
             if metric_name == 'pearson':
-                if issubclass(label_type, (np.int64, np.float64)):
+                if issubclass(label_type, (np.int32, np.int64, np.float64)):
                     if len(label_array) == 2 and use_probabilities:
                         metric_value = pearsonr(y_fold_test_indices,
                                                 sklearn_fold_test_probs[:, 1])[0]
@@ -1074,7 +1074,7 @@ def check_objective_values_for_classification(metric_name,
                         metric_value = pearsonr(y_fold_test_indices,
                                                 sklearn_fold_test_labels)[0]
             elif metric_name == 'spearman':
-                if issubclass(label_type, (np.int64, np.float64)):
+                if issubclass(label_type, (np.int32, np.int64, np.float64)):
                     if len(label_array) == 2 and use_probabilities:
                         metric_value = spearmanr(y_fold_test_indices,
                                                  sklearn_fold_test_probs[:, 1])[0]
@@ -1082,7 +1082,7 @@ def check_objective_values_for_classification(metric_name,
                         metric_value = spearmanr(y_fold_test_indices,
                                                  sklearn_fold_test_labels)[0]
             elif metric_name == 'kendall_tau':
-                if issubclass(label_type, (np.int64, np.float64)):
+                if issubclass(label_type, (np.int32, np.int64, np.float64)):
                     if len(label_array) == 2 and use_probabilities:
                         metric_value = kendalltau(y_fold_test_indices,
                                                   sklearn_fold_test_probs[:, 1])[0]
@@ -1326,7 +1326,7 @@ def check_metric_values_for_classification(metric_name,
     #    or float labels; they use probability values if
     #    available only in the binary case.
     if metric_name == 'pearson':
-        if issubclass(label_type, (np.int64, np.float64)):
+        if issubclass(label_type, (np.int32, np.int64, np.float64)):
             if len(label_array) == 2 and use_probabilities:
                 sklearn_metric_value = pearsonr(y_test,
                                                 sklearn_test_probs[:, 1])[0]
@@ -1334,7 +1334,7 @@ def check_metric_values_for_classification(metric_name,
                 sklearn_metric_value = pearsonr(y_test,
                                                 sklearn_test_labels)[0]
     elif metric_name == 'spearman':
-        if issubclass(label_type, (np.int64, np.float64)):
+        if issubclass(label_type, (np.int32, np.int64, np.float64)):
             if len(label_array) == 2 and use_probabilities:
                 sklearn_metric_value = spearmanr(y_test,
                                                  sklearn_test_probs[:, 1])[0]
@@ -1342,7 +1342,7 @@ def check_metric_values_for_classification(metric_name,
                 sklearn_metric_value = spearmanr(y_test,
                                                  sklearn_test_labels)[0]
     elif metric_name == 'kendall_tau':
-        if issubclass(label_type, (np.int64, np.float64)):
+        if issubclass(label_type, (np.int32, np.int64, np.float64)):
             if len(label_array) == 2 and use_probabilities:
                 sklearn_metric_value = kendalltau(y_test,
                                                   sklearn_test_probs[:, 1])[0]
