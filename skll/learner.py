@@ -1568,8 +1568,9 @@ class Learner(object):
                 old_grid_objective = grid_objective
                 new_grid_objective = '{}_probs'.format(grid_objective)
                 metrics_module = import_module('skll.metrics')
-                metric_func = getattr(metrics_module, grid_objective)
+                metric_func = getattr(metrics_module, 'correlation')
                 SCORERS[new_grid_objective] = make_scorer(metric_func,
+                                                          corr_type=grid_objective,
                                                           needs_proba=True)
                 grid_objective = new_grid_objective
 

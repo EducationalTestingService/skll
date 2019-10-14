@@ -15,8 +15,7 @@ from .logutils import (close_and_remove_logger_handlers,
 from .data import FeatureSet, Reader, Writer
 from .experiments import run_configuration
 from .learner import Learner
-from .metrics import (kappa, kendall_tau, spearman, pearson,
-                      f1_score_least_frequent)
+from .metrics import correlation, f1_score_least_frequent, kappa
 
 __all__ = ['FeatureSet', 'Learner', 'Reader', 'get_skll_logger',
            'orig_showwarning', 'close_and_remove_logger_handlers',
@@ -31,9 +30,9 @@ _scorers = {'f1_score_micro': make_scorer(f1_score,
             'f1_score_weighted': make_scorer(f1_score,
                                              average='weighted'),
             'f1_score_least_frequent': make_scorer(f1_score_least_frequent),
-            'pearson': make_scorer(pearson),
-            'spearman': make_scorer(spearman),
-            'kendall_tau': make_scorer(kendall_tau),
+            'pearson': make_scorer(correlation, corr_type='pearson'),
+            'spearman': make_scorer(correlation, corr_type='spearman'),
+            'kendall_tau': make_scorer(correlation, corr_type='kendall_tau'),
             'unweighted_kappa': make_scorer(kappa),
             'quadratic_weighted_kappa': make_scorer(kappa,
                                                     weights='quadratic'),

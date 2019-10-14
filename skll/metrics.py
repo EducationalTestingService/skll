@@ -181,13 +181,13 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     return k
 
 
-def kendall_tau(y_true, y_pred):
+def correlation(y_true, y_pred, corr_type='pearson'):
     """
-    Calculate Kendall's tau between ``y_true`` and ``y_pred``. ``y_pred``
+    Calculate given correlation between ``y_true`` and ``y_pred``. ``y_pred``
     can be multi-dimensional. If ``y_pred`` is 1-dimensional, it may either
     contain probabilities, most-likely classification labels, or regressor
-    predictions. In that case, we simply return the pearson correlation
-    between ``y_true`` and ``y_pred``. If ``y_pred`` is multi-dimensional,
+    predictions. In that case, we simply return the correlation between
+    ``y_true`` and ``y_pred``. If ``y_pred`` is multi-dimensional,
     it contains probabilties for multiple classes in which case, we infer
     the most likely labels and then compute the correlation between those
     and ``y_true``.
@@ -198,85 +198,24 @@ def kendall_tau(y_true, y_pred):
         The true/actual/gold labels for the data.
     y_pred : array-like of float
         The predicted/observed labels for the data.
+    corr_type : str, optional
+        Which type of correlation to compute. Possible
+        choices are ``pearson``, ``spearman``,
+        and ``kendall_tau``.
+        Defaults to ``pearson``.
 
     Returns
     -------
     ret_score : float
-        Kendall's tau if well-defined, else 0.0
+        correlation value if well-defined, else 0.0
     """
-    # convert to numpy array in case we are passed a list
-    y_pred = np.array(y_pred)
 
-    # multi-dimensional -> probability array -> get label
-    if y_pred.ndim > 1:
-        labels = np.argmax(y_pred, axis=1)
-        ret_score = kendalltau(y_true, labels)[0]
-    # 1-dimensional -> probabilities/labels -> use as is
-    else:
-        ret_score = kendalltau(y_true, y_pred)[0]
-    return ret_score if not np.isnan(ret_score) else 0.0
-
-
-def spearman(y_true, y_pred):
-    """
-    Calculate Spearman's rank correlation coefficient between ``y_true`` and
-    ``y_pred``. ``y_pred`` can be multi-dimensional. If ``y_pred`` is
-    1-dimensional, it may either contain probabilities, most-likely
-    classification labels, or regressor predictions. In that case, we
-    simply return the pearson correlation between ``y_true`` and ``y_pred``.
-    If ``y_pred`` is multi-dimensional, it contains probabilties for multiple
-    classes in which case, we infer the most likely labels and then compute
-    the correlation between those and ``y_true``.
-
-
-    Parameters
-    ----------
-    y_true : array-like of float
-        The true/actual/gold labels for the data.
-    y_pred : array-like of float
-        The predicted/observed labels for the data.
-
-    Returns
-    -------
-    ret_score : float
-        Spearman's rank correlation coefficient if well-defined, else 0.0
-    """
-    # convert to numpy array in case we are passed a list
-    y_pred = np.array(y_pred)
-
-    # multi-dimensional -> probability array -> get label
-    if y_pred.ndim > 1:
-        labels = np.argmax(y_pred, axis=1)
-        ret_score = spearmanr(y_true, labels)[0]
-    # 1-dimensional -> probabilities/labels -> use as is
-    else:
-        ret_score = spearmanr(y_true, y_pred)[0]
-    return ret_score if not np.isnan(ret_score) else 0.0
-
-
-def pearson(y_true, y_pred):
-    """
-    Calculate Pearson product-moment correlation coefficient between
-    ``y_true`` and ``y_pred``. ``y_pred`` can be multi-dimensional. If
-    ``y_pred`` is 1-dimensional, it may either contain probabilities,
-    most-likely classification labels, or regressor predictions. In that
-    case, we simply return the pearson correlation between ``y_true`` and
-    ``y_pred``. If ``y_pred`` is multi-dimensional, it contains
-    probabilties for multiple classes in which case, we infer the most
-    likely labels and then compute the correlation between those and ``y_true``.
-
-    Parameters
-    ----------
-    y_true : array-like of float
-        The true/actual/gold labels for the data.
-    y_pred : array-like of float
-        The predicted/observed labels for the data.
-
-    Returns
-    -------
-    ret_score : float
-        Pearson product-moment correlation coefficient if well-defined, else 0.0
-    """
+    # get the correlation function to use based on the given type
+    corr_func = pearsonr
+    if corr_type == 'spearman':
+        corr_func = spearmanr
+    elif corr_type == 'kendall_tau':
+        corr_func = kendalltau
 
     # convert to numpy array in case we are passed a list
     y_pred = np.array(y_pred)
@@ -284,10 +223,10 @@ def pearson(y_true, y_pred):
     # multi-dimensional -> probability array -> get label
     if y_pred.ndim > 1:
         labels = np.argmax(y_pred, axis=1)
-        ret_score = pearsonr(y_true, labels)[0]
+        ret_score = corr_func(y_true, labels)[0]
     # 1-dimensional -> probabilities/labels -> use as is
     else:
-        ret_score = pearsonr(y_true, y_pred)[0]
+        ret_score = corr_func(y_true, y_pred)[0]
     return ret_score if not np.isnan(ret_score) else 0.0
 
 
