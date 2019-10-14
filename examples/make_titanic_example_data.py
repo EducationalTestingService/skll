@@ -104,8 +104,7 @@ def main():
                                                          'Pclass', 'Fare',
                                                          'SibSp', 'Parch',
                                                          'Embarked',
-                                                         'PassengerId',
-                                                         'Survived']},
+                                                         'PassengerId']},
                               sparse=False).read()
 
     test_fs.filter(features=features_to_keep)
@@ -113,7 +112,6 @@ def main():
     test_fs.ids = list(range(num_train_dev + 1, num_test + num_train_dev + 1))
     writer = Writer.for_path('titanic/test/.csv',
                              test_fs,
-                             label_col='Survived',
                              id_col='PassengerId',
                              quiet=False,
                              subsets=subset_dict)
