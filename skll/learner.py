@@ -1572,8 +1572,9 @@ class Learner(object):
                 self.logger.info('You specified "{}" as the objective with '
                                  '"probability" set to "true". If this is '
                                  'a binary classification task with integer '
-                                 'labels, the probabilies for the positive '
-                                 'class will be used to compute the correlation.')
+                                 'labels, the probabilities for the positive '
+                                 'class will be used to compute the '
+                                 'correlation.'.format(grid_objective))
                 old_grid_objective = grid_objective
                 new_grid_objective = '{}_probs'.format(grid_objective)
                 metrics_module = import_module('skll.metrics')
