@@ -1067,30 +1067,21 @@ def check_objective_values_for_classification(metric_name,
             # 1. Correlation metrics are only computed for integer
             #    or float labels; they use probability values if
             #    available only in the binary case.
-            if metric_name == 'pearson':
+            if metric_name in ['pearson', 'spearman', 'kendall_tau']:
+                if metric_name == 'pearson':
+                    corr_metric_func = pearsonr
+                elif metric_name == 'spearman':
+                    corr_metric_func = spearmanr
+                elif metric_name == 'kendall_tau':
+                    corr_metric_func = kendalltau
+
                 if issubclass(label_type, (np.int32, np.int64, np.float64)):
                     if len(label_array) == 2 and use_probabilities:
-                        metric_value = pearsonr(y_fold_test_indices,
-                                                sklearn_fold_test_probs[:, 1])[0]
+                        metric_value = corr_metric_func(y_fold_test_indices,
+                                                        sklearn_fold_test_probs[:, 1])[0]
                     else:
-                        metric_value = pearsonr(y_fold_test_indices,
-                                                sklearn_fold_test_labels)[0]
-            elif metric_name == 'spearman':
-                if issubclass(label_type, (np.int32, np.int64, np.float64)):
-                    if len(label_array) == 2 and use_probabilities:
-                        metric_value = spearmanr(y_fold_test_indices,
-                                                 sklearn_fold_test_probs[:, 1])[0]
-                    else:
-                        metric_value = spearmanr(y_fold_test_indices,
-                                                 sklearn_fold_test_labels)[0]
-            elif metric_name == 'kendall_tau':
-                if issubclass(label_type, (np.int32, np.int64, np.float64)):
-                    if len(label_array) == 2 and use_probabilities:
-                        metric_value = kendalltau(y_fold_test_indices,
-                                                  sklearn_fold_test_probs[:, 1])[0]
-                    else:
-                        metric_value = kendalltau(y_fold_test_indices,
-                                                  sklearn_fold_test_labels)[0]
+                        metric_value = corr_metric_func(y_fold_test_indices,
+                                                        sklearn_fold_test_labels)[0]
             # 2. `neg_log_loss` requires probability values irrespective
             #     of label types and number of labels
             elif metric_name == 'neg_log_loss':
@@ -1327,30 +1318,22 @@ def check_metric_values_for_classification(metric_name,
     # 1. Correlation metrics are only computed for integer
     #    or float labels; they use probability values if
     #    available only in the binary case.
-    if metric_name == 'pearson':
+    if metric_name in ['pearson', 'spearman', 'kendall_tau']:
+        if metric_name == 'pearson':
+            corr_metric_func = pearsonr
+        elif metric_name == 'spearman':
+            corr_metric_func = spearmanr
+        elif metric_name == 'kendall_tau':
+            corr_metric_func = kendalltau
+
         if issubclass(label_type, (np.int32, np.int64, np.float64)):
             if len(label_array) == 2 and use_probabilities:
-                sklearn_metric_value = pearsonr(y_test,
-                                                sklearn_test_probs[:, 1])[0]
+                sklearn_metric_value = corr_metric_func(y_test,
+                                                        sklearn_test_probs[:, 1])[0]
             else:
-                sklearn_metric_value = pearsonr(y_test,
-                                                sklearn_test_labels)[0]
-    elif metric_name == 'spearman':
-        if issubclass(label_type, (np.int32, np.int64, np.float64)):
-            if len(label_array) == 2 and use_probabilities:
-                sklearn_metric_value = spearmanr(y_test,
-                                                 sklearn_test_probs[:, 1])[0]
-            else:
-                sklearn_metric_value = spearmanr(y_test,
-                                                 sklearn_test_labels)[0]
-    elif metric_name == 'kendall_tau':
-        if issubclass(label_type, (np.int32, np.int64, np.float64)):
-            if len(label_array) == 2 and use_probabilities:
-                sklearn_metric_value = kendalltau(y_test,
-                                                  sklearn_test_probs[:, 1])[0]
-            else:
-                sklearn_metric_value = kendalltau(y_test,
-                                                  sklearn_test_labels)[0]
+                sklearn_metric_value = corr_metric_func(y_test,
+                                                        sklearn_test_labels)[0]
+
     # 2. `neg_log_loss` requires probability values irrespective
     #     of label types and number of labels
     elif metric_name == 'neg_log_loss':
