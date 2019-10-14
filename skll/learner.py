@@ -252,7 +252,10 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
 def _contiguous_ints_or_floats(numbers):
     """
-    Summary
+    Check whether the given list of numbers contains
+    contiguous integers or contiguous integer-like
+    floats. For example, [1, 2, 3] or [4.0, 5.0, 6.0]
+    are both contiguous but [1.1, 1.2, 1.3] is not.
 
     Parameters
     ----------
