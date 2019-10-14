@@ -296,7 +296,7 @@ def _contiguous_ints_or_floats(numbers):
     except TypeError:
         raise TypeError('Input should only contain numbers.')
 
-    # we need both comditions to be true
+    # we need both conditions to be true
     return ints_or_int_like_floats and contiguous
 
 
@@ -455,7 +455,7 @@ def _get_acceptable_classification_metrics(label_array):
     acceptable_metrics = _CLASSIFICATION_ONLY_METRICS | _UNWEIGHTED_KAPPA_METRICS
 
     # now let us consider which other metrics may also
-    # be acceptable depending one whether the labels
+    # be acceptable depending on whether the labels
     # are strings or (contiguous) integers/floats
     label_type = label_array.dtype.type
 
@@ -477,7 +477,7 @@ def _get_acceptable_classification_metrics(label_array):
                                  np.float64)):
         acceptable_metrics.update(_CORRELATION_METRICS)
 
-        # CASE 3; labels are numerically contiguous integers
+        # CASE 3: labels are numerically contiguous integers
         # this is a special sub-case of CASE 2 which
         # represents ordinal classification. Only in this
         # case, weighted kappas -- where the distance
@@ -1726,7 +1726,7 @@ class Learner(object):
             grid_cv_results = None
 
         # restore the original of the grid objective if we
-        # had futzed with the it to handle correlation
+        # had futzed with it to handle correlation
         # objectives and probability outputs
         if 'old_grid_objective' in locals():
             grid_objective = old_grid_objective
