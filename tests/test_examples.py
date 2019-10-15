@@ -6,15 +6,12 @@ Run the examples, just to make sure they are all still working
 """
 
 import json
+import subprocess
 
 from glob import glob
-from os import chdir, getcwd, listdir, makedirs
+from os import getcwd, listdir, makedirs
 from os.path import abspath, basename, dirname, exists, join
 from shutil import copyfile, rmtree
-
-from examples import make_titanic_example_data as mtd
-from examples import make_boston_example_data as mbd
-from examples import make_iris_example_data as mid
 
 from nose.tools import eq_, assert_almost_equal
 
@@ -32,16 +29,6 @@ _old_iris_dir = join(_examples_dir, 'iris')
 _new_titanic_dir = join(_my_dir, 'other', 'titanic')
 _new_boston_dir = join(_my_dir, 'other', 'boston')
 _new_iris_dir = join(_my_dir, 'other', 'iris')
-
-
-def run_function_in_custom_dir(func, old_dir, new_dir):
-    """
-    A helper function to create the data in new directory
-    and then switch back to our original directory.
-    """
-    chdir(new_dir)
-    func()
-    chdir(old_dir)
 
 
 def run_configuration_and_check_outputs(config_path):
@@ -98,9 +85,12 @@ def setup():
                  join(_new_titanic_dir, file))
 
     # Create all of the data sets we need
-    run_function_in_custom_dir(mtd.main, _my_cwd, _new_titanic_dir)
-    run_function_in_custom_dir(mbd.main, _my_cwd, _new_boston_dir)
-    run_function_in_custom_dir(mid.main, _my_cwd, _new_iris_dir)
+    subprocess.run(['python', join(_examples_dir, 'make_titanic_example_data.py')],
+                   cwd=_new_titanic_dir)
+    subprocess.run(['python', join(_examples_dir, 'make_boston_example_data.py')],
+                   cwd=_new_boston_dir)
+    subprocess.run(['python', join(_examples_dir, 'make_iris_example_data.py')],
+                   cwd=_new_iris_dir)
 
     # Move all the configuration files to our new directories
     for file in glob(join(_old_titanic_dir, '**.cfg')):
