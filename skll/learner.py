@@ -22,6 +22,9 @@ from math import floor, log10
 from importlib import import_module
 from itertools import combinations
 from multiprocessing import cpu_count
+from typing import (Any, ClassVar, Dict, FrozenSet, Generator, List, Mapping,
+                    MutableMapping, MutableSequence, Optional, Sequence, Tuple,
+                    Union)
 
 import joblib
 import numpy as np
@@ -87,88 +90,91 @@ from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
 from skll.version import VERSION
 
 # Constants #
-_DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
-                        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        AdaBoostRegressor:
-                        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        BayesianRidge:
-                        [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
-                          'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
-                          'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
-                          'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}],
-                        DecisionTreeClassifier:
-                        [{'max_features': ["auto", None]}],
-                        DecisionTreeRegressor:
-                        [{'max_features': ["auto", None]}],
-                        DummyClassifier:
-                        [{}],
-                        DummyRegressor:
-                        [{}],
-                        ElasticNet:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        GradientBoostingClassifier:
-                        [{'max_depth': [1, 3, 5]}],
-                        GradientBoostingRegressor:
-                        [{'max_depth': [1, 3, 5]}],
-                        HuberRegressor:
-                        [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
-                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000]}],
-                        KNeighborsClassifier:
-                        [{'n_neighbors': [1, 5, 10, 100],
-                          'weights': ['uniform', 'distance']}],
-                        KNeighborsRegressor:
-                        [{'n_neighbors': [1, 5, 10, 100],
-                          'weights': ['uniform', 'distance']}],
-                        MLPClassifier:
-                        [{'activation': ['logistic', 'tanh', 'relu'],
-                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
-                          'learning_rate_init': [0.001, 0.01, 0.1]}],
-                        MLPRegressor:
-                        [{'activation': ['logistic', 'tanh', 'relu'],
-                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
-                          'learning_rate_init': [0.001, 0.01, 0.1]}],
-                        MultinomialNB:
-                        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
-                        Lars:
-                        [{}],
-                        Lasso:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        LinearRegression:
-                        [{}],
-                        LinearSVC:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        LogisticRegression:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SVC:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        RandomForestClassifier:
-                        [{'max_depth': [1, 5, 10, None]}],
-                        RandomForestRegressor:
-                        [{'max_depth': [1, 5, 10, None]}],
-                        RANSACRegressor:
-                        [{}],
-                        Ridge:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        RidgeClassifier:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SGDClassifier:
-                        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
-                          'penalty': ['l1', 'l2', 'elasticnet']}],
-                        SGDRegressor:
-                        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
-                          'penalty': ['l1', 'l2', 'elasticnet']}],
-                        LinearSVR:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SVR:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        TheilSenRegressor:
-                        [{}]}
+_DEFAULT_PARAM_GRIDS: MutableMapping = \
+    {AdaBoostClassifier:
+         [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     AdaBoostRegressor:
+         [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     BayesianRidge:
+         [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
+           'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
+           'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
+           'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}],
+     DecisionTreeClassifier:
+         [{'max_features': ["auto", None]}],
+     DecisionTreeRegressor:
+         [{'max_features': ["auto", None]}],
+     DummyClassifier:
+         [{}],
+     DummyRegressor:
+         [{}],
+     ElasticNet:
+         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     GradientBoostingClassifier:
+         [{'max_depth': [1, 3, 5]}],
+     GradientBoostingRegressor:
+         [{'max_depth': [1, 3, 5]}],
+     HuberRegressor:
+         [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
+           'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000]}],
+     KNeighborsClassifier:
+         [{'n_neighbors': [1, 5, 10, 100],
+           'weights': ['uniform', 'distance']}],
+     KNeighborsRegressor:
+         [{'n_neighbors': [1, 5, 10, 100],
+           'weights': ['uniform', 'distance']}],
+     MLPClassifier:
+         [{'activation': ['logistic', 'tanh', 'relu'],
+           'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
+           'learning_rate_init': [0.001, 0.01, 0.1]}],
+     MLPRegressor:
+         [{'activation': ['logistic', 'tanh', 'relu'],
+           'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
+           'learning_rate_init': [0.001, 0.01, 0.1]}],
+     MultinomialNB:
+         [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
+     Lars:
+         [{}],
+     Lasso:
+         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     LinearRegression:
+         [{}],
+     LinearSVC:
+         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     LogisticRegression:
+         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     SVC:
+         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+           'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+     RandomForestClassifier:
+         [{'max_depth': [1, 5, 10, None]}],
+     RandomForestRegressor:
+         [{'max_depth': [1, 5, 10, None]}],
+     RANSACRegressor:
+         [{}],
+     Ridge:
+         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     RidgeClassifier:
+         [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     SGDClassifier:
+         [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+           'penalty': ['l1', 'l2', 'elasticnet']}],
+     SGDRegressor:
+         [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+           'penalty': ['l1', 'l2', 'elasticnet']}],
+     LinearSVR:
+         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
+     SVR:
+         [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+           'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
+     TheilSenRegressor:
+         [{}]}
 
-_REQUIRES_DENSE = (BayesianRidge, Lars, TheilSenRegressor)
+_REQUIRES_DENSE: Tuple = (BayesianRidge,
+                          Lars,
+                          TheilSenRegressor)
 
-MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
+MAX_CONCURRENT_PROCESSES: int = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
 
 # pylint: disable=W0223,R0903
@@ -199,20 +205,28 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
     Parameters
     ----------
-    keep : set of str
-        A set of IDs to keep.
+    keep : sequence of str
+        A sequence of IDs to keep.
     example_ids : list of str, of length n_samples
         A list of example IDs.
     """
 
-    def __init__(self, keep, example_ids, logger=None):
+    keep: Sequence[str]
+    example_ids: Sequence[str]
+    _warned: bool
+    logger: logging.Logger
+
+    def __init__(self,
+                 keep: Sequence,
+                 example_ids: Sequence,
+                 logger: Optional[logging.Logger] = None):
         super(FilteredLeaveOneGroupOut, self).__init__()
         self.keep = keep
         self.example_ids = example_ids
         self._warned = False
         self.logger = logger if logger else logging.getLogger(__name__)
 
-    def split(self, X, y, groups):
+    def split(self, X, y, groups) -> Generator[Tuple[List[int], List[int]], None, None]:
         """
         Generate indices to split data into training and test set.
 
@@ -236,12 +250,12 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         """
         for train_index, test_index in super(FilteredLeaveOneGroupOut,
                                              self).split(X, y, groups):
-            train_len = len(train_index)
-            test_len = len(test_index)
-            train_index = [i for i in train_index if self.example_ids[i] in
-                           self.keep]
-            test_index = [i for i in test_index if self.example_ids[i] in
-                          self.keep]
+            train_len: int = len(train_index)
+            test_len: int = len(test_index)
+            train_index = \
+                [i for i in train_index if self.example_ids[i] in self.keep]
+            test_index = \
+                [i for i in test_index if self.example_ids[i] in self.keep]
             if not self._warned and (train_len != len(train_index) or
                                      test_len != len(test_index)):
                 self.logger.warning('Feature set contains IDs that are not ' +
@@ -301,7 +315,7 @@ def _contiguous_ints_or_floats(numbers):
     return ints_or_int_like_floats and contiguous
 
 
-def _find_default_param_grid(cls):
+def _find_default_param_grid(cls) -> Optional[List[Mapping[str, List[Any]]]]:
     """
     Finds the default parameter grid for the specified classifier.
 
@@ -322,7 +336,7 @@ def _find_default_param_grid(cls):
     return None
 
 
-def _import_custom_learner(custom_learner_path, custom_learner_name):
+def _import_custom_learner(custom_learner_path: str, custom_learner_name: str) -> None:
     """
     Does the gruntwork of adding the custom model's module to globals.
 
@@ -355,10 +369,10 @@ def _import_custom_learner(custom_learner_path, custom_learner_name):
         getattr(sys.modules[custom_learner_module_name], custom_learner_name)
 
 
-def _train_and_score(learner,
+def _train_and_score(learner: "Learner",
                      train_examples,
                      test_examples,
-                     metric):
+                     metric: str) -> Tuple[float, float]:
     """
     A utility method to train a given learner instance on the given training examples,
     generate predictions on the training set itself and also the given
@@ -391,13 +405,13 @@ def _train_and_score(learner,
         ``learner`` on ``test_examples``.
     """
 
-    _ = learner.train(train_examples, grid_search=False, shuffle=False)
+    learner.train(train_examples, grid_search=False, shuffle=False)
     train_predictions = learner.predict(train_examples)
     test_predictions = learner.predict(test_examples)
     if learner.model_type._estimator_type == 'classifier':
-        test_label_list = np.unique(test_examples.labels).tolist()
-        unseen_test_label_list = [label for label in test_label_list
-                                  if label not in learner.label_list]
+        test_label_list: List = list(np.unique(test_examples.labels).tolist())
+        unseen_test_label_list: List = [label for label in test_label_list
+                                        if label not in learner.label_list]
         unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
                                                                 start=len(learner.label_list))}
         # combine the two dictionaries
@@ -508,11 +522,14 @@ class SelectByMinCount(SelectKBest):
         Defaults to 1.
     """
 
-    def __init__(self, min_count=1):
+    min_count: int
+
+    def __init__(self, min_count: int = 1):
+        super().__init__()
         self.min_count = min_count
         self.scores_ = None
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None) -> "SelectByMinCount":
         """
         Fit the SelectByMinCount model.
 
@@ -589,13 +606,15 @@ def rescaled(cls):
     orig_fit = cls.fit
     orig_predict = cls.predict
 
+    _estimator_type: ClassVar[str]
+
     if cls._estimator_type == 'classifier':
         raise ValueError('Classifiers cannot be rescaled. ' +
                          'Only regressors can.')
 
     # Define all new versions of functions
     @wraps(cls.fit)
-    def fit(self, X, y=None):
+    def fit(self, X, y=None) -> "rescaled":
         """
         Fit a model, then store the mean, SD, max and min of the training set
         and the mean and SD of the predictions on the training set.
@@ -662,7 +681,7 @@ def rescaled(cls):
 
     @classmethod
     @wraps(cls._get_param_names)
-    def _get_param_names(class_x):
+    def _get_param_names(class_x) -> List:
         """
         This is adapted from scikit-learns's ``BaseEstimator`` class.
         It gets the kwargs for the superclass's init method and adds the
@@ -706,7 +725,7 @@ def rescaled(cls):
         return args
 
     @wraps(cls.__init__)
-    def init(self, constrain=True, rescale=True, **kwargs):
+    def init(self, constrain: bool = True, rescale: bool = True, **kwargs):
         """
         This special init function is used by the decorator to make sure
         that things get initialized in the right order.
@@ -902,10 +921,29 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self, model_type, probability=False, pipeline=False,
-                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
-                 min_feature_count=1, sampler=None, sampler_kwargs=None,
-                 custom_learner_path=None, logger=None):
+    pos_label_str: Optional[str]
+    _store_pipeline: bool
+    _feature_scaling: str
+    _min_feature_count: int
+    _model_kwargs: MutableMapping
+    _sampler_kwargs: MutableMapping
+    logger: logging.Logger
+    _probability: Optional[bool]
+    label_dict: Dict
+    label_list: MutableSequence
+
+    def __init__(self,
+                 model_type: str,
+                 probability: bool = False,
+                 pipeline: bool = False,
+                 feature_scaling: str = 'none',
+                 model_kwargs: Optional[MutableMapping] = None,
+                 pos_label_str: Optional[str] = None,
+                 min_feature_count: int = 1,
+                 sampler=None,
+                 sampler_kwargs: Optional[MutableMapping] = None,
+                 custom_learner_path: Optional[str] = None,
+                 logger: Optional[logging.Logger] = None):
         """
         Initializes a learner object with the specified settings.
         """
@@ -928,7 +966,7 @@ class Learner(object):
         if model_type not in globals():
             # here, we need to import the custom model and add it
             # to the appropriate lists of models.
-            _import_custom_learner(custom_learner_path, model_type)
+            _import_custom_learner(str(custom_learner_path), model_type)
             model_class = globals()[model_type]
 
             default_param_grid = (model_class.default_param_grid()
@@ -1021,7 +1059,8 @@ class Learner(object):
                           (AdaBoostRegressor,
                            AdaBoostClassifier,
                            RANSACRegressor)) and ('base_estimator' in model_kwargs):
-                base_estimator_name = model_kwargs['base_estimator']
+                base_estimator_name: str = model_kwargs['base_estimator']
+                base_estimator_kwargs: Mapping
                 if base_estimator_name in ['LinearRegression', 'MultinomialNB']:
                     base_estimator_kwargs = {}
                 elif base_estimator_name in ['SGDClassifier', 'SGDRegressor']:
@@ -1039,7 +1078,7 @@ class Learner(object):
             self._model_kwargs.update(model_kwargs)
 
     @classmethod
-    def from_file(cls, learner_path, logger=None):
+    def from_file(cls, learner_path: str, logger: Optional[logging.Logger] = None) -> "Learner":
         """
         Load a saved ``Learner`` instance from a file path.
 
@@ -1063,6 +1102,8 @@ class Learner(object):
         ValueError
             If the pickled version of the ``Learner`` instance is out of date.
         """
+        skll_version: Tuple[int, int, int]
+        learner: Learner
         skll_version, learner = joblib.load(learner_path)
 
         # create the learner logger attribute to the logger that's passed in
@@ -1075,8 +1116,8 @@ class Learner(object):
 
         # Check that we've actually loaded a Learner (or sub-class)
         if not isinstance(learner, cls):
-            raise ValueError(('The pickle stored at {} does not contain ' +
-                              'a {} object.').format(learner_path, cls))
+            raise ValueError('The pickle stored at {} does not contain '
+                             'a {} object.'.format(learner_path, cls))
         # Check that versions are compatible. (Currently, this just checks
         # that major versions match)
         elif skll_version >= (0, 9, 17):
@@ -1096,12 +1137,12 @@ class Learner(object):
                     learner.scaler = new_scaler
             return learner
         else:
-            raise ValueError(("{} stored in pickle file {} was " +
-                              "created with version {} of SKLL, which is " +
-                              "incompatible with the current version " +
-                              "{}").format(cls, learner_path,
-                                           '.'.join(skll_version),
-                                           '.'.join(VERSION)))
+            raise ValueError("{} stored in pickle file {} was "
+                              "created with version {} of SKLL, which is "
+                              "incompatible with the current version "
+                              "{}".format(cls, learner_path,
+                                          '.'.join([str(x) for x in skll_version]),
+                                          '.'.join([str(x) for x in VERSION])))
 
     @property
     def model_type(self):
@@ -1124,7 +1165,7 @@ class Learner(object):
         """
         return self._model
 
-    def load(self, learner_path):
+    def load(self, learner_path: str) -> None:
         """
         Replace the current learner instance with a saved learner.
 
@@ -1138,7 +1179,7 @@ class Learner(object):
 
     def _convert_coef_array_to_feature_names(self,
                                              coef,
-                                             feature_name_prefix=''):
+                                             feature_name_prefix: str = ''):
         """
         A helper method used by `model_params` to convert the model
         coefficients array into a dictionary with feature names as
@@ -1158,14 +1199,15 @@ class Learner(object):
         res : dict
             A dictionary of labeled weights
         """
-        res = {}
+        res: MutableMapping = {}
 
         # if we are doing feature hashing, then we need to make up
         # the feature names
+        vocabulary: Mapping
         if isinstance(self.feat_vectorizer, FeatureHasher):
-            num_features = len(coef)
-            index_width_in_feature_name = int(floor(log10(num_features))) + 1
-            feature_names = []
+            num_features: int = len(coef)
+            index_width_in_feature_name: int = int(floor(log10(num_features))) + 1
+            feature_names: MutableSequence = []
             for idx in range(num_features):
                 index_str = str(idx + 1).zfill(index_width_in_feature_name)
                 feature_names.append('hashed_feature_{}'.format(index_str))
@@ -1186,7 +1228,7 @@ class Learner(object):
         return res
 
     @property
-    def model_params(self):
+    def model_params(self) -> Tuple[MutableMapping, MutableMapping]:
         """
         Model parameters (i.e., weights) for a ``LinearModel`` (e.g., ``Ridge``)
         regression and liblinear models. If the model was trained using feature
@@ -1204,8 +1246,8 @@ class Learner(object):
         ValueError
             If the instance does not support model parameters.
         """
-        res = {}
-        intercept = None
+        res: MutableMapping = {}
+        intercept: MutableMapping = {}
         if (isinstance(self._model, LinearModel) or
            (isinstance(self._model, SVR) and
                 self._model.kernel == 'linear') or
@@ -1264,7 +1306,6 @@ class Learner(object):
         # in `svm/base.py`, the order of the rows is as follows is "0 vs 1",
         # "0 vs 2", ... "0 vs n", "1 vs 2", "1 vs 3", "1 vs n", ... "n-1 vs n".
         elif isinstance(self._model, SVC) and self._model.kernel == 'linear':
-            intercept = {}
             if isinstance(self.feat_vectorizer, FeatureHasher):
                 self.logger.warning("No feature names are available since this model was trained on hashed features.")
             for i, class_pair in enumerate(combinations(range(len(self.label_list)), 2)):
@@ -1285,7 +1326,7 @@ class Learner(object):
         return res, intercept
 
     @property
-    def probability(self):
+    def probability(self) -> bool:
         """
         Should learner return probabilities of all labels (instead of just
         label with highest probability)?
@@ -1293,7 +1334,7 @@ class Learner(object):
         return self._probability
 
     @probability.setter
-    def probability(self, value):
+    def probability(self, value: bool):
         """
         Set the probabilities flag (i.e. whether learner
         should return probabilities of all labels).
@@ -1310,7 +1351,7 @@ class Learner(object):
                                 "a predict_proba() method.".format(self.model_type.__name__))
             self._probability = False
 
-    def __getstate__(self):
+    def __getstate__(self) -> Mapping:
         """
         Return the attributes that should be pickled. We need this
         because we cannot pickle loggers.
@@ -1320,7 +1361,7 @@ class Learner(object):
             del attribute_dict['logger']
         return attribute_dict
 
-    def save(self, learner_path):
+    def save(self, learner_path: str) -> None:
         """
         Save the ``Learner`` instance to a file.
 
@@ -1330,7 +1371,7 @@ class Learner(object):
             The path to save the ``Learner`` instance to.
         """
         # create the directory if it doesn't exist
-        learner_dir = os.path.dirname(learner_path)
+        learner_dir: str = os.path.dirname(learner_path)
         if not os.path.exists(learner_dir):
             os.makedirs(learner_dir)
         # write out the learner to disk
@@ -1352,8 +1393,8 @@ class Learner(object):
         ValueError
             If there is no default parameter grid for estimator.
         """
-        estimator = None
-        default_param_grid = _find_default_param_grid(self._model_type)
+
+        default_param_grid: Optional[List[Dict]] = _find_default_param_grid(self._model_type)
         if default_param_grid is None:
             raise ValueError("%s is not a valid learner type." %
                              (self._model_type.__name__,))
@@ -1362,7 +1403,7 @@ class Learner(object):
 
         return estimator, default_param_grid
 
-    def _check_input_formatting(self, examples):
+    def _check_input_formatting(self, examples) -> None:
         """
         check that the examples are properly formatted.
 
@@ -1392,7 +1433,7 @@ class Learner(object):
                 raise TypeError("You have feature values that are strings.  "
                                 "Convert them to floats.")
 
-    def _check_max_feature_value(self, feat_array):
+    def _check_max_feature_value(self, feat_array) -> None:
         """
         Check if the the maximum absolute value of any feature is too large
 
@@ -1408,7 +1449,7 @@ class Learner(object):
                                 "algorithm to crash or perform "
                                 "poorly.".format(max_feat_abs))
 
-    def _create_label_dict(self, examples):
+    def _create_label_dict(self, examples) -> None:
         """
         Creates a dictionary of labels for classification problems.
 
@@ -1423,7 +1464,7 @@ class Learner(object):
 
         # extract list of unique labels if we are doing classification;
         # note that the output of np.unique() is sorted
-        self.label_list = np.unique(examples.labels).tolist()
+        self.label_list = list(np.unique(examples.labels).tolist())
 
         # for binary classification, if one label is specified as
         # the positive class, re-sort the label list to make sure
@@ -1445,7 +1486,7 @@ class Learner(object):
         # numbers.
         self.label_dict = {label: i for i, label in enumerate(self.label_list)}
 
-    def _train_setup(self, examples):
+    def _train_setup(self, examples) -> None:
         """
         Set up the feature vectorizer and the scaler.
 
@@ -1461,16 +1502,15 @@ class Learner(object):
         self.feat_vectorizer = examples.vectorizer
 
         # initialize feature selector
-        self.feat_selector = SelectByMinCount(
-            min_count=self._min_feature_count)
+        self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
 
         # Create a scaler if we weren't passed one and we are asked
         # to do feature scaling; note that we do not support feature
         # scaling for `MultinomialNB` learners
         if (not issubclass(self._model_type, MultinomialNB) and
                 self._feature_scaling != 'none'):
-            scale_with_mean = self._feature_scaling in {'with_mean', 'both'}
-            scale_with_std = self._feature_scaling in {'with_std', 'both'}
+            scale_with_mean: bool = self._feature_scaling in {'with_mean', 'both'}
+            scale_with_std: bool = self._feature_scaling in {'with_std', 'both'}
             self.scaler = StandardScaler(copy=True,
                                          with_mean=scale_with_mean,
                                          with_std=scale_with_std)
@@ -1481,9 +1521,15 @@ class Learner(object):
                                          with_mean=False,
                                          with_std=False)
 
-    def train(self, examples, param_grid=None, grid_search_folds=3,
-              grid_search=True, grid_objective=None,
-              grid_jobs=None, shuffle=False, create_label_dict=True):
+    def train(self,
+              examples,
+              param_grid: Optional[List[Dict]] = None,
+              grid_search_folds: Union[int, Dict[Any, int]] = 3,
+              grid_search: bool = True,
+              grid_objective: Optional[str] = None,
+              grid_jobs: Optional[int] = None,
+              shuffle: bool = False,
+              create_label_dict: bool = True) -> Tuple[float, Dict]:
         """
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -1716,7 +1762,7 @@ class Learner(object):
                 dummy_label = next(iter(grid_search_folds.values()))
                 fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
                                curr_id in examples.ids]
-                kfold = FilteredLeaveOneGroupOut(grid_search_folds,
+                kfold = FilteredLeaveOneGroupOut(list(grid_search_folds),
                                                  examples.ids,
                                                  logger=self.logger)
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
@@ -1760,7 +1806,7 @@ class Learner(object):
         if self._store_pipeline:
 
             # initialize the list that will hold the pipeline steps
-            pipeline_steps = []
+            pipeline_steps: MutableSequence = []
 
             # start with the vectorizer
 
@@ -1816,8 +1862,12 @@ class Learner(object):
 
         return grid_score, grid_cv_results
 
-    def evaluate(self, examples, prediction_prefix=None, append=False,
-                 grid_objective=None, output_metrics=[]):
+    def evaluate(self,
+                 examples,
+                 prediction_prefix: Optional[str] = None,
+                 append: bool = False,
+                 grid_objective=None,
+                 output_metrics: Optional[List[str]] = None) -> Tuple[List, float, Dict, Dict, float, Dict]:
         """
         Evaluates a given model on a given dev or test ``FeatureSet``.
 
@@ -1850,8 +1900,13 @@ class Learner(object):
             PRFs, the model parameters, the grid search objective
             function score, and the additional evaluation metrics, if any.
         """
+
+        if output_metrics is None:
+            output_metrics = []
+
         # initialize a dictionary that will hold all of the metric scores
-        metric_scores = {metric: None for metric in output_metrics}
+        metric_scores: Dict[str, float] = \
+            {metric: float('NaN') for metric in output_metrics}
 
         # are we in a regressor or a classifier
         estimator_type = self.model_type._estimator_type
@@ -1877,7 +1932,7 @@ class Learner(object):
         # convert the true class labels to indices too for consistency
         # if we are a classifier
         if estimator_type == 'classifier':
-            test_label_list = np.unique(examples.labels).tolist()
+            test_label_list = list(np.unique(examples.labels).tolist())
 
             # identify unseen test labels if any and add a new dictionary
             # for these  labels
@@ -2013,8 +2068,11 @@ class Learner(object):
                    additional_scores)
         return res
 
-    def predict(self, examples, prediction_prefix=None, append=False,
-                class_labels=False):
+    def predict(self,
+                examples,
+                prediction_prefix: Optional[str] = None,
+                append: bool = False,
+                class_labels: bool = False) -> Sequence:
         """
         Uses a given model to generate predictions on a given ``FeatureSet``.
 
@@ -2211,7 +2269,7 @@ class Learner(object):
 
         return yhat
 
-    def _compute_num_folds_from_example_counts(self, cv_folds, labels):
+    def _compute_num_folds_from_example_counts(self, cv_folds: int, labels: Sequence) -> int:
         """
         Calculate the number of folds we should use for cross validation, based
         on the number of examples we have for each label.
@@ -2255,19 +2313,23 @@ class Learner(object):
 
     def cross_validate(self,
                        examples,
-                       stratified=True,
-                       cv_folds=10,
-                       grid_search=True,
-                       grid_search_folds=3,
-                       grid_jobs=None,
-                       grid_objective=None,
-                       output_metrics=[],
-                       prediction_prefix=None,
-                       param_grid=None,
-                       shuffle=False,
-                       save_cv_folds=False,
-                       save_cv_models=False,
-                       use_custom_folds_for_grid_search=True):
+                       stratified: bool = True,
+                       cv_folds: int = 10,
+                       grid_search: bool = True,
+                       grid_search_folds: bool = 3,
+                       grid_jobs: Optional[int] = None,
+                       grid_objective: Optional[str] = None,
+                       output_metrics: Optional[List[str]] = None,
+                       prediction_prefix: Optional[str] = None,
+                       param_grid: Optional[Dict[str, List]] = None,
+                       shuffle: bool = False,
+                       save_cv_folds: bool = False,
+                       save_cv_models: bool = False,
+                       use_custom_folds_for_grid_search: bool = True) -> Tuple[List[Tuple[List, float, Dict, Dict, float, Dict]],
+                                                                               List[float],
+                                                                               List[Dict],
+                                                                               Optional[List[Any]],
+                                                                               List["Learner"]]:
         """
         Cross-validates a given model on the training examples.
 
@@ -2357,6 +2419,9 @@ class Learner(object):
         ValueError
             If labels are not encoded as strings.
         """
+
+        if output_metrics is None:
+            output_metrics = []
 
         # Seed the random number generator so that randomized algorithms are
         # replicable.
@@ -2508,9 +2573,10 @@ class Learner(object):
 
     def learning_curve(self,
                        examples,
-                       metric,
-                       cv_folds=10,
-                       train_sizes=np.linspace(0.1, 1.0, 5)):
+                       metric: str,
+                       cv_folds: int = 10,
+                       train_sizes: Sequence[Union[float, int]] = np.linspace(0.1, 1.0, 5)) \
+            -> Tuple[List[float], List[float], List]:
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning

@@ -23,7 +23,7 @@ before_install:
   - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda install -c anaconda --yes setuptools
 install:
-  - conda install --yes -c conda-forge python=$TRAVIS_PYTHON_VERSION codecov --file conda_requirements.txt
+  - conda install --yes -c conda-forge python=$TRAVIS_PYTHON_VERSION codecov --file conda_requirements.txt mypy>=0.730 lxml
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
   - python setup.py install
@@ -35,4 +35,4 @@ script:
 # Calculate coverage
 after_success:
   - codecov
-
+  - mypy skll tests examples --no-strict-optional --html-report .

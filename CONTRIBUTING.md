@@ -71,6 +71,11 @@ following rules before submitting a pull request:
 - You may need to add new tests if the code coverage after merging your branch 
   will be lower than the current `master`. This will be reported by the `codecov` bot once you submit your PR.
 
+-  mypy static type checking:
+
+           $ pip install mypy>=0.730 lxml
+           $ mypy skll tests examples
+
 After submitting a pull request, it is recommended to add at least 2-3 reviewers to 
 review it. See [Requesting a pull request review](https://help.github.com/en/articles/requesting-a-pull-request-review) for more details. 
 
