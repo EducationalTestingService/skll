@@ -1020,8 +1020,8 @@ class Learner(object):
                 if base_estimator_name in ['LinearRegression', 'MultinomialNB']:
                     base_estimator_kwargs = {}
                 elif base_estimator_name in ['SGDClassifier', 'SGDRegressor']:
-                    base_estimator_kwargs = {'max_iter': None,
-                                             'tol': None,
+                    base_estimator_kwargs = {'max_iter': 1000,
+                                             'tol': 0.001,
                                              'random_state': 123456789}
                 elif base_estimator_name == 'SVR':
                     base_estimator_kwargs = {'gamma': 'scale'}
