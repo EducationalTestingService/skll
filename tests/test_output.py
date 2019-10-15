@@ -408,53 +408,6 @@ def check_xval_fancy_results_file(do_grid_search,
             sorted(expected_metrics))
 
 
-def test_multiple_featuresets_and_featurehasher_throws_warning():
-    '''
-    test using multiple feature sets with feature hasher throws warning
-    '''
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-
-    # make a simple config file for feature hasher warning test
-    values_to_fill_dict = {'experiment_name': 'test_warning_multiple_featuresets',
-                           'train_directory': train_dir,
-                           'task': 'train',
-                           'grid_search': 'false',
-                           'objectives': "['f1_score_micro']",
-                           'learners': "['LogisticRegression']",
-                           'featuresets': ("[['test_input_3examples_1', "
-                                           "'test_input_3examples_2']]"),
-                           "featureset_names": "['feature_hasher']",
-                           'suffix': '.jsonlines',
-                           'log': output_dir,
-                           'models': output_dir,
-                           'feature_hasher': "true",
-                           "hasher_features": "4"
-                           }
-
-    config_template_path = join(_my_dir,
-                                'configs',
-                                'test_warning_multiple_featuresets.template.cfg')
-
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'feature_hasher')
-
-    # run the experiment
-    print(config_path)
-    run_configuration(config_path, quiet=True)
-
-    # test if it throws any warning
-    logfile_path = join(_my_dir, "output",
-                        "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log")
-    with open(logfile_path) as f:
-        warning_pattern = re.compile('Since there are multiple feature files, '
-                                     'feature hashing applies to each '
-                                     'specified feature file separately.')
-        matches = re.findall(warning_pattern, f.read())
-        eq_(len(matches), 1)
-
-
 def test_xval_fancy_results_file():
 
     for (do_grid_search,
@@ -629,6 +582,53 @@ def test_grid_search_cv_results():
     for task in _VALID_TASKS:
         for do_grid_search in [True, False]:
             yield check_grid_search_cv_results, task, do_grid_search
+
+
+def test_multiple_featuresets_and_featurehasher_throws_warning():
+    '''
+    test using multiple feature sets with feature hasher throws warning
+    '''
+    train_dir = join(_my_dir, 'train')
+    output_dir = join(_my_dir, 'output')
+
+    # make a simple config file for feature hasher warning test
+    values_to_fill_dict = {'experiment_name': 'test_warning_multiple_featuresets',
+                           'train_directory': train_dir,
+                           'task': 'train',
+                           'grid_search': 'false',
+                           'objectives': "['f1_score_micro']",
+                           'learners': "['LogisticRegression']",
+                           'featuresets': ("[['test_input_3examples_1', "
+                                           "'test_input_3examples_2']]"),
+                           "featureset_names": "['feature_hasher']",
+                           'suffix': '.jsonlines',
+                           'log': output_dir,
+                           'models': output_dir,
+                           'feature_hasher': "true",
+                           "hasher_features": "4"
+                           }
+
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_warning_multiple_featuresets.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'feature_hasher')
+
+    # run the experiment
+    print(config_path)
+    run_configuration(config_path, quiet=True)
+
+    # test if it throws any warning
+    logfile_path = join(_my_dir, "output",
+                        "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log")
+    with open(logfile_path) as f:
+        warning_pattern = re.compile('Since there are multiple feature files, '
+                                     'feature hashing applies to each '
+                                     'specified feature file separately.')
+        matches = re.findall(warning_pattern, f.read())
+        eq_(len(matches), 1)
 
 
 # Verify v0.9.17 model can still be loaded and generate the same predictions.
