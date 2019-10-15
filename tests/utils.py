@@ -133,7 +133,8 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
 
 def fill_in_config_options(config_template_path,
                            values_to_fill_dict,
-                           sub_prefix):
+                           sub_prefix,
+                           good_probability_option=False):
     """
     Fill in values in the given config template
     """
@@ -155,12 +156,17 @@ def fill_in_config_options(config_template_path,
                             'learning_curve_train_sizes', 'fixed_parameters',
                             'num_cv_folds', 'bad_option', 'duplicate_option',
                             'suffix'],
-                  'Tuning': ['probability', 'grid_search', 'objective',
+                  'Tuning': ['grid_search', 'objective',
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'param_grids', 'objectives', 'duplicate_option'],
                   'Output': ['results', 'log', 'models', 'metrics',
                              'predictions', 'pipeline', 'save_cv_folds',
                              'save_cv_models']}
+
+    if good_probability_option:
+        to_fill_in['Output'].append('probability')
+    else:
+        to_fill_in['Tuning'].append('probability')
 
     for section in to_fill_in:
         for param_name in to_fill_in[section]:

@@ -56,6 +56,13 @@ def main():
                                label_col='Survived',
                                id_col='PassengerId',
                                quiet=False,
+                               drop_blanks=True,
+                               pandas_kwargs={'usecols': ['Sex', 'Age',
+                                                          'Pclass', 'Fare',
+                                                          'SibSp', 'Parch',
+                                                          'Embarked',
+                                                          'PassengerId',
+                                                          'Survived']},
                                sparse=False).read()
 
     train_fs.filter(features=features_to_keep)
@@ -92,6 +99,12 @@ def main():
     test_fs = Reader.for_path('test.csv',
                               label_col='Survived',
                               quiet=False,
+                              drop_blanks=True,
+                              pandas_kwargs={'usecols': ['Sex', 'Age',
+                                                         'Pclass', 'Fare',
+                                                         'SibSp', 'Parch',
+                                                         'Embarked',
+                                                         'PassengerId']},
                               sparse=False).read()
 
     test_fs.filter(features=features_to_keep)
@@ -99,7 +112,6 @@ def main():
     test_fs.ids = list(range(num_train_dev + 1, num_test + num_train_dev + 1))
     writer = Writer.for_path('titanic/test/.csv',
                              test_fs,
-                             label_col='Survived',
                              id_col='PassengerId',
                              quiet=False,
                              subsets=subset_dict)
