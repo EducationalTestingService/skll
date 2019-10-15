@@ -53,7 +53,7 @@ Positional Arguments
 .. option:: infile
 
     Input feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.megam``, ``.ndj``, or ``.tsv``)
+    ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
@@ -93,7 +93,7 @@ Optional Arguments
     (default: ``y``)
 
 .. option:: -db, --drop-blanks
-    
+
     Drop all lines/rows that have any blank values.
     (default: ``False``)
 
@@ -102,7 +102,7 @@ Optional Arguments
     Specifies a new value with which to replace blank values in all columns in the
     file. To replace blanks differently in each column, use the SKLL Reader API directly.
     (default: ``None``)
-      
+
 .. option:: -q, --quiet
 
     Suppress printing of ``"Loading..."`` messages.
@@ -131,7 +131,7 @@ Positional Arguments
 
 .. option:: input_file(s)
 
-    One or more csv file(s), jsonlines file(s), or megam file(s) (with or without the
+    One or more csv file(s), or jsonlines file(s) (with or without the
     label column), with the appropriate suffix.
 
 Optional Arguments
@@ -149,7 +149,7 @@ Optional Arguments
 .. option:: -l <label_col>, --label_col <label_col>
 
     Name of the column which contains the labels in ARFF, CSV, or TSV files.
-    For ARFF files, this must be the final column to count as the label. 
+    For ARFF files, this must be the final column to count as the label.
     (default: ``y``)
 
 .. option:: -p <positive_label>, --positive_label <positive_label>
@@ -157,7 +157,7 @@ Optional Arguments
     If the model is only being used to predict the probability of a particular
     label, this specifies the index of the label we're predicting. 1 = second
     label, which is default for binary classification. Keep in mind that labels
-    are sorted lexicographically. 
+    are sorted lexicographically.
     (default: 1)
 
 .. option:: -q, --quiet
@@ -188,7 +188,7 @@ Positional Arguments
 .. option:: infile ...
 
     Input feature files (ends in ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.megam``, ``.ndj``, or ``.tsv``)
+    ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
@@ -272,7 +272,7 @@ skll_convert
 ------------
 .. program:: skll_convert
 
-Convert between .arff, .csv., .jsonlines, .libsvm, .megam, and .tsv formats.
+Convert between .arff, .csv., .jsonlines, .libsvm, and .tsv formats.
 
 Positional Arguments
 ^^^^^^^^^^^^^^^^^^^^
@@ -280,12 +280,12 @@ Positional Arguments
 .. option:: infile
 
     Input feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``)
+    ``.libsvm``, ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
     Output feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``)
+    ``.libsvm``, ``.ndj``, or ``.tsv``)
 
 
 Optional Arguments

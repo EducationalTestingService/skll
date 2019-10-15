@@ -233,7 +233,7 @@ Creating sparse files
 """""""""""""""""""""
 
 :ref:`skll_convert` can also create sparse data files in
-:ref:`.jsonlines <ndj>`, :ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, or
+:ref:`.jsonlines <ndj>`, :ref:`.libsvm <libsvm>`, or
 :ref:`.ndj <ndj>` formats.  This is very useful for saving disk space and
 memory when you have a large data set with mostly zero-valued features.
 

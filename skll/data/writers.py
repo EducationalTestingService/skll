@@ -32,7 +32,7 @@ class Writer(object):
     path : str
         A path to the feature file we would like to create. The suffix
         to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
-        ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``. If ``subsets``
+        ``.libsvm``, ``.ndj``, or ``.tsv``. If ``subsets``
         is not ``None``, when calling the ``write()`` method, path is
         assumed to be a string containing the path to the directory to
         write the feature files with an additional file extension
@@ -91,7 +91,7 @@ class Writer(object):
         path : str
             A path to the feature file we would like to create. The
             suffix to this filename must be ``.arff``, ``.csv``,
-            ``.jsonlines``, ``.libsvm``, ``.megam``, ``.ndj``, or
+            ``.jsonlines``, ``.libsvm``, ``.ndj``, or
             ``.tsv``. If ``subsets`` is not ``None``, when calling the
             ``write()`` method, path is assumed to be a string
             containing the path to the directory to write the feature
@@ -586,60 +586,6 @@ class ARFFWriter(Writer):
         self._dict_writer.writerow(feat_dict)
 
 
-class MegaMWriter(Writer):
-
-    """
-    Writer for writing out FeatureSets as MegaM files.
-    """
-
-    @staticmethod
-    def _replace_non_ascii(line):
-        """
-        Parameters
-        ----------
-        line : str
-            The line to clean up.
-
-        Returns
-        -------
-        char_list : str
-            Copy of line with all non-ASCII characters replaced with
-            <U1234> sequences where 1234 is the value of ord() for the character.
-        """
-        char_list = []
-        for char in line:
-            char_num = ord(char)
-            char_list.append(
-                '<U{}>'.format(char_num) if char_num > 127 else char)
-        return ''.join(char_list)
-
-    def _write_line(self, id_, label_, feat_dict, output_file):
-        """
-        Write the current line in the file in MegaM format.
-
-        Parameters
-        ----------
-        id_ : str
-            The ID for the current instance.
-        label_ : str
-            The label for the current instance.
-        feat_dict : dict
-            The feature dictionary for the current instance.
-        output_file : file buffer
-            The file being written to.
-        """
-        # Don't try to add class column if this is label-less data
-        print('# {}'.format(id_), file=output_file)
-        if self.feat_set.has_labels:
-            print('{}'.format(label_), end='\t', file=output_file)
-        print(self._replace_non_ascii(' '.join(('{} {}'.format(field,
-                                                               value) for
-                                                field, value in
-                                                sorted(feat_dict.items()) if
-                                                Decimal(value) != 0))),
-              file=output_file)
-
-
 class NDJWriter(Writer):
 
     """
@@ -762,7 +708,7 @@ class LibSVMWriter(Writer):
 
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
-        Write the current line in the file in MegaM format.
+        Write the current line in the file in given format.
 
         Parameters
         ----------
@@ -811,6 +757,5 @@ EXT_TO_WRITER = {".arff": ARFFWriter,
                  ".csv": CSVWriter,
                  ".jsonlines": NDJWriter,
                  ".libsvm": LibSVMWriter,
-                 ".megam": MegaMWriter,
                  '.ndj': NDJWriter,
                  ".tsv": TSVWriter}

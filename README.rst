@@ -85,7 +85,7 @@ out `our tutorial <https://skll.readthedocs.org/en/latest/tutorial.html>`__, or
 We also provide utilities for:
 
 -  `converting between machine learning toolkit formats <https://skll.readthedocs.org/en/latest/utilities.html#skll-convert>`__
-   (e.g., ARFF, CSV, MegaM)
+   (e.g., ARFF, CSV)
 -  `filtering feature files <https://skll.readthedocs.org/en/latest/utilities.html#filter-features>`__
 -  `joining feature files <https://skll.readthedocs.org/en/latest/utilities.html#join-features>`__
 -  `other common tasks <https://skll.readthedocs.org/en/latest/utilities.html>`__

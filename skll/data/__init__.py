@@ -11,10 +11,10 @@ Handles reading and writing data from various types of data files.
 import csv
 
 from .featureset import FeatureSet
-from .readers import (ARFFReader, CSVReader, LibSVMReader, MegaMReader,
+from .readers import (ARFFReader, CSVReader, LibSVMReader,
                       NDJReader, TSVReader, safe_float, Reader)
 from .writers import (ARFFWriter, Writer, TSVWriter, CSVWriter,
-                      LibSVMWriter, MegaMWriter, NDJWriter)
+                      LibSVMWriter, NDJWriter)
 
 
 # Register dialect for handling ARFF files
@@ -24,6 +24,6 @@ csv.register_dialect('arff', delimiter=',', quotechar="'",
 
 
 __all__ = ['Reader', 'safe_float', 'FeatureSet', 'ARFFReader',
-           'CSVReader', 'LibSVMReader', 'MegaMReader', 'NDJReader',
+           'CSVReader', 'LibSVMReader', 'NDJReader',
            'TSVReader', 'ARFFWriter', 'LibSVMWriter', 'TSVWriter',
-           'CSVWriter', 'MegaMWriter', 'NDJWriter', 'Writer']
+           'CSVWriter', 'NDJWriter', 'Writer']

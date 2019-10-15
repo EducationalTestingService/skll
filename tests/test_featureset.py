@@ -56,7 +56,7 @@ def tearDown():
     """
     Clean up files created during testing.
     """
-    for filetype in ['csv', 'jsonlines', 'libsvm', 'megam', 'tsv']:
+    for filetype in ['csv', 'jsonlines', 'libsvm', 'tsv']:
         filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
         if exists(filepath):
             os.unlink(filepath)
@@ -104,9 +104,9 @@ def check_empty_file_read(filetype, reader_type):
 
 def test_empty_file_read():
     for filetype, reader_type in zip(['csv', 'jsonlines',
-                                      'libsvm', 'megam', 'tsv'],
+                                      'libsvm', 'tsv'],
                                      ['CSVReader', 'NDJReader',
-                                      'LibSVMReader', 'MegaMReader', 'TSVReader']):
+                                      'LibSVMReader', 'TSVReader']):
         yield check_empty_file_read, filetype, reader_type
 
 
@@ -731,10 +731,10 @@ def check_load_featureset(suffix, numeric_ids):
 
 def test_load_featureset():
     # Test merging with numeric IDs
-    for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
+    for suffix in ['.jsonlines', '.ndj', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, True
 
-    for suffix in ['.jsonlines', '.ndj', '.megam', '.tsv', '.csv', '.arff']:
+    for suffix in ['.jsonlines', '.ndj', '.tsv', '.csv', '.arff']:
         yield check_load_featureset, suffix, False
 
 
@@ -791,13 +791,7 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=Tru
     for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
         ex_id = "{}{}".format(y, j)
-        # if we are not using labels, we do not want zero-valued features
-        # because it may be the case that some subset of features end up
-        # being all 0 and if this subset ends up being written out to a file
-        # below, then for some formats (e.g., megam) nothing will get written
-        # out which can cause issues when reading this file
-        lowest_feature_value = 0 if with_labels else 1
-        x = {"f{:03d}".format(feat_num): np.random.randint(lowest_feature_value, 4 + lowest_feature_value) for feat_num
+        x = {"f{:03d}".format(feat_num): np.random.randint(4) for feat_num
              in range(num_feat_files * num_feats_per_file)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
         ids.append(ex_id)
@@ -943,7 +937,7 @@ def test_convert_featureset():
     # Test the conversion from every format to every other format
     # with and without labels
     for from_suffix, to_suffix in itertools.permutations(['.jsonlines',
-                                                          '.megam', '.tsv',
+                                                          '.tsv',
                                                           '.csv', '.arff',
                                                           '.libsvm'], 2):
         yield check_convert_featureset, from_suffix, to_suffix, True

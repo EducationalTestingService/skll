@@ -57,10 +57,10 @@ A simple comma or tab-delimited format with the following restrictions:
 *   If the data has instance IDs, there should be a column with the name
     specified by :ref:`id_col <id_col>` in the :ref:`Input` section of the configuration file you create for your experiment. This defaults to ``id``.  If there is no such column, IDs will be generated automatically.
 *   All other columns contain feature values, and every feature value
-    must be specified (making this a poor choice for sparse data). 
-    
-.. warning:: 
- 
+    must be specified (making this a poor choice for sparse data).
+
+.. warning::
+
     SKLL will raise an error if there are blank values in *any* of the
     columns. You must either drop all rows with blank values in any column
     or replace the blanks with a value you specify. To drop or replace via
@@ -108,28 +108,6 @@ The entire format would like this::
     IDs, labels, and feature names cannot contain the following
     characters:  ``|`` ``#`` ``=``
 
-.. _megam:
-
-megam
-^^^^^
-
-An expanded form of the input format for the
-`MegaM classification package <http://users.umiacs.umd.edu/~hal/megam/>`__ with
-the ``-fvals`` switch.
-
-The basic format is::
-
-    # Instance1
-    CLASS1    F0 2.5 F1 3 FEATURE_2 -152000
-    # Instance2
-    CLASS2    F1 7.524
-
-where the **optional** comments before each instance specify the ID for the
-following line, class names are separated from feature-value pairs with a tab,
-and feature-value pairs are separated by spaces. Any omitted features for a
-given instance are assumed to be zero, so this format is handy when dealing
-with sparse data. We also include several utility scripts for converting
-to/from this MegaM format and for adding/removing features from the files.
 
 .. _create_config:
 
@@ -348,7 +326,7 @@ suffix *(Optional)*
 
 The file format the training/test files are in. Valid option are
 :ref:`.arff <arff>`, :ref:`.csv <csv>`, :ref:`.jsonlines <ndj>`,
-:ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, :ref:`.ndj <ndj>`, and
+:ref:`.libsvm <libsvm>`, :ref:`.ndj <ndj>`, and
 :ref:`.tsv <csv>`.
 
 If you omit this field, it is assumed that the "prefixes" listed in
@@ -457,26 +435,26 @@ folds_file *(Optional)*
 
 Path to a csv file specifying the mapping of instances in the training data
 to folds. This can be specified for the ``train``, ``evaluate``, ``predict``,
-and ``cross_validate`` tasks. For the  ``train``/``evaluate``/``predict`` tasks, 
-if :ref:`grid_search <grid_search>` is ``True``, this file, if specified, will be 
-used to define the cross-validation used for the grid search (leave one fold ID out 
+and ``cross_validate`` tasks. For the  ``train``/``evaluate``/``predict`` tasks,
+if :ref:`grid_search <grid_search>` is ``True``, this file, if specified, will be
+used to define the cross-validation used for the grid search (leave one fold ID out
 at a time). Otherwise, it will be ignored.
 
 For the ``cross_validate`` task, this file will be used to define the outer
-cross-validation loop and also for the inner grid-search cross-validation loop. 
-If the goal of specifiying the folds file is to ensure that the model does not 
-learn to differentiate based on a confound: e.g. the data from the same person 
-is always in the same fold, it makes sense to keep the same folds for both the 
+cross-validation loop and also for the inner grid-search cross-validation loop.
+If the goal of specifiying the folds file is to ensure that the model does not
+learn to differentiate based on a confound: e.g. the data from the same person
+is always in the same fold, it makes sense to keep the same folds for both the
 outer and the inner cross-validation loops.
 
 However, sometimes the goal of specifying the folds file is simply to
-compare to another existing experiment or in another context where 
+compare to another existing experiment or in another context where
 maintaining the constitution of the folds in the inner
 grid-search loop is not required. In this case, users may set the option
 :ref:`use_folds_file_for_grid_search <use_folds_file_for_grid_search>`
-in the configuration file to ``False`` which will then direct the inner 
-grid-search cross-validation loop to simply use the number specified via 
-:ref:`grid_search_folds <grid_search_folds>` instead of using the folds file. 
+in the configuration file to ``False`` which will then direct the inner
+grid-search cross-validation loop to simply use the number specified via
+:ref:`grid_search_folds <grid_search_folds>` instead of using the folds file.
 This can also likely lead to shorter execution times depending on how many
 folds are in the folds file and the value of :ref:`grid_search_folds <grid_search_folds>`.
 

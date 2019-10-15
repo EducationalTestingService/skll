@@ -127,8 +127,8 @@ def main(argv=None):
                         help='Model file to load and use for generating '
                              'predictions.')
     parser.add_argument('input_files',
-                        help='A space-separated list of csv file, json file, '
-                             'or megam file (with or without the label '
+                        help='A space-separated list of csv file, or json file, '
+                             '(with or without the label '
                              'column), with the appropriate suffix.',
                         nargs='+')
     parser.add_argument('-i', '--id_col',
@@ -208,7 +208,7 @@ def main(argv=None):
         input_extension = os.path.splitext(input_file)[1].lower()
         if input_extension not in EXT_TO_READER:
             logger.error(('Input file must be in either .arff, .csv, '
-                          '.jsonlines, .libsvm, .megam, .ndj, or .tsv format. '
+                          '.jsonlines, .libsvm, .ndj, or .tsv format. '
                           ' Skipping file {}').format(input_file))
             continue
         else:

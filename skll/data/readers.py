@@ -164,7 +164,7 @@ class Reader(object):
             ext = '.' + path_or_list.rsplit('.', 1)[-1].lower()
             if ext not in EXT_TO_READER:
                 raise ValueError(('Example files must be in either .arff, '
-                                  '.csv, .jsonlines, .megam, .ndj, or .tsv '
+                                  '.csv, .jsonlines, .ndj, or .tsv '
                                   'format. You specified: '
                                   '{}').format(path_or_list))
         return EXT_TO_READER[ext](path_or_list, **kwargs)
@@ -400,7 +400,7 @@ class Reader(object):
     def read(self):
         """
         Loads examples in the `.arff`, `.csv`, `.jsonlines`, `.libsvm`,
-        `.megam`, `.ndj`, or `.tsv` formats.
+        `.ndj`, or `.tsv` formats.
 
         Returns
         -------
@@ -552,7 +552,7 @@ class NDJReader(Reader):
             # Process good lines
             example = json.loads(line)
             # Convert all IDs to strings initially,
-            # for consistency with csv and megam formats.
+            # for consistency with csv formats.
             curr_id = str(example.get("id",
                                       "EXAMPLE_{}".format(example_num)))
             class_name = (safe_float(example['y'],
@@ -569,92 +569,6 @@ class NDJReader(Reader):
                                       'float').format(curr_id))
 
             yield curr_id, class_name, example
-
-
-class MegaMReader(Reader):
-
-    """
-    Reader to create a ``FeatureSet`` instance from  a MegaM -fvals file.
-    If example/instance IDs are included in the files, they must be specified
-    as a comment line directly preceding the line with feature values.
-    """
-
-    def _sub_read(self, file):
-        """
-        Parameters
-        ----------
-        file : file buffer
-            A file buffer for an MegaM file.
-
-        Yields
-        ------
-        curr_id : str
-            The current ID for the example.
-        class_name : float or str
-            The name of the class label for the example.
-        example : dict
-            The example valued in dictionary format, with 'x'
-            as list of features.
-
-        Raises
-        ------
-        ValueError
-            If there are duplicate feature names.
-        """
-        example_num = 0
-        curr_id = 'EXAMPLE_0'
-        for line in file:
-            # Process encoding
-            if not isinstance(line, str):
-                line = UnicodeDammit(line, ['utf-8',
-                                            'windows-1252']).unicode_markup
-            line = line.strip()
-            # Handle instance lines
-            if line.startswith('#'):
-                curr_id = line[1:].strip()
-            elif line and line not in ['TRAIN', 'TEST', 'DEV']:
-                split_line = line.split()
-                num_cols = len(split_line)
-                del line
-                # Line is just a class label
-                if num_cols == 1:
-                    class_name = safe_float(split_line[0],
-                                            replace_dict=self.class_map)
-                    field_pairs = []
-                # Line has a class label and feature-value pairs
-                elif num_cols % 2 == 1:
-                    class_name = safe_float(split_line[0],
-                                            replace_dict=self.class_map)
-                    field_pairs = split_line[1:]
-                # Line just has feature-value pairs
-                elif num_cols % 2 == 0:
-                    class_name = None
-                    field_pairs = split_line
-
-                curr_info_dict = {}
-                if len(field_pairs) > 0:
-                    # Get current instances feature-value pairs
-                    field_names = islice(field_pairs, 0, None, 2)
-                    # Convert values to floats, because otherwise
-                    # features'll be categorical
-                    field_values = (safe_float(val) for val in
-                                    islice(field_pairs, 1, None, 2))
-
-                    # Add the feature-value pairs to dictionary
-                    curr_info_dict.update(zip(field_names, field_values))
-
-                    if len(curr_info_dict) != len(field_pairs) / 2:
-                        raise ValueError(('There are duplicate feature ' +
-                                          'names in {} for example ' +
-                                          '{}.').format(self.path_or_list,
-                                                        curr_id))
-
-                yield curr_id, class_name, curr_info_dict
-
-                # Set default example ID for next instance, in case we see a
-                # line without an ID.
-                example_num += 1
-                curr_id = 'EXAMPLE_{}'.format(example_num)
 
 
 class LibSVMReader(Reader):
@@ -1147,6 +1061,5 @@ EXT_TO_READER = {".arff": ARFFReader,
                  ".csv": CSVReader,
                  ".jsonlines": NDJReader,
                  ".libsvm": LibSVMReader,
-                 ".megam": MegaMReader,
                  '.ndj': NDJReader,
                  ".tsv": TSVReader}

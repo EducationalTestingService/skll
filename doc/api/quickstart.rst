@@ -7,10 +7,10 @@ Load a ``FeatureSet`` from a file::
 
     from skll import Reader
 
-    example_reader = Reader.for_path('myexamples.megam')
+    example_reader = Reader.for_path('myexamples.csv')
     train_examples = example_reader.read()
 
-    
+
 Or, work with an existing ``pandas`` ``DataFrame``::
 
     from skll import FeatureSet
