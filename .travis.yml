@@ -21,8 +21,6 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
-  - conda install -c anaconda --yes setuptools
-  - conda update --yes conda
 install:
   - conda install --yes --channel conda-forge python=$TRAVIS_PYTHON_VERSION codecov --file conda_requirements.txt
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
