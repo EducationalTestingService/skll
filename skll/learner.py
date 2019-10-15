@@ -2074,12 +2074,10 @@ class Learner(object):
         elif both_hashers:
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
-                                   self.feat_vectorizer.n_features,
-                                   self.feat_vectorizer.non_negative)
+                                   self.feat_vectorizer.n_features)
             example_feat_vec_tuple = (examples.vectorizer.dtype,
                                       examples.vectorizer.input_type,
-                                      examples.vectorizer.n_features,
-                                      examples.vectorizer.non_negative)
+                                      examples.vectorizer.n_features)
 
             if self_feat_vec_tuple == example_feat_vec_tuple:
                 xtest = examples.features
