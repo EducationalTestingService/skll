@@ -29,7 +29,7 @@ setup(name='skll',
       author='Nitin Madnani',
       author_email='nmadnani@ets.org',
       license='BSD 3 clause',
-      packages=find_packages(exclude=['tests']),
+      packages=find_packages(exclude=['tests', 'examples']),
       include_package_data=True,
       entry_points={'console_scripts':
                     ['filter_features = skll.utilities.filter_features:main',
