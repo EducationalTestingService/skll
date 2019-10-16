@@ -30,6 +30,4 @@ From :py:mod:`~skll.metrics` Module
 -----------------------------------
 .. autofunction:: skll.f1_score_least_frequent
 .. autofunction:: skll.kappa
-.. autofunction:: skll.kendall_tau
-.. autofunction:: skll.spearman
-.. autofunction:: skll.pearson
+.. autofunction:: skll.correlation

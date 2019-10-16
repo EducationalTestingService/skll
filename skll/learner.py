@@ -15,10 +15,11 @@ import inspect
 import logging
 import os
 import sys
+
 from collections import Counter, defaultdict
 from functools import wraps
-from importlib import import_module
 from math import floor, log10
+from importlib import import_module
 from itertools import combinations
 from multiprocessing import cpu_count
 
@@ -41,6 +42,7 @@ from sklearn.ensemble import (AdaBoostClassifier,
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_selection import SelectKBest
+from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import type_of_target
 # AdditiveChi2Sampler is used indirectly, so ignore linting message
@@ -74,7 +76,13 @@ from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
-from skll.metrics import _CORRELATION_METRICS, use_score_func
+from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
+                          _CORRELATION_METRICS,
+                          _REGRESSION_ONLY_METRICS,
+                          _UNWEIGHTED_KAPPA_METRICS,
+                          _WEIGHTED_KAPPA_METRICS,
+                          SCORERS,
+                          use_score_func)
 from skll.version import VERSION
 
 # Constants #
@@ -157,47 +165,7 @@ _DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                         TheilSenRegressor:
                         [{}]}
 
-
-# list of valid grid objective functions for regression and classification
-# models depending on type of labels
-
-_BINARY_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
-                                     'linear_weighted_kappa',
-                                     'quadratic_weighted_kappa',
-                                     'uwk_off_by_one',
-                                     'lwk_off_by_one',
-                                     'qwk_off_by_one',
-                                     'kendall_tau',
-                                     'pearson',
-                                     'spearman',
-                                     'neg_log_loss'])
-
-_REGRESSION_ONLY_OBJ_FUNCS = frozenset(['r2',
-                                        'neg_mean_squared_error'])
-
-_CLASSIFICATION_ONLY_OBJ_FUNCS = frozenset(['accuracy',
-                                            'precision',
-                                            'recall',
-                                            'f1',
-                                            'f1_score_micro',
-                                            'f1_score_macro',
-                                            'f1_score_weighted',
-                                            'f1_score_least_frequent',
-                                            'average_precision',
-                                            'roc_auc',
-                                            'neg_log_loss'])
-
-_INT_CLASS_OBJ_FUNCS = frozenset(['unweighted_kappa',
-                                  'linear_weighted_kappa',
-                                  'quadratic_weighted_kappa',
-                                  'uwk_off_by_one',
-                                  'lwk_off_by_one',
-                                  'qwk_off_by_one',
-                                  'neg_log_loss'])
-
-_REQUIRES_DENSE = (BayesianRidge,
-                   Lars,
-                   TheilSenRegressor)
+_REQUIRES_DENSE = (BayesianRidge, Lars, TheilSenRegressor)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
 
@@ -280,6 +248,56 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
                 self._warned = True
 
             yield train_index, test_index
+
+
+def _contiguous_ints_or_floats(numbers):
+    """
+    Check whether the given list of numbers contains
+    contiguous integers or contiguous integer-like
+    floats. For example, [1, 2, 3] or [4.0, 5.0, 6.0]
+    are both contiguous but [1.1, 1.2, 1.3] is not.
+
+    Parameters
+    ----------
+    numbers : array-like of ints or floats
+        The numbers we want to check.
+
+    Returns
+    -------
+    answer : bool
+        True if the numbers are contiguous integers
+        or contiguous integer-like floats (1.0, 2.0, etc.)
+
+    Raises
+    ------
+    TypeError
+        If ``numbers`` does not contain integers or floating
+        point values.
+    ValueError
+        If ``numbers`` is empty.
+    """
+
+    try:
+
+        # make sure that number is not empty
+        assert len(numbers) > 0
+
+        # first check that the numbers are all integers
+        # or integer-like floats (e.g., 1.0, 2.0 etc.)
+        ints_or_int_like_floats = np.all(np.mod(numbers, 1) == 0)
+
+        # next check that the successive differences between
+        # the numbers are all 1, i.e., they are nuermicontiguous
+        contiguous = np.all(np.diff(numbers) == 1)
+
+    except AssertionError:
+        raise ValueError('Input cannot be empty.')
+
+    except TypeError:
+        raise TypeError('Input should only contain numbers.')
+
+    # we need both conditions to be true
+    return ints_or_int_like_floats and contiguous
 
 
 def _find_default_param_grid(cls):
@@ -397,33 +415,83 @@ def _train_and_score(learner,
     return train_score, test_score
 
 
-def _predict_binary(self, X):
+def _get_acceptable_regression_metrics():
     """
-    A helper function to allow us to use ``GridSearchCV`` with objective
-    functions like Kendall's tau for binary classification problems (where the
-    probability of the true class is used as the input to the objective
-    function).
+    Return the set of metrics that are acceptable for regression.
+    """
 
-    This only works if we've also taken the step of storing the old predict
-    function for ``self`` as ``predict_normal``. It's kind of a hack, but it saves
-    us from having to override ``GridSearchCV`` to change one little line.
+    # it's fairly straightforward for regression since
+    # we do not have to check the labels
+    acceptable_metrics = (_REGRESSION_ONLY_METRICS |
+                          _UNWEIGHTED_KAPPA_METRICS |
+                          _WEIGHTED_KAPPA_METRICS |
+                          _CORRELATION_METRICS)
+    return acceptable_metrics
+
+
+def _get_acceptable_classification_metrics(label_array):
+    """
+    Return the set of metrics that are acceptable given the
+    the unique set of labels that we are classifying.
 
     Parameters
     ----------
-    X : array-like
-        A set of examples to predict values for.
+    label_array : numpy.ndarray
+        A sorted numpy array containing the unique labels
+        that we are trying to predict. Optional for regressors
+        but required for classifiers.
 
     Returns
     -------
-    res : array-like
-        The prediction results.
+    acceptable_metrics : set
+        A set of metric names that are acceptable
+        for the given classification scenario.
     """
 
-    if self.coef_.shape[0] == 1:
-        res = self.predict_proba(X)[:, 1]
-    else:
-        res = self.predict_normal(X)
-    return res
+    # this is a classifier so the acceptable objective
+    # functions definitely include those metrics that
+    # are specifically for classification and also
+    # the unweighted kappa metrics
+    acceptable_metrics = _CLASSIFICATION_ONLY_METRICS | _UNWEIGHTED_KAPPA_METRICS
+
+    # now let us consider which other metrics may also
+    # be acceptable depending on whether the labels
+    # are strings or (contiguous) integers/floats
+    label_type = label_array.dtype.type
+
+    # CASE 1: labels are strings, then no other metrics
+    # are acceptable
+    if issubclass(label_type, (np.object_, str)):
+        pass
+
+    # CASE 2: labels are integers or floats; the way
+    # it works in SKLL, it's guaranteed that
+    # class indices will be sorted in the same order
+    # as the class labels therefore, ranking metrics
+    # such as various correlations should work fine.
+    elif issubclass(label_type, (int,
+                                 np.int32,
+                                 np.int64,
+                                 float,
+                                 np.float32,
+                                 np.float64)):
+        acceptable_metrics.update(_CORRELATION_METRICS)
+
+        # CASE 3: labels are numerically contiguous integers
+        # this is a special sub-case of CASE 2 which
+        # represents ordinal classification. Only in this
+        # case, weighted kappas -- where the distance
+        # between the class labels has a special
+        # meaning -- can be allowed. This is because
+        # class indices are always contiguous and all
+        # metrics in SKLL are computed in the index
+        # space, not the label space. Note that floating
+        # point numbers that are equivalent to integers
+        # (e.g., [1.0, 2.0, 3.0]) are also acceptable.
+        if _contiguous_ints_or_floats(label_array):
+            acceptable_metrics.update(_WEIGHTED_KAPPA_METRICS)
+
+    return acceptable_metrics
 
 
 class SelectByMinCount(SelectKBest):
@@ -1465,56 +1533,56 @@ class Learner(object):
             If FeatureHasher is used with MultinomialNB.
         """
 
+        # get the estimator type since we need it in multiple places below
+        estimator_type = self.model_type._estimator_type
+
         # if we are asked to do grid search, check that the grid objective
         # is specified and that the specified function is valid for the
         # selected learner
         if grid_search:
+
             if not grid_objective:
                 raise ValueError("Grid search is on by default. You must either "
                                  "specify a grid objective or turn off grid search.")
-            if self.model_type._estimator_type == 'regressor':
-                # types 2-4 are valid for all regression models
-                if grid_objective in _CLASSIFICATION_ONLY_OBJ_FUNCS:
-                    raise ValueError("{} is not a valid grid objective "
-                                     "function for the {} learner"
-                                     .format(grid_objective,
-                                             self._model_type.__name__))
-            elif grid_objective not in _CLASSIFICATION_ONLY_OBJ_FUNCS:
-                # This is a classifier. Valid objective functions depend on
-                # type of label (int, string, binary)
 
-                if issubclass(examples.labels.dtype.type, int):
-                    # If they're ints, class 1 and 2 are valid for classifiers,
-                    if grid_objective not in _INT_CLASS_OBJ_FUNCS:
-                        raise ValueError("{} is not a valid grid objective "
-                                         "function for the {} learner with "
-                                         "integer labels"
-                                         .format(grid_objective,
-                                                 self._model_type.__name__))
+            # get the list of objectives that are acceptable in the current
+            # prediction scenario and raise an exception if the current
+            # objective is not in this allowed list
+            label_type = examples.labels.dtype.type
+            if estimator_type == 'classifier':
+                sorted_unique_labels = np.unique(examples.labels)
+                allowed_objectives = _get_acceptable_classification_metrics(sorted_unique_labels)
+            else:
+                allowed_objectives = _get_acceptable_regression_metrics()
 
-                elif issubclass(examples.labels.dtype.type, str):
-                    # if all of the labels are strings, only class 1 objectives
-                    # are valid (with a classifier).
-                    raise ValueError("{} is not a valid grid objective "
-                                     "function for the {} learner with string "
-                                     "labels".format(grid_objective,
-                                                     self._model_type.__name__))
+            if grid_objective not in allowed_objectives:
+                raise ValueError("'{}' is not a valid objective "
+                                 "function for {} with "
+                                 "labels of type {}.".format(grid_objective,
+                                                             self._model_type.__name__,
+                                                             label_type.__name__))
 
-                elif len(set(examples.labels)) == 2:
-                    # If there are two labels, class 3 objectives are valid for
-                    # classifiers regardless of the type of the label.
-                    if grid_objective not in _BINARY_CLASS_OBJ_FUNCS:
-                        raise ValueError("{} is not a valid grid objective "
-                                         "function for the {} learner with "
-                                         "binary labels"
-                                         .format(grid_objective,
-                                                 self._model_type.__name__))
-                elif grid_objective in _REGRESSION_ONLY_OBJ_FUNCS:
-                    # simple backoff check for mixed-type labels
-                    raise ValueError("{} is not a valid grid objective "
-                                     "function for the {} learner"
-                                     .format(grid_objective,
-                                             self._model_type.__name__))
+            # If we're using a correlation metric for doing binary
+            # classification and probability is set to true, we assume
+            # that the user actually wants the `_with_probabilities`
+            # version of the metric
+            if (grid_objective in _CORRELATION_METRICS and
+                    estimator_type == 'classifier' and
+                    self.probability):
+                self.logger.info('You specified "{}" as the objective with '
+                                 '"probability" set to "true". If this is '
+                                 'a binary classification task with integer '
+                                 'labels, the probabilities for the positive '
+                                 'class will be used to compute the '
+                                 'correlation.'.format(grid_objective))
+                old_grid_objective = grid_objective
+                new_grid_objective = '{}_probs'.format(grid_objective)
+                metrics_module = import_module('skll.metrics')
+                metric_func = getattr(metrics_module, 'correlation')
+                SCORERS[new_grid_objective] = make_scorer(metric_func,
+                                                          corr_type=grid_objective,
+                                                          needs_proba=True)
+                grid_objective = new_grid_objective
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1586,7 +1654,7 @@ class Learner(object):
 
         # use label dict transformed version of examples.labels if doing
         # classification
-        if self.model_type._estimator_type == 'classifier':
+        if estimator_type == 'classifier':
             labels = np.array([self.label_dict[label] for label in
                                examples.labels])
         else:
@@ -1637,18 +1705,11 @@ class Learner(object):
                                                  logger=self.logger)
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
-            # If we're using a correlation metric for doing binary
-            # classification, override the estimator's predict function
-            if (grid_objective in _CORRELATION_METRICS and
-                    self.model_type._estimator_type == 'classifier'):
-                estimator.predict_normal = estimator.predict
-                estimator.predict = _predict_binary
-
             # limit the number of grid_jobs to be no higher than five or the
             # number of cores for the machine, whichever is lower
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
-
-            grid_searcher = GridSearchCV(estimator, param_grid,
+            grid_searcher = GridSearchCV(estimator,
+                                         param_grid,
                                          scoring=grid_objective,
                                          iid=False,
                                          cv=folds,
@@ -1665,6 +1726,13 @@ class Learner(object):
             grid_score = 0.0
             grid_cv_results = None
 
+        # restore the original of the grid objective if we
+        # had futzed with it to handle correlation
+        # objectives and probability outputs
+        if 'old_grid_objective' in locals():
+            grid_objective = old_grid_objective
+            del SCORERS[new_grid_objective]
+
         # store a scikit-learn Pipeline in the `pipeline` attribute
         # composed of a copy of the vectorizer, the selector,
         # the sampler, the scaler, and the estimator. This pipeline
@@ -1673,12 +1741,12 @@ class Learner(object):
         # We are using copies since the user might want to play
         # around with the pipeline and we want to let her do that
         # but keep the SKLL model the same
-
-        # start with the vectorizer
         if self._store_pipeline:
 
             # initialize the list that will hold the pipeline steps
             pipeline_steps = []
+
+            # start with the vectorizer
 
             # note that sometimes we may have to end up using dense
             # features or if we were using a SkewedChi2Sampler which
@@ -1769,21 +1837,34 @@ class Learner(object):
         # initialize a dictionary that will hold all of the metric scores
         metric_scores = {metric: None for metric in output_metrics}
 
-        # make the prediction on the test data
+        # are we in a regressor or a classifier
+        estimator_type = self.model_type._estimator_type
+
+        # make the prediction on the test data; note that these
+        # are either class indices or class probabilities
         yhat = self.predict(examples,
                             prediction_prefix=prediction_prefix,
                             append=append)
 
-        # make a single list of metrics including the grid objective
-        # since it's easier to compute everything together
-        metrics_to_compute = [grid_objective] + output_metrics
+        # if we are a classifier and in probability mode, then
+        # `yhat` are probabilities so we need to compute the
+        # class indices separately and save them too
+        if self.probability and estimator_type == 'classifier':
+            yhat_probs = yhat
+            yhat = np.argmax(yhat_probs, axis=1)
+        # if we are a regressor or classifier not in probability
+        # mode, then we have the class indices already and there
+        # are no probabilities
+        else:
+            yhat_probs = None
 
-        # extract actual labels (transformed for classification tasks)
-        if self.model_type._estimator_type == 'classifier':
+        # convert the true class labels to indices too for consistency
+        # if we are a classifier
+        if estimator_type == 'classifier':
             test_label_list = np.unique(examples.labels).tolist()
 
-            # identify unseen test labels if any and add a new dictionary for these
-            # labels
+            # identify unseen test labels if any and add a new dictionary
+            # for these  labels
             unseen_test_label_list = [label for label in test_label_list
                                       if label not in self.label_list]
             unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
@@ -1793,33 +1874,71 @@ class Learner(object):
             train_and_test_label_dict.update(unseen_label_dict)
             ytest = np.array([train_and_test_label_dict[label]
                               for label in examples.labels])
+        # we are a regressor, so we do not need to do anything else
         else:
             ytest = examples.labels
 
-        # compute all of the metrics that we need to but save the original
-        # predictions since we will need to use those for each metric
-        original_yhat = yhat
+        # compute the acceptable metrics for our current prediction scenario
+        label_type = examples.labels.dtype.type
+        if estimator_type == 'classifier':
+            sorted_unique_labels = np.unique(examples.labels)
+            acceptable_metrics = _get_acceptable_classification_metrics(sorted_unique_labels)
+        else:
+            acceptable_metrics = _get_acceptable_regression_metrics()
+
+        # check that all of the output metrics are acceptable
+        unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
+        if unacceptable_metrics:
+            raise ValueError("The following metrics are not valid "
+                             "for this learner ({}) with these labels of "
+                             "type {}: {}".format(self._model_type.__name__,
+                                                  label_type.__name__,
+                                                  list(unacceptable_metrics)))
+
+        # make a single list of metrics including the grid objective
+        # since it's easier to compute everything together
+        metrics_to_compute = [grid_objective] + output_metrics
         for metric in metrics_to_compute:
 
-            # if run in probability mode, convert yhat to list of labels predicted
+            # skip the None if we are not doing grid search
+            if not metric:
+                continue
+
+            # CASE 1: in probability mode for classification which means we
+            # need to either use the probabilities directly or infer the labels
+            # from them depending on the metric
             if self.probability:
-                # if we're using a correlation grid objective, calculate it here
-                if metric and metric in _CORRELATION_METRICS:
-                    try:
-                        metric_scores[metric] = use_score_func(metric, ytest, yhat[:, 1])
-                    except ValueError:
-                        metric_scores[metric] = float('NaN')
 
-                yhat = np.array([max(range(len(row)),
-                                     key=lambda i: row[i])
-                                 for row in original_yhat])
+                # there are three possible cases here:
+                # (a) if we are using a correlation metric or
+                #     `average_precision` or `roc_auc` in a binary
+                #      classification scenario, then we need to explicitly
+                #     pass in the probabilities of the positive class.
+                # (b) if we are using `neg_log_loss`, then we
+                #     just pass in the full probability array
+                # (c) we compute the most likely labels from the
+                #     probabilities via argmax and use those
+                #     for all other metrics
+                if (len(self.label_list) == 2 and
+                    (metric in _CORRELATION_METRICS or
+                     metric in ['average_precision', 'roc_auc'])):
+                    self.logger.info('using probabilities for the positive class to '
+                                     'compute {} for evaluation'.format(metric))
+                    yhat_for_metric = yhat_probs[:, 1]
+                elif metric == 'neg_log_loss':
+                    yhat_for_metric = yhat_probs
+                else:
+                    yhat_for_metric = yhat
 
-            # calculate grid search objective function score, if specified
-            if (metric and (metric not in _CORRELATION_METRICS or not self.probability)):
-                try:
-                    metric_scores[metric] = use_score_func(metric, ytest, yhat)
-                except ValueError:
-                    metric_scores[metric] = float('NaN')
+            # CASE 2: no probability mode for classifier or regressor
+            # in which case we just use the predictions as they are
+            else:
+                yhat_for_metric = yhat
+
+            try:
+                metric_scores[metric] = use_score_func(metric, ytest, yhat_for_metric)
+            except ValueError:
+                metric_scores[metric] = float('NaN')
 
         # now separate out the grid objective score from the additional metric scores
         # if a grid objective was actually passed in. If no objective was passed in
@@ -1830,7 +1949,7 @@ class Learner(object):
             objective_score = metric_scores[grid_objective]
             del additional_scores[grid_objective]
 
-        if self.model_type._estimator_type == 'regressor':
+        if estimator_type == 'regressor':
             result_dict = {'descriptive': defaultdict(dict)}
             for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
                 result_dict['descriptive'][table_label]['min'] = min(y)
@@ -1841,7 +1960,9 @@ class Learner(object):
             res = (None, None, result_dict, self._model.get_params(), objective_score,
                    additional_scores)
         else:
-            # compute the confusion matrix
+            # compute the confusion matrix and precision/recall/f1
+            # note that we are using the labels indices here
+            # and not the actual class labels themselves
             num_labels = len(train_and_test_label_dict)
             conf_mat = confusion_matrix(ytest, yhat,
                                         labels=list(range(num_labels)))
@@ -1880,7 +2001,9 @@ class Learner(object):
             Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
         class_labels : bool, optional
-            For classifier, should we convert class indices to their (str) labels?
+            For classifier, should we convert class indices to their (str) labels
+            for the returned array? Note that class labels are always written out
+            to disk.
             Defaults to ``False``.
 
         Returns
@@ -2322,13 +2445,13 @@ class Learner(object):
             # label dictionary for the whole dataset above.
             (grid_search_score,
              grid_search_cv_results) = self.train(train_set,
-                                           grid_search_folds=grid_search_folds,
-                                           grid_search=grid_search,
-                                           grid_objective=grid_objective,
-                                           param_grid=param_grid,
-                                           grid_jobs=grid_jobs,
-                                           shuffle=grid_search,
-                                           create_label_dict=False)
+                                                  grid_search_folds=grid_search_folds,
+                                                  grid_search=grid_search,
+                                                  grid_objective=grid_objective,
+                                                  param_grid=param_grid,
+                                                  grid_jobs=grid_jobs,
+                                                  shuffle=grid_search,
+                                                  create_label_dict=False)
             grid_search_scores.append(grid_search_score)
             if save_cv_models:
                 models.append(copy.deepcopy(self))
