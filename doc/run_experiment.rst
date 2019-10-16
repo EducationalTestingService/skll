@@ -173,7 +173,7 @@ The experiment configuration files that run_experiment accepts are standard
 that are similar in format to Windows INI files. [#]_
 There are four expected sections in a configuration file: :ref:`General`,
 :ref:`Input`, :ref:`Tuning`, and :ref:`Output`.  A detailed description of each
-possible settings for each section is provided below, but to summarize:
+field in each section is provided below, but to summarize:
 
 .. _cross_validate:
 
@@ -189,7 +189,6 @@ possible settings for each section is provided below, but to summarize:
         When using classifiers, SKLL will automatically reduce the
         number of cross-validation folds to be the same as the minimum
         number of examples for any of the classes in the training data.
-
 
 .. _evaluate:
 
@@ -252,17 +251,19 @@ What types of experiment we're trying to run. Valid options are:
 Input
 ^^^^^
 
-The Input section has only one required field, :ref:`learners`, but also must
-contain either :ref:`train_file <train_file>` or
-:ref:`train_directory <train_directory>`.
+The Input section must specify the machine learners to use via the :ref:`learners` 
+field as welll as the data and features to be used when
+training the model. This can be done by specifying either (a) 
+:ref:`train_file <train_file>`  in which case all of the features in
+the file will be used, or (b) :ref:`train_directory <train_directory>` along
+with :ref:`featuresets <featuresets>`.
 
 .. _learners:
 
 learners
 """"""""
-List of scikit-learn models to try using. A separate job will be run for each
-combination of classifier and feature-set. Acceptable values are described
-below.  Custom learners can also be specified. See
+List of scikit-learn models to be used in the experiment. Acceptable values
+are described below.  Custom learners can also be specified. See 
 :ref:`custom_learner_path <custom_learner_path>`.
 
 .. _classifiers:
@@ -307,61 +308,15 @@ Regressors:
     *   **SVR**: `Support Vector Regression using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
     *   **TheilSenRegressor**: `Theil-Sen Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__
 
-    For all regressors you can also prepend ``Rescaled`` to the
+    For all regressors, you can also prepend ``Rescaled`` to the
     beginning of the full name (e.g., ``RescaledSVR``) to get a version
     of the regressor where predictions are rescaled and constrained to
     better match the training set.
 
-.. _train_file:
-
-train_file *(Optional)*
-"""""""""""""""""""""""
-
-Path to a file containing the features to train on.  Cannot be used in
-combination with :ref:`featuresets <featuresets>`,
-:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`.
-
-.. note::
-
-    If :ref:`train_file <train_file>` is not specified,
-    :ref:`train_directory <train_directory>` must be.
-
-.. _train_directory:
-
-train_directory *(Optional)*
-""""""""""""""""""""""""""""
-
-Path to directory containing training data files. There must be a file for each
-featureset.  Cannot be used in combination with :ref:`train_file <train_file>`
-or :ref:`test_file <test_file>`.
-
-.. note::
-
-    If :ref:`train_directory <train_directory>` is not specified,
-    :ref:`train_file <train_file>` must be.
-
-.. _test_file:
-
-test_file *(Optional)*
-""""""""""""""""""""""
-
-Path to a file containing the features to test on.  Cannot be used in
-combination with :ref:`featuresets <featuresets>`,
-:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`
-
-.. _test_directory:
-
-test_directory *(Optional)*
-"""""""""""""""""""""""""""
-
-Path to directory containing test data files. There must be a file
-for each featureset.  Cannot be used in combination with
-:ref:`train_file <train_file>` or :ref:`test_file <test_file>`.
-
 .. _featuresets:
 
-featuresets *(Optional)*
-""""""""""""""""""""""""
+featuresets
+"""""""""""
 List of lists of prefixes for the files containing the features you would like
 to train/test on.  Each list will end up being a job. IDs are required to be
 the same in all of the feature files, and a :py:exc:`ValueError` will be raised
@@ -374,62 +329,37 @@ if this is not the case.  Cannot be used in combination with
     :ref:`test_directory <test_directory>`, :ref:`featuresets <featuresets>`
     is required.
 
-.. _suffix:
 
-suffix *(Optional)*
-"""""""""""""""""""
+.. _train_file:
 
-The file format the training/test files are in. Valid option are
-:ref:`.arff <arff>`, :ref:`.csv <csv>`, :ref:`.jsonlines <ndj>`,
-:ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, :ref:`.ndj <ndj>`, and
-:ref:`.tsv <csv>`.
+train_file 
+""""""""""
 
-If you omit this field, it is assumed that the "prefixes" listed in
-:ref:`featuresets <featuresets>` are actually complete filenames. This can be
-useful if you have feature files that are all in different formats that you
-would like to combine.
+Path to a file containing the features to train on.  Cannot be used in
+combination with :ref:`featuresets <featuresets>`,
+:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`.
 
+.. note::
 
-.. _id_col:
+    If :ref:`train_file <train_file>` is not specified,
+    :ref:`train_directory <train_directory>` must be.
 
-id_col *(Optional)*
-"""""""""""""""""""
-If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
-files, the IDs for each instance are assumed to be in a column with this
-name. If no column with this name is found, the IDs are generated
-automatically. Defaults to ``id``.
+.. _train_directory:
 
-.. _label_col:
+train_directory 
+"""""""""""""""
 
-label_col *(Optional)*
-""""""""""""""""""""""
+Path to directory containing training data files. There must be a file for each
+featureset.  Cannot be used in combination with :ref:`train_file <train_file>`
+or :ref:`test_file <test_file>`.
 
-If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
-files, the class labels for each instance are assumed to be in a column with
-this name. If no column with this name is found, the data is assumed to be
-unlabelled. Defaults to ``y``. For ARFF files only, this must also be the final
-column to count as the label (for compatibility with Weka).
+.. note::
 
-.. _ids_to_floats:
+    If :ref:`train_directory <train_directory>` is not specified,
+    :ref:`train_file <train_file>` must be.
 
-ids_to_floats *(Optional)*
-""""""""""""""""""""""""""
-
-If you have a dataset with lots of examples, and your input files have IDs that
-look like numbers (can be converted by float()), then setting this to True will
-save you some memory by storing IDs as floats. Note that this will cause IDs to
-be printed as floats in prediction files (e.g., ``4.0`` instead of ``4`` or
-``0004`` or ``4.000``).
-
-.. _shuffle:
-
-shuffle *(Optional)*
-""""""""""""""""""""
-
-If ``True``, shuffle the examples in the training data before using them for
-learning. This happens automatically when doing a grid search but it might be
-useful in other scenarios as well, e.g., online learning. Defaults to
-``False``.
+The following is a list of the other optional fields in this section 
+in alphabetical order.
 
 .. _class_map:
 
@@ -469,19 +399,67 @@ not ``str`` values that exactly match the input labels, as might be expected.
 ``class_map`` could be used to map the original labels to new values that do
 not have the same characteristics.
 
-.. _num_cv_folds:
+.. _custom_learner_path:
 
-num_cv_folds *(Optional)*
-"""""""""""""""""""""""""
+custom_learner_path *(Optional)*
+""""""""""""""""""""""""""""""""
 
-The number of folds to use for cross validation. Defaults to 10.
+Path to a ``.py`` file that defines a custom learner.  This file will be
+imported dynamically.  This is only required if a custom learner is specified
+in the list of :ref:`learners`.
 
-.. _random_folds:
+All Custom learners must implement the ``fit`` and
+``predict`` methods. Custom classifiers must either (a) inherit from an existing scikit-learn classifier, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
 
-random_folds *(Optional)*
-"""""""""""""""""""""""""
+Similarly, Custom regressors must either (a) inherit from an existing scikit-learn regressor, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
 
-Whether to use random folds for cross-validation. Defaults to ``False``.
+Learners that require dense matrices should implement a method ``requires_dense``
+that returns ``True``.
+
+.. _feature_hasher:
+
+feature_hasher *(Optional)*
+"""""""""""""""""""""""""""
+
+If "true", this enables a high-speed, low-memory vectorizer that uses
+feature hashing for converting feature dictionaries into NumPy arrays
+instead of using a
+`DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__.  This flag will drastically
+reduce memory consumption for data sets with a large number of
+features. If enabled, the user should also specify the number of
+features in the :ref:`hasher_features <hasher_features>` field.  For additional
+information see `the scikit-learn documentation <https://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`__.
+
+.. _feature_scaling:
+
+feature_scaling *(Optional)*
+""""""""""""""""""""""""""""
+
+Whether to scale features by their mean and/or their standard deviation. If you
+scale by mean, your data will automatically be converted to dense, so use
+caution when you have a very large dataset. Valid options are:
+
+none
+    Perform no feature scaling at all.
+
+with_std
+    Scale feature values by their standard deviation.
+
+with_mean
+    Center features by subtracting their mean.
+
+both
+    Perform both centering and scaling.
+
+Defaults to none.
+
+.. _featureset_names:
+
+featureset_names *(Optional)*
+"""""""""""""""""""""""""""""
+
+Optional list of names for the feature sets.  If omitted, then the prefixes
+will be munged together to make names.
 
 .. _folds_file:
 
@@ -520,6 +498,173 @@ will be ignored. The first column should consist of training set IDs and the
 second should be a string for the fold ID (e.g., 1 through 5, A through D, etc.).
 If specified, the CV and grid search will leave one fold ID out at a time. [#]_
 
+.. _fixed_parameters:
+
+fixed_parameters *(Optional)*
+"""""""""""""""""""""""""""""
+
+List of dictionaries containing parameters you want to have fixed for each
+learner in :ref:`learners` list. Any empty ones will be ignored
+(and the defaults will be used). If :ref:`grid_search` is ``True``,
+there is a potential for conflict with specified/default parameter grids
+and fixed parameters.
+
+The default fixed parameters (beyond those that scikit-learn sets) are:
+
+    AdaBoostClassifier and AdaBoostRegressor
+      .. code-block:: python
+
+        {'n_estimators': 500, 'random_state': 123456789}
+
+    DecisionTreeClassifier and DecisionTreeRegressor
+      .. code-block:: python
+
+        {'random_state': 123456789}
+
+    DummyClassifier
+        .. code-block:: python
+    
+           {'random_state': 123456789}
+    
+    ElasticNet
+        .. code-block:: python
+    
+           {'random_state': 123456789}
+    
+    GradientBoostingClassifier and GradientBoostingRegressor
+        .. code-block:: python
+    
+           {'n_estimators': 500, 'random_state': 123456789}
+    
+    Lasso:
+        .. code-block:: python
+    
+           {'random_state': 123456789}
+    
+    LinearSVC and LinearSVR
+        .. code-block:: python
+    
+           {'random_state': 123456789}
+    
+    LogisticRegression
+        .. code-block:: python
+    
+            {'random_state': 123456789}
+
+        .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
+
+    MLPClassifier and MLPRegressor:
+        .. code-block:: python
+    
+           {'learning_rate': 'invscaling', max_iter': 500}
+    
+    RandomForestClassifier and RandomForestRegressor
+        .. code-block:: python
+    
+           {'n_estimators': 500, 'random_state': 123456789}
+    
+    RANSACRegressor
+        .. code-block:: python
+    
+           {'loss': 'squared_loss', 'random_state': 123456789}
+    
+    Ridge and RidgeClassifier
+        .. code-block:: python
+    
+           {'random_state': 123456789}
+    
+    SVC and SVR
+        .. code-block:: python
+    
+           {'cache_size': 1000}
+    
+    SGDClassifier
+        .. code-block:: python
+    
+           {'loss': 'log', 'random_state': 123456789}
+
+    SGDRegressor
+        .. code-block:: python
+    
+           {'random_state': 123456789}
+    
+    TheilSenRegressor
+        .. code-block:: python
+    
+           {'random_state': 123456789}
+
+    .. _imbalanced_data:
+
+    .. note::
+
+        The `fixed_parameters` field offers us a way to deal with imbalanced
+        data sets by using the parameter ``class_weight`` for the following 
+        classifiers: ``DecisionTreeClassifier``, ``LogisticRegression``, 
+        ``LinearSVC``, ``RandomForestClassifier``, ``RidgeClassifier``, 
+        ``SGDClassifier``, and ``SVC``.
+
+        Two possible options are available. The first one is ``balanced``,
+        which automatically adjust weights inversely proportional to class
+        frequencies, as shown in the following code:
+
+        .. code-block:: python
+
+           {'class_weight': 'balanced'}
+
+        The second option allows you to assign a specific weight per each
+        class. The default weight per class is 1. For example:
+
+        .. code-block:: python
+
+           {'class_weight': {1: 10}}
+
+        Additional examples and information can be seen `here <https://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_samples.html>`__.
+
+.. _hasher_features:
+
+hasher_features *(Optional)*
+""""""""""""""""""""""""""""
+
+The number of features used by the `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ if the
+:ref:`feature_hasher <feature_hasher>` flag is enabled.
+
+.. note::
+
+    To avoid collisions, you should always use the power of two larger than the
+    number of features in the data set for this setting. For example, if you
+    had 17 features, you would want to set the flag to 32.
+
+.. _id_col:
+
+id_col *(Optional)*
+"""""""""""""""""""
+If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
+files, the IDs for each instance are assumed to be in a column with this
+name. If no column with this name is found, the IDs are generated
+automatically. Defaults to ``id``.
+
+.. _ids_to_floats:
+
+ids_to_floats *(Optional)*
+""""""""""""""""""""""""""
+
+If you have a dataset with lots of examples, and your input files have IDs that
+look like numbers (can be converted by float()), then setting this to True will
+save you some memory by storing IDs as floats. Note that this will cause IDs to
+be printed as floats in prediction files (e.g., ``4.0`` instead of ``4`` or
+``0004`` or ``4.000``).
+
+.. _label_col:
+
+label_col *(Optional)*
+""""""""""""""""""""""
+
+If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
+files, the class labels for each instance are assumed to be in a column with
+this name. If no column with this name is found, the data is assumed to be
+unlabelled. Defaults to ``y``. For ARFF files only, this must also be the final
+column to count as the label (for compatibility with Weka).
+
 .. _learning_curve_cv_folds_list:
 
 learning_curve_cv_folds_list *(Optional)*
@@ -549,22 +694,21 @@ interpreted as absolute sizes of the training sets. Note that for classification
 the number of samples usually have to be big enough to contain at least
 one sample from each class. Defaults to ``[0.1, 0.325, 0.55, 0.775, 1.0]``.
 
-.. _custom_learner_path:
+.. _num_cv_folds:
 
-custom_learner_path *(Optional)*
-""""""""""""""""""""""""""""""""
+num_cv_folds *(Optional)*
+"""""""""""""""""""""""""
 
-Path to a ``.py`` file that defines a custom learner.  This file will be
-imported dynamically.  This is only required if a custom learner is specified
-in the list of :ref:`learners`.
+The number of folds to use for cross validation. Defaults to 10.
 
-All Custom learners must implement the ``fit`` and
-``predict`` methods. Custom classifiers must either (a) inherit from an existing scikit-learn classifier, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
+.. _shuffle:
 
-Similarly, Custom regressors must either (a) inherit from an existing scikit-learn regressor, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
+.. _random_folds:
 
-Learners that require dense matrices should implement a method ``requires_dense``
-that returns ``True``.
+random_folds *(Optional)*
+"""""""""""""""""""""""""
+
+Whether to use random folds for cross-validation. Defaults to ``False``.
 
 .. _sampler:
 
@@ -605,247 +749,66 @@ SkewedChi2Sampler
 
        {'random_state': 123456789}
 
-.. _feature_hasher:
+shuffle *(Optional)*
+""""""""""""""""""""
 
-feature_hasher *(Optional)*
+If ``True``, shuffle the examples in the training data before using them for
+learning. This happens automatically when doing a grid search but it might be
+useful in other scenarios as well, e.g., online learning. Defaults to
+``False``.
+
+.. _suffix:
+
+suffix *(Optional)*
+"""""""""""""""""""
+
+The file format the training/test files are in. Valid option are
+:ref:`.arff <arff>`, :ref:`.csv <csv>`, :ref:`.jsonlines <ndj>`,
+:ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, :ref:`.ndj <ndj>`, and
+:ref:`.tsv <csv>`.
+
+If you omit this field, it is assumed that the "prefixes" listed in
+:ref:`featuresets <featuresets>` are actually complete filenames. This can be
+useful if you have feature files that are all in different formats that you
+would like to combine.
+
+.. _test_file:
+
+test_file *(Optional)*
+""""""""""""""""""""""
+
+Path to a file containing the features to test on.  Cannot be used in
+combination with :ref:`featuresets <featuresets>`,
+:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`
+
+.. _test_directory:
+
+test_directory *(Optional)*
 """""""""""""""""""""""""""
 
-If "true", this enables a high-speed, low-memory vectorizer that uses
-feature hashing for converting feature dictionaries into NumPy arrays
-instead of using a
-`DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__.  This flag will drastically
-reduce memory consumption for data sets with a large number of
-features. If enabled, the user should also specify the number of
-features in the :ref:`hasher_features <hasher_features>` field.  For additional
-information see `the scikit-learn documentation <https://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`__.
-
-.. _hasher_features:
-
-hasher_features *(Optional)*
-""""""""""""""""""""""""""""
-
-The number of features used by the `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ if the
-:ref:`feature_hasher <feature_hasher>` flag is enabled.
-
-.. note::
-
-    To avoid collisions, you should always use the power of two larger than the
-    number of features in the data set for this setting. For example, if you
-    had 17 features, you would want to set the flag to 32.
-
-.. _featureset_names:
-
-featureset_names *(Optional)*
-"""""""""""""""""""""""""""""
-
-Optional list of names for the feature sets.  If omitted, then the prefixes
-will be munged together to make names.
-
-.. _fixed_parameters:
-
-fixed_parameters *(Optional)*
-"""""""""""""""""""""""""""""
-
-List of dicts containing parameters you want to have fixed for each
-learner in :ref:`learners` list. Any empty ones will be ignored
-(and the defaults will be used). If :ref:`grid_search` is ``True``,
-there is a potential for conflict with specified/default parameter grids
-and fixed parameters.
-
-The default fixed parameters (beyond those that scikit-learn sets) are:
-
-AdaBoostClassifier and AdaBoostRegressor
-    .. code-block:: python
-
-       {'n_estimators': 500, 'random_state': 123456789}
-
-DecisionTreeClassifier and DecisionTreeRegressor
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-DummyClassifier
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-ElasticNet
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-GradientBoostingClassifier and GradientBoostingRegressor
-    .. code-block:: python
-
-       {'n_estimators': 500, 'random_state': 123456789}
-
-Lasso:
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-LinearSVC and LinearSVR
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-LogisticRegression
-    .. code-block:: python
-
-        {'random_state': 123456789}
-
-    .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
-
-MLPClassifier and MLPRegressor:
-    .. code-block:: python
-
-       {'learning_rate': 'invscaling', max_iter': 500}
-
-RandomForestClassifier and RandomForestRegressor
-    .. code-block:: python
-
-       {'n_estimators': 500, 'random_state': 123456789}
-
-RANSACRegressor
-    .. code-block:: python
-
-       {'loss': 'squared_loss', 'random_state': 123456789}
-
-Ridge and RidgeClassifier
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-SVC and SVR
-    .. code-block:: python
-
-       {'cache_size': 1000}
-
-SGDClassifier
-    .. code-block:: python
-
-       {'loss': 'log', 'random_state': 123456789}
-
-SGDRegressor
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-TheilSenRegressor
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-
-.. _imbalanced_data:
-
-.. note::
-    This option allows us to deal with imbalanced data sets by using
-    the parameter ``class_weight`` for the classifiers:
-    ``DecisionTreeClassifier``, ``LogisticRegression``,  ``LinearSVC``,
-    ``RandomForestClassifier``, ``RidgeClassifier``, ``SGDClassifier``,
-    and ``SVC``.
-
-    Two possible options are available. The first one is ``balanced``,
-    which automatically adjust weights inversely proportional to class
-    frequencies, as shown in the following code:
-
-    .. code-block:: python
-
-       {'class_weight': 'balanced'}
-
-    The second option allows you to assign a specific weight per each
-    class. The default weight per class is 1. For example:
-
-    .. code-block:: python
-
-       {'class_weight': {1: 10}}
-
-    Additional examples and information can be seen `here <https://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_samples.html>`__.
-
-.. _feature_scaling:
-
-feature_scaling *(Optional)*
-""""""""""""""""""""""""""""
-
-Whether to scale features by their mean and/or their standard deviation. If you
-scale by mean, your data will automatically be converted to dense, so use
-caution when you have a very large dataset. Valid options are:
-
-none
-    Perform no feature scaling at all.
-
-with_std
-    Scale feature values by their standard deviation.
-
-with_mean
-    Center features by subtracting their mean.
-
-both
-    Perform both centering and scaling.
-
-Defaults to ``none``.
+Path to directory containing test data files. There must be a file
+for each featureset.  Cannot be used in combination with
+:ref:`train_file <train_file>` or :ref:`test_file <test_file>`.
 
 .. _tuning:
 
 Tuning
 ^^^^^^
 
-.. _grid_search:
-
-grid_search *(Optional)*
-""""""""""""""""""""""""
-
-Whether or not to perform grid search to find optimal parameters for
-classifier. Defaults to ``False``. Note that for the
-:ref:`learning_curve <learning_curve>` task, grid search is not allowed
-and setting it to ``True`` will generate a warning and be ignored.
-
-.. _grid_search_folds:
-
-grid_search_folds *(Optional)*
-""""""""""""""""""""""""""""""
-
-The number of folds to use for grid search. Defaults to 3.
-
-.. _grid_search_jobs:
-
-grid_search_jobs *(Optional)*
-"""""""""""""""""""""""""""""
-
-Number of folds to run in parallel when using grid search. Defaults to
-number of grid search folds.
-
-.. _use_folds_file_for_grid_search:
-
-use_folds_file_for_grid_search *(Optional)*
-"""""""""""""""""""""""""""""""""""""""""""
-
-Whether to use the specified :ref:`folds_file <folds_file>` for the inner grid-search
-cross-validation loop when :ref:`task` is set to ``cross_validate``.
-Defaults to ``True``.
-
-.. note::
-
-    This flag is ignored for all other tasks, including the
-    ``train`` task where a specified :ref:`folds_file <folds_file>` is
-    *always* used for the grid search.
-
-.. _min_feature_count:
-
-min_feature_count *(Optional)*
-""""""""""""""""""""""""""""""
-
-The minimum number of examples for which the value of a feature must be nonzero
-to be included in the model. Defaults to 1.
+Generally, in this section, you would specify fields that pertain to the
+hyperparameter tuning for each learner. The most common required field
+is :ref:`objectives` although it may also be optional in certain 
+circumstances.
 
 .. _objectives:
 
-objectives *(Optional)*
-"""""""""""""""""""""""
+objectives 
+""""""""""
 
 A list of one or more metrics to use as objective functions for tuning the learner
-hyperparameters. Available metrics are:
+hyperparameters via grid search. Note that ``objectives`` is required by default in most cases unless (a) :ref:`grid_search <grid_search>` is explicitly set to ``False`` or (b) the task is :ref:`learning_curve <learning_curve>`. For (a), any specified objectives are ignored. For (b), specifying objectives will raise an exception.
+
+Available metrics are:
 
 .. _classification_obj:
 
@@ -897,10 +860,6 @@ hyperparameters. Available metrics are:
 
 .. |F1 link| replace:: F\ :sub:`1` score
 .. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
-
-
-
-
     **Regression:** The following objectives can be used for regression problems. 
 
     *   **explained_variance**: A `score <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.explained_variance_score.html#sklearn.metrics.explained_variance_score>`__ indicating how much of the variance in the given data can be by the model.
@@ -921,7 +880,42 @@ hyperparameters. Available metrics are:
     *   **uwk_off_by_one**: Same as ``unweighted_kappa``, but all ranking
         differences are discounted by one. In other words, a ranking of
         1 and a ranking of 2 would be considered equal.
-    
+
+The following is a list of the other optional fields in this section in alphabetical order.
+
+.. _grid_search:
+
+grid_search *(Optional)*
+""""""""""""""""""""""""
+
+Whether or not to perform grid search to find optimal parameters for
+classifier. Defaults to ``True`` since optimizing model hyperparameters
+almost always leads to better performance. Note that for the
+:ref:`learning_curve <learning_curve>` task, grid search is not allowed
+and setting it to ``True`` will generate a warning and be ignored.
+
+.. _grid_search_folds:
+
+grid_search_folds *(Optional)*
+""""""""""""""""""""""""""""""
+
+The number of folds to use for grid search. Defaults to 3.
+
+.. _grid_search_jobs:
+
+grid_search_jobs *(Optional)*
+"""""""""""""""""""""""""""""
+
+Number of folds to run in parallel when using grid search. Defaults to
+number of grid search folds.
+
+.. _min_feature_count:
+
+min_feature_count *(Optional)*
+""""""""""""""""""""""""""""""
+
+The minimum number of examples for which the value of a feature must be nonzero
+to be included in the model. Defaults to 1.
 
 .. _param_grids:
 
@@ -935,107 +929,106 @@ the default parameter grid for that learner will be searched.
 
 The default parameter grids for each learner are:
 
-AdaBoostClassifier and AdaBoostRegressor
-    .. code-block:: python
+    AdaBoostClassifier and AdaBoostRegressor
+        .. code-block:: python
+    
+            [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+    
+    BayesianRidge
+        .. code-block:: python
+    
+            [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
+              'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
+              'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
+              'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}]
+    
+    DecisionTreeClassifier and DecisionTreeRegressor
+        .. code-block:: python
+    
+           [{'max_features': ["auto", None]}]
+    
+    ElasticNet
+        .. code-block:: python
+    
+           [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+    
+    GradientBoostingClassifier and GradientBoostingRegressor
+        .. code-block:: python
+    
+           [{'max_depth': [1, 3, 5]}]
+    
+    HuberRegressor
+        .. code-block:: python
+    
+            [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
+              'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}]
+    
+    KNeighborsClassifier and KNeighborsRegressor
+        .. code-block:: python
+    
+            [{'n_neighbors': [1, 5, 10, 100],
+              'weights': ['uniform', 'distance']}]
+    
+    Lasso
+        .. code-block:: python
+    
+           [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+    
+    LinearSVC
+        .. code-block:: python
+    
+           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+    
+    LogisticRegression
+        .. code-block:: python
+    
+           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+    
+    MLPClassifier and MLPRegressor:
+        .. code-block:: python
+    
+           [{'activation': ['logistic', 'tanh', 'relu'],
+             'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+             'learning_rate_init': [0.001, 0.01, 0.1]}],
+    
+    MultinomialNB
+        .. code-block:: python
+    
+           [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
+    
+    RandomForestClassifier and RandomForestRegressor
+        .. code-block:: python
+    
+           [{'max_depth': [1, 5, 10, None]}]
+    
+    Ridge and RidgeClassifier
+        .. code-block:: python
+    
+           [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+    
+    SGDClassifier and SGDRegressor
+        .. code-block:: python
+    
+            [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+              'penalty': ['l1', 'l2', 'elasticnet']}]
+    
+    SVC
+        .. code-block:: python
+    
+           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+             'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]
+    
+    SVR
+        .. code-block:: python
+    
+           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-BayesianRidge
-    .. code-block:: python
-
-        [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
-          'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
-          'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
-          'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}]
-
-DecisionTreeClassifier and DecisionTreeRegressor
-    .. code-block:: python
-
-       [{'max_features': ["auto", None]}]
-
-ElasticNet
-    .. code-block:: python
-
-       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-GradientBoostingClassifier and GradientBoostingRegressor
-    .. code-block:: python
-
-       [{'max_depth': [1, 3, 5]}]
-
-HuberRegressor
-    .. code-block:: python
-
-        [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
-          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}]
-
-KNeighborsClassifier and KNeighborsRegressor
-    .. code-block:: python
-
-        [{'n_neighbors': [1, 5, 10, 100],
-          'weights': ['uniform', 'distance']}]
-
-Lasso
-    .. code-block:: python
-
-       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-LinearSVC
-    .. code-block:: python
-
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-LogisticRegression
-    .. code-block:: python
-
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-MLPClassifier and MLPRegressor:
-    .. code-block:: python
-
-       [{'activation': ['logistic', 'tanh', 'relu'],
-         'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
-         'learning_rate_init': [0.001, 0.01, 0.1]}],
-
-MultinomialNB
-    .. code-block:: python
-
-       [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
-
-RandomForestClassifier and RandomForestRegressor
-    .. code-block:: python
-
-       [{'max_depth': [1, 5, 10, None]}]
-
-Ridge and RidgeClassifier
-    .. code-block:: python
-
-       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-SGDClassifier and SGDRegressor
-    .. code-block:: python
-
-        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
-          'penalty': ['l1', 'l2', 'elasticnet']}]
-
-SVC
-    .. code-block:: python
-
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-         'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-SVR
-    .. code-block:: python
-
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-
-
-.. note::
-    Note that learners not listed here do not have any default
-    parameter grids in SKLL either because either there are no
-    hyper-parameters to tune or decisions about which parameters
-    to tune (and how) depend on the data being used for the
-    experiment and are best left up to the user.
+    .. note::
+           Note that learners not listed here do not have any default
+           parameter grids in SKLL either because either there are no
+           hyper-parameters to tune or decisions about which parameters
+           to tune (and how) depend on the data being used for the
+           experiment and are best left up to the user.
 
 
 .. _pos_label_str:
@@ -1047,20 +1040,66 @@ The string label for the positive class in the binary
 classification setting. If unspecified, an arbitrary class is
 picked.
 
+.. _use_folds_file_for_grid_search:
+
+use_folds_file_for_grid_search *(Optional)*
+"""""""""""""""""""""""""""""""""""""""""""
+
+Whether to use the specified :ref:`folds_file <folds_file>` for the inner grid-search
+cross-validation loop when :ref:`task` is set to ``cross_validate``.
+Defaults to ``True``.
+
+.. note::
+
+    This flag is ignored for all other tasks, including the
+    ``train`` task where a specified :ref:`folds_file <folds_file>` is
+    *always* used for the grid search.
+
+
 .. _output:
 
 Output
 ^^^^^^
 
-.. _probability:
+The fields in this section generally pertain to the outputs produced
+by the experiment. The most common fields are ``logs``, ``models``, 
+``predictions``, and ``results``. These fields are mostly optional
+although they may be required in certain cases. A common option 
+is to use the same directory for all of these fields.
 
-probability *(Optional)*
-""""""""""""""""""""""""
+.. _log:
 
-Whether or not to output probabilities for each class instead of the
-most probable class for each instance. Only really makes a difference
-when storing predictions. Defaults to ``False``. Note that this also
-applies to the tuning objective.
+log *(Optional)*
+""""""""""""""""
+
+Directory to store log files in. If omitted, the current working
+directory is used.
+
+.. _models:
+
+models *(Optional)*
+"""""""""""""""""""
+
+Directory to store trained models in. Can be omitted to not store
+models except when using the :ref:`train <train>` task. Must *not* be specified
+for the :ref:`learning_curve <learning_curve>` task.
+
+.. _metrics:
+
+metrics *(Optional)*
+""""""""""""""""""""
+For the ``evaluate`` and ``cross_validate`` tasks, this is an optional
+list of additional metrics that will be computed *in addition to*
+the tuning objectives and added to the results files. However, for the 
+:ref:`learning_curve <learning_curve>` task, this list is **required**. 
+Possible values are all of the same functions as those available for the 
+:ref:`tuning objectives <objectives>`  (with the same caveats).
+
+.. note::
+
+    For the ``evaluate`` and ``cross_validate`` tasks,  any functions
+    that are specified in both ``metrics`` and  ``objectives``
+    are assumed to be the latter.
 
 .. _pipeline:
 
@@ -1124,12 +1163,29 @@ Here's an example of how to use this attribute.
     # do the following for D1, which is much less readable
     enc.inverse_transform(learner1.model.predict(learner1.scaler.transform(learner1.feat_selector.transform(learner1.feat_vectorizer.transform(D1)))))
 
-
 .. note::
     1. When using a `DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__ in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both``, the `sparse` attribute of the vectorizer stage in the pipeline is set to ``False`` since centering requires dense arrays.
     2. When feature hashing is used (via a `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ ) in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both`` , a custom pipeline stage (:py:mod:`skll.learner.Densifier`) is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` does not have a ``sparse`` attribute to turn off -- it *only* returns sparse vectors.
     3. A ``Densifier`` is also inserted in the pipeline when using a `SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html>`__ for feature sampling since this sampler requires dense input and cannot be made to work with sparse arrays.
 
+.. _predictions:
+
+predictions *(Optional)*
+""""""""""""""""""""""""
+
+Directory to store prediction files in. Can be omitted to not store
+predictions. Must *not* be specified for the 
+:ref:`learning_curve <learning_curve>` and :ref:`train <train>` tasks.
+
+.. _probability:
+
+probability *(Optional)*
+""""""""""""""""""""""""
+
+Whether or not to output probabilities for each class instead of the
+most probable class for each instance. Only really makes a difference
+when storing predictions. Defaults to ``False``. Note that this also
+applies to the tuning objective.
 
 .. _results:
 
@@ -1138,62 +1194,6 @@ results *(Optional)*
 
 Directory to store result files in. If omitted, the current working
 directory is used.
-
-.. _metrics:
-
-metrics *(Optional)*
-""""""""""""""""""""
-For the ``evaluate`` and ``cross_validate`` tasks, this is a list of
-additional metrics that will be computed *in addition to* the tuning
-objectives and added to the results files. For the ``learning_curve`` task,
-this will be the list of metrics for which the learning curves
-will be plotted. Can take all of the same functions as those
-available for the :ref:`tuning objectives <objectives>` (with the
-same caveats).
-
-.. note::
-
-    1. For learning curves, ``metrics`` can be specified instead of
-       ``objectives`` since both serve the same purpose. If both are
-       specified, ``objectives`` will be ignored.
-    2. For the ``evaluate`` and ``cross_validate`` tasks,  any functions
-       that are specified in both ``metrics`` and  ``objectives``
-       are assumed to be the latter.
-    3. If you just want to use ``neg_log_loss`` as an additional metric,
-       you do not need to set :ref:`probability <probability>` to ``True``.
-       That's only neeeded for ``neg_log_loss`` to be used as a tuning
-       objective.
-
-.. _log:
-
-log *(Optional)*
-""""""""""""""""
-
-Directory to store log files in. If omitted, the current working
-directory is used.
-
-.. _models:
-
-models *(Optional)*
-"""""""""""""""""""
-
-Directory to store trained models in. Can be omitted to not store
-models.
-
-.. _predictions:
-
-predictions *(Optional)*
-""""""""""""""""""""""""
-
-Directory to store prediction files in. Can be omitted to not store
-predictions.
-
-.. note::
-
-    You can use the same directory for :ref:`results <results>`,
-    :ref:`log <log>`, :ref:`models <models>`, and
-    :ref:`predictions <predictions>`.
-
 
 .. _save_cv_folds:
 
