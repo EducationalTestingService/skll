@@ -23,7 +23,7 @@ before_install:
   - export PATH=/home/travis/miniconda3/bin:$PATH
   - conda install -c anaconda --yes setuptools
 install:
-  - conda install --yes -c conda-forge python=$TRAVIS_PYTHON_VERSION codecov --file conda_requirements.txt mypy>=0.730 lxml
+  - conda install --yes -c conda-forge python=$TRAVIS_PYTHON_VERSION codecov mypy>=0.730 lxml --file conda_requirements.txt
   # Have to use pip for nose-cov because its entry points are not supported by conda yet
   - pip install nose-cov
   - python setup.py install

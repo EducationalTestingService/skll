@@ -22,9 +22,8 @@ from math import floor, log10
 from importlib import import_module
 from itertools import combinations
 from multiprocessing import cpu_count
-from typing import (Any, ClassVar, Dict, FrozenSet, Generator, List, Mapping,
-                    MutableMapping, MutableSequence, Optional, Sequence, Tuple,
-                    Union)
+from typing import (Any, ClassVar, Dict, Generator, List, Mapping, MutableMapping,
+                    MutableSequence, Optional, Sequence, Tuple, Union)
 
 import joblib
 import numpy as np
@@ -187,10 +186,10 @@ class Densifier(BaseEstimator, TransformerMixin):
     but we are also doing centering using the feature means.
     """
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None) -> "Densifier":
         return self
 
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X, y=None) -> "Densifier":
         return self
 
     def transform(self, X):
@@ -1867,7 +1866,12 @@ class Learner(object):
                  prediction_prefix: Optional[str] = None,
                  append: bool = False,
                  grid_objective=None,
-                 output_metrics: Optional[List[str]] = None) -> Tuple[List, float, Dict, Dict, float, Dict]:
+                 output_metrics: Optional[List[str]] = None) -> Tuple[Optional[List],
+                                                                      Optional[float],
+                                                                      MutableMapping,
+                                                                      Optional[MutableMapping],
+                                                                      float,
+                                                                      Dict[str, float]]:
         """
         Evaluates a given model on a given dev or test ``FeatureSet``.
 
@@ -2034,7 +2038,7 @@ class Learner(object):
             del additional_scores[grid_objective]
 
         if estimator_type == 'regressor':
-            result_dict = {'descriptive': defaultdict(dict)}
+            result_dict: MutableMapping = {'descriptive': defaultdict(dict)}
             for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
                 result_dict['descriptive'][table_label]['min'] = min(y)
                 result_dict['descriptive'][table_label]['max'] = max(y)
@@ -2314,21 +2318,26 @@ class Learner(object):
     def cross_validate(self,
                        examples,
                        stratified: bool = True,
-                       cv_folds: int = 10,
+                       cv_folds: Union[int, Dict[Any, int]] = 10,
                        grid_search: bool = True,
-                       grid_search_folds: bool = 3,
+                       grid_search_folds: Union[int, Dict] = 3,
                        grid_jobs: Optional[int] = None,
                        grid_objective: Optional[str] = None,
                        output_metrics: Optional[List[str]] = None,
                        prediction_prefix: Optional[str] = None,
-                       param_grid: Optional[Dict[str, List]] = None,
+                       param_grid: Optional[List[Dict[str, List]]] = None,
                        shuffle: bool = False,
                        save_cv_folds: bool = False,
                        save_cv_models: bool = False,
-                       use_custom_folds_for_grid_search: bool = True) -> Tuple[List[Tuple[List, float, Dict, Dict, float, Dict]],
+                       use_custom_folds_for_grid_search: bool = True) -> Tuple[List[Tuple[Optional[List],
+                                                                                          Optional[float],
+                                                                                          MutableMapping,
+                                                                                          Optional[MutableMapping],
+                                                                                          float,
+                                                                                          Dict[str, float]]],
                                                                                List[float],
                                                                                List[Dict],
-                                                                               Optional[List[Any]],
+                                                                               Optional[MutableMapping[Any, str]],
                                                                                List["Learner"]]:
         """
         Cross-validates a given model on the training examples.
@@ -2341,7 +2350,7 @@ class Learner(object):
             Should we stratify the folds to ensure an even
             distribution of labels for each fold?
             Defaults to ``True``.
-        cv_folds : int, optional
+        cv_folds : int or dict, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
@@ -2489,7 +2498,7 @@ class Learner(object):
             dummy_label = next(iter(cv_folds.values()))
             fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
             # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneGroupOut(cv_folds,
+            kfold = FilteredLeaveOneGroupOut(list(cv_folds),
                                              examples.ids,
                                              logger=self.logger)
             cv_groups = fold_groups
@@ -2506,7 +2515,7 @@ class Learner(object):
 
         # Save the cross-validation fold information, if required
         # The format is that the test-fold that each id appears in is stored
-        skll_fold_ids = None
+        skll_fold_ids: Optional[MutableMapping[Any, str]] = None
         if save_cv_folds:
             skll_fold_ids = {}
             for fold_num, (_, test_indices) in enumerate(kfold.split(examples.features,
