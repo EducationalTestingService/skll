@@ -608,7 +608,7 @@ def test_ransac_regression():
                                                      'SGDRegressor',
                                                      'DecisionTreeRegressor',
                                                      'SVR'],
-                                                    [0.95, 0.45, 0.75, 0.65]):
+                                                    [0.95, 0.45, 0.75, 0.64]):
         yield check_ransac_regression, base_estimator_name, pearson_value
 
 
