@@ -9,7 +9,7 @@ import json
 import subprocess
 
 from glob import glob
-from os import getcwd, listdir, makedirs
+from os import getcwd, makedirs
 from os.path import abspath, basename, dirname, exists, join
 from shutil import copytree, copyfile, rmtree
 
@@ -88,7 +88,6 @@ def setup():
 
     # Copy the titanic data to our new directories
     copytree(join(_old_titanic_dir, 'titanic'), _new_titanic_dir)
-
 
     # Create all of the data sets we need
     subprocess.run(['python', join(_examples_dir, 'make_titanic_example_data.py')],
