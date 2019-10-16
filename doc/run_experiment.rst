@@ -1343,15 +1343,13 @@ learner-featureset combination you have in your configuration file. It is named
 experiments, this summary file will contain training set sizes and the averaged
 scores for all combinations of featuresets, learners, and objectives.
 
-If `seaborn <http://seaborn.pydata.org>`__ is available when running
-a :ref:`learning_curve <learning_curve>` experiment,
+When running a :ref:`learning_curve <learning_curve>` experiment,
 actual learning curves are also generated as PNG files - one for each feature set
 specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURESET.png``
 and contains a faceted learning curve plot for the featureset with objective
 functions on rows and learners on columns. Here's an example of such a plot.
 
-If you didn't have seaborn available when running the learning curve
-experiment, you can always generate the plots later from the learning curve summary
+You can also generate the plots from the learning curve summary
 file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
 
     .. image:: learning_curve.png

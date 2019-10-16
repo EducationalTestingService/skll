@@ -4,9 +4,9 @@
 A Helper script to generate learning plots from the learning curve output TSV file.
 
 This is necessary in scenarios where the plots were not generated as part of the original
-learning curve experiment, e.g. the experiment was run (a) on a remote server where plots
+learning curve experiment, e.g. the experiment was run on a remote server where plots
 may not have been generated either due to a crash or incorrect setting of the DISPLAY
-environment variable, or (b) in an environment where seaborn wasn't installed.
+environment variable.
 
 In these cases, the summary file should always be generated and this script can then be used
 to generate the plots later.
