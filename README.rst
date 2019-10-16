@@ -123,15 +123,15 @@ Requirements
 ~~~~~~~~~~~~
 
 -  Python 3.6+
--  `scikit-learn <http://scikit-learn.org/stable/>`__
--  `tabulate <https://pypi.org/project/tabulate/>`__
--  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
--  `pandas <http://pandas.pydata.org>`__
--  `Grid Map <https://pypi.org/project/gridmap/>`__ (only required if you plan
+-  `beautifulsoup4 <http://www.crummy.com/software/BeautifulSoup/>`__
+-  `gridmap <https://pypi.org/project/gridmap/>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
 -  `joblib <https://pypi.org/project/joblib/>`__
+-  `pandas <http://pandas.pydata.org>`__
 -  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
+-  `scikit-learn <http://scikit-learn.org/stable/>`__
 -  `seaborn <http://seaborn.pydata.org>`__
+-  `tabulate <https://pypi.org/project/tabulate/>`__
 
 Talks
 ~~~~~
