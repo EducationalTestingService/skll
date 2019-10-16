@@ -28,7 +28,8 @@ SciKit-Learn Laboratory
    :alt: DOI for citing SKLL 1.0.0
 
 .. image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/feature/448-interactive-binder?filepath=examples
+ :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/master?filepath=examples%2FTutorial.ipynb
+
 
 This Python package provides command-line utilities to make it easier to run
 machine learning experiments with scikit-learn.  One of the primary goals of
