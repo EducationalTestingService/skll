@@ -1020,8 +1020,8 @@ class Learner(object):
                 if base_estimator_name in ['LinearRegression', 'MultinomialNB']:
                     base_estimator_kwargs = {}
                 elif base_estimator_name in ['SGDClassifier', 'SGDRegressor']:
-                    base_estimator_kwargs = {'max_iter': None,
-                                             'tol': None,
+                    base_estimator_kwargs = {'max_iter': 1000,
+                                             'tol': 0.001,
                                              'random_state': 123456789}
                 elif base_estimator_name == 'SVR':
                     base_estimator_kwargs = {'gamma': 'scale'}
@@ -2074,12 +2074,10 @@ class Learner(object):
         elif both_hashers:
             self_feat_vec_tuple = (self.feat_vectorizer.dtype,
                                    self.feat_vectorizer.input_type,
-                                   self.feat_vectorizer.n_features,
-                                   self.feat_vectorizer.non_negative)
+                                   self.feat_vectorizer.n_features)
             example_feat_vec_tuple = (examples.vectorizer.dtype,
                                       examples.vectorizer.input_type,
-                                      examples.vectorizer.n_features,
-                                      examples.vectorizer.non_negative)
+                                      examples.vectorizer.n_features)
 
             if self_feat_vec_tuple == example_feat_vec_tuple:
                 xtest = examples.features

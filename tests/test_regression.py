@@ -483,7 +483,7 @@ def test_additional_metrics():
     # check that the values for the additional metrics are as expected
     additional_scores_dict = results[-1]
     assert_almost_equal(additional_scores_dict['spearman'], 0.9996, places=4)
-    assert_almost_equal(additional_scores_dict['kendall_tau'], 0.9846, places=4)
+    assert_almost_equal(additional_scores_dict['kendall_tau'], 0.9847, places=4)
 
 
 def test_fancy_output():
@@ -608,7 +608,7 @@ def test_ransac_regression():
                                                      'SGDRegressor',
                                                      'DecisionTreeRegressor',
                                                      'SVR'],
-                                                    [0.95, 0.45, 0.75, 0.65]):
+                                                    [0.95, 0.45, 0.75, 0.64]):
         yield check_ransac_regression, base_estimator_name, pearson_value
 
 
