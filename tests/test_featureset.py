@@ -251,6 +251,16 @@ def test_equality():
     eq_(fs1, fs9)
 
 
+def test_vectorizer_inequality():
+    """
+    Test to make sure that vectorizer equality fails properly
+    """
+    v = DictVectorizer()
+    assert_not_equal(v, 1)
+    assert_not_equal(v, 'passthrough')
+    assert_not_equal(v, [1.0, 2.0, 3.0])
+
+
 @raises(ValueError)
 def test_merge_different_vectorizers():
     """
