@@ -32,6 +32,7 @@ from skll.config import _setup_config_parser
 from skll.experiments import run_configuration
 from skll.learner import Learner, rescaled
 from skll.learner import _DEFAULT_PARAM_GRIDS
+from skll.metrics import _CLASSIFICATION_ONLY_METRICS
 
 from tests.utils import (make_regression_data,
                          fill_in_config_paths_for_fancy_output)
@@ -688,3 +689,52 @@ def test_learner_api_rescaling_classifier():
     """
 
     _ = rescaled(LogisticRegression)
+
+
+@raises(ValueError)
+def check_invalid_regression_grid_objective(learner, grid_objective):
+    """
+    Checks whether the grid objective function is valid for this regressor
+    """
+    (train_fs, _, _) = make_regression_data()
+    clf = Learner(learner)
+    clf.train(train_fs, grid_objective=grid_objective)
+
+
+def test_invalid_regression_grid_objective():
+    for learner in ['AdaBoostRegressor', 'BayesianRidge',
+                    'DecisionTreeRegressor', 'ElasticNet',
+                    'GradientBoostingRegressor', 'HuberRegressor',
+                    'KNeighborsRegressor', 'Lars', 'Lasso',
+                    'LinearRegression', 'MLPRegressor',
+                    'RandomForestRegressor', 'RANSACRegressor',
+                    'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
+                    'TheilSenRegressor']:
+        for metric in _CLASSIFICATION_ONLY_METRICS:
+            yield check_invalid_regression_grid_objective, learner, metric
+
+
+@raises(ValueError)
+def check_invalid_regression_metric(learner, metric, by_itself=False):
+    """
+    Checks that invalid metrics raise exceptions
+    """
+    (train_fs, test_fs, _) = make_regression_data()
+    clf = Learner(learner)
+    clf.train(train_fs, grid_search=False)
+    output_metrics = [metric] if by_itself else ['pearson', metric]
+    clf.evaluate(test_fs, output_metrics=output_metrics)
+
+
+def test_invalid_regression_metric():
+    for learner in ['AdaBoostRegressor', 'BayesianRidge',
+                    'DecisionTreeRegressor', 'ElasticNet',
+                    'GradientBoostingRegressor', 'HuberRegressor',
+                    'KNeighborsRegressor', 'Lars', 'Lasso',
+                    'LinearRegression', 'MLPRegressor',
+                    'RandomForestRegressor', 'RANSACRegressor',
+                    'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
+                    'TheilSenRegressor']:
+        for metric in _CLASSIFICATION_ONLY_METRICS:
+            yield check_invalid_regression_metric, learner, metric, True
+            yield check_invalid_regression_metric, learner, metric, False

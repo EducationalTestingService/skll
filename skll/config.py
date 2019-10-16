@@ -20,15 +20,27 @@ import configparser
 import numpy as np
 import ruamel.yaml as yaml
 
-from skll import get_skll_logger
 from sklearn.metrics import SCORERS
 
-_VALID_TASKS = frozenset(['predict', 'train', 'evaluate',
-                          'cross_validate', 'learning_curve'])
-_VALID_SAMPLERS = frozenset(['Nystroem', 'RBFSampler', 'SkewedChi2Sampler',
-                             'AdditiveChi2Sampler', ''])
-_VALID_FEATURE_SCALING_OPTIONS = frozenset(['with_std', 'with_mean', 'both',
-                                            'none'])
+from skll import get_skll_logger
+from skll.metrics import _PROBABILISTIC_METRICS
+
+_VALID_TASKS = frozenset(['cross_validate',
+                          'evaluate',
+                          'learning_curve',
+                          'predict',
+                          'train'])
+
+_VALID_SAMPLERS = frozenset(['Nystroem',
+                             'RBFSampler',
+                             'SkewedChi2Sampler',
+                             'AdditiveChi2Sampler',
+                             ''])
+
+_VALID_FEATURE_SCALING_OPTIONS = frozenset(['both',
+                                            'none',
+                                            'with_std',
+                                            'with_mean'])
 
 
 class SKLLConfigParser(configparser.ConfigParser):
@@ -840,11 +852,13 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                 output_metrics = [metric for metric in output_metrics
                                   if metric not in common_metrics_and_objectives]
 
-    # if the grid objectives contains `neg_log_loss`, then probability
-    # must be specified as true since that's needed to compute the loss
-    if 'neg_log_loss' in grid_objectives and not probability:
-        raise ValueError("The 'probability' option must be true in order "
-                         "to use `neg_log_loss` as the objective.")
+    # if any of the objectives or metrics require probabilities to be output,
+    # probability must be specified as true
+    specified_probabilistic_metrics = _PROBABILISTIC_METRICS.intersection(grid_objectives + output_metrics)
+    if specified_probabilistic_metrics and not probability:
+        raise ValueError("The 'probability' option must be 'true' "
+                         " to compute the following: "
+                         "{}.".format(list(specified_probabilistic_metrics)))
 
     # set the folds appropriately based on the task:
     #  (a) if the task is `train`/`evaluate`/`predict` and if an external

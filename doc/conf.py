@@ -186,7 +186,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'SKLL.tex', u'SciKit-Learn Laboratory Documentation',
-   u'Daniel Blanchard \\and Michael Heilman \\and Nitin Madnani', 'manual'),
+   u'Educational Testing Service', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -216,7 +216,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'SKLL', u'SciKit-Learn Laboratory Documentation',
-     [u'Daniel Blanchard, Michael Heilman, and Nitin Madnani'], 1)
+     [u'Educational Testing Service'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -230,7 +230,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'SKLL', u'SciKit-Learn Laboratory Documentation',
-   u'Daniel Blanchard, Michael Heilman, and Nitin Madnani', 'SciKit-LearnLab', 'One line description of project.',
+   u'Educational Testing Service', 'SciKit-LearnLab', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -251,7 +251,7 @@ texinfo_documents = [
 
 # Bibliographic Dublin Core info.
 epub_title = u'SciKit-Learn Laboratory'
-epub_author = u'Daniel Blanchard, Michael Heilman, and Nitin Madnani'
+epub_author = u'Educational Testing Service'
 epub_publisher = u'Educational Testing Service'
 epub_copyright = u'2012-2019, Educational Testing Service'
 
