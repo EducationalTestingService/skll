@@ -11,7 +11,7 @@ import subprocess
 from glob import glob
 from os import getcwd, listdir, makedirs
 from os.path import abspath, basename, dirname, exists, join
-from shutil import copyfile, rmtree
+from shutil import copytree, copyfile, rmtree
 
 from nose.tools import eq_, assert_almost_equal
 
@@ -60,10 +60,10 @@ def run_configuration_and_check_outputs(config_path):
                 actual = results_obj[key]
                 expected = results_exp_obj[key]
 
-                # if this is a float, then we check with less precision (2 decimals);
+                # if this is a float, then we check with less precision (4 decimals);
                 # otherwise, we check to make sure things are matching exactly
                 if isinstance(expected, float):
-                    assert_almost_equal(actual, expected, places=2)
+                    assert_almost_equal(actual, expected, places=4)
                 else:
                     eq_(actual, expected)
 
@@ -74,15 +74,21 @@ def setup():
     and copy files to new locations.
     """
 
-    # Create all of the directories we need
-    makedirs(_new_titanic_dir, exist_ok=True)
+    # Create the directories we need for boston and iris;
+    # if these directories already exist, it's fine
     makedirs(_new_boston_dir, exist_ok=True)
     makedirs(_new_iris_dir, exist_ok=True)
 
-    # Move the titanic data to our new directories
-    for file in listdir(join(_old_titanic_dir, 'titanic')):
-        copyfile(join(_old_titanic_dir, 'titanic', file),
-                 join(_new_titanic_dir, file))
+    # We get rid of the new titanic directory, if it already exists,
+    # because `copytree()` will raise an error if it already exists.
+    # Note :: In Python 3.8, `copytree()` has a new argument,
+    # `dirs_exist_ok`, which would render this step unnecessary.
+    if exists(_new_titanic_dir):
+        rmtree(_new_titanic_dir)
+
+    # Copy the titanic data to our new directories
+    copytree(join(_old_titanic_dir, 'titanic'), _new_titanic_dir)
+
 
     # Create all of the data sets we need
     subprocess.run(['python', join(_examples_dir, 'make_titanic_example_data.py')],
