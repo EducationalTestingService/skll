@@ -252,13 +252,13 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_fmeasures = ([0.4688995215311005, 0.41884816753926707] if
+        expected_fmeasures = ([0.6699507389162562, 0.6598984771573605] if
                               not use_scaling else
-                              [0.6919431279620853, 0.656084656084656])
+                              [0.7058823529411765, 0.7417840375586855])
     else:
-        expected_fmeasures = ([0.5728155339805824, 0.5463917525773198] if
+        expected_fmeasures = ([0.5288461538461539, 0.4895833333333333] if
                               not use_scaling else
-                              [0.6896551724137931, 0.6802030456852792])
+                              [0.632183908045977, 0.7168141592920354])
 
     assert_almost_equal(expected_fmeasures, fmeasures)
 

@@ -1,4 +1,4 @@
-scikit-learn==0.20.1
+scikit-learn==0.21.3
 tabulate
 beautifulsoup4
 numpy
