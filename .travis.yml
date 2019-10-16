@@ -9,7 +9,7 @@ env:
   - TESTFILES="tests/test_featureset.py tests/test_utilities.py"
   - TESTFILES="tests/test_output.py"
   - TESTFILES="tests/test_regression.py"
-  - TESTFILES="tests/test_input.py tests/test_preprocessing.py tests/test_metrics.py tests/test_custom_learner.py tests/test_logutils.py"
+  - TESTFILES="tests/test_input.py tests/test_preprocessing.py tests/test_metrics.py tests/test_custom_learner.py tests/test_logutils.py tests/test_examples.py"
   - TESTFILES="tests/test_classification.py tests/test_cv.py tests/test_ablation.py"
 
 # run on the new Travis infrastructure
