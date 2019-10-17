@@ -869,9 +869,13 @@ class Learner(object):
         initializer for the specified model.
         Defaults to ``None``.
     pos_label_str : str, optional
-        The string for the positive label in the binary
-        classification setting.  Otherwise, an arbitrary
-        label is picked.
+        A string denoting the label of the class to be
+        treated as the positive class in a binary classification
+        setting. If ``None``, the class represented by the label
+        that appears second when sorted is chosen as the positive
+        class. For example, if the two labels in data are "A"
+        and "B" and ``pos_label_str`` is not specified, "B" will
+        be chosen as the positive class.
         Defaults to ``None``.
     min_feature_count : int, optional
         The minimum number of examples a feature
@@ -1415,15 +1419,21 @@ class Learner(object):
         if self.model_type._estimator_type == 'regressor':
             return
 
-        # extract list of unique labels if we are doing classification
+        # extract list of unique labels if we are doing classification;
+        # note that the output of np.unique() is sorted
         self.label_list = np.unique(examples.labels).tolist()
 
-        # if one label is specified as the positive class, make sure it's
-        # last
+        # for binary classification, if one label is specified as
+        # the positive class, re-sort the label list to make sure
+        # that it is last in the list
         if self.pos_label_str:
-            self.label_list = sorted(self.label_list,
-                                     key=lambda x: (x == self.pos_label_str,
-                                                    x))
+            if len(self.label_list) != 2:
+                self.logger.warning('Ignoring value of `pos_label_str` for '
+                                    'multi-class classification.')
+            else:
+                self.label_list = sorted(self.label_list,
+                                         key=lambda x: (x == self.pos_label_str,
+                                                        x))
 
         # Given a list of all labels in the dataset and a list of the
         # unique labels in the set, convert the first list to an array of

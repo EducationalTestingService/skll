@@ -13,6 +13,8 @@ import argparse
 import logging
 import os
 
+import numpy as np
+
 from skll.data.readers import EXT_TO_READER
 from skll.learner import Learner
 from skll.version import __version__
@@ -179,15 +181,34 @@ def main(argv=None):
     # is the model a regressor or a classifier?
     estimator_type = learner._model.estimator_type
 
-    # if we want to infer the most likely label from probabilities
-    # or threshold the probabilities, make sure that the learner
-    # is probabilistic first
-    if ((args.infer_labels or args.threshold is not None) and
-            not hasattr(learner._model, 'predict_proba')):
-        logger.error('Cannot infer labels or threshold since '
-                     'given {} learner is non-probabilistic'
+    # if we are using a binary classification model, check whether it
+    # has the `pos_label_str` attribute and if not, just get it from
+    # the learner's label dictionary
+    if len(learner.label_list) == 2:
+        try:
+            pos_label_str = learner.pos_label_str
+        except AttributeError:
+            pos_label_str = [label for label in learner.label_dict if learner.label_dict[label] == 1][0]
+
+    # if we want to choose labels by thresholding the probabilities,
+    # make sure that the learner is probabilistic AND binary first
+    if (args.threshold is not None and
+        (not hasattr(learner._model, 'predict_proba') or
+         len(learner.label_list) != 2)):
+        logger.error('Cannot threshold probabilities to predict '
+                     'positive class since given {} learner is '
+                     'either multi-class or non-probabilistic'
                      '.'.format(learner._model_type.__name__))
-        raise ValueError('Probabilities not supported')
+        raise ValueError('Cannot threshold probabilities')
+
+    # if we want to choose labels by inferring the most likely label,
+    # make sure that the learner is probabilistic
+    if (args.infer_labels and
+            not hasattr(learner._model, 'predict_proba')):
+        logger.error('Cannot infer most likely label from probabilities '
+                     'since given {} learner is non-probabilistic'
+                     '.'.format(learner._model_type.__name__))
+        raise ValueError('Cannot infer most likely labels')
 
     # iterate over all the specified input files
     for i, input_file in enumerate(args.input_files):
@@ -210,7 +231,7 @@ def main(argv=None):
             # note that the predictions may either be the probabiltiies
             # or the most likely labels; if the model is a regressor then
             # `class_labels` will be ignored entirely
-            predictions = learner.predict(feature_set, class_labels=True)
+            original_predictions = learner.predict(feature_set, class_labels=True)
 
             # get the appropriate header depending on the what we will
             # be outputting; if we are using a regressor or a non-probabilistic
@@ -223,11 +244,27 @@ def main(argv=None):
                     args.threshold is not None):
                 header = ["id", "prediction"]
             else:
-                header = ["id"] + [""]
+                header = ["id"] + [str(x) for x in learner.label_list]
+
+            # now let us start computing what we want to output based
+            # on the predictions we have so far
+
+            # CASE 1: non-probabilistic classification or regression;
+            # no need to do anything special
+            if (estimator_type == 'regressor' or not learner.probability):
+                predictions = original_predictions
+
+            # CASE 2: infer most likely labels from probabilities
+            elif args.infer_labels:
+                predictions = learner.label_list[np.argmax(original_predictions)]
+            elif args.threshold is not None:
+                predictions = []
+                for probabilities in original_predictions:
+                    pos_label_index = 
+                    chosen_label = pos_label_prob if probabilities[pos_label_prob]
 
 
-
-            if learner.probability:
+                int(pred[pos_label_str] >= args.threshold) for pred in original_predictions]
 
             if args.output_file is not None:
                 with open(args.output_file, 'a') as outputfh:
