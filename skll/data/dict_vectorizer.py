@@ -82,7 +82,9 @@ class DictVectorizer(OldDictVectorizer):
     """
     def __eq__(self, other):
         """
-        Check whether two vectorizers are the same
+        Check whether two vectorizers are the same, assuming
+        we are actually comparing to a vectorizer
         """
-        return (self.dtype == other.dtype and
+        return (isinstance(other, OldDictVectorizer) and
+                self.dtype == other.dtype and
                 self.vocabulary_ == other.vocabulary_)
