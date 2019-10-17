@@ -3,8 +3,8 @@
 """
 Loads a trained model and outputs predictions based on input feature files.
 
-:author: Dan Blanchard (dblanchard@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
 :date: February 2013
 """
@@ -108,6 +108,9 @@ class Predictor(object):
         return preds
 
 
+
+
+
 def main(argv=None):
     """
     Handles command line arguments and gets things started.
@@ -129,36 +132,30 @@ def main(argv=None):
                         help='Model file to load and use for generating '
                              'predictions.')
     parser.add_argument('input_files',
-                        help='A space-separated list of csv file, json file, '
-                             'or megam file (with or without the label '
+                        help='A space-separated list of CSV, TSV, or '
+                             'jsonlines files (with or without the label '
                              'column), with the appropriate suffix.',
                         nargs='+')
     parser.add_argument('-i', '--id_col',
                         help='Name of the column which contains the instance '
                              'IDs in ARFF, CSV, or TSV files.',
                         default='id')
-    parser.add_argument('-l', '--label_col',
-                        help='Name of the column which contains the labels '
-                             'in ARFF, CSV, or TSV files. For ARFF files, '
-                             'this must be the final column to count as the '
-                             'label.',
-                        default='y')
-
-    pos_label_idx_group = parser.add_mutually_exclusive_group()
-    pos_label_idx_help_mssg = ("If the model is only being used to predict "
-                               "the probability of a particular label, this "
-                               "specifies the index of the label we're "
-                               "predicting. 1 = second label, which is "
-                               "default for binary classification. Keep in "
-                               "mind that labels are sorted "
-                               "lexicographically.")
-    pos_label_idx_group.add_argument('--positive_label',
-                                     help=pos_label_idx_help_mssg,
-                                     type=int)
-    pos_label_idx_group.add_argument('-p', '--positive_label_index',
-                                     help=pos_label_idx_help_mssg,
-                                     default=1, type=int)
-
+    parser.add_argument('-l', '--infer_labels',
+                        help="If the model being used is "
+                             "doing probabilistic classification, "
+                             "output the class label with the "
+                             "highest probability instead of all "
+                             "the probabilities.",
+                             action='store_true',
+                             default=False)
+    parser.add_argument('-t', '--threshold',
+                        help="If the model we're using is "
+                             "doing probabilistic binary "
+                             "classification, output the positive "
+                             "class label if its probability"
+                             "meets/exceeds this threshold"
+                             "and output the negative class "
+                             "label otherwise.", type=float)
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
@@ -167,19 +164,6 @@ def main(argv=None):
                              "predictions will be printed to stdout.")
     parser.add_argument('--version', action='version',
                         version='%(prog)s {0}'.format(__version__))
-    probability_handling = parser.add_mutually_exclusive_group()
-    probability_handling.add_argument('-t', '--threshold',
-                                      help="If the model we're using is "
-                                           "generating probabilities of the "
-                                           "positive label, return 1 if it "
-                                           "meets/exceeds the given threshold "
-                                           "and 0 otherwise.",  type=float)
-    probability_handling.add_argument('--all_probabilities', '-a',
-                                      action='store_true',
-                                      help="Flag indicating whether to output "
-                                           "the probabilities of all labels "
-                                           "instead of just the probability "
-                                           "of the positive label.")
 
     args = parser.parse_args(argv)
 
@@ -189,21 +173,23 @@ def main(argv=None):
                                 '%(message)s'))
     logger = logging.getLogger(__name__)
 
-    if args.positive_label:
-        logger.warning("The `positive_label` argument is deprecated. Use "
-                       "`positive_label_index` instead.")
-        positive_label_index = args.positive_label
-    else:
-        positive_label_index = args.positive_label_index
+    # load the model from disk
+    learner = Learner.from_file(args.model_file)
 
-    # Create the classifier and load the model
-    predictor = Predictor(args.model_file,
-                          positive_label_index=positive_label_index,
-                          threshold=args.threshold,
-                          all_labels=args.all_probabilities,
-                          logger=logger)
+    # is the model a regressor or a classifier?
+    estimator_type = learner._model.estimator_type
 
-    # Iterate over all the specified input files
+    # if we want to infer the most likely label from probabilities
+    # or threshold the probabilities, make sure that the learner
+    # is probabilistic first
+    if ((args.infer_labels or args.threshold is not None) and
+            not hasattr(learner._model, 'predict_proba')):
+        logger.error('Cannot infer labels or threshold since '
+                     'given {} learner is non-probabilistic'
+                     '.'.format(learner._model_type.__name__))
+        raise ValueError('Probabilities not supported')
+
+    # iterate over all the specified input files
     for i, input_file in enumerate(args.input_files):
 
         # make sure each file extension is one we can process
@@ -214,14 +200,34 @@ def main(argv=None):
                           ' Skipping file {}').format(input_file))
             continue
         else:
-            # Iterate through input file and collect the information we need
+            # read in the file into a featureset and get its predictions
             reader = EXT_TO_READER[input_extension](input_file,
                                                     quiet=args.quiet,
                                                     label_col=args.label_col,
                                                     id_col=args.id_col)
             feature_set = reader.read()
-            preds = predictor.predict(feature_set)
-            header = predictor.output_file_header
+
+            # note that the predictions may either be the probabiltiies
+            # or the most likely labels; if the model is a regressor then
+            # `class_labels` will be ignored entirely
+            predictions = learner.predict(feature_set, class_labels=True)
+
+            # get the appropriate header depending on the what we will
+            # be outputting; if we are using a regressor or a non-probabilistic
+            # learner, or thresholding probabilities, or inferring most likely
+            # labels, we are outputting only two columns - the ID and the label,
+            # otherwise we are outputting N + 1 columns where N = number of classes
+            if (estimator_type == 'regressor' or
+                    not learner.probability or
+                    args.infer_labels or
+                    args.threshold is not None):
+                header = ["id", "prediction"]
+            else:
+                header = ["id"] + [""]
+
+
+
+            if learner.probability:
 
             if args.output_file is not None:
                 with open(args.output_file, 'a') as outputfh:

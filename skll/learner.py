@@ -1509,7 +1509,8 @@ class Learner(object):
             values.  This should only be done once per
             experiment, so when ``cross_validate`` calls
             ``train``, ``create_label_dict`` gets set to
-            ``False``.
+            ``False``. This option is only for internal
+            use.
             Defaults to ``True``.
 
         Returns
