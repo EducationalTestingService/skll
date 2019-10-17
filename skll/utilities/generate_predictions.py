@@ -3,8 +3,8 @@
 """
 Loads a trained model and outputs predictions based on input feature files.
 
-:author: Dan Blanchard
-:contact: dblanchard@ets.org
+:author: Dan Blanchard (dblanchard@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 :date: February 2013
 """
@@ -12,7 +12,6 @@ Loads a trained model and outputs predictions based on input feature files.
 import argparse
 import logging
 import os
-import sys
 
 from skll.data.readers import EXT_TO_READER
 from skll.learner import Learner
@@ -25,8 +24,11 @@ class Predictor(object):
     predictions for feature strings.
     """
 
-    def __init__(self, model_path, threshold=None, positive_label_index=1,
-                 all_labels=False, logger=None):
+    def __init__(self, model_path,
+                 threshold=None,
+                 positive_label_index=1,
+                 all_labels=False,
+                 logger=None):
         """
         Initialize the predictor.
 
