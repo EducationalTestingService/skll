@@ -20,7 +20,7 @@ from itertools import product
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import assert_almost_equal, assert_raises, eq_, raises
+from nose.tools import assert_almost_equal, assert_raises, eq_, raises, set_trace
 from numpy.testing import assert_array_equal
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
@@ -158,6 +158,113 @@ def test_label_index_order():
 
         eq_(clf.label_list, correct_order)
         eq_(label_order_from_dict, correct_order)
+
+
+def test_binary_label_index_order_with_pos_label_str():
+    """
+    Test that label indices are created according to `pos_label_str`
+    """
+    train_fs, _ = make_classification_data()
+    prng = np.random.RandomState(123456789)
+    for (unique_label_list,
+         pos_label_str,
+         correct_order) in zip([['B', 'C'],
+                                [1, 2],
+                                ['FRAG', 'NONE']],
+                               ['B', 2, 'FRAG'],
+                               [['C', 'B'],
+                                [1, 2],
+                                ['NONE', 'FRAG']]):
+        labels = prng.choice(unique_label_list, size=len(train_fs))
+        train_fs.labels = labels
+
+        clf = Learner('LogisticRegression', pos_label_str=pos_label_str)
+        clf.train(train_fs, grid_search=False)
+        reverse_label_dict = {y: x for x, y in clf.label_dict.items()}
+        label_order_from_dict = [reverse_label_dict[x] for x in range(len(unique_label_list))]
+
+        eq_(clf.label_list, correct_order)
+        eq_(label_order_from_dict, correct_order)
+
+
+def check_binary_predictions_for_pos_label_str(label_list, use_pos_label_str=True, probability=True):
+    """
+    This tests whether binary predictions and probabilities
+    obtained from SKLL match the predictions from scikit-learn
+    on the same data for when `pos_label_str` is set and also
+    when it is not set.
+    """
+
+    if label_list == ['B', 'C']:
+        pos_label_str, other_label_str = 'B', 'C'
+    elif label_list == [1, 2]:
+        pos_label_str, other_label_str = 2, 1
+    else:
+        pos_label_str, other_label_str = 'FRAG', 'NONE'
+
+    # create the mapping from class indices to class labels
+    # manually so that they match our expectations for what
+    # is supposed to happen when `pos_label_str` is specified
+    # and when it is not
+    if use_pos_label_str:
+        index_label_dict = {0: other_label_str, 1: pos_label_str}
+    else:
+        sorted_label_list = sorted([pos_label_str, other_label_str])
+        index_label_dict = dict(enumerate(sorted_label_list))
+
+    # initialize a random number generator
+    prng = np.random.RandomState(123456789)
+
+    # create training and test featuresets whose labels we
+    # generate manually using random sampling from [0, 1]
+    # we convert [0, 1] to the appropriate labels so that
+    # SKLL gets trained on those labels
+    train_fs, test_fs = make_classification_data(num_examples=100)
+    train_class_indices = prng.choice([0, 1], size=len(train_fs))
+    train_fs.labels = [index_label_dict[index] for index in train_class_indices]
+    test_class_indices = prng.choice([0, 1], size=len(test_fs))
+    test_fs.labels = [index_label_dict[index] for index in test_class_indices]
+
+    # train a scikit-learn LogisticRegression estimator
+    # with the same fixed parameters as SKLL and using
+    # the class indices we generated randomly above;
+    # predict class indices/probabilities for the test set
+    clf_sklearn = LogisticRegression(max_iter=1000,
+                                     multi_class='auto',
+                                     solver='liblinear',
+                                     random_state=123456789)
+    sklearn_features = train_fs.features
+    clf_sklearn.fit(sklearn_features, train_class_indices)
+    if probability:
+        sklearn_predictions = clf_sklearn.predict_proba(test_fs.features)
+    else:
+        sklearn_predictions = clf_sklearn.predict(test_fs.features)
+
+    # train a SKLL LogisticRegression learner on the same data;
+    # predict the class indices/probabilities for the test set
+    pos_label_str = pos_label_str if use_pos_label_str else None
+    clf_skll = Learner('LogisticRegression', pos_label_str=pos_label_str, probability=probability)
+    clf_skll.train(train_fs, grid_search=False)
+    skll_predictions = clf_skll.predict(test_fs, class_labels=False)
+
+    # the two sets of predicted class indices should be identical
+    assert_array_equal(sklearn_predictions, skll_predictions)
+
+
+def test_binary_predictions_for_pos_label_str():
+
+    for (unique_label_list,
+         use_pos_label_str,
+         probability) in product([['B', 'C'],
+                                  [1, 2],
+                                  ['FRAG', 'NONE']],
+                                 [True, False],
+                                 [True, False]):
+
+        yield (check_binary_predictions_for_pos_label_str,
+               unique_label_list,
+               use_pos_label_str,
+               probability)
 
 
 def check_predict(model, use_feature_hashing=False):
