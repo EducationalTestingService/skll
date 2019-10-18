@@ -1425,11 +1425,14 @@ class Learner(object):
 
         # for binary classification, if one label is specified as
         # the positive class, re-sort the label list to make sure
-        # that it is last in the list
+        # that it is last in the list; for multi-class classification
+        # raise a warning and set it back to None, since it does not
+        # make any sense anyway
         if self.pos_label_str:
             if len(self.label_list) != 2:
                 self.logger.warning('Ignoring value of `pos_label_str` for '
                                     'multi-class classification.')
+                self.pos_label_str = None
             else:
                 self.label_list = sorted(self.label_list,
                                          key=lambda x: (x == self.pos_label_str,
