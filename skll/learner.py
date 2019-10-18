@@ -1428,7 +1428,7 @@ class Learner(object):
         # that it is last in the list; for multi-class classification
         # raise a warning and set it back to None, since it does not
         # make any sense anyway
-        if self.pos_label_str:
+        if self.pos_label_str is not None:
             if len(self.label_list) != 2:
                 self.logger.warning('Ignoring value of `pos_label_str` for '
                                     'multi-class classification.')
