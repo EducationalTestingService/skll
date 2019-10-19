@@ -28,10 +28,8 @@ except ImportError:
     from mock import create_autospec, patch
 
 from nose.plugins.logcapture import LogCapture
-from nose.tools import eq_, assert_almost_equal, raises, set_trace
-from numpy.testing import (assert_allclose,
-                           assert_array_equal,
-                           assert_array_almost_equal)
+from nose.tools import eq_, assert_almost_equal, raises
+from numpy.testing import assert_allclose, assert_array_almost_equal
 from numpy import concatenate
 
 from pandas.testing import assert_frame_equal
