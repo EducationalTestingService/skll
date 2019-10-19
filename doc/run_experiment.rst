@@ -1051,6 +1051,9 @@ class. For example, if the two labels in data are "A" and
 "B" and ``pos_label_str`` is not specified, "B" will be chosen
 as the positive class.
 
+Note that ``pos_label_str`` will be ignored if you have more
+than two classes.
+
 .. _output:
 
 Output
