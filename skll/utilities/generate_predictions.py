@@ -114,23 +114,27 @@ def main(argv=None):
 
     # if we want to choose labels by thresholding the probabilities,
     # make sure that the learner is probabilistic AND binary first
+    is_probabilistic_classifier = hasattr(learner._model, 'predict_proba') and learner.probability
     if (args.threshold is not None and
-        (not hasattr(learner._model, 'predict_proba') or
+        (not is_probabilistic_classifier or
          len(learner.label_list) != 2)):
-        logger.error('Cannot threshold probabilities to predict '
+        error_msg = ('Cannot threshold probabilities to predict '
                      'positive class since given {} learner is '
-                     'either multi-class or non-probabilistic'
+                     'either multi-class, non-probabilistic, or '
+                     'was not trained with probability=True'
                      '.'.format(learner._model_type.__name__))
-        raise ValueError('Cannot threshold probabilities')
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
     # if we want to choose labels by predicting the most likely label,
     # make sure that the learner is probabilistic
-    if (args.predict_labels and
-            not hasattr(learner._model, 'predict_proba')):
-        logger.error('Cannot predict most likely labels from probabilities '
-                     'since given {} learner is non-probabilistic'
+    if args.predict_labels and not is_probabilistic_classifier:
+        error_msg = ('Cannot predict most likely labels from probabilities '
+                     'since given {} learner is either non-probabilistic or '
+                     'was not trained with probability=True'
                      '.'.format(learner._model_type.__name__))
-        raise ValueError('Cannot predict most likely labels')
+        logger.error(error_msg)
+        raise ValueError(error_msg)
 
     # iterate over all the specified input files
     for i, input_file in enumerate(args.input_files):

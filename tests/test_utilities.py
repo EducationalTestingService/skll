@@ -580,8 +580,7 @@ def test_generate_predictions_console_bad_input_ext():
     _ = learner.predict(test_fs)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output',
-                      'test_generate_predictions_console.model')
+    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
@@ -597,6 +596,151 @@ def test_generate_predictions_console_bad_input_ext():
     eq_(lc.handler.buffer[-1], expected_log_mssg)
 
 
+@raises(ValueError)
+def test_generate_predictions_threshold_not_trained_with_probability():
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 num_labels=2)
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier')
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=False)
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, input_file]
+    generate_cmd.append("-t 0.6")
+    gp.main(generate_cmd)
+
+
+@raises(ValueError)
+def test_generate_predictions_threshold_multi_class():
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 num_labels=4)
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('LogisticRegression', probability=True)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=False)
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, input_file]
+    generate_cmd.append("-t 0.6")
+    gp.main(generate_cmd)
+
+
+@raises(ValueError)
+def test_generate_predictions_threshold_non_probabilistic():
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 num_labels=2)
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('LinearSVC', probability=True)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=False)
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, input_file]
+    generate_cmd.append("-t 0.6")
+    gp.main(generate_cmd)
+
+
+@raises(ValueError)
+def test_generate_predictions_predict_labels_not_trained_with_probability():
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 num_labels=2)
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('SGDClassifier')
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=False)
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, input_file]
+    generate_cmd.append("-p")
+    gp.main(generate_cmd)
+
+
+@raises(ValueError)
+def test_generate_predictions_predict_labels_non_probabilistic():
+
+    # create some simple classification data without feature hashing
+    train_fs, test_fs = make_classification_data(num_examples=1000,
+                                                 num_features=5,
+                                                 num_labels=4)
+
+    # save the test feature set to an NDJ file
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    writer = NDJWriter(input_file, test_fs)
+    writer.write()
+
+    # create a learner that uses an SGD classifier
+    learner = Learner('LinearSVC', probability=True)
+
+    # train the learner with grid search
+    learner.train(train_fs, grid_search=False)
+
+    # save the learner to a file
+    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    learner.save(model_file)
+
+    # now call main() from generate_predictions.py
+    generate_cmd = [model_file, input_file]
+    generate_cmd.append("-p")
+    gp.main(generate_cmd)
+
+
 @raises(SystemExit)
 def test_mutually_exclusive_generate_predictions_args():
 
@@ -606,8 +750,7 @@ def test_mutually_exclusive_generate_predictions_args():
     threshold = 0.6
 
     # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test',
-                      'test_generate_predictions.jsonlines')
+    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -615,11 +758,10 @@ def test_mutually_exclusive_generate_predictions_args():
     learner = Learner('SGDClassifier')
 
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+    learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output',
-                      'test_generate_predictions_console.model')
+    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
