@@ -28,14 +28,16 @@ except ImportError:
     from mock import create_autospec, patch
 
 from nose.plugins.logcapture import LogCapture
-from nose.tools import eq_, assert_almost_equal, raises
-from numpy.testing import assert_allclose, assert_array_almost_equal
+from nose.tools import eq_, assert_almost_equal, raises, set_trace
+from numpy.testing import (assert_allclose,
+                           assert_array_equal,
+                           assert_array_almost_equal)
 from numpy import concatenate
 
 from pandas.testing import assert_frame_equal
 from sklearn.feature_extraction import FeatureHasher
+from sklearn.linear_model import SGDClassifier, SGDRegressor
 
-import numpy as np
 import skll
 import skll.utilities.compute_eval_from_predictions as cefp
 from skll.utilities.compute_eval_from_predictions import get_prediction_from_probabilities
@@ -97,7 +99,7 @@ def tearDown():
     if exists(join(test_dir, 'test_generate_predictions.jsonlines')):
         os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
 
-    for f in glob(join(output_dir, 'output_test_*.tsv')):
+    for f in glob(join(output_dir, 'test_generate_predictions.tsv')):
         os.unlink(f)
 
     for model_chunk in glob(join(output_dir,
@@ -306,282 +308,260 @@ def test_compute_eval_from_predictions_random_choice():
     eq_(pred, 'C')
 
 
-def check_generate_predictions(use_feature_hashing=False,
-                               use_threshold=False,
+def _run_generate_predictions_and_capture_output(generate_cmd, output_file):
+
+    if output_file == 'stdout':
+        # we need to capture stdout since that's what main() writes to
+        err = ''
+        try:
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            sys.stdout = mystdout = StringIO()
+            sys.stderr = mystderr = StringIO()
+            gp.main(generate_cmd)
+            out = mystdout.getvalue()
+            err = mystderr.getvalue()
+            output_lines = out.strip().split('\n')
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            print(err)
+    else:
+        if exists(output_file):
+            os.unlink(output_file)
+        gp.main(generate_cmd)
+        with open(output_file, 'r') as outputfh:
+            output_lines = [line.strip() for line in outputfh.readlines()]
+
+    return output_lines
+
+
+def check_generate_predictions(use_regression=False,
+                               string_labels=False,
+                               num_labels=2,
+                               use_probability=False,
+                               use_pos_label_str=False,
                                test_on_subset=False,
-                               use_all_labels=False,
-                               string_labels=False):
+                               use_threshold=False,
+                               predict_labels=False,
+                               use_stdout=False,
+                               multiple_input_files=False):
 
     # create some simple classification feature sets for training and testing
-    string_label_list = ['a', 'b'] if string_labels else None
+    if string_labels:
+        string_label_list = ['a', 'b'] if num_labels == 2 else ['a', 'b', 'c', 'd']
+    else:
+        string_label_list = None
 
-    train_fs, test_fs = make_classification_data(num_examples=1000,
-                                                 num_features=5,
-                                                 use_feature_hashing=use_feature_hashing,
-                                                 feature_bins=4,
-                                                 string_label_list=string_label_list)
+    # generate the train and test featuresets
+    if use_regression:
+        pos_label_str = None
+        train_fs, test_fs, _ = make_regression_data(num_examples=100,
+                                                    num_features=5)
+    else:
+        train_fs, test_fs = make_classification_data(num_examples=100,
+                                                     num_features=5,
+                                                     num_labels=num_labels,
+                                                     string_label_list=string_label_list)
 
-    enable_probability = any([use_threshold, use_all_labels])
+        # get the sorted list of unique class labels
+        class_labels = np.unique(train_fs.labels).tolist()
 
-    # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=enable_probability)
-
-    # train the learner with grid search
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+        # if we are using `pos_label_str`, then randomly pick a label
+        # as its value even for multi-class since we want to check that
+        # it properly gets ignored; we also instantiate variables in the
+        # binary case that contain the positive and negative class labels
+        # since we need those to process our expected predictions we
+        # are matching against
+        prng = np.random.RandomState(123456789)
+        if use_pos_label_str:
+            pos_label_str = prng.choice(class_labels, size=1)[0]
+            if num_labels == 2:
+                positive_class_label = pos_label_str
+                negative_class_label = [label for label in class_labels if label != positive_class_label][0]
+                class_labels = [negative_class_label, positive_class_label]
+        else:
+            pos_label_str = None
+            if num_labels == 2:
+                positive_class_label = class_labels[-1]
+                negative_class_label = [label for label in class_labels if label != positive_class_label][0]
 
     # if we are asked to use only a subset, then filter out
     # one of the features if we are not using feature hashing,
     # do nothing if we are using feature hashing
-    if test_on_subset and not use_feature_hashing:
-        test_fs.filter(features=['f01', 'f02', 'f03', 'f04'])
-
-    # There are two cases where we don't want to translate the predictions to
-    # class labels:
-    #   1) If `use_all_labels` is True, a prediction will be a list of
-    #      probabilities.
-    #   2) If `use_threshold` is True, the prediction will be
-    #      either 1 or 0, indicating whether the probability of the positive
-    #      class was greater than or equal to the threshold.
-    use_class_labels = (string_labels and
-                        not (use_all_labels or use_threshold))
-
-    # get the predictions on the test featureset
-    predictions = learner.predict(test_fs, class_labels=use_class_labels)
-
-    # if we asked for probabilities, then use the threshold
-    # to convert them into binary predictions
-    if use_threshold:
-        threshold = 0.6
-        predictions = [int(p[1] >= threshold) for p in predictions]
-    else:
-        predictions = predictions.tolist()
-        threshold = None
-
-    # save the learner to a file
-    model_file = join(_my_dir, 'output',
-                      'test_generate_predictions.model')
-    learner.save(model_file)
-
-    # now use Predictor to generate the predictions and make
-    # sure that they are the same as before saving the model
-    p = gp.Predictor(model_file, threshold=threshold,
-                     all_labels=use_all_labels)
-
-    assert(p._pos_index == 1)
-    assert(p.threshold == threshold)
-
-    predictions_after_saving = p.predict(test_fs)
-
-    eq_(predictions, predictions_after_saving)
-
-
-def check_generate_predictions_file_headers(use_threshold=False,
-                                            use_all_labels=False,
-                                            string_labels=False):
-
-    string_label_list = ['a', 'b'] if string_labels else None
-
-    # create some simple classification feature sets for training and testing
-    train_fs, test_fs = make_classification_data(num_examples=1000,
-                                                 num_features=5,
-                                                 feature_bins=4,
-                                                 string_label_list=string_label_list)
-
-    # Unlike in other generate_predictions tests, for the headers test we
-    # want to enable probability when labels are strings in order to verify
-    # that the output header includes the correct label name(s) ("Probability
-    # of <label>", or "id, <label1>, <label2>").
-    enable_probability = any([use_threshold, use_all_labels, string_labels])
-
-    # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=enable_probability)
-
-    # train the learner with grid search
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
-
-    use_class_labels = string_labels
-    # get the predictions on the test featureset
-    _ = learner.predict(test_fs, class_labels=use_class_labels)
-
-    # if we asked for probabilities, then use the threshold
-    # to convert them into binary predictions
-    if use_threshold:
-        threshold = 0.6
-    else:
-        threshold = None
-
-    # save the learner to a file
-    model_file = join(_my_dir, 'output',
-                      'test_generate_predictions.model')
-    learner.save(model_file)
-
-    # now use Predictor to generate the predictions and make
-    # sure that they are the same as before saving the model
-    p = gp.Predictor(model_file, threshold=threshold,
-                     all_labels=use_all_labels)
-    _ = p.predict(test_fs)
-    if threshold:
-        assert (p.output_file_header == ['id', 'prediction'])
-    elif string_labels:
-        if use_all_labels:
-            assert (p.output_file_header == ['id', 'a', 'b'])
+    if test_on_subset:
+        if use_regression:
+            test_fs.filter(features=['f1', 'f2', 'f3', 'f4'])
         else:
-            assert (p.output_file_header == ['id', "Probability of 'b'"])
-    elif use_all_labels:
-        assert (p.output_file_header == ['id', '0', '1'])
+            test_fs.filter(features=['f01', 'f02', 'f03', 'f04'])
 
+    # write out the test set to disk so we can use it as a file
+    test_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    NDJWriter.for_path(test_file, test_fs).write()
 
-@raises(ValueError)
-def test_generate_predictions_conflicting_params():
-    """
-    Test that ValueError is raised when `generate_predictions.Predictor` is
-    initialized with both `threshold` and `all_labels` turned on.
-    """
-    model_file = "not/real/model/file.model"
-    gp.Predictor(model_file, threshold=0.6, all_labels=True)
+    # we need probabilities if we are using thresholds or label inference
+    enable_probability = any([use_probability, use_threshold, predict_labels])
+
+    # create a SKLL learner that is an SGDClassifier or an SGDRegressor,
+    # train it, and then save it to disk for use as a file
+    learner_name = 'SGDRegressor' if use_regression else 'SGDClassifier'
+    learner = Learner(learner_name,
+                      probability=enable_probability,
+                      pos_label_str=pos_label_str)
+    learner.train(train_fs, grid_search=False)
+    model_file = join(_my_dir, 'output', 'test_generate_predictions.model')
+    learner.save(model_file)
+
+    # now train equivalent sklearn estimators that we will use
+    # to get the expected predictions
+    if use_regression:
+        model = SGDRegressor(max_iter=1000,
+                             random_state=123456789,
+                             tol=1e-3)
+    else:
+        model = SGDClassifier(loss='log',
+                              max_iter=1000,
+                              random_state=123456789,
+                              tol=1e-3)
+    model.fit(train_fs.features, train_fs.labels)
+
+    # get the predictions from this sklearn model on the test set
+    if test_on_subset:
+        xtest = learner.feat_vectorizer.transform(test_fs.vectorizer.inverse_transform(test_fs.features))
+    else:
+        xtest = test_fs.features
+
+    if not (use_regression or predict_labels) and (use_threshold or use_probability):
+        predictions = model.predict_proba(xtest)
+
+        # since we are directly passing in the string labels to
+        # sklearn, it would sort the labels internally which
+        # may not match our expectation of having the positive
+        # class label probability last when doing binary
+        # classification so let's re-sort the sklearn predictions
+        sklearn_classes = model.classes_.tolist()
+        if num_labels == 2 and not np.all(model.classes_ == class_labels):
+            positive_class_index = sklearn_classes.index(positive_class_label)
+            negative_class_index = 1 - positive_class_index
+            predictions[:, [0, 1]] = predictions[:, [negative_class_index, positive_class_index]]
+    else:
+        predictions = model.predict(xtest)
+
+    # now start constructing the `generate_predictions` command
+    generate_cmd = ['-q']
+
+    # if we asked for thresholded predictions
+    if use_threshold and not use_regression:
+
+        # append the threshold to the command
+        threshold = 0.6
+        generate_cmd.append('-t 0.6')
+
+        # threshold the expected predictions; note that
+        # since we have already reordered sklearn predictions
+        # we can just look at the second index to get the
+        # positive class probability
+        predictions = np.where(predictions[:, 1] >= threshold,
+                               positive_class_label,
+                               negative_class_label)
+
+    # if we asked to predict most likely labels
+    elif predict_labels and not use_regression:
+
+        # append the option to the command
+        generate_cmd.append('-p')
+
+    # are we using an output file or the console?
+    if not use_stdout:
+        output_file = join(_my_dir, "output", "test_generate_predictions.tsv")
+        generate_cmd.extend(['--output', output_file])
+    else:
+        output_file = 'stdout'
+
+    # append the model file to the command
+    generate_cmd.append(model_file)
+
+    # if we are using multiple input files, repeat the input file
+    # and, correspondingly, concatenate the expected predictions
+    if multiple_input_files:
+        predictions = concatenate([predictions, predictions])
+        generate_cmd.extend([test_file, test_file])
+    else:
+        generate_cmd.append(test_file)
+
+    # run the constructed command and capture its output
+    gp_output_lines = _run_generate_predictions_and_capture_output(generate_cmd,
+                                                                   output_file)
+
+    # check the header first
+    generated_header = gp_output_lines[0].strip().split('\t')
+    if (use_regression or
+            not enable_probability or
+            use_threshold or
+            predict_labels):
+        expected_header = ['id', 'prediction']
+    else:
+        if num_labels == 2:
+            expected_header = ['id'] + [str(negative_class_label), str(positive_class_label)]
+        else:
+            expected_header = ['id'] + [str(x) for x in class_labels]
+    eq_(generated_header, expected_header)
+
+    # now check the ids, and predictions
+    for (gp_line,
+         expected_id,
+         expected_prediction) in zip(gp_output_lines[1:], test_fs.ids, predictions):
+        generated_fields = gp_line.strip().split('\t')
+        # comparing most likely labels
+        if len(generated_fields) == 2:
+            generated_id, generated_prediction = generated_fields[0], generated_fields[1]
+            eq_(generated_id, expected_id)
+            eq_(safe_float(generated_prediction), expected_prediction)
+        # comparing probabilities
+        else:
+            generated_id = generated_fields[0]
+            generated_prediction = list(map(safe_float, generated_fields[1:]))
+            eq_(generated_id, expected_id)
+            assert_array_almost_equal(generated_prediction, expected_prediction)
 
 
 def test_generate_predictions():
-    for (use_feature_hashing, use_threshold, test_on_subset, all_probabilities,
-         string_labels) in product(*[[True, False], [True, False],
-                                     [True, False], [True, False],
-                                     [True, False]]):
-        if use_threshold and all_probabilities:
+    for (use_regression,
+         string_labels,
+         num_labels,
+         use_probability,
+         use_pos_label_str,
+         test_on_subset,
+         use_threshold,
+         predict_labels,
+         use_stdout,
+         multiple_input_files) in product([True, False],
+                                          [True, False],
+                                          [2, 4],
+                                          [True, False],
+                                          [True, False],
+                                          [True, False],
+                                          [True, False],
+                                          [True, False],
+                                          [True, False],
+                                          [True, False]):
+        # skip testing conditions that will raise exceptions
+        # in `generate_predictions`
+        if (use_threshold and num_labels != 2 or
+                use_threshold and predict_labels or
+                use_regression and string_labels):
             continue
-        yield (check_generate_predictions, use_feature_hashing,
-               use_threshold, test_on_subset, all_probabilities,
-               string_labels)
-
-
-def test_generate_predictions_file_header():
-    for (use_threshold, all_probabilities, string_labels) in \
-            product(*[[True, False], [True, False], [True, False]]):
-        if use_threshold and all_probabilities:
-            continue
-        yield (check_generate_predictions_file_headers,
-               use_threshold, all_probabilities, string_labels)
-
-
-def check_generate_predictions_console(use_threshold=False, all_labels=False):
-
-    # create some simple classification data without feature hashing
-    train_fs, test_fs = make_classification_data(num_examples=1000,
-                                                 num_features=5)
-
-    # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test',
-                      'test_generate_predictions.jsonlines')
-    writer = NDJWriter(input_file, test_fs)
-    writer.write()
-
-    enable_probability = use_threshold or all_labels
-    # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=enable_probability)
-
-    # train the learner with grid search
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
-
-    # get the predictions on the test featureset
-    predictions = learner.predict(test_fs)
-
-    # if we asked for probabilities, then use the threshold
-    # to convert them into binary predictions
-    if use_threshold:
-        threshold = 0.6
-        predictions = [int(p[1] >= threshold) for p in predictions]
-    else:
-        predictions = predictions.tolist()
-        threshold = None
-
-    # save the learner to a file
-    model_file = join(_my_dir, 'output',
-                      'test_generate_predictions_console.model')
-    learner.save(model_file)
-
-    # now call main() from generate_predictions.py
-    generate_cmd = []
-    if use_threshold:
-        generate_cmd.append('-t {}'.format(threshold))
-    elif all_labels:
-        generate_cmd.append('-a')
-
-    generate_cmd.extend([model_file, input_file])
-
-    # we need to capture stdout since that's what main() writes to
-    err = ''
-    try:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = mystdout = StringIO()
-        sys.stderr = mystderr = StringIO()
-        gp.main(generate_cmd)
-        out = mystdout.getvalue()
-        err = mystderr.getvalue()
-        output_lines = out.strip().split('\n')[1:]  # Skip headers
-        if all_labels:
-            # Ignore the id (first column) in output.
-            predictions_after_saving = [[float(p) for p in x.split('\t')[1:]]
-                                        for x in output_lines]
-        else:
-            # Ignore the id (first column) in output.
-            predictions_after_saving = [int(x.split('\t')[1])
-                                        for x in output_lines]
-        if all_labels:
-            assert_array_almost_equal(predictions, predictions_after_saving)
-        else:
-            eq_(predictions, predictions_after_saving)
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
-        print(err)
-
-
-def test_generate_predictions_kw_arg_deprecation_warning():
-    lc = LogCapture()
-    lc.begin()
-
-    # create some simple classification data without feature hashing
-    train_fs, test_fs = make_classification_data(num_examples=1000,
-                                                 num_features=5)
-    # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test',
-                      'test_generate_predictions.jsonlines')
-    writer = NDJWriter(input_file, test_fs)
-    writer.write()
-
-    # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier')
-    # train the learner with grid search
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
-    # get the predictions on the test featureset
-    _ = learner.predict(test_fs)
-    # save the learner to a file
-    model_file = join(_my_dir, 'output',
-                      'test_generate_predictions_console.model')
-    learner.save(model_file)
-
-    # now call main() from generate_predictions.py
-    generate_cmd = [model_file, input_file, "--positive_label", "1"]
-
-    # we need to capture stdout since that's what main() writes to
-    err = ''
-    try:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = mystdout = StringIO()
-        sys.stderr = mystderr = StringIO()
-        gp.main(generate_cmd)
-        _ = mystdout.getvalue()
-        err = mystderr.getvalue()
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
-        print(err)
-
-    expected_log_mssg = ("skll.utilities.generate_predictions: WARNING: The "
-                         "`positive_label` argument is deprecated. Use "
-                         "`positive_label_index` instead.")
-    assert expected_log_mssg in lc.handler.buffer
+        yield (check_generate_predictions,
+               use_regression,
+               string_labels,
+               num_labels,
+               use_probability,
+               use_pos_label_str,
+               test_on_subset,
+               use_threshold,
+               predict_labels,
+               use_stdout,
+               multiple_input_files)
 
 
 def test_generate_predictions_console_bad_input_ext():
@@ -594,10 +574,13 @@ def test_generate_predictions_console_bad_input_ext():
 
     # create a learner that uses an SGD classifier
     learner = Learner('SGDClassifier')
+
     # train the learner with grid search
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+    learner.train(train_fs, grid_search=False)
+
     # get the predictions on the test featureset
     _ = learner.predict(test_fs)
+
     # save the learner to a file
     model_file = join(_my_dir, 'output',
                       'test_generate_predictions_console.model')
@@ -606,20 +589,7 @@ def test_generate_predictions_console_bad_input_ext():
     # now call main() from generate_predictions.py
     generate_cmd = [model_file, "fake_input_file.txt"]
 
-    # we need to capture stdout since that's what main() writes to
-    err = ''
-    try:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = mystdout = StringIO()
-        sys.stderr = mystderr = StringIO()
-        gp.main(generate_cmd)
-        _ = mystdout.getvalue()
-        err = mystderr.getvalue()
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
-        print(err)
+    _ = _run_generate_predictions_and_capture_output(generate_cmd, 'stdout')
 
     expected_log_mssg = ("skll.utilities.generate_predictions: ERROR: Input "
                          "file must be in either .arff, .csv, .jsonlines, "
@@ -629,173 +599,9 @@ def test_generate_predictions_console_bad_input_ext():
     eq_(lc.handler.buffer[-1], expected_log_mssg)
 
 
-def test_generate_predictions_console():
-    """
-    Test generate_predictions as a console script with/without a threshold
-    """
-
-    yield check_generate_predictions_console, False, False
-    yield check_generate_predictions_console, False, True
-    yield check_generate_predictions_console, True, False
-
-
-def check_generate_predictions_file_output_multi_infiles(use_threshold=False,
-                                                         all_labels=False):
-    """
-    Make sure generate_predictions works with multiple input files.
-    """
-
-    # create some simple classification data without feature hashing
-    train_fs, test_fs = make_classification_data(num_examples=1000,
-                                                 num_features=5)
-
-    # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
-    writer = NDJWriter(input_file, test_fs)
-    writer.write()
-
-    enable_probability = use_threshold or all_labels
-    # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=enable_probability)
-
-    # train the learner with grid search
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
-
-    # get the predictions on the test featureset
-    predictions = learner.predict(test_fs)
-    predictions = concatenate([predictions, predictions])
-
-    # if we asked for probabilities, then use the threshold
-    # to convert them into binary predictions
-    if use_threshold:
-        threshold = 0.6
-        predictions = [int(p[1] >= threshold) for p in predictions]
-    else:
-        predictions = predictions.tolist()
-        threshold = None
-
-    # save the learner to a file
-    model_file = join(_my_dir, 'output',
-                      'test_generate_predictions_console.model')
-    learner.save(model_file)
-
-    # now call main() from generate_predictions.py
-    generate_cmd = []
-    if use_threshold:
-        generate_cmd.append('-t {}'.format(threshold))
-    elif all_labels:
-        generate_cmd.append('-a')
-
-    output_file_path = join(_my_dir, 'output',
-                            'output_test_{}_{}_MULTI.tsv'
-                            .format(use_threshold, all_labels))
-    generate_cmd.extend(["--output_file", output_file_path])
-
-    generate_cmd.extend([model_file, input_file, input_file])
-
-    gp.main(generate_cmd)
-
-    with open(output_file_path) as saved_predictions_file:
-        predictions_after_saving = []
-        reader = csv.reader(saved_predictions_file, delimiter=str("\t"))
-        next(reader)
-        if all_labels:
-            for row in reader:
-                predictions_after_saving.append([float(r) for r in row[1:]])
-        else:
-            for row in reader:
-                predictions_after_saving.append(float(row[1]))
-
-    assert_array_almost_equal(predictions, predictions_after_saving)
-
-
-def test_generate_predictions_file_output_multi_infiles():
-    """
-    Test generate_predictions file output with/without a threshold
-    """
-
-    yield check_generate_predictions_file_output_multi_infiles, False, False
-    yield check_generate_predictions_file_output_multi_infiles, False, True
-    yield check_generate_predictions_file_output_multi_infiles, True, False
-
-
-def check_generate_predictions_file_output(use_threshold=False,
-                                           all_labels=False):
-
-    # create some simple classification data without feature hashing
-    train_fs, test_fs = make_classification_data(num_examples=1000,
-                                                 num_features=5)
-
-    # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
-    writer = NDJWriter(input_file, test_fs)
-    writer.write()
-
-    enable_probability = use_threshold or all_labels
-    # create a learner that uses an SGD classifier
-    learner = Learner('SGDClassifier', probability=enable_probability)
-
-    # train the learner with grid search
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
-
-    # get the predictions on the test featureset
-    predictions = learner.predict(test_fs)
-
-    # if we asked for probabilities, then use the threshold
-    # to convert them into binary predictions
-    if use_threshold:
-        threshold = 0.6
-        predictions = [int(p[1] >= threshold) for p in predictions]
-    else:
-        predictions = predictions.tolist()
-        threshold = None
-
-    # save the learner to a file
-    model_file = join(_my_dir, 'output',
-                      'test_generate_predictions_console.model')
-    learner.save(model_file)
-
-    # now call main() from generate_predictions.py
-    generate_cmd = []
-    if use_threshold:
-        generate_cmd.append('-t {}'.format(threshold))
-    elif all_labels:
-        generate_cmd.append('-a')
-
-    output_file_path = join(_my_dir, 'output',
-                            'output_test_{}_{}.tsv'
-                            .format(use_threshold, all_labels))
-    generate_cmd.extend(["--output_file", output_file_path])
-
-    generate_cmd.extend([model_file, input_file])
-    gp.main(generate_cmd)
-
-    with open(output_file_path) as saved_predictions_file:
-        predictions_after_saving = []
-        reader = csv.reader(saved_predictions_file, delimiter=str("\t"))
-        next(reader)
-        if all_labels:
-            for row in reader:
-                predictions_after_saving.append([float(r) for r in row[1:]])
-        else:
-            for row in reader:
-                predictions_after_saving.append(float(row[1]))
-
-    assert_array_almost_equal(predictions, predictions_after_saving)
-
-
-def test_generate_predictions_file_output():
-    """
-    Test generate_predictions file output with/without a threshold
-    """
-
-    yield check_generate_predictions_file_output, False, False
-    yield check_generate_predictions_file_output, False, True
-    yield check_generate_predictions_file_output, True, False
-
-
 @raises(SystemExit)
 def test_mutually_exclusive_generate_predictions_args():
+
     # create some simple classification data without feature hashing
     train_fs, test_fs = make_classification_data(num_examples=1000,
                                                  num_features=5)
@@ -819,7 +625,7 @@ def test_mutually_exclusive_generate_predictions_args():
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
-    generate_cmd = ['-t {}'.format(threshold), '-a']
+    generate_cmd = ['-t {}'.format(threshold), '-p']
     generate_cmd.extend([model_file, input_file])
     gp.main(generate_cmd)
 
