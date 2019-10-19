@@ -131,7 +131,7 @@ def test_contiguous_int_or_float_labels():
 
 def test_label_index_order():
     """
-    Test that label indices are created after first sorting the labels
+    Test that labels are sorted before creating the indices
     """
     train_fs, _ = make_classification_data()
     prng = np.random.RandomState(123456789)
@@ -160,20 +160,28 @@ def test_label_index_order():
         eq_(label_order_from_dict, correct_order)
 
 
-def test_binary_label_index_order_with_pos_label_str():
+def test_label_index_order_with_pos_label_str():
     """
-    Test that label indices are created according to `pos_label_str`
+    Test that only binary labels are sorted to satisfy `pos_label_str`
     """
     train_fs, _ = make_classification_data()
     prng = np.random.RandomState(123456789)
     for (unique_label_list,
          pos_label_str,
          correct_order) in zip([['B', 'C'],
+                                ['B', 'A', 'C'],
                                 [1, 2],
+                                [3, 1, 2],
+                                [1.0, 3.0, 2.0, 4.0],
+                                [1.0, 2.0],
                                 ['FRAG', 'NONE']],
-                               ['B', 2, 'FRAG'],
+                               ['B', 'A', 2, 1, 3.0, 1.0, 'FRAG'],
                                [['C', 'B'],
+                                ['A', 'B', 'C'],
                                 [1, 2],
+                                [1, 2, 3],
+                                [1.0, 2.0, 3.0, 4.0],
+                                [2.0, 1.0],
                                 ['NONE', 'FRAG']]):
         labels = prng.choice(unique_label_list, size=len(train_fs))
         train_fs.labels = labels
