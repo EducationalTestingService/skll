@@ -837,20 +837,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         if len(output_metrics) == 0:
             raise ValueError('The "metrics" option must be set when '
                              'the task is "learning_curve".')
-    elif task in ['evaluate', 'cross_validate']:
-        # for other appropriate tasks, if metrics and objectives have
-        # some overlaps - we will assume that the user meant to
-        # use the metric for tuning _and_ evaluation, not just evaluation
-        if (len(grid_objectives) > 0 and
-                len(output_metrics) > 0):
-            common_metrics_and_objectives = set(grid_objectives).intersection(output_metrics)
-            if common_metrics_and_objectives:
-                logger.warning('The following are specified both as '
-                               'objective functions and evaluation metrics: {}. '
-                               'They will be used as the '
-                               'former.'.format(common_metrics_and_objectives))
-                output_metrics = [metric for metric in output_metrics
-                                  if metric not in common_metrics_and_objectives]
 
     # if any of the objectives or metrics require probabilities to be output,
     # probability must be specified as true
