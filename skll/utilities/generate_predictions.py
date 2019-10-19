@@ -105,7 +105,7 @@ def main(argv=None):
     # label in the list
     if estimator_type == 'classifier':
         if len(learner.label_list) == 2:
-            if learner.pos_label_str:
+            if learner.pos_label_str is not None:
                 pos_label_str = learner.pos_label_str
             else:
                 pos_label_str = [label for label in learner.label_dict if learner.label_dict[label] == 1][0]
