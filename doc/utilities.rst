@@ -309,6 +309,10 @@ Optional Arguments
 
     Relation name to use for ARFF file. (default: ``skll_relation``)
 
+.. option:: --no_labels
+
+    Used to indicate that the input data has no labels.
+
 .. option:: --reuse_libsvm_map REUSE_LIBSVM_MAP
 
     If you want to output multiple files that use the same mapping from labels
