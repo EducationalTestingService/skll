@@ -1484,7 +1484,9 @@ When the predictions are class probabilities, there are N+1 columns
 in these files, where N are the number of classes in the training
 data. The header for the column containing IDs is still "id" and the
 labels themselves are the headers for the columns containing their
-respective probabilities.
+respective probabilities. In the special case of binary classification,
+the :ref:`positive class <pos_label_str>` probabilities are always in
+the last column.
 
 .. _output_summary_file:
 
