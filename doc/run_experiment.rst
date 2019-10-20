@@ -430,6 +430,17 @@ features. If enabled, the user should also specify the number of
 features in the :ref:`hasher_features <hasher_features>` field.  For additional
 information see `the scikit-learn documentation <https://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`__.
 
+.. warning:: Due to the way SKLL experiments are architected, if the features
+             for an experiment are spread across multiple files on disk, feature
+             hashing will be applied to each file *separately*. For example, if
+             you have F feature files and you choose H as the number of hashed
+             features (via :ref:`hasher_features <hasher_features>`), you will
+             end up with F x H features in the end. If this is not the
+             desired behavior, use the :ref:`join_features <join_features>` 
+             utility script to combine all feature files into a single file
+             before running the experiment.
+
+
 .. _feature_scaling:
 
 feature_scaling *(Optional)*
