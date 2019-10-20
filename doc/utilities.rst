@@ -266,9 +266,14 @@ Optional Arguments
 
     Number of top features to print (0 for all) (default: 50)
 
-.. option:: sign {positive,negative,all}
+.. option:: --sign {positive,negative,all}
 
     Show only positive, only negative, or all weights (default: ``all``)
+
+.. option:: --sort_by_labels
+
+    Oorder the features by classes (default: ``False``). Mutually exclusive
+    with the ``--k`` option.
 
 .. option:: --version
 
