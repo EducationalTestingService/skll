@@ -1151,17 +1151,18 @@ is to use the same directory for all of these fields.
 log *(Optional)*
 """"""""""""""""
 
-Directory to store log files in. If omitted, the current working
-directory is used.
+Directory to store SKLL :ref:`log files <output_log_files>` in. 
+If omitted, the current working directory is used. 
 
 .. _models:
 
 models *(Optional)*
 """""""""""""""""""
 
-Directory to store trained models in. Can be omitted to not store
-models except when using the :ref:`train <train>` task. Must *not* be specified
-for the :ref:`learning_curve <learning_curve>` task.
+Directory in which to store :ref:`trained models <output_model_files>`.
+Can be omitted to not store models except when using the :ref:`train <train>`
+task, where this path *must* be specified. On the other hand, this path must 
+*not* be specified for the :ref:`learning_curve <learning_curve>` task.
 
 .. _metrics:
 
@@ -1176,9 +1177,15 @@ Possible values are all of the same functions as those available for the
 
 .. note::
 
-    For the ``evaluate`` and ``cross_validate`` tasks,  any functions
-    that are specified in both ``metrics`` and  ``objectives``
-    are assumed to be the latter.
+    If the list of metrics overlaps with the grid search tuning 
+    :ref:`objectives <objectives>`, then, for each job, the objective
+    that overlaps is *not* computed again as a metric. Recall that
+    each SKLL job can only contain a single tuning objective. Therefore,
+    if, say, the ``objectives`` list is ``['accuracy', 'roc_auc']`` and the
+    ``metrics`` list is ``['roc_auc', 'average_precision']``, then in the
+    second job, ``roc_auc`` is used as the objective but *not* computed
+    as an additional metric.
+
 
 .. _pipeline:
 
@@ -1252,8 +1259,8 @@ Here's an example of how to use this attribute.
 predictions *(Optional)*
 """"""""""""""""""""""""
 
-Directory to store prediction files in. Can be omitted to not store
-predictions. Must *not* be specified for the 
+Directory in which to store :ref:`prediction files <output_prediction_files>`.
+Can be omitted to not store predictions. Must *not* be specified for the 
 :ref:`learning_curve <learning_curve>` and :ref:`train <train>` tasks.
 
 .. _probability:
@@ -1271,17 +1278,15 @@ applies to the tuning objective.
 results *(Optional)*
 """"""""""""""""""""
 
-Directory to store result files in. If omitted, the current working
-directory is used. Must *not* be specified for 
+Directory in which to store :ref:`result files <output_results_files>`.
+If omitted, the current working directory is used. 
 
 .. _save_cv_folds:
 
 save_cv_folds *(Optional)*
 """"""""""""""""""""""""""
 
-Whether to save the folds that were used for a cross-validation experiment
-to a CSV file named ``EXPERIMENT_skll_fold_ids.csv`` in the :ref:`results`
-directory, where ``EXPERIMENT`` refers to the :ref:`experiment_name`.
+Whether to save the :ref:`folds file <output_folds_file>` containing the folds for a cross-validation experiment.
 Defaults to ``False``.
 
 .. _run_experiment:
@@ -1493,14 +1498,24 @@ the last column.
 Summary file
 ^^^^^^^^^^^^
 
-For every experiment you run, there will also be a result summary file
+For every experiment you run, there will also be an experiment summary file
 generated that is a tab-delimited file summarizing the results for each
-learner-featureset combination you have in your configuration file. It is named
-``EXPERIMENT_summary.tsv``. For :ref:`learning_curve <learning_curve>`
-experiments, this summary file will contain training set sizes and the averaged
-scores for all combinations of featuresets, learners, and objectives.
+job in the experiment. It is named ``<EXPERIMENT>_summary.tsv``. 
+For :ref:`learning_curve <learning_curve>` experiments, this summary
+file will contain training set sizes and the averaged scores for all
+combinations of featuresets, learners, and objectives.
 
-.. _output_learning_curve_files:
+.. _output_folds_file:
+
+Folds file
+^^^^^^^^^^
+
+For the :ref:`cross_validate <cross_validate>` task, SKLL can also output
+the actual folds and instance IDs used in the cross-validation process, if
+the :ref:`save_cv_folds <save_cv_folds>` option is enabled. In this case,
+a file called ``<EXPERIMENT>_skll_fold_ids.csv`` is produced.
+
+.. _output_learning_curve_plots:
 
 Learning curve plots
 ^^^^^^^^^^^^^^^^^^^^
@@ -1512,11 +1527,12 @@ specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURE
 and contains a faceted learning curve plot for the featureset with objective
 functions on rows and learners on columns. Here's an example of such a plot.
 
-If you didn't have seaborn available when running the learning curve
-experiment, you can always generate the plots later from the learning curve summary
-file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
-
     .. image:: learning_curve.png
+
+If you didn't have seaborn available when running the learning curve
+experiment, you can always generate the plots later from the :ref:`summary
+file <output_summary_file>` using the 
+:ref:`plot_learning_curves <plot_learning_curves>` utility script.
 
 .. rubric:: Footnotes
 
