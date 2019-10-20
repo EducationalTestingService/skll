@@ -905,6 +905,12 @@ almost always leads to better performance. Note that for the
 :ref:`learning_curve <learning_curve>` task, grid search is not allowed
 and setting it to ``True`` will generate a warning and be ignored.
 
+.. note:: In versions of SKLL before v2.0, this option was set to
+          ``False`` by default but that was changed since the benefits
+          of hyperparameter tuning significantly outweight the cost
+          in terms of model fitting time. Instead, SKLL must explicly
+          opt out of hyperparameter tuning if they so desire.
+
 .. _grid_search_folds:
 
 grid_search_folds *(Optional)*
