@@ -15,7 +15,7 @@ In general, there are four steps to using SKLL:
 2.  Create a small :ref:`configuration file <create_config>` describing the
     machine learning experiment you would like to run.
 3.  Run that configuration file with :ref:`run_experiment <run_experiment>`.
-4.  Examine results
+4.  Examine the results of the experiment.
 
 Titanic Example
 ---------------
@@ -202,3 +202,10 @@ An example of a human-readable results file for our Titanic config file is::
 
     Additional Evaluation Metrics (Test):
      roc_auc = 0.8219429347826087
+
+IRIS Example on Binder
+----------------------
+If you prefer using an interactive Jupyter notebook to learn about SKLL, you can do so by clicking the launch button below. 
+
+.. image:: https://mybinder.org/badge_logo.svg
+ :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/master?filepath=examples%2FTutorial.ipynb
