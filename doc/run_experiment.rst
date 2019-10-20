@@ -2,30 +2,79 @@
 
 Running Experiments
 ===================
-The simplest way to use SKLL is to create configuration files that describe
-experiments you would like to run on pre-generated features. This document
-describes the supported feature file formats, how to create configuration files
-(and layout your directories), and how to use
-:ref:`run_experiment <run_experiment>` to get things going.
 
-Quick Example
--------------
-If you don't want to read the whole document, and just want an example of how
-things work, do the following from the command prompt:
+General Workflow
+----------------
+
+To run your own SKLL experiments via the command line, the following general workflow
+is recommended.
+
+**Get your data into the correct format**
+
+SKLL can work with several common data formats, all of which are described
+:ref:`here <file_formats>`.
+
+If you need to convert between any of the supported formats, because, for
+example, you would like to create a single data file that will work both with
+SKLL and Weka (or some other external tool), the :ref:`skll_convert` script can
+help you out.  It is as easy as:
 
 .. code-block:: bash
 
-    $ cd examples
-    $ python make_iris_example_data.py          # download a simple dataset
-    $ cd iris
-    $ run_experiment --local evaluate.cfg        # run an experiment
+    $ skll_convert examples/titanic/train/family.csv examples/titanic/train/family.arff
 
+**Create sparse feature files, if necessary**
+
+:ref:`skll_convert` can also create sparse data files in
+:ref:`.jsonlines <ndj>`, :ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, or
+:ref:`.ndj <ndj>` formats.  This is very useful for saving disk space and
+memory when you have a large data set with mostly zero-valued features.
+
+**Set up training and testing directories/files**
+
+At a minimum, you will probably want to work with a training set and a testing
+set.  If you have multiple feature files that you would like SKLL to join together
+for you automatically, you will need to create feature files with the exact
+same names and store them in training and testing directories.  You can
+specifiy these directories in your config file using
+:ref:`train_directory <train_directory>` and
+:ref:`test_directory <test_directory>`.  The list of files is specified using
+the :ref:`featuresets <featuresets>` setting.
+
+If you're conducting a simpler experiment, where you have a single training
+file with all of your features and a similar single testing file, you should
+use the :ref:`train_file <train_file>` and :ref:`test_file <test_file>`
+settings in your config file.
+
+.. note:: If you would like to split an existing file up into a training
+          set and a testing set, you can employ the :ref:`filter_features`
+          utility script to select instances you would like to include in
+          each file.
+
+**Create an experiment configuration file**
+
+You saw a :ref:`basic configuration file <titanic_config>` in the tutorial. For your
+own experiment, you will need to lookat the extensive options available in our
+:ref:`configuration file reference <create_config>`.
+
+**Run configuration file through run_experiment**
+
+There are a few meta-options for experiments that are specified directly to the
+:ref:`run_experiment <run_experiment>` command rather than in a configuration
+file.  For example, if you would like to run an ablation experiment, which
+conducts repeated experiments using different combinations of the features in
+your config, you should use the :option:`run_experiment --ablation` option. A
+complete list of options is available :ref:`here <run_experiment>`.
+
+Next, we describe the numerous file formats that SKLL supports for reading
+in features.
 
 .. _file_formats:
 
-Feature file formats
---------------------
-The following feature file formats are supported:
+Feature files
+-------------
+
+SKLL supports the following feature file formats:
 
 .. _arff:
 
@@ -166,8 +215,9 @@ to/from this MegaM format and for adding/removing features from the files.
 
 .. _create_config:
 
-Creating configuration files
-----------------------------
+Configuration file options
+--------------------------
+
 The experiment configuration files that run_experiment accepts are standard
 `Python configuration files <https://docs.python.org/3/library/configparser.html>`__
 that are similar in format to Windows INI files. [#]_
@@ -905,11 +955,19 @@ almost always leads to better performance. Note that for the
 :ref:`learning_curve <learning_curve>` task, grid search is not allowed
 and setting it to ``True`` will generate a warning and be ignored.
 
-.. note:: In versions of SKLL before v2.0, this option was set to
-          ``False`` by default but that was changed since the benefits
-          of hyperparameter tuning significantly outweight the cost
-          in terms of model fitting time. Instead, SKLL must explicly
-          opt out of hyperparameter tuning if they so desire.
+.. note:: 
+
+    1. In versions of SKLL before v2.0, this option was set to
+       ``False`` by default but that was changed since the benefits
+       of hyperparameter tuning significantly outweight the cost
+       in terms of model fitting time. Instead, SKLL must explicly
+       opt out of hyperparameter tuning if they so desire.
+
+    2. Although SKLL only uses the combination of hyperparameters in
+       the grid that maximizes the grid search objective, the results
+       for all other points on the grid that were tried are also available.
+       See the ``grid_search_cv_results`` attribute in the ``.results.json`` 
+       file. 
 
 .. _grid_search_folds:
 
@@ -1077,7 +1135,8 @@ Defaults to ``True``.
 Output
 ^^^^^^
 
-The fields in this section generally pertain to the outputs produced
+The fields in this section generally pertain to the 
+:ref:`output files<experiment_output_files>` produced
 by the experiment. The most common fields are ``logs``, ``models``, 
 ``predictions``, and ``results``. These fields are mostly optional
 although they may be required in certain cases. A common option 
@@ -1209,7 +1268,7 @@ results *(Optional)*
 """"""""""""""""""""
 
 Directory to store result files in. If omitted, the current working
-directory is used.
+directory is used. Must *not* be specified for 
 
 .. _save_cv_folds:
 
@@ -1282,8 +1341,7 @@ specified via command-line arguments instead of in the configuration file:
 
     Show program's version number and exit.
 
-GridMap options
-^^^^^^^^^^^^^^^
+**GridMap options**
 
 If you have `GridMap <https://pypi.org/project/gridmap/>`__ installed,
 :program:`run_experiment` will automatically schedule jobs on your DRMAA-
@@ -1308,49 +1366,126 @@ behavior.
 
         Full names must be specified, (e.g., ``nlp.research.ets.org``).
 
+.. _experiment_output_files:
 
 Output files
-^^^^^^^^^^^^
+------------
 
-For most of the tasks, the result, log, model, and prediction files generated by
-``run_experiment`` will all share the automatically generated prefix
-``EXPERIMENT_FEATURESET_LEARNER_OBJECTIVE``, where the following definitions hold:
+For most of the SKLL tasks the various output files generated by :ref:`run_experiment <run_experiment>` share the automatically generated prefix 
+``<EXPERIMENT>_<FEATURESET>_<LEARNER>_<OBJECTIVE>``, where the following definitions hold:
 
-    ``EXPERIMENT``
-        The name specified as :ref:`experiment_name` in the configuration file.
+    ``<EXPERIMENT>``
+        The value of the as :ref:`experiment_name` field in the configuration file.
 
-    ``FEATURESET``
-        The feature set we're training on joined with "+".
+    ``<FEATURESET>``
+        The components of the feature set that was used for training, joined with "+".
 
-    ``LEARNER``
-        The learner the current results/model/etc. was generated using.
+    ``<LEARNER>``
+        The learner that was used to generate the current current results/model/etc. 
 
-    ``OBJECTIVE``
-        The objective function the current results/model/etc. was generated using.
+    ``<OBJECTIVE>``
+        The objective function that was used to generate the current results/model/etc.
 
-However, if ``objectives`` contains only one objective function,
-the result, log, model, and prediction files will share the prefix
-``EXPERIMENT_FEATURESET_LEARNER``. For backward-compatibility, the same
-applies when a single objective is specified using ``objective=x``.
+.. note:: 
 
-In addition to the above log files that are specific to each "job"
-(a specific combination of featuresets, learners, and objectives specified
-in the configuration file), SKLL also produces a single, top level "experiment"
-log file with only ``EXPERIMENT`` as the prefix. While the job-level log files
-contain messages that pertain to the specific characteristics of the job, the
-experiment-level log file will contain logging messages that pertain to the
-overall experiment and configuration file. The messages in the log files are
-in the following format:
+    In SKLL terminology, a specific combination of featuresets, learners, 
+    and objectives specified in the configuration file is called a ``job``.
+    Therefore, an experiment (represented by a configuration file) can  
+    contain multiple jobs.
+    
+    However, if the :ref:`objectives <objectives>` field in the configuration file
+    contains only a single value, the job can be disambiguated using only
+    the featuresets and the learners since the objective is fixed. Therefore,
+    the output files will have the prefix ``<EXPERIMENT>_<FEATURESET>_<LEARNER>``.
+
+The following types of output files can be generated after running an experiment
+configuration file through :ref:`run_experiment <run_experiment>`. Note that
+some file types may or may not be generated depending on the options specified
+in the :ref:`Output section <output>` of the configuration file.
+
+.. _output_log_files:
+
+Log files
+^^^^^^^^^
+
+SKLL produces two types of log files -- one for each job in the experiment
+and a single, top level log file for the entire experiment. Each of the job
+log files have the usual job prefix as described above whereas the experiment
+log file is simply named ``<EXPERIMENT>.log``.
+
+While the job-level log files contain messages that pertain to the specific 
+characteristics of the job (e.g., warnings from scikit-learn pertaining to
+the specific learner), the experiment-level log file will contain logging
+messages that pertain to the overall experiment and configuration file (e.g.,
+an incorrect option specified in the configuration file). The  messages in all
+SKLL log files are in the following format:
 
 .. code-block:: bash
 
-    TIMESTAMP - LEVEL - MSG
+    <TIMESTAMP> - <LEVEL> - <MSG>
 
-where ``TIMESTAMP`` refers to the exact time when the message was logged,
-``LEVEL`` refers to the level of the logging message (e.g., ``INFO``, ``WARNING``,
-etc.), and ``MSG`` is the actual content of the message. All of the messages
+where ``<TIMESTAMP>`` refers to the exact time when the message was logged,
+``<LEVEL>`` refers to the level of the logging message (e.g., ``INFO``, ``WARNING``,
+etc.), and ``<MSG>`` is the actual content of the message. All of the messages
 are also printed to the console in addition to being saved in the job-level log
 files and the experiment-level log file.
+
+.. _output_model_files:
+
+Model files
+^^^^^^^^^^^
+Model files end in ``.model`` and are serialized :py:mod:`skll.learner.Learner`
+instances. :ref:`run_experiment <run_experiment>` will re-use existing model
+files if they exist, unless it is explicitly told not to. These model files
+can also be loaded programmatically via the SKLL API, specifically the 
+:py:mod:`skll.learner.Learner.from_file()` method.
+
+
+.. _output_results_files:
+
+Results files
+^^^^^^^^^^^^^
+
+SKLL generates two types of result files: 
+
+1. Files ending in ``.results`` which contain a human-readable summary of the
+   job, complete with confusion matrix, objective function score on the test set,
+   and values of any additional metrics specified via the :ref:`metrics <metrics>`
+   configuration file option. 
+
+2. Files ending in ``.results.json``, which contain all of the same information as the
+   ``.results`` files, but in a format more well-suited to automated processing. In
+   some cases, ``.results.json`` files may contain *more* information than their
+   ``.results`` file counterparts. For example, when doing :ref:`grid search <grid_search>`
+   for tuning model hyperparameters, these files contain an additional attribute ``grid_search_cv_results`` containing detailed results from the grid search process.
+
+
+.. _output_prediction_files:
+
+Prediction files
+^^^^^^^^^^^^^^^^
+
+Predictions files are TSV files that contain either the predicted
+values (for regression) OR predicted labels/class probabiltiies 
+(for classification) for each instance in the test feature set. 
+The value of the :ref:`probability <probability>` option decides whether SKLL
+outputs the labels or the probabilities.
+
+When the predictions are labels or values, there
+are only two columns in the file: one containing the ID for the instance
+and the other containing the prediction. The headers for the two columns
+in this case are "id" and "prediction".
+
+When the predictions are class probabilities, there are N+1 columns
+in these files, where N are the number of classes in the training
+data. The header for the column containing IDs is still "id" and the
+labels themselves are the headers for the columns containing their
+respective probabilities.
+
+.. _output_summary_file:
+
+Summary file
+^^^^^^^^^^^^
 
 For every experiment you run, there will also be a result summary file
 generated that is a tab-delimited file summarizing the results for each
@@ -1358,6 +1493,11 @@ learner-featureset combination you have in your configuration file. It is named
 ``EXPERIMENT_summary.tsv``. For :ref:`learning_curve <learning_curve>`
 experiments, this summary file will contain training set sizes and the averaged
 scores for all combinations of featuresets, learners, and objectives.
+
+.. _output_learning_curve_files:
+
+Learning curve plots
+^^^^^^^^^^^^^^^^^^^^
 
 If `seaborn <http://seaborn.pydata.org>`__ is available when running
 a :ref:`learning_curve <learning_curve>` experiment,
@@ -1371,7 +1511,6 @@ experiment, you can always generate the plots later from the learning curve summ
 file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
 
     .. image:: learning_curve.png
-
 
 .. rubric:: Footnotes
 
