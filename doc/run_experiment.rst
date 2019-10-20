@@ -1297,6 +1297,15 @@ save_cv_folds *(Optional)*
 Whether to save the :ref:`folds file <output_folds_file>` containing the folds for a cross-validation experiment.
 Defaults to ``False``.
 
+.. _save_cv_models:
+
+save_cv_models *(Optional)*
+"""""""""""""""""""""""""""
+
+Whether to save each of the K :ref:`model files <output_model_files>` trained during 
+each step of a K-fold cross-validation experiment.
+Defaults to ``False``.
+
 .. _run_experiment:
 
 Using run_experiment
@@ -1457,7 +1466,6 @@ files if they exist, unless it is explicitly told not to. These model files
 can also be loaded programmatically via the SKLL API, specifically the 
 :py:mod:`skll.learner.Learner.from_file()` method.
 
-
 .. _output_results_files:
 
 Results files
@@ -1521,7 +1529,7 @@ Folds file
 For the :ref:`cross_validate <cross_validate>` task, SKLL can also output
 the actual folds and instance IDs used in the cross-validation process, if
 the :ref:`save_cv_folds <save_cv_folds>` option is enabled. In this case,
-a file called ``<EXPERIMENT>_skll_fold_ids.csv`` is produced.
+a file called ``<EXPERIMENT>_skll_fold_ids.csv`` is saved to disk.
 
 .. _output_learning_curve_plots:
 
