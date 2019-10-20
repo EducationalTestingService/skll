@@ -247,7 +247,10 @@ print_model_weights
 -------------------
 .. program:: print_model_weights
 
-Prints out the weights of a given trained model.
+Prints out the weights of a given trained model. If the model
+was trained using :ref:`feature hashing <feature_hasher>`, 
+feature names of the form ``hashed_feature_XX`` will be used
+since the original feature names no longer apply.
 
 Positional Arguments
 ^^^^^^^^^^^^^^^^^^^^
