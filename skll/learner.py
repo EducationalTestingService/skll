@@ -915,7 +915,7 @@ class Learner(object):
         self.scaler = None
         self.label_dict = None
         self.label_list = None
-        self.pos_label_str = safe_float(pos_label_str)
+        self.pos_label_str = safe_float(pos_label_str) if pos_label_str is not None else pos_label_str
         self._model = None
         self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
