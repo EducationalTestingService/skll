@@ -8,7 +8,6 @@ Module for running unit tests related to command line utilities.
 
 import ast
 import copy
-import csv
 import itertools
 import os
 import sys
