@@ -780,14 +780,18 @@ Whether to use random folds for cross-validation. Defaults to ``False``.
 sampler *(Optional)*
 """"""""""""""""""""
 
-It performs a non-linear transformations of the input, which can serve
-as a basis for linear classification or other algorithms. Valid options
-are:
+Whether to use a feature sampler that performs  non-linear transformations 
+of the input, which can serve as a basis for linear classification 
+or other algorithms. Valid options are:
 `Nystroem <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.Nystroem.html#sklearn.kernel_approximation.Nystroem>`__,
 `RBFSampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.RBFSampler.html#sklearn.kernel_approximation.RBFSampler>`__,
 `SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html#sklearn.kernel_approximation.SkewedChi2Sampler>`__, and
 `AdditiveChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.AdditiveChi2Sampler.html#sklearn.kernel_approximation.AdditiveChi2Sampler>`__.  For additional information see
 `the scikit-learn documentation <https://scikit-learn.org/stable/modules/kernel_approximation.html>`__.
+
+.. note:: Using a feature sampler with the ``MultinomialNB`` learner is not allowed
+          since it cannot handle negative feature values.
+
 
 .. _sampler_parameters:
 
