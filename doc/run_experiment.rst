@@ -97,7 +97,11 @@ with the following added restrictions:
 csv/tsv
 ^^^^^^^
 
-A simple comma or tab-delimited format with the following restrictions:
+A simple comma or tab-delimited format. SKLL underlyingly uses 
+[pandas](https://pandas.pydata.org) to read these files which is
+extremely fast but at the cost of some extra memory consumption.
+
+When using this file format, the following restrictions apply:
 
 *   If the data is labelled, there must be a column with the name
     specified by :ref:`label_col <label_col>` in the :ref:`Input` section of the
