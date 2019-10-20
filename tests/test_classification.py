@@ -104,7 +104,7 @@ def tearDown():
     config_files.extend(glob(join(config_dir,
                                   'test_metric_values_for_classification_*.cfg')))
     config_files.extend(glob(join(config_dir,
-                                  'test_single_file_metrics_objective_overlap*.cfg')))
+                                  'test_fancy_metrics_objective_overlap*.cfg')))
 
     for config_file in config_files:
         if exists(config_file):
@@ -1585,8 +1585,8 @@ def check_metrics_and_objectives_overlap(task, metrics, objectives):
 
     train_dir = join('..', 'train')
     output_dir = join(_my_dir, 'output')
-    train_file = join(train_dir, 'f0.jsonlines')
-    test_file = join(train_dir, 'f1.jsonlines')
+    train_file = join(train_dir, 'metric_values_train.jsonlines')
+    test_file = join(train_dir, 'metric_values_test.jsonlines')
 
     # make a simple config file
     values_to_fill_dict = {'experiment_name': 'clf_metrics_objective_overlap',
@@ -1594,14 +1594,13 @@ def check_metrics_and_objectives_overlap(task, metrics, objectives):
                            'train_file': train_file,
                            'learners': "['LogisticRegression']",
                            'log': output_dir,
+                           'probability': 'false',
                            'results': output_dir,
+                           'predictions': output_dir,
                            'metrics': str(metrics)}
 
-    if task in ['evaluate', 'predict']:
+    if task == 'evaluate':
         values_to_fill_dict['test_file'] = test_file
-
-    if task == 'predict':
-        values_to_fill_dict['predictions'] = output_dir
 
     if objectives:
         values_to_fill_dict['objectives'] = str(objectives)
@@ -1610,11 +1609,12 @@ def check_metrics_and_objectives_overlap(task, metrics, objectives):
 
     config_template_path = join(_my_dir,
                                 'configs',
-                                'test_single_file.template.cfg')
+                                'test_fancy.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
-                                         'metrics_objective_overlap')
+                                         'metrics_objective_overlap',
+                                         good_probability_option=True)
 
     # run this configuration file and get the output JSON
     # files for each experiment
