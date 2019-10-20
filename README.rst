@@ -57,8 +57,8 @@ like:
   train_directory = train
   test_directory = dev
   # Can specify multiple sets of feature files that are merged together automatically
-  # (even across formats)
-  featuresets = [["family.ndj", "misc.csv", "socioeconomic.arff", "vitals.csv"]]
+  # (each file can also be in a different format!)
+  featuresets = [["family.csv", "misc.csv", "socioeconomic.csv", "vitals.csv"]]
   # List of scikit-learn learners to use
   learners = ["RandomForestClassifier", "DecisionTreeClassifier", "SVC", "MultinomialNB"]
   # Column in CSV containing labels to predict
@@ -75,10 +75,11 @@ like:
   [Output]
   # Also compute the area under the ROC curve as an additional metric
   metrics = ['roc_auc']
-  # The following can/should be absolute paths
+  # The following can also be absolute paths
   log = output
   results = output
   predictions = output
+  probability = true
   models = output
 
 
