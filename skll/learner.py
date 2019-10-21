@@ -76,6 +76,7 @@ from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
+from skll.data.readers import safe_float
 from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
                           _CORRELATION_METRICS,
                           _REGRESSION_ONLY_METRICS,
@@ -869,9 +870,13 @@ class Learner(object):
         initializer for the specified model.
         Defaults to ``None``.
     pos_label_str : str, optional
-        The string for the positive label in the binary
-        classification setting.  Otherwise, an arbitrary
-        label is picked.
+        A string denoting the label of the class to be
+        treated as the positive class in a binary classification
+        setting. If ``None``, the class represented by the label
+        that appears second when sorted is chosen as the positive
+        class. For example, if the two labels in data are "A"
+        and "B" and ``pos_label_str`` is not specified, "B" will
+        be chosen as the positive class.
         Defaults to ``None``.
     min_feature_count : int, optional
         The minimum number of examples a feature
@@ -910,7 +915,7 @@ class Learner(object):
         self.scaler = None
         self.label_dict = None
         self.label_list = None
-        self.pos_label_str = pos_label_str
+        self.pos_label_str = safe_float(pos_label_str) if pos_label_str is not None else pos_label_str
         self._model = None
         self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
@@ -1415,15 +1420,24 @@ class Learner(object):
         if self.model_type._estimator_type == 'regressor':
             return
 
-        # extract list of unique labels if we are doing classification
+        # extract list of unique labels if we are doing classification;
+        # note that the output of np.unique() is sorted
         self.label_list = np.unique(examples.labels).tolist()
 
-        # if one label is specified as the positive class, make sure it's
-        # last
-        if self.pos_label_str:
-            self.label_list = sorted(self.label_list,
-                                     key=lambda x: (x == self.pos_label_str,
-                                                    x))
+        # for binary classification, if one label is specified as
+        # the positive class, re-sort the label list to make sure
+        # that it is last in the list; for multi-class classification
+        # raise a warning and set it back to None, since it does not
+        # make any sense anyway
+        if self.pos_label_str is not None:
+            if len(self.label_list) != 2:
+                self.logger.warning('Ignoring value of `pos_label_str` for '
+                                    'multi-class classification.')
+                self.pos_label_str = None
+            else:
+                self.label_list = sorted(self.label_list,
+                                         key=lambda x: (x == self.pos_label_str,
+                                                        x))
 
         # Given a list of all labels in the dataset and a list of the
         # unique labels in the set, convert the first list to an array of
@@ -1509,7 +1523,8 @@ class Learner(object):
             values.  This should only be done once per
             experiment, so when ``cross_validate`` calls
             ``train``, ``create_label_dict`` gets set to
-            ``False``.
+            ``False``. This option is only for internal
+            use.
             Defaults to ``True``.
 
         Returns

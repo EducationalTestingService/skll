@@ -1043,9 +1043,16 @@ SVR
 pos_label_str *(Optional)*
 """"""""""""""""""""""""""
 
-The string label for the positive class in the binary
-classification setting. If unspecified, an arbitrary class is
-picked.
+A string denoting the label of the class to be
+treated as the positive class in a binary classification
+setting. If unspecified, the class represented by the label
+that appears second when sorted is chosen as the positive
+class. For example, if the two labels in data are "A" and
+"B" and ``pos_label_str`` is not specified, "B" will be chosen
+as the positive class.
+
+Note that ``pos_label_str`` will be ignored if you have more
+than two classes.
 
 .. _output:
 
