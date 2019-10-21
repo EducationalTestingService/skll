@@ -929,6 +929,7 @@ Available metrics are:
 
 .. |F1 link| replace:: F\ :sub:`1` score
 .. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
+
     **Regression:** The following objectives can be used for regression problems. 
 
     *   **explained_variance**: A `score <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.explained_variance_score.html#sklearn.metrics.explained_variance_score>`__ indicating how much of the variance in the given data can be by the model.
@@ -1201,7 +1202,7 @@ pipeline *(Optional)*
 """""""""""""""""""""
 
 Whether or not the final learner object should contain a ``pipeline``
-attribute that contains a scikit-learn `Pipeline <http://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html>`__ object composed
+attribute that contains a scikit-learn `Pipeline <https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html>`__ object composed
 of copies of each of the following steps of training the learner:
 
     * feature vectorization (`vectorizer`)
