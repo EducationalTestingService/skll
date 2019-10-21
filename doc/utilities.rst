@@ -139,7 +139,8 @@ Positional Arguments
 
 .. option:: input_file(s)
 
-    One or more csv file(s), or jsonlines file(s) (with or without the
+    One or more feature file(s) (ending in ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.libsvm``, ``.ndj``, or ``.tsv``) (with or without the
     label column), with the appropriate suffix.
 
 Optional Arguments
