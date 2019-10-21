@@ -76,6 +76,7 @@ from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
+from skll.data.readers import safe_float
 from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
                           _CORRELATION_METRICS,
                           _REGRESSION_ONLY_METRICS,
@@ -914,7 +915,7 @@ class Learner(object):
         self.scaler = None
         self.label_dict = None
         self.label_list = None
-        self.pos_label_str = pos_label_str
+        self.pos_label_str = safe_float(pos_label_str) if pos_label_str is not None else pos_label_str
         self._model = None
         self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
