@@ -1464,21 +1464,22 @@ class Learner(object):
         self.feat_selector = SelectByMinCount(
             min_count=self._min_feature_count)
 
-        # Create scaler if we weren't passed one and it's necessary
-        if not issubclass(self._model_type, MultinomialNB):
-            if self._feature_scaling != 'none':
-                scale_with_mean = self._feature_scaling in {
-                    'with_mean', 'both'}
-                scale_with_std = self._feature_scaling in {'with_std', 'both'}
-                self.scaler = StandardScaler(copy=True,
-                                             with_mean=scale_with_mean,
-                                             with_std=scale_with_std)
-            else:
-                # Doing this is to prevent any modification of feature values
-                # using a dummy transformation
-                self.scaler = StandardScaler(copy=False,
-                                             with_mean=False,
-                                             with_std=False)
+        # Create a scaler if we weren't passed one and we are asked
+        # to do feature scaling; note that we do not support feature
+        # scaling for `MultinomialNB` learners
+        if (not issubclass(self._model_type, MultinomialNB) and
+                self._feature_scaling != 'none'):
+            scale_with_mean = self._feature_scaling in {'with_mean', 'both'}
+            scale_with_std = self._feature_scaling in {'with_std', 'both'}
+            self.scaler = StandardScaler(copy=True,
+                                         with_mean=scale_with_mean,
+                                         with_std=scale_with_std)
+        else:
+            # Doing this is to prevent any modification of feature values
+            # using a dummy transformation
+            self.scaler = StandardScaler(copy=False,
+                                         with_mean=False,
+                                         with_std=False)
 
     def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective=None,
@@ -1647,8 +1648,7 @@ class Learner(object):
                              'feature values.')
 
         # Scale features if necessary
-        if not issubclass(self._model_type, MultinomialNB):
-            xtrain = self.scaler.fit_transform(xtrain)
+        xtrain = self.scaler.fit_transform(xtrain)
 
         # check whether any feature values are too large
         self._check_max_feature_value(xtrain)
