@@ -87,41 +87,41 @@ def setup():
         rmtree(_new_titanic_dir)
 
     # Copy the titanic data to our new directories
-    copytree(join(_old_titanic_dir, 'titanic'), _new_titanic_dir)
+    copytree(_old_titanic_dir, _new_titanic_dir)
 
     # Create all of the data sets we need
     subprocess.run(['python', join(_examples_dir, 'make_titanic_example_data.py')],
-                   cwd=_new_titanic_dir)
+                   cwd=dirname(_new_titanic_dir))
     subprocess.run(['python', join(_examples_dir, 'make_boston_example_data.py')],
-                   cwd=_new_boston_dir)
+                   cwd=dirname(_new_boston_dir))
     subprocess.run(['python', join(_examples_dir, 'make_iris_example_data.py')],
-                   cwd=_new_iris_dir)
+                   cwd=dirname(_new_iris_dir))
 
     # Move all the configuration files to our new directories
-    for file in glob(join(_old_titanic_dir, '**.cfg')):
-        copyfile(file, join(_new_titanic_dir, 'titanic', basename(file)))
+    for cfg_file in glob(join(_old_titanic_dir, '**.cfg')):
+        copyfile(cfg_file, join(_new_titanic_dir, basename(cfg_file)))
 
-    for file in glob(join(_old_boston_dir, '**.cfg')):
-        copyfile(file, join(_new_boston_dir, 'boston', basename(file)))
+    for cfg_file in glob(join(_old_boston_dir, '**.cfg')):
+        copyfile(cfg_file, join(_new_boston_dir, basename(cfg_file)))
 
-    for file in glob(join(_old_iris_dir, '**.cfg')):
-        copyfile(file, join(_new_iris_dir, 'iris', basename(file)))
+    for cfg_file in glob(join(_old_iris_dir, '**.cfg')):
+        copyfile(cfg_file, join(_new_iris_dir, basename(cfg_file)))
 
 
 def tearDown():
     """
     Clean up after tests, remove all directories we created.
     """
-    rmtree(_new_titanic_dir)
-    rmtree(_new_boston_dir)
-    rmtree(_new_iris_dir)
+    # rmtree(_new_titanic_dir)
+    # rmtree(_new_boston_dir)
+    # rmtree(_new_iris_dir)
 
 
 def test_titanic_configs():
     """
     Run all of the configuration files for the titanic example
     """
-    for config_path in glob(join(_new_titanic_dir, 'titanic', '*.cfg')):
+    for config_path in glob(join(_new_titanic_dir, '*.cfg')):
         run_configuration_and_check_outputs(config_path)
 
 
@@ -129,7 +129,7 @@ def test_boston_configs():
     """
     Run all of the configuration files for the boston example
     """
-    for config_path in glob(join(_new_boston_dir, 'boston', '*.cfg')):
+    for config_path in glob(join(_new_boston_dir, '*.cfg')):
         run_configuration_and_check_outputs(config_path)
 
 
@@ -137,5 +137,5 @@ def test_iris_configs():
     """
     Run all of the configuration files for the iris example
     """
-    for config_path in glob(join(_new_iris_dir, 'iris', '*.cfg')):
+    for config_path in glob(join(_new_iris_dir, '*.cfg')):
         run_configuration_and_check_outputs(config_path)

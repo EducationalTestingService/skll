@@ -23,12 +23,6 @@ def main():
     logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
                                 '%(message)s'), level=logging.INFO)
     logger = logging.getLogger(__name__)
-    if not (os.path.exists('train.csv') and os.path.exists('test.csv')):
-        logger.error('This script requires the train.csv and test.csv files ' +
-                     'from http://www.kaggle.com/c/titanic-gettingStarted/' +
-                     'data to be in the current directory in order to work. ' +
-                     'Please download them and try again.')
-        sys.exit(1)
 
     # Create dictionary of subsets to use for creating split feature files
     subset_dict = {'vitals': ['Sex', 'Age'],
@@ -55,7 +49,7 @@ def main():
     usecols_test = features_to_keep + ['PassengerId']
 
     # Read and write training FeatureSet
-    train_fs = Reader.for_path('train.csv',
+    train_fs = Reader.for_path('titanic/train.csv',
                                label_col='Survived',
                                id_col='PassengerId',
                                drop_blanks=True,
@@ -94,7 +88,7 @@ def main():
     writer.write()
 
     # Read and write test FeatureSet
-    test_fs = Reader.for_path('test.csv',
+    test_fs = Reader.for_path('titanic/test.csv',
                               label_col='Survived',
                               drop_blanks=True,
                               pandas_kwargs={'usecols': usecols_test},

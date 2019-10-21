@@ -27,19 +27,15 @@ data from `Kaggle <https://www.kaggle.com>`__.
 Get your data into the correct format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The first step to getting the Titanic data is logging into Kaggle and
-downloading `train.csv <https://www.kaggle.com/c/titanic-gettingStarted/download/train.csv>`__
-and `test.csv <https://www.kaggle.com/c/titanic-gettingStarted/download/test.csv>`__.
-Once you have those files, you'll also want to grab the
-`examples folder <https://github.com/EducationalTestingService/skll/tree/master/examples>`__
-on our GitHub page and put ``train.csv`` and ``test.csv`` in ``examples``.
+The first step is to get the Titanic data. We have already downloaded the data files
+from Kaggle and included them in the SKLL repository. Next, we need to get the files
+and process them to get them in the right shape.
 
-The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`,
-will split the training and test data files from Kaggle up into groups
-of related features and store them in ``dev``, ``test``, ``train``, and
-``train+dev`` subdirectories.  The development set that gets created by the
-script is 20% of the data that was in the original training set, and ``train``
-contains the other 80%.
+The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`, will split the train and test data files
+from Kaggle up into groups of related features and store them in 
+``dev``, ``test``, ``train``, and ``train+dev`` subdirectories.  
+The development set that gets created by the script is 20% of the data 
+that was in the original training set, and ``train`` contains the other 80%.
 
 Create a configuration file for the experiment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
