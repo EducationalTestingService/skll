@@ -17,15 +17,11 @@ This document is only meant for the project administrators, not users and develo
 
    e. update the README.
 
-3. Build the new conda package locally on your mac using the following command  (*Note*: you may have to replace the contents of the ``requirements()`` function in ``setup.py`` with a ``pass`` statement to get ``conda build`` to work)::
+3. Build the new conda package using the following command (*Note*: we should just be able to use ``conda-forge`` but due to a weirdness with the ``cycler`` package on that channel, we also have to include ``defaults``)::
 
-    conda build -c defaults -c conda-forge --python=3.6 --numpy=1.14 skll
+    conda build -c defaults -c conda-forge --numpy=1.17 skll
 
-4. Convert the package for both linux and windows::
-
-    conda convert -p win-64 -p linux-64 <mac package tarball>
-
-5. Upload each of the packages to anaconda.org using ``anaconda upload <package tarball>``.
+5. Upload the packages to anaconda.org using ``anaconda upload <package tarball>``.
 
 6. Upload source package to PyPI using ``python setup.py sdist upload``.
 
@@ -40,3 +36,5 @@ This document is only meant for the project administrators, not users and develo
 11. Tag the latest commit in ``master`` with the appropriate release tag and publish the release on GitHub.
 
 12. Send an email around at ETS announcing the release and the changes.
+
+13. Post release announcement on Twitter/LinkedIn.
