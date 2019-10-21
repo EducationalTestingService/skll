@@ -204,8 +204,8 @@ def check_label_index_order_with_pos_label_str(use_api=True):
         # if we are using the API, create a learner instance directly
         # otherwise run a configuration file to train a learner
         if use_api:
-        clf = Learner('LogisticRegression', pos_label_str=pos_label_str)
-        clf.train(train_fs, grid_search=False)
+            clf = Learner('LogisticRegression', pos_label_str=pos_label_str)
+            clf.train(train_fs, grid_search=False)
         else:
 
             train_file = join(_my_dir, 'train', 'pos_label_str_train.jsonlines')
@@ -316,7 +316,7 @@ def check_binary_predictions_for_pos_label_str(label_list,
         clf_skll = Learner('LogisticRegression',
                            pos_label_str=pos_label_str,
                            probability=probability)
-    clf_skll.train(train_fs, grid_search=False)
+        clf_skll.train(train_fs, grid_search=False)
     else:
         train_file = join(_my_dir, 'train', 'pos_label_str_train.jsonlines')
         output_dir = join(_my_dir, 'output')
@@ -361,11 +361,11 @@ def test_binary_predictions_for_pos_label_str():
          use_pos_label_str,
          probability,
          use_api) in product([['B', 'C'],
-                                  [1, 2],
-                                  ['FRAG', 'NONE']],
-                                 [True, False],
+                              [1, 2],
+                              ['FRAG', 'NONE']],
                              [True, False],
-                                 [True, False]):
+                             [True, False],
+                             [True, False]):
 
         yield (check_binary_predictions_for_pos_label_str,
                unique_label_list,
