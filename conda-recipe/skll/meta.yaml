@@ -7,6 +7,7 @@ source:
 
 build:
   number: 0
+  noarch: python
   script:
     - cd $SRC_DIR
     - $PYTHON setup.py install
