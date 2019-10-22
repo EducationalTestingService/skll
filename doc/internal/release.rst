@@ -3,7 +3,7 @@ Release Process
 
 This document is only meant for the project administrators, not users and developers.
 
-1. Create a release branch on GitHub.
+1. Create a release branch ``release/XX`` on GitHub.
 
 2. In the release branch:
 
@@ -15,13 +15,13 @@ This document is only meant for the project administrators, not users and develo
 
    d. run ``make linkcheck`` on the documentation and fix any redirected/broken links.
 
-   e. update the README.
+   e. update the README and this release documentation, if necessary.
 
 3. Build the new conda package using the following command (*Note*: we should just be able to use ``conda-forge`` but due to a weirdness with the ``cycler`` package on that channel, we also have to include ``defaults``)::
 
     conda build -c defaults -c conda-forge --numpy=1.17 skll
 
-4. Upload the package to anaconda.org using ``anaconda upload --user ets <package tarball>``.
+4. Upload the package to anaconda.org using ``anaconda upload --user ets <package tarball>``. You will need to have the appropriate permissions for the ``ets`` organization. 
 
 5. Build the PyPI source distribution using ``python setup.py sdist build``.
 
