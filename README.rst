@@ -15,8 +15,8 @@ SciKit-Learn Laboratory
 .. image:: https://img.shields.io/pypi/l/skll.svg
    :alt: License
 
-.. image:: https://img.shields.io/conda/v/desilinguist/skll.svg
-   :target: https://anaconda.org/desilinguist/skll
+.. image:: https://img.shields.io/conda/v/ets/skll.svg
+   :target: https://anaconda.org/ets/skll
    :alt: Conda package for SKLL
 
 .. image:: https://img.shields.io/pypi/pyversions/skll.svg
@@ -40,7 +40,7 @@ the features.
 Installation
 ~~~~~~~~~~~~
 
-You can install using either ``pip`` or ``conda``. See details [here](https://skll.readthedocs.io/en/latest/getting_started.html).
+You can install using either ``pip`` or ``conda``. See details `here <https://skll.readthedocs.io/en/latest/getting_started.html>`__.
 
 Requirements
 ~~~~~~~~~~~~
