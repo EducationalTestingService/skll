@@ -16,7 +16,7 @@ environment:
 
 branches:
   only:
-    - release
+    - /release/
 
 platform:
   - x64
