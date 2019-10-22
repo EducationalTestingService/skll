@@ -7,84 +7,69 @@ Contributing code
 How to contribute
 -----------------
 
-The preferred way to contribute to SKLL is to fork the
-[main repository](http://github.com/EducationalTestingService/skll/) on
-GitHub:
-
-(NOTE: Contributors internal to ETS can skip step 1 and clone the SKLL repository directly.)
-
 0. Read the [part of the documentation](https://skll.readthedocs.io/en/latest/contributing.html) that provides an overview of the SKLL codebase, run the tutorial and examples, and get familiar with the SKLL outputs.
 
-1. Fork the [project repository](http://github.com/EducationalTestingService/skll/):
-   click on the 'Fork' button near the top of the page. This creates
-   a copy of the code under your account on the GitHub server.
+1. Fork the [project repository](http://github.com/EducationalTestingService/skll/): click on the 'Fork' button near the top of the page. This creates
+   a copy of the code under your account on the GitHub server. (**NOTE**: If you are officially on the SKLL Developers team, you should not fork; just clone the SKLL repository directly.)
 
-2. Clone this copy to your local disk:
+2. Clone the fork (or the main repo) to your local disk:
 
           $ git clone git@github.com:YourLogin/skll.git
           $ cd skll
 
-3. Create a feature branch to hold your changes:
+3. Create an isolated environment for SKLL development. We recommend using the [conda](https://conda.io/en/latest/) package manager. To create a `conda` environment, run the following command in the root of the working directory:
+
+         $ conda create -n sklldev -c conda-forge --file conda_requirements.txt
+
+4. Activate the conda environment
+
+         $ conda activate sklldev
+
+5. Create a feature branch to hold your changes:
 
           $ git checkout -b feature/my-new-addition
 
-   and start making changes. Never work in the ``master`` branch!
+   and start making changes. **Never work in the ``master`` branch!**
 
-4. Work on this copy on your computer using Git to do the version
-   control. When you're done editing, do:
+6. During development, you can stage and commit your changes in git as follows: 
 
           $ git add modified_files
           $ git commit
 
-   to record your changes in Git, then push them to GitHub with:
+7. Once you are done with your changes (including any new tests), run the tests 
+   locally:
+
+         $ nosetests
+
+8. After making sure all tests pass, you are ready to push your branch/fork to GitHub with:
 
           $ git push feature/my-new-addition
 
-Finally, go to the web page of the your fork of the SKLL repo,
+Finally, go to the web page of (your fork of) the SKLL repo,
 and click 'Pull request' to send your changes to the maintainers for
 review.
 
 (If any of the above seems like magic to you, then look up the
 [Git documentation](http://git-scm.com/documentation) on the web.)
 
-It is recommended to check that your contribution complies with the
+We recommended that you check that your contribution complies with the
 following rules before submitting a pull request:
 
--  All public methods should have informative docstrings.
+-  All methods and functions should have informative docstrings.
 
--  All existing tests pass when everything is rebuilt from scratch. You should
-   be able to see this by running ``nosetests`` locally, or looking at the
-   Travis build status after you create your pull request.
+-  All existing tests should pass when everything is rebuilt from scratch. You
+   should be able to see this by running ``nosetests`` locally, or looking at the Travis CI build status after you create your pull request.
 
 -  All new functionality must be covered by unit tests.
 
 -  Every pull request description should contain a link to the issue that it is
-   trying to address. This is easily done by just typing `#` and then picking the issue from the dropdown. If the issue is not visible, then you type a few characters from the issue title and the dropdown should update.
+   trying to address. This is easily done by just typing `#` and then picking the issue from the dropdown. If the issue is not visible in the first set of results, type a few characters from the issue title and the dropdown should update.
 
+-  Address any PEP8 issues pointed out by the `pep8speaks` bot that comments on
+   your PR after you submit it. The *same* comment will update after you make make any further commits so refer to it after every commit. You may want to install a linter in your development environment so that you can fix any PEP8 issues while you write your code. We generally ignore E501 messages about lines longer than 100 characters. 
 
-You can also check for common programming errors with the following
-tools:
-
--  Code with good unittest coverage (at least 80%), check with:
-
-          $ pip install nose coverage
-          $ nosetests --with-coverage path/to/tests_for_package
-
--  No pyflakes warnings, check with:
-
-           $ pip install pyflakes
-           $ pyflakes path/to/module.py
-
--  No PEP8 warnings, check with:
-
-           $ pip install pep8
-           $ pep8 path/to/module.py
-
--  AutoPEP8 can help you fix some of the easy redundant errors:
-
-           $ pip install autopep8
-           $ autopep8 path/to/pep8.py
-
+- You may need to add new tests if the code coverage after merging your branch 
+  will be lower than the current `master`. This will be reported by the `codecov` bot once you submit your PR.
 
 After submitting a pull request, it is recommended to add at least 2-3 reviewers to 
 review it. See [Requesting a pull request review](https://help.github.com/en/articles/requesting-a-pull-request-review) for more details. 
@@ -127,7 +112,7 @@ README file in the doc/ directory for more information.
 
 For building the documentation, you will need [sphinx](http://sphinx.pocoo.org/) as well as the readthedocs sphinx theme. To install both, just run:
 
-      conda install sphinx sphinx_rtd_theme
+      $ conda install sphinx sphinx_rtd_theme
 
 in your existing conda environment.
 

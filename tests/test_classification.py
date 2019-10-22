@@ -98,10 +98,10 @@ def tearDown():
     for output_file in glob(join(output_dir, 'clf_metric_value_*')):
         os.unlink(output_file)
 
-    for output_file in glob(join(output_dir, 'clf_metrics_objective_overlap*')):
+    for output_file in glob(join(output_dir, 'pos_label_str_via_config*')):
         os.unlink(output_file)
 
-    for output_file in glob(join(output_dir, 'pos_label_str_via_config*')):
+    for output_file in glob(join(output_dir, 'clf_metrics_objective_overlap*')):
         os.unlink(output_file)
 
     config_files = [join(config_dir,
@@ -110,9 +110,9 @@ def tearDown():
     config_files.extend(glob(join(config_dir,
                                   'test_metric_values_for_classification_*.cfg')))
     config_files.extend(glob(join(config_dir,
-                                  'test_fancy_metrics_objective_overlap*.cfg')))
-    config_files.extend(glob(join(config_dir,
                                   'test_fancy_pos_label_str*.cfg')))
+    config_files.extend(glob(join(config_dir,
+                                  'test_fancy_metrics_objective_overlap*.cfg')))
 
     for config_file in config_files:
         if exists(config_file):

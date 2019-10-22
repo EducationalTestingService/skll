@@ -1189,7 +1189,8 @@ class Learner(object):
     def model_params(self):
         """
         Model parameters (i.e., weights) for a ``LinearModel`` (e.g., ``Ridge``)
-        regression and liblinear models.
+        regression and liblinear models. If the model was trained using feature
+        hashing, then names of the form `hashed_feature_XX` are used instead.
 
         Returns
         -------
