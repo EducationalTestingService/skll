@@ -1467,7 +1467,7 @@ class Learner(object):
 
     def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective=None,
-              grid_jobs=None, shuffle=False, create_label_dict=True):
+              grid_jobs=None, shuffle=False):
         """
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -1502,15 +1502,6 @@ class Learner(object):
         shuffle : bool, optional
             Shuffle examples (e.g., for grid search CV.)
             Defaults to ``False``.
-        create_label_dict : bool, optional
-            Should we create the label dictionary?  This
-            dictionary is used to map between string
-            labels and their corresponding numerical
-            values.  This should only be done once per
-            experiment, so when ``cross_validate`` calls
-            ``train``, ``create_label_dict`` gets set to
-            ``False``.
-            Defaults to ``True``.
 
         Returns
         -------
@@ -1602,7 +1593,7 @@ class Learner(object):
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
-        if create_label_dict:
+        if self.label_dict is None:
             self._create_label_dict(examples)
         self._train_setup(examples)
 
@@ -2448,8 +2439,7 @@ class Learner(object):
                                                   grid_objective=grid_objective,
                                                   param_grid=param_grid,
                                                   grid_jobs=grid_jobs,
-                                                  shuffle=grid_search,
-                                                  create_label_dict=False)
+                                                  shuffle=grid_search)
             grid_search_scores.append(grid_search_score)
             if save_cv_models:
                 models.append(copy.deepcopy(self))
