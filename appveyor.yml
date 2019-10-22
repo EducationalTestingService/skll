@@ -23,6 +23,7 @@ install:
   - conda update -q conda
   - conda info -a
   - "conda install --yes -c conda-forge python=%PYTHON_VERSION% codecov --file conda_requirements.txt"
+  - conda init cmd.exe
   - pip install nose-cov
   - git clone https://github.com/EducationalTestingService/rsmtool.git c:\skllcode
   - chdir c:\skllcode
