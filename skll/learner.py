@@ -1910,6 +1910,18 @@ class Learner(object):
                                                   label_type.__name__,
                                                   list(unacceptable_metrics)))
 
+        # if metrics has the objective in it, we will only output
+        # that function once as an objective and not include it
+        # in the list of additional metrics printed out
+        if len(output_metrics) > 0 and grid_objective in output_metrics:
+            self.logger.warning('The grid objective "{}" is also specified '
+                                'as an evaluation metric. Since its value is '
+                                'already included in the results as the '
+                                'objective score, it will not be printed '
+                                'again in the list of metrics.'.format(grid_objective))
+            output_metrics = [metric for metric in output_metrics
+                              if metric != grid_objective]
+
         # make a single list of metrics including the grid objective
         # since it's easier to compute everything together
         metrics_to_compute = [grid_objective] + output_metrics
@@ -1935,10 +1947,11 @@ class Learner(object):
                 #     probabilities via argmax and use those
                 #     for all other metrics
                 if (len(self.label_list) == 2 and
-                    (metric in _CORRELATION_METRICS or
-                     metric in ['average_precision', 'roc_auc'])):
+                        (metric in _CORRELATION_METRICS or
+                         metric in ['average_precision', 'roc_auc']) and
+                        metric != grid_objective):
                     self.logger.info('using probabilities for the positive class to '
-                                     'compute {} for evaluation'.format(metric))
+                                     'compute "{}" for evaluation.'.format(metric))
                     yhat_for_metric = yhat_probs[:, 1]
                 elif metric == 'neg_log_loss':
                     yhat_for_metric = yhat_probs

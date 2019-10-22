@@ -20,7 +20,7 @@ from itertools import product
 from os.path import abspath, dirname, exists, join
 
 import numpy as np
-from nose.tools import assert_almost_equal, assert_raises, eq_, raises
+from nose.tools import assert_almost_equal, assert_raises, eq_, ok_, raises
 from numpy.testing import assert_array_equal
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
@@ -98,6 +98,9 @@ def tearDown():
     for output_file in glob(join(output_dir, 'clf_metric_value_*')):
         os.unlink(output_file)
 
+    for output_file in glob(join(output_dir, 'clf_metrics_objective_overlap*')):
+        os.unlink(output_file)
+
     for output_file in glob(join(output_dir, 'pos_label_str_via_config*')):
         os.unlink(output_file)
 
@@ -106,6 +109,8 @@ def tearDown():
                                                   'test_single_file_saved_subset.cfg']]
     config_files.extend(glob(join(config_dir,
                                   'test_metric_values_for_classification_*.cfg')))
+    config_files.extend(glob(join(config_dir,
+                                  'test_fancy_metrics_objective_overlap*.cfg')))
     config_files.extend(glob(join(config_dir,
                                   'test_fancy_pos_label_str*.cfg')))
 
@@ -1668,3 +1673,69 @@ def test_metric_values_for_classification():
                    metric,
                    label_array,
                    use_probabilities)
+
+
+def check_metrics_and_objectives_overlap(task, metrics, objectives):
+
+    train_dir = join('..', 'train')
+    output_dir = join(_my_dir, 'output')
+    train_file = join(train_dir, 'metric_values_train.jsonlines')
+    test_file = join(train_dir, 'metric_values_test.jsonlines')
+
+    # make a simple config file
+    values_to_fill_dict = {'experiment_name': 'clf_metrics_objective_overlap',
+                           'task': task,
+                           'train_file': train_file,
+                           'learners': "['LogisticRegression']",
+                           'log': output_dir,
+                           'probability': 'false',
+                           'results': output_dir,
+                           'predictions': output_dir,
+                           'metrics': str(metrics)}
+
+    if task == 'evaluate':
+        values_to_fill_dict['test_file'] = test_file
+
+    if objectives:
+        values_to_fill_dict['objectives'] = str(objectives)
+    else:
+        values_to_fill_dict['grid_search'] = 'false'
+
+    config_template_path = join(_my_dir,
+                                'configs',
+                                'test_fancy.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'metrics_objective_overlap',
+                                         good_probability_option=True)
+
+    # run this configuration file and get the output JSON
+    # files for each experiment
+    results_json_paths = run_configuration(config_path, local=True, quiet=True)
+
+    # make a dummy objective if we do not have any for the
+    # purposes of iteration
+    if not objectives:
+        objectives = [None]
+
+    # iterate over each objective in the list and each results JSON file
+    # there should be a 1:1 correspondence since there is a single learner
+    # and a single featureset
+    for objective, results_json_path in zip(objectives, results_json_paths):
+        if objective is None:
+            pruned_metrics = metrics
+        else:
+            pruned_metrics = [metric for metric in metrics if metric != objective]
+        results_obj = json.load(open(results_json_path, 'r'))[0]
+        eq_(results_obj['grid_objective'], objective)
+        eq_(set(results_obj['additional_scores'].keys()), set(pruned_metrics))
+        ok_(objective not in results_obj['additional_scores'])
+
+
+def test_metrics_and_objectives_overlap():
+
+    for task, metrics, objectives in product(["evaluate", "cross_validate"],
+                                             [["f1_score_weighted", "unweighted_kappa", "accuracy"]],
+                                             [[], ["accuracy"], ["accuracy", "unweighted_kappa"]]):
+        yield (check_metrics_and_objectives_overlap, task, metrics, objectives)
