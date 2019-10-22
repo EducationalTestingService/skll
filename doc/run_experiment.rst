@@ -667,8 +667,8 @@ TheilSenRegressor
         ``LinearSVC``, ``RandomForestClassifier``, ``RidgeClassifier``, 
         ``SGDClassifier``, and ``SVC``.
 
-    Two possible options are available. The first one is ``balanced``,
-        which automatically adjusts weights inversely proportional to class
+    Two possible options are available. The first one is ``balanced``, which
+    automatically adjusts weights inversely proportional to class
     frequencies, as shown in the following code:
 
     .. code-block:: python
@@ -978,6 +978,7 @@ and setting it to ``True`` will generate a warning and be ignored.
        file. 
 
 .. _grid_search_folds:
+
 grid_search_folds *(Optional)*
     
 """"""""""""""""""""""""""""""
@@ -1108,7 +1109,7 @@ SVR
 
 .. note::
     Note that learners not listed here do not have any default
-           parameter grids in SKLL either because there are no
+    parameter grids in SKLL either because there are no
     hyper-parameters to tune or decisions about which parameters
     to tune (and how) depend on the data being used for the
     experiment and are best left up to the user.
