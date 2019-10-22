@@ -1,0 +1,37 @@
+build: false
+
+environment:
+
+  # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+  # /E:ON and /V:ON options are not enabled in the batch script interpreter
+  # See: http://stackoverflow.com/a/13751649/163740
+  CMD_IN_ENV: "cmd /E:ON /V:ON /C obvci_appveyor_python_build_env.cmd"
+
+  # Workaround for https://github.com/conda/conda-build/issues/636
+  # PYTHONIOENCODING: "UTF-8"
+
+  matrix:
+    - TARGET_ARCH: "x64"
+      CONDA_PY: "36"
+
+branches:
+  only:
+    - release
+
+platform:
+  - x64
+
+install:
+  - "set PATH=C:\\Miniconda-x64;C:\\Miniconda-x64\\Scripts;C:\\Miniconda-x64\\Library\\bin;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda install --yes -c conda-forge python=%PYTHON_VERSION% codecov --file conda_requirements.txt"
+  - conda init cmd.exe
+  - pip install nose
+  - chdir C:\projects\skll
+  - pip install -e .
+
+test_script:
+  - "set TESTDIR=C:\\projects\\skll\\tests"
+  - nosetests C:\projects\skll\tests

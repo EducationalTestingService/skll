@@ -305,9 +305,9 @@ Input
 ^^^^^
 
 The Input section must specify the machine learners to use via the :ref:`learners` 
-field as welll as the data and features to be used when
+field as well as the data and features to be used when
 training the model. This can be done by specifying either (a) 
-:ref:`train_file <train_file>`  in which case all of the features in
+:ref:`train_file <train_file>` in which case all of the features in
 the file will be used, or (b) :ref:`train_directory <train_directory>` along
 with :ref:`featuresets <featuresets>`.
 
@@ -575,91 +575,91 @@ and fixed parameters.
 
 The default fixed parameters (beyond those that scikit-learn sets) are:
 
-    AdaBoostClassifier and AdaBoostRegressor
-      .. code-block:: python
+AdaBoostClassifier and AdaBoostRegressor
+    .. code-block:: python
 
-        {'n_estimators': 500, 'random_state': 123456789}
+       {'n_estimators': 500, 'random_state': 123456789}
 
-    DecisionTreeClassifier and DecisionTreeRegressor
-      .. code-block:: python
+DecisionTreeClassifier and DecisionTreeRegressor
+    .. code-block:: python
 
-        {'random_state': 123456789}
+       {'random_state': 123456789}
 
-    DummyClassifier
-        .. code-block:: python
-    
-           {'random_state': 123456789}
-    
-    ElasticNet
-        .. code-block:: python
-    
-           {'random_state': 123456789}
-    
-    GradientBoostingClassifier and GradientBoostingRegressor
-        .. code-block:: python
-    
-           {'n_estimators': 500, 'random_state': 123456789}
-    
-    Lasso:
-        .. code-block:: python
-    
-           {'random_state': 123456789}
-    
-    LinearSVC and LinearSVR
-        .. code-block:: python
-    
-           {'random_state': 123456789}
-    
-    LogisticRegression
-        .. code-block:: python
-    
+DummyClassifier
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+ElasticNet
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+GradientBoostingClassifier and GradientBoostingRegressor
+    .. code-block:: python
+
+       {'n_estimators': 500, 'random_state': 123456789}
+
+Lasso:
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+LinearSVC and LinearSVR
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+LogisticRegression
+    .. code-block:: python
+
             {'max_iter': 1000, multi_class': 'auto', random_state': 123456789, 'solver': 'liblinear'}
 
-        .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
+    .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
 
-    MLPClassifier and MLPRegressor:
-        .. code-block:: python
-    
-           {'learning_rate': 'invscaling', max_iter': 500}
-    
-    RandomForestClassifier and RandomForestRegressor
-        .. code-block:: python
-    
-           {'n_estimators': 500, 'random_state': 123456789}
-    
-    RANSACRegressor
-        .. code-block:: python
-    
-           {'loss': 'squared_loss', 'random_state': 123456789}
-    
-    Ridge and RidgeClassifier
-        .. code-block:: python
-    
-           {'random_state': 123456789}
-    
-    SVC and SVR
-        .. code-block:: python
-    
+MLPClassifier and MLPRegressor:
+    .. code-block:: python
+
+       {'learning_rate': 'invscaling', max_iter': 500}
+
+RandomForestClassifier and RandomForestRegressor
+    .. code-block:: python
+
+       {'n_estimators': 500, 'random_state': 123456789}
+
+RANSACRegressor
+    .. code-block:: python
+
+       {'loss': 'squared_loss', 'random_state': 123456789}
+
+Ridge and RidgeClassifier
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+SVC and SVR
+    .. code-block:: python
+
            {'cache_size': 1000, 'gamma': 'scale'}
-    
-    SGDClassifier
-        .. code-block:: python
-    
+
+SGDClassifier
+    .. code-block:: python
+
            {'loss': 'log', 'max_iter': 1000, random_state': 123456789, 'tol': 1e-3}
 
-    SGDRegressor
-        .. code-block:: python
-    
+SGDRegressor
+    .. code-block:: python
+
            {'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
-    
-    TheilSenRegressor
-        .. code-block:: python
-    
-           {'random_state': 123456789}
 
-    .. _imbalanced_data:
+TheilSenRegressor
+    .. code-block:: python
 
-    .. note::
+       {'random_state': 123456789}
+
+.. _imbalanced_data:
+
+.. note::
 
         The `fixed_parameters` field offers us a way to deal with imbalanced
         data sets by using the parameter ``class_weight`` for the following 
@@ -667,22 +667,22 @@ The default fixed parameters (beyond those that scikit-learn sets) are:
         ``LinearSVC``, ``RandomForestClassifier``, ``RidgeClassifier``, 
         ``SGDClassifier``, and ``SVC``.
 
-        Two possible options are available. The first one is ``balanced``,
-        which automatically adjust weights inversely proportional to class
-        frequencies, as shown in the following code:
+    Two possible options are available. The first one is ``balanced``, which
+    automatically adjusts weights inversely proportional to class
+    frequencies, as shown in the following code:
 
-        .. code-block:: python
+    .. code-block:: python
 
-           {'class_weight': 'balanced'}
+       {'class_weight': 'balanced'}
 
-        The second option allows you to assign a specific weight per each
-        class. The default weight per class is 1. For example:
+    The second option allows you to assign a specific weight per each
+    class. The default weight per class is 1. For example:
 
-        .. code-block:: python
+    .. code-block:: python
 
-           {'class_weight': {1: 10}}
+       {'class_weight': {1: 10}}
 
-        Additional examples and information can be seen `here <https://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_samples.html>`__.
+    Additional examples and information can be seen `here <https://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_samples.html>`__.
 
 .. _hasher_features:
 
@@ -736,8 +736,8 @@ learning_curve_cv_folds_list *(Optional)*
 
 List of integers specifying the number of folds to use for cross-validation
 at each point of the learning curve (training size), one per learner. For
-example, if you specify the following learners: ``["SVC", "LogisticRegression"]``,
-specifying ``[10, 100]`` as the value of ``learning_curve_cv_folds_list`` will
+example, specifying ``["SVC", "LogisticRegression"]`` for ``learners``
+and  specifying ``[10, 100]`` for ``learning_curve_cv_folds_list`` will
 tell SKLL to use 10 cross-validation folds at each point of the SVC curve and
 100 cross-validation folds at each point of the logistic regression curve. Although
 more folds will generally yield more reliable results, smaller number of folds
@@ -755,7 +755,7 @@ respectively. If the type is float, it is regarded as a fraction of
 the maximum size of the training set (that is determined by the selected
 validation method), i.e. it has to be within (0, 1]. Otherwise it is
 interpreted as absolute sizes of the training sets. Note that for classification
-the number of samples usually have to be big enough to contain at least
+the number of samples usually has to be big enough to contain at least
 one sample from each class. Defaults to ``[0.1, 0.325, 0.55, 0.775, 1.0]``.
 
 .. _num_cv_folds:
@@ -958,7 +958,7 @@ grid_search *(Optional)*
 """"""""""""""""""""""""
 
 Whether or not to perform grid search to find optimal parameters for
-classifier. Defaults to ``True`` since optimizing model hyperparameters
+the learner. Defaults to ``True`` since optimizing model hyperparameters
 almost always leads to better performance. Note that for the
 :ref:`learning_curve <learning_curve>` task, grid search is not allowed
 and setting it to ``True`` will generate a warning and be ignored.
@@ -967,8 +967,8 @@ and setting it to ``True`` will generate a warning and be ignored.
 
     1. In versions of SKLL before v2.0, this option was set to
        ``False`` by default but that was changed since the benefits
-       of hyperparameter tuning significantly outweight the cost
-       in terms of model fitting time. Instead, SKLL must explicly
+       of hyperparameter tuning significantly outweigh the cost
+       in terms of model fitting time. Instead, SKLL users must explicitly
        opt out of hyperparameter tuning if they so desire.
 
     2. Although SKLL only uses the combination of hyperparameters in
@@ -980,6 +980,7 @@ and setting it to ``True`` will generate a warning and be ignored.
 .. _grid_search_folds:
 
 grid_search_folds *(Optional)*
+    
 """"""""""""""""""""""""""""""
 
 The number of folds to use for grid search. Defaults to 3.
@@ -1012,106 +1013,106 @@ the default parameter grid for that learner will be searched.
 
 The default parameter grids for each learner are:
 
-    AdaBoostClassifier and AdaBoostRegressor
-        .. code-block:: python
-    
-            [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-    
-    BayesianRidge
-        .. code-block:: python
-    
-            [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
-              'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
-              'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
-              'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}]
-    
-    DecisionTreeClassifier and DecisionTreeRegressor
-        .. code-block:: python
-    
-           [{'max_features': ["auto", None]}]
-    
-    ElasticNet
-        .. code-block:: python
-    
-           [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-    
-    GradientBoostingClassifier and GradientBoostingRegressor
-        .. code-block:: python
-    
-           [{'max_depth': [1, 3, 5]}]
-    
-    HuberRegressor
-        .. code-block:: python
-    
-            [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
-              'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}]
-    
-    KNeighborsClassifier and KNeighborsRegressor
-        .. code-block:: python
-    
-            [{'n_neighbors': [1, 5, 10, 100],
-              'weights': ['uniform', 'distance']}]
-    
-    Lasso
-        .. code-block:: python
-    
-           [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-    
-    LinearSVC
-        .. code-block:: python
-    
-           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-    
-    LogisticRegression
-        .. code-block:: python
-    
-           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-    
-    MLPClassifier and MLPRegressor:
-        .. code-block:: python
-    
-           [{'activation': ['logistic', 'tanh', 'relu'],
-             'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
-             'learning_rate_init': [0.001, 0.01, 0.1]}],
-    
-    MultinomialNB
-        .. code-block:: python
-    
-           [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
-    
-    RandomForestClassifier and RandomForestRegressor
-        .. code-block:: python
-    
-           [{'max_depth': [1, 5, 10, None]}]
-    
-    Ridge and RidgeClassifier
-        .. code-block:: python
-    
-           [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
-    
-    SGDClassifier and SGDRegressor
-        .. code-block:: python
-    
-            [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
-              'penalty': ['l1', 'l2', 'elasticnet']}]
-    
-    SVC
-        .. code-block:: python
-    
-           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-             'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]
-    
-    SVR
-        .. code-block:: python
-    
-           [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+AdaBoostClassifier and AdaBoostRegressor
+    .. code-block:: python
 
-    .. note::
-           Note that learners not listed here do not have any default
-           parameter grids in SKLL either because either there are no
-           hyper-parameters to tune or decisions about which parameters
-           to tune (and how) depend on the data being used for the
-           experiment and are best left up to the user.
+        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+BayesianRidge
+    .. code-block:: python
+
+        [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
+          'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
+          'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
+          'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}]
+
+DecisionTreeClassifier and DecisionTreeRegressor
+    .. code-block:: python
+
+       [{'max_features': ["auto", None]}]
+
+ElasticNet
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+GradientBoostingClassifier and GradientBoostingRegressor
+    .. code-block:: python
+
+       [{'max_depth': [1, 3, 5]}]
+
+HuberRegressor
+    .. code-block:: python
+
+        [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
+          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}]
+
+KNeighborsClassifier and KNeighborsRegressor
+    .. code-block:: python
+
+        [{'n_neighbors': [1, 5, 10, 100],
+          'weights': ['uniform', 'distance']}]
+
+Lasso
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+LinearSVC
+    .. code-block:: python
+
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+LogisticRegression
+    .. code-block:: python
+
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+MLPClassifier and MLPRegressor:
+    .. code-block:: python
+
+       [{'activation': ['logistic', 'tanh', 'relu'],
+         'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+         'learning_rate_init': [0.001, 0.01, 0.1]}],
+
+MultinomialNB
+    .. code-block:: python
+
+       [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
+
+RandomForestClassifier and RandomForestRegressor
+    .. code-block:: python
+
+       [{'max_depth': [1, 5, 10, None]}]
+
+Ridge and RidgeClassifier
+    .. code-block:: python
+
+       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+SGDClassifier and SGDRegressor
+    .. code-block:: python
+
+        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+          'penalty': ['l1', 'l2', 'elasticnet']}]
+
+SVC
+    .. code-block:: python
+
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+         'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+SVR
+    .. code-block:: python
+
+       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+
+.. note::
+    Note that learners not listed here do not have any default
+    parameter grids in SKLL either because there are no
+    hyper-parameters to tune or decisions about which parameters
+    to tune (and how) depend on the data being used for the
+    experiment and are best left up to the user.
 
 
 .. _pos_label_str:
@@ -1401,13 +1402,13 @@ For most of the SKLL tasks the various output files generated by :ref:`run_exper
 ``<EXPERIMENT>_<FEATURESET>_<LEARNER>_<OBJECTIVE>``, where the following definitions hold:
 
     ``<EXPERIMENT>``
-        The value of the as :ref:`experiment_name` field in the configuration file.
+        The value of the :ref:`experiment_name` field in the configuration file.
 
     ``<FEATURESET>``
         The components of the feature set that was used for training, joined with "+".
 
     ``<LEARNER>``
-        The learner that was used to generate the current current results/model/etc. 
+        The learner that was used to generate the current results/model/etc. 
 
     ``<OBJECTIVE>``
         The objective function that was used to generate the current results/model/etc.
@@ -1418,7 +1419,7 @@ For most of the SKLL tasks the various output files generated by :ref:`run_exper
     and objectives specified in the configuration file is called a ``job``.
     Therefore, an experiment (represented by a configuration file) can  
     contain multiple jobs.
-    
+
     However, if the :ref:`objectives <objectives>` field in the configuration file
     contains only a single value, the job can be disambiguated using only
     the featuresets and the learners since the objective is fixed. Therefore,
@@ -1502,7 +1503,7 @@ and the other containing the prediction. The headers for the two columns
 in this case are "id" and "prediction".
 
 When the predictions are class probabilities, there are N+1 columns
-in these files, where N are the number of classes in the training
+in these files, where N is the number of classes in the training
 data. The header for the column containing IDs is still "id" and the
 labels themselves are the headers for the columns containing their
 respective probabilities. In the special case of binary classification,
@@ -1536,8 +1537,7 @@ a file called ``<EXPERIMENT>_skll_fold_ids.csv`` is saved to disk.
 Learning curve plots
 ^^^^^^^^^^^^^^^^^^^^
 
-If `seaborn <http://seaborn.pydata.org>`__ is available when running
-a :ref:`learning_curve <learning_curve>` experiment,
+When running a :ref:`learning_curve <learning_curve>` experiment,
 actual learning curves are also generated as PNG files - one for each feature set
 specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURESET.png``
 and contains a faceted learning curve plot for the featureset with objective
@@ -1545,10 +1545,9 @@ functions on rows and learners on columns. Here's an example of such a plot.
 
     .. image:: learning_curve.png
 
-If you didn't have seaborn available when running the learning curve
-experiment, you can always generate the plots later from the :ref:`summary
-file <output_summary_file>` using the 
-:ref:`plot_learning_curves <plot_learning_curves>` utility script.
+You can also generate the plots from the learning curve summary
+file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
+
 
 .. rubric:: Footnotes
 

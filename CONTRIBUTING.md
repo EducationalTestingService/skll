@@ -17,7 +17,7 @@ How to contribute
           $ git clone git@github.com:YourLogin/skll.git
           $ cd skll
 
-3. Create an isolated environment for SKLL development. We recommend using the [conda](https://conda.io/en/latest/) package manager. TO create a `conda` environment, run the following command in the root of the working directory:
+3. Create an isolated environment for SKLL development. We recommend using the [conda](https://conda.io/en/latest/) package manager. To create a `conda` environment, run the following command in the root of the working directory:
 
          $ conda create -n sklldev -c conda-forge --file conda_requirements.txt
 
@@ -41,7 +41,7 @@ How to contribute
 
          $ nosetests
 
-8. After making sure all tests pass, you are ready push your branch/fork to GitHub with:
+8. After making sure all tests pass, you are ready to push your branch/fork to GitHub with:
 
           $ git push feature/my-new-addition
 
@@ -66,7 +66,7 @@ following rules before submitting a pull request:
    trying to address. This is easily done by just typing `#` and then picking the issue from the dropdown. If the issue is not visible in the first set of results, type a few characters from the issue title and the dropdown should update.
 
 -  Address any PEP8 issues pointed out by the `pep8speaks` bot that comments on
-   your PR after you submit it. The *same* comment will update after you make make any further commits so refer to it after every commit. You may want to install a linter in your development environment so that you fix any PEP8 issues while you write your code. We generally ignore E501 messages about lines longer than 100 character can be ignored. 
+   your PR after you submit it. The *same* comment will update after you make make any further commits so refer to it after every commit. You may want to install a linter in your development environment so that you can fix any PEP8 issues while you write your code. We generally ignore E501 messages about lines longer than 100 characters. 
 
 - You may need to add new tests if the code coverage after merging your branch 
   will be lower than the current `master`. This will be reported by the `codecov` bot once you submit your PR.

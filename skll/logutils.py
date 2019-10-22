@@ -13,7 +13,7 @@ import re
 import warnings
 
 orig_showwarning = warnings.showwarning
-SKLEARN_WARNINGS_RE = re.compile(r"{0}sklearn{0}".format(sep))
+SKLEARN_WARNINGS_RE = re.compile(re.escape("{0}sklearn{0}".format(sep)))
 
 
 def send_sklearn_warnings_to_logger(logger, message, category, filename,
