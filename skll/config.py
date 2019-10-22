@@ -607,7 +607,11 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                                                     "sampler_parameters"))
     fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
     param_grid_list = yaml.safe_load(_fix_json(config.get("Tuning", "param_grids")))
+
+    # read and normalize the value of `pos_label_str`
     pos_label_str = safe_float(config.get("Tuning", "pos_label_str"))
+    if pos_label_str == '':
+        pos_label_str = None
 
     # ensure that feature_scaling is specified only as one of the
     # four available choices
