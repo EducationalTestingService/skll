@@ -30,4 +30,4 @@ install:
 
 test_script:
   - "set TESTDIR=C:\\projects\\skll\\tests"
-  - nosetests --nologcapture c:\skll\tests
+  - nosetests --nologcapture C:\projects\skll\tests
