@@ -21,20 +21,20 @@ This document is only meant for the project administrators, not users and develo
 
     conda build -c defaults -c conda-forge --numpy=1.17 skll
 
-5. Upload the packages to anaconda.org using ``anaconda upload <package tarball>``.
+4. Upload the package to anaconda.org using ``anaconda upload <package tarball>``.
 
-6. Upload source package to PyPI using ``python setup.py sdist upload``.
+5. Upload source package to PyPI using ``python setup.py sdist upload``.
 
-7. Draft a release on GitHub.
+6. Draft a release on GitHub.
 
-8. Make a pull request with the release branch to be merged into ``master`` and request code review.
+7. Make a pull request with the release branch to be merged into ``master`` and request code review.
 
-9. Once the build for the PR passes and the reviewers approve, merge the release branch into ``master``.
+8. Once the build for the PR passes and the reviewers approve, merge the release branch into ``master``.
 
-10. Make sure that the RTFD build for ``master`` passes.
+9. Make sure that the RTFD build for ``master`` passes.
 
-11. Tag the latest commit in ``master`` with the appropriate release tag and publish the release on GitHub.
+10. Tag the latest commit in ``master`` with the appropriate release tag and publish the release on GitHub.
 
-12. Send an email around at ETS announcing the release and the changes.
+11. Send an email around at ETS announcing the release and the changes.
 
-13. Post release announcement on Twitter/LinkedIn.
+12. Post release announcement on Twitter/LinkedIn.
