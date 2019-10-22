@@ -21,7 +21,7 @@ This document is only meant for the project administrators, not users and develo
 
     conda build -c defaults -c conda-forge --numpy=1.17 skll
 
-4. Upload the package to anaconda.org using ``anaconda upload <package tarball>``.
+4. Upload the package to anaconda.org using ``anaconda upload --user ets <package tarball>``.
 
 5. Upload source package to PyPI using ``python setup.py sdist upload``.
 
