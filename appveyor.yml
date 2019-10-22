@@ -24,12 +24,11 @@ install:
   - conda info -a
   - "conda install --yes -c conda-forge python=%PYTHON_VERSION% codecov --file conda_requirements.txt"
   - conda init cmd.exe
-  - pip install nose-cov
-  - git clone https://github.com/EducationalTestingService/rsmtool.git c:\skllcode
-  - chdir c:\skllcode
+  - pip install nose
+  - chdir C:\projects\skll
   - pip install -e .
 
 test_script:
   - conda activate skllenv
-  - "set TESTDIR=C:\\skllcode\\tests"
-  - nosetests --nologcapture c:\skllcode\tests
+  - "set TESTDIR=C:\\projects\\skll\\tests"
+  - nosetests --nologcapture c:\skll\tests
