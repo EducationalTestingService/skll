@@ -84,4 +84,6 @@ test:
 
 about:
   home: http://github.com/EducationalTestingService/skll
-  license: BSD 3-clause
+  license: BSD
+  license_file: LICENSE.txt
+  summary: SciKit-Learn Laboratory makes it easier to run machine learning experiments with scikit-learn.
