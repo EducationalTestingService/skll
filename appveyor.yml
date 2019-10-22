@@ -26,7 +26,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - "conda install --yes -c conda-forge python=%PYTHON_VERSION% codecov --file conda_requirements.txt"
+  - "conda install --yes -c conda-forge python=%PYTHON_VERSION% --file conda_requirements.txt"
   - conda init cmd.exe
   - pip install nose
   - chdir C:\projects\skll
