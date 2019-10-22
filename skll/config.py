@@ -23,6 +23,7 @@ import ruamel.yaml as yaml
 from sklearn.metrics import SCORERS
 
 from skll import get_skll_logger
+from skll.data.readers import safe_float
 from skll.metrics import _PROBABILISTIC_METRICS
 
 _VALID_TASKS = frozenset(['cross_validate',
@@ -606,7 +607,11 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                                                     "sampler_parameters"))
     fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
     param_grid_list = yaml.safe_load(_fix_json(config.get("Tuning", "param_grids")))
-    pos_label_str = config.get("Tuning", "pos_label_str")
+
+    # read and normalize the value of `pos_label_str`
+    pos_label_str = safe_float(config.get("Tuning", "pos_label_str"))
+    if pos_label_str == '':
+        pos_label_str = None
 
     # ensure that feature_scaling is specified only as one of the
     # four available choices
@@ -837,20 +842,6 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         if len(output_metrics) == 0:
             raise ValueError('The "metrics" option must be set when '
                              'the task is "learning_curve".')
-    elif task in ['evaluate', 'cross_validate']:
-        # for other appropriate tasks, if metrics and objectives have
-        # some overlaps - we will assume that the user meant to
-        # use the metric for tuning _and_ evaluation, not just evaluation
-        if (len(grid_objectives) > 0 and
-                len(output_metrics) > 0):
-            common_metrics_and_objectives = set(grid_objectives).intersection(output_metrics)
-            if common_metrics_and_objectives:
-                logger.warning('The following are specified both as '
-                               'objective functions and evaluation metrics: {}. '
-                               'They will be used as the '
-                               'former.'.format(common_metrics_and_objectives))
-                output_metrics = [metric for metric in output_metrics
-                                  if metric not in common_metrics_and_objectives]
 
     # if any of the objectives or metrics require probabilities to be output,
     # probability must be specified as true

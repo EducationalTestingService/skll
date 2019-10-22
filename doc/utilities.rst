@@ -121,7 +121,15 @@ generate_predictions
 
 Loads a trained model and outputs predictions based on input feature files.
 Useful if you want to reuse a trained model as part of a larger system without
-creating configuration files.
+creating configuration files. Offers the following modes of operation:
+
+- For non-probabilistic classification and regression, generate the predictions.
+- For probabilistic classification, generate either the most likely labels 
+  or the probabilities for each class label.
+- For binary probablistic classification, generate the positive class label
+  only if its probability exceeds the given threshold. The positive class
+  label is either read from the model file or inferred the same way as 
+  a SKLL learner would.
 
 Positional Arguments
 ^^^^^^^^^^^^^^^^^^^^
@@ -136,11 +144,6 @@ Positional Arguments
 
 Optional Arguments
 ^^^^^^^^^^^^^^^^^^
-.. option:: -a, --all_probabilities
-
-    Flag indicating whether to output the probabilities of all labels instead of just
-    the probability of the positive label.
-
 .. option:: -i <id_col>, --id_col <id_col>
 
     Name of the column which contains the instance IDs in ARFF, CSV, or TSV files.
@@ -152,13 +155,16 @@ Optional Arguments
     For ARFF files, this must be the final column to count as the label. 
     (default: ``y``)
 
-.. option:: -p <positive_label>, --positive_label <positive_label>
-
-    If the model is only being used to predict the probability of a particular
-    label, this specifies the index of the label we're predicting. 1 = second
-    label, which is default for binary classification. Keep in mind that labels
-    are sorted lexicographically. 
-    (default: 1)
+.. option:: -o <path>, --output_file <path>
+    
+    Path to output TSV file. If not specified, predictions will be printed
+    to stdout. For probabilistic binary classification, the probability of
+    the positive class will always be in the last column.
+    
+.. option:: -p, --predict_labels
+    
+    If the model does probabilistic classification, output the class label
+    with the highest probability instead of the class probabilities.
 
 .. option:: -q, --quiet
 
@@ -166,8 +172,9 @@ Optional Arguments
 
 .. option:: -t <threshold>, --threshold <threshold>
 
-    If the model we're using is generating probabilities of the positive label,
-    return 1 if it meets/exceeds the given threshold and 0 otherwise.
+    If the model does binary probabilistic classification, 
+    return the positive class label only if it meets/exceeds
+    the given threshold and the other class label otherwise.
 
 .. option:: --version
 
@@ -240,7 +247,10 @@ print_model_weights
 -------------------
 .. program:: print_model_weights
 
-Prints out the weights of a given trained model.
+Prints out the weights of a given trained model. If the model
+was trained using :ref:`feature hashing <feature_hasher>`, 
+feature names of the form ``hashed_feature_XX`` will be used
+since the original feature names no longer apply.
 
 Positional Arguments
 ^^^^^^^^^^^^^^^^^^^^
@@ -256,9 +266,14 @@ Optional Arguments
 
     Number of top features to print (0 for all) (default: 50)
 
-.. option:: sign {positive,negative,all}
+.. option:: --sign {positive,negative,all}
 
     Show only positive, only negative, or all weights (default: ``all``)
+
+.. option:: --sort_by_labels
+
+    Order the features by classes (default: ``False``). Mutually exclusive
+    with the ``--k`` option.
 
 .. option:: --version
 
@@ -308,6 +323,10 @@ Optional Arguments
 .. option:: --arff_relation ARFF_RELATION
 
     Relation name to use for ARFF file. (default: ``skll_relation``)
+
+.. option:: --no_labels
+
+    Used to indicate that the input data has no labels.
 
 .. option:: --reuse_libsvm_map REUSE_LIBSVM_MAP
 

@@ -1,6 +1,6 @@
 New BSD License
 
-Copyright (c) 2012–2015 Educational Testing Service
+Copyright (c) 2012–2019 Educational Testing Service
 All rights reserved.
 
 

@@ -57,8 +57,7 @@ like:
   train_directory = train
   test_directory = dev
   # Can specify multiple sets of feature files that are merged together automatically
-  # (even across formats)
-  featuresets = [["family.ndj", "misc.csv", "socioeconomic.arff", "vitals.csv"]]
+  featuresets = [["family.csv", "misc.csv", "socioeconomic.csv", "vitals.csv"]]
   # List of scikit-learn learners to use
   learners = ["RandomForestClassifier", "DecisionTreeClassifier", "SVC", "MultinomialNB"]
   # Column in CSV containing labels to predict
@@ -75,10 +74,11 @@ like:
   [Output]
   # Also compute the area under the ROC curve as an additional metric
   metrics = ['roc_auc']
-  # The following can/should be absolute paths
+  # The following can also be absolute paths
   log = output
   results = output
   predictions = output
+  probability = true
   models = output
 
 
@@ -129,15 +129,15 @@ Requirements
 ~~~~~~~~~~~~
 
 -  Python 3.6+
--  `scikit-learn <http://scikit-learn.org/stable/>`__
--  `tabulate <https://pypi.org/project/tabulate/>`__
--  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
--  `pandas <http://pandas.pydata.org>`__
--  `Grid Map <https://pypi.org/project/gridmap/>`__ (only required if you plan
+-  `beautifulsoup4 <http://www.crummy.com/software/BeautifulSoup/>`__
+-  `gridmap <https://pypi.org/project/gridmap/>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
 -  `joblib <https://pypi.org/project/joblib/>`__
+-  `pandas <http://pandas.pydata.org>`__
 -  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
+-  `scikit-learn <http://scikit-learn.org/stable/>`__
 -  `seaborn <http://seaborn.pydata.org>`__
+-  `tabulate <https://pypi.org/project/tabulate/>`__
 
 Talks
 ~~~~~

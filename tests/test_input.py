@@ -1204,70 +1204,6 @@ def test_config_parsing_automatic_output_directory_creation():
     ok_(exists(new_predictions_path))
 
 
-def check_config_parsing_metrics_and_objectives_overlap(task,
-                                                        metrics,
-                                                        objectives):
-
-    test_dir = join('..', 'test')
-    train_dir = join('..', 'train')
-    output_dir = join(_my_dir, 'output')
-
-    # make a simple config file
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': task,
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'metrics': str(metrics)}
-
-    if task == 'evaluate':
-        values_to_fill_dict['test_directory'] = test_dir
-
-    if objectives:
-        values_to_fill_dict['objectives'] = str(objectives)
-    else:
-        values_to_fill_dict['grid_search'] = 'false'
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_parsing.template.cfg')
-
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'metrics_and_objectives_overlap')
-
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, parsed_objectives, probability, pipeline,
-     results_path, pos_label_str, feature_scaling, min_feature_count,
-     folds_file, grid_search_jobs, grid_search_folds, cv_folds,
-     save_cv_folds, save_cv_models, use_folds_file_for_grid_search,
-     do_stratified_folds, fixed_parameter_list, param_grid_list,
-     featureset_names, learners, prediction_dir, log_path, train_path,
-     test_path, ids_to_floats, class_map, custom_learner_path,
-     learning_curve_cv_folds_list, learning_curve_train_sizes,
-     parsed_metrics) = _parse_config_file(config_path)
-
-    if not objectives:
-        objectives = []
-    common_metrics = set(objectives).intersection(metrics)
-    pruned_metrics = [metric for metric in metrics if metric not in common_metrics]
-    eq_(parsed_objectives, objectives)
-    eq_(parsed_metrics, pruned_metrics)
-
-
-def test_config_parsing_metrics_and_objectives_overlap():
-
-    for task, metrics, objectives in product(["evaluate", "cross_validate"],
-                                             [["f1_score_micro", "unweighted_kappa"],
-                                              ["accuracy", "unweighted_kappa"]],
-                                             [[], ["accuracy"]]):
-        yield (check_config_parsing_metrics_and_objectives_overlap,
-               task, metrics, objectives)
-
-
 def test_cv_folds_and_grid_search_folds():
 
     # we want to test all possible combinations of the following variables:
@@ -1744,6 +1680,7 @@ def test_setting_learning_curve_options():
     eq_(learning_curve_cv_folds_list, [100, 10])
     eq_(learning_curve_train_sizes, [10, 50, 100, 200, 500])
 
+
 @raises(ValueError)
 def test_learning_curve_metrics_and_objectives_throw_error():
 
@@ -1888,7 +1825,6 @@ def test_learning_curve_pipeline_option():
     eq_(pipeline, True)
 
 
-
 def test_learning_curve_no_metrics():
 
     train_dir = join(_my_dir, 'train')
@@ -1932,7 +1868,6 @@ def test_learning_curve_no_metrics_and_no_objectives():
                                          'learning_curve_no_metrics_and_no_objectives')
 
     yield check_config_parsing_value_error, config_path
-
 
 
 def test_learning_curve_bad_folds_specifications():
@@ -2081,3 +2016,44 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
                        'parameter values will take precedence.')
         matches = re.findall(warning_pattern, f.read())
         assert_equal(len(matches), 1)
+
+
+def test_config_parsing_default_pos_label_str_value():
+    """
+    Check that the default value of `pos_label_str` gets set to `None`
+    """
+
+    train_dir = join('..', 'train')
+    test_dir = join('..', 'test')
+    output_dir = join(_my_dir, 'output')
+
+    values_to_fill_dict = {'experiment_name': 'config_parsing',
+                           'task': 'evaluate',
+                           'train_directory': train_dir,
+                           'test_directory': test_dir,
+                           'featuresets': "[['f1', 'f2', 'f3']]",
+                           'learners': "['LogisticRegression']",
+                           'objectives': "['accuracy']",
+                           'log': output_dir,
+                           'results': output_dir}
+
+    config_template_path = join(_my_dir, 'configs',
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_value_pos_label_str')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
+
+    eq_(pos_label_str, None)
