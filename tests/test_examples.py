@@ -112,9 +112,9 @@ def tearDown():
     """
     Clean up after tests, remove all directories we created.
     """
-    # rmtree(_new_titanic_dir)
-    # rmtree(_new_boston_dir)
-    # rmtree(_new_iris_dir)
+    rmtree(_new_titanic_dir)
+    rmtree(_new_boston_dir)
+    rmtree(_new_iris_dir)
 
 
 def test_titanic_configs():

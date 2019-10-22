@@ -272,7 +272,7 @@ Optional Arguments
 
 .. option:: --sort_by_labels
 
-    Oorder the features by classes (default: ``False``). Mutually exclusive
+    Order the features by classes (default: ``False``). Mutually exclusive
     with the ``--k`` option.
 
 .. option:: --version

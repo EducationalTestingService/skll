@@ -57,7 +57,6 @@ like:
   train_directory = train
   test_directory = dev
   # Can specify multiple sets of feature files that are merged together automatically
-  # (each file can also be in a different format!)
   featuresets = [["family.csv", "misc.csv", "socioeconomic.csv", "vitals.csv"]]
   # List of scikit-learn learners to use
   learners = ["RandomForestClassifier", "DecisionTreeClassifier", "SVC", "MultinomialNB"]
