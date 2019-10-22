@@ -1715,7 +1715,7 @@ def check_metrics_and_objectives_overlap(task, metrics, objectives):
     results_json_paths = run_configuration(config_path, local=True, quiet=True)
 
     # make a dummy objective if we do not have any for the
-    # purposes if iteration
+    # purposes of iteration
     if not objectives:
         objectives = [None]
 
