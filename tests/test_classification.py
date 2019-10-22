@@ -104,6 +104,9 @@ def tearDown():
     for output_file in glob(join(output_dir, 'clf_metrics_objective_overlap*')):
         os.unlink(output_file)
 
+    for output_file in glob(join(output_dir, 'test_multinomialnb_loading*')):
+        os.unlink(output_file)
+
     config_files = [join(config_dir,
                          cfgname) for cfgname in ['test_single_file.cfg',
                                                   'test_single_file_saved_subset.cfg']]
@@ -1739,3 +1742,24 @@ def test_metrics_and_objectives_overlap():
                                              [["f1_score_weighted", "unweighted_kappa", "accuracy"]],
                                              [[], ["accuracy"], ["accuracy", "unweighted_kappa"]]):
         yield (check_metrics_and_objectives_overlap, task, metrics, objectives)
+
+
+def test_multinomialnb_loading():
+    """
+    Make sure we can load MultnomialNB models from disk
+    """
+
+    output_dir = join(_my_dir, 'output')
+
+    learner = Learner('MultinomialNB')
+    train_fs, test_fs = make_classification_data(num_examples=100, non_negative=True)
+    learner.train(train_fs, grid_search=False)
+    model_file = join(output_dir, 'test_multinomialnb_loading.model')
+    learner.save(model_file)
+    predictions1 = learner.predict(test_fs)
+    del learner
+
+    learner2 = Learner.from_file(model_file)
+    predictions2 = learner2.predict(test_fs)
+
+    assert_array_equal(predictions1, predictions2)
