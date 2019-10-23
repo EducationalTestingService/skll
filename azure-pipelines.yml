@@ -10,9 +10,6 @@ jobs:
     vmImage: 'windows-latest'
   strategy:
     parallel: 5
-    matrix:
-      Python37:
-        python.version: '3.7'
 
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
