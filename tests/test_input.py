@@ -11,9 +11,12 @@ Tests for SKLL inputs, mainly configuration files.
 import os
 import re
 import tempfile
+
 from glob import glob
 from itertools import product
 from os.path import abspath, dirname, exists, join, normpath
+from shutil import rmtree
+
 import numpy as np
 
 from nose.tools import eq_, ok_, raises
@@ -24,6 +27,8 @@ from skll.config import (_parse_config_file,
                          _locate_file)
 from skll.data.readers import safe_float
 from skll.experiments import _load_featureset
+from skll.logutils import (close_and_remove_logger_handlers,
+                           get_skll_logger)
 
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_options)
@@ -55,12 +60,17 @@ def tearDown():
     Clean up after tests.
     """
     config_dir = join(_my_dir, 'configs')
+    output_dir = join(_my_dir, 'output')
+
     for config_file in glob(join(config_dir, 'test_config_parsing_*.cfg')):
         os.unlink(config_file)
-    for auto_dir in glob(join(_my_dir, 'auto*')):
-        for auto_dir_file in os.listdir(auto_dir):
-            os.unlink(join(auto_dir, auto_dir_file))
-        os.rmdir(auto_dir)
+
+    for config_file in glob(join(config_dir, 'test_relative_paths_auto_dir*.cfg')):
+        os.unlink(config_file)
+
+    auto_dirs = glob(join(output_dir, 'auto*'))
+    for auto_dir in auto_dirs:
+        rmtree(auto_dir)
 
 
 def check_safe_float_conversion(converted_val, expected_val):
@@ -1169,10 +1179,11 @@ def test_config_parsing_automatic_output_directory_creation():
 
     # make a simple config file that has new directories that should
     # be automatically created
-    new_log_path = join(_my_dir, 'autolog')
-    new_results_path = join(_my_dir, 'autoresults')
-    new_models_path = join(_my_dir, 'automodels')
-    new_predictions_path = join(_my_dir, 'autopredictions')
+    output_dir = join(_my_dir, 'output')
+    new_log_path = join(output_dir, 'autolog')
+    new_results_path = join(output_dir, 'autoresults')
+    new_models_path = join(output_dir, 'automodels')
+    new_predictions_path = join(output_dir, 'autopredictions')
 
     ok_(not(exists(new_log_path)))
     ok_(not(exists(new_results_path)))
@@ -1202,6 +1213,12 @@ def test_config_parsing_automatic_output_directory_creation():
     ok_(exists(new_results_path))
     ok_(exists(new_models_path))
     ok_(exists(new_predictions_path))
+
+    # we need to close the experiment log file
+    # that would also have been created otherwise
+    # the teardown fixture on Windows will not work
+    logger = get_skll_logger('experiment')
+    close_and_remove_logger_handlers(logger)
 
 
 def test_cv_folds_and_grid_search_folds():
