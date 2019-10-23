@@ -724,7 +724,7 @@ def test_learning_curve_output():
     # make sure that the TSV file is created with the right columns
     output_tsv_path = join(_my_dir, 'output', '{}_summary.tsv'.format(outprefix))
     ok_(exists(output_tsv_path))
-    with open(output_tsv_path, 'r', newline='') as tsvf:
+    with open(output_tsv_path, 'r') as tsvf:
         r = csv.reader(tsvf, dialect=csv.excel_tab)
         header = next(r)
         # make sure we have the expected number of columns
@@ -761,7 +761,7 @@ def test_learning_curve_output_with_objectives():
     # make sure that the TSV file is created with the right columns
     output_tsv_path = join(_my_dir, 'output', '{}_summary.tsv'.format(outprefix))
     ok_(exists(output_tsv_path))
-    with open(output_tsv_path, 'r', newline='') as tsvf:
+    with open(output_tsv_path, 'r') as tsvf:
         r = csv.reader(tsvf, dialect=csv.excel_tab)
         header = next(r)
         # make sure we have the expected number of columns
