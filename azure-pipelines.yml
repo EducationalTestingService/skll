@@ -20,9 +20,9 @@ steps:
   displayName: "Update conda"
 
 - script: |
-    conda create --name sklldev --yes --quiet -c defaults -c conda-forge python=%PYTHON_VERSION% nose --file conda_requirements.txt
+    conda create --name sklldev --yes --quiet -c defaults -c conda-forge python=%PYTHON_VERSION% numpy=1.17 nose --file conda_requirements.txt
     conda init cmd.exe
-    conda activate sklldev
+    CALL conda.bat activate sklldev
     pip install -e .
   displayName: 'Install dependencies & code'
 
