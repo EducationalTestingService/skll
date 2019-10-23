@@ -10,7 +10,7 @@ build:
   noarch: python
   script:
     - cd $SRC_DIR
-    - $PYTHON setup.py install
+    - "{{ PYTHON }} -m pip install . --no-deps -vv"
   entry_points:
     - compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main
     - filter_features = skll.utilities.filter_features:main
@@ -84,6 +84,6 @@ test:
 
 about:
   home: http://github.com/EducationalTestingService/skll
-  license: BSD
+  license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: SciKit-Learn Laboratory makes it easier to run machine learning experiments with scikit-learn.
