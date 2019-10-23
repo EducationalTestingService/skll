@@ -4,7 +4,7 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 pool:
-  vmImage: 'vs2017-win2016'
+  vmImage: 'windows-latest'
 strategy:
   matrix:
     Python37:
