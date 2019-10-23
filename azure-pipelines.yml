@@ -38,7 +38,7 @@ jobs:
   - script: |
       CALL activate sklldev
       echo $(pytestfiles)
-      nosetests --with-xunit $(pytestfiles)
+      MPLBACKEND=Agg nosetests --with-xunit $(pytestfiles)
     displayName: 'Run tests'
     continueOnError: true
 
