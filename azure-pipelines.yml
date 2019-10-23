@@ -41,5 +41,5 @@ jobs:
     displayName: 'Publish Test Results'
     inputs:
       testResultsFiles: 'nosetests.xml'
-      testRunTitle: 'SKLL tests with Python $(python.version)'
+      testRunTitle: 'SKLL tests'
     condition: succeededOrFailed()
