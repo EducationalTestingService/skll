@@ -5,7 +5,7 @@
 
 jobs:
 
-- job: 'ParallelTesting'
+- job: 'SKLL Tests'
   pool:
     vmImage: 'windows-latest'
   strategy:
