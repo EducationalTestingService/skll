@@ -1465,3 +1465,5 @@ def _generate_learning_curve_plots(experiment_name,
                                       frameon=True)
             g.fig.tight_layout(w_pad=1)
             plt.savefig(join(output_dir, '{}_{}.png'.format(experiment_name, fs_name)), dpi=300)
+            # explicitly close figure to save memory
+            plt.close(fig)
