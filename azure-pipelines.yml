@@ -3,30 +3,47 @@
 # Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
-pool:
-  vmImage: 'windows-latest'
-strategy:
-  matrix:
-    Python37:
-      python.version: '3.7'
+jobs:
 
-steps:
-- powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
-  displayName: Add conda to PATH
+- job: 'ParallelTesting'
+  pool:
+    vmImage: 'windows-latest'
+  strategy:
+    parallel: 5
+    matrix:
+      Python37:
+        python.version: '3.7'
 
-- script: |
-    conda update --quiet --yes conda
-    conda info -a
-  displayName: "Update conda"
+  steps:
+    - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+      displayName: Add conda to PATH
 
-- script: |
-    conda create --name sklldev --yes --quiet -c defaults -c conda-forge python=%PYTHON_VERSION% numpy=1.17 nose --file conda_requirements.txt
-    conda init cmd.exe
-    CALL conda.bat activate sklldev
-    pip install -e .
-  displayName: 'Install dependencies & code'
+  - script: |
+      conda update --quiet --yes conda
+      conda info -a
+    displayName: "Update conda"
 
-- script: |
-    conda activate sklldev
-    nosetests
-  displayName: 'Run tests'
+
+  - script: |
+      conda create --name sklldev --yes --quiet -c defaults -c conda-forge python=%PYTHON_VERSION% numpy=1.17 nose --file conda_requirements.txt
+      conda init cmd.exe
+      CALL activate sklldev
+      pip install -e .
+    displayName: 'Install dependencies & code'
+
+  - powershell: ./DistributeTests.ps1 
+    displayName: 'PowerShell Script to distribute tests'
+
+  - script: |
+      CALL activate sklldev
+      echo $(pytestfiles)
+      nosetests --with-xunit $(pytestfiles)
+    displayName: 'Run tests'
+    continueOnError: true
+
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results'
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'SKLL tests with Python $(python.version)'
+    condition: succeededOrFailed()
