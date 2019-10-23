@@ -1,0 +1,25 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+pool:
+  vmImage: 'vs2017-win2016'
+strategy:
+  matrix:
+    Python37:
+      python.version: '3.7'
+
+steps:
+- powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+  displayName: Add conda to PATH
+
+- script: |
+    conda update -q conda
+    conda info -a
+  displayName: "Update conda"
+
+- script: |
+    conda install --yes -c conda-forge python=%PYTHON_VERSION% --file conda_requirements.txt nose
+  displayName: 'Install dependencies'
+
