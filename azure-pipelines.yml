@@ -20,7 +20,6 @@ jobs:
       conda info -a
     displayName: "Update conda"
 
-
   - script: |
       conda create --name sklldev --yes --quiet -c conda-forge -c defaults python=%PYTHON_VERSION% numpy=1.17 nose --file conda_requirements.txt
       conda init cmd.exe
@@ -41,6 +40,6 @@ jobs:
   - task: PublishTestResults@2
     displayName: 'Publish Test Results'
     inputs:
-      testResultsFiles: '**/test-results.xml'
+      testResultsFiles: 'nosetests.xml'
       testRunTitle: 'SKLL tests with Python $(python.version)'
     condition: succeededOrFailed()
