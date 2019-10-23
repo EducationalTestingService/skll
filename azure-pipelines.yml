@@ -15,11 +15,21 @@ steps:
   displayName: Add conda to PATH
 
 - script: |
-    conda update -q conda
+    conda update --quiet --yes conda
     conda info -a
   displayName: "Update conda"
 
 - script: |
-    conda install --yes -c conda-forge python=%PYTHON_VERSION% --file conda_requirements.txt nose
+    conda install --yes -c conda-forge python=%PYTHON_VERSION% nose --file conda_requirements.txt
+    pip install nose
   displayName: 'Install dependencies'
 
+- script: |
+    cd %Build.Repository.LocalPath%
+    pip install -e .
+  displayName: 'Set up SKLL'
+
+- script: |
+    cd %Build.Repository.LocalPath%
+    nosetests
+  displayName: 'Run tests'
