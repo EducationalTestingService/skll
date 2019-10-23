@@ -20,16 +20,12 @@ steps:
   displayName: "Update conda"
 
 - script: |
-    conda install --yes -c conda-forge python=%PYTHON_VERSION% nose --file conda_requirements.txt
-    pip install nose
-  displayName: 'Install dependencies'
-
-- script: |
-    cd %Build.Repository.LocalPath%
+    conda create --name sklldev --yes --quiet -c conda-forge python=%PYTHON_VERSION% nose --file conda_requirements.txt
+    conda activate sklldev
     pip install -e .
-  displayName: 'Set up SKLL'
+  displayName: 'Install dependencies & code'
 
 - script: |
-    cd %Build.Repository.LocalPath%
+    conda activate sklldev
     nosetests
   displayName: 'Run tests'
