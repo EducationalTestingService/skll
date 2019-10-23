@@ -32,13 +32,13 @@ if ($agentNumber -eq 1) {
     $testsToRun = $testsToRun + "tests/test_featureset.py"
     $testsToRun = $testsToRun + "tests/test_utilities.py"
 }
-else if ($agentNumber -eq 2) {
+elseif ($agentNumber -eq 2) {
     $testsToRun = $testsToRun + "tests/test_output.py"
 }
-else if ($agentNumber -eq 3) {
+elseif ($agentNumber -eq 3) {
     $testsToRun = $testsToRun + "tests/test_regression.py"
 }
-else if ($agentNumber -eq 4) {
+elseif ($agentNumber -eq 4) {
     $testsToRun = $testsToRun + "tests/test_input.py"
     $testsToRun = $testsToRun + "tests/test_preprocessing.py"
     $testsToRun = $testsToRun + "tests/test_metrics.py"
@@ -46,7 +46,7 @@ else if ($agentNumber -eq 4) {
     $testsToRun = $testsToRun + "tests/test_logutils.py"
     $testsToRun = $testsToRun + "tests/test_examples.py"
 }
-else if ($agentNumber -eq 4) {
+elseif ($agentNumber -eq 5) {
     $testsToRun = $testsToRun + "tests/test_classification.py"
     $testsToRun = $testsToRun + "tests/test_cv.py"
     $testsToRun = $testsToRun + "tests/test_ablation.py"
