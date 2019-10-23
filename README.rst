@@ -15,8 +15,8 @@ SciKit-Learn Laboratory
 .. image:: https://img.shields.io/pypi/l/skll.svg
    :alt: License
 
-.. image:: https://img.shields.io/conda/v/desilinguist/skll.svg
-   :target: https://anaconda.org/desilinguist/skll
+.. image:: https://img.shields.io/conda/v/ets/skll.svg
+   :target: https://anaconda.org/ets/skll
    :alt: Conda package for SKLL
 
 .. image:: https://img.shields.io/pypi/pyversions/skll.svg
@@ -36,6 +36,25 @@ machine learning experiments with scikit-learn.  One of the primary goals of
 our project is to make it so that you can run scikit-learn experiments without
 actually needing to write any code other than what you used to generate/extract
 the features.
+
+Installation
+~~~~~~~~~~~~
+
+You can install using either ``pip`` or ``conda``. See details `here <https://skll.readthedocs.io/en/latest/getting_started.html>`__.
+
+Requirements
+~~~~~~~~~~~~
+
+-  Python 3.6+
+-  `beautifulsoup4 <http://www.crummy.com/software/BeautifulSoup/>`__
+-  `gridmap <https://pypi.org/project/gridmap/>`__ (only required if you plan
+   to run things in parallel on a DRMAA-compatible cluster)
+-  `joblib <https://pypi.org/project/joblib/>`__
+-  `pandas <http://pandas.pydata.org>`__
+-  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
+-  `scikit-learn <http://scikit-learn.org/stable/>`__
+-  `seaborn <http://seaborn.pydata.org>`__
+-  `tabulate <https://pypi.org/project/tabulate/>`__
 
 Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -81,7 +100,6 @@ like:
   probability = true
   models = output
 
-
 For more information about getting started with ``run_experiment``, please check
 out `our tutorial <https://skll.readthedocs.org/en/latest/tutorial.html>`__, or
 `our config file specs <https://skll.readthedocs.org/en/latest/run_experiment.html>`__.
@@ -124,20 +142,6 @@ A Note on Pronunciation
 
 SciKit-Learn Laboratory (SKLL) is pronounced "skull": that's where the learning
 happens.
-
-Requirements
-~~~~~~~~~~~~
-
--  Python 3.6+
--  `beautifulsoup4 <http://www.crummy.com/software/BeautifulSoup/>`__
--  `gridmap <https://pypi.org/project/gridmap/>`__ (only required if you plan
-   to run things in parallel on a DRMAA-compatible cluster)
--  `joblib <https://pypi.org/project/joblib/>`__
--  `pandas <http://pandas.pydata.org>`__
--  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
--  `scikit-learn <http://scikit-learn.org/stable/>`__
--  `seaborn <http://seaborn.pydata.org>`__
--  `tabulate <https://pypi.org/project/tabulate/>`__
 
 Talks
 ~~~~~

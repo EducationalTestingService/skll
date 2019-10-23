@@ -64,7 +64,7 @@ class NumpyTypeEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):
-        if isinstance(obj, np.int64):
+        if isinstance(obj, (np.int32, np.int64)):
             return int(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
@@ -1287,14 +1287,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         # write out the summary results file
         if (task == 'cross_validate' or task == 'evaluate') and write_summary:
             summary_file_name = experiment_name + '_summary.tsv'
-            with open(join(results_path, summary_file_name), 'w') as output_file:
+            with open(join(results_path,
+                           summary_file_name), 'w', newline='') as output_file:
                 _write_summary_file(result_json_paths,
                                     output_file,
                                     ablation=ablation)
         elif task == 'learning_curve':
             output_file_name = experiment_name + '_summary.tsv'
             output_file_path = join(results_path, output_file_name)
-            with open(output_file_path, 'w') as output_file:
+            with open(output_file_path, 'w', newline='') as output_file:
                 _write_learning_curve_file(result_json_paths, output_file)
 
             # generate the actual plot if we have the requirements installed
@@ -1465,3 +1466,5 @@ def _generate_learning_curve_plots(experiment_name,
                                       frameon=True)
             g.fig.tight_layout(w_pad=1)
             plt.savefig(join(output_dir, '{}_{}.png'.format(experiment_name, fs_name)), dpi=300)
+            # explicitly close figure to save memory
+            plt.close(fig)
