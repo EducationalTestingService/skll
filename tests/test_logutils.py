@@ -66,6 +66,8 @@ def test_get_skll_logger():
         assert log_lines[0].endswith("INFO - {}\n".format(msg1))
         assert log_lines[1].endswith("INFO - {}\n".format(msg2))
 
+    close_and_remove_logger_handlers(logger)
+
 
 def test_get_skll_logger_with_warning():
     reset()
@@ -93,7 +95,7 @@ def test_get_skll_logger_with_warning():
         log_lines = temp_file.readlines()
         assert log_lines[0].endswith("INFO - {}\n".format(msg1))
         sklearn_warning_re = \
-            re.compile(r"WARNING - [^\n]+sklearn/metrics/ranking.py:\d+: "
+            re.compile(r"WARNING - [^\n]+sklearn.metrics.ranking.py:\d+: "
                        r"UndefinedMetricWarning:No negative samples in "
                        r"y_true, false positive value should be "
                        r"meaningless")
@@ -116,6 +118,8 @@ def test_get_skll_logger_with_warning():
             assert "UserWarning:{}".format(msg3) not in log_file.read()
     finally:
         sys.stderr = old_stderr
+
+    close_and_remove_logger_handlers(logger)
 
 
 def test_close_and_remove_logger_handlers():

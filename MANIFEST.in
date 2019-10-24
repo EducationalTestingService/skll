@@ -1,7 +1,6 @@
 include LICENSE.txt
 include *.rst
 include requirements.txt
-include requirements_rtd.txt
-recursive-include doc *
-recursive-include examples *
-recursive-include tests *
+recursive-exclude doc *
+recursive-exclude tests *
+recursive-exclude examples *
