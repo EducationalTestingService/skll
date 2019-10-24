@@ -1331,7 +1331,7 @@ class Learner(object):
         """
         # create the directory if it doesn't exist
         learner_dir = os.path.dirname(learner_path)
-        if not os.path.exists(learner_dir):
+        if learner_dir and not os.path.exists(learner_dir):
             os.makedirs(learner_dir)
         # write out the learner to disk
         joblib.dump((VERSION, self), learner_path)
