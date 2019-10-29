@@ -195,7 +195,7 @@ def test_load_cv_folds():
 
     # write the generated CV folds to a CSV file
     fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
-    with open(fold_file_path, 'w') as foldf:
+    with open(fold_file_path, 'w', newline='') as foldf:
         w = csv.writer(foldf)
         w.writerow(['id', 'fold'])
         for example_id, fold_label in custom_cv_folds.items():
@@ -218,7 +218,7 @@ def test_load_cv_folds_non_float_ids():
 
     # write the generated CV folds to a CSV file
     fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
-    with open(fold_file_path, 'w') as foldf:
+    with open(fold_file_path, 'w', newline='') as foldf:
         w = csv.writer(foldf)
         w.writerow(['id', 'fold'])
         for example_id, fold_label in custom_cv_folds.items():

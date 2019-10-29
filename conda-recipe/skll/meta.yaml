@@ -1,15 +1,16 @@
 package:
   name: skll
-  version: 1.5.3
+  version: 2.0
 
 source:
   path: ../../../skll
 
 build:
   number: 0
+  noarch: python
   script:
     - cd $SRC_DIR
-    - $PYTHON setup.py install
+    - "{{ PYTHON }} -m pip install . --no-deps -vv"
   entry_points:
     - compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main
     - filter_features = skll.utilities.filter_features:main
@@ -41,25 +42,29 @@ build:
 
 requirements:
   build:
-    - python
-    - scikit-learn ==0.20.1
+    - beautifulsoup4
     - joblib >=0.8
+    - numpy
+    - pandas
+    - python >=3.6
+    - ruamel.yaml
+    - scikit-learn ==0.21.3
+    - scipy
+    - seaborn
     - setuptools
     - tabulate
-    - beautifulsoup4
-    - numpy
-    - scipy
-    - ruamel.yaml
 
   run:
-    - python
-    - scikit-learn ==0.20.1
-    - joblib >=0.8
-    - tabulate
     - beautifulsoup4
+    - joblib >=0.8
     - numpy
-    - scipy
+    - pandas
+    - python >=3.6
     - ruamel.yaml
+    - scikit-learn ==0.21.3
+    - seaborn
+    - scipy
+    - tabulate
 
 test:
   # Python imports
@@ -79,4 +84,6 @@ test:
 
 about:
   home: http://github.com/EducationalTestingService/skll
-  license: BSD 3-clause
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: SciKit-Learn Laboratory makes it easier to run machine learning experiments with scikit-learn.

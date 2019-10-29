@@ -76,6 +76,7 @@ from sklearn.utils import shuffle as sk_shuffle
 
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
+from skll.data.readers import safe_float
 from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
                           _CORRELATION_METRICS,
                           _REGRESSION_ONLY_METRICS,
@@ -869,9 +870,13 @@ class Learner(object):
         initializer for the specified model.
         Defaults to ``None``.
     pos_label_str : str, optional
-        The string for the positive label in the binary
-        classification setting.  Otherwise, an arbitrary
-        label is picked.
+        A string denoting the label of the class to be
+        treated as the positive class in a binary classification
+        setting. If ``None``, the class represented by the label
+        that appears second when sorted is chosen as the positive
+        class. For example, if the two labels in data are "A"
+        and "B" and ``pos_label_str`` is not specified, "B" will
+        be chosen as the positive class.
         Defaults to ``None``.
     min_feature_count : int, optional
         The minimum number of examples a feature
@@ -910,7 +915,7 @@ class Learner(object):
         self.scaler = None
         self.label_dict = None
         self.label_list = None
-        self.pos_label_str = pos_label_str
+        self.pos_label_str = safe_float(pos_label_str) if pos_label_str is not None else pos_label_str
         self._model = None
         self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
@@ -1184,7 +1189,8 @@ class Learner(object):
     def model_params(self):
         """
         Model parameters (i.e., weights) for a ``LinearModel`` (e.g., ``Ridge``)
-        regression and liblinear models.
+        regression and liblinear models. If the model was trained using feature
+        hashing, then names of the form `hashed_feature_XX` are used instead.
 
         Returns
         -------
@@ -1415,15 +1421,24 @@ class Learner(object):
         if self.model_type._estimator_type == 'regressor':
             return
 
-        # extract list of unique labels if we are doing classification
+        # extract list of unique labels if we are doing classification;
+        # note that the output of np.unique() is sorted
         self.label_list = np.unique(examples.labels).tolist()
 
-        # if one label is specified as the positive class, make sure it's
-        # last
-        if self.pos_label_str:
-            self.label_list = sorted(self.label_list,
-                                     key=lambda x: (x == self.pos_label_str,
-                                                    x))
+        # for binary classification, if one label is specified as
+        # the positive class, re-sort the label list to make sure
+        # that it is last in the list; for multi-class classification
+        # raise a warning and set it back to None, since it does not
+        # make any sense anyway
+        if self.pos_label_str is not None:
+            if len(self.label_list) != 2:
+                self.logger.warning('Ignoring value of `pos_label_str` for '
+                                    'multi-class classification.')
+                self.pos_label_str = None
+            else:
+                self.label_list = sorted(self.label_list,
+                                         key=lambda x: (x == self.pos_label_str,
+                                                        x))
 
         # Given a list of all labels in the dataset and a list of the
         # unique labels in the set, convert the first list to an array of
@@ -1449,21 +1464,22 @@ class Learner(object):
         self.feat_selector = SelectByMinCount(
             min_count=self._min_feature_count)
 
-        # Create scaler if we weren't passed one and it's necessary
-        if not issubclass(self._model_type, MultinomialNB):
-            if self._feature_scaling != 'none':
-                scale_with_mean = self._feature_scaling in {
-                    'with_mean', 'both'}
-                scale_with_std = self._feature_scaling in {'with_std', 'both'}
-                self.scaler = StandardScaler(copy=True,
-                                             with_mean=scale_with_mean,
-                                             with_std=scale_with_std)
-            else:
-                # Doing this is to prevent any modification of feature values
-                # using a dummy transformation
-                self.scaler = StandardScaler(copy=False,
-                                             with_mean=False,
-                                             with_std=False)
+        # Create a scaler if we weren't passed one and we are asked
+        # to do feature scaling; note that we do not support feature
+        # scaling for `MultinomialNB` learners
+        if (not issubclass(self._model_type, MultinomialNB) and
+                self._feature_scaling != 'none'):
+            scale_with_mean = self._feature_scaling in {'with_mean', 'both'}
+            scale_with_std = self._feature_scaling in {'with_std', 'both'}
+            self.scaler = StandardScaler(copy=True,
+                                         with_mean=scale_with_mean,
+                                         with_std=scale_with_std)
+        else:
+            # Doing this is to prevent any modification of feature values
+            # using a dummy transformation
+            self.scaler = StandardScaler(copy=False,
+                                         with_mean=False,
+                                         with_std=False)
 
     def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective=None,
@@ -1622,8 +1638,7 @@ class Learner(object):
                              'feature values.')
 
         # Scale features if necessary
-        if not issubclass(self._model_type, MultinomialNB):
-            xtrain = self.scaler.fit_transform(xtrain)
+        xtrain = self.scaler.fit_transform(xtrain)
 
         # check whether any feature values are too large
         self._check_max_feature_value(xtrain)
@@ -1886,6 +1901,18 @@ class Learner(object):
                                                   label_type.__name__,
                                                   list(unacceptable_metrics)))
 
+        # if metrics has the objective in it, we will only output
+        # that function once as an objective and not include it
+        # in the list of additional metrics printed out
+        if len(output_metrics) > 0 and grid_objective in output_metrics:
+            self.logger.warning('The grid objective "{}" is also specified '
+                                'as an evaluation metric. Since its value is '
+                                'already included in the results as the '
+                                'objective score, it will not be printed '
+                                'again in the list of metrics.'.format(grid_objective))
+            output_metrics = [metric for metric in output_metrics
+                              if metric != grid_objective]
+
         # make a single list of metrics including the grid objective
         # since it's easier to compute everything together
         metrics_to_compute = [grid_objective] + output_metrics
@@ -1911,10 +1938,11 @@ class Learner(object):
                 #     probabilities via argmax and use those
                 #     for all other metrics
                 if (len(self.label_list) == 2 and
-                    (metric in _CORRELATION_METRICS or
-                     metric in ['average_precision', 'roc_auc'])):
+                        (metric in _CORRELATION_METRICS or
+                         metric in ['average_precision', 'roc_auc']) and
+                        metric != grid_objective):
                     self.logger.info('using probabilities for the positive class to '
-                                     'compute {} for evaluation'.format(metric))
+                                     'compute "{}" for evaluation.'.format(metric))
                     yhat_for_metric = yhat_probs[:, 1]
                 elif metric == 'neg_log_loss':
                     yhat_for_metric = yhat_probs

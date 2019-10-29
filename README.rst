@@ -15,8 +15,8 @@ SciKit-Learn Laboratory
 .. image:: https://img.shields.io/pypi/l/skll.svg
    :alt: License
 
-.. image:: https://img.shields.io/conda/v/desilinguist/skll.svg
-   :target: https://anaconda.org/desilinguist/skll
+.. image:: https://img.shields.io/conda/v/ets/skll.svg
+   :target: https://anaconda.org/ets/skll
    :alt: Conda package for SKLL
 
 .. image:: https://img.shields.io/pypi/pyversions/skll.svg
@@ -36,6 +36,25 @@ machine learning experiments with scikit-learn.  One of the primary goals of
 our project is to make it so that you can run scikit-learn experiments without
 actually needing to write any code other than what you used to generate/extract
 the features.
+
+Installation
+~~~~~~~~~~~~
+
+You can install using either ``pip`` or ``conda``. See details `here <https://skll.readthedocs.io/en/latest/getting_started.html>`__.
+
+Requirements
+~~~~~~~~~~~~
+
+-  Python 3.6+
+-  `beautifulsoup4 <http://www.crummy.com/software/BeautifulSoup/>`__
+-  `gridmap <https://pypi.org/project/gridmap/>`__ (only required if you plan
+   to run things in parallel on a DRMAA-compatible cluster)
+-  `joblib <https://pypi.org/project/joblib/>`__
+-  `pandas <http://pandas.pydata.org>`__
+-  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
+-  `scikit-learn <http://scikit-learn.org/stable/>`__
+-  `seaborn <http://seaborn.pydata.org>`__
+-  `tabulate <https://pypi.org/project/tabulate/>`__
 
 Command-line Interface
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -57,8 +76,7 @@ like:
   train_directory = train
   test_directory = dev
   # Can specify multiple sets of feature files that are merged together automatically
-  # (even across formats)
-  featuresets = [["family.ndj", "misc.csv", "socioeconomic.arff", "vitals.csv"]]
+  featuresets = [["family.csv", "misc.csv", "socioeconomic.csv", "vitals.csv"]]
   # List of scikit-learn learners to use
   learners = ["RandomForestClassifier", "DecisionTreeClassifier", "SVC", "MultinomialNB"]
   # Column in CSV containing labels to predict
@@ -75,12 +93,12 @@ like:
   [Output]
   # Also compute the area under the ROC curve as an additional metric
   metrics = ['roc_auc']
-  # The following can/should be absolute paths
+  # The following can also be absolute paths
   log = output
   results = output
   predictions = output
+  probability = true
   models = output
-
 
 For more information about getting started with ``run_experiment``, please check
 out `our tutorial <https://skll.readthedocs.org/en/latest/tutorial.html>`__, or
@@ -124,20 +142,6 @@ A Note on Pronunciation
 
 SciKit-Learn Laboratory (SKLL) is pronounced "skull": that's where the learning
 happens.
-
-Requirements
-~~~~~~~~~~~~
-
--  Python 3.6+
--  `scikit-learn <http://scikit-learn.org/stable/>`__
--  `tabulate <https://pypi.org/project/tabulate/>`__
--  `BeautifulSoup 4 <http://www.crummy.com/software/BeautifulSoup/>`__
--  `pandas <http://pandas.pydata.org>`__
--  `Grid Map <https://pypi.org/project/gridmap/>`__ (only required if you plan
-   to run things in parallel on a DRMAA-compatible cluster)
--  `joblib <https://pypi.org/project/joblib/>`__
--  `ruamel.yaml <http://yaml.readthedocs.io/en/latest/overview.html>`__
--  `seaborn <http://seaborn.pydata.org>`__
 
 Talks
 ~~~~~
