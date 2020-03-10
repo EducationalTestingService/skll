@@ -966,6 +966,8 @@ class Learner(object):
                          GradientBoostingClassifier, GradientBoostingRegressor,
                          AdaBoostClassifier, AdaBoostRegressor)):
             self._model_kwargs['n_estimators'] = 500
+        elif issubclass(self._model_type, DummyClassifier):
+            self._model_kwargs['strategy'] = 'prior'
         elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['gamma'] = 'scale'
@@ -2411,7 +2413,7 @@ class Learner(object):
                 kfold = StratifiedKFold(n_splits=cv_folds)
                 cv_groups = None
             else:
-                kfold = KFold(n_splits=cv_folds, random_state=random_state)
+                kfold = KFold(n_splits=cv_folds)
                 cv_groups = None
         # Otherwise cv_folds is a dict
         else:
