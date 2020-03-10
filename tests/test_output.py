@@ -26,7 +26,6 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 
-from nose.plugins.skip import SkipTest
 from nose.tools import eq_, ok_, assert_raises
 
 from sklearn.datasets import load_digits
@@ -1085,11 +1084,9 @@ def test_send_warnings_to_log():
     """
     Test that warnings get correctly sent to the logger.
     """
+
     # Run experiment
 
-    if platform.system() == 'Windows':
-        raise SkipTest
-    else:
         suffix = '.jsonlines'
         train_path = join(_my_dir, 'train', 'test_send_warnings{}'.format(suffix))
         config_path = fill_in_config_paths_for_single_file(join(_my_dir,
@@ -1117,5 +1114,4 @@ def test_send_warnings_to_log():
                 re.compile(r"WARNING - [^\n]+sklearn/svm/_base\.py:\d+: "
                            r"ConvergenceWarning:Liblinear failed to converge, "
                            r"increase the number of iterations\.")
-            assert undefined_metric_sklearn_warning_re.search(log_content) is not None
             assert convergence_sklearn_warning_re.search(log_content) is not None
