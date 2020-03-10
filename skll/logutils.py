@@ -63,6 +63,7 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
     # first get the logger instance associated with the
     # given name if one already exists
     logger = logging.getLogger(name)
+    logger.setLevel(log_level)
 
     # if we are given a file path and this existing logger doesn't already
     # have a file handler for this file, then add one.
