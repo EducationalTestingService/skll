@@ -26,6 +26,7 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 
+from nose.plugins.skip import SkipTest
 from nose.tools import eq_, ok_, assert_raises
 
 from sklearn.datasets import load_digits
@@ -1084,29 +1085,37 @@ def test_send_warnings_to_log():
     """
     Test that warnings get correctly sent to the logger.
     """
-
     # Run experiment
 
-    suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'test_send_warnings{}'.format(suffix))
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
-                                                            "configs",
-                                                            "test_send_warnings_to_log"
-                                                            ".template.cfg"),
-                                                       train_path,
-                                                       None)
-    run_configuration(config_path, quiet=True, local=True)
+    if platform.system() == 'Windows':
+        raise SkipTest
+    else:
+        suffix = '.jsonlines'
+        train_path = join(_my_dir, 'train', 'test_send_warnings{}'.format(suffix))
+        config_path = fill_in_config_paths_for_single_file(join(_my_dir,
+                                                                "configs",
+                                                                "test_send_warnings_to_log"
+                                                                ".template.cfg"),
+                                                           train_path,
+                                                           None)
+        run_configuration(config_path, quiet=True, local=True)
 
-    # Check experiment log output
-    # The experiment log file should contain warnings related
-    # to the use of sklearn
-    with open(join(_my_dir,
-                   'output',
-                   'test_send_warnings_to_log_train_test_send_warnings.'
-                   'jsonlines_LinearSVC.log')) as f:
-        log_content = f.read()
-        convergence_sklearn_warning_re = \
-            re.compile(r"WARNING - [^\n]+sklearn/svm/_base\.py:\d+: "
-                       r"ConvergenceWarning:Liblinear failed to converge, "
-                       r"increase the number of iterations\.")
-        assert convergence_sklearn_warning_re.search(log_content) is not None
+        # Check experiment log output
+        # The experiment log file should contain warnings related
+        # to the use of sklearn
+        with open(join(_my_dir,
+                       'output',
+                       'test_send_warnings_to_log_train_test_send_warnings.'
+                       'jsonlines_LinearSVC.log')) as f:
+            log_content = f.read()
+            undefined_metric_sklearn_warning_re = \
+                re.compile(r"WARNING - [^\n]+sklearn/metrics/_classification\.py:\d+:"
+                           r" UndefinedMetricWarning:Precision and F-score are "
+                           r"ill-defined and being set to 0\.0 in labels with no "
+                           r"predicted samples\.")
+            convergence_sklearn_warning_re = \
+                re.compile(r"WARNING - [^\n]+sklearn/svm/_base\.py:\d+: "
+                           r"ConvergenceWarning:Liblinear failed to converge, "
+                           r"increase the number of iterations\.")
+            assert undefined_metric_sklearn_warning_re.search(log_content) is not None
+            assert convergence_sklearn_warning_re.search(log_content) is not None
