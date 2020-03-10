@@ -18,7 +18,7 @@ import scipy.sparse as sp
 
 from numpy.testing import assert_array_equal, assert_almost_equal
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.datasets.samples_generator import make_classification
+from sklearn.datasets import make_classification
 from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner, SelectByMinCount

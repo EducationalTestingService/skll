@@ -10,8 +10,7 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from numpy.random import RandomState
-from sklearn.datasets.samples_generator import (make_classification,
-                                                make_regression)
+from sklearn.datasets import make_classification, make_regression
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet, NDJWriter

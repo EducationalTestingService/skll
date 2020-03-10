@@ -21,21 +21,21 @@ from os.path import abspath, dirname, join, exists
 import numpy as np
 
 from nose.tools import eq_, raises
+
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.datasets.samples_generator import make_classification
+from sklearn.datasets import make_classification
 from sklearn.utils.testing import (assert_greater,
                                    assert_less,
                                    assert_equal,
                                    assert_almost_equal)
+
 from skll.config import _load_cv_folds
 from skll.data import FeatureSet
-from skll.learner import Learner
-from skll.learner import _DEFAULT_PARAM_GRIDS
-from skll.experiments import _load_featureset
+from skll.experiments import _load_featureset, run_configuration
+from skll.learner import _DEFAULT_PARAM_GRIDS, Learner
 from sklearn.model_selection import StratifiedKFold
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_paths_for_single_file)
-from skll.experiments import run_configuration
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
