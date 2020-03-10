@@ -50,7 +50,7 @@ def test_get_skll_logger():
     temp_file.close()
     TEMP_FILES.append(temp_file)
     TEMP_FILE_PATHS.append(temp_file.name)
-    logger = get_skll_logger("test_get_skll_logger", temp_file.name)
+    logger = get_skll_logger("test_get_skll_logger", filepath=temp_file.name)
     LOGGERS.append(logger)
 
     # Send a regular log message
@@ -61,8 +61,8 @@ def test_get_skll_logger():
     msg2 = "message 2"
     logger.info(msg2)
 
-    with open(temp_file.name) as temp_file:
-        log_lines = temp_file.readlines()
+    with open(temp_file.name) as tempfh:
+        log_lines = tempfh.readlines()
         assert log_lines[0].endswith("INFO - {}\n".format(msg1))
         assert log_lines[1].endswith("INFO - {}\n".format(msg2))
 
@@ -77,7 +77,7 @@ def test_get_skll_logger_with_warning():
     TEMP_FILES.append(temp_file)
     TEMP_FILE_PATHS.append(temp_file.name)
     logger = get_skll_logger("test_get_skll_logger_with_warning",
-                             temp_file.name)
+                             filepath=temp_file.name)
     LOGGERS.append(logger)
 
     # Send a regular log message
