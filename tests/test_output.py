@@ -1109,12 +1109,12 @@ def test_send_warnings_to_log():
                        'jsonlines_LinearSVC.log')) as f:
             log_content = f.read()
             undefined_metric_sklearn_warning_re = \
-                re.compile(r"WARNING - [^\n]+sklearn/metrics/classification\.py:\d+:"
+                re.compile(r"WARNING - [^\n]+sklearn/metrics/_classification\.py:\d+:"
                            r" UndefinedMetricWarning:Precision and F-score are "
                            r"ill-defined and being set to 0\.0 in labels with no "
                            r"predicted samples\.")
             convergence_sklearn_warning_re = \
-                re.compile(r"WARNING - [^\n]+sklearn/svm/base\.py:\d+: "
+                re.compile(r"WARNING - [^\n]+sklearn/svm/_base\.py:\d+: "
                            r"ConvergenceWarning:Liblinear failed to converge, "
                            r"increase the number of iterations\.")
             assert undefined_metric_sklearn_warning_re.search(log_content) is not None
