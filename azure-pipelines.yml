@@ -29,7 +29,7 @@ jobs:
     displayName: "Update conda"
 
   - script: |
-      conda create --name sklldev --yes --quiet -c conda-forge -c defaults python=%PYTHON_VERSION% numpy=1.17 nose --file conda_requirements.txt
+      conda create --name sklldev --yes --quiet -c conda-forge -c defaults python=%PYTHON_VERSION% nose --file conda_requirements.txt
       conda init cmd.exe
       CALL activate sklldev
       pip install -e .
