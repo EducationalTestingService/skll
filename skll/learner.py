@@ -62,7 +62,7 @@ from sklearn.linear_model import (BayesianRidge,
                                   SGDClassifier,
                                   SGDRegressor,
                                   TheilSenRegressor)
-from sklearn.linear_model.base import LinearModel
+from sklearn.linear_model._base import LinearModel
 from sklearn.metrics import (accuracy_score,
                              confusion_matrix,
                              precision_recall_fscore_support)
@@ -1727,7 +1727,6 @@ class Learner(object):
             grid_searcher = GridSearchCV(estimator,
                                          param_grid,
                                          scoring=grid_objective,
-                                         iid=False,
                                          cv=folds,
                                          n_jobs=grid_jobs,
                                          pre_dispatch=grid_jobs)
