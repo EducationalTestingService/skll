@@ -17,9 +17,9 @@ This document is only meant for the project administrators, not users and develo
 
    e. update the README and this release documentation, if necessary.
 
-3. Build the new conda package using the following command::
+3. Run the following command in the ``conda-recipe`` directory to build the conda package::
 
-    conda build -c conda-forge --numpy=1.17 skll
+    conda build -c conda-forge --numpy=1.17 .
 
 4. Upload the package to anaconda.org using ``anaconda upload --user ets <package tarball>``. You will need to have the appropriate permissions for the ``ets`` organization. 
 
@@ -35,13 +35,13 @@ This document is only meant for the project administrators, not users and develo
 
 9. Then run some SKLL examples or tests from a SKLL working copy. If the TestPyPI package works, then move on to the next step. If it doesn't, figure out why and rebuild and re-upload the package.
 
-10. Upload source package to main PyPI using ``python setup.py sdist upload``.
+10. Upload the source and wheel packages to main PyPI using ``python setup.py sdist upload`` and ``python setup.py bdist_wheel upload``
 
 11. Draft a release on GitHub.
 
 12. Make a pull request with the release branch to be merged into ``master`` and request code review.
 
-13. Once the Travis (Linux) and Appveyor (Windows) builds for the PR pass and the reviewers approve, merge the release branch into ``master``.
+13. Once the Travis (Linux) and Azure (Windows) builds for the PR pass and the reviewers approve, merge the release branch into ``master``.
 
 14. Make sure that the ReadTheDocs build for ``master`` passes.
 
