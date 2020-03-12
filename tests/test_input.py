@@ -1141,7 +1141,7 @@ def test_config_parsing_relative_input_path():
      class_map, custom_learner_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
-    eq_(normpath(train_path), (join(_my_dir, 'train')))
+    eq_(normpath(train_path), normpath(join(_my_dir, 'train')))
 
 
 def test_config_parsing_relative_input_paths():
