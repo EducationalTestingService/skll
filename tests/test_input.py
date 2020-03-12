@@ -14,7 +14,7 @@ import tempfile
 
 from glob import glob
 from itertools import product
-from os.path import abspath, dirname, exists, join, normpath
+from os.path import abspath, dirname, exists, join, normcase, normpath
 from shutil import rmtree
 
 import numpy as np
@@ -1141,7 +1141,8 @@ def test_config_parsing_relative_input_path():
      class_map, custom_learner_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
-    eq_(normpath(train_path), (join(_my_dir, 'train')))
+    # we need to use normcase here for Azure package builds to pass
+    eq_(normcase(normpath(train_path)), normcase(join(_my_dir, 'train')))
 
 
 def test_config_parsing_relative_input_paths():
