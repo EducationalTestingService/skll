@@ -18,7 +18,8 @@ import scipy.sparse as sp
 
 from numpy.testing import assert_array_equal, assert_almost_equal
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.datasets.samples_generator import make_classification
+from sklearn.datasets import make_classification
+
 from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner, SelectByMinCount
@@ -252,13 +253,13 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_fmeasures = ([0.6699507389162562, 0.6598984771573605] if
+        expected_fmeasures = ([0.5333333333333333, 0.4842105263157895] if
                               not use_scaling else
-                              [0.7058823529411765, 0.7417840375586855])
+                              [0.7219512195121951, 0.7076923076923077])
     else:
         expected_fmeasures = ([0.5288461538461539, 0.4895833333333333] if
                               not use_scaling else
-                              [0.632183908045977, 0.7168141592920354])
+                              [0.663157894736842, 0.6952380952380952])
 
     assert_almost_equal(expected_fmeasures, fmeasures)
 

@@ -18,14 +18,17 @@ from glob import glob
 from itertools import product
 from os.path import abspath, dirname, join, exists
 
-from nose.tools import eq_, assert_almost_equal, raises
+from nose.tools import (assert_almost_equal,
+                        assert_less,
+                        assert_greater,
+                        eq_,
+                        raises)
 
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
-from sklearn.utils.testing import assert_greater, assert_less
 
 from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
