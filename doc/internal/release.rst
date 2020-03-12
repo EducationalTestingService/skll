@@ -35,18 +35,20 @@ This document is only meant for the project administrators, not users and develo
 
 9. Then run some SKLL examples or tests from a SKLL working copy. If the TestPyPI package works, then move on to the next step. If it doesn't, figure out why and rebuild and re-upload the package.
 
-10. Upload the source and wheel packages to main PyPI using ``python setup.py sdist upload`` and ``python setup.py bdist_wheel upload``
+10. Create pull requests on the `skll-conda-tester <https://github.com/EducationalTestingService/skll-conda-tester/>`_ and `skll-pip-tester <https://github.com/EducationalTestingService/skll-pip-tester/>`_ repositories to test the conda and TestPyPI packages on Linux and Windows.
 
-11. Draft a release on GitHub.
+11. Draft a release on GitHub while the Linux and Windows package tester builds are running.
 
-12. Make a pull request with the release branch to be merged into ``master`` and request code review.
+12. Once both builds have passed, make a pull request with the release branch to be merged into ``master`` and request code review.
 
-13. Once the Travis (Linux) and Azure (Windows) builds for the PR pass and the reviewers approve, merge the release branch into ``master``.
+13. Once the build for the PR passes and the reviewers approve, merge the release branch into ``master``.
 
-14. Make sure that the ReadTheDocs build for ``master`` passes.
+14. Upload source and wheel packages to PyPI using ``python setup.py sdist upload`` and ``python setup.py bdist_wheel upload``
 
-15. Tag the latest commit in ``master`` with the appropriate release tag and publish the release on GitHub.
+15. Make sure that the ReadTheDocs build for ``master`` passes.
 
-16. Send an email around at ETS announcing the release and the changes.
+16. Tag the latest commit in ``master`` with the appropriate release tag and publish the release on GitHub.
 
-17. Post release announcement on Twitter/LinkedIn.
+17. Send an email around at ETS announcing the release and the changes.
+
+18. Post release announcement on Twitter/LinkedIn.
