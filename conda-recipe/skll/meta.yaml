@@ -1,6 +1,6 @@
 package:
   name: skll
-  version: 2.0
+  version: 2.1
 
 source:
   path: ../../../skll
@@ -48,7 +48,7 @@ requirements:
     - pandas
     - python >=3.6
     - ruamel.yaml
-    - scikit-learn ==0.21.3
+    - scikit-learn ==0.22.2.post1
     - scipy
     - seaborn
     - setuptools
@@ -61,7 +61,7 @@ requirements:
     - pandas
     - python >=3.6
     - ruamel.yaml
-    - scikit-learn ==0.21.3
+    - scikit-learn ==0.22.2.post1
     - seaborn
     - scipy
     - tabulate

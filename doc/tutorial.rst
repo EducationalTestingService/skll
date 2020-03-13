@@ -178,7 +178,7 @@ types of files:
 An example of a human-readable results file for our Titanic experiment is::
 
     Experiment Name: Titanic_Evaluate_Tuned
-    SKLL Version: 2.0
+    SKLL Version: 2.1
     Training Set: train
     Training Set Size: 569
     Test Set: dev
