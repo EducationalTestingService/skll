@@ -20,22 +20,19 @@ from os.path import abspath, dirname, join, exists
 
 import numpy as np
 
-from nose.tools import eq_, raises
+from nose.tools import assert_less, assert_greater, eq_, raises
+from numpy.testing import assert_almost_equal
+
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.datasets.samples_generator import make_classification
-from sklearn.utils.testing import (assert_greater,
-                                   assert_less,
-                                   assert_equal,
-                                   assert_almost_equal)
+from sklearn.datasets import make_classification
+
 from skll.config import _load_cv_folds
 from skll.data import FeatureSet
-from skll.learner import Learner
-from skll.learner import _DEFAULT_PARAM_GRIDS
-from skll.experiments import _load_featureset
+from skll.experiments import _load_featureset, run_configuration
+from skll.learner import _DEFAULT_PARAM_GRIDS, Learner
 from sklearn.model_selection import StratifiedKFold
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_paths_for_single_file)
-from skll.experiments import run_configuration
 
 _ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
@@ -256,7 +253,7 @@ def test_retrieve_cv_folds():
                                                        grid_objective='f1_score_micro',
                                                        shuffle=False,
                                                        save_cv_folds=True)
-    assert_equal(skll_fold_ids, expected_fold_ids)
+    eq_(skll_fold_ids, expected_fold_ids)
 
     # Test 2: if we pass in custom fold ids, those are also preserved.
     _, _, _, skll_fold_ids, _ = learner.cross_validate(cv_fs,
@@ -266,7 +263,7 @@ def test_retrieve_cv_folds():
                                                        grid_objective='f1_score_micro',
                                                        shuffle=False,
                                                        save_cv_folds=True)
-    assert_equal(skll_fold_ids, custom_cv_folds)
+    eq_(skll_fold_ids, custom_cv_folds)
 
     # Test 3: when learner.cross_validate() makes the folds but stratified=False
     # and grid_search=False, so that KFold is used.
@@ -286,7 +283,7 @@ def test_retrieve_cv_folds():
                                                        grid_search=False,
                                                        shuffle=False,
                                                        save_cv_folds=True)
-    assert_equal(skll_fold_ids, custom_cv_folds)
+    eq_(skll_fold_ids, custom_cv_folds)
 
 
 def test_folds_file_logging_num_folds():
@@ -311,16 +308,16 @@ def test_folds_file_logging_num_folds():
                    'test_folds_file_logging.log')) as f:
         cv_file_pattern = re.compile('Specifying "folds_file" overrides both explicit and default "num_cv_folds".')
         matches = re.findall(cv_file_pattern, f.read())
-        assert_equal(len(matches), 1)
+        eq_(len(matches), 1)
 
     # Check job log output
     with open(join(_my_dir,
                    'output',
                    'test_folds_file_logging_train_f0.'
                    'jsonlines_LogisticRegression.log')) as f:
-        cv_folds_pattern = re.compile("(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds\))")
+        cv_folds_pattern = re.compile(r"(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds\))")
         matches = re.findall(cv_folds_pattern, f.read())
-        assert_equal(len(matches), 1)
+        eq_(len(matches), 1)
 
 
 def test_folds_file_with_fewer_ids_than_featureset():
@@ -346,7 +343,7 @@ def test_folds_file_with_fewer_ids_than_featureset():
                    'jsonlines_LogisticRegression.log')) as f:
         cv_file_pattern = re.compile('Feature set contains IDs that are not in folds dictionary. Skipping those IDs.')
         matches = re.findall(cv_file_pattern, f.read())
-        assert_equal(len(matches), 1)
+        eq_(len(matches), 1)
 
 
 def test_folds_file_logging_grid_search():
@@ -372,7 +369,7 @@ def test_folds_file_logging_grid_search():
                    'test_folds_file_logging.log')) as f:
         cv_file_pattern = re.compile('Specifying "folds_file" overrides both explicit and default "num_cv_folds".\n(.+)The specified "folds_file" will not be used for inner grid search.')
         matches = re.findall(cv_file_pattern, f.read())
-        assert_equal(len(matches), 1)
+        eq_(len(matches), 1)
 
 
 def test_cross_validate_task():
@@ -416,7 +413,7 @@ def test_cross_validate_task():
     skll_fold_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(skll_fold_ids.items()))
     expected_skll_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(expected_skll_ids.items()))
 
-    assert_equal(skll_fold_ids_str, expected_skll_ids_str)
+    eq_(skll_fold_ids_str, expected_skll_ids_str)
 
 
 def test_cross_validate_task_save_cv_models():

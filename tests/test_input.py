@@ -14,13 +14,12 @@ import tempfile
 
 from glob import glob
 from itertools import product
-from os.path import abspath, dirname, exists, join, normpath
+from os.path import abspath, dirname, exists, join, normcase, normpath
 from shutil import rmtree
 
 import numpy as np
 
 from nose.tools import eq_, ok_, raises
-from sklearn.utils.testing import assert_equal
 
 from skll.config import (_parse_config_file,
                          _load_cv_folds,
@@ -1142,7 +1141,8 @@ def test_config_parsing_relative_input_path():
      class_map, custom_learner_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes, output_metrics) = _parse_config_file(config_path)
 
-    eq_(normpath(train_path), (join(_my_dir, 'train')))
+    # we need to use normcase here for Azure package builds to pass
+    eq_(normcase(normpath(train_path)), normcase(join(_my_dir, 'train')))
 
 
 def test_config_parsing_relative_input_paths():
@@ -1942,7 +1942,7 @@ def test_config_parsing_param_grids_no_grid_search():
                                      'the specified "param_grids" will be '
                                      'ignored.')
         matches = re.findall(warning_pattern, f.read())
-        assert_equal(len(matches), 1)
+        eq_(len(matches), 1)
 
 
 def test_config_parsing_no_grid_search_but_objectives_specified():
@@ -1990,7 +1990,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
         warning_pattern = re.compile('Since "grid_search" is set to False, '
                                      'any specified "objectives" will be ignored.')
         matches = re.findall(warning_pattern, f.read())
-        assert_equal(len(matches), 1)
+        eq_(len(matches), 1)
 
 
 def test_config_parsing_param_grids_fixed_parameters_conflict():
@@ -2032,7 +2032,7 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
                        'space and the fixed parameter values, the fixed '
                        'parameter values will take precedence.')
         matches = re.findall(warning_pattern, f.read())
-        assert_equal(len(matches), 1)
+        eq_(len(matches), 1)
 
 
 def test_config_parsing_default_pos_label_str_value():

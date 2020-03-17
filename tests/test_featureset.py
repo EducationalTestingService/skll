@@ -20,7 +20,7 @@ import pandas as pd
 from nose.tools import eq_, raises, assert_not_equal
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
-from sklearn.datasets.samples_generator import make_classification
+from sklearn.datasets import make_classification
 
 import skll
 from skll.data import (FeatureSet, Writer, Reader,

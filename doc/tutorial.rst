@@ -115,8 +115,8 @@ need to type the following into a terminal:
 
 That should produce output like::
 
-    2017-12-07 11:40:17,381 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Task: evaluate
-    2017-12-07 11:40:17,381 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Training on train, Test on dev, feature set ['family.csv', 'misc.csv', 'socioeconomic.csv', 'vitals.csv'] ...
+    2020-03-10 14:25:23,596 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Task: evaluate
+    2020-03-10 14:25:23,596 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Training on train, Test on dev, feature set ['family.csv', 'misc.csv', 'socioeconomic.csv', 'vitals.csv'] ...
     Loading /Users/nmadnani/work/skll/examples/titanic/train/family.csv...           done
     Loading /Users/nmadnani/work/skll/examples/titanic/train/misc.csv...           done
     Loading /Users/nmadnani/work/skll/examples/titanic/train/socioeconomic.csv...           done
@@ -125,12 +125,28 @@ That should produce output like::
     Loading /Users/nmadnani/work/skll/examples/titanic/dev/misc.csv...           done
     Loading /Users/nmadnani/work/skll/examples/titanic/dev/socioeconomic.csv...           done
     Loading /Users/nmadnani/work/skll/examples/titanic/dev/vitals.csv...           done
-    2017-12-07 11:40:17,515 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Featurizing and training new RandomForestClassifier model
-    2017-12-07 11:40:17,515 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - WARNING - Training data will be shuffled to randomize grid search folds.  Shuffling may yield different results compared to scikit-learn.
-    2017-12-07 11:40:21,650 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Best accuracy grid search score: 0.809
-    2017-12-07 11:40:21,651 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Hyperparameters: bootstrap: True, class_weight: None, criterion: gini, max_depth: 10, max_features: auto, max_leaf_nodes: None, min_impurity_decrease: 0.0, min_impurity_split: None, min_samples_leaf: 1, min_samples_split: 2, min_weight_fraction_leaf: 0.0, n_estimators: 500, n_jobs: 1, oob_score: False, random_state: 123456789, verbose: 0, warm_start: False
-    2017-12-07 11:40:21,651 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Evaluating predictions
-
+    2020-03-10 14:25:23,662 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Featurizing and training new RandomForestClassifier model
+    2020-03-10 14:25:23,663 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - WARNING - Training data will be shuffled to randomize grid search folds.  Shuffling may yield different results compared to scikit-learn.
+    2020-03-10 14:25:28,129 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Best accuracy grid search score: 0.798
+    2020-03-10 14:25:28,130 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Hyperparameters: bootstrap: True, ccp_alpha: 0.0, class_weight: None, criterion: gini, max_depth: 5, max_features: auto, max_leaf_nodes: None, max_samples: None, min_impurity_decrease: 0.0, min_impurity_split: None, min_samples_leaf: 1, min_samples_split: 2, min_weight_fraction_leaf: 0.0, n_estimators: 500, n_jobs: None, oob_score: False, random_state: 123456789, verbose: 0, warm_start: False
+    2020-03-10 14:25:28,130 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Evaluating predictions
+    2020-03-10 14:25:28,172 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - using probabilities for the positive class to compute "roc_auc" for evaluation.
+    2020-03-10 14:25:28,178 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Task: evaluate
+    2020-03-10 14:25:28,178 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Training on train, Test on dev, feature set ['family.csv', 'misc.csv', 'socioeconomic.csv', 'vitals.csv'] ...
+    Loading /Users/nmadnani/work/skll/examples/titanic/train/family.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/train/misc.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/train/socioeconomic.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/train/vitals.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/dev/family.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/dev/misc.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/dev/socioeconomic.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/dev/vitals.csv...           done
+    2020-03-10 14:25:28,226 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Featurizing and training new DecisionTreeClassifier model
+    2020-03-10 14:25:28,226 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - WARNING - Training data will be shuffled to randomize grid search folds.  Shuffling may yield different results compared to scikit-learn.
+    2020-03-10 14:25:28,269 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Best accuracy grid search score: 0.754
+    2020-03-10 14:25:28,269 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Hyperparameters: ccp_alpha: 0.0, class_weight: None, criterion: gini, max_depth: None, max_features: None, max_leaf_nodes: None, min_impurity_decrease: 0.0, min_impurity_split: None, min_samples_leaf: 1, min_samples_split: 2, min_weight_fraction_leaf: 0.0, presort: deprecated, random_state: 123456789, splitter: best
+    2020-03-10 14:25:28,269 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Evaluating predictions
+    2020-03-10 14:25:28,272 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - using probabilities for the positive class to compute "roc_auc" for evaluation.
 
 We could squelch the warnings about shuffling by setting
 :ref:`shuffle <shuffle>` to ``True`` in the :ref:`Input` section.
@@ -159,14 +175,14 @@ types of files:
     would like one giant summary file, you can use the :ref:`summarize_results`
     command.
 
-An example of a human-readable results file for our Titanic config file is::
+An example of a human-readable results file for our Titanic experiment is::
 
     Experiment Name: Titanic_Evaluate_Tuned
-    SKLL Version: 1.5
+    SKLL Version: 2.1
     Training Set: train
-    Training Set Size: 712
+    Training Set Size: 569
     Test Set: dev
-    Test Set Size: 179
+    Test Set Size: 143
     Shuffle: False
     Feature Set: ["family.csv", "misc.csv", "socioeconomic.csv", "vitals.csv"]
     Learner: RandomForestClassifier
@@ -176,28 +192,28 @@ An example of a human-readable results file for our Titanic config file is::
     Grid Search Folds: 3
     Grid Objective Function: accuracy
     Additional Evaluation Metrics: ['roc_auc']
-    Scikit-learn Version: 0.19.1
-    Start Timestamp: 07 Dec 2017 11:42:04.911657
-    End Timestamp: 07 Dec 2017 11:42:09.118036
-    Total Time: 0:00:04.206379
+    Scikit-learn Version: 0.22.2.post1
+    Start Timestamp: 10 Mar 2020 14:25:23.595787
+    End Timestamp: 10 Mar 2020 14:25:28.175375
+    Total Time: 0:00:04.579588
 
 
-    Fold:
-    Model Parameters: {"bootstrap": true, "class_weight": null, "criterion": "gini", "max_depth": 10, "max_features": "auto", "max_leaf_nodes": null, "min_impurity_decrease": 0.0, "min_impurity_split": null, "min_samples_leaf": 1, "min_samples_split": 2, "min_weight_fraction_leaf": 0.0, "n_estimators": 500, "n_jobs": 1, "oob_score": false, "random_state": 123456789, "verbose": 0, "warm_start": false}
-    Grid Objective Score (Train) = 0.8089887640449438
-    +---+-------+------+-----------+--------+-----------+
-    |   |     0 |    1 | Precision | Recall | F-measure |
-    +---+-------+------+-----------+--------+-----------+
-    | 0 | [101] |   14 |     0.871 |  0.878 |     0.874 |
-    +---+-------+------+-----------+--------+-----------+
-    | 1 |    15 | [49] |     0.778 |  0.766 |     0.772 |
-    +---+-------+------+-----------+--------+-----------+
+    Fold: 
+    Model Parameters: {"bootstrap": true, "ccp_alpha": 0.0, "class_weight": null, "criterion": "gini", "max_depth": 5, "max_features": "auto", "max_leaf_nodes": null, "max_samples": null, "min_impurity_decrease": 0.0, "min_impurity_split": null, "min_samples_leaf": 1, "min_samples_split": 2, "min_weight_fraction_leaf": 0.0, "n_estimators": 500, "n_jobs": null, "oob_score": false, "random_state": 123456789, "verbose": 0, "warm_start": false}
+    Grid Objective Score (Train) = 0.797874315418175
+    +----+------+------+-------------+----------+-------------+
+    |    |    0 |    1 |   Precision |   Recall |   F-measure |
+    +====+======+======+=============+==========+=============+
+    |  0 | [79] |    8 |       0.849 |    0.908 |       0.878 |
+    +----+------+------+-------------+----------+-------------+
+    |  1 |   14 | [42] |       0.840 |    0.750 |       0.792 |
+    +----+------+------+-------------+----------+-------------+
     (row = reference; column = predicted)
-    Accuracy = 0.8379888268156425
-    Objective Function Score (Test) = 0.8379888268156425
+    Accuracy = 0.8461538461538461
+    Objective Function Score (Test) = 0.8461538461538461
 
     Additional Evaluation Metrics (Test):
-     roc_auc = 0.8219429347826087
+     roc_auc = 0.9224137931034483
 
 IRIS Example on Binder
 ----------------------

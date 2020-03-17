@@ -9,8 +9,8 @@ import json
 import subprocess
 
 from glob import glob
-from os import getcwd, makedirs
-from os.path import abspath, basename, dirname, exists, join
+from os import environ, getcwd, makedirs
+from os.path import abspath, basename, dirname, exists, join, normpath
 from shutil import copytree, copyfile, rmtree
 
 from nose.tools import eq_, assert_almost_equal
@@ -20,7 +20,7 @@ from skll.experiments import run_configuration
 
 _my_cwd = getcwd()
 _my_dir = abspath(dirname(__file__))
-_examples_dir = join(_my_dir, '..', 'examples')
+_examples_dir = normpath(join(_my_dir, '..', 'examples'))
 
 _old_titanic_dir = join(_examples_dir, 'titanic')
 _old_boston_dir = join(_examples_dir, 'boston')
@@ -29,6 +29,13 @@ _old_iris_dir = join(_examples_dir, 'iris')
 _new_titanic_dir = join(_my_dir, 'other', 'titanic')
 _new_boston_dir = join(_my_dir, 'other', 'boston')
 _new_iris_dir = join(_my_dir, 'other', 'iris')
+
+# if we are running the tests without activating the conda
+# environment (as we do when testing the conda and TestPyPI
+# packages), then we will usually pass in a BINDIR environment
+# variable that points to where the environment's `bin` directory
+# is located
+_binary_dir = environ.get('BINDIR', '')
 
 
 def run_configuration_and_check_outputs(config_path):
@@ -90,11 +97,12 @@ def setup():
     copytree(_old_titanic_dir, _new_titanic_dir)
 
     # Create all of the data sets we need
-    subprocess.run(['python', join(_examples_dir, 'make_titanic_example_data.py')],
+    python_binary = join(_binary_dir, 'python') if _binary_dir else 'python'
+    subprocess.run([python_binary, join(_examples_dir, 'make_titanic_example_data.py')],
                    cwd=dirname(_new_titanic_dir))
-    subprocess.run(['python', join(_examples_dir, 'make_boston_example_data.py')],
+    subprocess.run([python_binary, join(_examples_dir, 'make_boston_example_data.py')],
                    cwd=dirname(_new_boston_dir))
-    subprocess.run(['python', join(_examples_dir, 'make_iris_example_data.py')],
+    subprocess.run([python_binary, join(_examples_dir, 'make_iris_example_data.py')],
                    cwd=dirname(_new_iris_dir))
 
     # Move all the configuration files to our new directories
