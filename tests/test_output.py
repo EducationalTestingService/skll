@@ -1106,7 +1106,7 @@ def test_send_warnings_to_log():
                    'jsonlines_LinearSVC.log')) as f:
         log_content = f.read()
         convergence_sklearn_warning_re = \
-            re.compile(r"WARNING - [^\n]+sklearn/svm/_base\.py:\d+: "
+            re.compile(r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: "
                        r"ConvergenceWarning:Liblinear failed to converge, "
                        r"increase the number of iterations\.")
         assert convergence_sklearn_warning_re.search(log_content) is not None
