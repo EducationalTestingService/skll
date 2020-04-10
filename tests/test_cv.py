@@ -25,16 +25,17 @@ from numpy.testing import assert_almost_equal
 
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets import make_classification
-
-from skll.config import _load_cv_folds
-from skll.data import FeatureSet
-from skll.experiments import _load_featureset, run_configuration
-from skll.learner import _DEFAULT_PARAM_GRIDS, Learner
 from sklearn.model_selection import StratifiedKFold
+
+from skll.config import load_cv_folds
+from skll.data import FeatureSet
+from skll.experiments import load_featureset, run_configuration
+from skll.learner import Learner
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_paths_for_single_file)
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
@@ -199,7 +200,7 @@ def test_load_cv_folds():
             w.writerow([example_id, fold_label])
 
     # now read the CSV file using _load_cv_folds
-    custom_cv_folds_loaded = _load_cv_folds(fold_file_path)
+    custom_cv_folds_loaded = load_cv_folds(fold_file_path)
 
     eq_(custom_cv_folds_loaded, custom_cv_folds)
 
@@ -222,7 +223,7 @@ def test_load_cv_folds_non_float_ids():
             w.writerow([example_id, fold_label])
 
     # now read the CSV file using _load_cv_folds, which should raise ValueError
-    _load_cv_folds(fold_file_path, ids_to_floats=True)
+    load_cv_folds(fold_file_path, ids_to_floats=True)
 
 
 def test_retrieve_cv_folds():
@@ -397,7 +398,7 @@ def test_cross_validate_task():
 
     # Check that the fold ids were saved correctly
     expected_skll_ids = {}
-    examples = _load_featureset(train_path, '', suffix, quiet=True)
+    examples = load_featureset(train_path, '', suffix, quiet=True)
     kfold = StratifiedKFold(n_splits=10)
     for fold_num, (_, test_indices) in enumerate(kfold.split(examples.features, examples.labels)):
         for index in test_indices:

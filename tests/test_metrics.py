@@ -16,10 +16,10 @@ from os.path import abspath, dirname, exists, join
 from nose.tools import raises
 from numpy.testing import assert_almost_equal
 
-from skll.learner import _DEFAULT_PARAM_GRIDS
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from skll.metrics import kappa
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
 # Inputs derived from Ben Hamner's unit tests for his
 # kappa implementation as part of the ASAP competition

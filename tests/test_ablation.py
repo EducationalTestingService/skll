@@ -17,13 +17,13 @@ from os.path import abspath, dirname, exists, join
 
 from nose.tools import eq_
 from skll.experiments import run_configuration
-from skll.learner import _DEFAULT_PARAM_GRIDS
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_paths)
 
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 

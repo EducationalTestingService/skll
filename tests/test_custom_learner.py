@@ -19,11 +19,12 @@ from nose.tools import raises
 from numpy.testing import assert_array_equal
 from skll.data import NDJWriter
 from skll.experiments import run_configuration
-from skll.learner import _DEFAULT_PARAM_GRIDS, Learner
+from skll.learner import Learner
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from tests.utils import fill_in_config_paths, make_classification_data
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
