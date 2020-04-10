@@ -16,8 +16,11 @@ from bs4 import UnicodeDammit
 
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import EXT_TO_READER
-from skll.data.writers import (ARFFWriter, CSVWriter, TSVWriter, LibSVMWriter,
-                               EXT_TO_WRITER)
+from skll.data.writers import (ARFFWriter,
+                               CSVWriter,
+                               EXT_TO_WRITER,
+                               LibSVMWriter,
+                               TSVWriter)
 from skll.version import __version__
 
 
