@@ -7,9 +7,9 @@ from six import StringIO
 from sklearn.metrics import roc_curve
 from tempfile import NamedTemporaryFile
 
-from skll.logutils import (close_and_remove_logger_handlers,
-                           get_skll_logger,
-                           orig_showwarning)
+from skll.utils.logging import (close_and_remove_logger_handlers,
+                                get_skll_logger,
+                                orig_showwarning)
 
 TEMP_FILES = []
 TEMP_FILE_PATHS = []
