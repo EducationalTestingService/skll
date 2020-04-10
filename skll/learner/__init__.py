@@ -25,7 +25,7 @@ from sklearn.model_selection import (GridSearchCV,
                                      KFold,
                                      ShuffleSplit,
                                      StratifiedKFold)
-from sklearn.dummy import DummyClassifier
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
                               GradientBoostingClassifier,
@@ -58,7 +58,7 @@ from sklearn.metrics import (accuracy_score,
                              confusion_matrix,
                              precision_recall_fscore_support)
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.neighbors import KNeighborsRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC, SVC, LinearSVR, SVR
