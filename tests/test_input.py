@@ -23,7 +23,7 @@ from nose.tools import eq_, ok_, raises
 
 from skll.config import locate_file, load_cv_folds, parse_config_file
 from skll.data.readers import safe_float
-from skll.experiments import _load_featureset
+from skll.experiments import load_featureset
 from skll.utils.logging import (close_and_remove_logger_handlers,
                                 get_skll_logger)
 
@@ -139,7 +139,7 @@ def test_input_checking1():
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_2examples_1', 'test_input_3examples_1']
-    _load_featureset(dirpath, featureset, suffix, quiet=True)
+    load_featureset(dirpath, featureset, suffix, quiet=True)
 
 
 @raises(ValueError)
@@ -150,7 +150,7 @@ def test_input_checking2():
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_1']
-    _load_featureset(dirpath, featureset, suffix, quiet=True)
+    load_featureset(dirpath, featureset, suffix, quiet=True)
 
 
 def test_input_checking3():
@@ -160,21 +160,21 @@ def test_input_checking3():
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_3examples_1', 'test_input_3examples_2']
-    examples_tuple = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    examples_tuple = load_featureset(dirpath, featureset, suffix, quiet=True)
     eq_(examples_tuple.features.shape[0], 3)
 
 
 def test_one_file_load_featureset():
     """
-    Test loading a single file with _load_featureset
+    Test loading a single file with load_featureset
     """
     dirpath = join(_my_dir, 'train')
     suffix = '.jsonlines'
     featureset = ['test_input_2examples_1']
-    single_file_fs = _load_featureset(join(dirpath,
-                                           'test_input_2examples_1.jsonlines'),
-                                      '', '', quiet=True)
-    single_fs = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    single_file_fs = load_featureset(join(dirpath,
+                                          'test_input_2examples_1.jsonlines'),
+                                     '', '', quiet=True)
+    single_fs = load_featureset(dirpath, featureset, suffix, quiet=True)
     eq_(single_file_fs, single_fs)
 
 
