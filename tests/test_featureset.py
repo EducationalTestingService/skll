@@ -33,13 +33,13 @@ from skll.data import (CSVReader,
 
 from skll.data.readers import DictListReader
 from skll.experiments import load_featureset
-from skll.utils.constants import DEFAULT_PARAM_GRIDS
 from skll.utils.commandline import skll_convert
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from tests.utils import make_classification_data, make_regression_data
 
 
-_ALL_MODELS = list(DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
