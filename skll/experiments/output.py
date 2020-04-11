@@ -158,8 +158,15 @@ def generate_learning_curve_plots(experiment_name,
                     if j == 0:
                         ax.set_ylabel(row_name)
                         if i == 0:
-                            ax.legend(handles=[matplotlib.lines.Line2D([], [], color=c, label=l, linestyle='-')
-                                               for c, l in zip(colors, ['Training', 'Cross-validation'])],
+                            # set up the legend handles for this plot
+                            plot_handles = [matplotlib.lines.Line2D([],
+                                                                    [],
+                                                                    color=c,
+                                                                    label=l,
+                                                                    linestyle='-')
+                                            for c, l in zip(colors, ['Training',
+                                                                     'Cross-validation'])]
+                            ax.legend(handles=plot_handles,
                                       loc=4,
                                       fancybox=True,
                                       fontsize='x-small',

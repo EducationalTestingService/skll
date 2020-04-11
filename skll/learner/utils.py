@@ -580,5 +580,3 @@ def train_and_score(learner,
     train_score = use_score_func(metric, train_labels, train_predictions)
     test_score = use_score_func(metric, test_labels, test_predictions)
     return train_score, test_score
-
-
