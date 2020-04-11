@@ -79,7 +79,7 @@ from .utils import (Densifier,
                     FilteredLeaveOneGroupOut,
                     get_acceptable_classification_metrics,
                     get_acceptable_regression_metrics,
-                    import_custom_learner,
+                    load_custom_learner,
                     rescaled,
                     SelectByMinCount,
                     train_and_score)
@@ -90,7 +90,7 @@ from .utils import (Densifier,
 _REQUIRES_DENSE = copy.copy(KNOWN_REQUIRES_DENSE)
 _DEFAULT_PARAM_GRIDS = copy.deepcopy(KNOWN_DEFAULT_PARAM_GRIDS)
 
-__all__ = ['Learner', 'MAX_CONCURRENT_PROCESSES', 'import_custom_learner']
+__all__ = ['Learner', 'MAX_CONCURRENT_PROCESSES', 'load_custom_learner']
 
 
 class Learner(object):
@@ -193,10 +193,9 @@ class Learner(object):
 
         if model_type not in globals():
             # here, we need to import the custom model and add it
-            # to the appropriate lists of models.
-            import_custom_learner(custom_learner_path, model_type)
+            # to the appropriate lists of models
+            globals()[model_type] = load_custom_learner(custom_learner_path, model_type)
             model_class = globals()[model_type]
-
             default_param_grid = (model_class.default_param_grid()
                                   if hasattr(model_class, 'default_param_grid')
                                   else [{}])

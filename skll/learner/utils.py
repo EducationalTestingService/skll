@@ -300,9 +300,9 @@ def get_acceptable_classification_metrics(label_array):
     return acceptable_metrics
 
 
-def import_custom_learner(custom_learner_path, custom_learner_name):
+def load_custom_learner(custom_learner_path, custom_learner_name):
     """
-    Does the gruntwork of adding the custom model's module to globals.
+    Import and load the custom learner object from the given path.
 
     Parameters
     ----------
@@ -314,9 +314,12 @@ def import_custom_learner(custom_learner_path, custom_learner_name):
     Raises
     ------
     ValueError
-        If the custom learner path is None.
-    ValueError
         If the custom learner path does not end in '.py'.
+
+    Returns
+    -------
+    custom_learner_obj : skll.Learner object
+        The SKLL learner object loaded from the given path.
     """
     if not custom_learner_path:
         raise ValueError('custom_learner_path was not set and learner {} '
@@ -329,8 +332,7 @@ def import_custom_learner(custom_learner_path, custom_learner_name):
     custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
     sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
     import_module(custom_learner_module_name)
-    globals()[custom_learner_name] = \
-        getattr(sys.modules[custom_learner_module_name], custom_learner_name)
+    return getattr(sys.modules[custom_learner_module_name], custom_learner_name)
 
 
 def rescaled(cls):

@@ -22,8 +22,8 @@ from sklearn import __version__ as SCIKIT_VERSION
 
 from skll.config import parse_config_file
 from skll.config.utils import _munge_featureset_name
-from skll.learner import (import_custom_learner,
-                          Learner,
+from skll.learner import (Learner,
+                          load_custom_learner,
                           MAX_CONCURRENT_PROCESSES)
 from skll.utils.logging import (close_and_remove_logger_handlers,
                                 get_skll_logger)
@@ -213,10 +213,10 @@ def _classify_featureset(args):
 
         # load the model if it already exists
         else:
-            # import the custom learner path here in case we are reusing a
-            # saved model
+            # import custom learner into global namespace if we are reusing
+            # a saved model
             if custom_learner_path:
-                import_custom_learner(custom_learner_path, learner_name)
+                globals()[learner_name] = load_custom_learner(custom_learner_path, learner_name)
             train_set_size = 'unknown'
             if exists(modelfile) and not overwrite:
                 logger.info("Loading pre-existing {} model: {}".format(learner_name,
