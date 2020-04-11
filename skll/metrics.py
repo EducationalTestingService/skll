@@ -191,7 +191,7 @@ def correlation(y_true, y_pred, corr_type='pearson'):
     # 1-dimensional -> probabilities/labels -> use as is
     else:
         ret_score = corr_func(y_true, y_pred)[0]
-    return ret_score if not np.isnan(ret_score) else 0.0
+    return ret_score
 
 
 def f1_score_least_frequent(y_true, y_pred):
