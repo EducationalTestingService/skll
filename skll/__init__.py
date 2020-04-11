@@ -10,12 +10,12 @@ common scikit-learn experiments with pre-generated features.
 """
 
 from sklearn.metrics import f1_score, make_scorer, SCORERS
-from .data import FeatureSet, Reader, Writer
+from .data import FeatureSet
 from .experiments import run_configuration
 from .learner import Learner
 from .metrics import correlation, f1_score_least_frequent, kappa
 
-__all__ = ['FeatureSet', 'Learner', 'Reader', 'run_configuration', 'Writer']
+__all__ = ['FeatureSet', 'Learner', 'run_configuration']
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll

@@ -10,12 +10,6 @@ From :py:mod:`~skll.data` Package
 .. autoclass:: skll.FeatureSet
     :members:
     :show-inheritance:
-.. autoclass:: skll.Reader
-    :members:
-    :show-inheritance:
-.. autoclass:: skll.Writer
-    :members:
-    :show-inheritance:
 
 From :py:mod:`~skll.experiments` Package
 ----------------------------------------
