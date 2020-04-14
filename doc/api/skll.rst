@@ -1,8 +1,8 @@
 :mod:`skll` Package
 ===================
 
-We have made the most useful parts of our API are available in the top level
-``skll`` namespace even though some of them actually live in  subpackages.
+We have made the most useful parts of our API available in the top-level
+``skll`` namespace even though some of them actually live in subpackages.
 They are documented in both places for convenience.
 
 From :py:mod:`~skll.data` Package

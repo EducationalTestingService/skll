@@ -12,4 +12,4 @@ Various useful constants defining groups of evaluation metrics.
 
 A useful logging function for SKLL developers
 
-.. autodata:: skll.utils.logging.get_skll_logger
+.. autofunction:: skll.utils.logging.get_skll_logger
