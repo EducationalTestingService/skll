@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 """
-A Helper script to generate learning plots from the learning curve output TSV file.
+A Helper script to generate learning plots from the learning curve output TSV
+file.
 
-This is necessary in scenarios where the plots were not generated as part of the original
-learning curve experiment, e.g. the experiment was run on a remote server where plots
-may not have been generated either due to a crash or incorrect setting of the DISPLAY
-environment variable.
+This is necessary in scenarios where the plots were not generated as part of
+the original learning curve experiment, e.g. the experiment was run on a remote
+server where plots may not have been generated either due to a crash or
+incorrect setting of the DISPLAY environment variable.
 
-In these cases, the summary file should always be generated and this script can then be used
-to generate the plots later.
+In these cases, the summary file should always be generated and this script can
+then be used to generate the plots later.
 
 :author: Nitin Madnani
 :organization: ETS
@@ -22,7 +23,7 @@ import sys
 from os import makedirs
 from os.path import basename, exists
 
-from skll.experiments import _generate_learning_curve_plots
+from skll.experiments import generate_learning_curve_plots
 from skll.version import __version__
 
 
@@ -68,7 +69,7 @@ def main(argv=None):
     # output_file_name = experiment_name + '_summary.tsv'
     experiment_name = basename(args.tsv_file).rstrip('_summary.tsv')
     logging.info("Generating learning curve(s)")
-    _generate_learning_curve_plots(experiment_name, args.output_dir, args.tsv_file)
+    generate_learning_curve_plots(experiment_name, args.output_dir, args.tsv_file)
 
 
 if __name__ == '__main__':

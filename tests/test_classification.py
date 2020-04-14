@@ -34,19 +34,19 @@ from sklearn.metrics import (accuracy_score,
 from sklearn.utils import shuffle as sk_shuffle
 
 from skll import run_configuration
-from skll.config import _parse_config_file
+from skll.config import parse_config_file
 from skll.data import FeatureSet, NDJReader, NDJWriter
-from skll.learner import (_DEFAULT_PARAM_GRIDS,
-                          FilteredLeaveOneGroupOut,
-                          Learner,
-                          _contiguous_ints_or_floats,
-                          _train_and_score)
-from skll.metrics import (_CORRELATION_METRICS,
-                          _PROBABILISTIC_METRICS,
-                          _REGRESSION_ONLY_METRICS,
-                          _UNWEIGHTED_KAPPA_METRICS,
-                          _WEIGHTED_KAPPA_METRICS,
-                          use_score_func)
+from skll.learner import Learner
+from skll.learner.utils import (contiguous_ints_or_floats,
+                                FilteredLeaveOneGroupOut,
+                                train_and_score)
+from skll.utils.constants import (CORRELATION_METRICS,
+                                  KNOWN_DEFAULT_PARAM_GRIDS,
+                                  PROBABILISTIC_METRICS,
+                                  REGRESSION_ONLY_METRICS,
+                                  UNWEIGHTED_KAPPA_METRICS,
+                                  WEIGHTED_KAPPA_METRICS)
+from skll.metrics import use_score_func
 
 from tests.utils import (make_classification_data,
                          make_regression_data,
@@ -55,7 +55,7 @@ from tests.utils import (make_classification_data,
                          fill_in_config_paths_for_single_file)
 
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
@@ -126,23 +126,23 @@ def test_contiguous_int_or_float_labels():
     """
     Test that we can accurately detect contiguous int/float labels
     """
-    eq_(_contiguous_ints_or_floats([1, 2, 3, 4]), True)
-    eq_(_contiguous_ints_or_floats([0, 1]), True)
-    eq_(_contiguous_ints_or_floats([1.0, 2.0]), True)
-    eq_(_contiguous_ints_or_floats([0, 1.0]), True)
-    eq_(_contiguous_ints_or_floats([-2, -1, 0, 1, 2]), True)
-    eq_(_contiguous_ints_or_floats([1.0, 2.0, 3.0, 4.0]), True)
-    eq_(_contiguous_ints_or_floats([4, 5, 6]), True)
-    eq_(_contiguous_ints_or_floats([1, 2, 3, 4.0]), True)
-    eq_(_contiguous_ints_or_floats([-1, 1]), False)
-    eq_(_contiguous_ints_or_floats([2, 4, 6]), False)
-    eq_(_contiguous_ints_or_floats([3, 6, 11]), False)
-    eq_(_contiguous_ints_or_floats([-2.0, -1.0, 1.0, 2.0]), False)
-    eq_(_contiguous_ints_or_floats([1.0, 1.1, 1.2]), False)
-    assert_raises(TypeError, _contiguous_ints_or_floats, ['a', 'b', 'c'])
-    assert_raises(TypeError, _contiguous_ints_or_floats, np.array([1, 2, 3, 'a']))
-    assert_raises(ValueError, _contiguous_ints_or_floats, [])
-    assert_raises(ValueError, _contiguous_ints_or_floats, np.array([]))
+    eq_(contiguous_ints_or_floats([1, 2, 3, 4]), True)
+    eq_(contiguous_ints_or_floats([0, 1]), True)
+    eq_(contiguous_ints_or_floats([1.0, 2.0]), True)
+    eq_(contiguous_ints_or_floats([0, 1.0]), True)
+    eq_(contiguous_ints_or_floats([-2, -1, 0, 1, 2]), True)
+    eq_(contiguous_ints_or_floats([1.0, 2.0, 3.0, 4.0]), True)
+    eq_(contiguous_ints_or_floats([4, 5, 6]), True)
+    eq_(contiguous_ints_or_floats([1, 2, 3, 4.0]), True)
+    eq_(contiguous_ints_or_floats([-1, 1]), False)
+    eq_(contiguous_ints_or_floats([2, 4, 6]), False)
+    eq_(contiguous_ints_or_floats([3, 6, 11]), False)
+    eq_(contiguous_ints_or_floats([-2.0, -1.0, 1.0, 2.0]), False)
+    eq_(contiguous_ints_or_floats([1.0, 1.1, 1.2]), False)
+    assert_raises(TypeError, contiguous_ints_or_floats, ['a', 'b', 'c'])
+    assert_raises(TypeError, contiguous_ints_or_floats, np.array([1, 2, 3, 'a']))
+    assert_raises(ValueError, contiguous_ints_or_floats, [])
+    assert_raises(ValueError, contiguous_ints_or_floats, np.array([]))
 
 
 def test_label_index_order():
@@ -420,7 +420,7 @@ def test_default_param_grids_no_duplicates():
     """
     Verify that the default parameter grids don't contain duplicate values.
     """
-    for learner, param_list in _DEFAULT_PARAM_GRIDS.items():
+    for learner, param_list in KNOWN_DEFAULT_PARAM_GRIDS.items():
         param_dict = param_list[0]
         for param_name, values in param_dict.items():
             assert(len(set(values)) == len(values))
@@ -798,7 +798,7 @@ def test_train_file_and_train_directory():
                                                             'test_single_file.'
                                                             'jsonlines'),
                                                        train_directory='foo')
-    _parse_config_file(config_path)
+    parse_config_file(config_path)
 
 
 @raises(ValueError)
@@ -817,7 +817,7 @@ def test_test_file_and_test_directory():
                                                             'test_single_file.'
                                                             'jsonlines'),
                                                        test_directory='foo')
-    _parse_config_file(config_path)
+    parse_config_file(config_path)
 
 
 def check_adaboost_predict(base_estimator, algorithm, expected_score):
@@ -994,7 +994,7 @@ def check_train_and_score_function(model_type):
     estimator_name = 'LogisticRegression' if model_type == 'classifier' else 'Ridge'
     metric = 'accuracy' if model_type == 'classifier' else 'pearson'
     learner1 = Learner(estimator_name)
-    train_score1, test_score1 = _train_and_score(learner1, train_fs, test_fs, metric)
+    train_score1, test_score1 = train_and_score(learner1, train_fs, test_fs, metric)
 
     # this should yield identical results when training another instance
     # of the same learner without grid search and shuffling and evaluating
@@ -1112,11 +1112,11 @@ def test_invalid_classification_grid_objective():
                                            np.array(['yes', 'no']),
                                            np.array([1, 2, 4.0]),
                                            np.array(['A', 'B', 1, 2])],
-                                          [_CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
-                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
-                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
-                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
-                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS])):
+                                          [CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                                           REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                                           CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                                           REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                                           CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS])):
 
         # check each bad objective
         for metric in bad_objectives:
@@ -1162,11 +1162,11 @@ def test_invalid_classification_metric():
                                            np.array(['yes', 'no']),
                                            np.array([1, 2, 4.0]),
                                            np.array(['A', 'B', 1, 2])],
-                                          [_CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
-                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
-                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
-                                           _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS,
-                                           _CORRELATION_METRICS | _REGRESSION_ONLY_METRICS | _WEIGHTED_KAPPA_METRICS])):
+                                          [CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                                           REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                                           CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                                           REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                                           CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS])):
 
         # check each bad objective
         for metric in bad_objectives:
@@ -1323,15 +1323,15 @@ def check_objective_values_for_classification(metric_name,
             elif metric_name == 'accuracy':
                 metric_value = accuracy_score(y_fold_test_indices,
                                               sklearn_fold_test_labels)
-            elif metric_name in _UNWEIGHTED_KAPPA_METRICS:
+            elif metric_name in UNWEIGHTED_KAPPA_METRICS:
                 metric_value = use_score_func(metric_name,
                                               y_fold_test_indices,
                                               sklearn_fold_test_labels)
 
             # 5. The only ones left are the weighted kapps;
             #    these require contiguous ints or floats
-            elif metric_name in _WEIGHTED_KAPPA_METRICS:
-                if _contiguous_ints_or_floats(label_array):
+            elif metric_name in WEIGHTED_KAPPA_METRICS:
+                if contiguous_ints_or_floats(label_array):
                     metric_value = use_score_func(metric_name,
                                                   y_fold_test_indices,
                                                   sklearn_fold_test_labels)
@@ -1384,10 +1384,10 @@ def test_objective_values_for_classification():
     # 4. We then compare values in 2 and 3 to verify that they are equal.
 
     metrics_to_test = set(['accuracy'])
-    metrics_to_test.update(_CORRELATION_METRICS,
-                           _PROBABILISTIC_METRICS,
-                           _UNWEIGHTED_KAPPA_METRICS,
-                           _WEIGHTED_KAPPA_METRICS)
+    metrics_to_test.update(CORRELATION_METRICS,
+                           PROBABILISTIC_METRICS,
+                           UNWEIGHTED_KAPPA_METRICS,
+                           WEIGHTED_KAPPA_METRICS)
     metrics_to_test = sorted(metrics_to_test)
 
     for (metric,
@@ -1418,12 +1418,12 @@ def test_objective_values_for_classification():
         # (d) probabilistic metrics and no probabilities
         skipped_conditions = ((metric in ['average_precision', 'roc_auc'] and
                                len(label_array) != 2) or
-                              ((metric in _WEIGHTED_KAPPA_METRICS or
-                                metric in _CORRELATION_METRICS) and
+                              ((metric in WEIGHTED_KAPPA_METRICS or
+                                metric in CORRELATION_METRICS) and
                                issubclass(label_array.dtype.type, str)) or
-                              (metric in _WEIGHTED_KAPPA_METRICS and
-                               not _contiguous_ints_or_floats(label_array)) or
-                              (metric in _PROBABILISTIC_METRICS and
+                              (metric in WEIGHTED_KAPPA_METRICS and
+                               not contiguous_ints_or_floats(label_array)) or
+                              (metric in PROBABILISTIC_METRICS and
                                not use_probabilities))
         if skipped_conditions:
             continue
@@ -1575,7 +1575,7 @@ def check_metric_values_for_classification(metric_name,
     elif metric_name == 'accuracy':
         sklearn_metric_value = accuracy_score(y_test,
                                               sklearn_test_labels)
-    elif metric_name in _UNWEIGHTED_KAPPA_METRICS:
+    elif metric_name in UNWEIGHTED_KAPPA_METRICS:
         sklearn_metric_value = use_score_func(metric_name,
                                               y_test,
                                               sklearn_test_labels)
@@ -1583,8 +1583,8 @@ def check_metric_values_for_classification(metric_name,
     # 5. The only ones left are the weighted kappas and they are not in sklearn
     #    so we are forced to use the SKLL implementations; both types
     #    require integer labels
-    elif metric_name in _WEIGHTED_KAPPA_METRICS:
-        if _contiguous_ints_or_floats(label_array):
+    elif metric_name in WEIGHTED_KAPPA_METRICS:
+        if contiguous_ints_or_floats(label_array):
             sklearn_metric_value = use_score_func(metric_name,
                                                   y_test,
                                                   sklearn_test_labels)
@@ -1628,10 +1628,10 @@ def test_metric_values_for_classification():
     # 4. We then compare values in 2 and 3 to verify that they are equal.
 
     metrics_to_test = set(['accuracy'])
-    metrics_to_test.update(_CORRELATION_METRICS,
-                           _PROBABILISTIC_METRICS,
-                           _UNWEIGHTED_KAPPA_METRICS,
-                           _WEIGHTED_KAPPA_METRICS)
+    metrics_to_test.update(CORRELATION_METRICS,
+                           PROBABILISTIC_METRICS,
+                           UNWEIGHTED_KAPPA_METRICS,
+                           WEIGHTED_KAPPA_METRICS)
     metrics_to_test = sorted(metrics_to_test)
 
     for (metric,
@@ -1662,12 +1662,12 @@ def test_metric_values_for_classification():
         # (d) probabilistic metrics and no probabilities
         skipped_conditions = ((metric in ['average_precision', 'roc_auc'] and
                                len(label_array) != 2) or
-                              ((metric in _WEIGHTED_KAPPA_METRICS or
-                                metric in _CORRELATION_METRICS) and
+                              ((metric in WEIGHTED_KAPPA_METRICS or
+                                metric in CORRELATION_METRICS) and
                                issubclass(label_array.dtype.type, str)) or
-                              (metric in _WEIGHTED_KAPPA_METRICS and
-                               not _contiguous_ints_or_floats(label_array)) or
-                              (metric in _PROBABILISTIC_METRICS and
+                              (metric in WEIGHTED_KAPPA_METRICS and
+                               not contiguous_ints_or_floats(label_array)) or
+                              (metric in PROBABILISTIC_METRICS and
                                not use_probabilities))
         if skipped_conditions:
             continue

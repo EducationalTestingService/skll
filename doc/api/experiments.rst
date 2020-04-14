@@ -1,5 +1,5 @@
-:mod:`experiments` Module
-=========================
+:mod:`experiments` Package
+==========================
 
 .. automodule:: skll.experiments
     :members:

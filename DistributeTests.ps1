@@ -30,7 +30,7 @@ $testsToRun= @()
 
 if ($agentNumber -eq 1) {
     $testsToRun = $testsToRun + "tests/test_featureset.py"
-    $testsToRun = $testsToRun + "tests/test_utilities.py"
+    $testsToRun = $testsToRun + "tests/test_commandline_utils.py"
 }
 elseif ($agentNumber -eq 2) {
     $testsToRun = $testsToRun + "tests/test_output.py"
@@ -43,7 +43,7 @@ elseif ($agentNumber -eq 4) {
     $testsToRun = $testsToRun + "tests/test_preprocessing.py"
     $testsToRun = $testsToRun + "tests/test_metrics.py"
     $testsToRun = $testsToRun + "tests/test_custom_learner.py"
-    $testsToRun = $testsToRun + "tests/test_logutils.py"
+    $testsToRun = $testsToRun + "tests/test_logging_utils.py"
     $testsToRun = $testsToRun + "tests/test_examples.py"
 }
 elseif ($agentNumber -eq 5) {

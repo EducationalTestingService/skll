@@ -22,13 +22,14 @@ from sklearn.datasets import make_classification
 
 from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration
-from skll.learner import Learner, SelectByMinCount
-from skll.learner import _DEFAULT_PARAM_GRIDS
+from skll.learner import Learner
+from skll.learner.utils import SelectByMinCount
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from tests.utils import fill_in_config_paths
 
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
                              r'([\-\d\.]+)')
 _my_dir = abspath(dirname(__file__))

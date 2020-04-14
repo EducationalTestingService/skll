@@ -36,16 +36,16 @@ from sklearn.feature_extraction import FeatureHasher
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 
 import skll
-import skll.utilities.compute_eval_from_predictions as cefp
-from skll.utilities.compute_eval_from_predictions import get_prediction_from_probabilities
-import skll.utilities.filter_features as ff
-import skll.utilities.generate_predictions as gp
-import skll.utilities.print_model_weights as pmw
-import skll.utilities.run_experiment as rex
-import skll.utilities.skll_convert as sk
-import skll.utilities.summarize_results as sr
-import skll.utilities.join_features as jf
-import skll.utilities.plot_learning_curves as plc
+import skll.utils.commandline.compute_eval_from_predictions as cefp
+from skll.utils.commandline.compute_eval_from_predictions import get_prediction_from_probabilities
+import skll.utils.commandline.filter_features as ff
+import skll.utils.commandline.generate_predictions as gp
+import skll.utils.commandline.print_model_weights as pmw
+import skll.utils.commandline.run_experiment as rex
+import skll.utils.commandline.skll_convert as sk
+import skll.utils.commandline.summarize_results as sr
+import skll.utils.commandline.join_features as jf
+import skll.utils.commandline.plot_learning_curves as plc
 
 from skll.data import (FeatureSet,
                        NDJWriter,
@@ -55,15 +55,16 @@ from skll.data import (FeatureSet,
                        safe_float)
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
-from skll.experiments import (_generate_learning_curve_plots,
-                              _write_summary_file,
+from skll.experiments import (generate_learning_curve_plots,
                               run_configuration)
-from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
+from skll.experiments.output import _write_summary_file
+from skll.learner import Learner
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from tests.utils import make_classification_data, make_regression_data
 
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
@@ -192,7 +193,7 @@ def test_warning_when_prediction_method_and_no_probabilities():
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
-    log_msg = ("skll.utilities.compute_eval_from_predictions: WARNING: A prediction "
+    log_msg = ("skll.utils.commandline.compute_eval_from_predictions: WARNING: A prediction "
                "method was provided, but the predictions file doesn't contain "
                "probabilities. Ignoring prediction method 'highest'.")
 
@@ -587,7 +588,7 @@ def test_generate_predictions_console_bad_input_ext():
 
     _ = _run_generate_predictions_and_capture_output(generate_cmd, 'stdout')
 
-    expected_log_mssg = ("skll.utilities.generate_predictions: ERROR: Input "
+    expected_log_mssg = ("skll.utils.commandline.generate_predictions: ERROR: Input "
                          "file must be in either .arff, .csv, .jsonlines, "
                          ".libsvm, .megam, .ndj, or .tsv format.  Skipping "
                          "file fake_input_file.txt")
@@ -1223,8 +1224,8 @@ def test_plot_learning_curves_argparse():
 
     # replace the _generate_learning_curve_plots function that's called
     # by the main() in plot_learning_curves with a mocked up version
-    generate_learning_curve_plots_mock = create_autospec(_generate_learning_curve_plots)
-    plc._generate_learning_curve_plots = generate_learning_curve_plots_mock
+    generate_learning_curve_plots_mock = create_autospec(generate_learning_curve_plots)
+    plc.generate_learning_curve_plots = generate_learning_curve_plots_mock
 
     # now call main with some arguments
     summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')

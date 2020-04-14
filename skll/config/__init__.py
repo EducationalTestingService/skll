@@ -1,6 +1,6 @@
 # License: BSD 3 clause
 """
-Functions related to parsing configuration files.
+The main class and functions used to parse SKLL configuration files.
 
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
@@ -8,46 +8,37 @@ Functions related to parsing configuration files.
 :author: Chee Wee Leong (cleong@ets.org)
 """
 
-import csv
 import errno
 import itertools
 import logging
 import os
-from os.path import (basename, dirname, exists,
-                     isabs, join, normpath, realpath)
+from os.path import basename, dirname, exists, join, realpath
 
 import configparser
 import numpy as np
 import ruamel.yaml as yaml
 
-from sklearn.metrics import SCORERS
 
-from skll import get_skll_logger
 from skll.data.readers import safe_float
-from skll.metrics import _PROBABILISTIC_METRICS
+from skll.utils.constants import (PROBABILISTIC_METRICS,
+                                  VALID_TASKS,
+                                  VALID_SAMPLERS,
+                                  VALID_FEATURE_SCALING_OPTIONS)
+from skll.utils.logging import get_skll_logger
 
-_VALID_TASKS = frozenset(['cross_validate',
-                          'evaluate',
-                          'learning_curve',
-                          'predict',
-                          'train'])
+from .utils import (fix_json,
+                    load_cv_folds,
+                    locate_file,
+                    _munge_featureset_name,
+                    _parse_and_validate_metrics)
 
-_VALID_SAMPLERS = frozenset(['Nystroem',
-                             'RBFSampler',
-                             'SkewedChi2Sampler',
-                             'AdditiveChi2Sampler',
-                             ''])
-
-_VALID_FEATURE_SCALING_OPTIONS = frozenset(['both',
-                                            'none',
-                                            'with_std',
-                                            'with_mean'])
+__all__ = ['SKLLConfigParser', 'fix_json', 'load_cv_folds', 'locate_file']
 
 
 class SKLLConfigParser(configparser.ConfigParser):
 
     """
-    A custom configuration file parser for SKLL
+    A custom configuration file parser for SKLL.
     """
 
     def __init__(self):
@@ -248,77 +239,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                                   incorrectly_specified_options]))
 
 
-def _locate_file(file_path, config_dir):
-    """
-    Locate a file, given a file path and configuration directory.
-
-    Parameters
-    ----------
-    file_path : str
-        The file to locate. Path may be absolute or relative.
-    config_dir : str
-        The path to the configuration file directory.
-
-    Returns
-    -------
-    path_to_check : str
-        The normalized absolute path, if it exists.
-
-    Raises
-    ------
-    IOError
-        If the file does not exist.
-    """
-    if not file_path:
-        return ''
-    path_to_check = file_path if isabs(file_path) else normpath(join(config_dir,
-                                                                     file_path))
-    ans = exists(path_to_check)
-    if not ans:
-        raise IOError(errno.ENOENT, "File does not exist", path_to_check)
-    else:
-        return path_to_check
-
-
-def _setup_config_parser(config_path, validate=True):
-    """
-    Returns a config parser at a given path. Only implemented as a separate
-    function to simplify testing.
-
-    Parameters
-    ----------
-    config_path : str
-        The path to the configuration file.
-    validate : bool, optional
-        Whether to validate the configuration file.
-        Defaults to ``True``.
-
-    Returns
-    -------
-    config : SKLLConfigParser
-        A SKLL configuration object.
-
-    Raises
-    ------
-    IOError
-        If the configuration file does not exist.
-    """
-    # initialize config parser with the given defaults
-    config = SKLLConfigParser()
-
-    # Read file if it exists
-    if not exists(config_path):
-        raise IOError(errno.ENOENT, "Configuration file does not exist",
-                      config_path)
-    config.read(config_path)
-
-    if validate:
-        config.validate()
-
-    return config
-
-
-def _parse_config_file(config_path, log_level=logging.INFO):
+def parse_config_file(config_path, log_level=logging.INFO):
     """
     Parses a SKLL experiment configuration file with the given path.
     Log messages with the given log level (default: INFO).
@@ -470,7 +391,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # save all logging messages to a log file in addition to displaying
     # them on the console
     try:
-        log_path = _locate_file(config.get("Output", "log"), config_dir)
+        log_path = locate_file(config.get("Output", "log"), config_dir)
     except IOError as e:
         if e.errno == errno.ENOENT:
             log_path = e.filename
@@ -492,18 +413,18 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     else:
         raise ValueError("Configuration file does not contain task in the "
                          "[General] section.")
-    if task not in _VALID_TASKS:
+    if task not in VALID_TASKS:
         raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
-                         ' {}'.format(task, ', '.join(_VALID_TASKS)))
+                         ' {}'.format(task, ', '.join(VALID_TASKS)))
 
     ####################
     # 2. Input section #
     ####################
     sampler = config.get("Input", "sampler")
-    if sampler not in _VALID_SAMPLERS:
+    if sampler not in VALID_SAMPLERS:
         raise ValueError('An invalid sampler was specified: {}.  Valid '
                          'samplers are: {}'.format(sampler,
-                                                   ', '.join(_VALID_SAMPLERS)))
+                                                   ', '.join(VALID_SAMPLERS)))
 
     # produce warnings if feature_hasher is set but hasher_features
     # is less than or equal to zero.
@@ -526,7 +447,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     else:
         raise ValueError("Configuration file does not contain list of learners "
                          "in [Input] section.")
-    learners = yaml.safe_load(_fix_json(learners_string))
+    learners = yaml.safe_load(fix_json(learners_string))
 
     if len(learners) == 0:
         raise ValueError("Configuration file contains an empty list of learners"
@@ -537,12 +458,12 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                          ' times, which is not currently supported.  Please use'
                          ' param_grids with tuning to find the optimal settings'
                          ' for the learner.')
-    custom_learner_path = _locate_file(config.get("Input", "custom_learner_path"),
-                                       config_dir)
+    custom_learner_path = locate_file(config.get("Input", "custom_learner_path"),
+                                      config_dir)
 
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
-    featuresets = yaml.safe_load(_fix_json(featuresets_string))
+    featuresets = yaml.safe_load(fix_json(featuresets_string))
 
     # ensure that featuresets is either a list of features or a list of lists
     # of features
@@ -552,8 +473,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
                          "features or a list of lists of features. You "
                          "specified: {}".format(featuresets))
 
-    featureset_names = yaml.safe_load(_fix_json(config.get("Input",
-                                                           "featureset_names")))
+    featureset_names = yaml.safe_load(fix_json(config.get("Input",
+                                                          "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
     if featureset_names:
@@ -570,7 +491,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # that we are using 10 folds for each learner.
     learning_curve_cv_folds_list_string = config.get("Input",
                                                      "learning_curve_cv_folds_list")
-    learning_curve_cv_folds_list = yaml.safe_load(_fix_json(learning_curve_cv_folds_list_string))
+    learning_curve_cv_folds_list = yaml.safe_load(fix_json(learning_curve_cv_folds_list_string))
     if len(learning_curve_cv_folds_list) == 0:
         learning_curve_cv_folds_list = [10] * len(learners)
     else:
@@ -587,7 +508,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # floats (proportions). If it's not specified, then we just
     # assume that we are using np.linspace(0.1, 1.0, 5).
     learning_curve_train_sizes_string = config.get("Input", "learning_curve_train_sizes")
-    learning_curve_train_sizes = yaml.safe_load(_fix_json(learning_curve_train_sizes_string))
+    learning_curve_train_sizes = yaml.safe_load(fix_json(learning_curve_train_sizes_string))
     if len(learning_curve_train_sizes) == 0:
         learning_curve_train_sizes = np.linspace(0.1, 1.0, 5).tolist()
     else:
@@ -601,12 +522,12 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
 
-    fixed_parameter_list = yaml.safe_load(_fix_json(config.get("Input",
-                                                               "fixed_parameters")))
-    fixed_sampler_parameters = _fix_json(config.get("Input",
-                                                    "sampler_parameters"))
+    fixed_parameter_list = yaml.safe_load(fix_json(config.get("Input",
+                                                              "fixed_parameters")))
+    fixed_sampler_parameters = fix_json(config.get("Input",
+                                                   "sampler_parameters"))
     fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
-    param_grid_list = yaml.safe_load(_fix_json(config.get("Tuning", "param_grids")))
+    param_grid_list = yaml.safe_load(fix_json(config.get("Tuning", "param_grids")))
 
     # read and normalize the value of `pos_label_str`
     pos_label_str = safe_float(config.get("Tuning", "pos_label_str"))
@@ -616,7 +537,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # ensure that feature_scaling is specified only as one of the
     # four available choices
     feature_scaling = config.get("Input", "feature_scaling")
-    if feature_scaling not in _VALID_FEATURE_SCALING_OPTIONS:
+    if feature_scaling not in VALID_FEATURE_SCALING_OPTIONS:
         raise ValueError("Invalid value for feature_scaling parameter: {}"
                          .format(feature_scaling))
 
@@ -626,12 +547,12 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
 
     # if an external folds file is specified, then read it into a dictionary
-    folds_file = _locate_file(config.get("Input", "folds_file"), config_dir)
+    folds_file = locate_file(config.get("Input", "folds_file"), config_dir)
     num_cv_folds = config.getint("Input", "num_cv_folds")
     specified_folds_mapping = None
     specified_num_folds = None
     if folds_file:
-        specified_folds_mapping = _load_cv_folds(folds_file, ids_to_floats=ids_to_floats)
+        specified_folds_mapping = load_cv_folds(folds_file, ids_to_floats=ids_to_floats)
     else:
         # if no file is specified, then set the number of folds for cross-validation
         specified_num_folds = num_cv_folds if num_cv_folds else 10
@@ -696,12 +617,12 @@ def _parse_config_file(config_path, log_level=logging.INFO):
         featuresets[0][0] += '_test_{}'.format(basename(test_file))
 
     # make sure all the specified paths/files exist
-    train_path = _locate_file(train_path, config_dir)
-    test_path = _locate_file(test_path, config_dir)
+    train_path = locate_file(train_path, config_dir)
+    test_path = locate_file(test_path, config_dir)
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
-    original_class_map = yaml.safe_load(_fix_json(class_map_string))
+    original_class_map = yaml.safe_load(fix_json(class_map_string))
     if original_class_map:
         # Change class_map to map from originals to replacements instead of
         # from replacement to list of originals
@@ -722,8 +643,8 @@ def _parse_config_file(config_path, log_level=logging.INFO):
     # do we want to keep the predictions?
     # make sure the predictions path exists and if not create it
     try:
-        prediction_dir = _locate_file(config.get("Output", "predictions"),
-                                      config_dir)
+        prediction_dir = locate_file(config.get("Output", "predictions"),
+                                     config_dir)
     except IOError as e:
         if e.errno == errno.ENOENT:
             prediction_dir = e.filename
@@ -731,7 +652,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # make sure model path exists and if not, create it
     try:
-        model_path = _locate_file(config.get("Output", "models"), config_dir)
+        model_path = locate_file(config.get("Output", "models"), config_dir)
     except IOError as e:
         if e.errno == errno.ENOENT:
             model_path = e.filename
@@ -739,7 +660,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # make sure results path exists
     try:
-        results_path = _locate_file(config.get("Output", "results"), config_dir)
+        results_path = locate_file(config.get("Output", "results"), config_dir)
     except IOError as e:
         if e.errno == errno.ENOENT:
             results_path = e.filename
@@ -845,7 +766,7 @@ def _parse_config_file(config_path, log_level=logging.INFO):
 
     # if any of the objectives or metrics require probabilities to be output,
     # probability must be specified as true
-    specified_probabilistic_metrics = _PROBABILISTIC_METRICS.intersection(grid_objectives + output_metrics)
+    specified_probabilistic_metrics = PROBABILISTIC_METRICS.intersection(grid_objectives + output_metrics)
     if specified_probabilistic_metrics and not probability:
         raise ValueError("The 'probability' option must be 'true' "
                          " to compute the following: "
@@ -907,140 +828,39 @@ def _parse_config_file(config_path, log_level=logging.INFO):
             learning_curve_train_sizes, output_metrics)
 
 
-def _munge_featureset_name(featureset):
+def _setup_config_parser(config_path, validate=True):
     """
-    Joins features in featureset by '+' if featureset is not a string, and just
-    returns featureset otherwise.
+    Returns a config parser at a given path. Only implemented as a separate
+    function to simplify testing.
 
     Parameters
     ----------
-    featureset : SKLL.FeatureSet
-        A SKLL feature_set object.
+    config_path : str
+        The path to the configuration file.
+    validate : bool, optional
+        Whether to validate the configuration file.
+        Defaults to ``True``.
 
     Returns
     -------
-    res : str
-        feature_set names joined with '+', if feature_set is not a string.
-    """
-    if isinstance(featureset, str):
-        return featureset
-
-    res = '+'.join(sorted(featureset))
-    return res
-
-
-def _fix_json(json_string):
-    """
-    Fixes incorrectly formatted quotes and capitalized booleans in the given
-    JSON string.
-
-    Parameters
-    ----------
-    json_string : str
-        A JSON-style string.
-
-    Returns
-    -------
-    json_string : str
-        The normalized JSON string.
-    """
-    json_string = json_string.replace('True', 'true')
-    json_string = json_string.replace('False', 'false')
-    json_string = json_string.replace("'", '"')
-    return json_string
-
-
-def _parse_and_validate_metrics(metrics, option_name, logger=None):
-    """
-    Given a string containing a list of metrics, this function
-    parses that string into a list and validates the list.
-
-    Parameters
-    ----------
-    metrics : str
-        A string containing a list of metrics
-    option_name : str
-        The name of the option with which the metrics are associated.
-    logger : logging.Logger, optional
-        A logging object
-        Defaults to ``None``.
-
-    Returns
-    -------
-    metrics : list of str
-        A list of metrics for the given option.
+    config : SKLLConfigParser
+        A SKLL configuration object.
 
     Raises
     ------
-    TypeError
-        If the given string cannot be converted to a list.
-    ValueError
-        If there are any invalid metrics specified.
+    IOError
+        If the configuration file does not exist.
     """
+    # initialize config parser with the given defaults
+    config = SKLLConfigParser()
 
-    # create a logger if one was not passed in
-    if not logger:
-        logger = logging.getLogger(__name__)
+    # Read file if it exists
+    if not exists(config_path):
+        raise IOError(errno.ENOENT, "Configuration file does not exist",
+                      config_path)
+    config.read(config_path)
 
-    # make sure the given metrics data type is a list
-    # and parse it correctly
-    metrics = yaml.safe_load(_fix_json(metrics))
-    if not isinstance(metrics, list):
-        raise TypeError("{} should be a list, not a {}.".format(option_name,
-                                                                type(metrics)))
+    if validate:
+        config.validate()
 
-    # `mean_squared_error` is no more supported.
-    # It is replaced by `neg_mean_squared_error`
-    if 'mean_squared_error' in metrics:
-        raise ValueError("The metric \"mean_squared_error\" "
-                         "is no longer supported."
-                         " please use the metric "
-                         "\"neg_mean_squared_error\" instead.")
-
-    invalid_metrics = [metric for metric in metrics if metric not in SCORERS]
-    if invalid_metrics:
-        raise ValueError('Invalid metric(s) {} '
-                         'specified for {}'.format(invalid_metrics,
-                                                   option_name))
-
-    return metrics
-
-
-def _load_cv_folds(folds_file, ids_to_floats=False):
-    """
-    Loads CV folds from a CSV file with columns for example ID and fold ID (and
-    a header).
-
-    Parameters
-    ----------
-    folds_file : str
-        The path to a folds file to read.
-    ids_to_floats : bool, optional
-        Whether to convert IDs to floats.
-        Defaults to ``False``.
-
-    Returns
-    -------
-    res : dict
-        A dictionary with example IDs as the keys and fold IDs as the values.
-
-    Raises
-    ------
-    ValueError
-        If example IDs cannot be converted to floats and `ids_to_floats` is `True`.
-    """
-    with open(folds_file, 'r') as f:
-        reader = csv.reader(f)
-        next(reader)  # discard the header
-        res = {}
-        for row in reader:
-            if ids_to_floats:
-                try:
-                    row[0] = float(row[0])
-                except ValueError:
-                    raise ValueError('You set ids_to_floats to true, but ID {}'
-                                     ' could not be converted to float'
-                                     .format(row[0]))
-            res[row[0]] = row[1]
-
-    return res
+    return config

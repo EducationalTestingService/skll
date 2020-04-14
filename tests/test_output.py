@@ -34,10 +34,10 @@ from sklearn.model_selection import ShuffleSplit, learning_curve
 from sklearn.naive_bayes import MultinomialNB
 
 from skll.data import FeatureSet, NDJWriter, Reader
-from skll.config import _VALID_TASKS
-from skll.experiments import (_compute_ylimits_for_featureset,
-                              run_configuration)
-from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
+from skll.experiments import run_configuration
+from skll.experiments.output import _compute_ylimits_for_featureset
+from skll.learner import Learner
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS, VALID_TASKS
 
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_options,
@@ -47,7 +47,7 @@ from tests.utils import (create_jsonlines_feature_files,
                          make_regression_data)
 
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
@@ -95,7 +95,7 @@ def tearDown():
                 + glob(join(output_dir, 'test_majority_class_custom_learner_*')):
             os.unlink(output_file)
 
-    for suffix in _VALID_TASKS:
+    for suffix in VALID_TASKS:
         config_files = ['test_cv_results_{}.cfg'.format(suffix)]
         for cf in config_files:
             if exists(join(config_dir, cf)):
@@ -581,7 +581,7 @@ def check_grid_search_cv_results(task, do_grid_search):
 
 
 def test_grid_search_cv_results():
-    for task in _VALID_TASKS:
+    for task in VALID_TASKS:
         for do_grid_search in [True, False]:
             yield check_grid_search_cv_results, task, do_grid_search
 

@@ -10,10 +10,9 @@ titanic.cfg expects.
 
 import logging
 import os
-import sys
 from itertools import chain
 
-from skll import Writer, Reader
+from skll.data import Reader, Writer
 
 
 def main():

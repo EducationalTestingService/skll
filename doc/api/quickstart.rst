@@ -5,7 +5,7 @@ Here is a quick run-down of how you accomplish common tasks.
 
 Load a ``FeatureSet`` from a file::
 
-    from skll import Reader
+    from skll.data import Reader
 
     example_reader = Reader.for_path('myexamples.megam')
     train_examples = example_reader.read()
