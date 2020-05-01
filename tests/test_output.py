@@ -10,7 +10,6 @@ Tests related to output from run_experiment
 import csv
 import json
 import os
-import platform
 import re
 import warnings
 
