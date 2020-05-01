@@ -26,14 +26,13 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 
-from nose.plugins.skip import SkipTest
 from nose.tools import eq_, ok_, assert_raises
 
 from sklearn.datasets import load_digits
 from sklearn.model_selection import ShuffleSplit, learning_curve
 from sklearn.naive_bayes import MultinomialNB
 
-from skll.data import FeatureSet, NDJWriter, Reader
+from skll.data import FeatureSet, NDJReader, NDJWriter, Reader
 from skll.experiments import run_configuration
 from skll.experiments.output import _compute_ylimits_for_featureset
 from skll.learner import Learner
@@ -109,6 +108,9 @@ def tearDown():
     for output_file in glob(join(output_dir,
                                  'test_send_warnings_to_log*')):
         os.unlink(output_file)
+
+    if exists("test_current_directory.model"):
+        os.unlink("test_current_directory.model")
 
 
 # Generate and write out data for the test that checks summary scores
@@ -1110,3 +1112,25 @@ def test_send_warnings_to_log():
                        r"ConvergenceWarning:Liblinear failed to converge, "
                        r"increase the number of iterations\.")
         assert convergence_sklearn_warning_re.search(log_content) is not None
+
+
+def test_save_models_to_current_directory():
+    """
+    Test that saving models to current directory works.
+    """
+
+    # create a learner and train it on some data
+    learner1 = Learner('LogisticRegression')
+    train_path = join(_my_dir, 'train', 'f0.jsonlines')
+    train_fs = NDJReader.for_path(train_path).read()
+    learner1.train(train_fs, grid_search=False)
+
+    # save this trained model into the current directory
+    learner1.save("test_current_directory.model")
+
+    # make sure that the model saved and that it's the same model
+    ok_(exists("test_current_directory.model"))
+    learner2 = Learner.from_file("test_current_directory.model")
+    eq_(learner1.model_type, learner2.model_type)
+    eq_(learner1.model_params, learner2.model_params)
+    eq_(learner1.model_kwargs, learner2.model_kwargs)
