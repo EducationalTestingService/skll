@@ -1,5 +1,5 @@
-:mod:`learner` Module
-=====================
+:mod:`learner` Package
+======================
 
 .. automodule:: skll.learner
     :members:

@@ -11,7 +11,7 @@ files.
 import argparse
 import logging
 
-from skll.experiments import _write_summary_file
+from skll.experiments.output import _write_summary_file
 from skll.version import __version__
 
 

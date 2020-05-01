@@ -6,14 +6,13 @@ Functions related to logging in SKLL.
 :organization: ETS
 """
 import logging
-from logging import FileHandler
 from functools import partial
 from os.path import sep
 import re
 import warnings
 
 orig_showwarning = warnings.showwarning
-SKLEARN_WARNINGS_RE = re.compile(r"{0}sklearn{0}".format(sep))
+SKLEARN_WARNINGS_RE = re.compile(re.escape("{0}sklearn{0}".format(sep)))
 
 
 def send_sklearn_warnings_to_logger(logger, message, category, filename,
@@ -63,12 +62,13 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
     # first get the logger instance associated with the
     # given name if one already exists
     logger = logging.getLogger(name)
+    logger.setLevel(log_level)
 
     # if we are given a file path and this existing logger doesn't already
     # have a file handler for this file, then add one.
     if filepath:
-        is_file_handler = lambda handler: isinstance(handler, FileHandler) \
-                                                and handler.stream.name == filepath
+        def is_file_handler(handler):
+            return isinstance(handler, logging.FileHandler) and handler.stream.name == filepath
         need_file_handler = not any([is_file_handler(handler) for handler in logger.handlers])
         if need_file_handler:
             formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')

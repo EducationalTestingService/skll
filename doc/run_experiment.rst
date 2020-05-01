@@ -2,30 +2,78 @@
 
 Running Experiments
 ===================
-The simplest way to use SKLL is to create configuration files that describe
-experiments you would like to run on pre-generated features. This document
-describes the supported feature file formats, how to create configuration files
-(and layout your directories), and how to use
-:ref:`run_experiment <run_experiment>` to get things going.
 
-Quick Example
--------------
-If you don't want to read the whole document, and just want an example of how
-things work, do the following from the command prompt:
+General Workflow
+----------------
+
+To run your own SKLL experiments via the command line, the following general workflow
+is recommended.
+
+**Get your data into the correct format**
+
+SKLL can work with several common data formats, all of which are described
+:ref:`here <file_formats>`.
+
+If you need to convert between any of the supported formats, because, for
+example, you would like to create a single data file that will work both with
+SKLL and Weka (or some other external tool), the :ref:`skll_convert` script can
+help you out.  It is as easy as:
 
 .. code-block:: bash
 
-    $ cd examples
-    $ python make_iris_example_data.py          # download a simple dataset
-    $ cd iris
-    $ run_experiment --local evaluate.cfg        # run an experiment
+    $ skll_convert examples/titanic/train/family.csv examples/titanic/train/family.arff
 
+**Create sparse feature files, if necessary**
+
+:ref:`skll_convert` can also create sparse data files in
+:ref:`.jsonlines <ndj>`, :ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, or
+:ref:`.ndj <ndj>` formats.  This is very useful for saving disk space and
+memory when you have a large data set with mostly zero-valued features.
+
+**Set up training and testing directories/files**
+
+At a minimum, you will probably want to work with a training set and a testing
+set.  If you have multiple feature files that you would like SKLL to join together
+for you automatically, you will need to create feature files with the exact
+same names and store them in training and testing directories.  You can
+specifiy these directories in your config file using
+:ref:`train_directory <train_directory>` and
+:ref:`test_directory <test_directory>`.  The list of files is specified using
+the :ref:`featuresets <featuresets>` setting.
+
+If you're conducting a simpler experiment, where you have a single training
+file with all of your features and a similar single testing file, you should
+use the :ref:`train_file <train_file>` and :ref:`test_file <test_file>`
+settings in your config file.
+
+.. note:: If you would like to split an existing file up into a training
+          set and a testing set, you can employ the :ref:`filter_features`
+          utility script to select instances you would like to include in
+          each file.
+
+**Create an experiment configuration file**
+
+You saw a :ref:`basic configuration file <titanic_config>` in the tutorial. For your
+own experiment, you will need to refer to the :ref:`create_config` section.
+
+**Run configuration file through run_experiment**
+
+There are a few meta-options for experiments that are specified directly to the
+:ref:`run_experiment <run_experiment>` command rather than in a configuration
+file.  For example, if you would like to run an ablation experiment, which
+conducts repeated experiments using different combinations of the features in
+your config, you should use the :option:`run_experiment --ablation` option. A
+complete list of options is available :ref:`here <run_experiment>`.
+
+Next, we describe the numerous file formats that SKLL supports for reading
+in features.
 
 .. _file_formats:
 
-Feature file formats
---------------------
-The following feature file formats are supported:
+Feature files
+-------------
+
+SKLL supports the following feature file formats:
 
 .. _arff:
 
@@ -48,7 +96,11 @@ with the following added restrictions:
 csv/tsv
 ^^^^^^^
 
-A simple comma or tab-delimited format with the following restrictions:
+A simple comma or tab-delimited format. SKLL underlyingly uses 
+[pandas](https://pandas.pydata.org) to read these files which is
+extremely fast but at the cost of some extra memory consumption.
+
+When using this file format, the following restrictions apply:
 
 *   If the data is labelled, there must be a column with the name
     specified by :ref:`label_col <label_col>` in the :ref:`Input` section of the
@@ -144,14 +196,14 @@ The entire format would like this::
 
 .. _create_config:
 
-Creating configuration files
-----------------------------
-The experiment configuration files that run_experiment accepts are standard
+Configuration file fields
+-------------------------
+The experiment configuration files that ``run_experiment`` accepts are standard
 `Python configuration files <https://docs.python.org/3/library/configparser.html>`__
 that are similar in format to Windows INI files. [#]_
 There are four expected sections in a configuration file: :ref:`General`,
 :ref:`Input`, :ref:`Tuning`, and :ref:`Output`.  A detailed description of each
-possible settings for each section is provided below, but to summarize:
+field in each section is provided below, but to summarize:
 
 .. _cross_validate:
 
@@ -167,7 +219,6 @@ possible settings for each section is provided below, but to summarize:
         When using classifiers, SKLL will automatically reduce the
         number of cross-validation folds to be the same as the minimum
         number of examples for any of the classes in the training data.
-
 
 .. _evaluate:
 
@@ -198,7 +249,7 @@ possible settings for each section is provided below, but to summarize:
 *   A :ref:`list of classifiers/regressors <learners>` to try on your feature
     files is required.
 
-Example configuration files are available `here <https://github.com/EducationalTestingService/skll/tree/master/examples/>`__.
+Example configuration files are available `here <https://github.com/EducationalTestingService/skll/tree/master/examples/>`__ under the ``boston``, ``iris``, and ``titanic`` sub-directories.
 
 .. _general:
 
@@ -230,17 +281,19 @@ What types of experiment we're trying to run. Valid options are:
 Input
 ^^^^^
 
-The Input section has only one required field, :ref:`learners`, but also must
-contain either :ref:`train_file <train_file>` or
-:ref:`train_directory <train_directory>`.
+The Input section must specify the machine learners to use via the :ref:`learners` 
+field as well as the data and features to be used when
+training the model. This can be done by specifying either (a) 
+:ref:`train_file <train_file>` in which case all of the features in
+the file will be used, or (b) :ref:`train_directory <train_directory>` along
+with :ref:`featuresets <featuresets>`.
 
 .. _learners:
 
 learners
 """"""""
-List of scikit-learn models to try using. A separate job will be run for each
-combination of classifier and feature-set. Acceptable values are described
-below.  Custom learners can also be specified. See
+List of scikit-learn models to be used in the experiment. Acceptable values
+are described below.  Custom learners can also be specified. See 
 :ref:`custom_learner_path <custom_learner_path>`.
 
 .. _classifiers:
@@ -285,61 +338,15 @@ Regressors:
     *   **SVR**: `Support Vector Regression using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
     *   **TheilSenRegressor**: `Theil-Sen Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__
 
-    For all regressors you can also prepend ``Rescaled`` to the
+    For all regressors, you can also prepend ``Rescaled`` to the
     beginning of the full name (e.g., ``RescaledSVR``) to get a version
     of the regressor where predictions are rescaled and constrained to
     better match the training set.
 
-.. _train_file:
-
-train_file *(Optional)*
-"""""""""""""""""""""""
-
-Path to a file containing the features to train on.  Cannot be used in
-combination with :ref:`featuresets <featuresets>`,
-:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`.
-
-.. note::
-
-    If :ref:`train_file <train_file>` is not specified,
-    :ref:`train_directory <train_directory>` must be.
-
-.. _train_directory:
-
-train_directory *(Optional)*
-""""""""""""""""""""""""""""
-
-Path to directory containing training data files. There must be a file for each
-featureset.  Cannot be used in combination with :ref:`train_file <train_file>`
-or :ref:`test_file <test_file>`.
-
-.. note::
-
-    If :ref:`train_directory <train_directory>` is not specified,
-    :ref:`train_file <train_file>` must be.
-
-.. _test_file:
-
-test_file *(Optional)*
-""""""""""""""""""""""
-
-Path to a file containing the features to test on.  Cannot be used in
-combination with :ref:`featuresets <featuresets>`,
-:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`
-
-.. _test_directory:
-
-test_directory *(Optional)*
-"""""""""""""""""""""""""""
-
-Path to directory containing test data files. There must be a file
-for each featureset.  Cannot be used in combination with
-:ref:`train_file <train_file>` or :ref:`test_file <test_file>`.
-
 .. _featuresets:
 
-featuresets *(Optional)*
-""""""""""""""""""""""""
+featuresets
+"""""""""""
 List of lists of prefixes for the files containing the features you would like
 to train/test on.  Each list will end up being a job. IDs are required to be
 the same in all of the feature files, and a :py:exc:`ValueError` will be raised
@@ -352,62 +359,37 @@ if this is not the case.  Cannot be used in combination with
     :ref:`test_directory <test_directory>`, :ref:`featuresets <featuresets>`
     is required.
 
-.. _suffix:
 
-suffix *(Optional)*
-"""""""""""""""""""
+.. _train_file:
 
-The file format the training/test files are in. Valid option are
-:ref:`.arff <arff>`, :ref:`.csv <csv>`, :ref:`.jsonlines <ndj>`,
-:ref:`.libsvm <libsvm>`, :ref:`.ndj <ndj>`, and
-:ref:`.tsv <csv>`.
+train_file 
+""""""""""
 
-If you omit this field, it is assumed that the "prefixes" listed in
-:ref:`featuresets <featuresets>` are actually complete filenames. This can be
-useful if you have feature files that are all in different formats that you
-would like to combine.
+Path to a file containing the features to train on.  Cannot be used in
+combination with :ref:`featuresets <featuresets>`,
+:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`.
 
+.. note::
 
-.. _id_col:
+    If :ref:`train_file <train_file>` is not specified,
+    :ref:`train_directory <train_directory>` must be.
 
-id_col *(Optional)*
-"""""""""""""""""""
-If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
-files, the IDs for each instance are assumed to be in a column with this
-name. If no column with this name is found, the IDs are generated
-automatically. Defaults to ``id``.
+.. _train_directory:
 
-.. _label_col:
+train_directory 
+"""""""""""""""
 
-label_col *(Optional)*
-""""""""""""""""""""""
+Path to directory containing training data files. There must be a file for each
+featureset.  Cannot be used in combination with :ref:`train_file <train_file>`
+or :ref:`test_file <test_file>`.
 
-If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
-files, the class labels for each instance are assumed to be in a column with
-this name. If no column with this name is found, the data is assumed to be
-unlabelled. Defaults to ``y``. For ARFF files only, this must also be the final
-column to count as the label (for compatibility with Weka).
+.. note::
 
-.. _ids_to_floats:
+    If :ref:`train_directory <train_directory>` is not specified,
+    :ref:`train_file <train_file>` must be.
 
-ids_to_floats *(Optional)*
-""""""""""""""""""""""""""
-
-If you have a dataset with lots of examples, and your input files have IDs that
-look like numbers (can be converted by float()), then setting this to True will
-save you some memory by storing IDs as floats. Note that this will cause IDs to
-be printed as floats in prediction files (e.g., ``4.0`` instead of ``4`` or
-``0004`` or ``4.000``).
-
-.. _shuffle:
-
-shuffle *(Optional)*
-""""""""""""""""""""
-
-If ``True``, shuffle the examples in the training data before using them for
-learning. This happens automatically when doing a grid search but it might be
-useful in other scenarios as well, e.g., online learning. Defaults to
-``False``.
+The following is a list of the other optional fields in this section 
+in alphabetical order.
 
 .. _class_map:
 
@@ -447,19 +429,78 @@ not ``str`` values that exactly match the input labels, as might be expected.
 ``class_map`` could be used to map the original labels to new values that do
 not have the same characteristics.
 
-.. _num_cv_folds:
+.. _custom_learner_path:
 
-num_cv_folds *(Optional)*
-"""""""""""""""""""""""""
+custom_learner_path *(Optional)*
+""""""""""""""""""""""""""""""""
 
-The number of folds to use for cross validation. Defaults to 10.
+Path to a ``.py`` file that defines a custom learner.  This file will be
+imported dynamically.  This is only required if a custom learner is specified
+in the list of :ref:`learners`.
 
-.. _random_folds:
+All Custom learners must implement the ``fit`` and
+``predict`` methods. Custom classifiers must either (a) inherit from an existing scikit-learn classifier, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
 
-random_folds *(Optional)*
-"""""""""""""""""""""""""
+Similarly, Custom regressors must either (a) inherit from an existing scikit-learn regressor, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
 
-Whether to use random folds for cross-validation. Defaults to ``False``.
+Learners that require dense matrices should implement a method ``requires_dense``
+that returns ``True``.
+
+.. _feature_hasher:
+
+feature_hasher *(Optional)*
+"""""""""""""""""""""""""""
+
+If "true", this enables a high-speed, low-memory vectorizer that uses
+feature hashing for converting feature dictionaries into NumPy arrays
+instead of using a
+`DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__.  This flag will drastically
+reduce memory consumption for data sets with a large number of
+features. If enabled, the user should also specify the number of
+features in the :ref:`hasher_features <hasher_features>` field.  For additional
+information see `the scikit-learn documentation <https://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`__.
+
+.. warning:: Due to the way SKLL experiments are architected, if the features
+             for an experiment are spread across multiple files on disk, feature
+             hashing will be applied to each file *separately*. For example, if
+             you have F feature files and you choose H as the number of hashed
+             features (via :ref:`hasher_features <hasher_features>`), you will
+             end up with F x H features in the end. If this is not the
+             desired behavior, use the :ref:`join_features <join_features>` 
+             utility script to combine all feature files into a single file
+             before running the experiment.
+
+
+.. _feature_scaling:
+
+feature_scaling *(Optional)*
+""""""""""""""""""""""""""""
+
+Whether to scale features by their mean and/or their standard deviation. If you
+scale by mean, your data will automatically be converted to dense, so use
+caution when you have a very large dataset. Valid options are:
+
+none
+    Perform no feature scaling at all.
+
+with_std
+    Scale feature values by their standard deviation.
+
+with_mean
+    Center features by subtracting their mean.
+
+both
+    Perform both centering and scaling.
+
+Defaults to none.
+
+.. _featureset_names:
+
+featureset_names *(Optional)*
+"""""""""""""""""""""""""""""
+
+Optional list of names for the feature sets.  If omitted, then the prefixes
+will be munged together to make names.
 
 .. _folds_file:
 
@@ -498,133 +539,12 @@ will be ignored. The first column should consist of training set IDs and the
 second should be a string for the fold ID (e.g., 1 through 5, A through D, etc.).
 If specified, the CV and grid search will leave one fold ID out at a time. [#]_
 
-.. _learning_curve_cv_folds_list:
-
-learning_curve_cv_folds_list *(Optional)*
-""""""""""""""""""""""""""""""""""""""""""
-
-List of integers specifying the number of folds to use for cross-validation
-at each point of the learning curve (training size), one per learner. For
-example, if you specify the following learners: ``["SVC", "LogisticRegression"]``,
-specifying ``[10, 100]`` as the value of ``learning_curve_cv_folds_list`` will
-tell SKLL to use 10 cross-validation folds at each point of the SVC curve and
-100 cross-validation folds at each point of the logistic regression curve. Although
-more folds will generally yield more reliable results, smaller number of folds
-may be better for learners that are slow to train. Defaults to 10 for
-each learner.
-
-.. _learning_curve_train_sizes:
-
-learning_curve_train_sizes *(Optional)*
-""""""""""""""""""""""""""""""""""""""""""
-
-List of floats or integers representing relative or absolute numbers
-of training examples that will be used to generate the learning curve
-respectively. If the type is float, it is regarded as a fraction of
-the maximum size of the training set (that is determined by the selected
-validation method), i.e. it has to be within (0, 1]. Otherwise it is
-interpreted as absolute sizes of the training sets. Note that for classification
-the number of samples usually have to be big enough to contain at least
-one sample from each class. Defaults to ``[0.1, 0.325, 0.55, 0.775, 1.0]``.
-
-.. _custom_learner_path:
-
-custom_learner_path *(Optional)*
-""""""""""""""""""""""""""""""""
-
-Path to a ``.py`` file that defines a custom learner.  This file will be
-imported dynamically.  This is only required if a custom learner is specified
-in the list of :ref:`learners`.
-
-All Custom learners must implement the ``fit`` and
-``predict`` methods. Custom classifiers must either (a) inherit from an existing scikit-learn classifier, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
-
-Similarly, Custom regressors must either (a) inherit from an existing scikit-learn regressor, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
-
-Learners that require dense matrices should implement a method ``requires_dense``
-that returns ``True``.
-
-.. _sampler:
-
-sampler *(Optional)*
-""""""""""""""""""""
-
-It performs a non-linear transformations of the input, which can serve
-as a basis for linear classification or other algorithms. Valid options
-are:
-`Nystroem <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.Nystroem.html#sklearn.kernel_approximation.Nystroem>`__,
-`RBFSampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.RBFSampler.html#sklearn.kernel_approximation.RBFSampler>`__,
-`SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html#sklearn.kernel_approximation.SkewedChi2Sampler>`__, and
-`AdditiveChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.AdditiveChi2Sampler.html#sklearn.kernel_approximation.AdditiveChi2Sampler>`__.  For additional information see
-`the scikit-learn documentation <https://scikit-learn.org/stable/modules/kernel_approximation.html>`__.
-
-.. _sampler_parameters:
-
-sampler_parameters *(Optional)*
-"""""""""""""""""""""""""""""""
-
-dict containing parameters you want to have fixed for  the ``sampler``.
-Any empty ones will be ignored (and the defaults will be used).
-
-The default fixed parameters (beyond those that scikit-learn sets) are:
-
-Nystroem
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-RBFSampler
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-SkewedChi2Sampler
-    .. code-block:: python
-
-       {'random_state': 123456789}
-
-.. _feature_hasher:
-
-feature_hasher *(Optional)*
-"""""""""""""""""""""""""""
-
-If "true", this enables a high-speed, low-memory vectorizer that uses
-feature hashing for converting feature dictionaries into NumPy arrays
-instead of using a
-`DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__.  This flag will drastically
-reduce memory consumption for data sets with a large number of
-features. If enabled, the user should also specify the number of
-features in the :ref:`hasher_features <hasher_features>` field.  For additional
-information see `the scikit-learn documentation <https://scikit-learn.org/stable/modules/feature_extraction.html#feature-hashing>`__.
-
-.. _hasher_features:
-
-hasher_features *(Optional)*
-""""""""""""""""""""""""""""
-
-The number of features used by the `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ if the
-:ref:`feature_hasher <feature_hasher>` flag is enabled.
-
-.. note::
-
-    To avoid collisions, you should always use the power of two larger than the
-    number of features in the data set for this setting. For example, if you
-    had 17 features, you would want to set the flag to 32.
-
-.. _featureset_names:
-
-featureset_names *(Optional)*
-"""""""""""""""""""""""""""""
-
-Optional list of names for the feature sets.  If omitted, then the prefixes
-will be munged together to make names.
-
 .. _fixed_parameters:
 
 fixed_parameters *(Optional)*
 """""""""""""""""""""""""""""
 
-List of dicts containing parameters you want to have fixed for each
+List of dictionaries containing parameters you want to have fixed for each
 learner in :ref:`learners` list. Any empty ones will be ignored
 (and the defaults will be used). If :ref:`grid_search` is ``True``,
 there is a potential for conflict with specified/default parameter grids
@@ -670,7 +590,7 @@ LinearSVC and LinearSVR
 LogisticRegression
     .. code-block:: python
 
-        {'random_state': 123456789}
+            {'max_iter': 1000, multi_class': 'auto', random_state': 123456789, 'solver': 'liblinear'}
 
     .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
 
@@ -697,35 +617,35 @@ Ridge and RidgeClassifier
 SVC and SVR
     .. code-block:: python
 
-       {'cache_size': 1000}
+           {'cache_size': 1000, 'gamma': 'scale'}
 
 SGDClassifier
     .. code-block:: python
 
-       {'loss': 'log', 'random_state': 123456789}
+           {'loss': 'log', 'max_iter': 1000, random_state': 123456789, 'tol': 1e-3}
 
 SGDRegressor
     .. code-block:: python
 
-       {'random_state': 123456789}
+           {'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
 
 TheilSenRegressor
     .. code-block:: python
 
        {'random_state': 123456789}
 
-
 .. _imbalanced_data:
 
 .. note::
-    This option allows us to deal with imbalanced data sets by using
-    the parameter ``class_weight`` for the classifiers:
-    ``DecisionTreeClassifier``, ``LogisticRegression``,  ``LinearSVC``,
-    ``RandomForestClassifier``, ``RidgeClassifier``, ``SGDClassifier``,
-    and ``SVC``.
 
-    Two possible options are available. The first one is ``balanced``,
-    which automatically adjust weights inversely proportional to class
+        The `fixed_parameters` field offers us a way to deal with imbalanced
+        data sets by using the parameter ``class_weight`` for the following 
+        classifiers: ``DecisionTreeClassifier``, ``LogisticRegression``, 
+        ``LinearSVC``, ``RandomForestClassifier``, ``RidgeClassifier``, 
+        ``SGDClassifier``, and ``SVC``.
+
+    Two possible options are available. The first one is ``balanced``, which
+    automatically adjusts weights inversely proportional to class
     frequencies, as shown in the following code:
 
     .. code-block:: python
@@ -741,89 +661,199 @@ TheilSenRegressor
 
     Additional examples and information can be seen `here <https://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_samples.html>`__.
 
-.. _feature_scaling:
+.. _hasher_features:
 
-feature_scaling *(Optional)*
+hasher_features *(Optional)*
 """"""""""""""""""""""""""""
 
-Whether to scale features by their mean and/or their standard deviation. If you
-scale by mean, your data will automatically be converted to dense, so use
-caution when you have a very large dataset. Valid options are:
+The number of features used by the `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ if the
+:ref:`feature_hasher <feature_hasher>` flag is enabled.
 
-none
-    Perform no feature scaling at all.
+.. note::
 
-with_std
-    Scale feature values by their standard deviation.
+    To avoid collisions, you should always use the power of two larger than the
+    number of features in the data set for this setting. For example, if you
+    had 17 features, you would want to set the flag to 32.
 
-with_mean
-    Center features by subtracting their mean.
+.. _id_col:
 
-both
-    Perform both centering and scaling.
+id_col *(Optional)*
+"""""""""""""""""""
+If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
+files, the IDs for each instance are assumed to be in a column with this
+name. If no column with this name is found, the IDs are generated
+automatically. Defaults to ``id``.
 
-Defaults to ``none``.
+.. _ids_to_floats:
+
+ids_to_floats *(Optional)*
+""""""""""""""""""""""""""
+
+If you have a dataset with lots of examples, and your input files have IDs that
+look like numbers (can be converted by float()), then setting this to True will
+save you some memory by storing IDs as floats. Note that this will cause IDs to
+be printed as floats in prediction files (e.g., ``4.0`` instead of ``4`` or
+``0004`` or ``4.000``).
+
+.. _label_col:
+
+label_col *(Optional)*
+""""""""""""""""""""""
+
+If you're using :ref:`ARFF <arff>`, :ref:`CSV <csv>`, or :ref:`TSV <csv>`
+files, the class labels for each instance are assumed to be in a column with
+this name. If no column with this name is found, the data is assumed to be
+unlabelled. Defaults to ``y``. For ARFF files only, this must also be the final
+column to count as the label (for compatibility with Weka).
+
+.. _learning_curve_cv_folds_list:
+
+learning_curve_cv_folds_list *(Optional)*
+""""""""""""""""""""""""""""""""""""""""""
+
+List of integers specifying the number of folds to use for cross-validation
+at each point of the learning curve (training size), one per learner. For
+example, specifying ``["SVC", "LogisticRegression"]`` for ``learners``
+and  specifying ``[10, 100]`` for ``learning_curve_cv_folds_list`` will
+tell SKLL to use 10 cross-validation folds at each point of the SVC curve and
+100 cross-validation folds at each point of the logistic regression curve. Although
+more folds will generally yield more reliable results, smaller number of folds
+may be better for learners that are slow to train. Defaults to 10 for
+each learner.
+
+.. _learning_curve_train_sizes:
+
+learning_curve_train_sizes *(Optional)*
+""""""""""""""""""""""""""""""""""""""""""
+
+List of floats or integers representing relative or absolute numbers
+of training examples that will be used to generate the learning curve
+respectively. If the type is float, it is regarded as a fraction of
+the maximum size of the training set (that is determined by the selected
+validation method), i.e. it has to be within (0, 1]. Otherwise it is
+interpreted as absolute sizes of the training sets. Note that for classification
+the number of samples usually has to be big enough to contain at least
+one sample from each class. Defaults to ``[0.1, 0.325, 0.55, 0.775, 1.0]``.
+
+.. _num_cv_folds:
+
+num_cv_folds *(Optional)*
+"""""""""""""""""""""""""
+
+The number of folds to use for cross validation. Defaults to 10.
+
+.. _shuffle:
+
+.. _random_folds:
+
+random_folds *(Optional)*
+"""""""""""""""""""""""""
+
+Whether to use random folds for cross-validation. Defaults to ``False``.
+
+.. _sampler:
+
+sampler *(Optional)*
+""""""""""""""""""""
+
+Whether to use a feature sampler that performs  non-linear transformations 
+of the input, which can serve as a basis for linear classification 
+or other algorithms. Valid options are:
+`Nystroem <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.Nystroem.html#sklearn.kernel_approximation.Nystroem>`__,
+`RBFSampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.RBFSampler.html#sklearn.kernel_approximation.RBFSampler>`__,
+`SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html#sklearn.kernel_approximation.SkewedChi2Sampler>`__, and
+`AdditiveChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.AdditiveChi2Sampler.html#sklearn.kernel_approximation.AdditiveChi2Sampler>`__.  For additional information see
+`the scikit-learn documentation <https://scikit-learn.org/stable/modules/kernel_approximation.html>`__.
+
+.. note:: Using a feature sampler with the ``MultinomialNB`` learner is not allowed
+          since it cannot handle negative feature values.
+
+
+.. _sampler_parameters:
+
+sampler_parameters *(Optional)*
+"""""""""""""""""""""""""""""""
+
+dict containing parameters you want to have fixed for  the ``sampler``.
+Any empty ones will be ignored (and the defaults will be used).
+
+The default fixed parameters (beyond those that scikit-learn sets) are:
+
+Nystroem
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+RBFSampler
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+SkewedChi2Sampler
+    .. code-block:: python
+
+       {'random_state': 123456789}
+
+shuffle *(Optional)*
+""""""""""""""""""""
+
+If ``True``, shuffle the examples in the training data before using them for
+learning. This happens automatically when doing a grid search but it might be
+useful in other scenarios as well, e.g., online learning. Defaults to
+``False``.
+
+.. _suffix:
+
+suffix *(Optional)*
+"""""""""""""""""""
+
+The file format the training/test files are in. Valid option are
+:ref:`.arff <arff>`, :ref:`.csv <csv>`, :ref:`.jsonlines <ndj>`,
+:ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, :ref:`.ndj <ndj>`, and
+:ref:`.tsv <csv>`.
+
+If you omit this field, it is assumed that the "prefixes" listed in
+:ref:`featuresets <featuresets>` are actually complete filenames. This can be
+useful if you have feature files that are all in different formats that you
+would like to combine.
+
+.. _test_file:
+
+test_file *(Optional)*
+""""""""""""""""""""""
+
+Path to a file containing the features to test on.  Cannot be used in
+combination with :ref:`featuresets <featuresets>`,
+:ref:`train_directory <train_directory>`, or :ref:`test_directory <test_directory>`
+
+.. _test_directory:
+
+test_directory *(Optional)*
+"""""""""""""""""""""""""""
+
+Path to directory containing test data files. There must be a file
+for each featureset.  Cannot be used in combination with
+:ref:`train_file <train_file>` or :ref:`test_file <test_file>`.
 
 .. _tuning:
 
 Tuning
 ^^^^^^
 
-.. _grid_search:
-
-grid_search *(Optional)*
-""""""""""""""""""""""""
-
-Whether or not to perform grid search to find optimal parameters for
-classifier. Defaults to ``False``. Note that for the
-:ref:`learning_curve <learning_curve>` task, grid search is not allowed
-and setting it to ``True`` will generate a warning and be ignored.
-
-.. _grid_search_folds:
-
-grid_search_folds *(Optional)*
-""""""""""""""""""""""""""""""
-
-The number of folds to use for grid search. Defaults to 3.
-
-.. _grid_search_jobs:
-
-grid_search_jobs *(Optional)*
-"""""""""""""""""""""""""""""
-
-Number of folds to run in parallel when using grid search. Defaults to
-number of grid search folds.
-
-.. _use_folds_file_for_grid_search:
-
-use_folds_file_for_grid_search *(Optional)*
-"""""""""""""""""""""""""""""""""""""""""""
-
-Whether to use the specified :ref:`folds_file <folds_file>` for the inner grid-search
-cross-validation loop when :ref:`task` is set to ``cross_validate``.
-Defaults to ``True``.
-
-.. note::
-
-    This flag is ignored for all other tasks, including the
-    ``train`` task where a specified :ref:`folds_file <folds_file>` is
-    *always* used for the grid search.
-
-.. _min_feature_count:
-
-min_feature_count *(Optional)*
-""""""""""""""""""""""""""""""
-
-The minimum number of examples for which the value of a feature must be nonzero
-to be included in the model. Defaults to 1.
+Generally, in this section, you would specify fields that pertain to the
+hyperparameter tuning for each learner. The most common required field
+is :ref:`objectives` although it may also be optional in certain 
+circumstances.
 
 .. _objectives:
 
-objectives *(Optional)*
-"""""""""""""""""""""""
+objectives 
+""""""""""
 
 A list of one or more metrics to use as objective functions for tuning the learner
-hyperparameters. Available metrics are:
+hyperparameters via grid search. Note that ``objectives`` is required by default in most cases unless (a) :ref:`grid_search <grid_search>` is explicitly set to ``False`` or (b) the task is :ref:`learning_curve <learning_curve>`. For (a), any specified objectives are ignored. For (b), specifying objectives will raise an exception.
+
+Available metrics are:
 
 .. _classification_obj:
 
@@ -876,9 +906,6 @@ hyperparameters. Available metrics are:
 .. |F1 link| replace:: F\ :sub:`1` score
 .. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 
-
-
-
     **Regression:** The following objectives can be used for regression problems.
 
     *   **explained_variance**: A `score <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.explained_variance_score.html#sklearn.metrics.explained_variance_score>`__ indicating how much of the variance in the given data can be by the model.
@@ -900,6 +927,56 @@ hyperparameters. Available metrics are:
         differences are discounted by one. In other words, a ranking of
         1 and a ranking of 2 would be considered equal.
 
+The following is a list of the other optional fields in this section in alphabetical order.
+
+.. _grid_search:
+
+grid_search *(Optional)*
+""""""""""""""""""""""""
+
+Whether or not to perform grid search to find optimal parameters for
+the learner. Defaults to ``True`` since optimizing model hyperparameters
+almost always leads to better performance. Note that for the
+:ref:`learning_curve <learning_curve>` task, grid search is not allowed
+and setting it to ``True`` will generate a warning and be ignored.
+
+.. note:: 
+
+    1. In versions of SKLL before v2.0, this option was set to
+       ``False`` by default but that was changed since the benefits
+       of hyperparameter tuning significantly outweigh the cost
+       in terms of model fitting time. Instead, SKLL users must explicitly
+       opt out of hyperparameter tuning if they so desire.
+
+    2. Although SKLL only uses the combination of hyperparameters in
+       the grid that maximizes the grid search objective, the results
+       for all other points on the grid that were tried are also available.
+       See the ``grid_search_cv_results`` attribute in the ``.results.json`` 
+       file. 
+
+.. _grid_search_folds:
+
+grid_search_folds *(Optional)*
+    
+""""""""""""""""""""""""""""""
+
+The number of folds to use for grid search. Defaults to 3.
+
+.. _grid_search_jobs:
+
+grid_search_jobs *(Optional)*
+"""""""""""""""""""""""""""""
+
+Number of folds to run in parallel when using grid search. Defaults to
+number of grid search folds.
+
+.. _min_feature_count:
+
+min_feature_count *(Optional)*
+""""""""""""""""""""""""""""""
+
+The minimum number of examples for which the value of a feature must be nonzero
+to be included in the model. Defaults to 1.
 
 .. _param_grids:
 
@@ -1007,10 +1084,9 @@ SVR
 
        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
 
-
 .. note::
     Note that learners not listed here do not have any default
-    parameter grids in SKLL either because either there are no
+    parameter grids in SKLL either because there are no
     hyper-parameters to tune or decisions about which parameters
     to tune (and how) depend on the data being used for the
     experiment and are best left up to the user.
@@ -1029,23 +1105,73 @@ class. For example, if the two labels in data are "A" and
 "B" and ``pos_label_str`` is not specified, "B" will be chosen
 as the positive class.
 
-Note that ``pos_label_str`` will be ignored if you have more
-than two classes.
+.. _use_folds_file_for_grid_search:
+
+use_folds_file_for_grid_search *(Optional)*
+"""""""""""""""""""""""""""""""""""""""""""
+
+Whether to use the specified :ref:`folds_file <folds_file>` for the inner grid-search
+cross-validation loop when :ref:`task` is set to ``cross_validate``.
+Defaults to ``True``.
+
+.. note::
+
+    This flag is ignored for all other tasks, including the
+    ``train`` task where a specified :ref:`folds_file <folds_file>` is
+    *always* used for the grid search.
 
 .. _output:
 
 Output
 ^^^^^^
 
-.. _probability:
+The fields in this section generally pertain to the 
+:ref:`output files<experiment_output_files>` produced
+by the experiment. The most common fields are ``logs``, ``models``, 
+``predictions``, and ``results``. These fields are mostly optional
+although they may be required in certain cases. A common option 
+is to use the same directory for all of these fields.
 
-probability *(Optional)*
-""""""""""""""""""""""""
+.. _log:
 
-Whether or not to output probabilities for each class instead of the
-most probable class for each instance. Only really makes a difference
-when storing predictions. Defaults to ``False``. Note that this also
-applies to the tuning objective.
+log *(Optional)*
+""""""""""""""""
+
+Directory to store SKLL :ref:`log files <output_log_files>` in. 
+If omitted, the current working directory is used. 
+
+.. _models:
+
+models *(Optional)*
+"""""""""""""""""""
+
+Directory in which to store :ref:`trained models <output_model_files>`.
+Can be omitted to not store models except when using the :ref:`train <train>`
+task, where this path *must* be specified. On the other hand, this path must 
+*not* be specified for the :ref:`learning_curve <learning_curve>` task.
+
+.. _metrics:
+
+metrics *(Optional)*
+""""""""""""""""""""
+For the ``evaluate`` and ``cross_validate`` tasks, this is an optional
+list of additional metrics that will be computed *in addition to*
+the tuning objectives and added to the results files. However, for the 
+:ref:`learning_curve <learning_curve>` task, this list is **required**. 
+Possible values are all of the same functions as those available for the 
+:ref:`tuning objectives <objectives>`  (with the same caveats).
+
+.. note::
+
+    If the list of metrics overlaps with the grid search tuning 
+    :ref:`objectives <objectives>`, then, for each job, the objective
+    that overlaps is *not* computed again as a metric. Recall that
+    each SKLL job can only contain a single tuning objective. Therefore,
+    if, say, the ``objectives`` list is ``['accuracy', 'roc_auc']`` and the
+    ``metrics`` list is ``['roc_auc', 'average_precision']``, then in the
+    second job, ``roc_auc`` is used as the objective but *not* computed
+    as an additional metric.
+
 
 .. _pipeline:
 
@@ -1053,7 +1179,7 @@ pipeline *(Optional)*
 """""""""""""""""""""
 
 Whether or not the final learner object should contain a ``pipeline``
-attribute that contains a scikit-learn `Pipeline <http://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html>`__ object composed
+attribute that contains a scikit-learn `Pipeline <https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html>`__ object composed
 of copies of each of the following steps of training the learner:
 
     * feature vectorization (`vectorizer`)
@@ -1109,85 +1235,53 @@ Here's an example of how to use this attribute.
     # do the following for D1, which is much less readable
     enc.inverse_transform(learner1.model.predict(learner1.scaler.transform(learner1.feat_selector.transform(learner1.feat_vectorizer.transform(D1)))))
 
-
 .. note::
     1. When using a `DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__ in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both``, the `sparse` attribute of the vectorizer stage in the pipeline is set to ``False`` since centering requires dense arrays.
     2. When feature hashing is used (via a `FeatureHasher <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html>`__ ) in SKLL along with :ref:`feature_scaling <feature_scaling>` set to either ``with_mean`` or ``both`` , a custom pipeline stage (:py:mod:`skll.learner.Densifier`) is inserted in the pipeline between the feature vectorization (here, hashing) stage and the feature scaling stage. This is necessary since a ``FeatureHasher`` does not have a ``sparse`` attribute to turn off -- it *only* returns sparse vectors.
     3. A ``Densifier`` is also inserted in the pipeline when using a `SkewedChi2Sampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.SkewedChi2Sampler.html>`__ for feature sampling since this sampler requires dense input and cannot be made to work with sparse arrays.
-
-
-.. _results:
-
-results *(Optional)*
-""""""""""""""""""""
-
-Directory to store result files in. If omitted, the current working
-directory is used.
-
-.. _metrics:
-
-metrics *(Optional)*
-""""""""""""""""""""
-For the ``evaluate`` and ``cross_validate`` tasks, this is a list of
-additional metrics that will be computed *in addition to* the tuning
-objectives and added to the results files. For the ``learning_curve`` task,
-this will be the list of metrics for which the learning curves
-will be plotted. Can take all of the same functions as those
-available for the :ref:`tuning objectives <objectives>` (with the
-same caveats).
-
-.. note::
-
-    1. For learning curves, ``metrics`` can be specified instead of
-       ``objectives`` since both serve the same purpose. If both are
-       specified, ``objectives`` will be ignored.
-    2. For the ``evaluate`` and ``cross_validate`` tasks,  any functions
-       that are specified in both ``metrics`` and  ``objectives``
-       are assumed to be the latter.
-    3. If you just want to use ``neg_log_loss`` as an additional metric,
-       you do not need to set :ref:`probability <probability>` to ``True``.
-       That's only neeeded for ``neg_log_loss`` to be used as a tuning
-       objective.
-
-.. _log:
-
-log *(Optional)*
-""""""""""""""""
-
-Directory to store log files in. If omitted, the current working
-directory is used.
-
-.. _models:
-
-models *(Optional)*
-"""""""""""""""""""
-
-Directory to store trained models in. Can be omitted to not store
-models.
 
 .. _predictions:
 
 predictions *(Optional)*
 """"""""""""""""""""""""
 
-Directory to store prediction files in. Can be omitted to not store
-predictions.
+Directory in which to store :ref:`prediction files <output_prediction_files>`.
+Can be omitted to not store predictions. Must *not* be specified for the 
+:ref:`learning_curve <learning_curve>` and :ref:`train <train>` tasks.
 
-.. note::
+.. _probability:
 
-    You can use the same directory for :ref:`results <results>`,
-    :ref:`log <log>`, :ref:`models <models>`, and
-    :ref:`predictions <predictions>`.
+probability *(Optional)*
+""""""""""""""""""""""""
 
+Whether or not to output probabilities for each class instead of the
+most probable class for each instance. Only really makes a difference
+when storing predictions. Defaults to ``False``. Note that this also
+applies to the tuning objective.
+
+.. _results:
+
+results *(Optional)*
+""""""""""""""""""""
+
+Directory in which to store :ref:`result files <output_results_files>`.
+If omitted, the current working directory is used. 
 
 .. _save_cv_folds:
 
 save_cv_folds *(Optional)*
 """"""""""""""""""""""""""
 
-Whether to save the folds that were used for a cross-validation experiment
-to a CSV file named ``EXPERIMENT_skll_fold_ids.csv`` in the :ref:`results`
-directory, where ``EXPERIMENT`` refers to the :ref:`experiment_name`.
+Whether to save the :ref:`folds file <output_folds_file>` containing the folds for a cross-validation experiment.
+Defaults to ``False``.
+
+.. _save_cv_models:
+
+save_cv_models *(Optional)*
+"""""""""""""""""""""""""""
+
+Whether to save each of the K :ref:`model files <output_model_files>` trained during 
+each step of a K-fold cross-validation experiment.
 Defaults to ``False``.
 
 .. _run_experiment:
@@ -1251,8 +1345,7 @@ specified via command-line arguments instead of in the configuration file:
 
     Show program's version number and exit.
 
-GridMap options
-^^^^^^^^^^^^^^^
+**GridMap options**
 
 If you have `GridMap <https://pypi.org/project/gridmap/>`__ installed,
 :program:`run_experiment` will automatically schedule jobs on your DRMAA-
@@ -1277,69 +1370,160 @@ behavior.
 
         Full names must be specified, (e.g., ``nlp.research.ets.org``).
 
+.. _experiment_output_files:
 
 Output files
-^^^^^^^^^^^^
+------------
 
-For most of the tasks, the result, log, model, and prediction files generated by
-``run_experiment`` will all share the automatically generated prefix
-``EXPERIMENT_FEATURESET_LEARNER_OBJECTIVE``, where the following definitions hold:
+For most of the SKLL tasks the various output files generated by :ref:`run_experiment <run_experiment>` share the automatically generated prefix 
+``<EXPERIMENT>_<FEATURESET>_<LEARNER>_<OBJECTIVE>``, where the following definitions hold:
 
-    ``EXPERIMENT``
-        The name specified as :ref:`experiment_name` in the configuration file.
+    ``<EXPERIMENT>``
+        The value of the :ref:`experiment_name` field in the configuration file.
 
-    ``FEATURESET``
-        The feature set we're training on joined with "+".
+    ``<FEATURESET>``
+        The components of the feature set that was used for training, joined with "+".
 
-    ``LEARNER``
-        The learner the current results/model/etc. was generated using.
+    ``<LEARNER>``
+        The learner that was used to generate the current results/model/etc. 
 
-    ``OBJECTIVE``
-        The objective function the current results/model/etc. was generated using.
+    ``<OBJECTIVE>``
+        The objective function that was used to generate the current results/model/etc.
 
-However, if ``objectives`` contains only one objective function,
-the result, log, model, and prediction files will share the prefix
-``EXPERIMENT_FEATURESET_LEARNER``. For backward-compatibility, the same
-applies when a single objective is specified using ``objective=x``.
+.. note:: 
 
-In addition to the above log files that are specific to each "job"
-(a specific combination of featuresets, learners, and objectives specified
-in the configuration file), SKLL also produces a single, top level "experiment"
-log file with only ``EXPERIMENT`` as the prefix. While the job-level log files
-contain messages that pertain to the specific characteristics of the job, the
-experiment-level log file will contain logging messages that pertain to the
-overall experiment and configuration file. The messages in the log files are
-in the following format:
+    In SKLL terminology, a specific combination of featuresets, learners, 
+    and objectives specified in the configuration file is called a ``job``.
+    Therefore, an experiment (represented by a configuration file) can  
+    contain multiple jobs.
+
+    However, if the :ref:`objectives <objectives>` field in the configuration file
+    contains only a single value, the job can be disambiguated using only
+    the featuresets and the learners since the objective is fixed. Therefore,
+    the output files will have the prefix ``<EXPERIMENT>_<FEATURESET>_<LEARNER>``.
+
+The following types of output files can be generated after running an experiment
+configuration file through :ref:`run_experiment <run_experiment>`. Note that
+some file types may or may not be generated depending on the values of the fields
+specified in the :ref:`Output section <output>` of the configuration file.
+
+.. _output_log_files:
+
+Log files
+^^^^^^^^^
+
+SKLL produces two types of log files -- one for each job in the experiment
+and a single, top level log file for the entire experiment. Each of the job
+log files have the usual job prefix as described above whereas the experiment
+log file is simply named ``<EXPERIMENT>.log``.
+
+While the job-level log files contain messages that pertain to the specific 
+characteristics of the job (e.g., warnings from scikit-learn pertaining to
+the specific learner), the experiment-level log file will contain logging
+messages that pertain to the overall experiment and configuration file (e.g.,
+an incorrect option specified in the configuration file). The  messages in all
+SKLL log files are in the following format:
 
 .. code-block:: bash
 
-    TIMESTAMP - LEVEL - MSG
+    <TIMESTAMP> - <LEVEL> - <MSG>
 
-where ``TIMESTAMP`` refers to the exact time when the message was logged,
-``LEVEL`` refers to the level of the logging message (e.g., ``INFO``, ``WARNING``,
-etc.), and ``MSG`` is the actual content of the message. All of the messages
+where ``<TIMESTAMP>`` refers to the exact time when the message was logged,
+``<LEVEL>`` refers to the level of the logging message (e.g., ``INFO``, ``WARNING``,
+etc.), and ``<MSG>`` is the actual content of the message. All of the messages
 are also printed to the console in addition to being saved in the job-level log
 files and the experiment-level log file.
 
-For every experiment you run, there will also be a result summary file
-generated that is a tab-delimited file summarizing the results for each
-learner-featureset combination you have in your configuration file. It is named
-``EXPERIMENT_summary.tsv``. For :ref:`learning_curve <learning_curve>`
-experiments, this summary file will contain training set sizes and the averaged
-scores for all combinations of featuresets, learners, and objectives.
+.. _output_model_files:
 
-If `seaborn <http://seaborn.pydata.org>`__ is available when running
-a :ref:`learning_curve <learning_curve>` experiment,
+Model files
+^^^^^^^^^^^
+Model files end in ``.model`` and are serialized :py:mod:`skll.learner.Learner`
+instances. :ref:`run_experiment <run_experiment>` will re-use existing model
+files if they exist, unless it is explicitly told not to. These model files
+can also be loaded programmatically via the SKLL API, specifically the 
+:py:mod:`skll.learner.Learner.from_file()` method.
+
+.. _output_results_files:
+
+Results files
+^^^^^^^^^^^^^
+
+SKLL generates two types of result files: 
+
+1. Files ending in ``.results`` which contain a human-readable summary of the
+   job, complete with confusion matrix, objective function score on the test set,
+   and values of any additional metrics specified via the :ref:`metrics <metrics>`
+   configuration file option. 
+
+2. Files ending in ``.results.json``, which contain all of the same information as the
+   ``.results`` files, but in a format more well-suited to automated processing. In
+   some cases, ``.results.json`` files may contain *more* information than their
+   ``.results`` file counterparts. For example, when doing :ref:`grid search <grid_search>`
+   for tuning model hyperparameters, these files contain an additional attribute ``grid_search_cv_results`` containing detailed results from the grid search process.
+
+
+.. _output_prediction_files:
+
+Prediction files
+^^^^^^^^^^^^^^^^
+
+Predictions files are TSV files that contain either the predicted
+values (for regression) OR predicted labels/class probabiltiies 
+(for classification) for each instance in the test feature set. 
+The value of the :ref:`probability <probability>` option decides whether SKLL
+outputs the labels or the probabilities.
+
+When the predictions are labels or values, there
+are only two columns in the file: one containing the ID for the instance
+and the other containing the prediction. The headers for the two columns
+in this case are "id" and "prediction".
+
+When the predictions are class probabilities, there are N+1 columns
+in these files, where N is the number of classes in the training
+data. The header for the column containing IDs is still "id" and the
+labels themselves are the headers for the columns containing their
+respective probabilities. In the special case of binary classification,
+the :ref:`positive class <pos_label_str>` probabilities are always in
+the last column.
+
+.. _output_summary_file:
+
+Summary file
+^^^^^^^^^^^^
+
+For every experiment you run, there will also be an experiment summary file
+generated that is a tab-delimited file summarizing the results for each
+job in the experiment. It is named ``<EXPERIMENT>_summary.tsv``. 
+For :ref:`learning_curve <learning_curve>` experiments, this summary
+file will contain training set sizes and the averaged scores for all
+combinations of featuresets, learners, and objectives.
+
+.. _output_folds_file:
+
+Folds file
+^^^^^^^^^^
+
+For the :ref:`cross_validate <cross_validate>` task, SKLL can also output
+the actual folds and instance IDs used in the cross-validation process, if
+the :ref:`save_cv_folds <save_cv_folds>` option is enabled. In this case,
+a file called ``<EXPERIMENT>_skll_fold_ids.csv`` is saved to disk.
+
+.. _output_learning_curve_plots:
+
+Learning curve plots
+^^^^^^^^^^^^^^^^^^^^
+
+When running a :ref:`learning_curve <learning_curve>` experiment,
 actual learning curves are also generated as PNG files - one for each feature set
 specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURESET.png``
 and contains a faceted learning curve plot for the featureset with objective
 functions on rows and learners on columns. Here's an example of such a plot.
 
-If you didn't have seaborn available when running the learning curve
-experiment, you can always generate the plots later from the learning curve summary
-file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
-
     .. image:: learning_curve.png
+
+You can also generate the plots from the learning curve summary
+file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
 
 
 .. rubric:: Footnotes

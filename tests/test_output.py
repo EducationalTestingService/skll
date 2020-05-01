@@ -10,6 +10,7 @@ Tests related to output from run_experiment
 import csv
 import json
 import os
+import platform
 import re
 import warnings
 
@@ -25,6 +26,7 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 
+from nose.plugins.skip import SkipTest
 from nose.tools import eq_, ok_, assert_raises
 
 from sklearn.datasets import load_digits
@@ -32,10 +34,10 @@ from sklearn.model_selection import ShuffleSplit, learning_curve
 from sklearn.naive_bayes import MultinomialNB
 
 from skll.data import FeatureSet, NDJWriter, Reader
-from skll.config import _VALID_TASKS
-from skll.experiments import (_compute_ylimits_for_featureset,
-                              run_configuration)
-from skll.learner import Learner, _DEFAULT_PARAM_GRIDS
+from skll.experiments import run_configuration
+from skll.experiments.output import _compute_ylimits_for_featureset
+from skll.learner import Learner
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS, VALID_TASKS
 
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_options,
@@ -45,7 +47,7 @@ from tests.utils import (create_jsonlines_feature_files,
                          make_regression_data)
 
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
@@ -93,7 +95,7 @@ def tearDown():
                 + glob(join(output_dir, 'test_majority_class_custom_learner_*')):
             os.unlink(output_file)
 
-    for suffix in _VALID_TASKS:
+    for suffix in VALID_TASKS:
         config_files = ['test_cv_results_{}.cfg'.format(suffix)]
         for cf in config_files:
             if exists(join(config_dir, cf)):
@@ -579,7 +581,7 @@ def check_grid_search_cv_results(task, do_grid_search):
 
 
 def test_grid_search_cv_results():
-    for task in _VALID_TASKS:
+    for task in VALID_TASKS:
         for do_grid_search in [True, False]:
             yield check_grid_search_cv_results, task, do_grid_search
 
@@ -1084,6 +1086,7 @@ def test_send_warnings_to_log():
     Test that warnings get correctly sent to the logger.
     """
     # Run experiment
+
     suffix = '.jsonlines'
     train_path = join(_my_dir, 'train', 'test_send_warnings{}'.format(suffix))
     config_path = fill_in_config_paths_for_single_file(join(_my_dir,
@@ -1102,14 +1105,8 @@ def test_send_warnings_to_log():
                    'test_send_warnings_to_log_train_test_send_warnings.'
                    'jsonlines_LinearSVC.log')) as f:
         log_content = f.read()
-        undefined_metric_sklearn_warning_re = \
-            re.compile(r"WARNING - [^\n]+sklearn/metrics/classification\.py:\d+:"
-                       r" UndefinedMetricWarning:Precision and F-score are "
-                       r"ill-defined and being set to 0\.0 in labels with no "
-                       r"predicted samples\.")
         convergence_sklearn_warning_re = \
-            re.compile(r"WARNING - [^\n]+sklearn/svm/base\.py:\d+: "
+            re.compile(r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: "
                        r"ConvergenceWarning:Liblinear failed to converge, "
                        r"increase the number of iterations\.")
-        assert undefined_metric_sklearn_warning_re.search(log_content) is not None
         assert convergence_sklearn_warning_re.search(log_content) is not None

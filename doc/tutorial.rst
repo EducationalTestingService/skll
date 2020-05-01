@@ -27,19 +27,15 @@ data from `Kaggle <https://www.kaggle.com>`__.
 Get your data into the correct format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The first step to getting the Titanic data is logging into Kaggle and
-downloading `train.csv <https://www.kaggle.com/c/titanic-gettingStarted/download/train.csv>`__
-and `test.csv <https://www.kaggle.com/c/titanic-gettingStarted/download/test.csv>`__.
-Once you have those files, you'll also want to grab the
-`examples folder <https://github.com/EducationalTestingService/skll/tree/master/examples>`__
-on our GitHub page and put ``train.csv`` and ``test.csv`` in ``examples``.
+The first step is to get the Titanic data. We have already downloaded the data files
+from Kaggle and included them in the SKLL repository. Next, we need to get the files
+and process them to get them in the right shape.
 
-The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`,
-will split the training and test data files from Kaggle up into groups
-of related features and store them in ``dev``, ``test``, ``train``, and
-``train+dev`` subdirectories.  The development set that gets created by the
-script is 20% of the data that was in the original training set, and ``train``
-contains the other 80%.
+The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`, will split the train and test data files
+from Kaggle up into groups of related features and store them in 
+``dev``, ``test``, ``train``, and ``train+dev`` subdirectories.  
+The development set that gets created by the script is 20% of the data 
+that was in the original training set, and ``train`` contains the other 80%.
 
 Create a configuration file for the experiment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -119,8 +115,8 @@ need to type the following into a terminal:
 
 That should produce output like::
 
-    2017-12-07 11:40:17,381 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Task: evaluate
-    2017-12-07 11:40:17,381 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Training on train, Test on dev, feature set ['family.csv', 'misc.csv', 'socioeconomic.csv', 'vitals.csv'] ...
+    2020-03-10 14:25:23,596 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Task: evaluate
+    2020-03-10 14:25:23,596 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Training on train, Test on dev, feature set ['family.csv', 'misc.csv', 'socioeconomic.csv', 'vitals.csv'] ...
     Loading /Users/nmadnani/work/skll/examples/titanic/train/family.csv...           done
     Loading /Users/nmadnani/work/skll/examples/titanic/train/misc.csv...           done
     Loading /Users/nmadnani/work/skll/examples/titanic/train/socioeconomic.csv...           done
@@ -129,12 +125,28 @@ That should produce output like::
     Loading /Users/nmadnani/work/skll/examples/titanic/dev/misc.csv...           done
     Loading /Users/nmadnani/work/skll/examples/titanic/dev/socioeconomic.csv...           done
     Loading /Users/nmadnani/work/skll/examples/titanic/dev/vitals.csv...           done
-    2017-12-07 11:40:17,515 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Featurizing and training new RandomForestClassifier model
-    2017-12-07 11:40:17,515 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - WARNING - Training data will be shuffled to randomize grid search folds.  Shuffling may yield different results compared to scikit-learn.
-    2017-12-07 11:40:21,650 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Best accuracy grid search score: 0.809
-    2017-12-07 11:40:21,651 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Hyperparameters: bootstrap: True, class_weight: None, criterion: gini, max_depth: 10, max_features: auto, max_leaf_nodes: None, min_impurity_decrease: 0.0, min_impurity_split: None, min_samples_leaf: 1, min_samples_split: 2, min_weight_fraction_leaf: 0.0, n_estimators: 500, n_jobs: 1, oob_score: False, random_state: 123456789, verbose: 0, warm_start: False
-    2017-12-07 11:40:21,651 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Evaluating predictions
-
+    2020-03-10 14:25:23,662 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Featurizing and training new RandomForestClassifier model
+    2020-03-10 14:25:23,663 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - WARNING - Training data will be shuffled to randomize grid search folds.  Shuffling may yield different results compared to scikit-learn.
+    2020-03-10 14:25:28,129 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Best accuracy grid search score: 0.798
+    2020-03-10 14:25:28,130 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Hyperparameters: bootstrap: True, ccp_alpha: 0.0, class_weight: None, criterion: gini, max_depth: 5, max_features: auto, max_leaf_nodes: None, max_samples: None, min_impurity_decrease: 0.0, min_impurity_split: None, min_samples_leaf: 1, min_samples_split: 2, min_weight_fraction_leaf: 0.0, n_estimators: 500, n_jobs: None, oob_score: False, random_state: 123456789, verbose: 0, warm_start: False
+    2020-03-10 14:25:28,130 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Evaluating predictions
+    2020-03-10 14:25:28,172 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - using probabilities for the positive class to compute "roc_auc" for evaluation.
+    2020-03-10 14:25:28,178 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Task: evaluate
+    2020-03-10 14:25:28,178 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Training on train, Test on dev, feature set ['family.csv', 'misc.csv', 'socioeconomic.csv', 'vitals.csv'] ...
+    Loading /Users/nmadnani/work/skll/examples/titanic/train/family.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/train/misc.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/train/socioeconomic.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/train/vitals.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/dev/family.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/dev/misc.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/dev/socioeconomic.csv...           done
+    Loading /Users/nmadnani/work/skll/examples/titanic/dev/vitals.csv...           done
+    2020-03-10 14:25:28,226 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Featurizing and training new DecisionTreeClassifier model
+    2020-03-10 14:25:28,226 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - WARNING - Training data will be shuffled to randomize grid search folds.  Shuffling may yield different results compared to scikit-learn.
+    2020-03-10 14:25:28,269 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Best accuracy grid search score: 0.754
+    2020-03-10 14:25:28,269 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Hyperparameters: ccp_alpha: 0.0, class_weight: None, criterion: gini, max_depth: None, max_features: None, max_leaf_nodes: None, min_impurity_decrease: 0.0, min_impurity_split: None, min_samples_leaf: 1, min_samples_split: 2, min_weight_fraction_leaf: 0.0, presort: deprecated, random_state: 123456789, splitter: best
+    2020-03-10 14:25:28,269 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - Evaluating predictions
+    2020-03-10 14:25:28,272 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_DecisionTreeClassifier - INFO - using probabilities for the positive class to compute "roc_auc" for evaluation.
 
 We could squelch the warnings about shuffling by setting
 :ref:`shuffle <shuffle>` to ``True`` in the :ref:`Input` section.
@@ -163,14 +175,14 @@ types of files:
     would like one giant summary file, you can use the :ref:`summarize_results`
     command.
 
-An example of a human-readable results file for our Titanic config file is::
+An example of a human-readable results file for our Titanic experiment is::
 
     Experiment Name: Titanic_Evaluate_Tuned
-    SKLL Version: 1.5
+    SKLL Version: 2.1
     Training Set: train
-    Training Set Size: 712
+    Training Set Size: 569
     Test Set: dev
-    Test Set Size: 179
+    Test Set Size: 143
     Shuffle: False
     Feature Set: ["family.csv", "misc.csv", "socioeconomic.csv", "vitals.csv"]
     Learner: RandomForestClassifier
@@ -180,29 +192,28 @@ An example of a human-readable results file for our Titanic config file is::
     Grid Search Folds: 3
     Grid Objective Function: accuracy
     Additional Evaluation Metrics: ['roc_auc']
-    Scikit-learn Version: 0.19.1
-    Start Timestamp: 07 Dec 2017 11:42:04.911657
-    End Timestamp: 07 Dec 2017 11:42:09.118036
-    Total Time: 0:00:04.206379
+    Scikit-learn Version: 0.22.2.post1
+    Start Timestamp: 10 Mar 2020 14:25:23.595787
+    End Timestamp: 10 Mar 2020 14:25:28.175375
+    Total Time: 0:00:04.579588
 
 
     Fold:
-    Model Parameters: {"bootstrap": true, "class_weight": null, "criterion": "gini", "max_depth": 10, "max_features": "auto", "max_leaf_nodes": null, "min_impurity_decrease": 0.0, "min_impurity_split": null, "min_samples_leaf": 1, "min_samples_split": 2, "min_weight_fraction_leaf": 0.0, "n_estimators": 500, "n_jobs": 1, "oob_score": false, "random_state": 123456789, "verbose": 0, "warm_start": false}
-    Grid Objective Score (Train) = 0.8089887640449438
-    +---+-------+------+-----------+--------+-----------+
-    |   |     0 |    1 | Precision | Recall | F-measure |
-    +---+-------+------+-----------+--------+-----------+
-    | 0 | [101] |   14 |     0.871 |  0.878 |     0.874 |
-    +---+-------+------+-----------+--------+-----------+
-    | 1 |    15 | [49] |     0.778 |  0.766 |     0.772 |
-    +---+-------+------+-----------+--------+-----------+
+    Model Parameters: {"bootstrap": true, "ccp_alpha": 0.0, "class_weight": null, "criterion": "gini", "max_depth": 5, "max_features": "auto", "max_leaf_nodes": null, "max_samples": null, "min_impurity_decrease": 0.0, "min_impurity_split": null, "min_samples_leaf": 1, "min_samples_split": 2, "min_weight_fraction_leaf": 0.0, "n_estimators": 500, "n_jobs": null, "oob_score": false, "random_state": 123456789, "verbose": 0, "warm_start": false}
+    Grid Objective Score (Train) = 0.797874315418175
+    +----+------+------+-------------+----------+-------------+
+    |    |    0 |    1 |   Precision |   Recall |   F-measure |
+    +====+======+======+=============+==========+=============+
+    |  0 | [79] |    8 |       0.849 |    0.908 |       0.878 |
+    +----+------+------+-------------+----------+-------------+
+    |  1 |   14 | [42] |       0.840 |    0.750 |       0.792 |
+    +----+------+------+-------------+----------+-------------+
     (row = reference; column = predicted)
-    Accuracy = 0.8379888268156425
-    Objective Function Score (Test) = 0.8379888268156425
+    Accuracy = 0.8461538461538461
+    Objective Function Score (Test) = 0.8461538461538461
 
     Additional Evaluation Metrics (Test):
-     roc_auc = 0.8219429347826087
-
+     roc_auc = 0.9224137931034483
 
 IRIS Example on Binder
 ----------------------
@@ -210,77 +221,3 @@ If you prefer using an interactive Jupyter notebook to learn about SKLL, you can
 
 .. image:: https://mybinder.org/badge_logo.svg
  :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/master?filepath=examples%2FTutorial.ipynb
-
-Running your own experiments
-----------------------------
-
-Once you've gone through the Titanic example, you will hopefully be interested
-in trying out SKLL with your own data.  To do so, you'll still need to get your
-data in an appropriate format first.
-
-Get your data into the correct format
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Supported formats
-"""""""""""""""""
-
-SKLL can work with several common data formats, each of which are described
-:ref:`here <file_formats>`.
-
-If you need to convert between any of the supported formats, because, for
-example, you would like to create a single data file that will work both with
-SKLL and Weka (or some other external tool), the :ref:`skll_convert` script can
-help you out.  It is as easy as:
-
-.. code-block:: bash
-
-    $ skll_convert examples/titanic/train/family.csv examples/titanic/train/family.arff
-
-Creating sparse files
-"""""""""""""""""""""
-
-:ref:`skll_convert` can also create sparse data files in
-:ref:`.jsonlines <ndj>`, :ref:`.libsvm <libsvm>`, or
-:ref:`.ndj <ndj>` formats.  This is very useful for saving disk space and
-memory when you have a large data set with mostly zero-valued features.
-
-Training and testing directories
-""""""""""""""""""""""""""""""""
-
-At minimum you will probably want to work with a training set and a testing
-set.  If you have multiple feature files that you would like SKLL to join together
-for you automatically, you will need to create feature files with the exact
-same names and store them in training and testing directories.  You can
-specifiy these directories in your config file using
-:ref:`train_directory <train_directory>` and
-:ref:`test_directory <test_directory>`.  The list of files is specified using
-the :ref:`featuresets <featuresets>` setting.
-
-Single-file training and testing sets
-"""""""""""""""""""""""""""""""""""""
-
-If you're conducting a simpler experiment, where you have a single training
-file with all of your features and a similar single testing file, you should
-use the :ref:`train_file <train_file>` and :ref:`test_file <test_file>`
-settings in your config file.
-
-If you would like to split an existing file up into a training set and a testing
-set, you can employ the :ref:`filter_features` tool to select instances you
-would like to include in each file.
-
-Creating a configuration file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Now that you've seen a :ref:`basic configuration file <titanic_config>`, you
-should look at the extensive option available in our
-:ref:`config file reference <create_config>`.
-
-Running your configuration file through :ref:`run_experiment <run_experiment>`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-There are a few meta-options for experiments that are specified directly to the
-:ref:`run_experiment <run_experiment>` command rather than in a configuration
-file.  For example, if you would like to run an ablation experiment, which
-conducts repeated experiments using different combinations of the features in
-your config, you should use the :option:`run_experiment --ablation` option. A
-complete list of options is available :ref:`here <run_experiment>`.

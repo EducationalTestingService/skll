@@ -8,7 +8,9 @@ API Documentation
 
    api/quickstart
    api/skll
+   api/config
    api/data
    api/experiments
    api/learner
    api/metrics
+   api/utils

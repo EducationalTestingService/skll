@@ -1,7 +1,6 @@
 # License: BSD 3 clause
 """
-This module contains a bunch of evaluation metrics that can be used to
-evaluate the performance of learners.
+Metrics that can be used to evaluate the performance of learners.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
@@ -14,41 +13,6 @@ from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn.metrics import (confusion_matrix,
                              f1_score,
                              SCORERS)
-
-
-# Useful constants
-_CORRELATION_METRICS = set(['kendall_tau', 'pearson', 'spearman'])
-
-_REGRESSION_ONLY_METRICS = set(['explained_variance',
-                                'max_error',
-                                'neg_mean_squared_error',
-                                'neg_mean_absolute_error',
-                                'r2'])
-
-_CLASSIFICATION_ONLY_METRICS = set(['accuracy',
-                                    'average_precision',
-                                    'balanced_accuracy',
-                                    'f1',
-                                    'f1_score_least_frequent',
-                                    'f1_score_macro',
-                                    'f1_score_micro',
-                                    'f1_score_weighted',
-                                    'neg_log_loss',
-                                    'precision',
-                                    'recall',
-                                    'roc_auc'])
-
-_PROBABILISTIC_METRICS = frozenset(['average_precision',
-                                    'neg_log_loss',
-                                    'roc_auc'])
-
-_UNWEIGHTED_KAPPA_METRICS = set(['unweighted_kappa',
-                                 'uwk_off_by_one'])
-
-_WEIGHTED_KAPPA_METRICS = set(['linear_weighted_kappa',
-                               'lwk_off_by_one',
-                               'quadratic_weighted_kappa',
-                               'qwk_off_by_one'])
 
 
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
@@ -227,7 +191,7 @@ def correlation(y_true, y_pred, corr_type='pearson'):
     # 1-dimensional -> probabilities/labels -> use as is
     else:
         ret_score = corr_func(y_true, y_pred)[0]
-    return ret_score if not np.isnan(ret_score) else 0.0
+    return ret_score
 
 
 def f1_score_least_frequent(y_true, y_pred):
@@ -253,10 +217,10 @@ def f1_score_least_frequent(y_true, y_pred):
 
 def use_score_func(func_name, y_true, y_pred):
     """
-    Call the scoring function in ``sklearn.metrics.SCORERS`` with the given name.
-    This takes care of handling keyword arguments that were pre-specified when
-    creating the scorer. This applies any sign-flipping that was specified by
-    ``make_scorer()`` when the scorer was created.
+    Call the scoring function in ``sklearn.metrics.SCORERS`` with the given
+    name. This takes care of handling keyword arguments that were pre-specified
+    when creating the scorer. This applies any sign-flipping that was specified
+    by ``make_scorer()`` when the scorer was created.
 
     Parameters
     ----------

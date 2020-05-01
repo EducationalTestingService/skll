@@ -7,8 +7,9 @@ from six import StringIO
 from sklearn.metrics import roc_curve
 from tempfile import NamedTemporaryFile
 
-from skll import (close_and_remove_logger_handlers, get_skll_logger,
-                  orig_showwarning)
+from skll.utils.logging import (close_and_remove_logger_handlers,
+                                get_skll_logger,
+                                orig_showwarning)
 
 TEMP_FILES = []
 TEMP_FILE_PATHS = []
@@ -50,7 +51,7 @@ def test_get_skll_logger():
     temp_file.close()
     TEMP_FILES.append(temp_file)
     TEMP_FILE_PATHS.append(temp_file.name)
-    logger = get_skll_logger("test_get_skll_logger", temp_file.name)
+    logger = get_skll_logger("test_get_skll_logger", filepath=temp_file.name)
     LOGGERS.append(logger)
 
     # Send a regular log message
@@ -61,10 +62,12 @@ def test_get_skll_logger():
     msg2 = "message 2"
     logger.info(msg2)
 
-    with open(temp_file.name) as temp_file:
-        log_lines = temp_file.readlines()
+    with open(temp_file.name) as tempfh:
+        log_lines = tempfh.readlines()
         assert log_lines[0].endswith("INFO - {}\n".format(msg1))
         assert log_lines[1].endswith("INFO - {}\n".format(msg2))
+
+    close_and_remove_logger_handlers(logger)
 
 
 def test_get_skll_logger_with_warning():
@@ -75,7 +78,7 @@ def test_get_skll_logger_with_warning():
     TEMP_FILES.append(temp_file)
     TEMP_FILE_PATHS.append(temp_file.name)
     logger = get_skll_logger("test_get_skll_logger_with_warning",
-                             temp_file.name)
+                             filepath=temp_file.name)
     LOGGERS.append(logger)
 
     # Send a regular log message
@@ -93,7 +96,7 @@ def test_get_skll_logger_with_warning():
         log_lines = temp_file.readlines()
         assert log_lines[0].endswith("INFO - {}\n".format(msg1))
         sklearn_warning_re = \
-            re.compile(r"WARNING - [^\n]+sklearn/metrics/ranking.py:\d+: "
+            re.compile(r"WARNING - [^\n]+sklearn.metrics._ranking.py:\d+: "
                        r"UndefinedMetricWarning:No negative samples in "
                        r"y_true, false positive value should be "
                        r"meaningless")
@@ -116,6 +119,8 @@ def test_get_skll_logger_with_warning():
             assert "UserWarning:{}".format(msg3) not in log_file.read()
     finally:
         sys.stderr = old_stderr
+
+    close_and_remove_logger_handlers(logger)
 
 
 def test_close_and_remove_logger_handlers():

@@ -1,23 +1,18 @@
-# License: BSD 3 clause
 """
-Provides easy-to-use wrapper around scikit-learn.
+An easy-to-use class that wraps scikit-learn estimators.
 
-:author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Michael Heilman (mheilman@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
 :organization: ETS
 """
-# pylint: disable=F0401,W0622,E1002,E1101
 
 import copy
-import inspect
 import logging
 import os
-import sys
 
 from collections import Counter, defaultdict
-from functools import wraps
 from math import floor, log10
 from importlib import import_module
 from itertools import combinations
@@ -26,10 +21,8 @@ from multiprocessing import cpu_count
 import joblib
 import numpy as np
 import scipy.sparse as sp
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import (GridSearchCV,
                                      KFold,
-                                     LeaveOneGroupOut,
                                      ShuffleSplit,
                                      StratifiedKFold)
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -41,11 +34,9 @@ from sklearn.ensemble import (AdaBoostClassifier,
                               RandomForestRegressor)
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
-from sklearn.feature_selection import SelectKBest
 from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import type_of_target
-# AdditiveChi2Sampler is used indirectly, so ignore linting message
 from sklearn.kernel_approximation import (Nystroem,
                                           RBFSampler,
                                           SkewedChi2Sampler)
@@ -62,7 +53,7 @@ from sklearn.linear_model import (BayesianRidge,
                                   SGDClassifier,
                                   SGDRegressor,
                                   TheilSenRegressor)
-from sklearn.linear_model.base import LinearModel
+from sklearn.linear_model._base import LinearModel
 from sklearn.metrics import (accuracy_score,
                              confusion_matrix,
                              precision_recall_fscore_support)
@@ -77,768 +68,35 @@ from sklearn.utils import shuffle as sk_shuffle
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import safe_float
-from skll.metrics import (_CLASSIFICATION_ONLY_METRICS,
-                          _CORRELATION_METRICS,
-                          _REGRESSION_ONLY_METRICS,
-                          _UNWEIGHTED_KAPPA_METRICS,
-                          _WEIGHTED_KAPPA_METRICS,
-                          SCORERS,
-                          use_score_func)
+from skll.metrics import SCORERS, use_score_func
+from skll.utils.constants import (CORRELATION_METRICS,
+                                  KNOWN_REQUIRES_DENSE,
+                                  KNOWN_DEFAULT_PARAM_GRIDS,
+                                  MAX_CONCURRENT_PROCESSES)
 from skll.version import VERSION
 
-# Constants #
-_DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
-                        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        AdaBoostRegressor:
-                        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        BayesianRidge:
-                        [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
-                          'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
-                          'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
-                          'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}],
-                        DecisionTreeClassifier:
-                        [{'max_features': ["auto", None]}],
-                        DecisionTreeRegressor:
-                        [{'max_features': ["auto", None]}],
-                        DummyClassifier:
-                        [{}],
-                        DummyRegressor:
-                        [{}],
-                        ElasticNet:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        GradientBoostingClassifier:
-                        [{'max_depth': [1, 3, 5]}],
-                        GradientBoostingRegressor:
-                        [{'max_depth': [1, 3, 5]}],
-                        HuberRegressor:
-                        [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
-                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000]}],
-                        KNeighborsClassifier:
-                        [{'n_neighbors': [1, 5, 10, 100],
-                          'weights': ['uniform', 'distance']}],
-                        KNeighborsRegressor:
-                        [{'n_neighbors': [1, 5, 10, 100],
-                          'weights': ['uniform', 'distance']}],
-                        MLPClassifier:
-                        [{'activation': ['logistic', 'tanh', 'relu'],
-                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
-                          'learning_rate_init': [0.001, 0.01, 0.1]}],
-                        MLPRegressor:
-                        [{'activation': ['logistic', 'tanh', 'relu'],
-                          'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1],
-                          'learning_rate_init': [0.001, 0.01, 0.1]}],
-                        MultinomialNB:
-                        [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}],
-                        Lars:
-                        [{}],
-                        Lasso:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        LinearRegression:
-                        [{}],
-                        LinearSVC:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        LogisticRegression:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SVC:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        RandomForestClassifier:
-                        [{'max_depth': [1, 5, 10, None]}],
-                        RandomForestRegressor:
-                        [{'max_depth': [1, 5, 10, None]}],
-                        RANSACRegressor:
-                        [{}],
-                        Ridge:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        RidgeClassifier:
-                        [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SGDClassifier:
-                        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
-                          'penalty': ['l1', 'l2', 'elasticnet']}],
-                        SGDRegressor:
-                        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
-                          'penalty': ['l1', 'l2', 'elasticnet']}],
-                        LinearSVR:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        SVR:
-                        [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-                          'gamma': ['auto', 'scale', 0.01, 0.1, 1.0, 10.0, 100.0]}],
-                        TheilSenRegressor:
-                        [{}]}
-
-_REQUIRES_DENSE = (BayesianRidge, Lars, TheilSenRegressor)
-
-MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
-
-
-# pylint: disable=W0223,R0903
-class Densifier(BaseEstimator, TransformerMixin):
-    """
-    A custom pipeline stage that will be inserted into the
-    learner pipeline attribute to accommodate the situation
-    when SKLL needs to manually convert feature arrays from
-    sparse to dense. For example, when features are being hashed
-    but we are also doing centering using the feature means.
-    """
-
-    def fit(self, X, y=None):
-        return self
-
-    def fit_transform(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        return X.todense()
-
-
-class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
-
-    """
-    Version of ``LeaveOneGroupOut`` cross-validation iterator that only outputs
-    indices of instances with IDs in a prespecified set.
-
-    Parameters
-    ----------
-    keep : set of str
-        A set of IDs to keep.
-    example_ids : list of str, of length n_samples
-        A list of example IDs.
-    """
-
-    def __init__(self, keep, example_ids, logger=None):
-        super(FilteredLeaveOneGroupOut, self).__init__()
-        self.keep = keep
-        self.example_ids = example_ids
-        self._warned = False
-        self.logger = logger if logger else logging.getLogger(__name__)
-
-    def split(self, X, y, groups):
-        """
-        Generate indices to split data into training and test set.
-
-        Parameters
-        ----------
-        X : array-like, with shape (n_samples, n_features)
-            Training data, where n_samples is the number of samples
-            and n_features is the number of features.
-        y : array-like, of length n_samples
-            The target variable for supervised learning problems.
-        groups : array-like, with shape (n_samples,)
-            Group labels for the samples used while splitting the dataset into
-            train/test set.
-
-        Yields
-        -------
-        train_index : np.array
-            The training set indices for that split.
-        test_index : np.array
-            The testing set indices for that split.
-        """
-        for train_index, test_index in super(FilteredLeaveOneGroupOut,
-                                             self).split(X, y, groups):
-            train_len = len(train_index)
-            test_len = len(test_index)
-            train_index = [i for i in train_index if self.example_ids[i] in
-                           self.keep]
-            test_index = [i for i in test_index if self.example_ids[i] in
-                          self.keep]
-            if not self._warned and (train_len != len(train_index) or
-                                     test_len != len(test_index)):
-                self.logger.warning('Feature set contains IDs that are not ' +
-                                    'in folds dictionary. Skipping those IDs.')
-                self._warned = True
-
-            yield train_index, test_index
-
-
-def _contiguous_ints_or_floats(numbers):
-    """
-    Check whether the given list of numbers contains
-    contiguous integers or contiguous integer-like
-    floats. For example, [1, 2, 3] or [4.0, 5.0, 6.0]
-    are both contiguous but [1.1, 1.2, 1.3] is not.
-
-    Parameters
-    ----------
-    numbers : array-like of ints or floats
-        The numbers we want to check.
-
-    Returns
-    -------
-    answer : bool
-        True if the numbers are contiguous integers
-        or contiguous integer-like floats (1.0, 2.0, etc.)
-
-    Raises
-    ------
-    TypeError
-        If ``numbers`` does not contain integers or floating
-        point values.
-    ValueError
-        If ``numbers`` is empty.
-    """
-
-    try:
-
-        # make sure that number is not empty
-        assert len(numbers) > 0
-
-        # first check that the numbers are all integers
-        # or integer-like floats (e.g., 1.0, 2.0 etc.)
-        ints_or_int_like_floats = np.all(np.mod(numbers, 1) == 0)
-
-        # next check that the successive differences between
-        # the numbers are all 1, i.e., they are nuermicontiguous
-        contiguous = np.all(np.diff(numbers) == 1)
-
-    except AssertionError:
-        raise ValueError('Input cannot be empty.')
-
-    except TypeError:
-        raise TypeError('Input should only contain numbers.')
-
-    # we need both conditions to be true
-    return ints_or_int_like_floats and contiguous
-
-
-def _find_default_param_grid(cls):
-    """
-    Finds the default parameter grid for the specified classifier.
-
-    Parameters
-    ----------
-    cls
-        A parent classifier class to check, and find the
-        default param grid.
-
-    Returns
-    -------
-    grid : list of dicts or None
-        The parameters grid for a given classifier.
-    """
-    for key_cls, grid in _DEFAULT_PARAM_GRIDS.items():
-        if issubclass(cls, key_cls):
-            return grid
-    return None
-
-
-def _import_custom_learner(custom_learner_path, custom_learner_name):
-    """
-    Does the gruntwork of adding the custom model's module to globals.
-
-    Parameters
-    ----------
-    custom_learner_path : str
-        The path to a custom learner.
-    custom_learner_name : str
-        The name of a custom learner.
-
-    Raises
-    ------
-    ValueError
-        If the custom learner path is None.
-    ValueError
-        If the custom learner path does not end in '.py'.
-    """
-    if not custom_learner_path:
-        raise ValueError('custom_learner_path was not set and learner {} '
-                         'was not found.'.format(custom_learner_name))
-
-    if not custom_learner_path.endswith('.py'):
-        raise ValueError('custom_learner_path must end in .py ({})'
-                         .format(custom_learner_path))
-
-    custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
-    sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
-    import_module(custom_learner_module_name)
-    globals()[custom_learner_name] = \
-        getattr(sys.modules[custom_learner_module_name], custom_learner_name)
-
-
-def _train_and_score(learner,
-                     train_examples,
-                     test_examples,
-                     metric):
-    """
-    A utility method to train a given learner instance on the given training examples,
-    generate predictions on the training set itself and also the given
-    test set, and score those predictions using the given metric.
-    The method returns the train and test scores.
-
-    Note that this method needs to be a top-level function since it is
-    called from within ``joblib.Parallel()`` and, therefore, needs to be
-    picklable which it would not be as an instancemethod of the ``Learner``
-    class.
-
-    Parameters
-    ----------
-    learner : skll.Learner
-        A SKLL ``Learner`` instance.
-    train_examples : array-like, with shape (n_samples, n_features)
-        The training examples.
-    test_examples : array-like, of length n_samples
-        The test examples.
-    metric : str
-        The scoring function passed to ``use_score_func()``.
-
-    Returns
-    -------
-    train_score : float
-        Output of the score function applied to predictions of
-        ``learner`` on ``train_examples``.
-    test_score : float
-        Output of the score function applied to predictions of
-        ``learner`` on ``test_examples``.
-    """
-
-    _ = learner.train(train_examples, grid_search=False, shuffle=False)
-    train_predictions = learner.predict(train_examples)
-    test_predictions = learner.predict(test_examples)
-    if learner.model_type._estimator_type == 'classifier':
-        test_label_list = np.unique(test_examples.labels).tolist()
-        unseen_test_label_list = [label for label in test_label_list
-                                  if label not in learner.label_list]
-        unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
-                                                                start=len(learner.label_list))}
-        # combine the two dictionaries
-        train_and_test_label_dict = learner.label_dict.copy()
-        train_and_test_label_dict.update(unseen_label_dict)
-        train_labels = np.array([train_and_test_label_dict[label]
-                                 for label in train_examples.labels])
-        test_labels = np.array([train_and_test_label_dict[label]
-                                for label in test_examples.labels])
-    else:
-        train_labels = train_examples.labels
-        test_labels = test_examples.labels
-
-    train_score = use_score_func(metric, train_labels, train_predictions)
-    test_score = use_score_func(metric, test_labels, test_predictions)
-    return train_score, test_score
-
-
-def _get_acceptable_regression_metrics():
-    """
-    Return the set of metrics that are acceptable for regression.
-    """
-
-    # it's fairly straightforward for regression since
-    # we do not have to check the labels
-    acceptable_metrics = (_REGRESSION_ONLY_METRICS |
-                          _UNWEIGHTED_KAPPA_METRICS |
-                          _WEIGHTED_KAPPA_METRICS |
-                          _CORRELATION_METRICS)
-    return acceptable_metrics
-
-
-def _get_acceptable_classification_metrics(label_array):
-    """
-    Return the set of metrics that are acceptable given the
-    the unique set of labels that we are classifying.
-
-    Parameters
-    ----------
-    label_array : numpy.ndarray
-        A sorted numpy array containing the unique labels
-        that we are trying to predict. Optional for regressors
-        but required for classifiers.
-
-    Returns
-    -------
-    acceptable_metrics : set
-        A set of metric names that are acceptable
-        for the given classification scenario.
-    """
-
-    # this is a classifier so the acceptable objective
-    # functions definitely include those metrics that
-    # are specifically for classification and also
-    # the unweighted kappa metrics
-    acceptable_metrics = _CLASSIFICATION_ONLY_METRICS | _UNWEIGHTED_KAPPA_METRICS
-
-    # now let us consider which other metrics may also
-    # be acceptable depending on whether the labels
-    # are strings or (contiguous) integers/floats
-    label_type = label_array.dtype.type
-
-    # CASE 1: labels are strings, then no other metrics
-    # are acceptable
-    if issubclass(label_type, (np.object_, str)):
-        pass
-
-    # CASE 2: labels are integers or floats; the way
-    # it works in SKLL, it's guaranteed that
-    # class indices will be sorted in the same order
-    # as the class labels therefore, ranking metrics
-    # such as various correlations should work fine.
-    elif issubclass(label_type, (int,
-                                 np.int32,
-                                 np.int64,
-                                 float,
-                                 np.float32,
-                                 np.float64)):
-        acceptable_metrics.update(_CORRELATION_METRICS)
-
-        # CASE 3: labels are numerically contiguous integers
-        # this is a special sub-case of CASE 2 which
-        # represents ordinal classification. Only in this
-        # case, weighted kappas -- where the distance
-        # between the class labels has a special
-        # meaning -- can be allowed. This is because
-        # class indices are always contiguous and all
-        # metrics in SKLL are computed in the index
-        # space, not the label space. Note that floating
-        # point numbers that are equivalent to integers
-        # (e.g., [1.0, 2.0, 3.0]) are also acceptable.
-        if _contiguous_ints_or_floats(label_array):
-            acceptable_metrics.update(_WEIGHTED_KAPPA_METRICS)
-
-    return acceptable_metrics
-
-
-class SelectByMinCount(SelectKBest):
-
-    """
-    Select features occurring in more (and/or fewer than) than a specified
-    number of examples in the training data (or a CV training fold).
-
-    Parameters
-    ----------
-    min_count : int, optional
-        The minimum feature count to select.
-        Defaults to 1.
-    """
-
-    def __init__(self, min_count=1):
-        self.min_count = min_count
-        self.scores_ = None
-
-    def fit(self, X, y=None):
-        """
-        Fit the SelectByMinCount model.
-
-        Parameters
-        ----------
-        X : array-like, with shape (n_samples, n_features)
-            The training data to fit.
-        y : Ignored
-
-        Returns
-        -------
-        self
-        """
-
-        # initialize a list of counts of times each feature appears
-        col_counts = [0 for _ in range(X.shape[1])]
-
-        if sp.issparse(X):
-            # find() is scipy.sparse's equivalent of nonzero()
-            _, col_indices, _ = sp.find(X)
-        else:
-            # assume it's a numpy array (not a numpy matrix)
-            col_indices = X.nonzero()[1].tolist()
-
-        for i in col_indices:
-            col_counts[i] += 1
-
-        self.scores_ = np.array(col_counts)
-        return self
-
-    def _get_support_mask(self):
-        """
-        Returns an indication of which features to keep.
-        Adapted from ``SelectKBest``.
-
-        Returns
-        -------
-        mask : np.array
-            The mask with features to keep set to True.
-        """
-        mask = np.zeros(self.scores_.shape, dtype=bool)
-        mask[self.scores_ >= self.min_count] = True
-        return mask
-
-
-def rescaled(cls):
-    """
-    Decorator to create regressors that store a min and a max for the training
-    data and make sure that predictions fall within that range.  It also stores
-    the means and SDs of the gold standard and the predictions on the training
-    set to rescale the predictions (e.g., as in e-rater).
-
-    Parameters
-    ----------
-    cls : BaseEstimator
-        An estimator class to add rescaling to.
-
-    Returns
-    -------
-    cls : BaseEstimator
-        Modified version of estimator class with rescaled functions added.
-
-    Raises
-    ------
-    ValueError
-        If classifier cannot be rescaled (i.e. is not a regressor).
-    """
-    # If this class has already been run through the decorator, return it
-    if hasattr(cls, 'rescale'):
-        return cls
-
-    # Save original versions of functions to use later.
-    orig_init = cls.__init__
-    orig_fit = cls.fit
-    orig_predict = cls.predict
-
-    if cls._estimator_type == 'classifier':
-        raise ValueError('Classifiers cannot be rescaled. ' +
-                         'Only regressors can.')
-
-    # Define all new versions of functions
-    @wraps(cls.fit)
-    def fit(self, X, y=None):
-        """
-        Fit a model, then store the mean, SD, max and min of the training set
-        and the mean and SD of the predictions on the training set.
-
-        Parameters
-        ----------
-        X : array-like, with shape (n_samples, n_features)
-            The data to fit.
-        y : Ignored
-
-        Returns
-        -------
-        self
-        """
-
-        # fit a regular regression model
-        orig_fit(self, X, y=y)
-
-        if self.constrain:
-            # also record the training data min and max
-            self.y_min = min(y)
-            self.y_max = max(y)
-
-        if self.rescale:
-            # also record the means and SDs for the training set
-            y_hat = orig_predict(self, X)
-            self.yhat_mean = np.mean(y_hat)
-            self.yhat_sd = np.std(y_hat)
-            self.y_mean = np.mean(y)
-            self.y_sd = np.std(y)
-
-        return self
-
-    @wraps(cls.predict)
-    def predict(self, X):
-        """
-        Make predictions with the super class, and then adjust them using the
-        stored min, max, means, and standard deviations.
-
-        Parameters
-        ----------
-        X : array-like, with shape (n_samples,)
-            The data to predict.
-
-        Returns
-        -------
-        res : array-like
-            The prediction results.
-        """
-        # get the unconstrained predictions
-        res = orig_predict(self, X)
-
-        if self.rescale:
-            # convert the predictions to z-scores,
-            # then rescale to match the training set distribution
-            res = (((res - self.yhat_mean) / self.yhat_sd) * self.y_sd) + self.y_mean
-
-        if self.constrain:
-            # apply min and max constraints
-            res = np.array([max(self.y_min, min(self.y_max, pred))
-                            for pred in res])
-
-        return res
-
-    @classmethod
-    @wraps(cls._get_param_names)
-    def _get_param_names(class_x):
-        """
-        This is adapted from scikit-learns's ``BaseEstimator`` class.
-        It gets the kwargs for the superclass's init method and adds the
-        kwargs for newly added ``__init__()`` method.
-
-        Parameters
-        ----------
-        class_x
-            The the superclass from which to retrieve param names.
-
-        Returns
-        -------
-        args : list
-            A list of parameter names for the class's init method.
-
-        Raises
-        ------
-        RunTimeError
-            If `varargs` exist in the scikit-learn estimator.
-        """
-        try:
-            init = getattr(orig_init, 'deprecated_original', orig_init)
-
-            args, varargs, _, _ = inspect.getargspec(init)
-            if varargs is not None:
-                raise RuntimeError('scikit-learn estimators should always '
-                                   'specify their parameters in the signature'
-                                   ' of their init (no varargs).')
-            # Remove 'self'
-            args.pop(0)
-        except TypeError:
-            args = []
-
-        rescale_args = inspect.getargspec(class_x.__init__)[0]
-        # Remove 'self'
-        rescale_args.pop(0)
-
-        args += rescale_args
-        args.sort()
-
-        return args
-
-    @wraps(cls.__init__)
-    def init(self, constrain=True, rescale=True, **kwargs):
-        """
-        This special init function is used by the decorator to make sure
-        that things get initialized in the right order.
-
-        Parameters
-        ----------
-        constrain : bool, optional
-            Whether to constrain predictions within min and max values.
-            Defaults to True.
-        rescale : bool, optional
-            Whether to rescale prediction values using z-scores.
-            Defaults to True.
-        kwargs : dict, optional
-            Arguments for base class.
-        """
-        # pylint: disable=W0201
-        self.constrain = constrain
-        self.rescale = rescale
-        self.y_min = None
-        self.y_max = None
-        self.yhat_mean = None
-        self.yhat_sd = None
-        self.y_mean = None
-        self.y_sd = None
-        orig_init(self, **kwargs)
-
-    # Override original functions with new ones
-    cls.__init__ = init
-    cls.fit = fit
-    cls.predict = predict
-    cls._get_param_names = _get_param_names
-    cls.rescale = True
-
-    # Return modified class
-    return cls
-
-
-# Rescaled regressors
-@rescaled
-class RescaledBayesianRidge(BayesianRidge):
-    pass
-
-
-@rescaled
-class RescaledAdaBoostRegressor(AdaBoostRegressor):
-    pass
-
-
-@rescaled
-class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
-    pass
-
-
-@rescaled
-class RescaledElasticNet(ElasticNet):
-    pass
-
-
-@rescaled
-class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
-    pass
-
-
-@rescaled
-class RescaledHuberRegressor(HuberRegressor):
-    pass
-
-
-@rescaled
-class RescaledKNeighborsRegressor(KNeighborsRegressor):
-    pass
-
-
-@rescaled
-class RescaledLars(Lars):
-    pass
-
-
-@rescaled
-class RescaledLasso(Lasso):
-    pass
-
-
-@rescaled
-class RescaledLinearRegression(LinearRegression):
-    pass
-
-
-@rescaled
-class RescaledLinearSVR(LinearSVR):
-    pass
-
-
-@rescaled
-class RescaledMLPRegressor(MLPRegressor):
-    pass
-
-
-@rescaled
-class RescaledRandomForestRegressor(RandomForestRegressor):
-    pass
-
-
-@rescaled
-class RescaledRANSACRegressor(RANSACRegressor):
-    pass
-
-
-@rescaled
-class RescaledRidge(Ridge):
-    pass
-
-
-@rescaled
-class RescaledSGDRegressor(SGDRegressor):
-    pass
-
-
-@rescaled
-class RescaledSVR(SVR):
-    pass
-
-
-@rescaled
-class RescaledTheilSenRegressor(TheilSenRegressor):
-    pass
+from .utils import (Densifier,
+                    FilteredLeaveOneGroupOut,
+                    get_acceptable_classification_metrics,
+                    get_acceptable_regression_metrics,
+                    load_custom_learner,
+                    rescaled,
+                    SelectByMinCount,
+                    train_and_score)
+
+# we need a list of learners requiring dense input and a dictionary of
+# default parameter grids that we can dynamically update in case we
+# import a custom learner
+_REQUIRES_DENSE = copy.copy(KNOWN_REQUIRES_DENSE)
+_DEFAULT_PARAM_GRIDS = copy.deepcopy(KNOWN_DEFAULT_PARAM_GRIDS)
+
+__all__ = ['Learner', 'MAX_CONCURRENT_PROCESSES', 'load_custom_learner']
 
 
 class Learner(object):
     """
     A simpler learner interface around many scikit-learn classification
-    and regression functions.
+    and regression estimators.
 
     Parameters
     ----------
@@ -902,10 +160,18 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self, model_type, probability=False, pipeline=False,
-                 feature_scaling='none', model_kwargs=None, pos_label_str=None,
-                 min_feature_count=1, sampler=None, sampler_kwargs=None,
-                 custom_learner_path=None, logger=None):
+    def __init__(self,
+                 model_type,
+                 probability=False,
+                 pipeline=False,
+                 feature_scaling='none',
+                 model_kwargs=None,
+                 pos_label_str=None,
+                 min_feature_count=1,
+                 sampler=None,
+                 sampler_kwargs=None,
+                 custom_learner_path=None,
+                 logger=None):
         """
         Initializes a learner object with the specified settings.
         """
@@ -927,10 +193,9 @@ class Learner(object):
 
         if model_type not in globals():
             # here, we need to import the custom model and add it
-            # to the appropriate lists of models.
-            _import_custom_learner(custom_learner_path, model_type)
+            # to the appropriate lists of models
+            globals()[model_type] = load_custom_learner(custom_learner_path, model_type)
             model_class = globals()[model_type]
-
             default_param_grid = (model_class.default_param_grid()
                                   if hasattr(model_class, 'default_param_grid')
                                   else [{}])
@@ -966,6 +231,8 @@ class Learner(object):
                          GradientBoostingClassifier, GradientBoostingRegressor,
                          AdaBoostClassifier, AdaBoostRegressor)):
             self._model_kwargs['n_estimators'] = 500
+        elif issubclass(self._model_type, DummyClassifier):
+            self._model_kwargs['strategy'] = 'prior'
         elif issubclass(self._model_type, SVR):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['gamma'] = 'scale'
@@ -1189,7 +456,8 @@ class Learner(object):
     def model_params(self):
         """
         Model parameters (i.e., weights) for a ``LinearModel`` (e.g., ``Ridge``)
-        regression and liblinear models.
+        regression and liblinear models. If the model was trained using feature
+        hashing, then names of the form `hashed_feature_XX` are used instead.
 
         Returns
         -------
@@ -1352,7 +620,10 @@ class Learner(object):
             If there is no default parameter grid for estimator.
         """
         estimator = None
-        default_param_grid = _find_default_param_grid(self._model_type)
+        default_param_grid = None
+        for key_class, grid in _DEFAULT_PARAM_GRIDS.items():
+            if issubclass(self._model_type, key_class):
+                default_param_grid = grid
         if default_param_grid is None:
             raise ValueError("%s is not a valid learner type." %
                              (self._model_type.__name__,))
@@ -1463,21 +734,22 @@ class Learner(object):
         self.feat_selector = SelectByMinCount(
             min_count=self._min_feature_count)
 
-        # Create scaler if we weren't passed one and it's necessary
-        if not issubclass(self._model_type, MultinomialNB):
-            if self._feature_scaling != 'none':
-                scale_with_mean = self._feature_scaling in {
-                    'with_mean', 'both'}
-                scale_with_std = self._feature_scaling in {'with_std', 'both'}
-                self.scaler = StandardScaler(copy=True,
-                                             with_mean=scale_with_mean,
-                                             with_std=scale_with_std)
-            else:
-                # Doing this is to prevent any modification of feature values
-                # using a dummy transformation
-                self.scaler = StandardScaler(copy=False,
-                                             with_mean=False,
-                                             with_std=False)
+        # Create a scaler if we weren't passed one and we are asked
+        # to do feature scaling; note that we do not support feature
+        # scaling for `MultinomialNB` learners
+        if (not issubclass(self._model_type, MultinomialNB) and
+                self._feature_scaling != 'none'):
+            scale_with_mean = self._feature_scaling in {'with_mean', 'both'}
+            scale_with_std = self._feature_scaling in {'with_std', 'both'}
+            self.scaler = StandardScaler(copy=True,
+                                         with_mean=scale_with_mean,
+                                         with_std=scale_with_std)
+        else:
+            # Doing this is to prevent any modification of feature values
+            # using a dummy transformation
+            self.scaler = StandardScaler(copy=False,
+                                         with_mean=False,
+                                         with_std=False)
 
     def train(self, examples, param_grid=None, grid_search_folds=3,
               grid_search=True, grid_objective=None,
@@ -1566,9 +838,9 @@ class Learner(object):
             label_type = examples.labels.dtype.type
             if estimator_type == 'classifier':
                 sorted_unique_labels = np.unique(examples.labels)
-                allowed_objectives = _get_acceptable_classification_metrics(sorted_unique_labels)
+                allowed_objectives = get_acceptable_classification_metrics(sorted_unique_labels)
             else:
-                allowed_objectives = _get_acceptable_regression_metrics()
+                allowed_objectives = get_acceptable_regression_metrics()
 
             if grid_objective not in allowed_objectives:
                 raise ValueError("'{}' is not a valid objective "
@@ -1581,7 +853,7 @@ class Learner(object):
             # classification and probability is set to true, we assume
             # that the user actually wants the `_with_probabilities`
             # version of the metric
-            if (grid_objective in _CORRELATION_METRICS and
+            if (grid_objective in CORRELATION_METRICS and
                     estimator_type == 'classifier' and
                     self.probability):
                 self.logger.info('You specified "{}" as the objective with '
@@ -1646,8 +918,7 @@ class Learner(object):
                              'feature values.')
 
         # Scale features if necessary
-        if not issubclass(self._model_type, MultinomialNB):
-            xtrain = self.scaler.fit_transform(xtrain)
+        xtrain = self.scaler.fit_transform(xtrain)
 
         # check whether any feature values are too large
         self._check_max_feature_value(xtrain)
@@ -1726,7 +997,6 @@ class Learner(object):
             grid_searcher = GridSearchCV(estimator,
                                          param_grid,
                                          scoring=grid_objective,
-                                         iid=False,
                                          cv=folds,
                                          n_jobs=grid_jobs,
                                          pre_dispatch=grid_jobs)
@@ -1897,9 +1167,9 @@ class Learner(object):
         label_type = examples.labels.dtype.type
         if estimator_type == 'classifier':
             sorted_unique_labels = np.unique(examples.labels)
-            acceptable_metrics = _get_acceptable_classification_metrics(sorted_unique_labels)
+            acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
         else:
-            acceptable_metrics = _get_acceptable_regression_metrics()
+            acceptable_metrics = get_acceptable_regression_metrics()
 
         # check that all of the output metrics are acceptable
         unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
@@ -1909,6 +1179,18 @@ class Learner(object):
                              "type {}: {}".format(self._model_type.__name__,
                                                   label_type.__name__,
                                                   list(unacceptable_metrics)))
+
+        # if metrics has the objective in it, we will only output
+        # that function once as an objective and not include it
+        # in the list of additional metrics printed out
+        if len(output_metrics) > 0 and grid_objective in output_metrics:
+            self.logger.warning('The grid objective "{}" is also specified '
+                                'as an evaluation metric. Since its value is '
+                                'already included in the results as the '
+                                'objective score, it will not be printed '
+                                'again in the list of metrics.'.format(grid_objective))
+            output_metrics = [metric for metric in output_metrics
+                              if metric != grid_objective]
 
         # make a single list of metrics including the grid objective
         # since it's easier to compute everything together
@@ -1935,10 +1217,11 @@ class Learner(object):
                 #     probabilities via argmax and use those
                 #     for all other metrics
                 if (len(self.label_list) == 2 and
-                    (metric in _CORRELATION_METRICS or
-                     metric in ['average_precision', 'roc_auc'])):
+                        (metric in CORRELATION_METRICS or
+                         metric in ['average_precision', 'roc_auc']) and
+                        metric != grid_objective):
                     self.logger.info('using probabilities for the positive class to '
-                                     'compute {} for evaluation'.format(metric))
+                                     'compute "{}" for evaluation.'.format(metric))
                     yhat_for_metric = yhat_probs[:, 1]
                 elif metric == 'neg_log_loss':
                     yhat_for_metric = yhat_probs
@@ -2398,7 +1681,7 @@ class Learner(object):
                 kfold = StratifiedKFold(n_splits=cv_folds)
                 cv_groups = None
             else:
-                kfold = KFold(n_splits=cv_folds, random_state=random_state)
+                kfold = KFold(n_splits=cv_folds)
                 cv_groups = None
         # Otherwise cv_folds is a dict
         else:
@@ -2575,10 +1858,10 @@ class Learner(object):
         # Run jobs in parallel that train the model on each subset
         # of the training data and compute train and test scores
         parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
-        out = parallel(joblib.delayed(_train_and_score)(self,
-                                                        train_fs[:n_train_samples],
-                                                        test_fs,
-                                                        metric)
+        out = parallel(joblib.delayed(train_and_score)(self,
+                                                       train_fs[:n_train_samples],
+                                                       test_fs,
+                                                       metric)
                        for train_fs, test_fs in featureset_iter
                        for n_train_samples in train_sizes_abs)
 
@@ -2589,3 +1872,93 @@ class Learner(object):
         out = np.asarray(out).transpose((2, 1, 0))
 
         return list(out[0]), list(out[1]), list(train_sizes_abs)
+
+# Rescaled regressors
+@rescaled
+class RescaledBayesianRidge(BayesianRidge):
+    pass
+
+
+@rescaled
+class RescaledAdaBoostRegressor(AdaBoostRegressor):
+    pass
+
+
+@rescaled
+class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
+    pass
+
+
+@rescaled
+class RescaledElasticNet(ElasticNet):
+    pass
+
+
+@rescaled
+class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
+    pass
+
+
+@rescaled
+class RescaledHuberRegressor(HuberRegressor):
+    pass
+
+
+@rescaled
+class RescaledKNeighborsRegressor(KNeighborsRegressor):
+    pass
+
+
+@rescaled
+class RescaledLars(Lars):
+    pass
+
+
+@rescaled
+class RescaledLasso(Lasso):
+    pass
+
+
+@rescaled
+class RescaledLinearRegression(LinearRegression):
+    pass
+
+
+@rescaled
+class RescaledLinearSVR(LinearSVR):
+    pass
+
+
+@rescaled
+class RescaledMLPRegressor(MLPRegressor):
+    pass
+
+
+@rescaled
+class RescaledRandomForestRegressor(RandomForestRegressor):
+    pass
+
+
+@rescaled
+class RescaledRANSACRegressor(RANSACRegressor):
+    pass
+
+
+@rescaled
+class RescaledRidge(Ridge):
+    pass
+
+
+@rescaled
+class RescaledSGDRegressor(SGDRegressor):
+    pass
+
+
+@rescaled
+class RescaledSVR(SVR):
+    pass
+
+
+@rescaled
+class RescaledTheilSenRegressor(TheilSenRegressor):
+    pass

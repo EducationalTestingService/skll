@@ -20,20 +20,26 @@ import pandas as pd
 from nose.tools import eq_, raises, assert_not_equal
 from numpy.testing import assert_array_equal
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
-from sklearn.datasets.samples_generator import make_classification
+from sklearn.datasets import make_classification
 
 import skll
-from skll.data import (FeatureSet, Writer, Reader,
-                       CSVReader, TSVReader, NDJReader, NDJWriter)
+from skll.data import (CSVReader,
+                       FeatureSet,
+                       NDJReader,
+                       NDJWriter,
+                       Reader,
+                       TSVReader,
+                       Writer)
+
 from skll.data.readers import DictListReader
-from skll.experiments import _load_featureset
-from skll.learner import _DEFAULT_PARAM_GRIDS
-from skll.utilities import skll_convert
+from skll.experiments import load_featureset
+from skll.utils.commandline import skll_convert
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from tests.utils import make_classification_data, make_regression_data
 
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
@@ -723,12 +729,12 @@ def check_load_featureset(suffix, numeric_ids):
     # Load unmerged data and merge it
     dirpath = join(_my_dir, 'train', 'test_merging')
     featureset = ['{}'.format(i) for i in range(num_feat_files)]
-    merged_exs = _load_featureset(dirpath, featureset, suffix, quiet=True)
+    merged_exs = load_featureset(dirpath, featureset, suffix, quiet=True)
 
     # Load pre-merged data
     featureset = ['all']
-    premerged_exs = _load_featureset(dirpath, featureset, suffix,
-                                     quiet=True)
+    premerged_exs = load_featureset(dirpath, featureset, suffix,
+                                    quiet=True)
 
     assert_array_equal(merged_exs.ids, premerged_exs.ids)
     assert_array_equal(merged_exs.labels, premerged_exs.labels)
@@ -916,19 +922,19 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
     featureset = ['{}_{}{}'.format(feature_name_prefix, i, with_labels_part) for i in
                   range(num_feat_files)]
     label_col = 'y' if with_labels else None
-    merged_exs = _load_featureset(dirpath,
-                                  featureset,
-                                  to_suffix,
-                                  label_col=label_col,
-                                  quiet=True)
+    merged_exs = load_featureset(dirpath,
+                                 featureset,
+                                 to_suffix,
+                                 label_col=label_col,
+                                 quiet=True)
 
     # Load pre-merged data in the `to_suffix` format
     featureset = ['{}{}_all'.format(feature_name_prefix, with_labels_part)]
-    premerged_exs = _load_featureset(dirpath,
-                                     featureset,
-                                     to_suffix,
-                                     label_col=label_col,
-                                     quiet=True)
+    premerged_exs = load_featureset(dirpath,
+                                    featureset,
+                                    to_suffix,
+                                    label_col=label_col,
+                                    quiet=True)
 
     # make sure that the pre-generated merged data in the to_suffix format
     # is the same as the converted, merged data in the to_suffix format

@@ -18,26 +18,30 @@ from glob import glob
 from itertools import product
 from os.path import abspath, dirname, join, exists
 
-from nose.tools import eq_, assert_almost_equal, raises
+from nose.tools import (assert_almost_equal,
+                        assert_less,
+                        assert_greater,
+                        eq_,
+                        raises)
 
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
-from sklearn.utils.testing import assert_greater, assert_less
 
 from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
 from skll.experiments import run_configuration
-from skll.learner import Learner, rescaled
-from skll.learner import _DEFAULT_PARAM_GRIDS
-from skll.metrics import _CLASSIFICATION_ONLY_METRICS
+from skll.learner import Learner
+from skll.learner.utils import rescaled
+from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
+                                  KNOWN_DEFAULT_PARAM_GRIDS)
 
 from tests.utils import (make_regression_data,
                          fill_in_config_paths_for_fancy_output)
 
-_ALL_MODELS = list(_DEFAULT_PARAM_GRIDS.keys())
+_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
 
 
@@ -710,7 +714,7 @@ def test_invalid_regression_grid_objective():
                     'RandomForestRegressor', 'RANSACRegressor',
                     'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
                     'TheilSenRegressor']:
-        for metric in _CLASSIFICATION_ONLY_METRICS:
+        for metric in CLASSIFICATION_ONLY_METRICS:
             yield check_invalid_regression_grid_objective, learner, metric
 
 
@@ -735,6 +739,6 @@ def test_invalid_regression_metric():
                     'RandomForestRegressor', 'RANSACRegressor',
                     'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
                     'TheilSenRegressor']:
-        for metric in _CLASSIFICATION_ONLY_METRICS:
+        for metric in CLASSIFICATION_ONLY_METRICS:
             yield check_invalid_regression_metric, learner, metric, True
             yield check_invalid_regression_metric, learner, metric, False

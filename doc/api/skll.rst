@@ -1,33 +1,22 @@
 :mod:`skll` Package
 ===================
 
-The most useful parts of our API are available at the package level in addition
-to the module level. They are documented in both places for convenience.
+We have made the most useful parts of our API available in the top-level
+``skll`` namespace even though some of them actually live in subpackages.
+They are documented in both places for convenience.
 
 From :py:mod:`~skll.data` Package
 ---------------------------------
 .. autoclass:: skll.FeatureSet
     :members:
     :show-inheritance:
-.. autoclass:: skll.Reader
-    :members:
-    :show-inheritance:
-.. autoclass:: skll.Writer
-    :members:
-    :show-inheritance:
 
-From :py:mod:`~skll.experiments` Module
----------------------------------------
+From :py:mod:`~skll.experiments` Package
+----------------------------------------
 .. autofunction:: skll.run_configuration
 
-From :py:mod:`~skll.learner` Module
------------------------------------
+From :py:mod:`~skll.learner` Package
+------------------------------------
 .. autoclass:: skll.Learner
     :members:
     :show-inheritance:
-
-From :py:mod:`~skll.metrics` Module
------------------------------------
-.. autofunction:: skll.f1_score_least_frequent
-.. autofunction:: skll.kappa
-.. autofunction:: skll.correlation

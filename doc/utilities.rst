@@ -248,7 +248,10 @@ print_model_weights
 -------------------
 .. program:: print_model_weights
 
-Prints out the weights of a given trained model.
+Prints out the weights of a given trained model. If the model
+was trained using :ref:`feature hashing <feature_hasher>`, 
+feature names of the form ``hashed_feature_XX`` will be used
+since the original feature names no longer apply.
 
 Positional Arguments
 ^^^^^^^^^^^^^^^^^^^^
@@ -264,9 +267,14 @@ Optional Arguments
 
     Number of top features to print (0 for all) (default: 50)
 
-.. option:: sign {positive,negative,all}
+.. option:: --sign {positive,negative,all}
 
     Show only positive, only negative, or all weights (default: ``all``)
+
+.. option:: --sort_by_labels
+
+    Order the features by classes (default: ``False``). Mutually exclusive
+    with the ``--k`` option.
 
 .. option:: --version
 
@@ -316,6 +324,10 @@ Optional Arguments
 .. option:: --arff_relation ARFF_RELATION
 
     Relation name to use for ARFF file. (default: ``skll_relation``)
+
+.. option:: --no_labels
+
+    Used to indicate that the input data has no labels.
 
 .. option:: --reuse_libsvm_map REUSE_LIBSVM_MAP
 

@@ -163,7 +163,7 @@ class Writer(object):
                             if filter_features is not None else self.feat_set)
 
             # Open file for writing and write each line
-            with open(sub_path, 'w') as output_file:
+            with open(sub_path, 'w', encoding='utf-8') as output_file:
                 # Write out the header if this format requires it
                 self._write_header(filtered_set, output_file, filter_features)
                 # Write individual lines
