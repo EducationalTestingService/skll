@@ -708,7 +708,7 @@ class LibSVMWriter(Writer):
 
     def _write_line(self, id_, label_, feat_dict, output_file):
         """
-        Write the current line in the file in given format.
+        Write the current line in the file in this Writer's format.
 
         Parameters
         ----------

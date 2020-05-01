@@ -42,8 +42,8 @@ def main(argv=None):
                         help='Model file to load and use for generating '
                              'predictions.')
     parser.add_argument('input_files',
-                        help='A space-separated list of csv file, or json file, '
-                             '(with or without the label '
+                        help='A space-separated list of CSV, TSV, or '
+                             'jsonlines files (with or without the label '
                              'column), with the appropriate suffix.',
                         nargs='+')
     parser.add_argument('-i', '--id_col',
