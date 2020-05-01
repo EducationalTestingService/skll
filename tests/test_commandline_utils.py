@@ -589,7 +589,7 @@ def test_generate_predictions_console_bad_input_ext():
 
     expected_log_mssg = ("skll.utils.commandline.generate_predictions: ERROR: Input "
                          "file must be in either .arff, .csv, .jsonlines, "
-                         ".libsvm, .megam, .ndj, or .tsv format.  Skipping "
+                         ".libsvm, .ndj, or .tsv format.  Skipping "
                          "file fake_input_file.txt")
 
     eq_(lc.handler.buffer[-1], expected_log_mssg)
