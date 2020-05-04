@@ -111,8 +111,8 @@ When using this file format, the following restrictions apply:
 *   All other columns contain feature values, and every feature value
     must be specified (making this a poor choice for sparse data).
 
-.. warning:: 
- 
+.. warning::
+
     1. SKLL will raise an error if there are blank values in **any** of the
        columns. You must either drop all rows with blank values in any column
        or replace the blanks with a value you specify. To drop or replace via
@@ -137,8 +137,8 @@ When using this file format, the following restrictions apply:
             $ filter_features --id_col ID --label_col CLASS --drop_blanks temp.csv out.csv
 
        If you are using the SKLL Reader API, you can accomplish the same in a
-       single step by also passing using the keyword argument ``pandas_kwargs`` 
-       when instantiating either a :py:mod:`skll.data.readers.CSVReader` or a 
+       single step by also passing using the keyword argument ``pandas_kwargs``
+       when instantiating either a :py:mod:`skll.data.readers.CSVReader` or a
        :py:mod:`skll.data.readers.TSVReader`. For our example:
 
         .. code-block:: python
@@ -150,7 +150,7 @@ When using this file format, the following restrictions apply:
                                    pandas_kwargs={'usecols': ['A', 'C', 'F', 'ID', 'CLASS']})
             fs = r.read()
 
-       Make sure to include the ID and label columns in the `usecols` list 
+       Make sure to include the ID and label columns in the `usecols` list
        otherwise ``pandas`` will drop them too.
 
 .. _ndj:
@@ -193,34 +193,11 @@ The entire format would like this::
     IDs, labels, and feature names cannot contain the following
     characters:  ``|`` ``#`` ``=``
 
-.. _megam:
-
-megam
-^^^^^
-
-An expanded form of the input format for the
-`MegaM classification package <http://users.umiacs.umd.edu/~hal/megam/>`__ with
-the ``-fvals`` switch.
-
-The basic format is::
-
-    # Instance1
-    CLASS1    F0 2.5 F1 3 FEATURE_2 -152000
-    # Instance2
-    CLASS2    F1 7.524
-
-where the **optional** comments before each instance specify the ID for the
-following line, class names are separated from feature-value pairs with a tab,
-and feature-value pairs are separated by spaces. Any omitted features for a
-given instance are assumed to be zero, so this format is handy when dealing
-with sparse data. We also include several utility scripts for converting
-to/from this MegaM format and for adding/removing features from the files.
 
 .. _create_config:
 
 Configuration file fields
 -------------------------
-
 The experiment configuration files that ``run_experiment`` accepts are standard
 `Python configuration files <https://docs.python.org/3/library/configparser.html>`__
 that are similar in format to Windows INI files. [#]_
@@ -882,22 +859,22 @@ Available metrics are:
 
     **Classification:** The following objectives can be used for classification problems although some are restricted by problem type (binary/multiclass), types of labels (integers/floats/strings), and whether they are contiguous (if integers). Please read carefully.
 
-    .. note:: When doing classification, SKLL internally sorts and maps all the class 
+    .. note:: When doing classification, SKLL internally sorts and maps all the class
               labels in the data and maps them to integers which can be thought
               of class indices. This happens irrespective of the data type of the
               original labels. For example, if your data has the labels ``['A', 'B', 'C']``,
               SKLL will map them to the indices ``[0, 1, 2]`` respectively. It will do the
-              same if you have integer labels (``[1, 2, 3]``) or floating point ones 
+              same if you have integer labels (``[1, 2, 3]``) or floating point ones
               (``[1.0, 1.1, 1.2]``). All of the tuning objectives are computed using
               these integer indices rather than the original class labels. This is why
               some metrics *only* make sense in certain scenarios. For example, SKLL
               only allows using weighted kappa metrics as tuning objectives if the original
-              class labels are contiguous integers, e.g., ``[1, 2, 3]`` or ``[4, 5, 6]`` 
-              -- or even integer-like floats (e,g., ``[1.0, 2.0, 3.0]``, but not 
+              class labels are contiguous integers, e.g., ``[1, 2, 3]`` or ``[4, 5, 6]``
+              -- or even integer-like floats (e,g., ``[1.0, 2.0, 3.0]``, but not
               ``[1.0, 1.1, 1.2]``).
 
 
-    *   **accuracy**: Overall `accuracy <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__ 
+    *   **accuracy**: Overall `accuracy <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__
     *   **average_precision**: `Area under PR curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__ . To use this metric, :ref:`probability <probability>` must be set to ``True``. (*Binary classification only*).
     *   **balanced_accuracy**: A version of accuracy `specifically designed <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html#sklearn.metrics.balanced_accuracy_score>`__ for imbalanced binary and multi-class scenarios.
     *   **f1**: The default scikit-learn |F1 link|_
@@ -913,26 +890,26 @@ Available metrics are:
     *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
         ranking differences are discounted by one. (*Contiguous integer labels only*).
     *   **neg_log_loss**: The negative of the classification `log loss <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this metric, :ref:`probability <probability>` must be set to ``True``.
-    *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__ . For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*). 
+    *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__ . For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
     *   **precision**: `Precision <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`__
-    *   **quadratic_weighted_kappa**: `Quadratic weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*). 
+    *   **quadratic_weighted_kappa**: `Quadratic weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*).
     *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
-        ranking differences are discounted by one. (*Contiguous integer labels only*). 
+        ranking differences are discounted by one. (*Contiguous integer labels only*).
     *   **recall**: `Recall <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`__
     *   **roc_auc**: `Area under ROC curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__ .To use this metric, :ref:`probability <probability>` must be set to ``True``. (*Binary classification only*).
     *   **spearman**: `Spearman rank-correlation <https://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__. For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
-    *   **unweighted_kappa**: Unweighted `Cohen's kappa <https://en.wikipedia.org/wiki/Cohen's_kappa>`__. 
+    *   **unweighted_kappa**: Unweighted `Cohen's kappa <https://en.wikipedia.org/wiki/Cohen's_kappa>`__.
     *   **uwk_off_by_one**: Same as ``unweighted_kappa``, but all ranking
         differences are discounted by one. In other words, a ranking of
-        1 and a ranking of 2 would be considered equal. 
+        1 and a ranking of 2 would be considered equal.
 
 .. |F1 link| replace:: F\ :sub:`1` score
 .. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 
-    **Regression:** The following objectives can be used for regression problems. 
+    **Regression:** The following objectives can be used for regression problems.
 
     *   **explained_variance**: A `score <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.explained_variance_score.html#sklearn.metrics.explained_variance_score>`__ indicating how much of the variance in the given data can be by the model.
-    *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__ 
+    *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__
     *   **linear_weighted_kappa**: Linear weighted kappa (any floating point values are rounded to ints)
     *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
         ranking differences are discounted by one.

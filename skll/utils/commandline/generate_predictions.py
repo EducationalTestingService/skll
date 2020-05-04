@@ -143,7 +143,7 @@ def main(argv=None):
         input_extension = os.path.splitext(input_file)[1].lower()
         if input_extension not in EXT_TO_READER:
             logger.error(('Input file must be in either .arff, .csv, '
-                          '.jsonlines, .libsvm, .megam, .ndj, or .tsv format. '
+                          '.jsonlines, .libsvm, .ndj, or .tsv format. '
                           ' Skipping file {}').format(input_file))
             continue
         else:

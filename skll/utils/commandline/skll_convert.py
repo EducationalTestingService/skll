@@ -53,10 +53,10 @@ def main(argv=None):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
                         help='input feature file (ends in .arff, .csv, \
-                              .jsonlines, .libsvm, .megam, .ndj, or .tsv)')
+                              .jsonlines, .libsvm, .ndj, or .tsv)')
     parser.add_argument('outfile',
                         help='output feature file (ends in .arff, .csv, \
-                              .jsonlines, .libsvm, .megam, .ndj, or .tsv)')
+                              .jsonlines, .libsvm, .ndj, or .tsv)')
     parser.add_argument('-i', '--id_col',
                         help='Name of the column which contains the instance \
                               IDs in ARFF, CSV, or TSV files.',
@@ -106,7 +106,7 @@ def main(argv=None):
 
     if input_extension not in EXT_TO_READER:
         logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
-                      '.libsvm, .megam, .ndj, or .tsv format. You specified: '
+                      '.libsvm, .ndj, or .tsv format. You specified: '
                       '{}').format(input_extension))
         sys.exit(1)
 

@@ -4,7 +4,7 @@
 Tutorial
 ========
 
-Before doing anything below, you'll want to :ref:`install SKLL <install>`.
+Before doing anything below, you'll want to :ref:`install SKLL <install>`. 
 
 Workflow
 --------
@@ -198,7 +198,7 @@ An example of a human-readable results file for our Titanic experiment is::
     Total Time: 0:00:04.579588
 
 
-    Fold: 
+    Fold:
     Model Parameters: {"bootstrap": true, "ccp_alpha": 0.0, "class_weight": null, "criterion": "gini", "max_depth": 5, "max_features": "auto", "max_leaf_nodes": null, "max_samples": null, "min_impurity_decrease": 0.0, "min_impurity_split": null, "min_samples_leaf": 1, "min_samples_split": 2, "min_weight_fraction_leaf": 0.0, "n_estimators": 500, "n_jobs": null, "oob_score": false, "random_state": 123456789, "verbose": 0, "warm_start": false}
     Grid Objective Score (Train) = 0.797874315418175
     +----+------+------+-------------+----------+-------------+
