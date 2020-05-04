@@ -53,7 +53,7 @@ Positional Arguments
 .. option:: infile
 
     Input feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.megam``, ``.ndj``, or ``.tsv``)
+    ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
@@ -93,7 +93,7 @@ Optional Arguments
     (default: ``y``)
 
 .. option:: -db, --drop-blanks
-    
+
     Drop all lines/rows that have any blank values.
     (default: ``False``)
 
@@ -102,7 +102,7 @@ Optional Arguments
     Specifies a new value with which to replace blank values in all columns in the
     file. To replace blanks differently in each column, use the SKLL Reader API directly.
     (default: ``None``)
-      
+
 .. option:: -q, --quiet
 
     Suppress printing of ``"Loading..."`` messages.
@@ -124,11 +124,11 @@ Useful if you want to reuse a trained model as part of a larger system without
 creating configuration files. Offers the following modes of operation:
 
 - For non-probabilistic classification and regression, generate the predictions.
-- For probabilistic classification, generate either the most likely labels 
+- For probabilistic classification, generate either the most likely labels
   or the probabilities for each class label.
 - For binary probablistic classification, generate the positive class label
   only if its probability exceeds the given threshold. The positive class
-  label is either read from the model file or inferred the same way as 
+  label is either read from the model file or inferred the same way as
   a SKLL learner would.
 
 Positional Arguments
@@ -139,7 +139,8 @@ Positional Arguments
 
 .. option:: input_file(s)
 
-    One or more csv file(s), jsonlines file(s), or megam file(s) (with or without the
+    One or more feature file(s) (ending in ``.arff``, ``.csv``, ``.jsonlines``,
+    ``.libsvm``, ``.ndj``, or ``.tsv``) (with or without the
     label column), with the appropriate suffix.
 
 Optional Arguments
@@ -152,17 +153,17 @@ Optional Arguments
 .. option:: -l <label_col>, --label_col <label_col>
 
     Name of the column which contains the labels in ARFF, CSV, or TSV files.
-    For ARFF files, this must be the final column to count as the label. 
+    For ARFF files, this must be the final column to count as the label.
     (default: ``y``)
 
 .. option:: -o <path>, --output_file <path>
-    
+
     Path to output TSV file. If not specified, predictions will be printed
     to stdout. For probabilistic binary classification, the probability of
     the positive class will always be in the last column.
-    
+
 .. option:: -p, --predict_labels
-    
+
     If the model does probabilistic classification, output the class label
     with the highest probability instead of the class probabilities.
 
@@ -172,7 +173,7 @@ Optional Arguments
 
 .. option:: -t <threshold>, --threshold <threshold>
 
-    If the model does binary probabilistic classification, 
+    If the model does binary probabilistic classification,
     return the positive class label only if it meets/exceeds
     the given threshold and the other class label otherwise.
 
@@ -195,7 +196,7 @@ Positional Arguments
 .. option:: infile ...
 
     Input feature files (ends in ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.megam``, ``.ndj``, or ``.tsv``)
+    ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
@@ -287,7 +288,7 @@ skll_convert
 ------------
 .. program:: skll_convert
 
-Convert between .arff, .csv., .jsonlines, .libsvm, .megam, and .tsv formats.
+Convert between .arff, .csv., .jsonlines, .libsvm, and .tsv formats.
 
 Positional Arguments
 ^^^^^^^^^^^^^^^^^^^^
@@ -295,12 +296,12 @@ Positional Arguments
 .. option:: infile
 
     Input feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``)
+    ``.libsvm``, ``.ndj``, or ``.tsv``)
 
 .. option:: outfile
 
     Output feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
-    ``.libsvm``, ``.megam``, ``.ndj``, or ``.tsv``)
+    ``.libsvm``, ``.ndj``, or ``.tsv``)
 
 
 Optional Arguments

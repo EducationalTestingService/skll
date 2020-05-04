@@ -35,7 +35,7 @@ def main(argv=None):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
                         help='input feature file (ends in .arff, .csv, \
-                              .jsonlines, .megam, .ndj, or .tsv)',
+                              .jsonlines, .ndj, or .tsv)',
                         nargs='+')
     parser.add_argument('outfile',
                         help='output feature file')
@@ -79,7 +79,7 @@ def main(argv=None):
 
     if input_extension not in valid_extensions:
         logger.error(('Input files must be in either .arff, .csv, .jsonlines, '
-                      '.megam, .ndj, or .tsv format. You specified: '
+                      '.ndj, or .tsv format. You specified: '
                       '{}').format(input_extension))
         sys.exit(1)
 

@@ -50,7 +50,6 @@ import skll.utils.commandline.plot_learning_curves as plc
 from skll.data import (FeatureSet,
                        NDJWriter,
                        LibSVMWriter,
-                       MegaMWriter,
                        LibSVMReader,
                        safe_float)
 from skll.data.readers import EXT_TO_READER
@@ -590,7 +589,7 @@ def test_generate_predictions_console_bad_input_ext():
 
     expected_log_mssg = ("skll.utils.commandline.generate_predictions: ERROR: Input "
                          "file must be in either .arff, .csv, .jsonlines, "
-                         ".libsvm, .megam, .ndj, or .tsv format.  Skipping "
+                         ".libsvm, .ndj, or .tsv format.  Skipping "
                          "file fake_input_file.txt")
 
     eq_(lc.handler.buffer[-1], expected_log_mssg)
@@ -678,6 +677,7 @@ def test_generate_predictions_threshold_non_probabilistic():
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
+
     generate_cmd = [model_file, input_file]
     generate_cmd.append("-t 0.6")
     gp.main(generate_cmd)
@@ -827,7 +827,6 @@ def test_skll_convert():
                                                '.csv',
                                                '.jsonlines',
                                                '.libsvm',
-                                               '.megam',
                                                '.tsv'], 2):
         yield check_skll_convert, from_suffix, to_suffix, 'string'
         yield check_skll_convert, from_suffix, to_suffix, 'integer_string'
@@ -861,12 +860,6 @@ def test_skll_convert_libsvm_map():
     tmp = swapped_fs.features[:, 0]
     swapped_fs.features[:, 0] = swapped_fs.features[:, 1]
     swapped_fs.features[:, 1] = tmp
-
-    # now write out this new feature set as a MegaM file
-    swapped_megam_file = join(_my_dir, 'other',
-                              'test_skll_convert_libsvm_map.megam')
-    writer = MegaMWriter(swapped_megam_file, swapped_fs, quiet=True)
-    writer.write()
 
     # now run skll_convert to convert this into a libsvm file
     # but using the mapping specified in the first libsvm file
@@ -1455,7 +1448,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
 def test_filter_features_no_arff_argparse():
     for (extension, filter_type, id_col,
          label_col, inverse, quiet) in product(['.jsonlines', '.ndj',
-                                                '.megam', '.tsv',
+                                                '.tsv',
                                                 '.csv', ],
                                                ['feature', 'id',
                                                 'label'],
@@ -1633,7 +1626,7 @@ def check_filter_features_raises_system_exit(cmd_args):
 def test_filter_features_unmatched_formats():
     # Make sure filter_feature exits when the output file is in a different
     # format
-    for inext, outext in combinations(['.arff', '.megam', '.ndj', '.tsv',
+    for inext, outext in combinations(['.arff', '.ndj', '.tsv',
                                        '.jsonlines', '.csv'], 2):
         ff_cmd_args = ['foo{}'.format(inext), 'bar{}'.format(outext), '-f',
                        'a', 'b', 'c']
@@ -1714,7 +1707,7 @@ def check_join_features_argparse(extension, label_col='y', id_col='id',
 
 def test_join_features_argparse():
     for (extension, label_col, id_col, quiet) in product(['.jsonlines', '.ndj',
-                                                          '.megam', '.tsv',
+                                                          '.tsv',
                                                           '.csv', '.arff'],
                                                          ['y', 'foo'],
                                                          ['id', 'id_foo'],
@@ -1776,7 +1769,7 @@ def check_join_features_raises_system_exit(cmd_args):
 def test_join_features_unmatched_input_formats():
     # Make sure that join_feature exits when the input files are in different
     # formats
-    for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
+    for ext1, ext2 in combinations(['.arff', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
         jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext2),
                        'baz{}'.format(ext1)]
@@ -1786,7 +1779,7 @@ def test_join_features_unmatched_input_formats():
 def test_join_features_unmatched_output_format():
     # Make sure join_features exits when the output file is in a different
     # format
-    for ext1, ext2 in combinations(['.arff', '.megam', '.ndj', '.tsv',
+    for ext1, ext2 in combinations(['.arff', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
         jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1),
                        'baz{}'.format(ext2)]
