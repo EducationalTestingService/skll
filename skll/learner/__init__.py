@@ -598,6 +598,8 @@ class Learner(object):
         """
         # create the directory if it doesn't exist
         learner_dir = os.path.dirname(learner_path)
+        if not learner_dir:
+            learner_dir = os.getcwd()
         if not os.path.exists(learner_dir):
             os.makedirs(learner_dir)
         # write out the learner to disk
