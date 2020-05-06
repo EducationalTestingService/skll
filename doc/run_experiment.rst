@@ -26,7 +26,7 @@ help you out.  It is as easy as:
 **Create sparse feature files, if necessary**
 
 :ref:`skll_convert` can also create sparse data files in
-:ref:`.jsonlines <ndj>`, :ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, or
+:ref:`.jsonlines <ndj>`, :ref:`.libsvm <libsvm>`, or
 :ref:`.ndj <ndj>` formats.  This is very useful for saving disk space and
 memory when you have a large data set with mostly zero-valued features.
 
@@ -809,8 +809,7 @@ suffix *(Optional)*
 
 The file format the training/test files are in. Valid option are
 :ref:`.arff <arff>`, :ref:`.csv <csv>`, :ref:`.jsonlines <ndj>`,
-:ref:`.libsvm <libsvm>`, :ref:`.megam <megam>`, :ref:`.ndj <ndj>`, and
-:ref:`.tsv <csv>`.
+:ref:`.libsvm <libsvm>`, :ref:`.ndj <ndj>`, and :ref:`.tsv <csv>`.
 
 If you omit this field, it is assumed that the "prefixes" listed in
 :ref:`featuresets <featuresets>` are actually complete filenames. This can be
