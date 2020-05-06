@@ -885,6 +885,11 @@ Available metrics are:
     *   **f1_score_least_frequent**: F:\ :sub:`1` score of the least frequent
         class. The least frequent class may vary from fold to fold for certain
         data distributions.
+    *   **f05**: The default scikit-learn |F05 link|_
+        (F\ :sub:`\beta=0.5` of the positive class for binary classification, or the weighted average F\ :sub:`\beta=0.5` for multiclass classification)
+    *   **f05_score_micro**: Micro-averaged |F05 link|_
+    *   **f05_score_macro**: Macro-averaged |F05 link|_
+    *   **f05_score_weighted**: Weighted average |F05 link|_
     *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__ . For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
     *   **linear_weighted_kappa**: `Linear weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*).
     *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
@@ -905,6 +910,9 @@ Available metrics are:
 
 .. |F1 link| replace:: F\ :sub:`1` score
 .. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
+.. |F05 link| replace:: F\ :sub:`\beta=0.5` score
+.. _F05 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.fbeta_score.html
+
 
     **Regression:** The following objectives can be used for regression problems.
 
