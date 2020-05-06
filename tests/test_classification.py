@@ -697,7 +697,7 @@ def test_train_file_test_file():
                                                             'jsonlines'))
     run_configuration(config_path, quiet=True)
 
-    # Check results for objective functions ["accuracy", "f1"]
+    # Check results for objective functions ["accuracy", "f1", "f05"]
 
     # objective function accuracy
     with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
@@ -714,6 +714,14 @@ def test_train_file_test_file():
                                        '_f1.results.json'))) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['score'], 0.9491525423728813)
+
+    # objective function f05
+    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
+                                       'single_file.jsonlines_test_test_single'
+                                       '_file.jsonlines_RandomForestClassifier'
+                                       '_f05.results.json'))) as f:
+        result_dict = json.load(f)[0]
+    assert_almost_equal(result_dict['score'], 0.9302325581395348)
 
 
 def test_predict_on_subset_with_existing_model():
