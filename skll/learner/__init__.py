@@ -689,8 +689,11 @@ class Learner(object):
         examples : skll.FeatureSet
             The examples to use for training.
         """
-        # We don't need to do this for regression models, so return.
-        if self.model_type._estimator_type == 'regressor':
+
+        # we don't need to do this if we have already done it
+        # or for regression models, so simply return.
+        if (self.label_dict is not None or
+                self.model_type._estimator_type == 'regressor'):
             return
 
         # extract list of unique labels if we are doing classification;
@@ -753,9 +756,14 @@ class Learner(object):
                                          with_mean=False,
                                          with_std=False)
 
-    def train(self, examples, param_grid=None, grid_search_folds=3,
-              grid_search=True, grid_objective=None,
-              grid_jobs=None, shuffle=False, create_label_dict=True):
+    def train(self,
+              examples,
+              param_grid=None,
+              grid_search_folds=3,
+              grid_search=True,
+              grid_objective=None,
+              grid_jobs=None,
+              shuffle=False):
         """
         Train a classification model and return the model, score, feature
         vectorizer, scaler, label dictionary, and inverse label dictionary.
@@ -790,16 +798,6 @@ class Learner(object):
         shuffle : bool, optional
             Shuffle examples (e.g., for grid search CV.)
             Defaults to ``False``.
-        create_label_dict : bool, optional
-            Should we create the label dictionary?  This
-            dictionary is used to map between string
-            labels and their corresponding numerical
-            values.  This should only be done once per
-            experiment, so when ``cross_validate`` calls
-            ``train``, ``create_label_dict`` gets set to
-            ``False``. This option is only for internal
-            use.
-            Defaults to ``True``.
 
         Returns
         -------
@@ -891,8 +889,7 @@ class Learner(object):
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
-        if create_label_dict:
-            self._create_label_dict(examples)
+        self._create_label_dict(examples)
         self._train_setup(examples)
 
         # select features
@@ -1739,8 +1736,6 @@ class Learner(object):
                                    features=examples.features[train_index],
                                    vectorizer=examples.vectorizer)
 
-            # Set run_create_label_dict to False since we already created the
-            # label dictionary for the whole dataset above.
             (grid_search_score,
              grid_search_cv_results) = self.train(train_set,
                                                   grid_search_folds=grid_search_folds,
@@ -1748,8 +1743,7 @@ class Learner(object):
                                                   grid_objective=grid_objective,
                                                   param_grid=param_grid,
                                                   grid_jobs=grid_jobs,
-                                                  shuffle=grid_search,
-                                                  create_label_dict=False)
+                                                  shuffle=grid_search)
             grid_search_scores.append(grid_search_score)
             if save_cv_models:
                 models.append(copy.deepcopy(self))
