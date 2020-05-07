@@ -12,7 +12,6 @@ build.sh
 .DS_Store
 .coverage
 .idea
-.condaenv
 
 examples/train.csv
 examples/test.csv
