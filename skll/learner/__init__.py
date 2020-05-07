@@ -690,7 +690,7 @@ class Learner(object):
             The examples to use for training.
         """
 
-        # we don't need to do this if we have alerady done it
+        # we don't need to do this if we have already done it
         # or for regression models, so simply return.
         if (self.label_dict is not None or
                 self.model_type._estimator_type == 'regressor'):
