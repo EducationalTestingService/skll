@@ -13,11 +13,12 @@ import os
 
 from os.path import abspath, dirname, exists, join
 
-from nose.tools import raises
+from nose.tools import eq_, raises
 from numpy.testing import assert_almost_equal
 
+from sklearn.metrics import fbeta_score
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-from skll.metrics import kappa
+from skll.metrics import kappa, use_score_func
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
@@ -115,3 +116,25 @@ def test_invalid_weighted_kappa():
 @raises(ValueError)
 def test_invalid_lists_kappa():
     kappa(['a', 'b', 'c'], ['a', 'b', 'c'])
+
+
+def check_f05_metrics(metric_name, average_method):
+    y_true = [1, 1, 1, 0, 0, 0]
+    y_pred = [0, 1, 1, 1, 0, 0]
+    skll_value = use_score_func(metric_name, y_true, y_pred)
+    sklearn_value = fbeta_score(y_true, y_pred, 0.5, average=average_method)
+    eq_(skll_value, sklearn_value)
+
+
+def test_f05_metrics():
+    for (metric_name,
+         average_method) in zip(["f05",
+                                 "f05_score_micro",
+                                 "f05_score_macro",
+                                 "f05_score_weighted"],
+                                ["binary",
+                                 "micro",
+                                 "macro",
+                                 "weighted"]):
+
+        yield check_f05_metrics, metric_name, average_method
