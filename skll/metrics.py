@@ -2,17 +2,29 @@
 """
 Metrics that can be used to evaluate the performance of learners.
 
-:author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
+:author: Michael Heilman (mheilman@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
 """
+
+import os
+import sys
+
+from importlib import import_module
+from inspect import signature
 
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
 from sklearn.metrics import (confusion_matrix,
                              f1_score,
+                             make_scorer,
                              SCORERS)
+
+
+# a set that will hold the names of any custom metrics;
+# this is a private variable only meant for internal use
+_CUSTOM_METRICS = set()
 
 
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
@@ -213,6 +225,55 @@ def f1_score_least_frequent(y_true, y_pred):
     """
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
+
+
+def register_custom_metric(custom_metric_path, custom_metric_name):
+    """
+    Import, load, and register the custom metric function from the given path.
+
+    Parameters
+    ----------
+    custom_metric_path : str
+        The path to a custom metric.
+    custom_metric_name : str
+        The name of the custom metric function to load.
+        This function must take only two array-like
+        arguments: the true labels and the predictions,
+        in that order.
+
+    Raises
+    ------
+    ValueError
+        If the custom metric path does not end in '.py'.
+    """
+    if not custom_metric_path:
+        raise ValueError('custom_metric_path was not set and metric {} '
+                         'was not found.'.format(custom_metric_name))
+
+    if not custom_metric_path.endswith('.py'):
+        raise ValueError('custom_metric_path must end in .py ({})'
+                         .format(custom_metric_path))
+
+    custom_metric_module_name = os.path.basename(custom_metric_path)[:-3]
+    sys.path.append(os.path.dirname(os.path.abspath(custom_metric_path)))
+    import_module(custom_metric_module_name)
+
+    # get the metric callable and get the values of the specific keyword
+    # arguments that we need to pass to `make_scorer()`
+    metric_func = getattr(sys.modules[custom_metric_module_name], custom_metric_name)
+    metric_func_parameters = signature(metric_func).parameters
+    make_scorer_kwargs = {}
+    for make_scorer_kwarg in ['greater_is_better',
+                              'needs_proba',
+                              'needs_threshold']:
+        if make_scorer_kwarg in metric_func_parameters:
+            parameter_value = metric_func_parameters.get(make_scorer_kwarg).default
+            make_scorer_kwargs.update({make_scorer_kwarg: parameter_value})
+
+    # make the scorer function with the appropriate keyword arguments
+    # and add it to the `CUSTOM_METRICS` set
+    SCORERS[f"{custom_metric_name}"] = make_scorer(metric_func, **make_scorer_kwargs)
+    _CUSTOM_METRICS.add(custom_metric_name)
 
 
 def use_score_func(func_name, y_true, y_pred):
