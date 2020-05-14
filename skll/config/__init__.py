@@ -51,6 +51,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         # defaults are automatically provided
         defaults = {'class_map': '{}',
                     'custom_learner_path': '',
+                    'custom_metric_path': '',
                     'folds_file': '',
                     'feature_hasher': 'False',
                     'feature_scaling': 'none',
@@ -93,6 +94,7 @@ class SKLLConfigParser(configparser.ConfigParser):
 
         correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
+                                   'custom_metric_path': 'Input',
                                    'folds_file': 'Input',
                                    'feature_hasher': 'Input',
                                    'feature_scaling': 'Input',
@@ -347,6 +349,8 @@ def parse_config_file(config_path, log_level=logging.INFO):
         A class map collapsing several labels into one.
     custom_learner_path : str
         Path to a .py file that defines a custom learner.
+    custom_metric_path : str
+        Path to a .py file that defines a custom metric.
     learning_curve_cv_folds_list : list of int
         A list of integers specifying the number of folds to use for CV.
     learning_curve_train_sizes : list of float or list of int
@@ -460,6 +464,10 @@ def parse_config_file(config_path, log_level=logging.INFO):
                          ' for the learner.')
     custom_learner_path = locate_file(config.get("Input", "custom_learner_path"),
                                       config_dir)
+
+    # get the custom metric path, if specified, and locate it
+    custom_metric_path = locate_file(config.get("Input", "custom_metric_path"),
+                                     config_dir)
 
     # get the featuresets
     featuresets_string = config.get("Input", "featuresets")
@@ -824,8 +832,9 @@ def parse_config_file(config_path, log_level=logging.INFO):
             save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
             fixed_parameter_list, param_grid_list, featureset_names, learners,
             prediction_dir, log_path, train_path, test_path, ids_to_floats,
-            class_map, custom_learner_path, learning_curve_cv_folds_list,
-            learning_curve_train_sizes, output_metrics)
+            class_map, custom_learner_path, custom_metric_path,
+            learning_curve_cv_folds_list, learning_curve_train_sizes,
+            output_metrics)
 
 
 def _setup_config_parser(config_path, validate=True):
