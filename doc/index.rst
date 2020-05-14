@@ -28,6 +28,7 @@ Documentation
    getting_started
    tutorial
    run_experiment
+   custom_metrics
    utilities
    api
    contributing

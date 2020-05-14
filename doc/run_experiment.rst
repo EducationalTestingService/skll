@@ -1,5 +1,3 @@
-.. sectionauthor:: Dan Blanchard <dblanchard@ets.org>
-
 Running Experiments
 ===================
 
@@ -446,6 +444,17 @@ Similarly, Custom regressors must either (a) inherit from an existing scikit-lea
 Learners that require dense matrices should implement a method ``requires_dense``
 that returns ``True``.
 
+.. _custom_metric_path:
+
+custom_metric_path *(Optional)*
+"""""""""""""""""""""""""""""""
+
+Path to a ``.py`` file that defines a :ref:`custom metric function <custom_metrics>`. 
+This file will be imported dynamically.  This is only required if a custom metric
+is specified either as :ref:`tuning objective <objectives>` or as an 
+:ref:`output metric <metrics>` or both.
+
+
 .. _feature_hasher:
 
 feature_hasher *(Optional)*
@@ -852,7 +861,7 @@ objectives
 A list of one or more metrics to use as objective functions for tuning the learner
 hyperparameters via grid search. Note that ``objectives`` is required by default in most cases unless (a) :ref:`grid_search <grid_search>` is explicitly set to ``False`` or (b) the task is :ref:`learning_curve <learning_curve>`. For (a), any specified objectives are ignored. For (b), specifying objectives will raise an exception.
 
-Available metrics are:
+SKLL provides the following metrics but you can also write your own :ref:`custom metrics <custom_metrics>`.
 
 .. _classification_obj:
 
@@ -889,6 +898,10 @@ Available metrics are:
     *   **f05_score_micro**: Micro-averaged |F05 link|_
     *   **f05_score_macro**: Macro-averaged |F05 link|_
     *   **f05_score_weighted**: Weighted average |F05 link|_
+    *   **jaccard**: The default |Jaccard link|_  from scikit-learn for binary classification.
+    *   **jaccard_micro**: Micro-averaged |Jaccard link|_
+    *   **jaccard_macro**: Macro-averaged |Jaccard link|_
+    *   **jaccard_weighted**: Weighted average |Jaccard link|_
     *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__ . For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
     *   **linear_weighted_kappa**: `Linear weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*).
     *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
@@ -911,6 +924,8 @@ Available metrics are:
 .. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 .. |F05 link| replace:: F\ :sub:`β=0.5` score
 .. _F05 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.fbeta_score.html
+.. |Jaccard link| replace:: Jaccard similarity coefficient
+.. _Jaccard link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.jaccard_score.html
 
 
     **Regression:** The following objectives can be used for regression problems.
@@ -1166,7 +1181,8 @@ list of additional metrics that will be computed *in addition to*
 the tuning objectives and added to the results files. However, for the 
 :ref:`learning_curve <learning_curve>` task, this list is **required**. 
 Possible values are all of the same functions as those available for the 
-:ref:`tuning objectives <objectives>`  (with the same caveats).
+:ref:`tuning objectives <objectives>` (with the same caveats). You can
+also include your own :ref:`custom metric <custom_metrics>` functions.
 
 .. note::
 
