@@ -127,6 +127,7 @@ def _classify_featureset(args):
     ids_to_floats = args.pop("ids_to_floats")
     class_map = args.pop("class_map")
     custom_learner_path = args.pop("custom_learner_path")
+    custom_metric_path = args.pop("custom_metric_path")
     quiet = args.pop('quiet', False)
     learning_curve_cv_folds = args.pop("learning_curve_cv_folds")
     learning_curve_train_sizes = args.pop("learning_curve_train_sizes")
@@ -514,7 +515,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
          save_cv_folds, save_cv_models, use_folds_file_for_grid_search,
          do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
          learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
-         class_map, custom_learner_path, learning_curve_cv_folds_list,
+         class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
          learning_curve_train_sizes, output_metrics) = parse_config_file(config_file,
                                                                          log_level=log_level)
 
@@ -705,6 +706,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                     job_args["quiet"] = quiet
                     job_args["class_map"] = class_map
                     job_args["custom_learner_path"] = custom_learner_path
+                    job_args["custom_metric_path"] = custom_metric_path
                     job_args["learning_curve_cv_folds"] = learning_curve_cv_folds_list[learner_num]
                     job_args["learning_curve_train_sizes"] = learning_curve_train_sizes
 
