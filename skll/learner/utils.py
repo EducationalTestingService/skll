@@ -21,7 +21,7 @@ import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.feature_selection import SelectKBest
-from skll.metrics import use_score_func
+from skll.metrics import _CUSTOM_METRICS, use_score_func
 from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
                                   CORRELATION_METRICS,
                                   REGRESSION_ONLY_METRICS,
@@ -232,6 +232,11 @@ def get_acceptable_regression_metrics():
                           UNWEIGHTED_KAPPA_METRICS |
                           WEIGHTED_KAPPA_METRICS |
                           CORRELATION_METRICS)
+
+    # if there are any custom metrics registered, include them too
+    if len(_CUSTOM_METRICS) > 0:
+        acceptable_metrics.update(_CUSTOM_METRICS)
+
     return acceptable_metrics
 
 
@@ -296,6 +301,10 @@ def get_acceptable_classification_metrics(label_array):
         # (e.g., [1.0, 2.0, 3.0]) are also acceptable.
         if contiguous_ints_or_floats(label_array):
             acceptable_metrics.update(WEIGHTED_KAPPA_METRICS)
+
+    # if there are any custom metrics registered, include them too
+    if len(_CUSTOM_METRICS) > 0:
+        acceptable_metrics.update(_CUSTOM_METRICS)
 
     return acceptable_metrics
 
