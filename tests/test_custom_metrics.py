@@ -155,8 +155,8 @@ def test_custom_metric_api_experiment():
     input_dir = join(_my_dir, "other")
     custom_metrics_file1 = join(input_dir, "custom_metrics.py")
     register_custom_metric(custom_metrics_file1, "f075_macro")
-    # custom_metrics_file2 = join(input_dir, "custom_metrics2.py")
-    # register_custom_metric(custom_metrics_file2, "f06_micro")
+    custom_metrics_file2 = join(input_dir, "custom_metrics2.py")
+    register_custom_metric(custom_metrics_file2, "f06_micro")
 
     # read in some train/test data
     train_file = join(input_dir, "examples_train.jsonlines")
@@ -171,16 +171,16 @@ def test_custom_metric_api_experiment():
     _ = learner.train(train_fs, grid_objective="f075_macro")
     results = learner.evaluate(test_fs,
                                grid_objective="f075_macro",
-                               output_metrics=["balanced_accuracy"])
+                               output_metrics=["balanced_accuracy", "f06_micro"])
     test_objective_value = results[-2]
     test_output_metrics_dict = results[-1]
     test_accuracy_value = test_output_metrics_dict["balanced_accuracy"]
-    # test_f06_micro_value = test_output_metrics_dict["f06_micro"]
+    test_f06_micro_value = test_output_metrics_dict["f06_micro"]
 
     # check that the values are as expected
     assert_almost_equal(test_objective_value, 0.9785, places=4)
     assert_almost_equal(test_accuracy_value, 0.9792, places=4)
-    # assert_almost_equal(test_f06_micro_value, 0.98, places=4)
+    assert_almost_equal(test_f06_micro_value, 0.98, places=4)
 
 
 def test_custom_metric_config_experiment():
