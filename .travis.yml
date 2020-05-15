@@ -6,7 +6,7 @@ notifications:
   slack:
     secure: d+NSaR+cfRkcJfX/uEVwdyQDlayZO6c8QV96grl1stmWxG3XOXvXg1tM6v7EBeb9VRw5T4VglnnJGNJA62j1ReEJ0XyWr5XtaNWiF6Lc4UOty/TTG36IQdkWS1vQA8v2Hre73YbvOhtBb6biNneVAk+rrfRSgomEa+ec22cjgUo=
 env:
-  - TESTFILES="tests/test_featureset.py tests/test_commandline_utils.py"
+  - TESTFILES="tests/test_featureset.py tests/test_commandline_utils.py tests/test_custom_metrics.py"
   - TESTFILES="tests/test_output.py"
   - TESTFILES="tests/test_regression.py"
   - TESTFILES="tests/test_input.py tests/test_preprocessing.py tests/test_metrics.py tests/test_custom_learner.py tests/test_logging_utils.py tests/test_examples.py"
