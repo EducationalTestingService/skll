@@ -262,12 +262,13 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     custom_metric_module_name = basename(custom_metric_path)[:-3]
     if custom_metric_module_name not in sys.modules:
         sys.path.append(dirname(abspath(custom_metric_path)))
-        module = import_module(custom_metric_module_name)
-        globals()[custom_metric_module_name] = module
+        metric_module = import_module(custom_metric_module_name)
+        globals()[custom_metric_module_name] = metric_module
 
     # get the metric callable and get the values of the specific keyword
     # arguments that we need to pass to `make_scorer()`
     metric_func = getattr(sys.modules[custom_metric_module_name], custom_metric_name)
+    metric_func.__module__ = f"skll.metrics.{custom_metric_module_name}"
     metric_func_parameters = signature(metric_func).parameters
     make_scorer_kwargs = {}
     for make_scorer_kwarg in ['greater_is_better',
