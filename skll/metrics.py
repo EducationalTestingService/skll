@@ -8,11 +8,11 @@ Metrics that can be used to evaluate the performance of learners.
 :organization: ETS
 """
 
-import os
 import sys
 
 from importlib import import_module
 from inspect import signature
+from os.path import abspath, basename, dirname, exists
 
 import numpy as np
 from scipy.stats import kendalltau, spearmanr, pearsonr
@@ -247,15 +247,19 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
         If the custom metric path does not end in '.py'.
     """
     if not custom_metric_path:
-        raise ValueError('custom_metric_path was not set and metric {} '
-                         'was not found.'.format(custom_metric_name))
+        raise ValueError(f"custom metric path was not set and "
+                         f"metric {custom_metric_name} was not found.")
+
+    if not exists(custom_metric_path):
+        raise ValueError(f"custom metric path '{custom_metric_path}' "
+                         f"does not exist.")
 
     if not custom_metric_path.endswith('.py'):
-        raise ValueError('custom_metric_path must end in .py ({})'
-                         .format(custom_metric_path))
+        raise ValueError(f"custom metric path must end in .py, you specified "
+                         f"{custom_metric_path}")
 
-    custom_metric_module_name = os.path.basename(custom_metric_path)[:-3]
-    sys.path.append(os.path.dirname(os.path.abspath(custom_metric_path)))
+    custom_metric_module_name = basename(custom_metric_path)[:-3]
+    sys.path.append(dirname(abspath(custom_metric_path)))
     import_module(custom_metric_module_name)
 
     # get the metric callable and get the values of the specific keyword
