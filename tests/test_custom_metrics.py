@@ -209,9 +209,9 @@ def test_custom_metric_config_experiment():
     test_objective_value = result_dict['score']
     test_output_metrics_dict = result_dict['additional_scores']
     test_accuracy_value = test_output_metrics_dict["balanced_accuracy"]
-    test_f06_micro_value = test_output_metrics_dict["f06_micro"]
+    test_ratio_of_ones_value = test_output_metrics_dict["ratio_of_ones"]
 
     # check that the values are as expected
     assert_almost_equal(test_objective_value, 0.9785, places=4)
     assert_almost_equal(test_accuracy_value, 0.9792, places=4)
-    assert_almost_equal(test_f06_micro_value, 0.98, places=4)
+    assert_almost_equal(test_ratio_of_ones_value, 0.5161, places=4)
