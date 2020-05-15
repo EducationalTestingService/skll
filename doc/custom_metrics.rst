@@ -63,7 +63,6 @@ Here's an excerpt from a configuration file for the SKLL Titanic example that il
    objectives = ['f075']
 
    [Output]
-   # again, these can be absolute paths
    metrics = ['roc_auc']
    probability = true
    log = output
