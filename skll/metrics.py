@@ -258,9 +258,11 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
         raise ValueError(f"custom metric path must end in .py, you specified "
                          f"{custom_metric_path}")
 
+    # dynamically import the module unless we have already done it
     custom_metric_module_name = basename(custom_metric_path)[:-3]
-    sys.path.append(dirname(abspath(custom_metric_path)))
-    import_module(custom_metric_module_name)
+    if custom_metric_module_name not in sys.modules:
+        sys.path.append(dirname(abspath(custom_metric_path)))
+        import_module(custom_metric_module_name)
 
     # get the metric callable and get the values of the specific keyword
     # arguments that we need to pass to `make_scorer()`
