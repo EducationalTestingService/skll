@@ -1,7 +1,6 @@
 # License: BSD 3 clause
 """
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+Module for running tests with custom learners.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
