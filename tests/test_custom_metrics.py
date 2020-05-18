@@ -10,7 +10,9 @@ import os
 from glob import glob
 from os.path import abspath, dirname, join
 
-from nose.tools import assert_almost_equal, eq_, ok_, raises
+from nose.tools import assert_almost_equal, eq_, ok_, raises, with_setup
+
+import skll.metrics
 
 from sklearn.metrics import fbeta_score, SCORERS
 from skll import Learner, run_configuration
@@ -21,16 +23,18 @@ from tests.utils import fill_in_config_paths_for_single_file
 _my_dir = abspath(dirname(__file__))
 
 
-def setup():
+def setup_func():
     """
-    Create necessary directories for testing.
+    Run before each test function.
     """
-    pass
+    # clean up any already registered metrics to simulate
+    # as if we are starting a new Python session
+    _cleanup_custom_metrics()
 
 
 def tearDown():
     """
-    Clean up after tests.
+    Clean up after all tests are run.
     """
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
@@ -42,6 +46,27 @@ def tearDown():
         os.unlink(output_file)
 
 
+def _cleanup_custom_metrics():
+    """A helper function to clean up any custom metrics"""
+
+    # remove any registered sub-modules from skll.metrics
+    try:
+        delattr(skll.metrics, 'custom_metrics')
+        delattr(skll.metrics, 'custom_metrics2')
+        delattr(skll.metrics, 'kappa')
+    except AttributeError:
+        pass
+
+    # remove any registered metric functions from SCORERS
+    try:
+        del SCORERS['f075_macro']
+        del SCORERS['ratio_of_ones']
+        del SCORERS['f06_micro']
+    except KeyError:
+        pass
+
+
+@with_setup(setup_func)
 def test_register_custom_metric_load_one():
     """Test loading a single custom metric"""
 
@@ -60,6 +85,7 @@ def test_register_custom_metric_load_one():
     assert "ratio_of_ones" not in SCORERS
 
 
+@with_setup(setup_func)
 def test_register_custom_metric_load_both():
     """Test loading two custom metrics from one file"""
 
@@ -76,6 +102,7 @@ def test_register_custom_metric_load_both():
     assert "ratio_of_ones" in SCORERS
 
 
+@with_setup(setup_func)
 def test_register_custom_metric_load_different_files():
     """Test loading two custom metrics from two files"""
 
@@ -93,6 +120,38 @@ def test_register_custom_metric_load_different_files():
     assert "f06_micro" in SCORERS
 
 
+@with_setup(setup_func)
+@raises(NameError)
+def test_reregister_same_metric_same_session():
+    """Test loading custom metric again in same session"""
+
+    # try to load a metric from a txt file, not a py file
+    metric_dir = join(_my_dir, "other")
+    custom_metrics_file = join(metric_dir, "custom_metrics.py")
+    register_custom_metric(custom_metrics_file, "f075_macro")
+
+    # re-registering should raise an error
+    register_custom_metric(custom_metrics_file, "f075_macro")
+
+
+@with_setup(setup_func)
+def test_reregister_same_metric_different_session():
+    """Test loading custom metric again in different session"""
+
+    # try to load a metric from a txt file, not a py file
+    metric_dir = join(_my_dir, "other")
+    custom_metrics_file = join(metric_dir, "custom_metrics.py")
+    register_custom_metric(custom_metrics_file, "f075_macro")
+
+    # clean up any already registered metrics to simulate
+    # as if we are starting a new Python session
+    _cleanup_custom_metrics()
+
+    # now re-registering should work just fine
+    register_custom_metric(custom_metrics_file, "f075_macro")
+
+
+@with_setup(setup_func)
 @raises(ValueError)
 def test_register_custom_metric_bad_extension():
     """Test loading custom metric from non-py file"""
@@ -103,6 +162,7 @@ def test_register_custom_metric_bad_extension():
     register_custom_metric(bad_custom_metrics_file, "f075_macro")
 
 
+@with_setup(setup_func)
 @raises(ValueError)
 def test_register_custom_metric_missing_file():
     """Test loading custom metric from missing file"""
@@ -113,6 +173,7 @@ def test_register_custom_metric_missing_file():
     register_custom_metric(missing_custom_metrics_file, "f075_macro")
 
 
+@with_setup(setup_func)
 @raises(AttributeError)
 def test_register_custom_metric_wrong_name():
     """Test loading custom metric with wrong name"""
@@ -123,6 +184,29 @@ def test_register_custom_metric_wrong_name():
     register_custom_metric(custom_metrics_file, "blah")
 
 
+@with_setup(setup_func)
+@raises(NameError)
+def test_register_custom_metric_conflicting_filename():
+    """Test loading custom metric with conflicting filename"""
+
+    # try to load a metric that does not exist in a file
+    metric_dir = join(_my_dir, "other")
+    custom_metrics_file = join(metric_dir, "kappa.py")
+    register_custom_metric(custom_metrics_file, "dummy_metric")
+
+
+@with_setup(setup_func)
+@raises(NameError)
+def test_register_custom_metric_conflicting_metric_name():
+    """Test loading custom metric with conflicting name"""
+
+    # try to load a metric that does not exist in a file
+    metric_dir = join(_my_dir, "other")
+    custom_metrics_file = join(metric_dir, "custom_metrics.py")
+    register_custom_metric(custom_metrics_file, "r2")
+
+
+@with_setup(setup_func)
 def test_register_custom_metric_values():
     """Test to check values of custom metrics"""
 
@@ -148,6 +232,7 @@ def test_register_custom_metric_values():
     eq_(skll_value, expected_value)
 
 
+@with_setup(setup_func)
 def test_custom_metric_api_experiment():
     """Test API SKLL experiment with custom metrics"""
 
@@ -183,6 +268,7 @@ def test_custom_metric_api_experiment():
     assert_almost_equal(test_f06_micro_value, 0.98, places=4)
 
 
+@with_setup(setup_func)
 def test_custom_metric_config_experiment():
     """Test config SKLL experiment with custom metrics"""
 
