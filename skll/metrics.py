@@ -245,6 +245,11 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     ------
     ValueError
         If the custom metric path does not end in '.py'.
+    NameError
+        If the name of the custom metric file conflicts
+        with an already existing attribute in ``skll.metrics``
+        or if the custom metric name conflicts with a scikit-learn
+        or SKLL metric.
     """
     if not custom_metric_path:
         raise ValueError(f"custom metric path was not set and "
@@ -258,8 +263,31 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
         raise ValueError(f"custom metric path must end in .py, you specified "
                          f"{custom_metric_path}")
 
-    # dynamically import the module unless we have already done it
+    # get the name of the module containing the custom metric
     custom_metric_module_name = basename(custom_metric_path)[:-3]
+
+    # make sure that the name of the module does not conflict#
+    # with any of the existing names under `skll.metrics`;
+    # this is a bit tricky since we do want to allow reusing
+    # the same module to register another metric, so we need
+    # to explicitly check that the potential conflict is an
+    # an existing variable/function in the `skll.metrics` module
+    if custom_metric_module_name in globals():
+        potential_conflict = globals()[custom_metric_module_name]
+        if (hasattr(potential_conflict, '__module__') and
+                getattr(potential_conflict, '__module__') == 'skll.metrics'):
+            raise NameError(f"the name '{custom_metric_module_name}' conflicts "
+                            f"with another name in SKLL; rename "
+                            f"{custom_metric_module_name}.py and try again.")
+
+    # once we know that the module name is okay, we need to make sure
+    # that the metric function name is also okay
+    if custom_metric_name in SCORERS:
+        raise NameError(f"a metric called '{custom_metric_name}' already "
+                        f"exists in SKLL; rename the metric function "
+                        f"in {custom_metric_module_name}.py and try again.")
+
+    # dynamically import the module unless we have already done it
     if custom_metric_module_name not in sys.modules:
         sys.path.append(dirname(abspath(custom_metric_path)))
         metric_module = import_module(custom_metric_module_name)
@@ -268,6 +296,10 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     # get the metric callable and get the values of the specific keyword
     # arguments that we need to pass to `make_scorer()`
     metric_func = getattr(sys.modules[custom_metric_module_name], custom_metric_name)
+
+    # set the module attribute to the submodule we just imported
+    # under `skll.metrics`; we need this to make sure that things
+    # work well with joblib serialization and deserialization
     metric_func.__module__ = f"skll.metrics.{custom_metric_module_name}"
     metric_func_parameters = signature(metric_func).parameters
     make_scorer_kwargs = {}
