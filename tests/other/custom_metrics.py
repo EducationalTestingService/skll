@@ -1,4 +1,4 @@
-from sklearn.metrics import fbeta_score, precision_score, r2_score
+from sklearn.metrics import f1_score, fbeta_score, precision_score, r2_score
 
 
 def f075_macro(y_true, y_pred):
@@ -17,3 +17,7 @@ def r2(y_true, y_pred):
 
 def one_minus_precision(y_true, y_pred, greater_is_better=False):
     return 1 - precision_score(y_true, y_pred, average='binary')
+
+
+def one_minus_f1_macro(y_true, y_pred, greater_is_better=False):
+    return 1 - f1_score(y_true, y_pred, average='macro')

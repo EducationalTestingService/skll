@@ -10,10 +10,11 @@ import os
 from glob import glob
 from os.path import abspath, dirname, join
 
-from nose.tools import assert_almost_equal, eq_, ok_, raises, with_setup
-from numpy.testing import assert_array_equal, assert_array_almost_equal
-
+import numpy as np
 import skll.metrics
+
+from nose.tools import assert_almost_equal, eq_, raises, with_setup
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from sklearn.metrics import fbeta_score, SCORERS
 from skll import Learner, run_configuration
@@ -42,6 +43,12 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
 
     for cfg_file in glob(join(config_dir, '*custom_metrics.cfg')):
+        os.unlink(cfg_file)
+
+    for cfg_file in glob(join(config_dir, '*custom_metrics_kwargs1.cfg')):
+        os.unlink(cfg_file)
+
+    for cfg_file in glob(join(config_dir, '*custom_metrics_kwargs2.cfg')):
         os.unlink(cfg_file)
 
     for output_file in glob(join(output_dir, 'test_custom_metrics*')):
@@ -312,7 +319,7 @@ def test_custom_metric_config_experiment():
 
 @with_setup(setup_func)
 def test_custom_metric_api_using_kwargs():
-    """Test API with custom metrics with keyword arguments"""
+    """Test API with custom metrics and keyword arguments"""
 
     # register a lower-is-better custom metrics from our file
     # which is simply 1 minus the precision score
@@ -346,8 +353,71 @@ def test_custom_metric_api_using_kwargs():
 
     # further more the final grid score and the mean scores for each
     # C hyperparameter value should follow the same 1-X relationship
-    # except that our custom metric should be negated
+    # except that our custom metric should be negated due to the
+    # keyword argument that we set when we defined it
     assert_almost_equal(1 - grid_score2, -1 * grid_score1, places=6)
     assert_array_almost_equal(1 - grid_results_dict2['mean_test_score'],
                               -1 * grid_results_dict1['mean_test_score'],
+                              decimal=6)
+
+
+@with_setup(setup_func)
+def test_custom_metric_config_using_kwargs():
+    """Test config with custom metrics and keyword arguments"""
+
+    # run the first experiment that uses a lower-is-better custom metric
+    # for grid saerch defined as simply 1 minus the macro-averaged F1 score
+    input_dir = join(_my_dir, "other")
+    train_file = join(input_dir, "examples_train.jsonlines")
+    test_file = join(input_dir, "examples_test.jsonlines")
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_custom_"
+                                                            "metrics_kwargs1"
+                                                            ".template.cfg"),
+                                                       train_file,
+                                                       test_file)
+    run_configuration(config_path, quiet=True)
+
+    # laod the results
+    with open(join(_my_dir, 'output', ('test_custom_metrics_kwargs1_train_'
+                                       'examples_train.jsonlines_'
+                                       'LogisticRegression.results.json'))) as f:
+        result_dict1 = json.load(f)
+        grid_score1 = result_dict1['grid_score']
+        grid_results_dict1 = result_dict1['grid_search_cv_results']
+
+    # now run the second experiment that is identical except that
+    # that it uses the regular macro-averaged F1 score for grid search
+    input_dir = join(_my_dir, "other")
+    train_file = join(input_dir, "examples_train.jsonlines")
+    test_file = join(input_dir, "examples_test.jsonlines")
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_custom_"
+                                                            "metrics_kwargs2"
+                                                            ".template.cfg"),
+                                                       train_file,
+                                                       test_file)
+    run_configuration(config_path, quiet=True)
+
+    # laod the results
+    with open(join(_my_dir, 'output', ('test_custom_metrics_kwargs2_train_'
+                                       'examples_train.jsonlines_'
+                                       'LogisticRegression.results.json'))) as f:
+        result_dict2 = json.load(f)
+        grid_score2 = result_dict2['grid_score']
+        grid_results_dict2 = result_dict2['grid_search_cv_results']
+
+    # for both experiments the ranking of the C hyperparameter should be
+    # should be the identical since when we defined one_minus_precision
+    # we set the `greater_is_better` keyword argument to `False`.
+    assert_array_equal(grid_results_dict1['rank_test_score'],
+                       grid_results_dict2['rank_test_score'])
+
+    # further more the final grid score and the mean scores for each
+    # C hyperparameter value should follow the same 1-X relationship
+    # except that our custom metric should be negated due to the
+    # keyword argument that we set when we defined it
+    assert_almost_equal(1 - grid_score2, -1 * grid_score1, places=6)
+    assert_array_almost_equal(1 - np.array(grid_results_dict2['mean_test_score']),
+                              -1 * np.array(grid_results_dict1['mean_test_score']),
                               decimal=6)
