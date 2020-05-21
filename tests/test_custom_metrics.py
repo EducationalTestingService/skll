@@ -11,6 +11,7 @@ from glob import glob
 from os.path import abspath, dirname, join
 
 from nose.tools import assert_almost_equal, eq_, ok_, raises, with_setup
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 import skll.metrics
 
@@ -18,7 +19,8 @@ from sklearn.metrics import fbeta_score, SCORERS
 from skll import Learner, run_configuration
 from skll.data import NDJReader
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric, use_score_func
-from tests.utils import fill_in_config_paths_for_single_file
+from tests.utils import (fill_in_config_paths_for_single_file,
+                         make_classification_data)
 
 _my_dir = abspath(dirname(__file__))
 
@@ -239,7 +241,7 @@ def test_register_custom_metric_values():
 
 @with_setup(setup_func)
 def test_custom_metric_api_experiment():
-    """Test API SKLL experiment with custom metrics"""
+    """Test API with custom metrics"""
 
     # register two different metrics from two files
     input_dir = join(_my_dir, "other")
@@ -275,7 +277,7 @@ def test_custom_metric_api_experiment():
 
 @with_setup(setup_func)
 def test_custom_metric_config_experiment():
-    """Test config SKLL experiment with custom metrics"""
+    """Test config with custom metrics"""
 
     # Run experiment
     input_dir = join(_my_dir, "other")
@@ -306,3 +308,46 @@ def test_custom_metric_config_experiment():
     assert_almost_equal(test_objective_value, 0.9785, places=4)
     assert_almost_equal(test_accuracy_value, 0.9792, places=4)
     assert_almost_equal(test_ratio_of_ones_value, 0.5161, places=4)
+
+
+@with_setup(setup_func)
+def test_custom_metric_api_using_kwargs():
+    """Test API with custom metrics with keyword arguments"""
+
+    # register a lower-is-better custom metrics from our file
+    # which is simply 1 minus the precision score
+    input_dir = join(_my_dir, "other")
+    custom_metrics_file1 = join(input_dir, "custom_metrics.py")
+    register_custom_metric(custom_metrics_file1, "one_minus_precision")
+
+    # create some classification data
+    train_fs, _ = make_classification_data(num_examples=1000,
+                                           num_features=10,
+                                           num_labels=2)
+
+    # set up a learner to tune using the lower-is-better custom metric
+    learner1 = Learner("LogisticRegression")
+    (grid_score1,
+     grid_results_dict1) = learner1.train(train_fs,
+                                          grid_objective="one_minus_precision")
+
+    # now setup another learner that uses the complementary version
+    # of our custom metric (regular precision) for grid search
+    learner2 = Learner("LogisticRegression")
+    (grid_score2,
+     grid_results_dict2) = learner2.train(train_fs,
+                                          grid_objective="precision")
+
+    # for both learners the ranking of the C hyperparameter should be
+    # should be the identical since when we defined one_minus_precision
+    # we set the `greater_is_better` keyword argument to `False`.
+    assert_array_equal(grid_results_dict1['rank_test_score'],
+                       grid_results_dict2['rank_test_score'])
+
+    # further more the final grid score and the mean scores for each
+    # C hyperparameter value should follow the same 1-X relationship
+    # except that our custom metric should be negated
+    assert_almost_equal(1 - grid_score2, -1 * grid_score1, places=6)
+    assert_array_almost_equal(1 - grid_results_dict2['mean_test_score'],
+                              -1 * grid_results_dict1['mean_test_score'],
+                              decimal=6)
