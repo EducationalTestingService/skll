@@ -65,6 +65,11 @@ def _cleanup_custom_metrics():
     except KeyError:
         pass
 
+    # remove any metric functions from _CUSTOM_METRICS
+    _CUSTOM_METRICS.difference_update(["f075_micro",
+                                       "ratio_of_ones",
+                                       "f06_micro"])
+
 
 @with_setup(setup_func)
 def test_register_custom_metric_load_one():
