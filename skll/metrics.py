@@ -266,7 +266,7 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     # get the name of the module containing the custom metric
     custom_metric_module_name = basename(custom_metric_path)[:-3]
 
-    # make sure that the name of the module does not conflict#
+    # make sure that the name of the module does not conflict
     # with any of the existing names under `skll.metrics`;
     # this is a bit tricky since we do want to allow reusing
     # the same module to register another metric, so we need
