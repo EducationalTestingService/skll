@@ -14,7 +14,9 @@ import numpy as np
 import skll.metrics
 
 from nose.tools import assert_almost_equal, eq_, ok_, raises, with_setup
-from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_raises
+from numpy.testing import (assert_array_equal,
+                           assert_array_almost_equal,
+                           assert_raises_regex)
 
 from sklearn.metrics import fbeta_score, SCORERS
 from skll import Learner, run_configuration
@@ -43,6 +45,9 @@ def tearDown():
     config_dir = join(_my_dir, "configs")
 
     for cfg_file in glob(join(config_dir, "*custom_metrics.cfg")):
+        os.unlink(cfg_file)
+
+    for cfg_file in glob(join(config_dir, "*custom_metrics_bad.cfg")):
         os.unlink(cfg_file)
 
     for cfg_file in glob(join(config_dir, "*custom_metrics_kwargs1.cfg")):
@@ -369,6 +374,26 @@ def test_custom_metric_config_experiment():
 
 
 @with_setup(setup_func)
+def test_custom_metric_config_with_invalid_custom_metric():
+    """Test config with a valid and an invalid custom metric"""
+
+    # Run experiment
+    input_dir = join(_my_dir, "other")
+    train_file = join(input_dir, "examples_train.jsonlines")
+    test_file = join(input_dir, "examples_test.jsonlines")
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_custom_metrics_bad"
+                                                            ".template.cfg"),
+                                                       train_file,
+                                                       test_file)
+    # since this configuration file consists of an invalid
+    # metric, this should raise an error
+    assert_raises_regex(ValueError,
+                        r"Invalid metric\(s\) \['missing_metric'\]",
+                        run_configuration, config_path, quiet=True)
+
+
+@with_setup(setup_func)
 def test_api_with_inverted_custom_metric():
     """Test API with a lower-is-better custom metric"""
 
@@ -488,8 +513,9 @@ def test_api_with_custom_prob_metric():
     # set up a learner to tune using this probabilistic metric
     # this should fail since LinearSVC doesn't support probabilities
     learner1 = Learner("LinearSVC")
-    assert_raises(AttributeError,
-                  learner1.train, train_fs, grid_objective="fake_prob_metric")
+    assert_raises_regex(AttributeError,
+                        r"has no attribute 'predict_proba'",
+                        learner1.train, train_fs, grid_objective="fake_prob_metric")
 
     # set up another learner with explicit probability support
     # this should work just fine with our custom metric
@@ -515,7 +541,9 @@ def test_config_with_custom_prob_metric():
                                                        test_file)
 
     # this should fail as expected
-    assert_raises(AttributeError, run_configuration, config_path, quiet=True)
+    assert_raises_regex(AttributeError,
+                        r"has no attribute 'predict_proba'",
+                        run_configuration, config_path, quiet=True)
 
     # now run the second experiment that is identical except that
     # the learner now produces probabilities
