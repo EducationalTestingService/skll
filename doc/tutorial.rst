@@ -17,6 +17,8 @@ In general, there are four steps to using SKLL:
 3.  Run that configuration file with :ref:`run_experiment <run_experiment>`.
 4.  Examine the results of the experiment.
 
+.. _titanic_example:
+
 Titanic Example
 ---------------
 
