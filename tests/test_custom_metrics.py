@@ -13,8 +13,8 @@ from os.path import abspath, dirname, join
 import numpy as np
 import skll.metrics
 
-from nose.tools import assert_almost_equal, eq_, raises, with_setup
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from nose.tools import assert_almost_equal, eq_, ok_, raises, with_setup
+from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_raises
 
 from sklearn.metrics import fbeta_score, SCORERS
 from skll import Learner, run_configuration
@@ -39,19 +39,25 @@ def tearDown():
     """
     Clean up after all tests are run.
     """
-    output_dir = join(_my_dir, 'output')
-    config_dir = join(_my_dir, 'configs')
+    output_dir = join(_my_dir, "output")
+    config_dir = join(_my_dir, "configs")
 
-    for cfg_file in glob(join(config_dir, '*custom_metrics.cfg')):
+    for cfg_file in glob(join(config_dir, "*custom_metrics.cfg")):
         os.unlink(cfg_file)
 
-    for cfg_file in glob(join(config_dir, '*custom_metrics_kwargs1.cfg')):
+    for cfg_file in glob(join(config_dir, "*custom_metrics_kwargs1.cfg")):
         os.unlink(cfg_file)
 
-    for cfg_file in glob(join(config_dir, '*custom_metrics_kwargs2.cfg')):
+    for cfg_file in glob(join(config_dir, "*custom_metrics_kwargs2.cfg")):
         os.unlink(cfg_file)
 
-    for output_file in glob(join(output_dir, 'test_custom_metrics*')):
+    for cfg_file in glob(join(config_dir, "*custom_metrics_kwargs3.cfg")):
+        os.unlink(cfg_file)
+
+    for cfg_file in glob(join(config_dir, "*custom_metrics_kwargs4.cfg")):
+        os.unlink(cfg_file)
+
+    for output_file in glob(join(output_dir, "test_custom_metrics*")):
         os.unlink(output_file)
 
 
@@ -61,23 +67,58 @@ def _cleanup_custom_metrics():
     # remove any registered sub-modules from skll.metrics
     try:
         delattr(skll.metrics, 'custom_metrics')
+    except AttributeError:
+        pass
+
+    try:
         delattr(skll.metrics, 'custom_metrics2')
-        delattr(skll.metrics, 'kappa')
     except AttributeError:
         pass
 
     # remove any registered metric functions from SCORERS
     try:
         del SCORERS['f075_macro']
+    except KeyError:
+        pass
+
+    try:
         del SCORERS['ratio_of_ones']
+    except KeyError:
+        pass
+
+    try:
         del SCORERS['f06_micro']
     except KeyError:
         pass
 
+    try:
+        del SCORERS['one_minus_precision']
+    except KeyError:
+        pass
+
+    try:
+        del SCORERS['one_minus_f1_macro']
+    except KeyError:
+        pass
+
+    try:
+        del SCORERS['fake_prob_metric']
+    except KeyError:
+        pass
+
+    try:
+        del SCORERS['fake_prob_metric_multiclass']
+    except KeyError:
+        pass
+
     # remove any metric functions from _CUSTOM_METRICS
-    _CUSTOM_METRICS.difference_update(["f075_micro",
+    _CUSTOM_METRICS.difference_update(["f075_macro",
                                        "ratio_of_ones",
-                                       "f06_micro"])
+                                       "f06_micro",
+                                       "one_minus_precision",
+                                       "one_minus_f1_macro",
+                                       "fake_prob_meltric",
+                                       "fake_prob_metric_multiclass"])
 
 
 @with_setup(setup_func)
@@ -174,6 +215,16 @@ def test_register_custom_metric_bad_extension():
     metric_dir = join(_my_dir, "other")
     bad_custom_metrics_file = join(metric_dir, "custom_metrics.txt")
     register_custom_metric(bad_custom_metrics_file, "f075_macro")
+
+
+@with_setup(setup_func)
+@raises(ValueError)
+def test_register_custom_metric_missing_name():
+    """Test loading custom metric from empty string"""
+
+    # try to load a metric from a missing file name
+    # which can happen via a bad configuration file
+    register_custom_metric("", "f075_macro")
 
 
 @with_setup(setup_func)
@@ -318,8 +369,8 @@ def test_custom_metric_config_experiment():
 
 
 @with_setup(setup_func)
-def test_custom_metric_api_using_kwargs():
-    """Test API with custom metrics and keyword arguments"""
+def test_api_with_inverted_custom_metric():
+    """Test API with a lower-is-better custom metric"""
 
     # register a lower-is-better custom metrics from our file
     # which is simply 1 minus the precision score
@@ -362,21 +413,21 @@ def test_custom_metric_api_using_kwargs():
 
 
 @with_setup(setup_func)
-def test_custom_metric_config_using_kwargs():
-    """Test config with custom metrics and keyword arguments"""
+def test_config_with_inverted_custom_metric():
+    """Test config with a lower-is-better custom metric"""
 
     # run the first experiment that uses a lower-is-better custom metric
     # for grid saerch defined as simply 1 minus the macro-averaged F1 score
     input_dir = join(_my_dir, "other")
     train_file = join(input_dir, "examples_train.jsonlines")
     test_file = join(input_dir, "examples_test.jsonlines")
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
-                                                            "test_custom_"
-                                                            "metrics_kwargs1"
-                                                            ".template.cfg"),
-                                                       train_file,
-                                                       test_file)
-    run_configuration(config_path, quiet=True)
+    config_path1 = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                             "test_custom_"
+                                                             "metrics_kwargs1"
+                                                             ".template.cfg"),
+                                                        train_file,
+                                                        test_file)
+    run_configuration(config_path1, quiet=True)
 
     # laod the results
     with open(join(_my_dir, 'output', ('test_custom_metrics_kwargs1_train_'
@@ -388,16 +439,13 @@ def test_custom_metric_config_using_kwargs():
 
     # now run the second experiment that is identical except that
     # that it uses the regular macro-averaged F1 score for grid search
-    input_dir = join(_my_dir, "other")
-    train_file = join(input_dir, "examples_train.jsonlines")
-    test_file = join(input_dir, "examples_test.jsonlines")
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
-                                                            "test_custom_"
-                                                            "metrics_kwargs2"
-                                                            ".template.cfg"),
-                                                       train_file,
-                                                       test_file)
-    run_configuration(config_path, quiet=True)
+    config_path2 = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                             "test_custom_"
+                                                             "metrics_kwargs2"
+                                                             ".template.cfg"),
+                                                        train_file,
+                                                        test_file)
+    run_configuration(config_path2, quiet=True)
 
     # laod the results
     with open(join(_my_dir, 'output', ('test_custom_metrics_kwargs2_train_'
@@ -421,3 +469,70 @@ def test_custom_metric_config_using_kwargs():
     assert_array_almost_equal(1 - np.array(grid_results_dict2['mean_test_score']),
                               -1 * np.array(grid_results_dict1['mean_test_score']),
                               decimal=6)
+
+
+@with_setup(setup_func)
+def test_api_with_custom_prob_metric():
+    """Test API with custom probabilistic metric"""
+
+    # register a custom metric from our file that requires probabilities
+    input_dir = join(_my_dir, "other")
+    custom_metrics_file = join(input_dir, "custom_metrics.py")
+    register_custom_metric(custom_metrics_file, "fake_prob_metric")
+
+    # create some classification data
+    train_fs, _ = make_classification_data(num_examples=1000,
+                                           num_features=10,
+                                           num_labels=2)
+
+    # set up a learner to tune using this probabilistic metric
+    # this should fail since LinearSVC doesn't support probabilities
+    learner1 = Learner("LinearSVC")
+    assert_raises(AttributeError,
+                  learner1.train, train_fs, grid_objective="fake_prob_metric")
+
+    # set up another learner with explicit probability support
+    # this should work just fine with our custom metric
+    learner2 = Learner("SVC", probability=True)
+    grid_score, _ = learner2.train(train_fs, grid_objective="fake_prob_metric")
+    ok_(grid_score > 0.95)
+
+
+@with_setup(setup_func)
+def test_config_with_custom_prob_metric():
+    """Test config with custom probabilistic metric"""
+
+    # run the first experiment that uses a custom probabilistic metric
+    # for grid search but with a learner that does not produce probabilities
+    input_dir = join(_my_dir, "other")
+    train_file = join(input_dir, "examples_train.jsonlines")
+    test_file = join(input_dir, "examples_test.jsonlines")
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_custom_"
+                                                            "metrics_kwargs3"
+                                                            ".template.cfg"),
+                                                       train_file,
+                                                       test_file)
+
+    # this should fail as expected
+    assert_raises(AttributeError, run_configuration, config_path, quiet=True)
+
+    # now run the second experiment that is identical except that
+    # the learner now produces probabilities
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_custom_"
+                                                            "metrics_kwargs4"
+                                                            ".template.cfg"),
+                                                       train_file,
+                                                       test_file)
+    # this should succeed and produce results
+    run_configuration(config_path, quiet=True)
+
+    # laod the results and verify them
+    with open(join(_my_dir, 'output', ('test_custom_metrics_kwargs4_train_'
+                                       'examples_train.jsonlines_'
+                                       'SVC.results.json'))) as f:
+        result_dict = json.load(f)
+        grid_score = result_dict['grid_score']
+
+    ok_(grid_score > 0.95)

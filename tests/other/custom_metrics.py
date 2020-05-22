@@ -1,4 +1,9 @@
-from sklearn.metrics import f1_score, fbeta_score, precision_score, r2_score
+from sklearn.metrics import (average_precision_score,
+                             f1_score,
+                             fbeta_score,
+                             precision_score,
+                             r2_score,
+                             roc_auc_score)
 
 
 def f075_macro(y_true, y_pred):
@@ -21,3 +26,11 @@ def one_minus_precision(y_true, y_pred, greater_is_better=False):
 
 def one_minus_f1_macro(y_true, y_pred, greater_is_better=False):
     return 1 - f1_score(y_true, y_pred, average='macro')
+
+
+def fake_prob_metric(y_true, y_pred, needs_proba=True):
+    return average_precision_score(y_true, y_pred)
+
+
+def fake_prob_metric_multiclass(y_true, y_pred, needs_proba=True):
+    return roc_auc_score(y_true, y_pred, average='macro', multi_class='ovo')
