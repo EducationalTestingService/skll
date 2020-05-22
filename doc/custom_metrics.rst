@@ -20,9 +20,10 @@ second being the predicted labels or scores. This function can also take three o
 
 Note that these keyword arguments are identical to the keyword arguments for the `sklearn.metrics.make_scorer() <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html#sklearn.metrics.make_scorer>`_ function and serve the same purpose.
 
-In short, custom metric functions take two required positional arguments (order matters) and three optional keyword arguments. Here's a simple example of a custom metric function: F\ :sub:`β` with β=0.75.
+In short, custom metric functions take two required positional arguments (order matters) and three optional keyword arguments. Here's a simple example of a custom metric function: F\ :sub:`β` with β=0.75 defined in a file called ``custom.py``.
 
 .. code-block:: python
+   :caption: custom.py
 
     from sklearn.metrics import fbeta_score
 
@@ -30,18 +31,28 @@ In short, custom metric functions take two required positional arguments (order 
         return fbeta_score(y_true, y_pred, beta=0.75)
 
 
-Obviously, you may write much more complex functions that aren't directly available in scikit-learn.
-Once you have written your metric function, the next step is to use it in your SKLL experiment.
+Obviously, you may write much more complex functions that aren't directly
+available in scikit-learn. Once you have written your metric function, the next
+step is to use it in your SKLL experiment. 
 
 Using in Configuration Files
 ----------------------------
 
-The first way of using custom metric functions is via your SKLL experiment configuration file if you are running SKLL via the command line. To do so:
+The first way of using custom metric functions is via your SKLL experiment
+configuration file if you are running SKLL via the command line. To do so:
 
-1. Add a field called :ref:`custom_metric_path <custom_metric_path>` in the Input section of your configuration file and set its value to be the path to the ``.py`` file containing your custom metric function.
-2. Add the name of your custom metric function to either the :ref:`objectives` field in the Tuning section (if you wish to use it to tune the model hyper-parameters) or to the :ref:`metrics <metrics>` field in the Output section if you wish to only use it for evaluation. You can also add it to both.
+1. Add a field called :ref:`custom_metric_path <custom_metric_path>` in the
+   Input section of your configuration file and set its value to be the path to
+   the ``.py`` file containing your custom metric function.
+2. Add the name of your custom metric function to either the :ref:`objectives`
+   field in the Tuning section (if you wish to use it to tune the model
+   hyper-parameters) or to the :ref:`metrics <metrics>` field in the Output
+   section if you wish to only use it for evaluation. You can also add it to
+   both.
 
-Here's an excerpt from a configuration file for the SKLL Titanic example that illustrates this. This file assumes that the custom function above is defined in a file called ``custom.py`` located in the same directory as the configuration file.
+Here's an example configuration file using data from the
+:ref:`SKLL Titanic example <titanic_example>` that illustrates this. This file
+assumes that the file ``custom.py`` above is located in the same directory.
 
 .. code-block:: cfg
 
@@ -71,17 +82,19 @@ Here's an excerpt from a configuration file for the SKLL Titanic example that il
    models = output
 
    
-And that's it! SKLL will dynamically load and use your custom metric function when you :ref:`run your experiment <run_experiment>`.
+And that's it! SKLL will dynamically load and use your custom metric function when you :ref:`run your experiment <run_experiment>`. Custom metric functions can be used for both
+hyper-parameter tuning and for evaluation.
 
 Using via the API
 -----------------
 
-To use a custom metric function via the SKLL API, you first need to register the custom metric
-function using the register_custom_metric() function and then just use the metric name either
-for tuning or for evaluation or both.
+To use a custom metric function via the SKLL API, you first need to register
+the custom metric function using the register_custom_metric() function and then
+just use the metric name either for tuning or for evaluation or both.
 
-Here's a short example that shows how to use the custom metric function we defined above
-via the SKLL API. Let's assume that we defined the above function in a file called ``custom.py`` located in the current directory.
+Here's a short example that shows how to use the ``f075()`` custom metric
+function we defined above via the SKLL API. Again, we assume that ``custom.py``
+is located in the current directory.
 
 .. code-block:: python
 
@@ -96,9 +109,29 @@ via the SKLL API. Let's assume that we defined the above function in a file call
     # we load that into a SKLL FeatureSet
     fs = CSVReader.for_path("train.csv").read()
 
-    # instantiate a learner and tune its parameters using this metric
+    # instantiate a learner and tune its parameters using the custom metric
     learner = Learner('LogisticRegression')
     learner.train(fs, grid_objective="f075")
 
     ...
+
+As with configuration files, custom metric functions can be used for
+both training as well as evaluation with the API.
+
+.. note:: 
+
+    1. When using the API, if you have multiple metric functions defined in a
+       Python source file, you must register each one individually using ``register_custom_metric()``.
+    2. When using the API, if you try to re-register the same metric in the
+       same Python session, it will raise a ``NameError``. Therefore, if you
+       edit your custom metric, you must start a new Python session to be able
+       to see the changes.
+    3. When usig a configuration file or the API, if the name of the Python
+       source file containing your custom metrics conflicts with any of the
+       functions already defined in ``skll.metrics``, it will raise
+       a ``NameError``. You should rename the file in that case.
+    4. When usig a configuration file or the API, if the name of any of your
+       custom metric functions conflict with names of :ref:`metrics <objectives>`
+       that already exist in either SKLL or scikit-learn, it will raise a
+       ``NameError``. You should rename the metric function in that case.
 
