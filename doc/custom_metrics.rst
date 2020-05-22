@@ -121,17 +121,24 @@ both training as well as evaluation with the API.
 .. note:: 
 
     1. When using the API, if you have multiple metric functions defined in a
-       Python source file, you must register each one individually using ``register_custom_metric()``.
+       Python source file, you must register each one individually using 
+       ``register_custom_metric()``.
     2. When using the API, if you try to re-register the same metric in the
        same Python session, it will raise a ``NameError``. Therefore, if you
        edit your custom metric, you must start a new Python session to be able
        to see the changes.
-    3. When usig a configuration file or the API, if the name of the Python
+
+.. warning::
+
+    1. When using a configuration file or the API, if the name of the Python
        source file containing your custom metrics conflicts with any of the
        functions already defined in ``skll.metrics``, it will raise
        a ``NameError``. You should rename the file in that case.
-    4. When usig a configuration file or the API, if the name of any of your
+    2. When using a configuration file or the API, if the name of any of your
        custom metric functions conflict with names of :ref:`metrics <objectives>`
        that already exist in either SKLL or scikit-learn, it will raise a
        ``NameError``. You should rename the metric function in that case.
+    3. Unlike for the built-in metrics, SKLL does not check whether your custom
+       metric function is appropriate for classification or regression. You
+       must make that decision for yourself.
 
