@@ -423,11 +423,11 @@ def test_api_with_inverted_custom_metric():
 
     # for both learners the ranking of the C hyperparameter should be
     # should be the identical since when we defined one_minus_precision
-    # we set the `greater_is_better` keyword argument to `False`.
+    # we set the `greater_is_better` keyword argument to `False`
     assert_array_equal(grid_results_dict1['rank_test_score'],
                        grid_results_dict2['rank_test_score'])
 
-    # further more the final grid score and the mean scores for each
+    # furthermore, the final grid score and the mean scores for each
     # C hyperparameter value should follow the same 1-X relationship
     # except that our custom metric should be negated due to the
     # keyword argument that we set when we defined it
@@ -482,11 +482,11 @@ def test_config_with_inverted_custom_metric():
 
     # for both experiments the ranking of the C hyperparameter should be
     # should be the identical since when we defined one_minus_precision
-    # we set the `greater_is_better` keyword argument to `False`.
+    # we set the `greater_is_better` keyword argument to `False`
     assert_array_equal(grid_results_dict1['rank_test_score'],
                        grid_results_dict2['rank_test_score'])
 
-    # further more the final grid score and the mean scores for each
+    # furthermore, the final grid score and the mean scores for each
     # C hyperparameter value should follow the same 1-X relationship
     # except that our custom metric should be negated due to the
     # keyword argument that we set when we defined it
