@@ -286,6 +286,8 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     # get the metric function from this imported module
     metric_func = getattr(sys.modules[custom_metric_module_name],
                           custom_metric_name)
+    # again, we need this for multiprocessing serialization
+    metric_func.__module__ = f"skll.metrics.{custom_metric_module_name}"
 
     # extract any "special" keyword arguments from the metric function
     metric_func_parameters = signature(metric_func).parameters
