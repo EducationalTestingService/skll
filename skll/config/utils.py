@@ -13,8 +13,6 @@ import logging
 from os.path import exists, isabs, join, normpath
 
 import ruamel.yaml as yaml
-from sklearn.metrics import SCORERS
-from skll.metrics import _CUSTOM_METRICS, register_custom_metric
 
 
 def fix_json(json_string):
@@ -132,10 +130,11 @@ def _munge_featureset_name(featureset):
     return res
 
 
-def _parse_and_validate_metrics(metrics, option_name, custom_file=None, logger=None):
+def _parse_and_validate_metrics(metrics, option_name, logger=None):
     """
     Given a string containing a list of metrics, this function
-    parses that string into a list and validates the list.
+    parses that string into a list and validates some specific
+    metric names.
 
     Parameters
     ----------
@@ -143,8 +142,6 @@ def _parse_and_validate_metrics(metrics, option_name, custom_file=None, logger=N
         A string containing a list of metrics
     option_name : str
         The name of the option with which the metrics are associated.
-    custom_file : str
-        Path to a .py file containing custom metric functions.
     logger : logging.Logger, optional
         A logging object
         Defaults to ``None``.
@@ -159,7 +156,7 @@ def _parse_and_validate_metrics(metrics, option_name, custom_file=None, logger=N
     TypeError
         If the given string cannot be converted to a list.
     ValueError
-        If there are any invalid metrics specified.
+        If "mean_squared_error" is specified as a metric.
     """
 
     # create a logger if one was not passed in
@@ -180,34 +177,5 @@ def _parse_and_validate_metrics(metrics, option_name, custom_file=None, logger=N
                          "is no longer supported."
                          " please use the metric "
                          "\"neg_mean_squared_error\" instead.")
-
-    # find any metrics that are not built into SKLL;
-    # these are candidates for custom metrics so try to register them
-    possible_custom_metrics = [metric for metric in metrics if metric not in SCORERS]
-    if (len(possible_custom_metrics) > 0 and
-            (custom_file is not None and custom_file != '')):
-
-        # try to register each potential metric
-        for custom_metric in possible_custom_metrics:
-            try:
-                register_custom_metric(custom_file, custom_metric)
-
-            # do not raise an error if the registration fails since
-            # we will raise an exception for all invalid metrics later
-            except AttributeError:
-                pass
-
-            # if registration worked, log a message
-            else:
-                logger.info(f"registered '{custom_metric}' as a custom metric")
-
-    # now look for any metrics that are still invalid even after
-    # custom metric registration above
-    invalid_metrics = [metric for metric in possible_custom_metrics
-                       if metric not in _CUSTOM_METRICS]
-    if len(invalid_metrics) > 0:
-        raise ValueError('Invalid metric(s) {} '
-                         'specified for {}'.format(invalid_metrics,
-                                                   option_name))
 
     return metrics

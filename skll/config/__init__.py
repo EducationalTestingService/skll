@@ -678,7 +678,6 @@ def parse_config_file(config_path, log_level=logging.INFO):
     output_metrics = config.get("Output", "metrics")
     output_metrics = _parse_and_validate_metrics(output_metrics,
                                                  'metrics',
-                                                 custom_file=custom_metric_path,
                                                  logger=logger)
 
     #####################
@@ -693,7 +692,6 @@ def parse_config_file(config_path, log_level=logging.INFO):
     grid_objectives = config.get("Tuning", "objectives")
     grid_objectives = _parse_and_validate_metrics(grid_objectives,
                                                   'objectives',
-                                                  custom_file=custom_metric_path,
                                                   logger=logger)
 
     # if we are doing learning curves , we don't care about

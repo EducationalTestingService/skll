@@ -19,12 +19,14 @@ from itertools import combinations
 from os.path import exists, join, getsize
 
 from sklearn import __version__ as SCIKIT_VERSION
+from sklearn.metrics import SCORERS
 
 from skll.config import parse_config_file
 from skll.config.utils import _munge_featureset_name
 from skll.learner import (Learner,
                           load_custom_learner,
                           MAX_CONCURRENT_PROCESSES)
+from skll.metrics import _CUSTOM_METRICS, register_custom_metric
 from skll.utils.logging import (close_and_remove_logger_handlers,
                                 get_skll_logger)
 from skll.version import __version__
@@ -147,6 +149,49 @@ def _classify_featureset(args):
 
         # log messages
         logger.info("Task: {}".format(task))
+
+        # check if we have any possible custom metrics
+        possible_custom_metric_names = []
+        for metric_name in output_metrics + [grid_objective]:
+            # metrics that are not in SCORERS at this point are candidates
+            if metric_name not in SCORERS:
+                possible_custom_metric_names.append(metric_name)
+            # if the metric is already in SCORERS, is it a custom one
+            # that we already registered? if so, log that
+            elif metric_name in _CUSTOM_METRICS:
+                logger.info(f"custom metric '{metric_name}' is already registered")
+
+        # initialize list that will hold any invalid metrics
+        # that we could not register as custom metrics
+        invalid_metric_names = []
+
+        # if we have possible custom metrics
+        if possible_custom_metric_names:
+
+            # check that we have a file to load them from
+            if not custom_metric_path:
+                raise ValueError(f"invalid metrics specified: {possible_custom_metric_names}")
+            else:
+                # try to register each possible custom metric
+                # raise an exception if we fail, if we don't then
+                # add the custom metric function to globals() so
+                # that it serializes properly for gridmap
+                for custom_metric_name in possible_custom_metric_names:
+                    try:
+                        custom_metric_func = register_custom_metric(custom_metric_path, custom_metric_name)
+                    except (AttributeError, NameError, ValueError):
+                        invalid_metric_names.append(custom_metric_name)
+                    else:
+                        logger.info(f"registered '{custom_metric_name}' as a "
+                                    f"custom metric")
+                        globals()[custom_metric_name] = custom_metric_func
+
+        # raise an error if we have any invalid metrics
+        if invalid_metric_names:
+            raise ValueError(f"invalid metrics specified: {invalid_metric_names}. "
+                             f"If these are custom metrics, check the function "
+                             f"names.")
+
         if task == 'cross_validate':
             if isinstance(cv_folds, int):
                 num_folds = cv_folds
