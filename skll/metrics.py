@@ -266,20 +266,6 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     # get the name of the module containing the custom metric
     custom_metric_module_name = basename(custom_metric_path)[:-3]
 
-    # make sure that the name of the module does not conflict
-    # with any of the existing names under `skll.metrics`;
-    # this is a bit tricky since we do want to allow reusing
-    # the same module to register another metric, so we need
-    # to explicitly check that the potential conflict is an
-    # an existing variable/function in the `skll.metrics` module
-    if custom_metric_module_name in globals():
-        potential_conflict = globals()[custom_metric_module_name]
-        if (hasattr(potential_conflict, '__module__') and
-                getattr(potential_conflict, '__module__') == 'skll.metrics'):
-            raise NameError(f"the name '{custom_metric_module_name}' conflicts "
-                            f"with another name in SKLL; rename "
-                            f"{custom_metric_module_name}.py and try again.")
-
     # once we know that the module name is okay, we need to make sure
     # that the metric function name is also okay
     if custom_metric_name in SCORERS:
@@ -290,17 +276,13 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     # dynamically import the module unless we have already done it
     if custom_metric_module_name not in sys.modules:
         sys.path.append(dirname(abspath(custom_metric_path)))
-        metric_module = import_module(custom_metric_module_name)
-        globals()[custom_metric_module_name] = metric_module
+        _ = import_module(custom_metric_module_name)
 
-    # get the metric callable and get the values of the specific keyword
-    # arguments that we need to pass to `make_scorer()`
-    metric_func = getattr(sys.modules[custom_metric_module_name], custom_metric_name)
+    # get the metric function from this imported module
+    metric_func = getattr(sys.modules[custom_metric_module_name],
+                          custom_metric_name)
 
-    # set the module attribute to the submodule we just imported
-    # under `skll.metrics`; we need this to make sure that things
-    # work well with joblib serialization and deserialization
-    metric_func.__module__ = f"skll.metrics.{custom_metric_module_name}"
+    # extract any "special" keyword arguments from the metric function
     metric_func_parameters = signature(metric_func).parameters
     make_scorer_kwargs = {}
     for make_scorer_kwarg in ['greater_is_better',
@@ -310,10 +292,12 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
             parameter_value = metric_func_parameters.get(make_scorer_kwarg).default
             make_scorer_kwargs.update({make_scorer_kwarg: parameter_value})
 
-    # make the scorer function with the appropriate keyword arguments
+    # make the scorer function with the extracted keyword arguments
     # and add it to the `CUSTOM_METRICS` set
     SCORERS[f"{custom_metric_name}"] = make_scorer(metric_func, **make_scorer_kwargs)
     _CUSTOM_METRICS.add(custom_metric_name)
+
+    return metric_func
 
 
 def use_score_func(func_name, y_true, y_pred):
