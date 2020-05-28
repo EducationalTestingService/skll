@@ -9,6 +9,7 @@ import json
 import os
 from glob import glob
 from os.path import abspath, dirname, join
+import sys
 
 import numpy as np
 import skll.metrics
@@ -47,6 +48,9 @@ def tearDown():
     for cfg_file in glob(join(config_dir, "*custom_metrics.cfg")):
         os.unlink(cfg_file)
 
+    for cfg_file in glob(join(config_dir, "*custom_metrics_kappa.cfg")):
+        os.unlink(cfg_file)
+
     for cfg_file in glob(join(config_dir, "*custom_metrics_bad.cfg")):
         os.unlink(cfg_file)
 
@@ -69,52 +73,29 @@ def tearDown():
 def _cleanup_custom_metrics():
     """A helper function to clean up any custom metrics"""
 
-    # remove any registered sub-modules from skll.metrics
-    try:
-        delattr(skll.metrics, 'custom_metrics')
-    except AttributeError:
-        pass
+    for metric_name in ['f06_micro',
+                        'f075_macro',
+                        'fake_prob_metric',
+                        'fake_prob_metric_multiclass',
+                        'one_minus_f1_macro',
+                        'one_minus_precision',
+                        'ratio_of_ones']:
 
-    try:
-        delattr(skll.metrics, 'custom_metrics2')
-    except AttributeError:
-        pass
+        try:
+            delattr(skll.experiments, metric_name)
+        except AttributeError:
+            pass
 
-    # remove any registered metric functions from SCORERS
-    try:
-        del SCORERS['f075_macro']
-    except KeyError:
-        pass
+        try:
+            del SCORERS[metric_name]
+        except KeyError:
+            pass
 
-    try:
-        del SCORERS['ratio_of_ones']
-    except KeyError:
-        pass
-
-    try:
-        del SCORERS['f06_micro']
-    except KeyError:
-        pass
-
-    try:
-        del SCORERS['one_minus_precision']
-    except KeyError:
-        pass
-
-    try:
-        del SCORERS['one_minus_f1_macro']
-    except KeyError:
-        pass
-
-    try:
-        del SCORERS['fake_prob_metric']
-    except KeyError:
-        pass
-
-    try:
-        del SCORERS['fake_prob_metric_multiclass']
-    except KeyError:
-        pass
+    for module_name in ['custom_metrics', 'custom_metrics2']:
+        try:
+            del sys.modules[module_name]
+        except KeyError:
+            pass
 
     # remove any metric functions from _CUSTOM_METRICS
     _CUSTOM_METRICS.difference_update(["f075_macro",
@@ -256,17 +237,6 @@ def test_register_custom_metric_wrong_name():
 
 @with_setup(setup_func)
 @raises(NameError)
-def test_register_custom_metric_conflicting_filename():
-    """Test loading custom metric with conflicting filename"""
-
-    # try to load a metric that does not exist in a file
-    metric_dir = join(_my_dir, "other")
-    custom_metrics_file = join(metric_dir, "kappa.py")
-    register_custom_metric(custom_metrics_file, "dummy_metric")
-
-
-@with_setup(setup_func)
-@raises(NameError)
 def test_register_custom_metric_conflicting_metric_name():
     """Test loading custom metric with conflicting name"""
 
@@ -351,7 +321,7 @@ def test_custom_metric_config_experiment():
                                                             ".template.cfg"),
                                                        train_file,
                                                        test_file)
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, local=True, quiet=True)
 
     # Check results for objective functions and output metrics
 
@@ -374,6 +344,79 @@ def test_custom_metric_config_experiment():
 
 
 @with_setup(setup_func)
+def test_custom_metric_api_experiment_with_kappa_filename():
+    """Test API with metric defined in a file named kappa"""
+
+    # register a dummy metric that just returns 1 from
+    # a file called 'kappa.py'
+    input_dir = join(_my_dir, "other")
+    custom_metrics_file = join(input_dir, "kappa.py")
+    register_custom_metric(custom_metrics_file, "dummy_metric")
+
+    # read in some train/test data
+    train_file = join(input_dir, "examples_train.jsonlines")
+    test_file = join(input_dir, "examples_test.jsonlines")
+
+    train_fs = NDJReader.for_path(train_file).read()
+    test_fs = NDJReader.for_path(test_file).read()
+
+    # set up a learner to tune using our usual kappa metric
+    # and evaluate it using the dummy metric we loaded
+    # this should work as there should be no confict between
+    # the two "kappa" names
+    learner = Learner("LogisticRegression")
+    _ = learner.train(train_fs, grid_objective="unweighted_kappa")
+    results = learner.evaluate(test_fs,
+                               grid_objective="unweighted_kappa",
+                               output_metrics=["balanced_accuracy",
+                                               "dummy_metric"])
+    test_objective_value = results[-2]
+    test_output_metrics_dict = results[-1]
+    test_accuracy_value = test_output_metrics_dict["balanced_accuracy"]
+    test_dummy_metric_value = test_output_metrics_dict["dummy_metric"]
+
+    # check that the values are as expected
+    assert_almost_equal(test_objective_value, 0.9699, places=4)
+    assert_almost_equal(test_accuracy_value, 0.9792, places=4)
+    eq_(test_dummy_metric_value, 1.0)
+
+
+@with_setup(setup_func)
+def test_custom_metric_config_experiment_with_kappa_filename():
+    """Test config with metric defined in a file named kappa"""
+
+    # Run experiment
+    input_dir = join(_my_dir, "other")
+    train_file = join(input_dir, "examples_train.jsonlines")
+    test_file = join(input_dir, "examples_test.jsonlines")
+    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+                                                            "test_custom_metrics_"
+                                                            "kappa.template.cfg"),
+                                                       train_file,
+                                                       test_file)
+    run_configuration(config_path, local=True, quiet=True)
+
+    # Check results for objective functions and output metrics
+
+    # objective function f075_macro
+    with open(join(_my_dir, 'output', ('test_custom_metrics_kappa_train_'
+                                       'examples_train.jsonlines_test_'
+                                       'examples_test.jsonlines_'
+                                       'LogisticRegression.results.json'))) as f:
+        result_dict = json.load(f)[0]
+
+    test_objective_value = result_dict['score']
+    test_output_metrics_dict = result_dict['additional_scores']
+    test_accuracy_value = test_output_metrics_dict["balanced_accuracy"]
+    test_dummy_metric_value = test_output_metrics_dict["dummy_metric"]
+
+    # check that the values are as expected
+    assert_almost_equal(test_objective_value, 0.9699, places=4)
+    assert_almost_equal(test_accuracy_value, 0.9792, places=4)
+    eq_(test_dummy_metric_value, 1.0)
+
+
+@with_setup(setup_func)
 def test_custom_metric_config_with_invalid_custom_metric():
     """Test config with a valid and an invalid custom metric"""
 
@@ -389,8 +432,8 @@ def test_custom_metric_config_with_invalid_custom_metric():
     # since this configuration file consists of an invalid
     # metric, this should raise an error
     assert_raises_regex(ValueError,
-                        r"Invalid metric\(s\) \['missing_metric'\]",
-                        run_configuration, config_path, quiet=True)
+                        r"invalid metrics specified:.*missing_metric",
+                        run_configuration, config_path, local=True, quiet=True)
 
 
 @with_setup(setup_func)
@@ -452,7 +495,7 @@ def test_config_with_inverted_custom_metric():
                                                              ".template.cfg"),
                                                         train_file,
                                                         test_file)
-    run_configuration(config_path1, quiet=True)
+    run_configuration(config_path1, local=True, quiet=True)
 
     # laod the results
     with open(join(_my_dir, 'output', ('test_custom_metrics_kwargs1_train_'
@@ -470,7 +513,7 @@ def test_config_with_inverted_custom_metric():
                                                              ".template.cfg"),
                                                         train_file,
                                                         test_file)
-    run_configuration(config_path2, quiet=True)
+    run_configuration(config_path2, local=True, quiet=True)
 
     # laod the results
     with open(join(_my_dir, 'output', ('test_custom_metrics_kwargs2_train_'
@@ -543,7 +586,7 @@ def test_config_with_custom_prob_metric():
     # this should fail as expected
     assert_raises_regex(AttributeError,
                         r"has no attribute 'predict_proba'",
-                        run_configuration, config_path, quiet=True)
+                        run_configuration, config_path, local=True, quiet=True)
 
     # now run the second experiment that is identical except that
     # the learner now produces probabilities
@@ -554,7 +597,7 @@ def test_config_with_custom_prob_metric():
                                                        train_file,
                                                        test_file)
     # this should succeed and produce results
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, local=True, quiet=True)
 
     # laod the results and verify them
     with open(join(_my_dir, 'output', ('test_custom_metrics_kwargs4_train_'
