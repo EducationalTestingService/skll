@@ -655,35 +655,6 @@ def test_config_parsing_bad_objectives():
 
 def test_config_parsing_bad_metric():
     """
-    Test to ensure config file parsing raises an error with an invalid evaluation metric
-    """
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
-    # make a simple config file that has bad metrics
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'metrics': "['foobar', 'accuracy']"}
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'bad_metric')
-
-    yield check_config_parsing_value_error, config_path
-
-
-def test_config_parsing_bad_metric_2():
-    """
     Test to ensure config file parsing raises an error with metrics given as a string
     """
 
