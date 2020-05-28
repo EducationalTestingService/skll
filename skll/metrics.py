@@ -276,7 +276,12 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     # dynamically import the module unless we have already done it
     if custom_metric_module_name not in sys.modules:
         sys.path.append(dirname(abspath(custom_metric_path)))
-        _ = import_module(custom_metric_module_name)
+        metric_module = import_module(custom_metric_module_name)
+
+        # this statement is only necessary so that if we end
+        # up using multiprocessing parallelization backend,
+        # things are serialized properly
+        globals()[custom_metric_module_name] = metric_module
 
     # get the metric function from this imported module
     metric_func = getattr(sys.modules[custom_metric_module_name],

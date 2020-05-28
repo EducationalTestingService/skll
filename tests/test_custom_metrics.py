@@ -87,6 +87,11 @@ def _cleanup_custom_metrics():
             pass
 
         try:
+            delattr(skll.metrics, metric_name)
+        except AttributeError:
+            pass
+
+        try:
             del SCORERS[metric_name]
         except KeyError:
             pass
