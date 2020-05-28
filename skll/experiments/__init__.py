@@ -153,10 +153,12 @@ def _classify_featureset(args):
         # check if we have any possible custom metrics
         possible_custom_metric_names = []
         for metric_name in output_metrics + [grid_objective]:
-            # metrics that are not in SCORERS at this point are candidates
-            if metric_name not in SCORERS:
+            # metrics that are not in `SCORERS` or `None` are candidates
+            # (the `None` is a by-product of how jobs with single tuning
+            # objectives are created)
+            if metric_name not in SCORERS and metric_name is not None:
                 possible_custom_metric_names.append(metric_name)
-            # if the metric is already in SCORERS, is it a custom one
+            # if the metric is already in `SCORERS`, is it a custom one
             # that we already registered? if so, log that
             elif metric_name in _CUSTOM_METRICS:
                 logger.info(f"custom metric '{metric_name}' is already registered")
@@ -174,7 +176,7 @@ def _classify_featureset(args):
             else:
                 # try to register each possible custom metric
                 # raise an exception if we fail, if we don't then
-                # add the custom metric function to globals() so
+                # add the custom metric function to `globals()` so
                 # that it serializes properly for gridmap
                 for custom_metric_name in possible_custom_metric_names:
                     try:
