@@ -595,36 +595,6 @@ def test_config_parsing_grid_search_but_no_objectives():
     yield check_config_parsing_value_error, config_path
 
 
-def test_config_parsing_bad_objective():
-    """
-    Test to ensure config file parsing raises an error with an invalid grid objective
-    """
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
-    # make a simple config file that has an invalid objective value
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'true',
-                           'objectives': "['foobar']"}
-
-    config_template_path = join(_my_dir, 'configs',
-                                'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'bad_objective')
-
-    yield check_config_parsing_value_error, config_path
-
-
 def test_config_parsing_bad_objectives():
     """
     Test to ensure config file parsing raises an error with grid objectives given as a string
