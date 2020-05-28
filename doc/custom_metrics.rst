@@ -42,13 +42,10 @@ The first way of using custom metric functions is via your SKLL experiment
 configuration file if you are running SKLL via the command line. To do so:
 
 1. Add a field called :ref:`custom_metric_path <custom_metric_path>` in the
-   Input section of your configuration file and set its value to be the path to
-   the ``.py`` file containing your custom metric function.
+   :ref:`Input <input>` section of your configuration file and set its value to be the path to the ``.py`` file containing your custom metric function.
 2. Add the name of your custom metric function to either the :ref:`objectives`
-   field in the Tuning section (if you wish to use it to tune the model
-   hyper-parameters) or to the :ref:`metrics <metrics>` field in the Output
-   section if you wish to only use it for evaluation. You can also add it to
-   both.
+   field in the :ref:`Tuning <tuning>` section (if you wish to use it to tune the model hyper-parameters) or to the :ref:`metrics <metrics>` field in
+   the :ref:`Output <output>` section if you wish to only use it for evaluation. You can also add it to both.
 
 Here's an example configuration file using data from the
 :ref:`SKLL Titanic example <titanic_example>` that illustrates this. This file
@@ -82,15 +79,15 @@ assumes that the file ``custom.py`` above is located in the same directory.
    models = output
 
    
-And that's it! SKLL will dynamically load and use your custom metric function when you :ref:`run your experiment <run_experiment>`. Custom metric functions can be used for both
-hyper-parameter tuning and for evaluation.
+And that's it! SKLL will dynamically load and use your custom metric function when you :ref:`run your experiment <run_experiment>`. Custom metric functions can be used for both hyper-parameter tuning and for evaluation.
 
 Using via the API
 -----------------
 
 To use a custom metric function via the SKLL API, you first need to register
-the custom metric function using the register_custom_metric() function and then
-just use the metric name either for tuning or for evaluation or both.
+the custom metric function using the ``register_custom_metric()`` function and
+then just use the metric name either as a grid search objective, an output
+metric, or both.
 
 Here's a short example that shows how to use the ``f075()`` custom metric
 function we defined above via the SKLL API. Again, we assume that ``custom.py``
@@ -103,7 +100,7 @@ is located in the current directory.
     from skll.metrics import register_custom_metric
 
     # register the custom function with SKLL
-    register_custom_metric("custom.py", "f075")
+    _ = register_custom_metric("custom.py", "f075")
 
     # let's assume the training data lives in a file called "train.csv"
     # we load that into a SKLL FeatureSet
@@ -130,15 +127,11 @@ both training as well as evaluation with the API.
 
 .. warning::
 
-    1. When using a configuration file or the API, if the name of the Python
-       source file containing your custom metrics conflicts with any of the
-       functions already defined in ``skll.metrics``, it will raise
-       a ``NameError``. You should rename the file in that case.
-    2. When using a configuration file or the API, if the name of any of your
+    1. When using a configuration file or the API, if the names of any of your
        custom metric functions conflict with names of :ref:`metrics <objectives>`
        that already exist in either SKLL or scikit-learn, it will raise a
        ``NameError``. You should rename the metric function in that case.
-    3. Unlike for the built-in metrics, SKLL does not check whether your custom
+    2. Unlike for the built-in metrics, SKLL does not check whether your custom
        metric function is appropriate for classification or regression. You
        must make that decision for yourself.
 

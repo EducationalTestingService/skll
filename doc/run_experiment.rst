@@ -449,10 +449,10 @@ that returns ``True``.
 custom_metric_path *(Optional)*
 """""""""""""""""""""""""""""""
 
-Path to a ``.py`` file that defines a :ref:`custom metric function <custom_metrics>`. 
-This file will be imported dynamically.  This is only required if a custom metric
-is specified either as :ref:`tuning objective <objectives>` or as an 
-:ref:`output metric <metrics>` or both.
+Path to a ``.py`` file that defines a 
+:ref:`custom metric function <custom_metrics>`. This file will be imported dynamically.  This is only required if a custom metric is specified as a 
+:ref:`tuning objective  <objectives>`, an :ref:`output metric <metrics>`, 
+or both.
 
 
 .. _feature_hasher:
