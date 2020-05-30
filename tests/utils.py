@@ -108,7 +108,7 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
     else:
         to_fill_in.append('models')
 
-    if task == 'evaluate' or task == 'cross_validate':
+    if task in ['cross_validate', 'evaluate', 'train']:
         to_fill_in.append('results')
 
     for d in to_fill_in:

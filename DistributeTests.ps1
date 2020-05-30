@@ -31,6 +31,7 @@ $testsToRun= @()
 if ($agentNumber -eq 1) {
     $testsToRun = $testsToRun + "tests/test_featureset.py"
     $testsToRun = $testsToRun + "tests/test_commandline_utils.py"
+    $testsToRun = $testsToRun + "tests/test_custom_metrics.py"
 }
 elseif ($agentNumber -eq 2) {
     $testsToRun = $testsToRun + "tests/test_output.py"

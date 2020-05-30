@@ -1,5 +1,3 @@
-.. sectionauthor:: Dan Blanchard <dblanchard@ets.org>
-
 Running Experiments
 ===================
 
@@ -446,6 +444,17 @@ Similarly, Custom regressors must either (a) inherit from an existing scikit-lea
 Learners that require dense matrices should implement a method ``requires_dense``
 that returns ``True``.
 
+.. _custom_metric_path:
+
+custom_metric_path *(Optional)*
+"""""""""""""""""""""""""""""""
+
+Path to a ``.py`` file that defines a 
+:ref:`custom metric function <custom_metrics>`. This file will be imported dynamically.  This is only required if a custom metric is specified as a 
+:ref:`tuning objective  <objectives>`, an :ref:`output metric <metrics>`, 
+or both.
+
+
 .. _feature_hasher:
 
 feature_hasher *(Optional)*
@@ -852,7 +861,7 @@ objectives
 A list of one or more metrics to use as objective functions for tuning the learner
 hyperparameters via grid search. Note that ``objectives`` is required by default in most cases unless (a) :ref:`grid_search <grid_search>` is explicitly set to ``False`` or (b) the task is :ref:`learning_curve <learning_curve>`. For (a), any specified objectives are ignored. For (b), specifying objectives will raise an exception.
 
-Available metrics are:
+SKLL provides the following metrics but you can also write your own :ref:`custom metrics <custom_metrics>`.
 
 .. _classification_obj:
 
@@ -878,28 +887,38 @@ Available metrics are:
     *   **balanced_accuracy**: A version of accuracy `specifically designed <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html#sklearn.metrics.balanced_accuracy_score>`__ for imbalanced binary and multi-class scenarios.
     *   **f1**: The default scikit-learn |F1 link|_
         (F\ :sub:`1` of the positive class for binary classification, or the weighted average F\ :sub:`1` for multiclass classification)
-    *   **f1_score_micro**: Micro-averaged |F1 link|_
     *   **f1_score_macro**: Macro-averaged |F1 link|_
+    *   **f1_score_micro**: Micro-averaged |F1 link|_
     *   **f1_score_weighted**: Weighted average |F1 link|_
     *   **f1_score_least_frequent**: F\ :sub:`1` score of the least frequent
         class. The least frequent class may vary from fold to fold for certain
         data distributions.
     *   **f05**: The default scikit-learn |F05 link|_
         (F\ :sub:`β=0.5` of the positive class for binary classification, or the weighted average F\ :sub:`β=0.5` for multiclass classification)
-    *   **f05_score_micro**: Micro-averaged |F05 link|_
     *   **f05_score_macro**: Macro-averaged |F05 link|_
+    *   **f05_score_micro**: Micro-averaged |F05 link|_
     *   **f05_score_weighted**: Weighted average |F05 link|_
+    *   **jaccard**: The default |Jaccard link|_  from scikit-learn for binary classification.
+    *   **jaccard_macro**: Macro-averaged |Jaccard link|_
+    *   **jaccard_micro**: Micro-averaged |Jaccard link|_
+    *   **jaccard_weighted**: Weighted average |Jaccard link|_
     *   **kendall_tau**: `Kendall's tau <https://en.wikipedia.org/wiki/Kendall_tau_rank_correlation_coefficient>`__ . For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
     *   **linear_weighted_kappa**: `Linear weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*).
     *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
         ranking differences are discounted by one. (*Contiguous integer labels only*).
     *   **neg_log_loss**: The negative of the classification `log loss <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this metric, :ref:`probability <probability>` must be set to ``True``.
     *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__ . For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
-    *   **precision**: `Precision <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`__
+    *   **precision**: |Precision link|_ for binary classification
+    *   **precision_macro**: Macro-averaged |Precision link|_
+    *   **precision_micro**: Micro-averaged |Precision link|_
+    *   **precision_weighted**: Weighted average |Precision link|_
     *   **quadratic_weighted_kappa**: `Quadratic weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*).
     *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
         ranking differences are discounted by one. (*Contiguous integer labels only*).
-    *   **recall**: `Recall <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html>`__
+    *   **recall**: |Recall link|_ for binary classification
+    *   **recall_macro**: Macro-averaged |Recall link|_ 
+    *   **recall_micro**: Micro-averaged |Recall link|_ 
+    *   **recall_weighted**: Weighted average |Recall link|_
     *   **roc_auc**: `Area under ROC curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__ .To use this metric, :ref:`probability <probability>` must be set to ``True``. (*Binary classification only*).
     *   **spearman**: `Spearman rank-correlation <https://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__. For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
     *   **unweighted_kappa**: Unweighted `Cohen's kappa <https://en.wikipedia.org/wiki/Cohen's_kappa>`__.
@@ -911,6 +930,12 @@ Available metrics are:
 .. _F1 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 .. |F05 link| replace:: F\ :sub:`β=0.5` score
 .. _F05 link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.fbeta_score.html
+.. |Jaccard link| replace:: Jaccard similarity coefficient
+.. _Jaccard link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.jaccard_score.html
+.. |Precision link| replace:: Precision
+.. _Precision link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+.. |Recall link| replace:: Recall
+.. _Recall link: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html
 
 
     **Regression:** The following objectives can be used for regression problems.
@@ -1166,7 +1191,10 @@ list of additional metrics that will be computed *in addition to*
 the tuning objectives and added to the results files. However, for the 
 :ref:`learning_curve <learning_curve>` task, this list is **required**. 
 Possible values are all of the same functions as those available for the 
-:ref:`tuning objectives <objectives>`  (with the same caveats).
+:ref:`tuning objectives <objectives>` (with the same caveats). 
+
+As with objectives, You can also use your own :ref:`custom metric <custom_metrics>`
+functions.
 
 .. note::
 

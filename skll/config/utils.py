@@ -13,7 +13,6 @@ import logging
 from os.path import exists, isabs, join, normpath
 
 import ruamel.yaml as yaml
-from sklearn.metrics import SCORERS
 
 
 def fix_json(json_string):
@@ -134,7 +133,8 @@ def _munge_featureset_name(featureset):
 def _parse_and_validate_metrics(metrics, option_name, logger=None):
     """
     Given a string containing a list of metrics, this function
-    parses that string into a list and validates the list.
+    parses that string into a list and validates some specific
+    metric names.
 
     Parameters
     ----------
@@ -156,7 +156,7 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     TypeError
         If the given string cannot be converted to a list.
     ValueError
-        If there are any invalid metrics specified.
+        If "mean_squared_error" is specified as a metric.
     """
 
     # create a logger if one was not passed in
@@ -170,18 +170,12 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
         raise TypeError("{} should be a list, not a {}.".format(option_name,
                                                                 type(metrics)))
 
-    # `mean_squared_error` is no more supported.
-    # It is replaced by `neg_mean_squared_error`
+    # `mean_squared_error` is no longer supported.
+    # It has been replaced by `neg_mean_squared_error`
     if 'mean_squared_error' in metrics:
         raise ValueError("The metric \"mean_squared_error\" "
                          "is no longer supported."
                          " please use the metric "
                          "\"neg_mean_squared_error\" instead.")
-
-    invalid_metrics = [metric for metric in metrics if metric not in SCORERS]
-    if invalid_metrics:
-        raise ValueError('Invalid metric(s) {} '
-                         'specified for {}'.format(invalid_metrics,
-                                                   option_name))
 
     return metrics
