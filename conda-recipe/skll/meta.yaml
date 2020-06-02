@@ -48,7 +48,7 @@ requirements:
     - pandas
     - python >=3.6
     - ruamel.yaml
-    - scikit-learn ==0.22.2.post1
+    - scikit-learn ==0.23.1
     - scipy
     - seaborn
     - setuptools
@@ -61,7 +61,7 @@ requirements:
     - pandas
     - python >=3.6
     - ruamel.yaml
-    - scikit-learn ==0.22.2.post1
+    - scikit-learn ==0.23.1
     - seaborn
     - scipy
     - tabulate
