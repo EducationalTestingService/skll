@@ -342,11 +342,11 @@ class Learner(object):
 
         # Check that we've actually loaded a Learner (or sub-class)
         if not isinstance(learner, cls):
-            raise ValueError(('The pickle stored at {} does not contain ' +
-                              'a {} object.').format(learner_path, cls))
+            raise ValueError(f"'{learner_path}' does not contain "
+                             f"a learner object.")
         # Check that versions are compatible. (Currently, this just checks
         # that major versions match)
-        elif skll_version >= (0, 9, 17):
+        elif skll_version >= (2, 5, 0):
             if not hasattr(learner, 'sampler'):
                 learner.sampler = None
             # From v0.17.0 onwards, scikit-learn requires all scalers to have
@@ -363,12 +363,12 @@ class Learner(object):
                     learner.scaler = new_scaler
             return learner
         else:
-            raise ValueError(("{} stored in pickle file {} was " +
-                              "created with version {} of SKLL, which is " +
-                              "incompatible with the current version " +
-                              "{}").format(cls, learner_path,
-                                           '.'.join(skll_version),
-                                           '.'.join(VERSION)))
+            model_version_str = '.'.join(map(str, skll_version))
+            current_version_str = '.'.join(map(str, VERSION))
+            raise ValueError(f"The learner stored in '{learner_path}' was "
+                             f"created with v{model_version_str} of SKLL, "
+                             f"which is incompatible with the current "
+                             f"v{current_version_str}.")
 
     @property
     def model_type(self):
