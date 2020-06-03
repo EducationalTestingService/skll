@@ -634,28 +634,28 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
         eq_(len(matches), 1)
 
 
-# Verify v0.9.17 model can still be loaded and generate the same predictions.
+# Verify v0.23.1 model can still be loaded and generates the same predictions.
 def test_backward_compatibility():
     """
     Test to validate backward compatibility
     """
     predict_path = join(_my_dir,
                         'backward_compatibility',
-                        'v0.9.17_test_summary_test_summary_LogisticRegression.predictions')
+                        'v0.23.1_test_summary_test_summary_LogisticRegression_predictions.tsv')
     model_path = join(_my_dir,
                       'backward_compatibility',
-                      'v0.9.17_test_summary_test_summary_LogisticRegression.model')
+                      'v0.23.1_test_summary_test_summary_LogisticRegression.model')
     test_path = join(_my_dir,
                      'backward_compatibility',
-                     'v0.9.17_test_summary.jsonlines')
+                     'v0.23.1_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
     examples = Reader.for_path(test_path, quiet=True).read()
     new_predictions = learner.predict(examples)[:, 1]
 
-    with open(predict_path) as predict_file:
-        old_predictions = [float(line.strip()) for
-                           line in predict_file]
+    with open(predict_path, 'r') as predict_file:
+        reader = csv.DictReader(predict_file, dialect=csv.excel_tab)
+        old_predictions = [float(row['1']) for row in reader]
     assert_almost_equal(new_predictions, old_predictions)
 
 

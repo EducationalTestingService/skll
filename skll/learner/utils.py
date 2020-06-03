@@ -469,23 +469,41 @@ def rescaled(cls):
         RunTimeError
             If `varargs` exist in the scikit-learn estimator.
         """
+
+        # initialize the empty list of parameter names
+        args = []
+
         try:
+            # get signature of the original init method
             init = getattr(orig_init, 'deprecated_original', orig_init)
+            init_signature = inspect.signature(init)
 
-            args, varargs, _, _ = inspect.getargspec(init)
-            if varargs is not None:
-                raise RuntimeError('scikit-learn estimators should always '
-                                   'specify their parameters in the signature'
-                                   ' of their init (no varargs).')
-            # Remove 'self'
-            args.pop(0)
+            # get all parameters excluding 'self'
+            original_parameters = [p for p in init_signature.parameters.values()
+                                   if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+
+            # there should be no varargs
+            for parameter in original_parameters:
+                if parameter.kind == parameter.VAR_POSITIONAL:
+                    raise RuntimeError("scikit-learn estimators should always "
+                                       "specify their parameters in the signature"
+                                       " of their __init__ (no varargs)."
+                                       " %s with constructor %s doesn't "
+                                       " follow this convention."
+                                       % (cls, init_signature))
+                else:
+                    args.append(parameter.name)
+
         except TypeError:
-            args = []
+            pass
 
+        # now get the additional rescaling arguments
         rescale_args = inspect.getargspec(class_x.__init__)[0]
+
         # Remove 'self'
         rescale_args.pop(0)
 
+        # add the rescaling arguments to the original arguments and sort
         args += rescale_args
         args.sort()
 
