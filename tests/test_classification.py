@@ -1777,11 +1777,11 @@ def test_load_old_skll_model():
     """
     Make sure loading an older SKLL model raises an error
     """
-    
+
     # get the path to the old model
     model_path = join(_my_dir, "other", "v2.1_SVC.model")
-    
-    # suppress warnings and 
+
+    # suppress warnings and check that error is raised
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         assert_raises_regex(ValueError,
