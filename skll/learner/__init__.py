@@ -198,7 +198,7 @@ class Learner(object):
             model_class = globals()[model_type]
             default_param_grid = (model_class.default_param_grid()
                                   if hasattr(model_class, 'default_param_grid')
-                                  else [{}])
+                                  else {})
 
             # ewww, globals :-(
             global _REQUIRES_DENSE
@@ -772,7 +772,7 @@ class Learner(object):
         ----------
         examples : skll.FeatureSet
             The ``FeatureSet`` instance to use for training.
-        param_grid : list of dicts, optional
+        param_grid : dict, optional
             The parameter grid to search through for grid
             search. If ``None``, a default parameter grid
             will be used.
@@ -952,7 +952,7 @@ class Learner(object):
         # In case the default parameter grid is also empty
         # then there's no point doing the grid search at all
         if grid_search and not param_grid:
-            if default_param_grid == [{}]:
+            if default_param_grid == {}:
                 self.logger.warning("SKLL has no default parameter grid "
                                     "available for the {} learner and no "
                                     "parameter grids were supplied. Using "
@@ -1058,7 +1058,7 @@ class Learner(object):
                 else:
                     self.logger.warning("A custom pipeline stage "
                                         "(`Densifier`) will be inserted "
-                                        " in the pipeline since the "
+                                        "in the pipeline since the "
                                         "current SKLL configuration "
                                         "requires dense features.")
                     densifier = Densifier()
