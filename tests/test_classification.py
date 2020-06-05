@@ -420,8 +420,7 @@ def test_default_param_grids_no_duplicates():
     """
     Verify that the default parameter grids don't contain duplicate values.
     """
-    for learner, param_list in KNOWN_DEFAULT_PARAM_GRIDS.items():
-        param_dict = param_list[0]
+    for learner, param_dict in KNOWN_DEFAULT_PARAM_GRIDS.items():
         for param_name, values in param_dict.items():
             assert(len(set(values)) == len(values))
 
