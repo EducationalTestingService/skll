@@ -21,7 +21,7 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from nose.tools import assert_almost_equal, assert_raises, eq_, ok_, raises
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_raises_regex
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
@@ -1770,3 +1770,20 @@ def test_multinomialnb_loading():
     predictions2 = learner2.predict(test_fs)
 
     assert_array_equal(predictions1, predictions2)
+
+
+def test_load_old_skll_model():
+    """
+    Make sure loading an older SKLL model raises an error
+    """
+
+    # get the path to the old model
+    model_path = join(_my_dir, "other", "v2.1_SVC.model")
+
+    # suppress warnings and check that error is raised
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert_raises_regex(ValueError,
+                            r"created with v2.1 of SKLL, which is "
+                            r"incompatible with the current",
+                            Learner.from_file, model_path)
