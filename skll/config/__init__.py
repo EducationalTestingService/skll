@@ -330,7 +330,7 @@ def parse_config_file(config_path, log_level=logging.INFO):
         List of dicts containing parameters you want to have fixed for
         each classifier in learners list.
     param_grid_list : list of dict
-        List of parameter grids to search for each learner.
+        List of parameter grids to search, one dict for each learner.
     featureset_names : list of str
         The names of the featuresets used for each job.
     learners : list of str

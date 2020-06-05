@@ -1015,106 +1015,106 @@ to be included in the model. Defaults to 1.
 param_grids *(Optional)*
 """"""""""""""""""""""""
 
-List of parameter grids to search for each learner. Each parameter
-grid should be a list of dictionaries mapping from strings to lists
-of parameter values. When you specify an empty list for a learner,
-the default parameter grid for that learner will be searched.
+List of parameter grid dictionaries, one for each learner. Each parameter
+grid is a dictionary mapping from strings to list of parameter values. When you
+specify an empty dictionary for a learner, the default parameter grid for that
+learner will be searched.
 
 The default parameter grids for each learner are:
 
 AdaBoostClassifier and AdaBoostRegressor
     .. code-block:: python
 
-        [{'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+        {'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 BayesianRidge
     .. code-block:: python
 
-        [{'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
-          'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
-          'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
-          'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}]
+        {'alpha_1': [1e-6, 1e-4, 1e-2, 1, 10],
+         'alpha_2': [1e-6, 1e-4, 1e-2, 1, 10],
+         'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
+         'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]}
 
 DecisionTreeClassifier and DecisionTreeRegressor
     .. code-block:: python
 
-       [{'max_features': ["auto", None]}]
+       {'max_features': ["auto", None]}
 
 ElasticNet
     .. code-block:: python
 
-       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       {'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 GradientBoostingClassifier and GradientBoostingRegressor
     .. code-block:: python
 
-       [{'max_depth': [1, 3, 5]}]
+       {'max_depth': [1, 3, 5]}
 
 HuberRegressor
     .. code-block:: python
 
-        [{'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
-          'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}]
+        {'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
+         'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1, 10, 100, 1000]}
 
 KNeighborsClassifier and KNeighborsRegressor
     .. code-block:: python
 
-        [{'n_neighbors': [1, 5, 10, 100],
-          'weights': ['uniform', 'distance']}]
+        {'n_neighbors': [1, 5, 10, 100],
+         'weights': ['uniform', 'distance']}
 
 Lasso
     .. code-block:: python
 
-       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       {'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 LinearSVC
     .. code-block:: python
 
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       {'C': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 LogisticRegression
     .. code-block:: python
 
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       {'C': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 MLPClassifier and MLPRegressor:
     .. code-block:: python
 
-       [{'activation': ['logistic', 'tanh', 'relu'],
-         'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
-         'learning_rate_init': [0.001, 0.01, 0.1]}],
+       {'activation': ['logistic', 'tanh', 'relu'],
+        'alpha': [1e-4, 1e-3, 1e-3, 1e-1, 1],
+        'learning_rate_init': [0.001, 0.01, 0.1]},
 
 MultinomialNB
     .. code-block:: python
 
-       [{'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}]
+       {'alpha': [0.1, 0.25, 0.5, 0.75, 1.0]}
 
 RandomForestClassifier and RandomForestRegressor
     .. code-block:: python
 
-       [{'max_depth': [1, 5, 10, None]}]
+       {'max_depth': [1, 5, 10, None]}
 
 Ridge and RidgeClassifier
     .. code-block:: python
 
-       [{'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       {'alpha': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 SGDClassifier and SGDRegressor
     .. code-block:: python
 
-        [{'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
-          'penalty': ['l1', 'l2', 'elasticnet']}]
+        {'alpha': [0.000001, 0.00001, 0.0001, 0.001, 0.01],
+         'penalty': ['l1', 'l2', 'elasticnet']}
 
 SVC
     .. code-block:: python
 
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0],
-         'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}]
+       {'C': [0.01, 0.1, 1.0, 10.0, 100.0],
+        'gamma': ['auto', 0.01, 0.1, 1.0, 10.0, 100.0]}
 
 SVR
     .. code-block:: python
 
-       [{'C': [0.01, 0.1, 1.0, 10.0, 100.0]}]
+       {'C': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 .. note::
     Note that learners not listed here do not have any default
