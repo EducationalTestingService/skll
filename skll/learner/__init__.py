@@ -613,7 +613,7 @@ class Learner(object):
         -------
         estimator
             The estimator that was created.
-        default_param_grid : list of dicts
+        default_param_grid : dict
             The parameter grid for the estimator.
 
         Raises
@@ -1580,8 +1580,8 @@ class Learner(object):
             prefix that will be used for the filename.
             It will be followed by ``"_predictions.tsv"``
             Defaults to ``None``.
-        param_grid : list of dicts, optional
-            The parameter grid to traverse.
+        param_grid : dict, optional
+            The parameter grid to search.
             Defaults to ``None``.
         shuffle : bool, optional
             Shuffle examples before splitting into folds for CV.
