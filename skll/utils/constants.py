@@ -59,7 +59,7 @@ KNOWN_DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                              GradientBoostingClassifier:
                              {'max_depth': [1, 3, 5]},
                              GradientBoostingRegressor:
-                             [{'max_depth': [1, 3, 5]}],
+                             {'max_depth': [1, 3, 5]},
                              HuberRegressor:
                              {'epsilon': [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
                               'alpha': [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000]},
