@@ -82,7 +82,8 @@ from .utils import (Densifier,
                     load_custom_learner,
                     rescaled,
                     SelectByMinCount,
-                    train_and_score)
+                    train_and_score,
+                    write_predictions)
 
 # we need a list of learners requiring dense input and a dictionary of
 # default parameter grids that we can dynamically update in case we
@@ -1429,42 +1430,37 @@ class Learner(object):
                                                          self.probability))
             raise e
 
+        # decide what predictions to write and what predictions to return
+        # by default, these are just what is output by the model
+        predictions_to_write = yhat
+        predictions_to_return = yhat
+
+        # if it's a non-probabilistic classifier
+        if (self.model_type._estimator_type == "classifier" and
+                not self.probability):
+
+            # get its predicted classes
+            classes = np.array([self.label_list[int(pred)] for pred in yhat])
+
+            # we always want to write out classes as our predictions
+            predictions_to_write = classes
+
+            # if the user specified `class_labels`, then we want
+            # to return classes as well
+            if class_labels:
+                predictions_to_return = classes
+
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            prediction_file = '{}_predictions.tsv'.format(prediction_prefix)
-            with open(prediction_file,
-                      "w" if not append else "a") as predictionfh:
-                # header
-                if not append:
-                    # Output probabilities if we're asked (and able)
-                    if self.probability:
-                        print('\t'.join(["id"] +
-                                        [str(x) for x in self.label_list]),
-                              file=predictionfh)
-                    else:
-                        print('id\tprediction', file=predictionfh)
+            write_predictions(example_ids,
+                              predictions_to_write,
+                              self.model_type._estimator_type,
+                              prediction_prefix,
+                              append=append,
+                              label_list=self.label_list,
+                              probability=self.probability)
 
-                if self.probability:
-                    for example_id, class_probs in zip(example_ids, yhat):
-                        print('\t'.join([str(example_id)] +
-                                        [str(x) for x in class_probs]),
-                              file=predictionfh)
-                else:
-                    if self.model_type._estimator_type == 'regressor':
-                        for example_id, pred in zip(example_ids, yhat):
-                            print('{0}\t{1}'.format(example_id, pred),
-                                  file=predictionfh)
-                    else:
-                        for example_id, pred in zip(example_ids, yhat):
-                            print('%s\t%s' % (example_id,
-                                              self.label_list[int(pred)]),
-                                  file=predictionfh)
-
-        if (class_labels and
-                self.model_type._estimator_type == 'classifier'):
-            yhat = np.array([self.label_list[int(pred)] for pred in yhat])
-
-        return yhat
+        return predictions_to_return
 
     def _compute_num_folds_from_example_counts(self, cv_folds, labels):
         """

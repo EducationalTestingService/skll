@@ -13,6 +13,7 @@ import logging
 import os
 import sys
 
+from csv import DictWriter, excel_tab
 from functools import wraps
 from importlib import import_module
 
@@ -607,3 +608,47 @@ def train_and_score(learner,
     train_score = use_score_func(metric, train_labels, train_predictions)
     test_score = use_score_func(metric, test_labels, test_predictions)
     return train_score, test_score
+
+
+def write_predictions(example_ids,
+                      predictions_to_write,
+                      model_type,
+                      file_prefix,
+                      append=False,
+                      label_list=None,
+                      probability=False):
+
+    # create a new file starting with the given prefix
+    prediction_file = f"{file_prefix}_predictions.tsv"
+    with open(prediction_file, 'w' if not append else 'a') as predictionfh:
+
+        # create a DictWriter with the appropriate field names
+        if probability:
+            fieldnames = ["id"] + [label for label in label_list]
+        else:
+            fieldnames = ["id", "prediction"]
+        writer = DictWriter(predictionfh, fieldnames=fieldnames, dialect=excel_tab)
+
+        # write out the header unless we are appending
+        if not append:
+            writer.writeheader()
+
+        for example_id, pred in zip(example_ids, predictions_to_write):
+
+            # for regressors, we just write out the prediction as-is
+            if model_type == 'regressor':
+                row = {'id': example_id, 'prediction': pred}
+
+            # for classifiers, if it's probabilistic, we want
+            # to write out the class probabilities; and if it's
+            # non-probabilistic, then the prediction as-is (which
+            # should be a class label by this point)
+            else:
+                if probability:
+                    row = {'id': example_id}
+                    row.update(dict(zip(label_list, pred)))
+                else:
+                    row = {'id': example_id, 'prediction': pred}
+
+            # write out the row
+            writer.writerow(row)
