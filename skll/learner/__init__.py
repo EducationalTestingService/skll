@@ -752,8 +752,8 @@ class Learner(object):
               grid_jobs=None,
               shuffle=False):
         """
-        Train a classification model and return the model, score, feature
-        vectorizer, scaler, label dictionary, and inverse label dictionary.
+        Train the model underlying the learner and return the grid search
+        score and a dictionary of grid search results.
 
         Parameters
         ----------
