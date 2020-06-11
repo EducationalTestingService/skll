@@ -16,7 +16,11 @@ import numpy as np
 from sklearn.ensemble import VotingClassifier, VotingRegressor
 from skll import Learner
 
-from .utils import write_predictions
+from .utils import (add_unseen_labels,
+                    get_acceptable_classification_metrics,
+                    get_acceptable_regression_metrics,
+                    compute_evaluation_metrics,
+                    write_predictions)
 
 
 class VotingLearner(object):
@@ -302,7 +306,8 @@ class VotingLearner(object):
                 class_labels=False,
                 individual_predictions=False):
         """
-        Uses a given model to generate predictions on the given ``FeatureSet``.
+        Generate predictions from the meta-estimator and, optionally, the
+        underlying estimators on given ``FeatureSet``.
 
         Parameters
         ----------
@@ -327,8 +332,8 @@ class VotingLearner(object):
 
         Returns
         -------
-        tuple : (array-like, dict)
-            A tuple that contains (1) the predictions returned by the
+        res : (array-like, dict)
+            A 2-tuple that contains (1) the predictions returned by the
             meta-estimator and (2) an optional dictionary with the name of each
             underlying learner as the key and the array of its predictions
             as the value. The second element is ``None`` if
@@ -369,8 +374,8 @@ class VotingLearner(object):
         if prediction_prefix is not None:
             write_predictions(example_ids,
                               predictions_to_write,
-                              self.learner_type,
                               prediction_prefix,
+                              self.learner_type,
                               append=append,
                               label_list=self.learners[0].label_list)
 
@@ -406,11 +411,12 @@ class VotingLearner(object):
                 # save this estimator's predictions in the dictionary
                 individual_predictions_dict[name] = predictions_to_return
 
+                # also write them out if asked
                 if prediction_prefix is not None:
                     write_predictions(example_ids,
                                       predictions_to_write,
-                                      self.learner_type,
                                       prediction_prefix + f"_{name}",
+                                      self.learner_type,
                                       append=append,
                                       label_list=self.learners[0].label_list,
                                       probability=self.voting == "soft")
@@ -460,7 +466,56 @@ class VotingLearner(object):
             function score, and the additional evaluation metrics, if any.
         """
 
-        pass
+        # make the prediction on the test data; note that these
+        # are either class indices or class probabilities
+        yhat, _ = self.predict(examples,
+                               prediction_prefix=prediction_prefix,
+                               append=append)
+
+        # for classifiers, convert class labels indices for consistency
+        # but account for any unseen labels in the test set that may not
+        # have occurred in the training data for the underlying learners
+        # at all; then get acceptable metrics based on the type of labels we have
+        if self.learner_type == 'classifier':
+            sorted_unique_labels = np.unique(examples.labels)
+            test_label_list = sorted_unique_labels.tolist()
+            train_and_test_label_dict = add_unseen_labels(self.learners[0].label_dict,
+                                                          test_label_list)
+            ytest = np.array([train_and_test_label_dict[label]
+                              for label in examples.labels])
+            acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
+        # for regressors we do not need to do anything special to the labels
+        else:
+            ytest = examples.labels
+            acceptable_metrics = get_acceptable_regression_metrics()
+
+        # check that all of the output metrics are acceptable
+        unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
+        if unacceptable_metrics:
+            label_type = examples.labels.dtype.type
+            raise ValueError("The following metrics are not valid "
+                             "for this learner({}) with these labels of "
+                             "type {}: {}".format(self._model_type.__name__,
+                                                  label_type.__name__,
+                                                  list(unacceptable_metrics)))
+
+        (conf_matrix,
+         accuracy,
+         result_dict,
+         objective_score,
+         metric_scores) = compute_evaluation_metrics(output_metrics,
+                                                     ytest,
+                                                     yhat,
+                                                     self.learner_type,
+                                                     label_dict=train_and_test_label_dict,
+                                                     grid_objective=grid_objective,
+                                                     logger=self.logger)
+
+        model_params = self.model.get_params()
+
+        res = (conf_matrix, accuracy, result_dict, model_params,
+               objective_score, metric_scores)
+        return res
 
     def cross_validate(self):
         # basically run
