@@ -13,6 +13,7 @@ import logging
 import os
 import sys
 
+from collections import defaultdict
 from csv import DictWriter, excel_tab
 from functools import wraps
 from importlib import import_module
@@ -22,6 +23,10 @@ import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.feature_selection import SelectKBest
+from sklearn.metrics import (accuracy_score,
+                             confusion_matrix,
+                             precision_recall_fscore_support)
+
 from skll.metrics import _CUSTOM_METRICS, use_score_func
 from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
                                   CORRELATION_METRICS,
@@ -547,6 +552,206 @@ def rescaled(cls):
 
     # Return modified class
     return cls
+
+
+def add_unseen_labels(train_label_dict, test_label_list):
+    """
+    Merge test set labels that not seen in the training data with seen ones.
+
+    Parameters
+    ----------
+    train_label_dict : dict
+        Dictionary mapping training set class labels to class indices.
+    test_label_list : list
+        List containing labels in the test set.
+
+    Returns
+    -------
+    train_and_test_label_dict : dict
+        Dictionary mapping merged lables from both the training and test set
+        to indices.
+    """
+    # get the list of labels that were in the training set
+    train_label_list = list(train_label_dict.keys())
+
+    # identify any unseen labels in the test set
+    unseen_test_label_list = [label for label in test_label_list
+                              if label not in train_label_list]
+
+    # create a new dictionary for these unseen labels with label indices
+    # for them starting _after_  those for the training set labels
+    unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
+                                                            start=len(train_label_list))}
+
+    # combine the train label dictionary with this unseen label one & return
+    train_and_test_label_dict = train_label_dict.copy()
+    train_and_test_label_dict.update(unseen_label_dict)
+    return train_and_test_label_dict
+
+
+def compute_evaluation_metrics(metrics,
+                               labels,
+                               predictions,
+                               estimator_type,
+                               label_dict=None,
+                               grid_objective=None,
+                               probability=False,
+                               logger=None):
+    """
+    Compute given metrics to evaluate the given predictions generated
+    by the given type of estimator against the given true labels.
+
+    Parameters
+    ----------
+    metrics : list of str
+        List of metrics to compute.
+    labels : array-like
+        True labels to be used for computing the metrics.
+    predictions : array-like
+        The predictions to be used for computing the metrics.
+    estimator_type : str
+        One of "classifier" or "regressor".
+    label_dict : dict, optional
+        Dictionary mapping classes labels to indices for classification.
+        Defaults to ``None``.
+    grid_objective : str, optional
+        The objective used for tuning the hyper-parameters of the model
+        that generated the predictions. If ``None``, it means that no
+        grid search was done.
+        Defaults to ``None``.
+    probability : bool, optional
+        Does the model output class probabilities?
+        Defaults to ``False``.
+    logger : logging.Logger, optional
+        A logger instance to use for logging messages and warnings.
+        If ``None``, a new one is created.
+        Defaults to ``None``.
+
+    Returns
+    -------
+    res : 5-tuple
+        The confusion matrix, the overall accuracy, the per-label
+        PRFs, the grid search objective function score, and the
+        additional evaluation metrics, if any. For regressors, the
+        first two elements are ``None``.
+    """
+    # set up the logger
+    logger = logger if logger else logging.getLogger(__name__)
+
+    # warn if grid objective was also specified in metrics
+    if len(metrics) > 0 and grid_objective in metrics:
+        logger.warning(f"The grid objective '{grid_objective}' is also "
+                       f"specified as an evaluation metric. Since its "
+                       f"value is already included in the results as the "
+                       f"objective score, it will not be printed "
+                       f"again in the list of metrics.")
+        metrics = [metric for metric in metrics if metric != grid_objective]
+
+    # initialize a dictionary that will hold all of the metric scores
+    metric_scores = {metric: None for metric in metrics}
+
+    # if we are a classifier and in probability mode, then
+    # `yhat` are probabilities so we need to compute the
+    # class indices separately and save them too
+    if probability and estimator_type == 'classifier':
+        class_probs = predictions
+        predictions = np.argmax(class_probs, axis=1)
+    # if we are a regressor or classifier not in probability
+    # mode, then we have the class indices already and there
+    # are no probabilities
+    else:
+        class_probs = None
+
+    # make a single list of metrics including the grid objective
+    # since it's easier to compute everything together
+    metrics_to_compute = [grid_objective] + metrics
+    for metric in metrics_to_compute:
+
+        # skip the None if we are not doing grid search
+        if not metric:
+            continue
+
+        # CASE 1: in probability mode for classification which means we
+        # need to either use the probabilities directly or infer the labels
+        # from them depending on the metric
+        if probability:
+
+            # there are three possible cases here:
+            # (a) if we are using a correlation metric or
+            #     `average_precision` or `roc_auc` in a binary
+            #      classification scenario, then we need to explicitly
+            #     pass in the probabilities of the positive class.
+            # (b) if we are using `neg_log_loss`, then we
+            #     just pass in the full probability array
+            # (c) we compute the most likely labels from the
+            #     probabilities via argmax and use those
+            #     for all other metrics
+            if (len(label_dict) == 2 and
+                    (metric in CORRELATION_METRICS or
+                     metric in ['average_precision', 'roc_auc']) and
+                    metric != grid_objective):
+                logger.info(f"using probabilities for the positive class to "
+                            f"compute '{metric}' for evaluation.")
+                preds_for_metric = class_probs[:, 1]
+            elif metric == 'neg_log_loss':
+                preds_for_metric = class_probs
+            else:
+                preds_for_metric = predictions
+
+        # CASE 2: no probability mode for classifier or regressor
+        # in which case we just use the predictions as they are
+        else:
+            preds_for_metric = predictions
+
+        try:
+            metric_scores[metric] = use_score_func(metric, labels, preds_for_metric)
+        except ValueError:
+            metric_scores[metric] = float('NaN')
+
+    # now separate out the grid objective score from the additional metric scores
+    # if a grid objective was actually passed in. If no objective was passed in
+    # then that score should just be none.
+    objective_score = None
+    additional_scores = metric_scores.copy()
+    if grid_objective:
+        objective_score = metric_scores[grid_objective]
+        del additional_scores[grid_objective]
+
+    # compute some basic statistics for regressors
+    if estimator_type == 'regressor':
+        result_dict = {'descriptive': defaultdict(dict)}
+        for table_label, y in zip(['actual', 'predicted'], [labels, predictions]):
+            result_dict['descriptive'][table_label]['min'] = min(y)
+            result_dict['descriptive'][table_label]['max'] = max(y)
+            result_dict['descriptive'][table_label]['avg'] = np.mean(y)
+            result_dict['descriptive'][table_label]['std'] = np.std(y)
+        result_dict['pearson'] = use_score_func('pearson', labels, predictions)
+        res = (None, None, result_dict, objective_score, additional_scores)
+    else:
+        # compute the confusion matrix and precision/recall/f1
+        # note that we are using the class indices here
+        # and not the actual class labels themselves
+        num_labels = len(label_dict)
+        conf_mat = confusion_matrix(labels,
+                                    predictions,
+                                    labels=list(range(num_labels)))
+        # Calculate metrics
+        overall_accuracy = accuracy_score(labels, predictions)
+        result_matrix = precision_recall_fscore_support(
+            labels, predictions, labels=list(range(num_labels)), average=None)
+
+        # Store results
+        result_dict = defaultdict(dict)
+        for actual_label in sorted(label_dict):
+            col = label_dict[actual_label]
+            result_dict[actual_label]["Precision"] = result_matrix[0][col]
+            result_dict[actual_label]["Recall"] = result_matrix[1][col]
+            result_dict[actual_label]["F-measure"] = result_matrix[2][col]
+
+        res = (conf_mat.tolist(), overall_accuracy, result_dict,
+               objective_score, additional_scores)
+
+    return res
 
 
 def train_and_score(learner,
