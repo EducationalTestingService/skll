@@ -74,6 +74,7 @@ from skll.version import VERSION
 
 from .utils import (add_unseen_labels,
                     compute_evaluation_metrics,
+                    compute_num_folds_from_example_counts,
                     Densifier,
                     FilteredLeaveOneGroupOut,
                     get_acceptable_classification_metrics,
@@ -81,6 +82,7 @@ from .utils import (add_unseen_labels,
                     load_custom_learner,
                     rescaled,
                     SelectByMinCount,
+                    setup_cv_iterator,
                     train_and_score,
                     write_predictions)
 
@@ -954,7 +956,9 @@ class Learner(object):
             # set up grid search folds
             if isinstance(grid_search_folds, int):
                 grid_search_folds = \
-                    self._compute_num_folds_from_example_counts(grid_search_folds, labels)
+                    compute_num_folds_from_example_counts(grid_search_folds,
+                                                          labels,
+                                                          logger=self.logger)
 
                 if not grid_jobs:
                     grid_jobs = grid_search_folds
@@ -1143,6 +1147,7 @@ class Learner(object):
                                                   label_type.__name__,
                                                   list(unacceptable_metrics)))
 
+        # get the values of the evaluation metrics
         (conf_matrix,
          accuracy,
          result_dict,
@@ -1156,8 +1161,8 @@ class Learner(object):
                                                      probability=self.probability,
                                                      logger=self.logger)
 
+        # add in the model parameters and return
         model_params = self.model.get_params()
-
         res = (conf_matrix, accuracy, result_dict, model_params,
                objective_score, metric_scores)
         return res
@@ -1358,48 +1363,6 @@ class Learner(object):
 
         return predictions_to_return
 
-    def _compute_num_folds_from_example_counts(self, cv_folds, labels):
-        """
-        Calculate the number of folds we should use for cross validation, based
-        on the number of examples we have for each label.
-
-        Parameters
-        ----------
-        cv_folds : int
-            The number of cross-validation folds.
-        labels : list
-            The example labels.
-
-        Returns
-        -------
-        cv_folds : int
-            The number of folds to use, based on the number of examples
-            for each label.
-
-        Raises
-        ------
-        AssertionError
-            If ```cv_folds``` is not an integer.
-        ValueError
-            If the training set has less than or equal to one label(s).
-        """
-        assert isinstance(cv_folds, int)
-
-        # For regression models, we can just return the current cv_folds
-        if self.model_type._estimator_type == 'regressor':
-            return cv_folds
-
-        min_examples_per_label = min(Counter(labels).values())
-        if min_examples_per_label <= 1:
-            raise ValueError(('The training set has only {} example for a' +
-                              ' label.').format(min_examples_per_label))
-        if min_examples_per_label < cv_folds:
-            self.logger.warning('The minimum number of examples per label was {}. '
-                                'Setting the number of cross-validation folds to '
-                                'that value.'.format(min_examples_per_label))
-            cv_folds = min_examples_per_label
-        return cv_folds
-
     def cross_validate(self,
                        examples,
                        stratified=True,
@@ -1514,7 +1477,7 @@ class Learner(object):
         # an exception since the stratified splitting in sklearn does not
         # work with continuous labels. Note that although using random folds
         # _will_ work, we want to raise an error in general since it's better
-        # to encode the labels as strings anyway.
+        # to encode the labels as strings anyway for classification problems.
         if (self.model_type._estimator_type == 'classifier' and
                 type_of_target(examples.labels) not in ['binary', 'multiclass']):
             raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
@@ -1549,38 +1512,18 @@ class Learner(object):
         self._train_setup(examples)
 
         # Set up the cross-validation iterator.
-        if isinstance(cv_folds, int):
-            cv_folds = self._compute_num_folds_from_example_counts(cv_folds,
-                                                                   examples.labels)
-
-            stratified = (stratified and
-                          self.model_type._estimator_type == 'classifier')
-            if stratified:
-                kfold = StratifiedKFold(n_splits=cv_folds)
-                cv_groups = None
-            else:
-                kfold = KFold(n_splits=cv_folds)
-                cv_groups = None
-        # Otherwise cv_folds is a dict
-        else:
-            # if we have a mapping from IDs to folds, use it for the overall
-            # cross-validation as well as the grid search within each
-            # training fold.  Note that this means that the grid search
-            # will use K-1 folds because the Kth will be the test fold for
-            # the outer cross-validation.
-            dummy_label = next(iter(cv_folds.values()))
-            fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
-            # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneGroupOut(cv_folds,
-                                             examples.ids,
+        kfold, cv_groups = setup_cv_iterator(cv_folds,
+                                             examples,
+                                             self.model_type._estimator_type,
+                                             stratified=stratified,
                                              logger=self.logger)
-            cv_groups = fold_groups
 
-            # If we are planning to do grid search, set the grid search folds
-            # to be the same as the custom cv folds unless a flag is set that
-            # explicitly tells us not to. Note that this should only happen
-            # when we are using the API; otherwise the configparser should
-            # take care of this even before this method is called
+        # When using custom CV folds (a dictionary), if we are planning to do
+        # grid search, set the grid search folds to be the same as the custom
+        # cv folds unless a flag is set that explicitly tells us not to.
+        # Note that this should only happen when we are using the API; otherwise
+        # the configparser should take care of this even before this method is called
+        if isinstance(cv_folds, dict):
             if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
                 self.logger.warning("The specified custom folds will be used for "
                                     "the inner grid search.")

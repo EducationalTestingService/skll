@@ -13,7 +13,7 @@ import logging
 import os
 import sys
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from csv import DictWriter, excel_tab
 from functools import wraps
 from importlib import import_module
@@ -21,11 +21,14 @@ from importlib import import_module
 import numpy as np
 import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.feature_selection import SelectKBest
 from sklearn.metrics import (accuracy_score,
                              confusion_matrix,
                              precision_recall_fscore_support)
+from sklearn.model_selection import (KFold,
+                                     LeaveOneGroupOut,
+                                     ShuffleSplit,
+                                     StratifiedKFold)
 
 from skll.metrics import _CUSTOM_METRICS, use_score_func
 from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
@@ -592,7 +595,7 @@ def add_unseen_labels(train_label_dict, test_label_list):
 def compute_evaluation_metrics(metrics,
                                labels,
                                predictions,
-                               estimator_type,
+                               model_type,
                                label_dict=None,
                                grid_objective=None,
                                probability=False,
@@ -609,7 +612,7 @@ def compute_evaluation_metrics(metrics,
         True labels to be used for computing the metrics.
     predictions : array-like
         The predictions to be used for computing the metrics.
-    estimator_type : str
+    model_type : str
         One of "classifier" or "regressor".
     label_dict : dict, optional
         Dictionary mapping classes labels to indices for classification.
@@ -653,7 +656,7 @@ def compute_evaluation_metrics(metrics,
     # if we are a classifier and in probability mode, then
     # `yhat` are probabilities so we need to compute the
     # class indices separately and save them too
-    if probability and estimator_type == 'classifier':
+    if probability and model_type == 'classifier':
         class_probs = predictions
         predictions = np.argmax(class_probs, axis=1)
     # if we are a regressor or classifier not in probability
@@ -718,7 +721,7 @@ def compute_evaluation_metrics(metrics,
         del additional_scores[grid_objective]
 
     # compute some basic statistics for regressors
-    if estimator_type == 'regressor':
+    if model_type == 'regressor':
         result_dict = {'descriptive': defaultdict(dict)}
         for table_label, y in zip(['actual', 'predicted'], [labels, predictions]):
             result_dict['descriptive'][table_label]['min'] = min(y)
@@ -752,6 +755,86 @@ def compute_evaluation_metrics(metrics,
                objective_score, additional_scores)
 
     return res
+
+
+def compute_num_folds_from_example_counts(cv_folds, labels, logger=None):
+    """
+    Calculate the number of folds we should use for cross validation, based
+    on the number of examples we have for each label.
+
+    Parameters
+    ----------
+    cv_folds : int
+        The number of cross-validation folds.
+    labels : list
+        The example labels.
+    logger : logging.Logger, optional
+        A logger instance to use for logging messages and warnings.
+        If ``None``, a new one is created.
+        Defaults to ``None``.
+
+    Returns
+    -------
+    cv_folds : int
+        The number of folds to use, based on the number of examples
+        for each label.
+
+    Raises
+    ------
+    AssertionError
+        If ```cv_folds``` is not an integer.
+    ValueError
+        If the training set has less than or equal to one label(s).
+    """
+    assert isinstance(cv_folds, int)
+
+    min_examples_per_label = min(Counter(labels).values())
+    if min_examples_per_label <= 1:
+        raise ValueError(f"The training set has only {min_examples_per_label} "
+                         f"example for a label.")
+    if min_examples_per_label < cv_folds:
+        logger.warning(f"The minimum number of examples per label was "
+                       f"{min_examples_per_label}. Setting the number of "
+                       f"cross-validation folds to that value.")
+        cv_folds = min_examples_per_label
+    return cv_folds
+
+
+def setup_cv_iterator(cv_folds,
+                      examples,
+                      model_type,
+                      stratified=False,
+                      logger=None):
+
+    # Set up the cross-validation iterator.
+    if isinstance(cv_folds, int):
+        cv_folds = compute_num_folds_from_example_counts(cv_folds,
+                                                         examples.labels,
+                                                         logger=logger)
+
+        stratified = (stratified and model_type == 'classifier')
+        if stratified:
+            kfold = StratifiedKFold(n_splits=cv_folds)
+            cv_groups = None
+        else:
+            kfold = KFold(n_splits=cv_folds)
+            cv_groups = None
+    # Otherwise cv_folds is a dict
+    else:
+        # if we have a mapping from IDs to folds, use it for the overall
+        # cross-validation as well as the grid search within each
+        # training fold.  Note that this means that the grid search
+        # will use K-1 folds because the Kth will be the test fold for
+        # the outer cross-validation.
+        dummy_label = next(iter(cv_folds.values()))
+        fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
+        # Only retain IDs within folds if they're in cv_folds
+        kfold = FilteredLeaveOneGroupOut(cv_folds,
+                                         examples.ids,
+                                         logger=logger)
+        cv_groups = fold_groups
+
+    return kfold, cv_groups
 
 
 def train_and_score(learner,
