@@ -12,7 +12,6 @@ import copy
 import logging
 import os
 
-from collections import Counter, defaultdict
 from math import floor, log10
 from importlib import import_module
 from itertools import combinations
@@ -22,9 +21,7 @@ import joblib
 import numpy as np
 import scipy.sparse as sp
 from sklearn.model_selection import (GridSearchCV,
-                                     KFold,
-                                     ShuffleSplit,
-                                     StratifiedKFold)
+                                     ShuffleSplit)
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
@@ -1529,33 +1526,23 @@ class Learner(object):
                                     "the inner grid search.")
                 grid_search_folds = cv_folds
 
-        # Save the cross-validation fold information, if required
-        # The format is that the test-fold that each id appears in is stored
-        skll_fold_ids = None
-        if save_cv_folds:
-            skll_fold_ids = {}
-            for fold_num, (_, test_indices) in enumerate(kfold.split(examples.features,
-                                                                     examples.labels,
-                                                                     cv_groups)):
-                for index in test_indices:
-                    skll_fold_ids[examples.ids[index]] = str(fold_num)
-
-        # handle each fold separately and accumulate the predictions and the
-        # numbers
+        # handle each fold separately & accumulate the predictions and results
         results = []
         grid_search_scores = []
         grid_search_cv_results_dicts = []
         append_predictions = False
         models = [] if save_cv_models else None
-        for train_index, test_index in kfold.split(examples.features,
-                                                   examples.labels,
-                                                   cv_groups):
+        skll_fold_ids = {} if save_cv_folds else None
+        for fold_num, (train_indices,
+                       test_indices) in enumerate(kfold.split(examples.features,
+                                                              examples.labels,
+                                                              cv_groups)):
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
             train_set = FeatureSet(examples.name,
-                                   examples.ids[train_index],
-                                   labels=examples.labels[train_index],
-                                   features=examples.features[train_index],
+                                   examples.ids[train_indices],
+                                   labels=examples.labels[train_indices],
+                                   features=examples.features[train_indices],
                                    vectorizer=examples.vectorizer)
 
             (grid_search_score,
@@ -1575,9 +1562,9 @@ class Learner(object):
 
             # Evaluate model
             test_tuple = FeatureSet(examples.name,
-                                    examples.ids[test_index],
-                                    labels=examples.labels[test_index],
-                                    features=examples.features[test_index],
+                                    examples.ids[test_indices],
+                                    labels=examples.labels[test_indices],
+                                    features=examples.features[test_indices],
                                     vectorizer=examples.vectorizer)
             results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
@@ -1585,6 +1572,11 @@ class Learner(object):
                                          grid_objective=grid_objective,
                                          output_metrics=output_metrics))
             append_predictions = True
+
+            # save the fold number for each test ID if we were asked to
+            if save_cv_folds:
+                for index in test_indices:
+                    skll_fold_ids[examples.ids[index]] = str(fold_num)
 
         # return list of results/outputs for all folds
         return (results,
