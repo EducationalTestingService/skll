@@ -6,20 +6,25 @@ around scikit-learn's `VotingClassifier` and `VotingRegressor`.
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
-
+import copy
 import logging
 
-from itertools import zip_longest
+from collections import defaultdict
+from itertools import combinations, zip_longest
 
 import numpy as np
 
+from nose.tools import assert_dict_equal
 from sklearn.ensemble import VotingClassifier, VotingRegressor
+from sklearn.utils.multiclass import type_of_target
 from skll import Learner
+from skll.data import FeatureSet
 
 from .utils import (add_unseen_labels,
+                    compute_evaluation_metrics,
                     get_acceptable_classification_metrics,
                     get_acceptable_regression_metrics,
-                    compute_evaluation_metrics,
+                    setup_cv_iterator,
                     write_predictions)
 
 
@@ -48,15 +53,6 @@ class VotingLearner(object):
         from an already existing scikit-learn estimator, it must explicitly
         define an `_estimator_type` attribute indicating whether it's a
         "classifier" or a "regressor".
-    pipeline : bool, optional
-        Should the meta-learner contain a pipeline attribute that
-        contains a scikit-learn Pipeline object composed of itself
-        as well as each of the fitted estimators and their underlying
-        steps (the vectorizer, the feature selector, the sampler,
-        the feature scaler, and the actual estimator). Note that this
-        will increase the size of the learner object in memory and also
-        when it is saved to disk.
-        Defaults to ``False``.
     feature_scaling : str, optional
         How to scale the features, if at all for each estimator. Options are
         -  "with_std": scale features using the standard deviation
@@ -107,7 +103,6 @@ class VotingLearner(object):
                  learner_names,
                  voting="hard",
                  custom_learner_path=None,
-                 pipeline=False,
                  feature_scaling='none',
                  pos_label_str=None,
                  min_feature_count=1,
@@ -121,14 +116,25 @@ class VotingLearner(object):
 
         self.voting = voting
         self._model = None
-        self._store_pipeline = pipeline
         self.logger = logger if logger else logging.getLogger(__name__)
 
         self.model_kwargs_list = [] if model_kwargs_list is None else model_kwargs_list
         self.sampler_list = [] if sampler_list is None else sampler_list
         self.sampler_kwargs_list = [] if sampler_kwargs_list is None else sampler_kwargs_list
 
-        # TODO: more validation of input arguments
+        # check that the arguments that are supposed to be lists are lists
+        for argument_name in ["model_kwargs_list",
+                              "sampler_list",
+                              "sampler_kwargs_list"]:
+            argument_value = locals()[argument_name]
+            if argument_value is None:
+                setattr(self, argument_name, [])
+            else:
+                if not isinstance(argument_value, list):
+                    raise ValueError(f"{argument_name} should be a list, you "
+                                     f"specified {argument_value}")
+                else:
+                    setattr(self, argument_name, argument_value)
 
         # instantiate each of the given estimators
         self._learners = []
@@ -191,6 +197,9 @@ class VotingLearner(object):
         """
         return self._model_type
 
+    def _fit_meta_estimator(self, estimators):
+        pass
+
     def train(self,
               examples,
               param_grid_list=None,
@@ -202,19 +211,20 @@ class VotingLearner(object):
         """
         Train the voting meta-estimator.
 
-        First, we train each of the underlying SKLL learner(represented by
-        a skll `Learner`), possibly with grid search. Then, we instantiate
-        a `VotingClassifier` or `VotingRegressor` as appropriate with the
-        scikit-learn `Pipeline` stored in the `pipeline` attribute
+        First, we train each of the underlying estimators (represented by
+        a skll ``Learner``), possibly with grid search. Then, we instantiate
+        a `VotingClassifier` or ``VotingRegressor`` as appropriate with the
+        scikit-learn ``Pipeline`` stored in the ``pipeline`` attribute
         of each trained `Learner` instance as the estimator. Finally,
-        we call `fit()` on the `VotingClassifier` or `VotingRegressor`
+        we call ``fit()`` on the ``VotingClassifier`` or ``VotingRegressor``
         instance. We do this because it allows us to use grid search to
         find good hyperparameter values for our underlying learners before
         passing them to the meta-estimator AND because it allows us to
         use SKLL featuresets and do all of the same pre-processing when
         doing inference.
 
-        The trained meta-estimator is saved in the `_model` attribute.
+        The trained meta-estimator is saved in the ``_model`` attribute.
+        Nothing is returned.
 
         Parameters
         ----------
@@ -248,7 +258,13 @@ class VotingLearner(object):
             Shuffle examples (e.g., for grid search CV.)
             Defaults to ``False``.
         """
-        self._param_grids = [] if param_grid_list is None else param_grid_list
+        if param_grid_list is None:
+            self._param_grids = []
+        else:
+            if not isinstance(param_grid_list, list):
+                raise ValueError(f"`param_grid_list` should be a list of dictionaries, you specified: {param_grid_list}")
+            else:
+                self._param_grids = param_grid_list
 
         # train each of the underlying estimators with grid search, if required;
         # basically, we are just running grid search to find good hyperparameter
@@ -499,6 +515,7 @@ class VotingLearner(object):
                                                   label_type.__name__,
                                                   list(unacceptable_metrics)))
 
+        # get the values of the evaluation metrics
         (conf_matrix,
          accuracy,
          result_dict,
@@ -511,15 +528,106 @@ class VotingLearner(object):
                                                      grid_objective=grid_objective,
                                                      logger=self.logger)
 
+        # add in the model parameters and return
         model_params = self.model.get_params()
-
         res = (conf_matrix, accuracy, result_dict, model_params,
                objective_score, metric_scores)
         return res
 
-    def cross_validate(self):
-        # basically run
-        pass
+    def cross_validate(self,
+                       examples,
+                       stratified=True,
+                       cv_folds=10,
+                       grid_search=True,
+                       grid_search_folds=3,
+                       grid_jobs=None,
+                       grid_objective=None,
+                       output_metrics=[],
+                       prediction_prefix=None,
+                       param_grid_list=None,
+                       shuffle=False,
+                       save_cv_folds=False,
+                       save_cv_models=False,
+                       use_custom_folds_for_grid_search=True):
+
+        # We need to check whether the labels in the featureset are labels
+        # or continuous values. If it's the latter, we need to raise an
+        # an exception since the stratified splitting in sklearn does not
+        # work with continuous labels. Note that although using random folds
+        # _will_ work, we want to raise an error in general since it's better
+        # to encode the labels as strings anyway for classification problems.
+        if (self.learner_type == 'classifier' and
+                type_of_target(examples.labels) not in ['binary', 'multiclass']):
+            raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
+
+        # Set up the cross-validation iterator.
+        kfold, cv_groups = setup_cv_iterator(cv_folds,
+                                             examples,
+                                             self.learner_type,
+                                             stratified=stratified,
+                                             logger=self.logger)
+
+        # When using custom CV folds (a dictionary), if we are planning to do
+        # grid search, set the grid search folds to be the same as the custom
+        # cv folds unless a flag is set that explicitly tells us not to.
+        # Note that this should only happen when we are using the API; otherwise
+        # the configparser should take care of this even before this method is called
+        if isinstance(cv_folds, dict):
+            if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
+                self.logger.warning("The specified custom folds will be used for "
+                                    "the inner grid search.")
+                grid_search_folds = cv_folds
+
+        # handle each fold separately &accumulate the predictions and results
+        results = []
+        append_predictions = False
+        models = [] if save_cv_models else None
+        skll_fold_ids = {} if save_cv_folds else None
+        for fold_num, (train_indices,
+                       test_indices) in enumerate(kfold.split(examples.features,
+                                                              examples.labels,
+                                                              cv_groups)):
+            # Train model
+            self._model = None  # prevent feature vectorizer from being reset.
+            train_set = FeatureSet(examples.name,
+                                   examples.ids[train_indices],
+                                   labels=examples.labels[train_indices],
+                                   features=examples.features[train_indices],
+                                   vectorizer=examples.vectorizer)
+
+            self.train(train_set,
+                       param_grid_list=param_grid_list,
+                       grid_search_folds=grid_search_folds,
+                       grid_objective=grid_objective,
+                       grid_search=grid_search,
+                       grid_jobs=grid_jobs,
+                       shuffle=grid_search)
+
+            if save_cv_models:
+                models.append(copy.deepcopy(self))
+
+            # evaluate the voting meta-estimator on the test fold
+            test_tuple = FeatureSet(examples.name,
+                                    examples.ids[test_indices],
+                                    labels=examples.labels[test_indices],
+                                    features=examples.features[test_indices],
+                                    vectorizer=examples.vectorizer)
+
+            # save the results
+            results.append(self.evaluate(test_tuple,
+                                         prediction_prefix=prediction_prefix,
+                                         append=append_predictions,
+                                         grid_objective=grid_objective,
+                                         output_metrics=output_metrics))
+            append_predictions = True
+
+            # save the fold number for each test ID if we were asked to
+            if save_cv_folds:
+                for index in test_indices:
+                    skll_fold_ids[examples.ids[index]] = str(fold_num)
+
+        # return list of results/outputs for all folds
+        return (results, skll_fold_ids, models)
 
     def learning_curve(self):
         pass
