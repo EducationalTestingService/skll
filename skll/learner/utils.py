@@ -30,6 +30,7 @@ from sklearn.model_selection import (KFold,
                                      ShuffleSplit,
                                      StratifiedKFold)
 
+from skll.data import FeatureSet
 from skll.metrics import _CUSTOM_METRICS, use_score_func
 from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
                                   CORRELATION_METRICS,
@@ -800,12 +801,38 @@ def compute_num_folds_from_example_counts(cv_folds, labels, logger=None):
     return cv_folds
 
 
-def setup_cv_iterator(cv_folds,
-                      examples,
-                      model_type,
-                      stratified=False,
-                      logger=None):
+def setup_cv_fold_iterator(cv_folds,
+                           examples,
+                           model_type,
+                           stratified=False,
+                           logger=None):
+    """
+    Set up a cross-validation fold iterator for the given ``FeatureSet``.
 
+    Parameters
+    ----------
+    cv_folds : int or dict
+        The number of folds to use for cross-validation, or
+        a mapping from example IDs to folds.
+    examples : skll.FeatureSet
+        The ``FeatureSet`` instance for which the CV iterator is to be computed.
+    model_type : str
+        One of "classifier" or "regressor".
+    stratified : bool, optional
+        Should the cross-validation iterator be set up in a stratified
+        fashion?
+        Defaults to ``False``.
+    logger : logging.Logger, optional
+        A logger instance to use for logging messages and warnings.
+        If ``None``, a new one is created.
+        Defaults to ``None``.
+
+    Returns
+    -------
+    res : a 2-tuple
+        The first element is the the kfold iterator and the second
+        is the list of cross-validation groups.
+    """
     # Set up the cross-validation iterator.
     if isinstance(cv_folds, int):
         cv_folds = compute_num_folds_from_example_counts(cv_folds,
@@ -837,15 +864,52 @@ def setup_cv_iterator(cv_folds,
     return kfold, cv_groups
 
 
+def setup_cv_split_iterator(cv_folds, examples):
+    """
+    Set up a cross-validation split iterator over the given ``FeatureSet``.
+
+    Parameters
+    ----------
+    cv_folds : int or dict
+        The number of folds to use for cross-validation, or
+        a mapping from example IDs to folds.
+    examples : skll.FeatureSet
+        The given featureset which is to be split.
+
+    Returns
+    -------
+    res : a 2-tuple
+        The first element is an iterator over the train/test featuresets
+        and the second is the maximum number of training samples available.
+    """
+    # seed the random number generator for replicability
+    random_state = np.random.RandomState(123456789)
+
+    # set up the cross-validation split iterator with 20% of
+    # the data always reserved for testing
+    cv = ShuffleSplit(n_splits=cv_folds,
+                      test_size=0.2,
+                      random_state=random_state)
+    cv_iter = list(cv.split(examples.features, examples.labels, None))
+    n_max_training_samples = len(cv_iter[0][0])
+
+    # create an iterator over train/test featuresets based on the
+    # cross-validation index iterator
+    featureset_iter = (FeatureSet.split_by_ids(examples, train, test)
+                       for train, test in cv_iter)
+
+    return featureset_iter, n_max_training_samples
+
+
 def train_and_score(learner,
                     train_examples,
                     test_examples,
                     metric):
     """
-    A utility method to train a given learner instance on the given training examples,
-    generate predictions on the training set itself and also the given
-    test set, and score those predictions using the given metric.
-    The method returns the train and test scores.
+    A utility method to train a given learner instance on the given
+    training examples, generate predictions on the training set itself
+    and also the given test set, and score those predictions using the
+    given metric. The method returns the train and test scores.
 
     Note that this method needs to be a top-level function since it is
     called from within ``joblib.Parallel()`` and, therefore, needs to be
@@ -878,13 +942,8 @@ def train_and_score(learner,
     test_predictions = learner.predict(test_examples)
     if learner.model_type._estimator_type == 'classifier':
         test_label_list = np.unique(test_examples.labels).tolist()
-        unseen_test_label_list = [label for label in test_label_list
-                                  if label not in learner.label_list]
-        unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
-                                                                start=len(learner.label_list))}
-        # combine the two dictionaries
-        train_and_test_label_dict = learner.label_dict.copy()
-        train_and_test_label_dict.update(unseen_label_dict)
+        train_and_test_label_dict = add_unseen_labels(learner.label_dict,
+                                                      test_label_list)
         train_labels = np.array([train_and_test_label_dict[label]
                                  for label in train_examples.labels])
         test_labels = np.array([train_and_test_label_dict[label]
