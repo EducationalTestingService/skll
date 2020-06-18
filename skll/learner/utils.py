@@ -758,7 +758,7 @@ def compute_evaluation_metrics(metrics,
     return res
 
 
-def compute_num_folds_from_example_counts(cv_folds, labels, logger=None):
+def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=None):
     """
     Calculate the number of folds we should use for cross validation, based
     on the number of examples we have for each label.
@@ -769,6 +769,8 @@ def compute_num_folds_from_example_counts(cv_folds, labels, logger=None):
         The number of cross-validation folds.
     labels : list
         The example labels.
+    model_type : TYPE
+        One of "classifier" or "regressor".
     logger : logging.Logger, optional
         A logger instance to use for logging messages and warnings.
         If ``None``, a new one is created.
@@ -782,12 +784,18 @@ def compute_num_folds_from_example_counts(cv_folds, labels, logger=None):
 
     Raises
     ------
-    AssertionError
-        If ```cv_folds``` is not an integer.
     ValueError
-        If the training set has less than or equal to one label(s).
+        If ``cv_folds`` is not an integer or if the training set has
+        less than or equal to one label(s) for classification.
     """
-    assert isinstance(cv_folds, int)
+    try:
+        assert isinstance(cv_folds, int)
+    except AssertionError:
+        raise ValueError("`cv_folds` must be an integer.")
+
+    # For regression models, we can just return the current cv_folds
+    if model_type == 'regressor':
+        return cv_folds
 
     min_examples_per_label = min(Counter(labels).values())
     if min_examples_per_label <= 1:
@@ -837,6 +845,7 @@ def setup_cv_fold_iterator(cv_folds,
     if isinstance(cv_folds, int):
         cv_folds = compute_num_folds_from_example_counts(cv_folds,
                                                          examples.labels,
+                                                         model_type,
                                                          logger=logger)
 
         stratified = (stratified and model_type == 'classifier')
