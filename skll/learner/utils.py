@@ -940,6 +940,13 @@ def train_and_score(learner,
     _ = learner.train(train_examples, grid_search=False, shuffle=False)
     train_predictions = learner.predict(train_examples)
     test_predictions = learner.predict(test_examples)
+
+    # note that VotingLearner `predict()` method returns a 2-tuple
+    if isinstance(train_predictions, tuple):
+        train_predictions = train_predictions[0]
+    if isinstance(test_predictions, tuple):
+        test_predictions = test_predictions[0]
+
     if learner.model_type._estimator_type == 'classifier':
         test_label_list = np.unique(test_examples.labels).tolist()
         train_and_test_label_dict = add_unseen_labels(learner.label_dict,

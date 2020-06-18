@@ -9,22 +9,27 @@ around scikit-learn's `VotingClassifier` and `VotingRegressor`.
 import copy
 import logging
 
-from collections import defaultdict
-from itertools import combinations, zip_longest
+from importlib import import_module
+from itertools import zip_longest
+from multiprocessing import cpu_count
 
+import joblib
 import numpy as np
 
-from nose.tools import assert_dict_equal
 from sklearn.ensemble import VotingClassifier, VotingRegressor
+from sklearn.utils import shuffle as sk_shuffle
 from sklearn.utils.multiclass import type_of_target
 from skll import Learner
 from skll.data import FeatureSet
+from skll.utils.constants import MAX_CONCURRENT_PROCESSES
 
 from .utils import (add_unseen_labels,
                     compute_evaluation_metrics,
                     get_acceptable_classification_metrics,
                     get_acceptable_regression_metrics,
-                    setup_cv_iterator,
+                    setup_cv_fold_iterator,
+                    setup_cv_split_iterator,
+                    train_and_score,
                     write_predictions)
 
 
@@ -114,10 +119,11 @@ class VotingLearner(object):
         Initializes a ``VotingLearner`` object with the specified settings.
         """
 
-        self.voting = voting
+        # initialize various attributes
         self._model = None
+        self.voting = voting
+        self.label_dict = None
         self.logger = logger if logger else logging.getLogger(__name__)
-
         self.model_kwargs_list = [] if model_kwargs_list is None else model_kwargs_list
         self.sampler_list = [] if sampler_list is None else sampler_list
         self.sampler_kwargs_list = [] if sampler_kwargs_list is None else sampler_kwargs_list
@@ -197,9 +203,6 @@ class VotingLearner(object):
         """
         return self._model_type
 
-    def _fit_meta_estimator(self, estimators):
-        pass
-
     def train(self,
               examples,
               param_grid_list=None,
@@ -269,7 +272,7 @@ class VotingLearner(object):
         # train each of the underlying estimators with grid search, if required;
         # basically, we are just running grid search to find good hyperparameter
         # values that we can then pass to scikit-learn below
-        for (learner, param_grid) in zip_longest(self._learners,
+        for (learner, param_grid) in zip_longest(self.learners,
                                                  self._param_grids):
             _ = learner.train(examples,
                               grid_search=grid_search,
@@ -282,26 +285,28 @@ class VotingLearner(object):
         # once we have our instantiated learners, we use their `pipeline`
         # attribute as the input estimators to the specific voting learner type
         estimators = list(zip(self._learner_names,
-                              [learner.pipeline for learner in self._learners]))
+                              [learner.pipeline for learner in self.learners]))
         if self.learner_type == 'classifier':
             self._model_type = VotingClassifier
             model_kwargs = {"voting": self.voting}
         else:
             self._model_type = VotingRegressor
             model_kwargs = {}
-        meta_learner = self._model_type(estimators, **model_kwargs)
+        meta_learner = self.model_type(estimators, **model_kwargs)
 
         # get the training features in the right dictionary format
         X_train = examples.vectorizer.inverse_transform(examples.features)
 
+        # since label dictionaries are identical for all underlying
+        # learners, save it into a easier to access attribute
+        self.label_dict = self.learners[0].label_dict
+
         # get the training label sin the right format too
-        # NOTE: for classifiers, we can use any of the training learners since
-        # the label dict will be identical for all of them; technically, we
-        # could also use a `LabelEncoder` here but that may not account for
-        # passing `pos_label_str` above when instantiating the learners so we
-        # stick with the properly inferred label dict
+        # NOTE: technically, we could also use a `LabelEncoder` here but
+        # that may not account for passing `pos_label_str` above when
+        # instantiating the learners so we stick with the label dict
         if self.learner_type == "classifier":
-            y_train = [self._learners[0].label_dict[label] for label in examples.labels]
+            y_train = [self.label_dict[label] for label in examples.labels]
         else:
             # for regressors, the labels are just the labels
             y_train = examples.labels
@@ -348,21 +353,21 @@ class VotingLearner(object):
 
         Returns
         -------
-        res : (array-like, dict)
-            A 2-tuple that contains (1) the predictions returned by the
-            meta-estimator and (2) an optional dictionary with the name of each
-            underlying learner as the key and the array of its predictions
-            as the value. The second element is ``None`` if
+        res : a 2-tuple
+            The first element is the array of predictions returned by the
+            meta-estimator and the second is an optional dictionary with the
+            name of each underlying learner as the key and the array of its
+            predictions as the value. The second element is ``None`` if
             ``individual_predictions`` is set to ``False``.
         """
         example_ids = examples.ids
 
         # get the test set features in the right format
-        X_test = examples.vectorizer.inverse_transform(examples.features)
-        self.logger.warning("If there is any between the features used "
+        self.logger.warning("If there is any difference between features used "
                             "to train the underlying learners and the "
-                            "features in the test set, the test set features "
-                            "will be transformed to the trained model space.")
+                            "features in the test set, the latter will be "
+                            "transformed to the trained model space.")
+        X_test = examples.vectorizer.inverse_transform(examples.features)
 
         # get the predictions from the meta-learner
         yhat = self._model.predict(X_test)
@@ -495,7 +500,7 @@ class VotingLearner(object):
         if self.learner_type == 'classifier':
             sorted_unique_labels = np.unique(examples.labels)
             test_label_list = sorted_unique_labels.tolist()
-            train_and_test_label_dict = add_unseen_labels(self.learners[0].label_dict,
+            train_and_test_label_dict = add_unseen_labels(self.label_dict,
                                                           test_label_list)
             ytest = np.array([train_and_test_label_dict[label]
                               for label in examples.labels])
@@ -511,7 +516,7 @@ class VotingLearner(object):
             label_type = examples.labels.dtype.type
             raise ValueError("The following metrics are not valid "
                              "for this learner({}) with these labels of "
-                             "type {}: {}".format(self._model_type.__name__,
+                             "type {}: {}".format(self.model_type.__name__,
                                                   label_type.__name__,
                                                   list(unacceptable_metrics)))
 
@@ -549,6 +554,104 @@ class VotingLearner(object):
                        save_cv_folds=False,
                        save_cv_models=False,
                        use_custom_folds_for_grid_search=True):
+        """
+        Cross-validate the meta-estimator on the given examples.
+
+        We follow essentially the same methodology as in
+        ``Learner.cross_validate()`` - split the examples into
+        training and testing folds, and then call ``self.train()``
+        on the training folds and then ``self.evaluate()`` on the
+        test fold. Note that this means that underlying estimators
+        with different hyperparameters may be used for each fold, as is
+        the case with ``Learner.cross_validate()``.
+
+        Parameters
+        ----------
+        examples : skll.FeatureSet
+            The ``FeatureSet`` instance to cross-validate learner performance on.
+        stratified : bool, optional
+            Should we stratify the folds to ensure an even
+            distribution of labels for each fold?
+            Defaults to ``True``.
+        cv_folds : int or dict, optional
+            The number of folds to use for cross-validation, or
+            a mapping from example IDs to folds.
+            Defaults to 10.
+        grid_search : bool, optional
+            Should we do grid search when training each fold?
+            Note: This will make this take *much* longer.
+            Defaults to ``False``.
+        grid_search_folds : int or dict, optional
+            The number of folds to use when doing the
+            grid search, or a mapping from
+            example IDs to folds.
+            Defaults to 3.
+        grid_jobs : int, optional
+            The number of jobs to run in parallel when doing the
+            grid search. If ``None`` or 0, the number of
+            grid search folds will be used.
+            Defaults to ``None``.
+        grid_objective : str, optional
+            The name of the objective function to use when
+            doing the grid search. Must be specified if
+            ``grid_search`` is ``True``.
+            Defaults to ``None``.
+        output_metrics : list of str, optional
+            List of additional metric names to compute in
+            addition to the metric used for grid search. Empty
+            by default.
+            Defaults to an empty list.
+        prediction_prefix : str, optional
+            If saving the predictions, this is the
+            prefix that will be used for the filename.
+            It will be followed by ``"_predictions.tsv"``
+            Defaults to ``None``.
+        param_grid_list : list, optional
+            The list of parameters grid to search through for grid
+            search, one for each underlying learner. The order of
+            the dictionaries should correspond to the order If ``None``,
+            the default parameter grids will be used for the underlying
+            estimators.
+            Defaults to ``None``.
+        shuffle : bool, optional
+            Shuffle examples before splitting into folds for CV.
+            Defaults to ``False``.
+        save_cv_folds : bool, optional
+             Whether to save the cv fold ids or not?
+             Defaults to ``False``.
+        save_cv_models : bool, optional
+            Whether to save the cv models or not?
+            Defaults to ``False``.
+        use_custom_folds_for_grid_search : bool, optional
+            If ``cv_folds`` is a custom dictionary, but
+            ``grid_search_folds`` is not, perhaps due to user
+            oversight, should the same custom dictionary
+            automatically be used for the inner grid-search
+            cross-validation?
+            Defaults to ``True``.
+
+        Returns
+        -------
+        results : list of 6-tuples
+            The confusion matrix, overall accuracy, per-label PRFs, model
+            parameters, objective function score, and evaluation metrics (if any)
+            for each fold.
+        skll_fold_ids : dict
+            A dictionary containing the test-fold number for each id
+            if ``save_cv_folds`` is ``True``, otherwise ``None``.
+        models : list of skll.learner.VotingLearner
+            A list of skll.learner.VotingLearner instances, one for each fold
+            if ``save_cv_models`` is ``True``, otherwise ``None``.
+
+        Raises
+        ------
+        ValueError
+            If classification labels are not properly encoded as strings.
+        """
+
+        # Seed the random number generator so that randomized algorithms are
+        # replicable.
+        random_state = np.random.RandomState(123456789)
 
         # We need to check whether the labels in the featureset are labels
         # or continuous values. If it's the latter, we need to raise an
@@ -560,12 +663,28 @@ class VotingLearner(object):
                 type_of_target(examples.labels) not in ['binary', 'multiclass']):
             raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
 
+        # Shuffle so that the folds are random for the inner grid search CV.
+        # If grid search is True but shuffle isn't, shuffle anyway.
+        # You can't shuffle a scipy sparse matrix in place, so unfortunately
+        # we make a copy of everything (and then get rid of the old version)
+        if grid_search or shuffle:
+            if grid_search and not shuffle:
+                self.logger.warning('Training data will be shuffled to randomize '
+                                    'grid search folds.  Shuffling may yield '
+                                    'different results compared to scikit-learn.')
+            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
+                                               examples.features,
+                                               random_state=random_state)
+            examples = FeatureSet(examples.name, ids, labels=labels,
+                                  features=features,
+                                  vectorizer=examples.vectorizer)
+
         # Set up the cross-validation iterator.
-        kfold, cv_groups = setup_cv_iterator(cv_folds,
-                                             examples,
-                                             self.learner_type,
-                                             stratified=stratified,
-                                             logger=self.logger)
+        kfold, cv_groups = setup_cv_fold_iterator(cv_folds,
+                                                  examples,
+                                                  self.model_type._learner_type,
+                                                  stratified=stratified,
+                                                  logger=self.logger)
 
         # When using custom CV folds (a dictionary), if we are planning to do
         # grid search, set the grid search folds to be the same as the custom
@@ -629,5 +748,83 @@ class VotingLearner(object):
         # return list of results/outputs for all folds
         return (results, skll_fold_ids, models)
 
-    def learning_curve(self):
-        pass
+    def learning_curve(self,
+                       examples,
+                       metric,
+                       cv_folds=10,
+                       train_sizes=np.linspace(0.1, 1.0, 5)):
+        """
+        Generates learning curves for the voting meta-estimator on the training
+        examples via cross-validation. Adapted from the scikit-learn code for
+        learning curve generation (cf.``sklearn.model_selection.learning_curve``).
+
+        Parameters
+        ----------
+        examples : skll.FeatureSet
+            The ``FeatureSet`` instance to generate the learning curve on.
+        cv_folds : int or dict, optional
+            The number of folds to use for cross-validation, or
+            a mapping from example IDs to folds.
+            Defaults to 10.
+        metric : str
+            The name of the metric function to use
+            when computing the train and test scores
+            for the learning curve.
+        train_sizes : list of float or int, optional
+            Relative or absolute numbers of training examples
+            that will be used to generate the learning curve.
+            If the type is float, it is regarded as a fraction
+            of the maximum size of the training set (that is
+            determined by the selected validation method),
+            i.e. it has to be within (0, 1]. Otherwise it
+            is interpreted as absolute sizes of the training
+            sets. Note that for classification the number of
+            samples usually have to be big enough to contain
+            at least one sample from each class.
+            Defaults to  ``np.linspace(0.1, 1.0, 5)``.
+
+        Returns
+        -------
+        train_scores : list of float
+            The scores for the training set.
+        test_scores : list of float
+            The scores on the test set.
+        num_examples : list of int
+            The numbers of training examples used to generate
+            the curve
+        """
+
+        # set up the CV split iterator over the train/test featuresets
+        # which also returns the maximum number of training examples
+        (featureset_iter,
+         n_max_training_samples) = setup_cv_split_iterator(cv_folds, examples)
+
+        # Get the `_translate_train_sizes()` function from scikit-learn
+        # since we need it to get the right list of sizes after cross-validation
+        _module = import_module('sklearn.model_selection._validation')
+        _translate_train_sizes = getattr(_module, '_translate_train_sizes')
+        train_sizes_abs = _translate_train_sizes(train_sizes,
+                                                 n_max_training_samples)
+        n_unique_ticks = train_sizes_abs.shape[0]
+
+        # limit the number of parallel jobs for this to be no higher than
+        # MAX_CONCURRENT_PROCESSES or the number of cores, whichever is lower
+        n_jobs = min(cpu_count(), MAX_CONCURRENT_PROCESSES)
+
+        # Run jobs in parallel that train the model on each subset
+        # of the training data and compute train and test scores
+        parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
+        out = parallel(joblib.delayed(train_and_score)(self,
+                                                       train_fs[:n_train_samples],
+                                                       test_fs,
+                                                       metric)
+                       for train_fs, test_fs in featureset_iter
+                       for n_train_samples in train_sizes_abs)
+
+        # Reshape the outputs
+        out = np.array(out)
+        n_cv_folds = out.shape[0] // n_unique_ticks
+        out = out.reshape(n_cv_folds, n_unique_ticks, 2)
+        out = np.asarray(out).transpose((2, 1, 0))
+
+        return list(out[0]), list(out[1]), list(train_sizes_abs)
