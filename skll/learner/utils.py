@@ -758,7 +758,10 @@ def compute_evaluation_metrics(metrics,
     return res
 
 
-def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=None):
+def compute_num_folds_from_example_counts(cv_folds,
+                                          labels,
+                                          model_type,
+                                          logger=None):
     """
     Calculate the number of folds we should use for cross validation, based
     on the number of examples we have for each label.
@@ -769,7 +772,7 @@ def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=N
         The number of cross-validation folds.
     labels : list
         The example labels.
-    model_type : TYPE
+    model_type : str
         One of "classifier" or "regressor".
     logger : logging.Logger, optional
         A logger instance to use for logging messages and warnings.
