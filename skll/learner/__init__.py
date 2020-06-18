@@ -1350,8 +1350,8 @@ class Learner(object):
         if prediction_prefix is not None:
             write_predictions(example_ids,
                               predictions_to_write,
-                              self.model_type._estimator_type,
                               prediction_prefix,
+                              self.model_type._estimator_type,
                               append=append,
                               label_list=self.label_list,
                               probability=self.probability)

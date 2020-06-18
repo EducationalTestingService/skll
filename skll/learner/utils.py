@@ -817,12 +817,36 @@ def train_and_score(learner,
 
 def write_predictions(example_ids,
                       predictions_to_write,
-                      model_type,
                       file_prefix,
+                      model_type,
                       append=False,
                       label_list=None,
                       probability=False):
+    """
+    Write example IDs and predictions to a tab-separated file with given prefix.
 
+    Parameters
+    ----------
+    example_ids : array-like
+        The IDs of the examples for which the predictions have been generated.
+    predictions_to_write : array-like
+        The predictions to write out to the file.
+    file_prefix : TYPE
+        The prefix for the output file. The output file will be named
+        "<file_prefix>_predictions.tsv".
+    model_type : str
+        One of "classifier" or "regressor".
+    append : bool, optional
+        Should we append the current predictions to the file if it exists?
+        Defaults to ``False``.
+    label_list : list of str, optional
+        List of class labels, required if ``probability`` is ``True``.
+        Defaults to ``None``.
+    probability : bool, optional
+        Are the predictions class probabilities? If ``True``, requires
+        ``label_list`` to be specified.
+        Defaults to ``False``.
+    """
     # create a new file starting with the given prefix
     prediction_file = f"{file_prefix}_predictions.tsv"
     with open(prediction_file, 'w' if not append else 'a') as predictionfh:
@@ -841,8 +865,8 @@ def write_predictions(example_ids,
         for example_id, pred in zip(example_ids, predictions_to_write):
 
             # for regressors, we just write out the prediction as-is
-            if model_type == 'regressor':
-                row = {'id': example_id, 'prediction': pred}
+            if model_type == "regressor":
+                row = {"id": example_id, "prediction": pred}
 
             # for classifiers, if it's probabilistic, we want
             # to write out the class probabilities; and if it's
@@ -853,7 +877,7 @@ def write_predictions(example_ids,
                     row = {'id': example_id}
                     row.update(dict(zip(label_list, pred)))
                 else:
-                    row = {'id': example_id, 'prediction': pred}
+                    row = {"id": example_id, "prediction": pred}
 
             # write out the row
             writer.writerow(row)
