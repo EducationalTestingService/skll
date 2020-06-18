@@ -20,8 +20,7 @@ from multiprocessing import cpu_count
 import joblib
 import numpy as np
 import scipy.sparse as sp
-from sklearn.model_selection import (GridSearchCV,
-                                     ShuffleSplit)
+from sklearn.model_selection import GridSearchCV
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
@@ -79,7 +78,8 @@ from .utils import (add_unseen_labels,
                     load_custom_learner,
                     rescaled,
                     SelectByMinCount,
-                    setup_cv_iterator,
+                    setup_cv_fold_iterator,
+                    setup_cv_split_iterator,
                     train_and_score,
                     write_predictions)
 
@@ -1072,8 +1072,12 @@ class Learner(object):
 
         return grid_score, grid_cv_results
 
-    def evaluate(self, examples, prediction_prefix=None, append=False,
-                 grid_objective=None, output_metrics=[]):
+    def evaluate(self,
+                 examples,
+                 prediction_prefix=None,
+                 append=False,
+                 grid_objective=None,
+                 output_metrics=[]):
         """
         Evaluates a given model on a given dev or test ``FeatureSet``.
 
@@ -1386,7 +1390,7 @@ class Learner(object):
             Should we stratify the folds to ensure an even
             distribution of labels for each fold?
             Defaults to ``True``.
-        cv_folds : int, optional
+        cv_folds : int or dict, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
@@ -1462,7 +1466,7 @@ class Learner(object):
         Raises
         ------
         ValueError
-            If labels are not encoded as strings.
+            If classification labels are not properly encoded as strings.
         """
 
         # Seed the random number generator so that randomized algorithms are
@@ -1509,11 +1513,11 @@ class Learner(object):
         self._train_setup(examples)
 
         # Set up the cross-validation iterator.
-        kfold, cv_groups = setup_cv_iterator(cv_folds,
-                                             examples,
-                                             self.model_type._estimator_type,
-                                             stratified=stratified,
-                                             logger=self.logger)
+        kfold, cv_groups = setup_cv_fold_iterator(cv_folds,
+                                                  examples,
+                                                  self.model_type._estimator_type,
+                                                  stratified=stratified,
+                                                  logger=self.logger)
 
         # When using custom CV folds (a dictionary), if we are planning to do
         # grid search, set the grid search folds to be the same as the custom
@@ -1599,7 +1603,7 @@ class Learner(object):
         ----------
         examples : skll.FeatureSet
             The ``FeatureSet`` instance to generate the learning curve on.
-        cv_folds : int, optional
+        cv_folds : int or dict, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
@@ -1630,35 +1634,23 @@ class Learner(object):
             The numbers of training examples used to generate
             the curve
         """
-
-        # Seed the random number generator so that randomized algorithms are
-        # replicable.
-        random_state = np.random.RandomState(123456789)
-
         # Call train setup before since we need to train
         # the learner eventually
         self._create_label_dict(examples)
         self._train_setup(examples)
 
-        # Set up the cross-validation iterator with 20% of the data
-        # always reserved for testing
-        cv = ShuffleSplit(n_splits=cv_folds,
-                          test_size=0.2,
-                          random_state=random_state)
-        cv_iter = list(cv.split(examples.features, examples.labels, None))
-        n_max_training_samples = len(cv_iter[0][0])
+        # set up the CV split iterator over the train/test featuresets
+        # which also returns the maximum number of training examples
+        (featureset_iter,
+         n_max_training_samples) = setup_cv_split_iterator(cv_folds, examples)
 
-        # Get the _translate_train_sizes() function from scikit-learn
+        # Get the `_translate_train_sizes()` function from scikit-learn
         # since we need it to get the right list of sizes after cross-validation
         _module = import_module('sklearn.model_selection._validation')
         _translate_train_sizes = getattr(_module, '_translate_train_sizes')
         train_sizes_abs = _translate_train_sizes(train_sizes,
                                                  n_max_training_samples)
         n_unique_ticks = train_sizes_abs.shape[0]
-
-        # Create an iterator over train/test featuresets based on the
-        # cross-validation index iterator
-        featureset_iter = (FeatureSet.split_by_ids(examples, train, test) for train, test in cv_iter)
 
         # Limit the number of parallel jobs for this
         # to be no higher than five or the number of cores
