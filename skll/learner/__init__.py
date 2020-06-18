@@ -955,6 +955,7 @@ class Learner(object):
                 grid_search_folds = \
                     compute_num_folds_from_example_counts(grid_search_folds,
                                                           labels,
+                                                          self.model_type._estimator_type,
                                                           logger=self.logger)
 
                 if not grid_jobs:
