@@ -1006,7 +1006,7 @@ def write_predictions(example_ids,
     with open(prediction_file, 'w' if not append else 'a') as predictionfh:
 
         # create a DictWriter with the appropriate field names
-        if probability:
+        if predictions_to_write.ndim > 1:
             fieldnames = ["id"] + [label for label in label_list]
         else:
             fieldnames = ["id", "prediction"]
@@ -1022,12 +1022,11 @@ def write_predictions(example_ids,
             if model_type == "regressor":
                 row = {"id": example_id, "prediction": pred}
 
-            # for classifiers, if it's probabilistic, we want
-            # to write out the class probabilities; and if it's
-            # non-probabilistic, then the prediction as-is (which
-            # should be a class label by this point)
+            # if we have an array as a prediction, it must be
+            # a list of probabilities and if not, then it's
+            # either a class label or an index
             else:
-                if probability:
+                if isinstance(pred, np.ndarray):
                     row = {'id': example_id}
                     row.update(dict(zip(label_list, pred)))
                 else:

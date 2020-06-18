@@ -1321,10 +1321,8 @@ class Learner(object):
 
         # make the prediction on the test data
         try:
-            yhat = (self._model.predict_proba(xtest)
-                    if (self.probability and
-                        not class_labels)
-                    else self._model.predict(xtest))
+            yhat = self._model.predict(xtest)
+            yhat_probs = self._model.predict_proba(xtest) if self.probability else None
         except NotImplementedError as e:
             self.logger.error("Model type: {}\n"
                               "Model: {}\n"
@@ -1333,25 +1331,32 @@ class Learner(object):
                                                          self.probability))
             raise e
 
-        # decide what predictions to write and what predictions to return
-        # by default, these are just what is output by the model
-        predictions_to_write = yhat
-        predictions_to_return = yhat
+        # if it's a classifier
+        if self.model_type._estimator_type == "classifier":
 
-        # if it's a non-probabilistic classifier
-        if (self.model_type._estimator_type == "classifier" and
-                not self.probability):
-
-            # get its predicted classes
+            # get the predicted class labels
             classes = np.array([self.label_list[int(pred)] for pred in yhat])
 
-            # we always want to write out classes as our predictions
-            predictions_to_write = classes
-
-            # if the user specified `class_labels`, then we want
-            # to return classes as well
+            # if `class_labels` is `True`, we write out AND return
+            # class labels irrespective of `self.probability`
             if class_labels:
+                predictions_to_write = classes
                 predictions_to_return = classes
+            else:
+                # if `class_labels` is `False` and `self.probability` is
+                # `True`, we write out AND return probabilities
+                if self.probability:
+                    predictions_to_write = yhat_probs
+                    predictions_to_return = yhat_probs
+                # if `class_labels` is `False` and `self.probability` is
+                # `False`, we write out class labels AND return class indices
+                else:
+                    predictions_to_write = classes
+                    predictions_to_return = yhat
+        # for regressors, it's really simple
+        else:
+            predictions_to_write = yhat
+            predictions_to_return = yhat
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
