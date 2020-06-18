@@ -7,7 +7,7 @@ from sklearn.metrics import (average_precision_score,
 
 
 def f075_macro(y_true, y_pred):
-    return fbeta_score(y_true, y_pred, 0.75, average='macro')
+    return fbeta_score(y_true, y_pred, beta=0.75, average='macro')
 
 
 def ratio_of_ones(y_true, y_pred):
