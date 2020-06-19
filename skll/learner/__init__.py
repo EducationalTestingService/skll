@@ -1085,11 +1085,12 @@ class Learner(object):
         Parameters
         ----------
         examples : skll.FeatureSet
-            The ``FeatureSet`` instance to evaluate the performance of the model on.
+            The ``FeatureSet`` instance to evaluate the performance of the
+            model on.
         prediction_prefix : str, optional
-            If saving the predictions, this is the
-            prefix that will be used for the filename.
-            It will be followed by ``"_predictions.tsv"``
+            If not ``None``, predictions will also be written out to a file with
+            the name  ``<prediction_prefix>_predictions.tsv``. Note that
+            the prefix can also contain a path.
             Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if
@@ -1175,21 +1176,35 @@ class Learner(object):
                 append=False,
                 class_labels=False):
         """
-        Uses a given model to generate predictions on a given ``FeatureSet``.
+        Uses a given model to return, and optionally, write out predictions
+        on a given ``FeatureSet`` to a file.
+
+        For regressors, the returned and written-out predictions are identical.
+        However, for classifiers:
+        - if ``class_labels`` is ``True``, class labels are returned
+          as well as written out.
+        - if ``class_labels`` is ``False`` and the classifier is probabilistic
+          (i.e., ``self..probability`` is ``True``), class probabilities are
+          returned as well as written out.
+        - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
+          (i.e., ``self..probability`` is ``False``), class indices are returned
+          and class labels are written out. This option is generally only
+          meant for SKLL-internal use.
 
         Parameters
         ----------
         examples : skll.FeatureSet
             The ``FeatureSet`` instance to predict labels for.
         prediction_prefix : str, optional
-            If saving the predictions, this is the prefix that will be used for
-            the filename. It will be followed by ``"_predictions.tsv"``
+            If not ``None``, predictions will also be written out to a file with
+            the name  ``<prediction_prefix>_predictions.tsv``. Note that
+            the prefix can also contain a path.
             Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
         class_labels : bool, optional
-            For classifier, should we convert class indices to their (str) labels
+            For classifiers, should we convert class indices to their (str) labels
             for the returned array? Note that class labels are always written out
             to disk.
             Defaults to ``False``.
