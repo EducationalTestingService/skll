@@ -1811,8 +1811,7 @@ def check_predict_return_and_write(learner, test_fs, class_labels):
     # and return class labels
     if class_labels:
         eq_(returned_predictions.shape, (250,))
-        assert_array_equal(np.unique(returned_predictions),
-                           np.array(['a', 'b', 'c']))
+        assert(set(returned_predictions).issubset({'a', 'b', 'c'}))
         header = written_predictions[0]
         eq_(sorted(header.keys()), ['id', 'prediction'])
         for row in written_predictions[1:]:
@@ -1835,8 +1834,7 @@ def check_predict_return_and_write(learner, test_fs, class_labels):
         # then we print out class labels but return class indices
         else:
             eq_(returned_predictions.shape, (250,))
-            assert_array_equal(np.unique(returned_predictions),
-                               np.array([0, 1, 2]))
+            assert(set(returned_predictions).issubset({0, 1, 2}))
             header = written_predictions[0]
             eq_(sorted(header.keys()), ['id', 'prediction'])
             for row in written_predictions[1:]:
