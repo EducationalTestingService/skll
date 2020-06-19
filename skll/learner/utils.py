@@ -1016,8 +1016,13 @@ def train_and_score(learner,
     """
 
     _ = learner.train(train_examples, grid_search=False, shuffle=False)
-    train_predictions = learner.predict(train_examples)
-    test_predictions = learner.predict(test_examples)
+
+    # get the train and test class indices (not labels)
+    train_predictions = learner.predict(train_examples, class_labels=False)
+    test_predictions = learner.predict(test_examples, class_labels=False)
+
+    # now get the training and test labels and convert them to indices
+    # but make sure to include any unseen labels in the test data
     if learner.model_type._estimator_type == 'classifier':
         test_label_list = np.unique(test_examples.labels).tolist()
         train_and_test_label_dict = add_unseen_labels(learner.label_dict,
@@ -1030,6 +1035,7 @@ def train_and_score(learner,
         train_labels = train_examples.labels
         test_labels = test_examples.labels
 
+    # now compute and return the scores
     train_score = use_score_func(metric, train_labels, train_predictions)
     test_score = use_score_func(metric, test_labels, test_predictions)
     return train_score, test_score

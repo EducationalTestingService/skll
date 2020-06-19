@@ -651,7 +651,7 @@ def test_backward_compatibility():
 
     learner = Learner.from_file(model_path)
     examples = Reader.for_path(test_path, quiet=True).read()
-    new_predictions = learner.predict(examples)[:, 1]
+    new_predictions = learner.predict(examples, class_labels=False)[:, 1]
 
     with open(predict_path, 'r') as predict_file:
         reader = csv.DictReader(predict_file, dialect=csv.excel_tab)
