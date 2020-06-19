@@ -220,7 +220,7 @@ def _classify_featureset(args):
                                                     train_set_name,
                                                     featureset))
         else:  # predict
-            logger.info("Training on {}, Making predictions about {}, "
+            logger.info("Training on {}, Making predictions on {}, "
                         "feature set {} ...".format(train_set_name,
                                                     test_set_name,
                                                     featureset))
