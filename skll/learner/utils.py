@@ -1003,7 +1003,9 @@ def write_predictions(example_ids,
     """
     # create a new file starting with the given prefix
     prediction_file = f"{file_prefix}_predictions.tsv"
-    with open(prediction_file, 'w' if not append else 'a') as predictionfh:
+    with open(prediction_file,
+              mode='w' if not append else 'a',
+              newline='') as predictionfh:
 
         # create a DictWriter with the appropriate field names
         if predictions_to_write.ndim > 1:
