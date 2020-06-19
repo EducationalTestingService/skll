@@ -1192,22 +1192,29 @@ class Learner(object):
           (i.e., ``self..probability`` is ``False``), class indices are returned
           and class labels are written out.
 
+        TL;DR: for regressors, just ignore ``class_labels``. For classfiers,
+        set it to ``True`` to get class labels and ``False`` to get class
+        probabilities.
+
         Parameters
         ----------
         examples : skll.FeatureSet
             The ``FeatureSet`` instance to predict labels for.
         prediction_prefix : str, optional
             If not ``None``, predictions will also be written out to a file with
-            the name  ``<prediction_prefix>_predictions.tsv``. Note that
-            the prefix can also contain a path.
+            the name  ``<prediction_prefix>_predictions.tsv``. For classifiers,
+            the predictions written out are class labels unless the learner is
+            probabilistic AND ``class_labels`` is set to ``False``. Note that
+            this prefix can also contain a path.
             Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
         class_labels : bool, optional
-            For classifiers, if ``False``, return the class indices instead
-            of the actual class labels. Users should almost never need to
-            change the default value for this option.
+            If ``False``, return either the class probabilities (probabilistic
+            classifiers) or the class indices (non-probabilistic ones). If
+            ``True``, return the class labels no matter what. Ignored for
+            regressors.
             Defaults to ``True``.
 
         Returns
