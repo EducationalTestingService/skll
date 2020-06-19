@@ -634,26 +634,30 @@ def get_predictions(learner, xtest):
 
     Returns
     -------
-    prediction_types : dict
-        Dictionary containing
+    prediction_dict : dict
+        Dictionary containing the three types of predictions as the keys
+        and either ``None`` or a numpy array as the value.
 
     Raises
     ------
-    e
-        Description
+    NotImplementedError
+        If the scikit-learn model does not implement ``predict_proba()`` to
+        get the class probabilities.
     """
-    predictions = {'raw': None, 'labels': None, 'probabilities': None}
+    # initialize the prediction dictionary
+    prediction_dict = {'raw': None, 'labels': None, 'probabilities': None}
 
     # first get the raw predictions from the underlying scikit-learn model
+    # this works for both classifiers and regressors
     yhat = learner.model.predict(xtest)
-    predictions['raw'] = yhat
+    prediction_dict['raw'] = yhat
 
-    # next, if it's a classifier
+    # next, if it's a classifier ...
     if learner.model_type._estimator_type == "classifier":
 
         # get the predicted class labels
         class_labels = np.array([learner.label_list[int(pred)] for pred in yhat])
-        predictions['labels'] = class_labels
+        prediction_dict['labels'] = class_labels
 
         # then get the class probabilities too if the learner is probabilistic
         if learner.probability:
@@ -665,9 +669,9 @@ def get_predictions(learner, xtest):
                                      f"Probability: {learner.probability}\n")
                 raise e
             else:
-                predictions['probabilities'] = yhat_probs
+                prediction_dict['probabilities'] = yhat_probs
 
-    return predictions
+    return prediction_dict
 
 
 def rescaled(cls):

@@ -1217,8 +1217,13 @@ class Learner(object):
 
         Raises
         ------
+        AssertionError
+            If invalid predictions are being returned or written out.
         MemoryError
             If process runs out of memory when converting to dense.
+        RuntimeError
+            If there is a mismatch between the learner vectorizer
+            and the test set vectorizer.
         """
         example_ids = examples.ids
 
@@ -1343,19 +1348,27 @@ class Learner(object):
 
             # return and write class labels if they were explicitly asked for
             if class_labels:
-                to_return = to_write = prediction_dict['labels']
+                to_return = to_write = prediction_dict["labels"]
             else:
                 # return and write probabilities
                 if self.probability:
-                    to_return = to_write = prediction_dict['probabilities']
+                    to_return = to_write = prediction_dict["probabilities"]
                 # return class indices and write labels
                 else:
-                    to_return = prediction_dict['raw']
-                    to_write = prediction_dict['labels']
+                    to_return = prediction_dict["raw"]
+                    to_write = prediction_dict["labels"]
 
         # for regressors, it's really simple
         else:
-            to_write = to_return = prediction_dict['raw']
+            to_write = to_return = prediction_dict["raw"]
+
+        # check that our predictions to write and return
+        # are not invalid; this should NEVER happen
+        try:
+            assert to_return is not None
+            assert to_write is not None
+        except AssertionError:
+            raise AssertionError("invalid predictions generated")
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
