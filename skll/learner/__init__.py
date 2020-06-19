@@ -955,6 +955,7 @@ class Learner(object):
                 grid_search_folds = \
                     compute_num_folds_from_example_counts(grid_search_folds,
                                                           labels,
+                                                          self.model_type._estimator_type,
                                                           logger=self.logger)
 
                 if not grid_jobs:
@@ -1084,11 +1085,12 @@ class Learner(object):
         Parameters
         ----------
         examples : skll.FeatureSet
-            The ``FeatureSet`` instance to evaluate the performance of the model on.
+            The ``FeatureSet`` instance to evaluate the performance of the
+            model on.
         prediction_prefix : str, optional
-            If saving the predictions, this is the
-            prefix that will be used for the filename.
-            It will be followed by ``"_predictions.tsv"``
+            If not ``None``, predictions will also be written out to a file with
+            the name  ``<prediction_prefix>_predictions.tsv``. Note that
+            the prefix can also contain a path.
             Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if
@@ -1174,21 +1176,35 @@ class Learner(object):
                 append=False,
                 class_labels=False):
         """
-        Uses a given model to generate predictions on a given ``FeatureSet``.
+        Uses a given model to return, and optionally, write out predictions
+        on a given ``FeatureSet`` to a file.
+
+        For regressors, the returned and written-out predictions are identical.
+        However, for classifiers:
+        - if ``class_labels`` is ``True``, class labels are returned
+          as well as written out.
+        - if ``class_labels`` is ``False`` and the classifier is probabilistic
+          (i.e., ``self..probability`` is ``True``), class probabilities are
+          returned as well as written out.
+        - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
+          (i.e., ``self..probability`` is ``False``), class indices are returned
+          and class labels are written out. This option is generally only
+          meant for SKLL-internal use.
 
         Parameters
         ----------
         examples : skll.FeatureSet
             The ``FeatureSet`` instance to predict labels for.
         prediction_prefix : str, optional
-            If saving the predictions, this is the prefix that will be used for
-            the filename. It will be followed by ``"_predictions.tsv"``
+            If not ``None``, predictions will also be written out to a file with
+            the name  ``<prediction_prefix>_predictions.tsv``. Note that
+            the prefix can also contain a path.
             Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
         class_labels : bool, optional
-            For classifier, should we convert class indices to their (str) labels
+            For classifiers, should we convert class indices to their (str) labels
             for the returned array? Note that class labels are always written out
             to disk.
             Defaults to ``False``.
@@ -1320,10 +1336,8 @@ class Learner(object):
 
         # make the prediction on the test data
         try:
-            yhat = (self._model.predict_proba(xtest)
-                    if (self.probability and
-                        not class_labels)
-                    else self._model.predict(xtest))
+            yhat = self._model.predict(xtest)
+            yhat_probs = self._model.predict_proba(xtest) if self.probability else None
         except NotImplementedError as e:
             self.logger.error("Model type: {}\n"
                               "Model: {}\n"
@@ -1332,25 +1346,32 @@ class Learner(object):
                                                          self.probability))
             raise e
 
-        # decide what predictions to write and what predictions to return
-        # by default, these are just what is output by the model
-        predictions_to_write = yhat
-        predictions_to_return = yhat
+        # if it's a classifier
+        if self.model_type._estimator_type == "classifier":
 
-        # if it's a non-probabilistic classifier
-        if (self.model_type._estimator_type == "classifier" and
-                not self.probability):
-
-            # get its predicted classes
+            # get the predicted class labels
             classes = np.array([self.label_list[int(pred)] for pred in yhat])
 
-            # we always want to write out classes as our predictions
-            predictions_to_write = classes
-
-            # if the user specified `class_labels`, then we want
-            # to return classes as well
+            # if `class_labels` is `True`, we write out AND return
+            # class labels irrespective of `self.probability`
             if class_labels:
+                predictions_to_write = classes
                 predictions_to_return = classes
+            else:
+                # if `class_labels` is `False` and `self.probability` is
+                # `True`, we write out AND return probabilities
+                if self.probability:
+                    predictions_to_write = yhat_probs
+                    predictions_to_return = yhat_probs
+                # if `class_labels` is `False` and `self.probability` is
+                # `False`, we write out class labels AND return class indices
+                else:
+                    predictions_to_write = classes
+                    predictions_to_return = yhat
+        # for regressors, it's really simple
+        else:
+            predictions_to_write = yhat
+            predictions_to_return = yhat
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:

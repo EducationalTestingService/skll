@@ -107,6 +107,10 @@ def tearDown():
     for output_file in glob(join(output_dir, 'test_multinomialnb_loading*')):
         os.unlink(output_file)
 
+    for output_file in glob(join(output_dir,
+                                 'test_predict_return_and_write_predictions*')):
+        os.unlink(output_file)
+
     config_files = [join(config_dir,
                          cfgname) for cfgname in ['test_single_file.cfg',
                                                   'test_single_file_saved_subset.cfg']]
@@ -1787,3 +1791,74 @@ def test_load_old_skll_model():
                             r"created with v2.1 of SKLL, which is "
                             r"incompatible with the current",
                             Learner.from_file, model_path)
+
+
+def check_predict_return_and_write(learner, test_fs, class_labels):
+
+    output_dir = join(_my_dir, 'output')
+
+    returned_predictions = learner.predict(test_fs,
+                                           class_labels=class_labels,
+                                           prediction_prefix=f"{output_dir}/test_predict_return_and_write")
+
+    # open and read the predictions file
+    with open(f"{output_dir}/test_predict_return_"
+              f"and_write_predictions.tsv", 'r') as predictfh:
+        reader = csv.DictReader(predictfh, dialect=csv.excel_tab)
+        written_predictions = list(reader)
+
+    # if `class_labels` is `True`, then we both print out
+    # and return class labels
+    if class_labels:
+        eq_(returned_predictions.shape, (250,))
+        assert(set(returned_predictions).issubset({'a', 'b', 'c'}))
+        header = written_predictions[0]
+        eq_(sorted(header.keys()), ['id', 'prediction'])
+        for row in written_predictions[1:]:
+            assert(row['prediction'] in ['a', 'b', 'c'])
+    else:
+        # if `class_labels` is `False` but the learner is probabilistic,
+        # then we both print out and return class probabilities
+        if learner.probability:
+            eq_(returned_predictions.shape, (250, 3))
+            header = written_predictions[0]
+            eq_(sorted(header.keys()), ['a', 'b', 'c', 'id'])
+            for row in written_predictions[1:]:
+                assert('a' in row)
+                assert('b' in row)
+                assert('c' in row)
+                assert(0 <= float(row['a']) <= 1)
+                assert(0 <= float(row['b']) <= 1)
+                assert(0 <= float(row['c']) <= 1)
+        # if `class_labels` is `False` and the learner is non-probabilistic,
+        # then we print out class labels but return class indices
+        else:
+            eq_(returned_predictions.shape, (250,))
+            assert(set(returned_predictions).issubset({0, 1, 2}))
+            header = written_predictions[0]
+            eq_(sorted(header.keys()), ['id', 'prediction'])
+            for row in written_predictions[1:]:
+                assert(row['prediction'] in ['a', 'b', 'c'])
+
+
+def test_predict_return_and_write():
+    """
+    Test the predictions are returned and written out correctly
+    """
+    train_fs, test_fs = make_classification_data(num_examples=500,
+                                                 non_negative=True,
+                                                 num_labels=3,
+                                                 string_label_list=['a', 'b', 'c'])
+
+    # create a non-probabilistic and a probabilistic learner
+    learner1 = Learner('SGDClassifier', probability=False)
+    learner2 = Learner('SGDClassifier', probability=True)
+
+    # train both the learners
+    learner1.train(train_fs, grid_search=False)
+    learner2.train(train_fs, grid_search=False)
+
+    # run the various tests
+    for (learner, class_labels) in product([learner1, learner2],
+                                           [False, True]):
+        yield check_predict_return_and_write, learner, test_fs, class_labels

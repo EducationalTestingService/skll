@@ -758,7 +758,10 @@ def compute_evaluation_metrics(metrics,
     return res
 
 
-def compute_num_folds_from_example_counts(cv_folds, labels, logger=None):
+def compute_num_folds_from_example_counts(cv_folds,
+                                          labels,
+                                          model_type,
+                                          logger=None):
     """
     Calculate the number of folds we should use for cross validation, based
     on the number of examples we have for each label.
@@ -769,6 +772,8 @@ def compute_num_folds_from_example_counts(cv_folds, labels, logger=None):
         The number of cross-validation folds.
     labels : list
         The example labels.
+    model_type : str
+        One of "classifier" or "regressor".
     logger : logging.Logger, optional
         A logger instance to use for logging messages and warnings.
         If ``None``, a new one is created.
@@ -785,9 +790,17 @@ def compute_num_folds_from_example_counts(cv_folds, labels, logger=None):
     AssertionError
         If ```cv_folds``` is not an integer.
     ValueError
-        If the training set has less than or equal to one label(s).
+        If ``cv_folds`` is not an integer or if the training set has
+        less than or equal to one label(s) for classification.
     """
+    try:
     assert isinstance(cv_folds, int)
+    except AssertionError:
+        raise ValueError("`cv_folds` must be an integer.")
+
+    # For regression models, we can just return the current cv_folds
+    if model_type == 'regressor':
+        return cv_folds
 
     min_examples_per_label = min(Counter(labels).values())
     if min_examples_per_label <= 1:
@@ -837,6 +850,7 @@ def setup_cv_fold_iterator(cv_folds,
     if isinstance(cv_folds, int):
         cv_folds = compute_num_folds_from_example_counts(cv_folds,
                                                          examples.labels,
+                                                         model_type,
                                                          logger=logger)
 
         stratified = (stratified and model_type == 'classifier')
@@ -998,10 +1012,12 @@ def write_predictions(example_ids,
     """
     # create a new file starting with the given prefix
     prediction_file = f"{file_prefix}_predictions.tsv"
-    with open(prediction_file, 'w' if not append else 'a') as predictionfh:
+    with open(prediction_file,
+              mode='w' if not append else 'a',
+              newline='') as predictionfh:
 
         # create a DictWriter with the appropriate field names
-        if probability:
+        if predictions_to_write.ndim > 1:
             fieldnames = ["id"] + [label for label in label_list]
         else:
             fieldnames = ["id", "prediction"]
@@ -1017,12 +1033,12 @@ def write_predictions(example_ids,
             if model_type == "regressor":
                 row = {"id": example_id, "prediction": pred}
 
-            # for classifiers, if it's probabilistic, we want
-            # to write out the class probabilities; and if it's
+            # if we have an array as a prediction, it must be
+            # a list of probabilities and if not, then it's
             # non-probabilistic, then the prediction as-is (which
-            # should be a class label by this point)
+            # either a class label or an index
             else:
-                if probability:
+                if isinstance(pred, np.ndarray):
                     row = {'id': example_id}
                     row.update(dict(zip(label_list, pred)))
                 else:

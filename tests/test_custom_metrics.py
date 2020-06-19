@@ -265,7 +265,7 @@ def test_register_custom_metric_values():
     y_true = [1, 1, 1, 0, 2, 1, 2, 0, 1]
     y_pred = [0, 1, 1, 0, 1, 2, 0, 1, 2]
     skll_value = use_score_func("f075_macro", y_true, y_pred)
-    sklearn_value = fbeta_score(y_true, y_pred, 0.75, average='macro')
+    sklearn_value = fbeta_score(y_true, y_pred, beta=0.75, average='macro')
     eq_(skll_value, sklearn_value)
 
     y_true = [1, 1, 1, 0]
