@@ -615,7 +615,7 @@ def get_predictions(learner, xtest):
 
     The various types of predictions include:
 
-    - "raw" predictions which are  self-explanatory for regressors; for
+    - "raw" predictions which are self-explanatory for regressors; for
       classifiers, these are the indices of the class labels, not the labels
       themselves.
     - "labels": for classifiers, these are the class labels; for regressors
@@ -627,7 +627,7 @@ def get_predictions(learner, xtest):
     Parameters
     ----------
     learner : skll.Learner
-        The already-trained ``Learner`` instance that we will use to generate
+        The already-trained ``Learner`` instance that is used to generate
         the predictions.
     xtest : array-like
         Numpy array of features on which the predictions are to be made.
@@ -645,19 +645,19 @@ def get_predictions(learner, xtest):
         get the class probabilities.
     """
     # initialize the prediction dictionary
-    prediction_dict = {'raw': None, 'labels': None, 'probabilities': None}
+    prediction_dict = {"raw": None, "labels": None, "probabilities": None}
 
     # first get the raw predictions from the underlying scikit-learn model
     # this works for both classifiers and regressors
     yhat = learner.model.predict(xtest)
-    prediction_dict['raw'] = yhat
+    prediction_dict["raw"] = yhat
 
     # next, if it's a classifier ...
     if learner.model_type._estimator_type == "classifier":
 
         # get the predicted class labels
         class_labels = np.array([learner.label_list[int(pred)] for pred in yhat])
-        prediction_dict['labels'] = class_labels
+        prediction_dict["labels"] = class_labels
 
         # then get the class probabilities too if the learner is probabilistic
         if learner.probability:
@@ -669,7 +669,7 @@ def get_predictions(learner, xtest):
                                      f"Probability: {learner.probability}\n")
                 raise e
             else:
-                prediction_dict['probabilities'] = yhat_probs
+                prediction_dict["probabilities"] = yhat_probs
 
     return prediction_dict
 
