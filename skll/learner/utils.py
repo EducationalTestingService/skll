@@ -181,383 +181,6 @@ class SelectByMinCount(SelectKBest):
         return mask
 
 
-def contiguous_ints_or_floats(numbers):
-    """
-    Check whether the given list of numbers contains
-    contiguous integers or contiguous integer-like
-    floats. For example, [1, 2, 3] or [4.0, 5.0, 6.0]
-    are both contiguous but [1.1, 1.2, 1.3] is not.
-
-    Parameters
-    ----------
-    numbers : array-like of ints or floats
-        The numbers we want to check.
-
-    Returns
-    -------
-    answer : bool
-        True if the numbers are contiguous integers
-        or contiguous integer-like floats (1.0, 2.0, etc.)
-
-    Raises
-    ------
-    TypeError
-        If ``numbers`` does not contain integers or floating
-        point values.
-    ValueError
-        If ``numbers`` is empty.
-    """
-
-    try:
-
-        # make sure that number is not empty
-        assert len(numbers) > 0
-
-        # first check that the numbers are all integers
-        # or integer-like floats (e.g., 1.0, 2.0 etc.)
-        ints_or_int_like_floats = np.all(np.mod(numbers, 1) == 0)
-
-        # next check that the successive differences between
-        # the numbers are all 1, i.e., they are nuermicontiguous
-        contiguous = np.all(np.diff(numbers) == 1)
-
-    except AssertionError:
-        raise ValueError('Input cannot be empty.')
-
-    except TypeError:
-        raise TypeError('Input should only contain numbers.')
-
-    # we need both conditions to be true
-    return ints_or_int_like_floats and contiguous
-
-
-def get_acceptable_regression_metrics():
-    """
-    Return the set of metrics that are acceptable for regression.
-    """
-
-    # it's fairly straightforward for regression since
-    # we do not have to check the labels
-    acceptable_metrics = (REGRESSION_ONLY_METRICS |
-                          UNWEIGHTED_KAPPA_METRICS |
-                          WEIGHTED_KAPPA_METRICS |
-                          CORRELATION_METRICS)
-
-    # if there are any custom metrics registered, include them too
-    if len(_CUSTOM_METRICS) > 0:
-        acceptable_metrics.update(_CUSTOM_METRICS)
-
-    return acceptable_metrics
-
-
-def get_acceptable_classification_metrics(label_array):
-    """
-    Return the set of metrics that are acceptable given the
-    the unique set of labels that we are classifying.
-
-    Parameters
-    ----------
-    label_array : numpy.ndarray
-        A sorted numpy array containing the unique labels
-        that we are trying to predict. Optional for regressors
-        but required for classifiers.
-
-    Returns
-    -------
-    acceptable_metrics : set
-        A set of metric names that are acceptable
-        for the given classification scenario.
-    """
-
-    # this is a classifier so the acceptable objective
-    # functions definitely include those metrics that
-    # are specifically for classification and also
-    # the unweighted kappa metrics
-    acceptable_metrics = CLASSIFICATION_ONLY_METRICS | UNWEIGHTED_KAPPA_METRICS
-
-    # now let us consider which other metrics may also
-    # be acceptable depending on whether the labels
-    # are strings or (contiguous) integers/floats
-    label_type = label_array.dtype.type
-
-    # CASE 1: labels are strings, then no other metrics
-    # are acceptable
-    if issubclass(label_type, (np.object_, str)):
-        pass
-
-    # CASE 2: labels are integers or floats; the way
-    # it works in SKLL, it's guaranteed that
-    # class indices will be sorted in the same order
-    # as the class labels therefore, ranking metrics
-    # such as various correlations should work fine.
-    elif issubclass(label_type, (int,
-                                 np.int32,
-                                 np.int64,
-                                 float,
-                                 np.float32,
-                                 np.float64)):
-        acceptable_metrics.update(CORRELATION_METRICS)
-
-        # CASE 3: labels are numerically contiguous integers
-        # this is a special sub-case of CASE 2 which
-        # represents ordinal classification. Only in this
-        # case, weighted kappas -- where the distance
-        # between the class labels has a special
-        # meaning -- can be allowed. This is because
-        # class indices are always contiguous and all
-        # metrics in SKLL are computed in the index
-        # space, not the label space. Note that floating
-        # point numbers that are equivalent to integers
-        # (e.g., [1.0, 2.0, 3.0]) are also acceptable.
-        if contiguous_ints_or_floats(label_array):
-            acceptable_metrics.update(WEIGHTED_KAPPA_METRICS)
-
-    # if there are any custom metrics registered, include them too
-    if len(_CUSTOM_METRICS) > 0:
-        acceptable_metrics.update(_CUSTOM_METRICS)
-
-    return acceptable_metrics
-
-
-def load_custom_learner(custom_learner_path, custom_learner_name):
-    """
-    Import and load the custom learner object from the given path.
-
-    Parameters
-    ----------
-    custom_learner_path : str
-        The path to a custom learner.
-    custom_learner_name : str
-        The name of a custom learner.
-
-    Raises
-    ------
-    ValueError
-        If the custom learner path does not end in '.py'.
-
-    Returns
-    -------
-    custom_learner_obj : skll.Learner object
-        The SKLL learner object loaded from the given path.
-    """
-    if not custom_learner_path:
-        raise ValueError('custom_learner_path was not set and learner {} '
-                         'was not found.'.format(custom_learner_name))
-
-    if not custom_learner_path.endswith('.py'):
-        raise ValueError('custom_learner_path must end in .py ({})'
-                         .format(custom_learner_path))
-
-    custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
-    sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
-    import_module(custom_learner_module_name)
-    return getattr(sys.modules[custom_learner_module_name], custom_learner_name)
-
-
-def rescaled(cls):
-    """
-    Decorator to create regressors that store a min and a max for the training
-    data and make sure that predictions fall within that range.  It also stores
-    the means and SDs of the gold standard and the predictions on the training
-    set to rescale the predictions (e.g., as in e-rater).
-
-    Parameters
-    ----------
-    cls : BaseEstimator
-        An estimator class to add rescaling to.
-
-    Returns
-    -------
-    cls : BaseEstimator
-        Modified version of estimator class with rescaled functions added.
-
-    Raises
-    ------
-    ValueError
-        If classifier cannot be rescaled (i.e. is not a regressor).
-    """
-    # If this class has already been run through the decorator, return it
-    if hasattr(cls, 'rescale'):
-        return cls
-
-    # Save original versions of functions to use later.
-    orig_init = cls.__init__
-    orig_fit = cls.fit
-    orig_predict = cls.predict
-
-    if cls._estimator_type == 'classifier':
-        raise ValueError('Classifiers cannot be rescaled. ' +
-                         'Only regressors can.')
-
-    # Define all new versions of functions
-    @wraps(cls.fit)
-    def fit(self, X, y=None):
-        """
-        Fit a model, then store the mean, SD, max and min of the training set
-        and the mean and SD of the predictions on the training set.
-
-        Parameters
-        ----------
-        X : array-like, with shape (n_samples, n_features)
-            The data to fit.
-        y : Ignored
-
-        Returns
-        -------
-        self
-        """
-
-        # fit a regular regression model
-        orig_fit(self, X, y=y)
-
-        if self.constrain:
-            # also record the training data min and max
-            self.y_min = min(y)
-            self.y_max = max(y)
-
-        if self.rescale:
-            # also record the means and SDs for the training set
-            y_hat = orig_predict(self, X)
-            self.yhat_mean = np.mean(y_hat)
-            self.yhat_sd = np.std(y_hat)
-            self.y_mean = np.mean(y)
-            self.y_sd = np.std(y)
-
-        return self
-
-    @wraps(cls.predict)
-    def predict(self, X):
-        """
-        Make predictions with the super class, and then adjust them using the
-        stored min, max, means, and standard deviations.
-
-        Parameters
-        ----------
-        X : array-like, with shape (n_samples,)
-            The data to predict.
-
-        Returns
-        -------
-        res : array-like
-            The prediction results.
-        """
-        # get the unconstrained predictions
-        res = orig_predict(self, X)
-
-        if self.rescale:
-            # convert the predictions to z-scores,
-            # then rescale to match the training set distribution
-            res = (((res - self.yhat_mean) / self.yhat_sd) * self.y_sd) + self.y_mean
-
-        if self.constrain:
-            # apply min and max constraints
-            res = np.array([max(self.y_min, min(self.y_max, pred))
-                            for pred in res])
-
-        return res
-
-    @classmethod
-    @wraps(cls._get_param_names)
-    def _get_param_names(class_x):
-        """
-        This is adapted from scikit-learns's ``BaseEstimator`` class.
-        It gets the kwargs for the superclass's init method and adds the
-        kwargs for newly added ``__init__()`` method.
-
-        Parameters
-        ----------
-        class_x
-            The the superclass from which to retrieve param names.
-
-        Returns
-        -------
-        args : list
-            A list of parameter names for the class's init method.
-
-        Raises
-        ------
-        RunTimeError
-            If `varargs` exist in the scikit-learn estimator.
-        """
-
-        # initialize the empty list of parameter names
-        args = []
-
-        try:
-            # get signature of the original init method
-            init = getattr(orig_init, 'deprecated_original', orig_init)
-            init_signature = inspect.signature(init)
-
-            # get all parameters excluding 'self'
-            original_parameters = [p for p in init_signature.parameters.values()
-                                   if p.name != 'self' and p.kind != p.VAR_KEYWORD]
-
-            # there should be no varargs
-            for parameter in original_parameters:
-                if parameter.kind == parameter.VAR_POSITIONAL:
-                    raise RuntimeError("scikit-learn estimators should always "
-                                       "specify their parameters in the signature"
-                                       " of their __init__ (no varargs)."
-                                       " %s with constructor %s doesn't "
-                                       " follow this convention."
-                                       % (cls, init_signature))
-                else:
-                    args.append(parameter.name)
-
-        except TypeError:
-            pass
-
-        # now get the additional rescaling arguments
-        rescale_args = inspect.getargspec(class_x.__init__)[0]
-
-        # Remove 'self'
-        rescale_args.pop(0)
-
-        # add the rescaling arguments to the original arguments and sort
-        args += rescale_args
-        args.sort()
-
-        return args
-
-    @wraps(cls.__init__)
-    def init(self, constrain=True, rescale=True, **kwargs):
-        """
-        This special init function is used by the decorator to make sure
-        that things get initialized in the right order.
-
-        Parameters
-        ----------
-        constrain : bool, optional
-            Whether to constrain predictions within min and max values.
-            Defaults to True.
-        rescale : bool, optional
-            Whether to rescale prediction values using z-scores.
-            Defaults to True.
-        kwargs : dict, optional
-            Arguments for base class.
-        """
-        # pylint: disable=W0201
-        self.constrain = constrain
-        self.rescale = rescale
-        self.y_min = None
-        self.y_max = None
-        self.yhat_mean = None
-        self.yhat_sd = None
-        self.y_mean = None
-        self.y_sd = None
-        orig_init(self, **kwargs)
-
-    # Override original functions with new ones
-    cls.__init__ = init
-    cls.fit = fit
-    cls.predict = predict
-    cls._get_param_names = _get_param_names
-    cls.rescale = True
-
-    # Return modified class
-    return cls
-
-
 def add_unseen_labels(train_label_dict, test_label_list):
     """
     Merge test set labels that not seen in the training data with seen ones.
@@ -810,6 +433,383 @@ def compute_num_folds_from_example_counts(cv_folds,
                        f"cross-validation folds to that value.")
         cv_folds = min_examples_per_label
     return cv_folds
+
+
+def contiguous_ints_or_floats(numbers):
+    """
+    Check whether the given list of numbers contains
+    contiguous integers or contiguous integer-like
+    floats. For example, [1, 2, 3] or [4.0, 5.0, 6.0]
+    are both contiguous but [1.1, 1.2, 1.3] is not.
+
+    Parameters
+    ----------
+    numbers : array-like of ints or floats
+        The numbers we want to check.
+
+    Returns
+    -------
+    answer : bool
+        True if the numbers are contiguous integers
+        or contiguous integer-like floats (1.0, 2.0, etc.)
+
+    Raises
+    ------
+    TypeError
+        If ``numbers`` does not contain integers or floating
+        point values.
+    ValueError
+        If ``numbers`` is empty.
+    """
+
+    try:
+
+        # make sure that number is not empty
+        assert len(numbers) > 0
+
+        # first check that the numbers are all integers
+        # or integer-like floats (e.g., 1.0, 2.0 etc.)
+        ints_or_int_like_floats = np.all(np.mod(numbers, 1) == 0)
+
+        # next check that the successive differences between
+        # the numbers are all 1, i.e., they are nuermicontiguous
+        contiguous = np.all(np.diff(numbers) == 1)
+
+    except AssertionError:
+        raise ValueError('Input cannot be empty.')
+
+    except TypeError:
+        raise TypeError('Input should only contain numbers.')
+
+    # we need both conditions to be true
+    return ints_or_int_like_floats and contiguous
+
+
+def get_acceptable_classification_metrics(label_array):
+    """
+    Return the set of metrics that are acceptable given the
+    the unique set of labels that we are classifying.
+
+    Parameters
+    ----------
+    label_array : numpy.ndarray
+        A sorted numpy array containing the unique labels
+        that we are trying to predict. Optional for regressors
+        but required for classifiers.
+
+    Returns
+    -------
+    acceptable_metrics : set
+        A set of metric names that are acceptable
+        for the given classification scenario.
+    """
+
+    # this is a classifier so the acceptable objective
+    # functions definitely include those metrics that
+    # are specifically for classification and also
+    # the unweighted kappa metrics
+    acceptable_metrics = CLASSIFICATION_ONLY_METRICS | UNWEIGHTED_KAPPA_METRICS
+
+    # now let us consider which other metrics may also
+    # be acceptable depending on whether the labels
+    # are strings or (contiguous) integers/floats
+    label_type = label_array.dtype.type
+
+    # CASE 1: labels are strings, then no other metrics
+    # are acceptable
+    if issubclass(label_type, (np.object_, str)):
+        pass
+
+    # CASE 2: labels are integers or floats; the way
+    # it works in SKLL, it's guaranteed that
+    # class indices will be sorted in the same order
+    # as the class labels therefore, ranking metrics
+    # such as various correlations should work fine.
+    elif issubclass(label_type, (int,
+                                 np.int32,
+                                 np.int64,
+                                 float,
+                                 np.float32,
+                                 np.float64)):
+        acceptable_metrics.update(CORRELATION_METRICS)
+
+        # CASE 3: labels are numerically contiguous integers
+        # this is a special sub-case of CASE 2 which
+        # represents ordinal classification. Only in this
+        # case, weighted kappas -- where the distance
+        # between the class labels has a special
+        # meaning -- can be allowed. This is because
+        # class indices are always contiguous and all
+        # metrics in SKLL are computed in the index
+        # space, not the label space. Note that floating
+        # point numbers that are equivalent to integers
+        # (e.g., [1.0, 2.0, 3.0]) are also acceptable.
+        if contiguous_ints_or_floats(label_array):
+            acceptable_metrics.update(WEIGHTED_KAPPA_METRICS)
+
+    # if there are any custom metrics registered, include them too
+    if len(_CUSTOM_METRICS) > 0:
+        acceptable_metrics.update(_CUSTOM_METRICS)
+
+    return acceptable_metrics
+
+
+def get_acceptable_regression_metrics():
+    """
+    Return the set of metrics that are acceptable for regression.
+    """
+
+    # it's fairly straightforward for regression since
+    # we do not have to check the labels
+    acceptable_metrics = (REGRESSION_ONLY_METRICS |
+                          UNWEIGHTED_KAPPA_METRICS |
+                          WEIGHTED_KAPPA_METRICS |
+                          CORRELATION_METRICS)
+
+    # if there are any custom metrics registered, include them too
+    if len(_CUSTOM_METRICS) > 0:
+        acceptable_metrics.update(_CUSTOM_METRICS)
+
+    return acceptable_metrics
+
+
+def load_custom_learner(custom_learner_path, custom_learner_name):
+    """
+    Import and load the custom learner object from the given path.
+
+    Parameters
+    ----------
+    custom_learner_path : str
+        The path to a custom learner.
+    custom_learner_name : str
+        The name of a custom learner.
+
+    Raises
+    ------
+    ValueError
+        If the custom learner path does not end in '.py'.
+
+    Returns
+    -------
+    custom_learner_obj : skll.Learner object
+        The SKLL learner object loaded from the given path.
+    """
+    if not custom_learner_path:
+        raise ValueError('custom_learner_path was not set and learner {} '
+                         'was not found.'.format(custom_learner_name))
+
+    if not custom_learner_path.endswith('.py'):
+        raise ValueError('custom_learner_path must end in .py ({})'
+                         .format(custom_learner_path))
+
+    custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
+    sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
+    import_module(custom_learner_module_name)
+    return getattr(sys.modules[custom_learner_module_name], custom_learner_name)
+
+
+def rescaled(cls):
+    """
+    Decorator to create regressors that store a min and a max for the training
+    data and make sure that predictions fall within that range.  It also stores
+    the means and SDs of the gold standard and the predictions on the training
+    set to rescale the predictions (e.g., as in e-rater).
+
+    Parameters
+    ----------
+    cls : BaseEstimator
+        An estimator class to add rescaling to.
+
+    Returns
+    -------
+    cls : BaseEstimator
+        Modified version of estimator class with rescaled functions added.
+
+    Raises
+    ------
+    ValueError
+        If classifier cannot be rescaled (i.e. is not a regressor).
+    """
+    # If this class has already been run through the decorator, return it
+    if hasattr(cls, 'rescale'):
+        return cls
+
+    # Save original versions of functions to use later.
+    orig_init = cls.__init__
+    orig_fit = cls.fit
+    orig_predict = cls.predict
+
+    if cls._estimator_type == 'classifier':
+        raise ValueError('Classifiers cannot be rescaled. ' +
+                         'Only regressors can.')
+
+    # Define all new versions of functions
+    @wraps(cls.fit)
+    def fit(self, X, y=None):
+        """
+        Fit a model, then store the mean, SD, max and min of the training set
+        and the mean and SD of the predictions on the training set.
+
+        Parameters
+        ----------
+        X : array-like, with shape (n_samples, n_features)
+            The data to fit.
+        y : Ignored
+
+        Returns
+        -------
+        self
+        """
+
+        # fit a regular regression model
+        orig_fit(self, X, y=y)
+
+        if self.constrain:
+            # also record the training data min and max
+            self.y_min = min(y)
+            self.y_max = max(y)
+
+        if self.rescale:
+            # also record the means and SDs for the training set
+            y_hat = orig_predict(self, X)
+            self.yhat_mean = np.mean(y_hat)
+            self.yhat_sd = np.std(y_hat)
+            self.y_mean = np.mean(y)
+            self.y_sd = np.std(y)
+
+        return self
+
+    @wraps(cls.predict)
+    def predict(self, X):
+        """
+        Make predictions with the super class, and then adjust them using the
+        stored min, max, means, and standard deviations.
+
+        Parameters
+        ----------
+        X : array-like, with shape (n_samples,)
+            The data to predict.
+
+        Returns
+        -------
+        res : array-like
+            The prediction results.
+        """
+        # get the unconstrained predictions
+        res = orig_predict(self, X)
+
+        if self.rescale:
+            # convert the predictions to z-scores,
+            # then rescale to match the training set distribution
+            res = (((res - self.yhat_mean) / self.yhat_sd) * self.y_sd) + self.y_mean
+
+        if self.constrain:
+            # apply min and max constraints
+            res = np.array([max(self.y_min, min(self.y_max, pred))
+                            for pred in res])
+
+        return res
+
+    @classmethod
+    @wraps(cls._get_param_names)
+    def _get_param_names(class_x):
+        """
+        This is adapted from scikit-learns's ``BaseEstimator`` class.
+        It gets the kwargs for the superclass's init method and adds the
+        kwargs for newly added ``__init__()`` method.
+
+        Parameters
+        ----------
+        class_x
+            The the superclass from which to retrieve param names.
+
+        Returns
+        -------
+        args : list
+            A list of parameter names for the class's init method.
+
+        Raises
+        ------
+        RunTimeError
+            If `varargs` exist in the scikit-learn estimator.
+        """
+
+        # initialize the empty list of parameter names
+        args = []
+
+        try:
+            # get signature of the original init method
+            init = getattr(orig_init, 'deprecated_original', orig_init)
+            init_signature = inspect.signature(init)
+
+            # get all parameters excluding 'self'
+            original_parameters = [p for p in init_signature.parameters.values()
+                                   if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+
+            # there should be no varargs
+            for parameter in original_parameters:
+                if parameter.kind == parameter.VAR_POSITIONAL:
+                    raise RuntimeError("scikit-learn estimators should always "
+                                       "specify their parameters in the signature"
+                                       " of their __init__ (no varargs)."
+                                       " %s with constructor %s doesn't "
+                                       " follow this convention."
+                                       % (cls, init_signature))
+                else:
+                    args.append(parameter.name)
+
+        except TypeError:
+            pass
+
+        # now get the additional rescaling arguments
+        rescale_args = inspect.getargspec(class_x.__init__)[0]
+
+        # Remove 'self'
+        rescale_args.pop(0)
+
+        # add the rescaling arguments to the original arguments and sort
+        args += rescale_args
+        args.sort()
+
+        return args
+
+    @wraps(cls.__init__)
+    def init(self, constrain=True, rescale=True, **kwargs):
+        """
+        This special init function is used by the decorator to make sure
+        that things get initialized in the right order.
+
+        Parameters
+        ----------
+        constrain : bool, optional
+            Whether to constrain predictions within min and max values.
+            Defaults to True.
+        rescale : bool, optional
+            Whether to rescale prediction values using z-scores.
+            Defaults to True.
+        kwargs : dict, optional
+            Arguments for base class.
+        """
+        # pylint: disable=W0201
+        self.constrain = constrain
+        self.rescale = rescale
+        self.y_min = None
+        self.y_max = None
+        self.yhat_mean = None
+        self.yhat_sd = None
+        self.y_mean = None
+        self.y_sd = None
+        orig_init(self, **kwargs)
+
+    # Override original functions with new ones
+    cls.__init__ = init
+    cls.fit = fit
+    cls.predict = predict
+    cls._get_param_names = _get_param_names
+    cls.rescale = True
+
+    # Return modified class
+    return cls
 
 
 def setup_cv_fold_iterator(cv_folds,
