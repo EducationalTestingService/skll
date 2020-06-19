@@ -328,7 +328,20 @@ class VotingLearner(object):
                 individual_predictions=False):
         """
         Generate predictions from the meta-estimator and, optionally, the
-        underlying estimators on given ``FeatureSet``.
+        underlying estimators on given ``FeatureSet``. The predictions are
+        also written to disk if ``prediction_prefix`` is not ``None``.
+
+        For regressors, the returned and written-out predictions are identical.
+        However, for classifiers:
+        - if ``class_labels`` is ``True``, class labels are returned
+          as well as written out.
+        - if ``class_labels`` is ``False`` and the classifier is probabilistic
+          (i.e., ``self..probability`` is ``True``), class probabilities are
+          returned as well as written out.
+        - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
+          (i.e., ``self..probability`` is ``False``), class indices are returned
+          and class labels are written out. This option is generally only
+          meant for SKLL-internal use.
 
         Parameters
         ----------
