@@ -12,7 +12,6 @@ import copy
 import logging
 import os
 
-from collections import Counter, defaultdict
 from math import floor, log10
 from importlib import import_module
 from itertools import combinations
@@ -21,10 +20,7 @@ from multiprocessing import cpu_count
 import joblib
 import numpy as np
 import scipy.sparse as sp
-from sklearn.model_selection import (GridSearchCV,
-                                     KFold,
-                                     ShuffleSplit,
-                                     StratifiedKFold)
+from sklearn.model_selection import GridSearchCV
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (AdaBoostClassifier,
                               AdaBoostRegressor,
@@ -54,9 +50,6 @@ from sklearn.linear_model import (BayesianRidge,
                                   SGDRegressor,
                                   TheilSenRegressor)
 from sklearn.linear_model._base import LinearModel
-from sklearn.metrics import (accuracy_score,
-                             confusion_matrix,
-                             precision_recall_fscore_support)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -68,21 +61,28 @@ from sklearn.utils import shuffle as sk_shuffle
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import safe_float
-from skll.metrics import SCORERS, use_score_func
+from skll.metrics import SCORERS
 from skll.utils.constants import (CORRELATION_METRICS,
                                   KNOWN_REQUIRES_DENSE,
                                   KNOWN_DEFAULT_PARAM_GRIDS,
                                   MAX_CONCURRENT_PROCESSES)
 from skll.version import VERSION
 
-from .utils import (Densifier,
+from .utils import (add_unseen_labels,
+                    get_predictions,
+                    compute_evaluation_metrics,
+                    compute_num_folds_from_example_counts,
+                    Densifier,
                     FilteredLeaveOneGroupOut,
                     get_acceptable_classification_metrics,
                     get_acceptable_regression_metrics,
                     load_custom_learner,
                     rescaled,
                     SelectByMinCount,
-                    train_and_score)
+                    setup_cv_fold_iterator,
+                    setup_cv_split_iterator,
+                    train_and_score,
+                    write_predictions)
 
 # we need a list of learners requiring dense input and a dictionary of
 # default parameter grids that we can dynamically update in case we
@@ -752,8 +752,8 @@ class Learner(object):
               grid_jobs=None,
               shuffle=False):
         """
-        Train a classification model and return the model, score, feature
-        vectorizer, scaler, label dictionary, and inverse label dictionary.
+        Train the model underlying the learner and return the grid search
+        score and a dictionary of grid search results.
 
         Parameters
         ----------
@@ -954,7 +954,10 @@ class Learner(object):
             # set up grid search folds
             if isinstance(grid_search_folds, int):
                 grid_search_folds = \
-                    self._compute_num_folds_from_example_counts(grid_search_folds, labels)
+                    compute_num_folds_from_example_counts(grid_search_folds,
+                                                          labels,
+                                                          self.model_type._estimator_type,
+                                                          logger=self.logger)
 
                 if not grid_jobs:
                     grid_jobs = grid_search_folds
@@ -1071,19 +1074,24 @@ class Learner(object):
 
         return grid_score, grid_cv_results
 
-    def evaluate(self, examples, prediction_prefix=None, append=False,
-                 grid_objective=None, output_metrics=[]):
+    def evaluate(self,
+                 examples,
+                 prediction_prefix=None,
+                 append=False,
+                 grid_objective=None,
+                 output_metrics=[]):
         """
         Evaluates a given model on a given dev or test ``FeatureSet``.
 
         Parameters
         ----------
         examples : skll.FeatureSet
-            The ``FeatureSet`` instance to evaluate the performance of the model on.
+            The ``FeatureSet`` instance to evaluate the performance of the
+            model on.
         prediction_prefix : str, optional
-            If saving the predictions, this is the
-            prefix that will be used for the filename.
-            It will be followed by ``"_predictions.tsv"``
+            If not ``None``, predictions will also be written out to a file with
+            the name  ``<prediction_prefix>_predictions.tsv``. Note that
+            the prefix can also contain a path.
             Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if
@@ -1104,10 +1112,8 @@ class Learner(object):
             The confusion matrix, the overall accuracy, the per-label
             PRFs, the model parameters, the grid search objective
             function score, and the additional evaluation metrics, if any.
+            For regressors, the first two elements are ``None``.
         """
-        # initialize a dictionary that will hold all of the metric scores
-        metric_scores = {metric: None for metric in output_metrics}
-
         # are we in a regressor or a classifier
         estimator_type = self.model_type._estimator_type
 
@@ -1115,180 +1121,101 @@ class Learner(object):
         # are either class indices or class probabilities
         yhat = self.predict(examples,
                             prediction_prefix=prediction_prefix,
-                            append=append)
+                            append=append,
+                            class_labels=False)
 
-        # if we are a classifier and in probability mode, then
-        # `yhat` are probabilities so we need to compute the
-        # class indices separately and save them too
-        if self.probability and estimator_type == 'classifier':
-            yhat_probs = yhat
-            yhat = np.argmax(yhat_probs, axis=1)
-        # if we are a regressor or classifier not in probability
-        # mode, then we have the class indices already and there
-        # are no probabilities
-        else:
-            yhat_probs = None
-
-        # convert the true class labels to indices too for consistency
-        # if we are a classifier
-        if estimator_type == 'classifier':
-            test_label_list = np.unique(examples.labels).tolist()
-
-            # identify unseen test labels if any and add a new dictionary
-            # for these  labels
-            unseen_test_label_list = [label for label in test_label_list
-                                      if label not in self.label_list]
-            unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
-                                                                    start=len(self.label_list))}
-            # combine the two dictionaries
-            train_and_test_label_dict = self.label_dict.copy()
-            train_and_test_label_dict.update(unseen_label_dict)
-            ytest = np.array([train_and_test_label_dict[label]
-                              for label in examples.labels])
-        # we are a regressor, so we do not need to do anything else
-        else:
-            ytest = examples.labels
-
-        # compute the acceptable metrics for our current prediction scenario
-        label_type = examples.labels.dtype.type
+        # for classifiers, convert class labels indices for consistency
+        # but account for any unseen labels in the test set that may not
+        # have occurred in the training data at all; then get acceptable
+        # metrics based on the type of labels we have
         if estimator_type == 'classifier':
             sorted_unique_labels = np.unique(examples.labels)
+            test_label_list = sorted_unique_labels.tolist()
+            train_and_test_label_dict = add_unseen_labels(self.label_dict,
+                                                          test_label_list)
+            ytest = np.array([train_and_test_label_dict[label]
+                              for label in examples.labels])
             acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
+        # for regressors we do not need to do anything special to the labels
         else:
+            train_and_test_label_dict = None
+            ytest = examples.labels
             acceptable_metrics = get_acceptable_regression_metrics()
 
         # check that all of the output metrics are acceptable
         unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
         if unacceptable_metrics:
+            label_type = examples.labels.dtype.type
             raise ValueError("The following metrics are not valid "
                              "for this learner ({}) with these labels of "
                              "type {}: {}".format(self._model_type.__name__,
                                                   label_type.__name__,
                                                   list(unacceptable_metrics)))
 
-        # if metrics has the objective in it, we will only output
-        # that function once as an objective and not include it
-        # in the list of additional metrics printed out
-        if len(output_metrics) > 0 and grid_objective in output_metrics:
-            self.logger.warning('The grid objective "{}" is also specified '
-                                'as an evaluation metric. Since its value is '
-                                'already included in the results as the '
-                                'objective score, it will not be printed '
-                                'again in the list of metrics.'.format(grid_objective))
-            output_metrics = [metric for metric in output_metrics
-                              if metric != grid_objective]
+        # get the values of the evaluation metrics
+        (conf_matrix,
+         accuracy,
+         result_dict,
+         objective_score,
+         metric_scores) = compute_evaluation_metrics(output_metrics,
+                                                     ytest,
+                                                     yhat,
+                                                     estimator_type,
+                                                     label_dict=train_and_test_label_dict,
+                                                     grid_objective=grid_objective,
+                                                     probability=self.probability,
+                                                     logger=self.logger)
 
-        # make a single list of metrics including the grid objective
-        # since it's easier to compute everything together
-        metrics_to_compute = [grid_objective] + output_metrics
-        for metric in metrics_to_compute:
-
-            # skip the None if we are not doing grid search
-            if not metric:
-                continue
-
-            # CASE 1: in probability mode for classification which means we
-            # need to either use the probabilities directly or infer the labels
-            # from them depending on the metric
-            if self.probability:
-
-                # there are three possible cases here:
-                # (a) if we are using a correlation metric or
-                #     `average_precision` or `roc_auc` in a binary
-                #      classification scenario, then we need to explicitly
-                #     pass in the probabilities of the positive class.
-                # (b) if we are using `neg_log_loss`, then we
-                #     just pass in the full probability array
-                # (c) we compute the most likely labels from the
-                #     probabilities via argmax and use those
-                #     for all other metrics
-                if (len(self.label_list) == 2 and
-                        (metric in CORRELATION_METRICS or
-                         metric in ['average_precision', 'roc_auc']) and
-                        metric != grid_objective):
-                    self.logger.info('using probabilities for the positive class to '
-                                     'compute "{}" for evaluation.'.format(metric))
-                    yhat_for_metric = yhat_probs[:, 1]
-                elif metric == 'neg_log_loss':
-                    yhat_for_metric = yhat_probs
-                else:
-                    yhat_for_metric = yhat
-
-            # CASE 2: no probability mode for classifier or regressor
-            # in which case we just use the predictions as they are
-            else:
-                yhat_for_metric = yhat
-
-            try:
-                metric_scores[metric] = use_score_func(metric, ytest, yhat_for_metric)
-            except ValueError:
-                metric_scores[metric] = float('NaN')
-
-        # now separate out the grid objective score from the additional metric scores
-        # if a grid objective was actually passed in. If no objective was passed in
-        # then that score should just be none.
-        objective_score = None
-        additional_scores = metric_scores.copy()
-        if grid_objective:
-            objective_score = metric_scores[grid_objective]
-            del additional_scores[grid_objective]
-
-        if estimator_type == 'regressor':
-            result_dict = {'descriptive': defaultdict(dict)}
-            for table_label, y in zip(['actual', 'predicted'], [ytest, yhat]):
-                result_dict['descriptive'][table_label]['min'] = min(y)
-                result_dict['descriptive'][table_label]['max'] = max(y)
-                result_dict['descriptive'][table_label]['avg'] = np.mean(y)
-                result_dict['descriptive'][table_label]['std'] = np.std(y)
-            result_dict['pearson'] = use_score_func('pearson', ytest, yhat)
-            res = (None, None, result_dict, self._model.get_params(), objective_score,
-                   additional_scores)
-        else:
-            # compute the confusion matrix and precision/recall/f1
-            # note that we are using the labels indices here
-            # and not the actual class labels themselves
-            num_labels = len(train_and_test_label_dict)
-            conf_mat = confusion_matrix(ytest, yhat,
-                                        labels=list(range(num_labels)))
-            # Calculate metrics
-            overall_accuracy = accuracy_score(ytest, yhat)
-            result_matrix = precision_recall_fscore_support(
-                ytest, yhat, labels=list(range(num_labels)), average=None)
-
-            # Store results
-            result_dict = defaultdict(dict)
-            for actual_label in sorted(train_and_test_label_dict):
-                col = train_and_test_label_dict[actual_label]
-                result_dict[actual_label]["Precision"] = result_matrix[0][col]
-                result_dict[actual_label]["Recall"] = result_matrix[1][col]
-                result_dict[actual_label]["F-measure"] = result_matrix[2][col]
-
-            res = (conf_mat.tolist(), overall_accuracy, result_dict,
-                   self._model.get_params(), objective_score,
-                   additional_scores)
+        # add in the model parameters and return
+        model_params = self.model.get_params()
+        res = (conf_matrix, accuracy, result_dict, model_params,
+               objective_score, metric_scores)
         return res
 
-    def predict(self, examples, prediction_prefix=None, append=False,
-                class_labels=False):
+    def predict(self,
+                examples,
+                prediction_prefix=None,
+                append=False,
+                class_labels=True):
         """
-        Uses a given model to generate predictions on a given ``FeatureSet``.
+        Uses a given model to return, and optionally, write out predictions
+        on a given ``FeatureSet`` to a file.
+
+        For regressors, the returned and written-out predictions are identical.
+        However, for classifiers:
+        - if ``class_labels`` is ``True``, class labels are returned
+          as well as written out.
+        - if ``class_labels`` is ``False`` and the classifier is probabilistic
+          (i.e., ``self..probability`` is ``True``), class probabilities are
+          returned as well as written out.
+        - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
+          (i.e., ``self..probability`` is ``False``), class indices are returned
+          and class labels are written out.
+
+        TL;DR: for regressors, just ignore ``class_labels``. For classfiers,
+        set it to ``True`` to get class labels and ``False`` to get class
+        probabilities.
 
         Parameters
         ----------
         examples : skll.FeatureSet
             The ``FeatureSet`` instance to predict labels for.
         prediction_prefix : str, optional
-            If saving the predictions, this is the prefix that will be used for
-            the filename. It will be followed by ``"_predictions.tsv"``
+            If not ``None``, predictions will also be written out to a file with
+            the name  ``<prediction_prefix>_predictions.tsv``. For classifiers,
+            the predictions written out are class labels unless the learner is
+            probabilistic AND ``class_labels`` is set to ``False``. Note that
+            this prefix can also contain a path.
             Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
         class_labels : bool, optional
-            For classifier, should we convert class indices to their (str) labels
-            for the returned array? Note that class labels are always written out
-            to disk.
-            Defaults to ``False``.
+            If ``False``, return either the class probabilities (probabilistic
+            classifiers) or the class indices (non-probabilistic ones). If
+            ``True``, return the class labels no matter what. Ignored for
+            regressors.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -1297,8 +1224,13 @@ class Learner(object):
 
         Raises
         ------
+        AssertionError
+            If invalid predictions are being returned or written out.
         MemoryError
             If process runs out of memory when converting to dense.
+        RuntimeError
+            If there is a mismatch between the learner vectorizer
+            and the test set vectorizer.
         """
         example_ids = examples.ids
 
@@ -1415,98 +1347,47 @@ class Learner(object):
                     xtest = xtest.todense()
             xtest = self.sampler.fit_transform(xtest)
 
-        # make the prediction on the test data
+        # get the various prediction from this learner on these features
+        prediction_dict = get_predictions(self, xtest)
+
+        # for classifiers ...
+        if self.model_type._estimator_type == "classifier":
+
+            # return and write class labels if they were explicitly asked for
+            if class_labels:
+                to_return = to_write = prediction_dict["labels"]
+            else:
+                # return and write probabilities
+                if self.probability:
+                    to_return = to_write = prediction_dict["probabilities"]
+                # return class indices and write labels
+                else:
+                    to_return = prediction_dict["raw"]
+                    to_write = prediction_dict["labels"]
+
+        # for regressors, it's really simple
+        else:
+            to_write = to_return = prediction_dict["raw"]
+
+        # check that our predictions to write and return
+        # are not invalid; this should NEVER happen
         try:
-            yhat = (self._model.predict_proba(xtest)
-                    if (self.probability and
-                        not class_labels)
-                    else self._model.predict(xtest))
-        except NotImplementedError as e:
-            self.logger.error("Model type: {}\n"
-                              "Model: {}\n"
-                              "Probability: {}\n".format(self._model_type.__name__,
-                                                         self._model,
-                                                         self.probability))
-            raise e
+            assert to_return is not None
+            assert to_write is not None
+        except AssertionError:
+            raise AssertionError("invalid predictions generated")
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            prediction_file = '{}_predictions.tsv'.format(prediction_prefix)
-            with open(prediction_file,
-                      "w" if not append else "a") as predictionfh:
-                # header
-                if not append:
-                    # Output probabilities if we're asked (and able)
-                    if self.probability:
-                        print('\t'.join(["id"] +
-                                        [str(x) for x in self.label_list]),
-                              file=predictionfh)
-                    else:
-                        print('id\tprediction', file=predictionfh)
+            write_predictions(example_ids,
+                              to_write,
+                              prediction_prefix,
+                              self.model_type._estimator_type,
+                              append=append,
+                              label_list=self.label_list,
+                              probability=self.probability)
 
-                if self.probability:
-                    for example_id, class_probs in zip(example_ids, yhat):
-                        print('\t'.join([str(example_id)] +
-                                        [str(x) for x in class_probs]),
-                              file=predictionfh)
-                else:
-                    if self.model_type._estimator_type == 'regressor':
-                        for example_id, pred in zip(example_ids, yhat):
-                            print('{0}\t{1}'.format(example_id, pred),
-                                  file=predictionfh)
-                    else:
-                        for example_id, pred in zip(example_ids, yhat):
-                            print('%s\t%s' % (example_id,
-                                              self.label_list[int(pred)]),
-                                  file=predictionfh)
-
-        if (class_labels and
-                self.model_type._estimator_type == 'classifier'):
-            yhat = np.array([self.label_list[int(pred)] for pred in yhat])
-
-        return yhat
-
-    def _compute_num_folds_from_example_counts(self, cv_folds, labels):
-        """
-        Calculate the number of folds we should use for cross validation, based
-        on the number of examples we have for each label.
-
-        Parameters
-        ----------
-        cv_folds : int
-            The number of cross-validation folds.
-        labels : list
-            The example labels.
-
-        Returns
-        -------
-        cv_folds : int
-            The number of folds to use, based on the number of examples
-            for each label.
-
-        Raises
-        ------
-        AssertionError
-            If ```cv_folds``` is not an integer.
-        ValueError
-            If the training set has less than or equal to one label(s).
-        """
-        assert isinstance(cv_folds, int)
-
-        # For regression models, we can just return the current cv_folds
-        if self.model_type._estimator_type == 'regressor':
-            return cv_folds
-
-        min_examples_per_label = min(Counter(labels).values())
-        if min_examples_per_label <= 1:
-            raise ValueError(('The training set has only {} example for a' +
-                              ' label.').format(min_examples_per_label))
-        if min_examples_per_label < cv_folds:
-            self.logger.warning('The minimum number of examples per label was {}. '
-                                'Setting the number of cross-validation folds to '
-                                'that value.'.format(min_examples_per_label))
-            cv_folds = min_examples_per_label
-        return cv_folds
+        return to_return
 
     def cross_validate(self,
                        examples,
@@ -1534,7 +1415,7 @@ class Learner(object):
             Should we stratify the folds to ensure an even
             distribution of labels for each fold?
             Defaults to ``True``.
-        cv_folds : int, optional
+        cv_folds : int or dict, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
@@ -1610,7 +1491,7 @@ class Learner(object):
         Raises
         ------
         ValueError
-            If labels are not encoded as strings.
+            If classification labels are not properly encoded as strings.
         """
 
         # Seed the random number generator so that randomized algorithms are
@@ -1622,7 +1503,7 @@ class Learner(object):
         # an exception since the stratified splitting in sklearn does not
         # work with continuous labels. Note that although using random folds
         # _will_ work, we want to raise an error in general since it's better
-        # to encode the labels as strings anyway.
+        # to encode the labels as strings anyway for classification problems.
         if (self.model_type._estimator_type == 'classifier' and
                 type_of_target(examples.labels) not in ['binary', 'multiclass']):
             raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
@@ -1657,70 +1538,40 @@ class Learner(object):
         self._train_setup(examples)
 
         # Set up the cross-validation iterator.
-        if isinstance(cv_folds, int):
-            cv_folds = self._compute_num_folds_from_example_counts(cv_folds,
-                                                                   examples.labels)
+        kfold, cv_groups = setup_cv_fold_iterator(cv_folds,
+                                                  examples,
+                                                  self.model_type._estimator_type,
+                                                  stratified=stratified,
+                                                  logger=self.logger)
 
-            stratified = (stratified and
-                          self.model_type._estimator_type == 'classifier')
-            if stratified:
-                kfold = StratifiedKFold(n_splits=cv_folds)
-                cv_groups = None
-            else:
-                kfold = KFold(n_splits=cv_folds)
-                cv_groups = None
-        # Otherwise cv_folds is a dict
-        else:
-            # if we have a mapping from IDs to folds, use it for the overall
-            # cross-validation as well as the grid search within each
-            # training fold.  Note that this means that the grid search
-            # will use K-1 folds because the Kth will be the test fold for
-            # the outer cross-validation.
-            dummy_label = next(iter(cv_folds.values()))
-            fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
-            # Only retain IDs within folds if they're in cv_folds
-            kfold = FilteredLeaveOneGroupOut(cv_folds,
-                                             examples.ids,
-                                             logger=self.logger)
-            cv_groups = fold_groups
-
-            # If we are planning to do grid search, set the grid search folds
-            # to be the same as the custom cv folds unless a flag is set that
-            # explicitly tells us not to. Note that this should only happen
-            # when we are using the API; otherwise the configparser should
-            # take care of this even before this method is called
+        # When using custom CV folds (a dictionary), if we are planning to do
+        # grid search, set the grid search folds to be the same as the custom
+        # cv folds unless a flag is set that explicitly tells us not to.
+        # Note that this should only happen when we are using the API; otherwise
+        # the configparser should take care of this even before this method is called
+        if isinstance(cv_folds, dict):
             if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
                 self.logger.warning("The specified custom folds will be used for "
                                     "the inner grid search.")
                 grid_search_folds = cv_folds
 
-        # Save the cross-validation fold information, if required
-        # The format is that the test-fold that each id appears in is stored
-        skll_fold_ids = None
-        if save_cv_folds:
-            skll_fold_ids = {}
-            for fold_num, (_, test_indices) in enumerate(kfold.split(examples.features,
-                                                                     examples.labels,
-                                                                     cv_groups)):
-                for index in test_indices:
-                    skll_fold_ids[examples.ids[index]] = str(fold_num)
-
-        # handle each fold separately and accumulate the predictions and the
-        # numbers
+        # handle each fold separately & accumulate the predictions and results
         results = []
         grid_search_scores = []
         grid_search_cv_results_dicts = []
         append_predictions = False
         models = [] if save_cv_models else None
-        for train_index, test_index in kfold.split(examples.features,
-                                                   examples.labels,
-                                                   cv_groups):
+        skll_fold_ids = {} if save_cv_folds else None
+        for fold_num, (train_indices,
+                       test_indices) in enumerate(kfold.split(examples.features,
+                                                              examples.labels,
+                                                              cv_groups)):
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
             train_set = FeatureSet(examples.name,
-                                   examples.ids[train_index],
-                                   labels=examples.labels[train_index],
-                                   features=examples.features[train_index],
+                                   examples.ids[train_indices],
+                                   labels=examples.labels[train_indices],
+                                   features=examples.features[train_indices],
                                    vectorizer=examples.vectorizer)
 
             (grid_search_score,
@@ -1740,9 +1591,9 @@ class Learner(object):
 
             # Evaluate model
             test_tuple = FeatureSet(examples.name,
-                                    examples.ids[test_index],
-                                    labels=examples.labels[test_index],
-                                    features=examples.features[test_index],
+                                    examples.ids[test_indices],
+                                    labels=examples.labels[test_indices],
+                                    features=examples.features[test_indices],
                                     vectorizer=examples.vectorizer)
             results.append(self.evaluate(test_tuple,
                                          prediction_prefix=prediction_prefix,
@@ -1750,6 +1601,11 @@ class Learner(object):
                                          grid_objective=grid_objective,
                                          output_metrics=output_metrics))
             append_predictions = True
+
+            # save the fold number for each test ID if we were asked to
+            if save_cv_folds:
+                for index in test_indices:
+                    skll_fold_ids[examples.ids[index]] = str(fold_num)
 
         # return list of results/outputs for all folds
         return (results,
@@ -1772,7 +1628,7 @@ class Learner(object):
         ----------
         examples : skll.FeatureSet
             The ``FeatureSet`` instance to generate the learning curve on.
-        cv_folds : int, optional
+        cv_folds : int or dict, optional
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
@@ -1803,35 +1659,23 @@ class Learner(object):
             The numbers of training examples used to generate
             the curve
         """
-
-        # Seed the random number generator so that randomized algorithms are
-        # replicable.
-        random_state = np.random.RandomState(123456789)
-
         # Call train setup before since we need to train
         # the learner eventually
         self._create_label_dict(examples)
         self._train_setup(examples)
 
-        # Set up the cross-validation iterator with 20% of the data
-        # always reserved for testing
-        cv = ShuffleSplit(n_splits=cv_folds,
-                          test_size=0.2,
-                          random_state=random_state)
-        cv_iter = list(cv.split(examples.features, examples.labels, None))
-        n_max_training_samples = len(cv_iter[0][0])
+        # set up the CV split iterator over the train/test featuresets
+        # which also returns the maximum number of training examples
+        (featureset_iter,
+         n_max_training_samples) = setup_cv_split_iterator(cv_folds, examples)
 
-        # Get the _translate_train_sizes() function from scikit-learn
+        # Get the `_translate_train_sizes()` function from scikit-learn
         # since we need it to get the right list of sizes after cross-validation
         _module = import_module('sklearn.model_selection._validation')
         _translate_train_sizes = getattr(_module, '_translate_train_sizes')
         train_sizes_abs = _translate_train_sizes(train_sizes,
                                                  n_max_training_samples)
         n_unique_ticks = train_sizes_abs.shape[0]
-
-        # Create an iterator over train/test featuresets based on the
-        # cross-validation index iterator
-        featureset_iter = (FeatureSet.split_by_ids(examples, train, test) for train, test in cv_iter)
 
         # Limit the number of parallel jobs for this
         # to be no higher than five or the number of cores

@@ -110,7 +110,7 @@ def main(argv=None):
             else:
                 pos_label_str = [label for label in learner.label_dict if learner.label_dict[label] == 1][0]
             neg_label_str = [label for label in learner.label_list if label != pos_label_str][0]
-            logger.info("{} is the label for the positive class.")
+            logger.info(f"{pos_label_str} is the label for the positive class.")
 
     # if we want to choose labels by thresholding the probabilities,
     # make sure that the learner is probabilistic AND binary first
@@ -142,9 +142,9 @@ def main(argv=None):
         # make sure each file extension is one we can process
         input_extension = os.path.splitext(input_file)[1].lower()
         if input_extension not in EXT_TO_READER:
-            logger.error(('Input file must be in either .arff, .csv, '
-                          '.jsonlines, .libsvm, .ndj, or .tsv format. '
-                          ' Skipping file {}').format(input_file))
+            logger.error(f"Input file must be in either .arff, .csv, "
+                         f".jsonlines, .libsvm, .ndj, or .tsv format. "
+                         f" Skipping file {input_file}")
             continue
         else:
             # read in the file into a featureset
@@ -199,7 +199,7 @@ def main(argv=None):
             for j, prediction in enumerate(predictions):
                 id_ = feature_set.ids[j]
                 prediction_str = "\t".join([str(p) for p in prediction]) if isinstance(prediction, (np.ndarray, list)) else prediction
-                print("{}\t{}".format(id_, prediction_str), file=outputfh)
+                print(f"{id_}\t{prediction_str}", file=outputfh)
 
             # close the file if we had opened one
             if args.output_file:
