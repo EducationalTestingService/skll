@@ -183,7 +183,7 @@ class SelectByMinCount(SelectKBest):
 
 def add_unseen_labels(train_label_dict, test_label_list):
     """
-    Merge test set labels that not seen in the training data with seen ones.
+    Merge test set labels that are not seen in the training data with seen ones.
 
     Parameters
     ----------
@@ -195,7 +195,7 @@ def add_unseen_labels(train_label_dict, test_label_list):
     Returns
     -------
     train_and_test_label_dict : dict
-        Dictionary mapping merged lables from both the training and test set
+        Dictionary mapping merged labels from both the training and test sets
         to indices.
     """
     # get the list of labels that were in the training set
@@ -206,7 +206,7 @@ def add_unseen_labels(train_label_dict, test_label_list):
                               if label not in train_label_list]
 
     # create a new dictionary for these unseen labels with label indices
-    # for them starting _after_  those for the training set labels
+    # for them starting _after_ those for the training set labels
     unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
                                                             start=len(train_label_list))}
 
@@ -239,7 +239,7 @@ def compute_evaluation_metrics(metrics,
     model_type : str
         One of "classifier" or "regressor".
     label_dict : dict, optional
-        Dictionary mapping classes labels to indices for classification.
+        Dictionary mapping class labels to indices for classification.
         Defaults to ``None``.
     grid_objective : str, optional
         The objective used for tuning the hyper-parameters of the model
@@ -386,7 +386,7 @@ def compute_num_folds_from_example_counts(cv_folds,
                                           model_type,
                                           logger=None):
     """
-    Calculate the number of folds we should use for cross validation, based
+    Calculate the number of folds we should use for cross-validation, based
     on the number of examples we have for each label.
 
     Parameters
@@ -412,7 +412,7 @@ def compute_num_folds_from_example_counts(cv_folds,
     ------
     ValueError
         If ``cv_folds`` is not an integer or if the training set has
-        less than or equal to one label(s) for classification.
+        fewer than 2 examples associated with a label (for classification).
     """
     try:
         assert isinstance(cv_folds, int)
