@@ -220,7 +220,7 @@ def _classify_featureset(args):
                                                     train_set_name,
                                                     featureset))
         else:  # predict
-            logger.info("Training on {}, Making predictions about {}, "
+            logger.info("Training on {}, Making predictions on {}, "
                         "feature set {} ...".format(train_set_name,
                                                     test_set_name,
                                                     featureset))
@@ -411,8 +411,11 @@ def _classify_featureset(args):
                                                  output_metrics=output_metrics)]
             elif task == 'predict':
                 logger.info("Writing predictions")
+                # we set `class_labels` to `False` so that if the learner is
+                # probabilistic, probabilities are written instead of labels
                 learner.predict(test_examples,
-                                prediction_prefix=prediction_prefix)
+                                prediction_prefix=prediction_prefix,
+                                class_labels=False)
             # do nothing here for train
 
         end_timestamp = datetime.datetime.now()

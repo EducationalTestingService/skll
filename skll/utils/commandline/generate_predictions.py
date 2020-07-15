@@ -142,9 +142,9 @@ def main(argv=None):
         # make sure each file extension is one we can process
         input_extension = os.path.splitext(input_file)[1].lower()
         if input_extension not in EXT_TO_READER:
-            logger.error((f"Input file must be in either .arff, .csv, "
-                          f".jsonlines, .libsvm, .ndj, or .tsv format. "
-                          f" Skipping file {input_file}"))
+            logger.error(f"Input file must be in either .arff, .csv, "
+                         f".jsonlines, .libsvm, .ndj, or .tsv format. "
+                         f" Skipping file {input_file}")
             continue
         else:
             # read in the file into a featureset

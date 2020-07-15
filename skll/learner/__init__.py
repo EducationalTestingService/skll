@@ -69,6 +69,7 @@ from skll.utils.constants import (CORRELATION_METRICS,
 from skll.version import VERSION
 
 from .utils import (add_unseen_labels,
+                    get_predictions,
                     compute_evaluation_metrics,
                     compute_num_folds_from_example_counts,
                     Densifier,
@@ -1120,7 +1121,8 @@ class Learner(object):
         # are either class indices or class probabilities
         yhat = self.predict(examples,
                             prediction_prefix=prediction_prefix,
-                            append=append)
+                            append=append,
+                            class_labels=False)
 
         # for classifiers, convert class labels indices for consistency
         # but account for any unseen labels in the test set that may not
@@ -1174,7 +1176,7 @@ class Learner(object):
                 examples,
                 prediction_prefix=None,
                 append=False,
-                class_labels=False):
+                class_labels=True):
         """
         Uses a given model to return, and optionally, write out predictions
         on a given ``FeatureSet`` to a file.
@@ -1188,8 +1190,11 @@ class Learner(object):
           returned as well as written out.
         - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
           (i.e., ``self..probability`` is ``False``), class indices are returned
-          and class labels are written out. This option is generally only
-          meant for SKLL-internal use.
+          and class labels are written out.
+
+        TL;DR: for regressors, just ignore ``class_labels``. For classfiers,
+        set it to ``True`` to get class labels and ``False`` to get class
+        probabilities.
 
         Parameters
         ----------
@@ -1197,17 +1202,20 @@ class Learner(object):
             The ``FeatureSet`` instance to predict labels for.
         prediction_prefix : str, optional
             If not ``None``, predictions will also be written out to a file with
-            the name  ``<prediction_prefix>_predictions.tsv``. Note that
-            the prefix can also contain a path.
+            the name  ``<prediction_prefix>_predictions.tsv``. For classifiers,
+            the predictions written out are class labels unless the learner is
+            probabilistic AND ``class_labels`` is set to ``False``. Note that
+            this prefix can also contain a path.
             Defaults to ``None``.
         append : bool, optional
             Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
         class_labels : bool, optional
-            For classifiers, should we convert class indices to their (str) labels
-            for the returned array? Note that class labels are always written out
-            to disk.
-            Defaults to ``False``.
+            If ``False``, return either the class probabilities (probabilistic
+            classifiers) or the class indices (non-probabilistic ones). If
+            ``True``, return the class labels no matter what. Ignored for
+            regressors.
+            Defaults to ``True``.
 
         Returns
         -------
@@ -1216,8 +1224,13 @@ class Learner(object):
 
         Raises
         ------
+        AssertionError
+            If invalid predictions are being returned or written out.
         MemoryError
             If process runs out of memory when converting to dense.
+        RuntimeError
+            If there is a mismatch between the learner vectorizer
+            and the test set vectorizer.
         """
         example_ids = examples.ids
 
@@ -1334,56 +1347,47 @@ class Learner(object):
                     xtest = xtest.todense()
             xtest = self.sampler.fit_transform(xtest)
 
-        # make the prediction on the test data
-        try:
-            yhat = self._model.predict(xtest)
-            yhat_probs = self._model.predict_proba(xtest) if self.probability else None
-        except NotImplementedError as e:
-            self.logger.error("Model type: {}\n"
-                              "Model: {}\n"
-                              "Probability: {}\n".format(self._model_type.__name__,
-                                                         self._model,
-                                                         self.probability))
-            raise e
+        # get the various prediction from this learner on these features
+        prediction_dict = get_predictions(self, xtest)
 
-        # if it's a classifier
+        # for classifiers ...
         if self.model_type._estimator_type == "classifier":
 
-            # get the predicted class labels
-            classes = np.array([self.label_list[int(pred)] for pred in yhat])
-
-            # if `class_labels` is `True`, we write out AND return
-            # class labels irrespective of `self.probability`
+            # return and write class labels if they were explicitly asked for
             if class_labels:
-                predictions_to_write = classes
-                predictions_to_return = classes
+                to_return = to_write = prediction_dict["labels"]
             else:
-                # if `class_labels` is `False` and `self.probability` is
-                # `True`, we write out AND return probabilities
+                # return and write probabilities
                 if self.probability:
-                    predictions_to_write = yhat_probs
-                    predictions_to_return = yhat_probs
-                # if `class_labels` is `False` and `self.probability` is
-                # `False`, we write out class labels AND return class indices
+                    to_return = to_write = prediction_dict["probabilities"]
+                # return class indices and write labels
                 else:
-                    predictions_to_write = classes
-                    predictions_to_return = yhat
+                    to_return = prediction_dict["raw"]
+                    to_write = prediction_dict["labels"]
+
         # for regressors, it's really simple
         else:
-            predictions_to_write = yhat
-            predictions_to_return = yhat
+            to_write = to_return = prediction_dict["raw"]
+
+        # check that our predictions to write and return
+        # are not invalid; this should NEVER happen
+        try:
+            assert to_return is not None
+            assert to_write is not None
+        except AssertionError:
+            raise AssertionError("invalid predictions generated")
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
             write_predictions(example_ids,
-                              predictions_to_write,
+                              to_write,
                               prediction_prefix,
                               self.model_type._estimator_type,
                               append=append,
                               label_list=self.label_list,
                               probability=self.probability)
 
-        return predictions_to_return
+        return to_return
 
     def cross_validate(self,
                        examples,
