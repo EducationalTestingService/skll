@@ -528,6 +528,7 @@ class VotingLearner(object):
             acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
         # for regressors we do not need to do anything special to the labels
         else:
+            train_and_test_label_dict = None
             ytest = examples.labels
             acceptable_metrics = get_acceptable_regression_metrics()
 
