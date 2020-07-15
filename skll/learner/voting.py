@@ -203,6 +203,14 @@ class VotingLearner(object):
         """
         return self._model_type
 
+    def _learning_curve_setup(self, examples):
+        """
+        Initial set-up for learning curve task
+        """
+        for learner in self.learners:
+            learner._create_label_dict(examples)
+            learner._train_setup(examples)
+
     def train(self,
               examples,
               param_grid_list=None,
@@ -806,6 +814,10 @@ class VotingLearner(object):
             The numbers of training examples used to generate
             the curve
         """
+        # Call learning curve before since we need to train
+        # which will properly initialize the underlying learners
+        # before they are eventually trained
+        self._learning_curve_setup(examples)
 
         # set up the CV split iterator over the train/test featuresets
         # which also returns the maximum number of training examples
