@@ -546,7 +546,6 @@ def get_acceptable_classification_metrics(label_array):
         # (e.g., [1.0, 2.0, 3.0]) are also acceptable.
         if contiguous_ints_or_floats(label_array):
             acceptable_metrics.update(WEIGHTED_KAPPA_METRICS)
-def get_acceptable_regression_metrics():
 
     # if there are any custom metrics registered, include them too
     if len(_CUSTOM_METRICS) > 0:
@@ -555,6 +554,7 @@ def get_acceptable_regression_metrics():
     return acceptable_metrics
 
 
+def get_acceptable_regression_metrics():
     """
     Return the set of metrics that are acceptable for regression.
     """
@@ -1020,6 +1020,12 @@ def train_and_score(learner,
     # get the train and test class indices (not labels)
     train_predictions = learner.predict(train_examples, class_labels=False)
     test_predictions = learner.predict(test_examples, class_labels=False)
+
+    # recall that voting learners return a tuple from `predict()`
+    if isinstance(train_predictions, tuple):
+        train_predictions = train_predictions[0]
+    if isinstance(test_predictions, tuple):
+        test_predictions = test_predictions[0]
 
     # now get the training and test labels and convert them to indices
     # but make sure to include any unseen labels in the test data
