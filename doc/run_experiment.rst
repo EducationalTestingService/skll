@@ -247,7 +247,7 @@ field in each section is provided below, but to summarize:
 *   A :ref:`list of classifiers/regressors <learners>` to try on your feature
     files is required.
 
-Example configuration files are available `here <https://github.com/EducationalTestingService/skll/tree/master/examples/>`__ under the ``boston``, ``iris``, and ``titanic`` sub-directories.
+Example configuration files are available `here <https://github.com/EducationalTestingService/skll/tree/main/examples/>`__ under the ``boston``, ``iris``, and ``titanic`` sub-directories.
 
 .. _general:
 

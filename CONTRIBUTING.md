@@ -29,7 +29,7 @@ How to contribute
 
           $ git checkout -b feature/my-new-addition
 
-   and start making changes. **Never work in the ``master`` branch!**
+   and start making changes. **Never work in the ``main`` branch!**
 
 6. During development, you can stage and commit your changes in git as follows: 
 
@@ -69,7 +69,7 @@ following rules before submitting a pull request:
    your PR after you submit it. The *same* comment will update after you make make any further commits so refer to it after every commit. You may want to install a linter in your development environment so that you can fix any PEP8 issues while you write your code. We generally ignore E501 messages about lines longer than 100 characters. 
 
 - You may need to add new tests if the code coverage after merging your branch 
-  will be lower than the current `master`. This will be reported by the `codecov` bot once you submit your PR.
+  will be lower than the current `main`. This will be reported by the `codecov` bot once you submit your PR.
 
 After submitting a pull request, it is recommended to add at least 2-3 reviewers to 
 review it. See [Requesting a pull request review](https://help.github.com/en/articles/requesting-a-pull-request-review) for more details. 
