@@ -26,21 +26,18 @@ The main Python code for the SKLL package lives inside the ``skll`` sub-director
 
 -  `__init__.py <https://github.com/EducationalTestingService/skll/blob/main/skll/__init__.py>`__ : Code used to initialize the ``skll`` Python
    package.
--  `config.py <https://github.com/EducationalTestingService/skll/blob/main/skll/config.py>`__ : Code to parse SKLL experiment configuration files.
--  `experiments.py <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments.py>`__ : Code that is related to creating and running
+-  `config/ <https://github.com/EducationalTestingService/skll/tree/main/skll/config>`__ : Code to parse SKLL experiment configuration files.
+-  `experiments/ <https://github.com/EducationalTestingService/skll/tree/main/skll/experiments>`__ : Code that is related to creating and running
    SKLL experiments. It also contains code that collects the various
    evaluation metrics and predictions for each SKLL experiment and
    writes them out to disk.
--  `learner.py <https://github.com/EducationalTestingService/skll/blob/main/skll/learner.py>`__ : Code for the ``Learner`` class. This class is
+-  `learner/ <https://github.com/EducationalTestingService/skll/tree/main/skll/learner>`__ : Code for the ``Learner`` class. This class is
    instantiated for every learner name specified in the experiment
    configuration file.
 -  `metrics.py <https://github.com/EducationalTestingService/skll/blob/main/skll/metrics.py>`__ : Code for any custom metrics that are not in
    ``sklearn.metrics``, e.g., ``kappa``, ``kendall_tau``,
    ``spearman``, etc.
--  `logutils.py <https://github.com/EducationalTestingService/skll/blob/main/skll/logutils.py>`__ : Code for a custom logging solution that allows
-   capturing any information logged to STDOUT/STDERR by SKLL and
-   scikit-learn to also be captured into log files that are then
-   saved on disk.
+-  `utils/ <https://github.com/EducationalTestingService/skll/tree/main/skll/utils>`__ : Code for a different utility functions and classes used throughout SKLL. 
 -  `version.py <https://github.com/EducationalTestingService/skll/blob/main/skll/version.py>`__ : Code to define the SKLL version. Only changed for
    new releases.
 -  `data/ <https://github.com/EducationalTestingService/skll/tree/main/skll/data>`__
@@ -57,25 +54,25 @@ The main Python code for the SKLL package lives inside the ``skll`` sub-director
    -  `dict_vectorizer.py <https://github.com/EducationalTestingService/skll/blob/main/skll/data/dict_vectorizer.py>`__ : Code for a ``DictVectorizer`` class that
       subclasses ``sklearn.feature_extraction.DictVectorizer`` to add an
       ``__eq__()`` method that we need for vectorizer equality.
--  `utilities/ <https://github.com/EducationalTestingService/skll/tree/main/skll/utilities>`__
+-  `commandline/ <https://github.com/EducationalTestingService/skll/tree/main/skll/utils/commandline/>`__
 
-   -  `compute_eval_from_predictions.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/compute_eval_from_predictions.py>`__ : See
+   -  `compute_eval_from_predictions.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/compute_eval_from_predictions.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/utilities.html#compute-eval-from-predictions>`__.
-   -  `filter_features.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/filter_features.py>`__ : See
+   -  `filter_features.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/filter_features.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/utilities.html#filter-features>`__.
-   -  `generate_predictions.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/generate_predictions.py>`__ : See
+   -  `generate_predictions.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/generate_predictions.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/utilities.html#generate-predictions>`__.
-   -  `join_features.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/join_features.py>`__ : See
+   -  `join_features.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/join_features.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/utilities.html#join-features>`__.
-   -  `plot_learning_curves.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/plot_learning_curves.py>`__ : See
+   -  `plot_learning_curves.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/plot_learning_curves.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/utilities.html#plot-learning-curves>`__.
-   -  `print_model_weights.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/print_model_weights.py>`__ : See
+   -  `print_model_weights.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/print_model_weights.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/utilities.html#print-model-weights>`__.
-   -  `run_experiment.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/run_experiment.py>`__ : See
+   -  `run_experiment.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/run_experiment.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/run_experiment.html#using-run-experiment>`__.
-   -  `skll_convert.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/skll_convert.py>`__ : See
+   -  `skll_convert.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/skll_convert.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/utilities.html#skll-convert>`__.
-   -  `summarize_results.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utilities/summarize_results.py>`__ : See
+   -  `summarize_results.py <https://github.com/EducationalTestingService/skll/blob/main/skll/utils/commandline/summarize_results.py>`__ : See
       `documentation <https://skll.readthedocs.io/en/latest/utilities.html#summarize-results>`__.
 
 -  `tests/ <https://github.com/EducationalTestingService/skll/tree/main/tests>`__
@@ -93,12 +90,12 @@ There are three main entry points into the SKLL codebase:
    ``run_experiment <config_file>``, the following happens (at a high level):
 
    -  the configuration file is handed off to the
-      `run_configuration() <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments.py#L989>`__ function in ``experiments.py``.
-   -  a `SKLLConfigParser <https://github.com/EducationalTestingService/skll/blob/main/skll/config.py#L34>`__ object is instantiated from ``config.py``
+      `run_configuration() <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments/__init__.py#L496>`__ function in ``experiments.py``.
+   -  a `SKLLConfigParser <https://github.com/EducationalTestingService/skll/blob/main/skll/config/__init__.py#L38>`__ object is instantiated from ``config.py``
       that parses all of the relevant fields out of the given
       configuration file.
    -  the configuration fields are then passed to the
-      `_classify_featureset() <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments.py#L449>`__ function in ``experiments.py`` which
+      `_classify_featureset() <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments/__init__.py#L61>`__ function in ``experiments.py`` which
       instantiates the learners (using code from ``learner.py``), the
       featuresets (using code from ``reader.py`` & ``featureset.py``),
       and runs the experiments, collects the results, and writes them
@@ -106,7 +103,7 @@ There are three main entry points into the SKLL codebase:
 
 2. **SKLL API**. Another way to interact with SKLL is via the SKLL API
    directly in your Python code rather than using configuration files.
-   For example, you could use the `Learner.from_file() <https://github.com/EducationalTestingService/skll/blob/main/skll/learner.py#L967>`__ method to load a saved model from disk and make predictions on new data. The
+   For example, you could use the `Learner.from_file() <https://github.com/EducationalTestingService/skll/blob/main/skll/learner/__init__.py#L309>`__ method to load a saved model from disk and make predictions on new data. The
    documentation for the SKLL API can be found
    `here <https://skll.readthedocs.io/en/latest/api.html>`__.
 
