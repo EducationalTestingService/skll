@@ -39,15 +39,15 @@ This document is only meant for the project administrators, not users and develo
 
 11. Draft a release on GitHub while the Linux and Windows package tester builds are running.
 
-12. Once both builds have passed, make a pull request with the release branch to be merged into ``master`` and request code review.
+12. Once both builds have passed, make a pull request with the release branch to be merged into ``main`` and request code review.
 
-13. Once the build for the PR passes and the reviewers approve, merge the release branch into ``master``.
+13. Once the build for the PR passes and the reviewers approve, merge the release branch into ``main``.
 
 14. Upload source and wheel packages to PyPI using ``python setup.py sdist upload`` and ``python setup.py bdist_wheel upload``
 
-15. Make sure that the ReadTheDocs build for ``master`` passes.
+15. Make sure that the ReadTheDocs build for ``main`` passes.
 
-16. Tag the latest commit in ``master`` with the appropriate release tag and publish the release on GitHub.
+16. Tag the latest commit in ``main`` with the appropriate release tag and publish the release on GitHub.
 
 17. Send an email around at ETS announcing the release and the changes.
 
