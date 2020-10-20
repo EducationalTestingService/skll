@@ -21,7 +21,7 @@ build:
     - run_experiment = skll.utilities.run_experiment:main
     - skll_convert = skll.utilities.skll_convert:main
     - summarize_results = skll.utilities.summarize_results:main
-    - compute_eval_from_predictions3 = skll.utilities.compute_eval_from_predictions:main
+    - compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main
     - filter_features = skll.utilities.filter_features:main
     - generate_predictions = skll.utilities.generate_predictions:main
     - join_features = skll.utilities.join_features:main
