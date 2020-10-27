@@ -10,17 +10,20 @@ Module for running tests with custom learners.
 
 import csv
 import os
+import re
 from glob import glob
 from os.path import abspath, dirname, exists, join
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 from nose.tools import raises
 from numpy.testing import assert_array_equal
+
 from skll.data import NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-
+from skll.utils.logging import (get_skll_logger)
 from tests.utils import fill_in_config_paths, make_classification_data
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
@@ -40,6 +43,9 @@ def setup():
     output_dir = join(_my_dir, 'output')
     if not exists(output_dir):
         os.makedirs(output_dir)
+    log_dir = join(_my_dir, 'log')
+    if not exists(log_dir):
+        os.makedirs(log_dir)
 
 
 def tearDown():
@@ -50,6 +56,7 @@ def tearDown():
     test_dir = join(_my_dir, 'test')
     output_dir = join(_my_dir, 'output')
     config_dir = join(_my_dir, 'configs')
+    log_dir = join(_my_dir, 'log')
 
     input_files = ['test_logistic_custom_learner.jsonlines',
                    'test_majority_class_custom_learner.jsonlines',
@@ -69,6 +76,9 @@ def tearDown():
                                   'test_majority_class_custom_learner_*')) +
                         glob(join(output_dir, 'test_model_custom_learner_*'))):
         os.unlink(output_file)
+
+    for log_file in glob(join(log_dir, '*')):
+        os.unlink(log_file)
 
 
 def read_predictions(path):
@@ -235,7 +245,6 @@ def test_custom_learner_api_bad_extension():
 def test_custom_learner_learning_curve_min_examples():
     """
     Test to check learning curve raises error with less than 500 examples
-    :return:
     """
     # generates a training split with less than 500 examples
     train_fs_less_than_500, _ = make_classification_data(num_examples=499,
@@ -246,5 +255,38 @@ def test_custom_learner_learning_curve_min_examples():
     learner = Learner('LogisticRegression')
 
     # this must throw an error because `examples` has less than 500 items
+    _ = learner.learning_curve(examples=train_fs_less_than_500, metric='accuracy')
+
+
+def test_custom_learner_learning_curve_min_examples_override():
+    """
+    Test to check learning curve displays warning with less than 500 examples
+    """
+
+    # creates a logger which writes to a temporary log file
+    log_dir = join(_my_dir, 'log')
+    log_file = NamedTemporaryFile("w", delete=False, dir=log_dir)
+    logger = get_skll_logger("test_custom_learner_learning_curve_min_examples_override",
+                             filepath=log_file.name)
+
+    # generates a training split with less than 500 examples
+    train_fs_less_than_500, _ = make_classification_data(num_examples=499,
+                                                         train_test_ratio=1.0,
+                                                         num_labels=3)
+
+    # creating an example learner
+    learner = Learner('LogisticRegression', logger=logger)
+
+    # this must throw an error because `examples` has less than 500 items
     _ = learner.learning_curve(examples=train_fs_less_than_500, metric='accuracy',
-                               override_minimum=False)
+                               override_minimum=True)
+
+    # checks that the learning_curve warning message is contained in the log file
+    with open(log_file.name) as tf:
+        log_text = tf.read()
+        learning_curve_warning_re = \
+            re.compile(r'Because the number of training examples provided - '
+                       r'\d+ - is less than the ideal minimum - \d+ - '
+                       r'learning curve generation is unreliable'
+                       r' and might break')
+        assert learning_curve_warning_re.search(log_text)
