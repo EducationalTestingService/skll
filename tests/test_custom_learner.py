@@ -229,3 +229,20 @@ def test_custom_learner_api_missing_file():
 def test_custom_learner_api_bad_extension():
     other_dir = join(_my_dir, 'other')
     _ = Learner('_CustomLogisticRegressionWrapper', custom_learner_path=join(other_dir, 'custom_learner.txt'))
+
+
+@raises(ValueError)
+def test_custom_learner_learning_curve_min_examples():
+    """
+    test to check that Learner.learning_curve raises an error
+    when the number of training examples provided is less than 500
+    :return:
+    """
+    # generates a training split with less than 500 examples
+    train_fs_less_than_500, _ = make_classification_data(num_examples=499, train_test_ratio=1.0, num_labels=3)
+
+    # creating an example learner
+    learner = Learner('LogisticRegression')
+
+    # this must throw an error because `examples` has less than 500 items
+    _ = learner.learning_curve(examples=train_fs_less_than_500, metric='accuracy', override_minimum=False)

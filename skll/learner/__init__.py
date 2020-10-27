@@ -1619,7 +1619,7 @@ class Learner(object):
                        metric,
                        cv_folds=10,
                        train_sizes=np.linspace(0.1, 1.0, 5),
-                       min_training_examples=500):
+                       override_minimum=False):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
@@ -1649,12 +1649,14 @@ class Learner(object):
             samples usually have to be big enough to contain
             at least one sample from each class.
             Defaults to  ``np.linspace(0.1, 1.0, 5)``.
-        min_training_examples : int, optional
-            The minimum number of `examples` in the FeatureSet
-            less than which an exception is raised, because
+        override_minimum : bool, optional
+            Should this be True, learning curve would be generated
+            even with less than ideal number of `examples` (500).
+            However, by default, if the number of `examples` in the FeatureSet is
+            less than 500, an exception is raised, because
             learning curves can be very unreliable
             for very small sizes esp. if you have > 2 labels.
-            Defaults to 500.
+            Defaults to False.
 
         Returns
         -------
@@ -1669,17 +1671,21 @@ class Learner(object):
         Raises
         ------
         ValueError
-            If the number of training `examples` is less than
-            min_training_examples (default: 500)
+            If the number of training `examples` is less than 500
         """
 
         # check that the number of training examples is more than the minimum
         # needed for generating a reliable learning curve
-        if len(examples) < min_training_examples:
-            raise ValueError("Number of training examples provided - {} - "
-                             "is less than the minimum needed - {} - "
-                             "for the learning curve to be reliable.".format(len(examples),
-                                                                             min_training_examples))
+        if len(examples) < 500:
+            if not override_minimum:
+                raise ValueError('Number of training examples provided - {} - '
+                                 'is less than the minimum needed - {} - '
+                                 'for the learning curve to be reliable.'.format(len(examples), 500))
+            else:
+                self.logger.warning('Because the number of training examples provided - {} '
+                                    'is less than the ideal minimum - {} - '
+                                    'learning curve generation is unreliable and might break'.format(len(examples), 500))
+
         # Call train setup before since we need to train
         # the learner eventually
         self._create_label_dict(examples)
