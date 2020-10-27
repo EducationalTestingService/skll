@@ -1650,14 +1650,12 @@ class Learner(object):
             at least one sample from each class.
             Defaults to  ``np.linspace(0.1, 1.0, 5)``.
         override_minimum : bool, optional
-            Should this be True, learning curve would be generated
-            even with less than ideal number of `examples` (500).
-            However, by default, if the number of training `examples`
-            in the provided FeatureSet is less than 500,
-            an exception is raised, because learning curves
-            can be very unreliable for very small sizes
-            esp. if you have > 2 labels.
-            Defaults to False.
+            Learning curves can be unreliable for very small sizes
+            esp. for > 2 labels. If this option is set to ``True``, the
+            learning curve would be generated even if the number
+            of example is less 500 along with a warning. If ``False``,
+            the curve is not generated and an exception is raised instead.
+            Defaults to ``False``.
 
         Returns
         -------
