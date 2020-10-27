@@ -1672,7 +1672,7 @@ class Learner(object):
         Raises
         ------
         ValueError
-            If the number of training `examples` is less than 500
+            If the number of examples is less than 500.
         """
 
         # check that the number of training examples is more than the minimum
