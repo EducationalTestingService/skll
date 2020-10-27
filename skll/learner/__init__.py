@@ -1618,7 +1618,8 @@ class Learner(object):
                        examples,
                        metric,
                        cv_folds=10,
-                       train_sizes=np.linspace(0.1, 1.0, 5)):
+                       train_sizes=np.linspace(0.1, 1.0, 5),
+                       min_training_examples=500):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
@@ -1648,6 +1649,12 @@ class Learner(object):
             samples usually have to be big enough to contain
             at least one sample from each class.
             Defaults to  ``np.linspace(0.1, 1.0, 5)``.
+        min_training_examples : int, optional
+            The minimum number of `examples` in the FeatureSet
+            less than which an exception is raised, because
+            learning curves can be very unreliable
+            for very small sizes esp. if you have > 2 labels.
+            Defaults to 500.
 
         Returns
         -------
@@ -1658,7 +1665,21 @@ class Learner(object):
         num_examples : list of int
             The numbers of training examples used to generate
             the curve
+
+        Raises
+        ------
+        ValueError
+            If the number of training `examples` is less than
+            min_training_examples (default: 500)
         """
+
+        # check that the number of training examples is more than the minimum
+        # needed for generating a reliable learning curve
+        if len(examples) < min_training_examples:
+            raise ValueError("Number of training examples provided - {} - "
+                             "is less than the minimum needed - {} - "
+                             "for the learning curve to be reliable.".format(len(examples),
+                                                                             min_training_examples))
         # Call train setup before since we need to train
         # the learner eventually
         self._create_label_dict(examples)
