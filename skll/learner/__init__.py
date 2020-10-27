@@ -1652,10 +1652,11 @@ class Learner(object):
         override_minimum : bool, optional
             Should this be True, learning curve would be generated
             even with less than ideal number of `examples` (500).
-            However, by default, if the number of `examples` in the FeatureSet is
-            less than 500, an exception is raised, because
-            learning curves can be very unreliable
-            for very small sizes esp. if you have > 2 labels.
+            However, by default, if the number of training `examples`
+            in the provided FeatureSet is less than 500,
+            an exception is raised, because learning curves
+            can be very unreliable for very small sizes
+            esp. if you have > 2 labels.
             Defaults to False.
 
         Returns
@@ -1680,11 +1681,13 @@ class Learner(object):
             if not override_minimum:
                 raise ValueError('Number of training examples provided - {} - '
                                  'is less than the minimum needed - {} - '
-                                 'for the learning curve to be reliable.'.format(len(examples), 500))
+                                 'for the learning curve to be reliable.'.format(len(examples),
+                                                                                 500))
             else:
                 self.logger.warning('Because the number of training examples provided - {} '
                                     'is less than the ideal minimum - {} - '
-                                    'learning curve generation is unreliable and might break'.format(len(examples), 500))
+                                    'learning curve generation is unreliable'
+                                    ' and might break'.format(len(examples), 500))
 
         # Call train setup before since we need to train
         # the learner eventually
