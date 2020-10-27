@@ -234,8 +234,7 @@ def test_custom_learner_api_bad_extension():
 @raises(ValueError)
 def test_custom_learner_learning_curve_min_examples():
     """
-    test to check that Learner.learning_curve raises an error
-    when the number of training examples provided is less than 500
+    Test to check learning curve raises error with less than 500 examples
     :return:
     """
     # generates a training split with less than 500 examples
