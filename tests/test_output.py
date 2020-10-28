@@ -25,7 +25,7 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 
-from nose.tools import eq_, ok_, assert_raises
+from nose.tools import eq_, ok_, assert_raises, raises
 
 from sklearn.datasets import load_digits
 from sklearn.model_selection import ShuffleSplit, learning_curve
@@ -36,14 +36,13 @@ from skll.experiments import run_configuration
 from skll.experiments.output import _compute_ylimits_for_featureset
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS, VALID_TASKS
-
+from skll.utils.logging import get_skll_logger, close_and_remove_logger_handlers
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_options,
                          fill_in_config_paths,
                          fill_in_config_paths_for_single_file,
                          make_classification_data,
                          make_regression_data)
-
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
@@ -89,8 +88,7 @@ def tearDown():
                 os.unlink(join(config_dir, cf))
 
         for output_file in glob(join(output_dir, 'test_{}_*'.format(suffix))) \
-            + glob(join(output_dir, 'test_{}.log'.format(suffix))) \
-                + glob(join(output_dir, 'test_majority_class_custom_learner_*')):
+                           + glob(join(output_dir, 'test_{}.log'.format(suffix))):
             os.unlink(output_file)
 
     for suffix in VALID_TASKS:
@@ -99,14 +97,17 @@ def tearDown():
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
 
-    for grid_search_cv_results_file in glob(join(output_dir, 'test_grid_search_cv_results_*.*')):
-        os.unlink(grid_search_cv_results_file)
-
     if exists(join(config_dir, 'test_send_warnings_to_log.cfg')):
         os.unlink(join(config_dir, 'test_send_warnings_to_log.cfg'))
-    for output_file in glob(join(output_dir,
-                                 'test_send_warnings_to_log*')):
-        os.unlink(output_file)
+
+    # adding all the suffix independent output patterns here that are not f'test_{SUFFIX}_*'
+    clean_up_output_file_name_patterns = ['test_majority_class_custom_learner_*',
+                                          'test_send_warnings_to_log*',
+                                          'test_grid_search_cv_results_*.*',
+                                          'test_check_override_learning_curve_min_examples*']
+    for file_name_pattern in clean_up_output_file_name_patterns:
+        for output_file in glob(join(output_dir, file_name_pattern)):
+            os.unlink(output_file)
 
     if exists("test_current_directory.model"):
         os.unlink("test_current_directory.model")
@@ -892,6 +893,59 @@ def test_learning_curve_ylimits():
     eq_(ylimits_dict['neg_mean_squared_error'][1], 0)
     eq_(ylimits_dict['r2'][0], 0)
     assert_almost_equal(ylimits_dict['r2'][1], 0.67, decimal=2)
+
+
+@raises(ValueError)
+def test_learning_curve_min_examples_check():
+    """
+    Test to check learning curve raises error with less than 500 examples
+    """
+    # generates a training split with less than 500 examples
+    train_fs_less_than_500, _ = make_classification_data(num_examples=499,
+                                                         train_test_ratio=1.0,
+                                                         num_labels=3)
+
+    # creating an example learner
+    learner = Learner('LogisticRegression')
+
+    # this must throw an error because `examples` has less than 500 items
+    _ = learner.learning_curve(examples=train_fs_less_than_500, metric='accuracy')
+
+
+def test_learning_curve_min_examples_check_override():
+    """
+    Test to check learning curve displays warning with less than 500 examples
+    """
+
+    # creates a logger which writes to a temporary log file
+    log_file_path = join(_my_dir, "output",
+                         "test_check_override_learning_curve_min_examples.log")
+    logger = get_skll_logger("test_learning_curve_min_examples_check_override",
+                             filepath=log_file_path)
+
+    # generates a training split with less than 500 examples
+    train_fs_less_than_500, _ = make_classification_data(num_examples=499,
+                                                         train_test_ratio=1.0,
+                                                         num_labels=3)
+
+    # creating an example learner
+    learner = Learner('LogisticRegression', logger=logger)
+
+    # this must throw an error because `examples` has less than 500 items
+    _ = learner.learning_curve(examples=train_fs_less_than_500, metric='accuracy',
+                               override_minimum=True)
+
+    # checks that the learning_curve warning message is contained in the log file
+    with open(log_file_path) as tf:
+        log_text = tf.read()
+        learning_curve_warning_re = \
+            re.compile(r'Because the number of training examples provided - '
+                       r'\d+ - is less than the ideal minimum - \d+ - '
+                       r'learning curve generation is unreliable'
+                       r' and might break')
+        assert learning_curve_warning_re.search(log_text)
+
+    close_and_remove_logger_handlers(logger)
 
 
 def check_pipeline_attribute(learner_name,
