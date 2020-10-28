@@ -36,7 +36,7 @@ from skll.experiments import run_configuration
 from skll.experiments.output import _compute_ylimits_for_featureset
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS, VALID_TASKS
-from skll.utils.logging import get_skll_logger
+from skll.utils.logging import get_skll_logger, close_and_remove_logger_handlers
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_options,
                          fill_in_config_paths,
@@ -100,11 +100,11 @@ def tearDown():
     if exists(join(config_dir, 'test_send_warnings_to_log.cfg')):
         os.unlink(join(config_dir, 'test_send_warnings_to_log.cfg'))
 
-    # adding all the suffix independent output patterns here
+    # adding all the suffix independent output patterns here that are not f'test_{SUFFIX}_*'
     clean_up_output_file_name_patterns = ['test_majority_class_custom_learner_*',
                                           'test_send_warnings_to_log*',
                                           'test_grid_search_cv_results_*.*',
-                                          'test_learning_curve_min_examples_check_override*']
+                                          'test_check_override_learning_curve_min_examples*']
     for file_name_pattern in clean_up_output_file_name_patterns:
         for output_file in glob(join(output_dir, file_name_pattern)):
             os.unlink(output_file)
@@ -919,7 +919,7 @@ def test_learning_curve_min_examples_check_override():
 
     # creates a logger which writes to a temporary log file
     log_file_path = join(_my_dir, "output",
-                         "test_learning_curve_min_examples_check_override.log")
+                         "test_check_override_learning_curve_min_examples.log")
     logger = get_skll_logger("test_learning_curve_min_examples_check_override",
                              filepath=log_file_path)
 
@@ -944,6 +944,8 @@ def test_learning_curve_min_examples_check_override():
                        r'learning curve generation is unreliable'
                        r' and might break')
         assert learning_curve_warning_re.search(log_text)
+
+    close_and_remove_logger_handlers(logger)
 
 
 def check_pipeline_attribute(learner_name,
