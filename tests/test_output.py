@@ -101,13 +101,13 @@ def tearDown():
         os.unlink(join(config_dir, 'test_send_warnings_to_log.cfg'))
 
     # adding all the suffix independent output patterns here
-    clean_up_output_file_path_patterns = ['test_majority_class_custom_learner_*',
+    clean_up_output_file_name_patterns = ['test_majority_class_custom_learner_*',
                                           'test_send_warnings_to_log*',
                                           'test_grid_search_cv_results_*.*',
-                                          'test_learning_curve_min_examples_check_override*'
-                                          ]
-    for output_file in [f for p in clean_up_output_file_path_patterns for f in glob(join(output_dir, p))]:
-        os.unlink(output_file)
+                                          'test_learning_curve_min_examples_check_override*']
+    for file_name_pattern in clean_up_output_file_name_patterns:
+        for output_file in glob(join(output_dir, file_name_pattern)):
+            os.unlink(output_file)
 
     if exists("test_current_directory.model"):
         os.unlink("test_current_directory.model")
