@@ -25,7 +25,7 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 
-from nose.tools import eq_, ok_, assert_raises
+from nose.tools import eq_, ok_, assert_raises, raises
 
 from sklearn.datasets import load_digits
 from sklearn.model_selection import ShuffleSplit, learning_curve
