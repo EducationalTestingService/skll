@@ -64,8 +64,8 @@ def test_get_skll_logger():
 
     with open(temp_file.name) as tempfh:
         log_lines = tempfh.readlines()
-        assert log_lines[0].endswith("INFO - {}\n".format(msg1))
-        assert log_lines[1].endswith("INFO - {}\n".format(msg2))
+        assert log_lines[0].endswith(f"INFO - {msg1}\n")
+        assert log_lines[1].endswith(f"INFO - {msg2}\n")
 
     close_and_remove_logger_handlers(logger)
 
@@ -94,14 +94,14 @@ def test_get_skll_logger_with_warning():
 
     with open(temp_file.name) as temp_file:
         log_lines = temp_file.readlines()
-        assert log_lines[0].endswith("INFO - {}\n".format(msg1))
+        assert log_lines[0].endswith(f"INFO - {msg1}\n")
         sklearn_warning_re = \
             re.compile(r"WARNING - [^\n]+sklearn.metrics._ranking.py:\d+: "
                        r"UndefinedMetricWarning:No negative samples in "
                        r"y_true, false positive value should be "
                        r"meaningless")
         assert sklearn_warning_re.search("".join(log_lines[1]))
-        assert log_lines[-1].endswith("INFO - {}\n".format(msg2))
+        assert log_lines[-1].endswith(f"INFO - {msg2}\n")
 
     # Now make sure that warnings.showwarning works the way
     # it normally works (writes to STDERR) by issuing a warning,
@@ -114,9 +114,9 @@ def test_get_skll_logger_with_warning():
         sys.stderr = mystderr = StringIO()
         warnings.warn(msg3)
         err = mystderr.getvalue()
-        assert "UserWarning: {}".format(msg3) in err
+        assert f"UserWarning: {msg3}" in err
         with open(temp_file.name) as log_file:
-            assert "UserWarning:{}".format(msg3) not in log_file.read()
+            assert f"UserWarning:{msg3}" not in log_file.read()
     finally:
         sys.stderr = old_stderr
 

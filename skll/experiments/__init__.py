@@ -135,8 +135,8 @@ def _classify_featureset(args):
     learning_curve_train_sizes = args.pop("learning_curve_train_sizes")
 
     if args:
-        raise ValueError(("Extra arguments passed to _classify_featureset: "
-                          "{}").format(args.keys()))
+        raise ValueError("Extra arguments passed to _classify_featureset: "
+                         f"{args.keys()}")
     start_timestamp = datetime.datetime.now()
 
     # create a new SKLL logger for this specific job and
@@ -148,7 +148,7 @@ def _classify_featureset(args):
     try:
 
         # log messages
-        logger.info("Task: {}".format(task))
+        logger.info(f"Task: {task}")
 
         # check if we have any possible custom metrics
         possible_custom_metric_names = []
@@ -199,35 +199,27 @@ def _classify_featureset(args):
                 num_folds = cv_folds
             else:  # folds_file was used, so count the unique fold ids.
                 num_folds = len(set(cv_folds.values()))
-            logger.info("Cross-validating ({} folds) on {}, feature "
-                        "set {} ...".format(num_folds,
-                                            train_set_name,
-                                            featureset))
+            logger.info(f"Cross-validating ({num_folds} folds) on "
+                        f"{train_set_name}, feature set {featureset} ...")
         elif task == 'evaluate':
-            logger.info("Training on {}, Test on {}, "
-                        "feature set {} ...".format(train_set_name,
-                                                    test_set_name,
-                                                    featureset))
+            logger.info(f"Training on {train_set_name}, Test on "
+                        f"{test_set_name}, feature set {featureset} ...")
         elif task == 'train':
-            logger.info("Training on {}, feature set {} ...".format(train_set_name,
-                                                                    featureset))
+            logger.info(f"Training on {train_set_name}, feature set "
+                        f"{featureset} ...")
         elif task == 'learning_curve':
             logger.info("Generating learning curve "
-                        "({} 80/20 folds, sizes={}, objective={}) on {}, "
-                        "feature set {} ...".format(learning_curve_cv_folds,
-                                                    learning_curve_train_sizes,
-                                                    grid_objective,
-                                                    train_set_name,
-                                                    featureset))
+                        f"({learning_curve_cv_folds} 80/20 folds, "
+                        f"sizes={learning_curve_train_sizes}, "
+                        f"objective={grid_objective}) on {train_set_name}, "
+                        f"feature set {featureset} ...")
         else:  # predict
-            logger.info("Training on {}, Making predictions on {}, "
-                        "feature set {} ...".format(train_set_name,
-                                                    test_set_name,
-                                                    featureset))
+            logger.info(f"Training on {train_set_name}, Making predictions on"
+                        f" {test_set_name}, feature set {featureset} ...")
 
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it and then use it on test data
-        modelfile = join(model_path, '{}.model'.format(job_name))
+        modelfile = join(model_path, f'{job_name}.model')
         if (task in ['cross_validate', 'learning_curve'] or
                 not exists(modelfile) or
                 overwrite):
@@ -267,8 +259,8 @@ def _classify_featureset(args):
                 globals()[learner_name] = load_custom_learner(custom_learner_path, learner_name)
             train_set_size = 'unknown'
             if exists(modelfile) and not overwrite:
-                logger.info("Loading pre-existing {} model: {}".format(learner_name,
-                                                                       modelfile))
+                logger.info(f"Loading pre-existing {learner_name} model: "
+                            f"{modelfile}")
             learner = Learner.from_file(modelfile)
 
             # attach the job logger to this learner
@@ -293,13 +285,13 @@ def _classify_featureset(args):
         # compute information about xval and grid folds that can be put in results
         # in readable form
         if isinstance(cv_folds, dict):
-            cv_folds_to_print = '{} via folds file'.format(len(set(cv_folds.values())))
+            cv_folds_to_print = f'{len(set(cv_folds.values()))} via folds file'
         else:
             cv_folds_to_print = str(cv_folds)
 
         if isinstance(grid_search_folds, dict):
             grid_search_folds_to_print = \
-                '{} via folds file'.format(len(set(grid_search_folds.values())))
+                f'{len(set(grid_search_folds.values()))} via folds file'
         else:
             grid_search_folds_to_print = str(grid_search_folds)
 
@@ -358,7 +350,7 @@ def _classify_featureset(args):
                                               use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
             if models:
                 for index, m in enumerate(models, start=1):
-                    modelfile = join(model_path, '{}_fold{}.model'.format(job_name, index))
+                    modelfile = join(model_path, f'{job_name}_fold{index}.model')
                     m.save(modelfile)
         elif task == 'learning_curve':
             logger.info("Generating learning curve(s)")
@@ -371,7 +363,8 @@ def _classify_featureset(args):
         else:
             # if we have do not have a saved model, we need to train one.
             if not exists(modelfile) or overwrite:
-                logger.info("Featurizing and training new {} model".format(learner_name))
+                logger.info(f"Featurizing and training new {learner_name} "
+                            "model")
 
                 (best_score,
                  grid_search_cv_results) = learner.train(train_examples,
@@ -389,17 +382,17 @@ def _classify_featureset(args):
                     learner.save(modelfile)
 
                 if grid_search:
-                    logger.info("Best {} grid search score: {}".format(grid_objective,
-                                                                       round(best_score, 3)))
+                    logger.info(f"Best {grid_objective} grid search score: "
+                                f"{round(best_score, 3)}")
             else:
                 grid_scores = [None]
                 grid_search_cv_results_dicts = [None]
 
             # print out the parameters
-            param_out = ('{}: {}'.format(param_name, param_value) for
+            param_out = (f'{param_name}: {param_value}' for
                          param_name, param_value in
                          learner.model.get_params().items())
-            logger.info("Hyperparameters: {}".format(', '.join(param_out)))
+            logger.info("Hyperparameters: {', '.join(param_out)}")
 
             # run on test set or cross-validate on training data,
             # depending on what was asked for
@@ -426,7 +419,7 @@ def _classify_featureset(args):
 
         if task == 'cross_validate' or task == 'evaluate':
             results_json_path = join(results_path,
-                                     '{}.results.json'.format(job_name))
+                                     f'{job_name}.results.json')
 
             res = _create_learner_result_dicts(task_results,
                                                grid_scores,
@@ -437,14 +430,12 @@ def _classify_featureset(args):
             with open(results_json_path, 'w') as json_file:
                 json.dump(res, json_file, cls=NumpyTypeEncoder)
 
-            with open(join(results_path,
-                           '{}.results'.format(job_name)),
+            with open(join(results_path, f'{job_name}.results'),
                       'w') as output_file:
                 _print_fancy_output(res, output_file)
 
         elif task == 'learning_curve':
-            results_json_path = join(results_path,
-                                     '{}.results.json'.format(job_name))
+            results_json_path = join(results_path, f'{job_name}.results.json')
 
             res = {}
             res.update(learner_result_dict_base)
@@ -467,7 +458,7 @@ def _classify_featureset(args):
         else:
             if results_path:
                 results_json_path = join(results_path,
-                                         '{}.results.json'.format(job_name))
+                                         f'{job_name}.results.json')
 
                 assert len(grid_scores) == 1
                 assert len(grid_search_cv_results_dicts) == 1
@@ -645,13 +636,15 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         # allowed
         for featureset_name in featureset_names:
             if len(featureset_name) > 210:
-                raise OSError('System generated file length "{}" exceeds the '
-                              'maximum length supported.  Please specify names of '
-                              'your datasets with "featureset_names".  If you are '
-                              'running ablation experiment, please reduce the '
-                              'length of the features in "featuresets" because the'
-                              ' auto-generated name would be longer than the file '
-                              'system can handle'.format(featureset_name))
+                raise OSError('System generated file length '
+                              f'"{featureset_name}" exceeds the maximum '
+                              'length supported.  Please specify names of '
+                              'your datasets with "featureset_names".  If you'
+                              ' are running ablation experiment, please '
+                              'reduce the length of the features in '
+                              '"featuresets" because the auto-generated name '
+                              'would be longer than the file system can '
+                              'handle')
 
         # if the task is learning curve, and ``metrics`` was specified, then
         # assign the value of ``metrics`` to ``grid_objectives`` - this lets
@@ -688,19 +681,20 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
                     # the log file that stores the actual output of this script (e.g.,
                     # the tuned parameters, what kind of experiment was run, etc.)
-                    logfile = join(log_path, '{}.log'.format(job_name))
+                    logfile = join(log_path, f'{job_name}.log')
 
                     # Figure out result json file path
                     result_json_path = join(results_path,
-                                            '{}.results.json'.format(job_name))
+                                            f'{job_name}.results.json')
 
                     # save the path to the results json file that will be written
                     result_json_paths.append(result_json_path)
 
                     # If result file already exists and we're resuming, move on
                     if resume and (exists(result_json_path) and getsize(result_json_path)):
-                        logger.info('Running in resume mode and %s exists, '
-                                    'so skipping job.', result_json_path)
+                        logger.info('Running in resume mode and '
+                                    f'{result_json_path} exists, so skipping '
+                                    'job.')
                         continue
 
                     # create job if we're doing things on the grid

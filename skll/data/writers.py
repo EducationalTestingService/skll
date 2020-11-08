@@ -77,8 +77,8 @@ class Writer(object):
         self._progress_msg = ''
         self._use_pandas = False
         if kwargs:
-            raise ValueError('Passed extra keyword arguments to '
-                             'Writer constructor: {}'.format(kwargs))
+            raise ValueError('Passed extra keyword arguments to Writer '
+                             f'constructor: {kwargs}')
 
     @classmethod
     def for_path(cls, path, feature_set, **kwargs):
@@ -129,10 +129,9 @@ class Writer(object):
         # Otherwise write one feature file per subset
         else:
             for subset_name, filter_features in self.subsets.items():
-                self.logger.debug('Subset ({}) features: {}'.format(subset_name,
-                                                                    filter_features))
-                sub_path = os.path.join(self.root, '{}{}'.format(subset_name,
-                                                                 self.ext))
+                self.logger.debug(f'Subset ({subset_name}) features: '
+                                  f'{filter_features}')
+                sub_path = os.path.join(self.root, f'{subset_name}{self.ext}')
                 self._write_subset(sub_path, set(filter_features))
 
     def _write_subset(self, sub_path, filter_features):
@@ -147,12 +146,12 @@ class Writer(object):
         filter_features : set of str
             Set of features to include in current feature file.
         """
-        self.logger.debug('sub_path: %s', sub_path)
-        self.logger.debug('feature_set: %s', self.feat_set.name)
-        self.logger.debug('filter_features: %s', filter_features)
+        self.logger.debug(f'sub_path: {sub_path}')
+        self.logger.debug(f'feature_set: {self.feat_set.name}')
+        self.logger.debug(f'filter_features: {filter_features}')
 
         if not self.quiet:
-            self._progress_msg = "Writing {}...".format(sub_path)
+            self._progress_msg = f"Writing {sub_path}..."
             print(self._progress_msg, end="\r", file=sys.stderr)
             sys.stderr.flush()
 
@@ -170,15 +169,14 @@ class Writer(object):
                 for ex_num, (id_, label_, feat_dict) in enumerate(filtered_set):
                     self._write_line(id_, label_, feat_dict, output_file)
                     if not self.quiet and ex_num % 100 == 0:
-                        print("{}{:>15}".format(self._progress_msg, ex_num),
+                        print(f"{self._progress_msg}{ex_num:>15}",
                               end="\r", file=sys.stderr)
                         sys.stderr.flush()
         else:
             self._write_data(self.feat_set, sub_path, filter_features)
 
         if not self.quiet:
-            print("{}{:<15}".format(self._progress_msg, "done"),
-                  file=sys.stderr)
+            print(f"{self._progress_msg}{'done':<15}", file=sys.stderr)
             sys.stderr.flush()
 
     def _write_header(self, feature_set, output_file, filter_features):
@@ -369,16 +367,16 @@ class Writer(object):
         # if the id column is already in the data frame,
         # then raise an error; otherwise, just add the ids
         if self.id_col in df_features:
-            raise ValueError('ID column name "{}" already used as feature '
-                             'name.'.format(self.id_col))
+            raise ValueError(f'ID column name "{self.id_col}" already used as'
+                             ' feature name.')
         df_features[self.id_col] = feature_set.ids
 
         # if the the labels should exist but the column is already
         # in the data frame, then raise an error; otherwise, just add the labels
         if feature_set.has_labels:
             if self.label_col in df_features:
-                raise ValueError(('Class column name "{}" already used as '
-                                  'feature name.').format(self.label_col))
+                raise ValueError(f'Class column name "{self.label_col}" '
+                                 'already used as feature name.')
             df_features[self.label_col] = feature_set.labels
 
         return df_features
@@ -518,24 +516,24 @@ class ARFFWriter(Writer):
         fieldnames.append(self.id_col)
 
         # Add relation to header
-        print("@relation '{}'\n".format(self.relation), file=output_file)
+        print(f"@relation '{self.relation}'\n", file=output_file)
 
         # Loop through fields writing the header info for the ARFF file
         for field in fieldnames:
-            print("@attribute '{}' numeric".format(field.replace('\\', '\\\\')
-                                                   .replace("'", "\\'")),
-                  file=output_file)
+            field = field.replace('\\', '\\\\').replace("'", "\\'")
+            print(f"@attribute '{field}' numeric", file=output_file)
 
         # Print class label header if necessary
         if self.regression:
-            print("@attribute {} numeric".format(self.label_col),
-                  file=output_file)
+            print(f"@attribute {self.label_col} numeric", file=output_file)
         else:
             if self.feat_set.has_labels:
-                print("@attribute {} ".format(self.label_col) +
-                      "{" + ','.join(list(map(str,
-                                              sorted(set(self.feat_set.labels))))) +
-                      "}", file=output_file)
+                labels_str = ','.join(
+                    list(map(str, sorted(set(self.feat_set.labels))))
+                )
+                labels_str = "{" + labels_str + "}"
+                print(f"@attribute {self.label_col} {labels_str}",
+                      file=output_file)
         if self.label_col:
             fieldnames.append(self.label_col)
 
@@ -574,14 +572,14 @@ class ARFFWriter(Writer):
             if self.feat_set.has_labels:
                 feat_dict[self.label_col] = label_
         else:
-            raise ValueError(('Class column name "{}" already used as feature '
-                              'name.').format(self.label_col))
+            raise ValueError(f'Class column name "{self.label_col}" already '
+                             'used as feature name.')
         # Add id column to feat_dict if id is provided
         if self.id_col not in feat_dict:
             feat_dict[self.id_col] = id_
         else:
-            raise ValueError('ID column name "{}" already used as feature '
-                             'name.'.format(self.id_col))
+            raise ValueError(f'ID column name "{self.id_col}" already used as'
+                             ' feature name.')
         # Write out line
         self._dict_writer.writerow(feat_dict)
 
@@ -726,29 +724,28 @@ class LibSVMWriter(Writer):
                                feat_dict.items() if Decimal(value) != 0])
         # Print label
         if label_ in self.label_map:
-            print('{}'.format(self.label_map[label_]), end=' ',
-                  file=output_file)
+            print(str(self.label_map[label_]), end=' ', file=output_file)
         else:
-            print('{}'.format(label_), end=' ', file=output_file)
+            print(str(label_), end=' ', file=output_file)
         # Print features
-        print(' '.join(('{}:{}'.format(field, value) for field, value in
-                        field_values)), end=' ', file=output_file)
+        print(' '.join((f'{field}:{value}' for field, value in field_values)),
+              end=' ', file=output_file)
         # Print comment with id and mappings
         print('#', end=' ', file=output_file)
-        print(self._sanitize('{}'.format(id_)), end='',
-              file=output_file)
+        print(self._sanitize(id_), end='', file=output_file)
         print(' |', end=' ', file=output_file)
 
         if label_ in self.label_map:
-            print('%s=%s' % (self._sanitize(self.label_map[label_]),
-                             self._sanitize(label_)),
+            print(f'{self._sanitize(self.label_map[label_])}='
+                  f'{self._sanitize(label_)}',
                   end=' | ', file=output_file)
         else:
             print(' |', end=' ', file=output_file)
-        line = ' '.join(('%s=%s' % (self.feat_set.vectorizer.vocabulary_[field] + 1,
-                                    self._sanitize(field))
-                         for field, value in feat_dict.items()
-                         if Decimal(value) != 0))
+        line = ' '.join(
+            f'{self.feat_set.vectorizer.vocabulary_[field] + 1}='
+            f'{self._sanitize(field)}'
+            for field, value in feat_dict.items() if Decimal(value) != 0
+        )
         print(line, file=output_file)
 
 

@@ -650,12 +650,12 @@ def check_dummy_regressor_predict(model_args, train_labels, expected_output):
 
     # create hard-coded featuresets with the given labels
     train_fs = FeatureSet('regression_train',
-                          ['TrainExample{}'.format(i) for i in range(20)],
+                          [f'TrainExample{i}' for i in range(20)],
                           labels=train_labels,
                           features=[{"feature": i} for i in range(20)])
 
     test_fs = FeatureSet('regression_test',
-                         ['TestExample{}'.format(i) for i in range(10)],
+                         [f'TestExample{i}' for i in range(10)],
                          features=[{"feature": i} for i in range(20, 30)])
 
     # Ensure predictions are as expectedfor the given strategy

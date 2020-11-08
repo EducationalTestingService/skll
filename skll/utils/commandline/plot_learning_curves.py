@@ -48,17 +48,18 @@ def main(argv=None):
     parser.add_argument('output_dir',
                         help='Directory to store the learning curve plots.')
     parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(__version__))
+                        version=f'%(prog)s {__version__}')
     args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
                                 '%(message)s'))
 
     # make sure that the input TSV file that's being passed exists
     if not exists(args.tsv_file):
-        logging.error("Error: the given file {} does not exist.".format(args.tsv_file))
+        logging.error(f"Error: the given file {args.tsv_file} does not "
+                      "exist.")
         sys.exit(1)
 
     # create the output directory if it doesn't already exist

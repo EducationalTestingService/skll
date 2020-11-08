@@ -595,12 +595,12 @@ def load_custom_learner(custom_learner_path, custom_learner_name):
         The SKLL learner object loaded from the given path.
     """
     if not custom_learner_path:
-        raise ValueError('custom_learner_path was not set and learner {} '
-                         'was not found.'.format(custom_learner_name))
+        raise ValueError('custom_learner_path was not set and learner '
+                         f'{custom_learner_name} was not found.')
 
     if not custom_learner_path.endswith('.py'):
-        raise ValueError('custom_learner_path must end in .py ({})'
-                         .format(custom_learner_path))
+        raise ValueError('custom_learner_path must end in .py '
+                         f'({custom_learner_path})')
 
     custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
     sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
@@ -815,12 +815,12 @@ def rescaled(cls):
             # there should be no varargs
             for parameter in original_parameters:
                 if parameter.kind == parameter.VAR_POSITIONAL:
-                    raise RuntimeError("scikit-learn estimators should always "
-                                       "specify their parameters in the signature"
-                                       " of their __init__ (no varargs)."
-                                       " %s with constructor %s doesn't "
-                                       " follow this convention."
-                                       % (cls, init_signature))
+                    raise RuntimeError("scikit-learn estimators should always"
+                                       " specify their parameters in the "
+                                       "signature of their __init__ (no "
+                                       f"varargs). {cls} with constructor "
+                                       f"{init_signature} doesn't follow this"
+                                       " convention.")
                 else:
                     args.append(parameter.name)
 

@@ -163,10 +163,9 @@ class Reader(object):
             # Get lowercase extension for file extension checking
             ext = '.' + path_or_list.rsplit('.', 1)[-1].lower()
             if ext not in EXT_TO_READER:
-                raise ValueError(('Example files must be in either .arff, '
-                                  '.csv, .jsonlines, .ndj, or .tsv '
-                                  'format. You specified: '
-                                  '{}').format(path_or_list))
+                raise ValueError('Example files must be in either .arff, '
+                                 '.csv, .jsonlines, .ndj, or .tsv format. You'
+                                 f'specified: {path_or_list}')
         return EXT_TO_READER[ext](path_or_list, **kwargs)
 
     def _sub_read(self, file):
@@ -209,7 +208,7 @@ class Reader(object):
         """
         # Print out status
         if not self.quiet:
-            print("{}{:>15}".format(self._progress_msg, progress_num),
+            print(f"{self._progress_msg}{progress_num:>15}",
                   end=end, file=sys.stderr)
             sys.stderr.flush()
 
@@ -257,11 +256,9 @@ class Reader(object):
                     try:
                         id_ = float(id_)
                     except ValueError:
-                        raise ValueError(('You set ids_to_floats to true,'
-                                          ' but ID {} could not be '
-                                          'converted to float in '
-                                          '{}').format(id_,
-                                                       self.path_or_list))
+                        raise ValueError('You set ids_to_floats to true, but '
+                                         f'ID {id_} could not be converted to'
+                                         f' float in {self.path_or_list}')
                 ids.append(id_)
                 labels.append(class_)
                 if ex_num % 100 == 0:
@@ -271,8 +268,8 @@ class Reader(object):
         # Remember total number of examples for percentage progress meter
         total = ex_num
         if total == 0:
-            raise ValueError("No features found in possibly "
-                             "empty file '{}'.".format(self.path_or_list))
+            raise ValueError("No features found in possibly empty file "
+                             f"'{self.path_or_list}'.")
 
         # Convert everything to numpy arrays
         ids = np.array(ids)
@@ -283,7 +280,7 @@ class Reader(object):
                 for ex_num, (_, _, feat_dict) in enumerate(self._sub_read(f)):
                     yield feat_dict
                     if ex_num % 100 == 0:
-                        self._print_progress('{:.8}%'.format(100 * ((ex_num / total))))
+                        self._print_progress('{100 * (ex_num / total):.8}%')
                 self._print_progress("100%")
 
         # extract the features dictionary
@@ -337,8 +334,8 @@ class Reader(object):
             The features for the feature set.
         """
         if df.empty:
-            raise ValueError("No features found in possibly "
-                             "empty file '{}'.".format(self.path_or_list))
+            raise ValueError("No features found in possibly empty file "
+                             f"'{self.path_or_list}'.")
 
         if drop_blanks and replace_blanks_with is not None:
             raise ValueError("You cannot both drop blanks and replace them. "
@@ -370,7 +367,7 @@ class Reader(object):
             ids = ids.values
         else:
             # create ids with the prefix `EXAMPLE_`
-            ids = np.array(['EXAMPLE_{}'.format(i) for i in range(df.shape[0])])
+            ids = np.array([f'EXAMPLE_{i}' for i in range(df.shape[0])])
 
         # if the label column exists,
         # get them from the data frame and
@@ -416,10 +413,10 @@ class Reader(object):
         ValueError
             If the example IDs are not unique.
         """
-        self.logger.debug('Path: %s', self.path_or_list)
+        self.logger.debug(f'Path: {self.path_or_list}')
 
         if not self.quiet:
-            self._progress_msg = "Loading {}...".format(self.path_or_list)
+            self._progress_msg = f"Loading {self.path_or_list}..."
             print(self._progress_msg, end="\r", file=sys.stderr)
             sys.stderr.flush()
 
@@ -438,8 +435,8 @@ class Reader(object):
         assert ids.shape[0] == labels.shape[0] == features.shape[0]
 
         if ids.shape[0] != len(set(ids)):
-            raise ValueError('The example IDs are not unique in %s.' %
-                             self.path_or_list)
+            raise ValueError('The example IDs are not unique in '
+                             f'{self.path_or_list}.')
 
         return FeatureSet(self.path_or_list, ids, labels=labels,
                           features=features, vectorizer=self.vectorizer)
@@ -467,16 +464,14 @@ class DictListReader(Reader):
         labels = []
         feat_dicts = []
         for example_num, example in enumerate(self.path_or_list):
-            curr_id = str(example.get("id",
-                                      "EXAMPLE_{}".format(example_num)))
+            curr_id = str(example.get("id", f"EXAMPLE_{example_num}"))
             if self.ids_to_floats:
                 try:
                     curr_id = float(curr_id)
                 except ValueError:
-                    raise ValueError(('You set ids_to_floats to true,' +
-                                      ' but ID {} could not be ' +
-                                      'converted to float in ' +
-                                      '{}').format(curr_id, example))
+                    raise ValueError('You set ids_to_floats to true, but ID '
+                                     f'{curr_id} could not be converted to '
+                                     f'float in {example}')
             class_name = (safe_float(example['y'],
                                      replace_dict=self.class_map)
                           if 'y' in example else None)
@@ -487,9 +482,9 @@ class DictListReader(Reader):
                 try:
                     curr_id = float(curr_id)
                 except ValueError:
-                    raise ValueError(('You set ids_to_floats to true, but ID '
-                                      '{} could not be converted to float in '
-                                      '{}').format(curr_id, self.path_or_list))
+                    raise ValueError('You set ids_to_floats to true, but ID '
+                                     f'{curr_id} could not be converted to '
+                                     f'float in {self.path_or_list}')
             ids.append(curr_id)
             labels.append(class_name)
             feat_dicts.append(example)
@@ -553,8 +548,7 @@ class NDJReader(Reader):
             example = json.loads(line)
             # Convert all IDs to strings initially,
             # for consistency with csv formats.
-            curr_id = str(example.get("id",
-                                      "EXAMPLE_{}".format(example_num)))
+            curr_id = str(example.get("id", f"EXAMPLE_{example_num}"))
             class_name = (safe_float(example['y'],
                                      replace_dict=self.class_map)
                           if 'y' in example else None)
@@ -564,9 +558,9 @@ class NDJReader(Reader):
                 try:
                     curr_id = float(curr_id)
                 except ValueError:
-                    raise ValueError(('You set ids_to_floats to true, but' +
-                                      ' ID {} could not be converted to ' +
-                                      'float').format(curr_id))
+                    raise ValueError('You set ids_to_floats to true, but ID '
+                                     f'{curr_id} could not be converted to '
+                                     'float')
 
             yield curr_id, class_name, example
 
@@ -649,7 +643,7 @@ class LibSVMReader(Reader):
             match = self.line_regex.search(line.strip())
             if not match:
                 raise ValueError('Line does not look like valid libsvm format'
-                                 '\n{}'.format(line))
+                                 f'\n{line}')
             # Metadata is stored in comments if this was produced by SKLL
             if match.group('comments') is not None:
                 # Store mapping from feature numbers to names
@@ -672,7 +666,7 @@ class LibSVMReader(Reader):
                 curr_id = match.group('example_id').strip()
 
             if not curr_id:
-                curr_id = 'EXAMPLE_{}'.format(example_num)
+                curr_id = f'EXAMPLE_{example_num}'
 
             class_num = match.group('label_num')
             # If we have a mapping from class numbers to labels, get label
@@ -865,7 +859,7 @@ class DelimitedReader(Reader):
                 class_name = None
 
             if self.id_col not in row:
-                curr_id = "EXAMPLE_{}".format(example_num)
+                curr_id = f"EXAMPLE_{example_num}"
             else:
                 curr_id = row[self.id_col]
                 del row[self.id_col]
@@ -1042,7 +1036,7 @@ def safe_float(text, replace_dict=None, logger=None):
             text = replace_dict[text]
         else:
             logger.warning('Encountered value that was not in replacement '
-                           'dictionary (e.g., class_map): {}'.format(text))
+                           f'dictionary (e.g., class_map): {text}')
     try:
         return int(text)
     except ValueError:

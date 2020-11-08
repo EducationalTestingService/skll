@@ -86,7 +86,7 @@ def tearDown():
         os.unlink(output_file)
 
     for i in range(6):
-        os.unlink(join(train_dir, "f{}.jsonlines".format(i)))
+        os.unlink(join(train_dir, f"f{i}.jsonlines"))
 
 
 def make_cv_folds_data(num_examples_per_fold=100,
@@ -114,17 +114,17 @@ def make_cv_folds_data(num_examples_per_fold=100,
     # now create the list of feature dictionaries
     # and add the binary features that depend on
     # the class and fold number
-    feature_names = ['f{}'.format(i) for i in range(1, 4)]
+    feature_names = [f'f{i}' for i in range(1, 4)]
     features = []
     for row, classid, foldnum in zip(X, y, folds):
-        string_feature_name = 'is_{}_{}'.format(classid, foldnum)
+        string_feature_name = f'is_{classid}_{foldnum}'
         string_feature_value = 1
         feat_dict = dict(zip(feature_names, row))
         feat_dict.update({string_feature_name: string_feature_value})
         features.append(feat_dict)
 
     # create the example IDs
-    ids = ['EXAMPLE_{}'.format(num_examples_per_fold * k + i)
+    ids = [f'EXAMPLE_{num_examples_per_fold * k + i}'
            for k in range(num_folds) for i in range(num_examples_per_fold)]
 
     # create the cross-validation feature set with or without feature hashing
@@ -293,7 +293,7 @@ def test_folds_file_logging_num_folds():
     """
     # Run experiment
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+    train_path = join(_my_dir, 'train', f'f0{suffix}')
 
     config_path = fill_in_config_paths_for_single_file(join(_my_dir,
                                                             "configs",
@@ -327,7 +327,7 @@ def test_folds_file_with_fewer_ids_than_featureset():
     """
     # Run experiment with a special featureset that has extra IDs
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'f5{}'.format(suffix))
+    train_path = join(_my_dir, 'train', f'f5{suffix}')
 
     config_path = fill_in_config_paths_for_single_file(join(_my_dir,
                                                             "configs",
@@ -354,7 +354,7 @@ def test_folds_file_logging_grid_search():
     """
     # Run experiment
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+    train_path = join(_my_dir, 'train', f'f0{suffix}')
 
     config_path = fill_in_config_paths_for_single_file(join(_my_dir,
                                                             "configs",
@@ -380,7 +380,7 @@ def test_cross_validate_task():
 
     # Run experiment
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+    train_path = join(_my_dir, 'train', f'f0{suffix}')
 
     config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
                                                             "test_save_cv_folds"
@@ -411,8 +411,8 @@ def test_cross_validate_task():
             skll_fold_ids[row['id']] = row['cv_test_fold']
 
     # convert the dictionary to strings (sorted by key) for quick comparison
-    skll_fold_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(skll_fold_ids.items()))
-    expected_skll_ids_str = ''.join('{}{}'.format(key, val) for key, val in sorted(expected_skll_ids.items()))
+    skll_fold_ids_str = ''.join(f'{key}{val}' for key, val in sorted(skll_fold_ids.items()))
+    expected_skll_ids_str = ''.join(f'{key}{val}' for key, val in sorted(expected_skll_ids.items()))
 
     eq_(skll_fold_ids_str, expected_skll_ids_str)
 
@@ -424,7 +424,7 @@ def test_cross_validate_task_save_cv_models():
     """
 
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'f0{}'.format(suffix))
+    train_path = join(_my_dir, 'train', f'f0{suffix}')
     config_path = \
         fill_in_config_paths_for_single_file(join(_my_dir, "configs",
                                                   "test_save_cv_models.template.cfg"),
@@ -435,5 +435,4 @@ def test_cross_validate_task_save_cv_models():
     cv_model_prefix = \
         "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
     for i in range(1, 11):
-        assert exists(join(output_dir,
-                           "{}{}.model".format(cv_model_prefix, i))) is True
+        assert exists(join(output_dir, f"{cv_model_prefix}{i}.model")) is True
