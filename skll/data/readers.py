@@ -280,7 +280,7 @@ class Reader(object):
                 for ex_num, (_, _, feat_dict) in enumerate(self._sub_read(f)):
                     yield feat_dict
                     if ex_num % 100 == 0:
-                        self._print_progress('{100 * (ex_num / total):.8}%')
+                        self._print_progress('{100 * ex_num / total:.8}%')
                 self._print_progress("100%")
 
         # extract the features dictionary

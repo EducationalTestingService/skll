@@ -724,9 +724,9 @@ class LibSVMWriter(Writer):
                                feat_dict.items() if Decimal(value) != 0])
         # Print label
         if label_ in self.label_map:
-            print(str(self.label_map[label_]), end=' ', file=output_file)
+            print(self.label_map[label_], end=' ', file=output_file)
         else:
-            print(str(label_), end=' ', file=output_file)
+            print(label_, end=' ', file=output_file)
         # Print features
         print(' '.join((f'{field}:{value}' for field, value in field_values)),
               end=' ', file=output_file)
