@@ -64,7 +64,7 @@ def fill_in_config_paths(config_template_path):
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
+    new_config_path = f'{config_prefix}.cfg'
 
     with open(new_config_path, 'w') as new_config_file:
         config.write(new_config_file)
@@ -122,7 +122,7 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
+    new_config_path = f'{config_prefix}.cfg'
 
     with open(new_config_path, 'w') as new_config_file:
         config.write(new_config_file)
@@ -176,7 +176,7 @@ def fill_in_config_options(config_template_path,
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
-    new_config_path = '{}_{}.cfg'.format(config_prefix, sub_prefix)
+    new_config_path = f'{config_prefix}_{sub_prefix}.cfg'
 
     with open(new_config_path, 'w') as new_config_file:
         config.write(new_config_file)
@@ -205,7 +205,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
                               config_template_path).groups()[0]
-    new_config_path = '{}.cfg'.format(config_prefix)
+    new_config_path = f'{config_prefix}.cfg'
 
     with open(new_config_path, 'w') as new_config_file:
         config.write(new_config_file)
@@ -217,7 +217,7 @@ def create_jsonlines_feature_files(path):
 
     # we only need to create the feature files if they
     # don't already exist under the given path
-    feature_files_to_create = [join(path, 'f{}.jsonlines'.format(i)) for i in range(6)]
+    feature_files_to_create = [join(path, f'f{i}.jsonlines') for i in range(6)]
     if all([exists(ff) for ff in feature_files_to_create]):
         return
     else:
@@ -230,8 +230,8 @@ def create_jsonlines_feature_files(path):
         labels = []
         for j in range(num_examples):
             y = "dog" if j % 2 == 0 else "cat"
-            ex_id = "{}{}".format(y, j)
-            x = {"f{}".format(feat_num): np.random.randint(0, 4) for feat_num in
+            ex_id = f"{y}{j}"
+            x = {f"f{feat_num}": np.random.randint(0, 4) for feat_num in
                  range(5)}
             x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
             ids.append(ex_id)
@@ -239,12 +239,12 @@ def create_jsonlines_feature_files(path):
             features.append(x)
 
         for i in range(5):
-            file_path = join(path, 'f{}.jsonlines'.format(i))
+            file_path = join(path, f'f{i}.jsonlines')
             sub_features = []
             for example_num in range(num_examples):
                 feat_num = i
-                x = {"f{}".format(feat_num):
-                     features[example_num]["f{}".format(feat_num)]}
+                x = {f"f{feat_num}":
+                     features[example_num][f"f{feat_num}"]}
                 sub_features.append(x)
             fs = FeatureSet('ablation_cv', ids, features=sub_features, labels=labels)
 
@@ -255,8 +255,8 @@ def create_jsonlines_feature_files(path):
         # identical to the last featureset we wrote
         # except that it has two extra instances
         fs = FeatureSet('extra',
-                        ids + ['cat{}'.format(num_examples),
-                               'dog{}'.format(num_examples + 1)],
+                        ids + [f'cat{num_examples}',
+                               f'dog{num_examples + 1}'],
                         features=sub_features + [{}, {}],
                         labels=labels + ['cat', 'dog'])
         file_path = join(path, 'f5.jsonlines')
@@ -297,9 +297,9 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     # create a list of IDs; we create IDs that either can also
     # be numbers or pure strings
     if id_type == 'string':
-        ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+        ids = [f'EXAMPLE_{n}' for n in range(1, num_examples + 1)]
     elif id_type == 'integer_string':
-        ids = ['{}'.format(n) for n in range(1, num_examples + 1)]
+        ids = [f'{n}' for n in range(1, num_examples + 1)]
     elif id_type == 'float':
         ids = [float(n) for n in range(1, num_examples + 1)]
     elif id_type == 'integer':
@@ -318,7 +318,7 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
         X = np.append(X, string_feature_column, 1)
 
     # create a list of dictionaries as the features
-    feature_names = ['{}{:02d}'.format(feature_prefix, n) for n in
+    feature_names = [f'{feature_prefix}{n:02d}' for n in
                      range(1, num_features + 1)]
     features = [dict(zip(feature_names, row)) for row in X]
 
@@ -375,14 +375,14 @@ def make_regression_data(num_examples=100,
 
     # since we want to use SKLL's FeatureSet class, we need to
     # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, num_examples + 1)]
+    ids = [f'EXAMPLE_{n}' for n in range(1, num_examples + 1)]
 
     # create a list of dictionaries as the features
     index_width_for_feature_name = int(floor(log10(num_features))) + 1
     feature_names = []
     for n in range(start_feature_num, start_feature_num + num_features):
         index_str = str(n).zfill(index_width_for_feature_name)
-        feature_name = 'f{}'.format(index_str)
+        feature_name = f'f{index_str}'
         feature_names.append(feature_name)
     features = [dict(zip(feature_names, row)) for row in X]
 
@@ -410,7 +410,7 @@ def make_regression_data(num_examples=100,
         hashed_feature_names = []
         for i in range(feature_bins):
             index_str = str(i + 1).zfill(index_width_for_feature_name)
-            feature_name = 'hashed_feature_{}'.format(index_str)
+            feature_name = f'hashed_feature_{index_str}'
             hashed_feature_names.append(feature_name)
         weightdict = dict(zip(hashed_feature_names, weights[:feature_bins]))
     else:
@@ -457,11 +457,11 @@ def make_sparse_data(use_feature_hashing=False):
 
     # since we want to use SKLL's FeatureSet class, we need to
     # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 501)]
+    ids = [f'EXAMPLE_{n}' for n in range(1, 501)]
 
     # create a list of dictionaries as the features
     # with f1 and f5 always 0
-    feature_names = ['f{}'.format(n) for n in range(1, 6)]
+    feature_names = [f'f{n}' for n in range(1, 6)]
     features = []
     for row in X:
         row = [0] + row.tolist() + [0]
@@ -479,11 +479,11 @@ def make_sparse_data(use_feature_hashing=False):
                                n_classes=2, random_state=1234567890)
     X = np.abs(X)
     X[np.where(X == 0)] += 1
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 101)]
+    ids = [f'EXAMPLE_{n}' for n in range(1, 101)]
 
     # create a list of dictionaries as the features
     # with f4 always 0
-    feature_names = ['f{}'.format(n) for n in range(1, 6)]
+    feature_names = [f'f{n}' for n in range(1, 6)]
     features = []
     for row in X:
         row = row.tolist()

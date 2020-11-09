@@ -49,7 +49,7 @@ def main(argv=None):
                         default='all',
                         help='show only positive, only negative or all weights')
     parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(__version__))
+                        version=f'%(prog)s {__version__}')
     args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
@@ -90,11 +90,11 @@ def main(argv=None):
                 intercept_is_array = False
 
             # now print out the intercepts
-            print("intercept = {:.12f}".format(model_intercepts))
+            print(f"intercept = {model_intercepts:.12f}")
         else:
             print("== intercept values ==")
             for (label, val) in intercept.items():
-                print("{: .12f}\t{}".format(val, label))
+                print(f"{val:.12f}\t{label}")
         print()
 
     print("Number of nonzero features:", len(weights), file=sys.stderr)
@@ -105,10 +105,10 @@ def main(argv=None):
             weight_by_class[label][feature] = weight
         for label in sorted(weight_by_class):
             for feat, val in sorted(weight_by_class[label].items(), key=lambda x: -abs(x[1])):
-                print("{: .12f}\t{}\t{}".format(val, label, feat))
+                print(f"{val:.12f}\t{label}\t{feat}")
     else:
         for feat, val in sorted(weight_items, key=lambda x: -abs(x[1]))[:k]:
-            print("{: .12f}\t{}".format(val, feat))
+            print(f"{val:.12f}\t{feat}")
 
 
 if __name__ == '__main__':

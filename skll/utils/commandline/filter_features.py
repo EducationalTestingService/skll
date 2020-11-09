@@ -81,7 +81,7 @@ def main(argv=None):
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
     parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(__version__))
+                        version=f'%(prog)s {__version__}')
     args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
@@ -103,14 +103,14 @@ def main(argv=None):
         sys.exit(1)
 
     if input_extension not in valid_extensions:
-        logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
-                      '.ndj, or .tsv format. You specified: '
-                      '{}').format(input_extension))
+        logger.error('Input file must be in either .arff, .csv, .jsonlines, '
+                     '.ndj, or .tsv format. You specified: '
+                     f'{input_extension}')
         sys.exit(1)
 
     if output_extension != input_extension:
-        logger.error(('Output file must be in the same format as the input '
-                      'file.  You specified: {}').format(output_extension))
+        logger.error('Output file must be in the same format as the input '
+                     f'file.  You specified: {output_extension}')
         sys.exit(1)
 
     if input_extension == '.csv' or input_extension == '.tsv':

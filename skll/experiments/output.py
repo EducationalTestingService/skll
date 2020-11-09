@@ -173,7 +173,8 @@ def generate_learning_curve_plots(experiment_name,
                                       ncol=1,
                                       frameon=True)
             g.fig.tight_layout(w_pad=1)
-            plt.savefig(join(output_dir, '{}_{}.png'.format(experiment_name, fs_name)), dpi=300)
+            plt.savefig(join(output_dir, f'{experiment_name}_{fs_name}.png'),
+                        dpi=300)
             # explicitly close figure to save memory
             plt.close(fig)
 
@@ -195,74 +196,67 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         raise ValueError('Result dictionary list is empty!')
 
     lrd = learner_result_dicts[0]
-    print('Experiment Name: {}'.format(lrd['experiment_name']),
+    print(f'Experiment Name: {lrd["experiment_name"]}',
           file=output_file)
-    print('SKLL Version: {}'.format(lrd['version']), file=output_file)
-    print('Training Set: {}'.format(lrd['train_set_name']), file=output_file)
-    print('Training Set Size: {}'.format(
-        lrd['train_set_size']), file=output_file)
-    print('Test Set: {}'.format(lrd['test_set_name']), file=output_file)
-    print('Test Set Size: {}'.format(lrd['test_set_size']), file=output_file)
-    print('Shuffle: {}'.format(lrd['shuffle']), file=output_file)
-    print('Feature Set: {}'.format(lrd['featureset']), file=output_file)
-    print('Learner: {}'.format(lrd['learner_name']), file=output_file)
-    print('Task: {}'.format(lrd['task']), file=output_file)
+    print(f'SKLL Version: {lrd["version"]}', file=output_file)
+    print(f'Training Set: {lrd["train_set_name"]}', file=output_file)
+    print(f'Training Set Size: {lrd["train_set_size"]}', file=output_file)
+    print(f'Test Set: {lrd["test_set_name"]}', file=output_file)
+    print(f'Test Set Size: {lrd["test_set_size"]}', file=output_file)
+    print(f'Shuffle: {lrd["shuffle"]}', file=output_file)
+    print(f'Feature Set: {lrd["featureset"]}', file=output_file)
+    print(f'Learner: {lrd["learner_name"]}', file=output_file)
+    print(f'Task: {lrd["task"]}', file=output_file)
     if lrd['folds_file']:
-        print('Specified Folds File: {}'.format(lrd['folds_file']),
-              file=output_file)
+        print(f'Specified Folds File: {lrd["folds_file"]}', file=output_file)
     if lrd['task'] == 'cross_validate':
-        print('Number of Folds: {}'.format(lrd['cv_folds']),
-              file=output_file)
+        print(f'Number of Folds: {lrd["cv_folds"]}', file=output_file)
         if not lrd['cv_folds'].endswith('folds file'):
-            print('Stratified Folds: {}'.format(lrd['stratified_folds']),
+            print(f'Stratified Folds: {lrd["stratified_folds"]}',
                   file=output_file)
-    print('Feature Scaling: {}'.format(lrd['feature_scaling']),
-          file=output_file)
-    print('Grid Search: {}'.format(lrd['grid_search']), file=output_file)
+    print(f'Feature Scaling: {lrd["feature_scaling"]}', file=output_file)
+    print(f'Grid Search: {lrd["grid_search"]}', file=output_file)
     if lrd['grid_search']:
-        print('Grid Search Folds: {}'.format(lrd['grid_search_folds']),
+        print(f'Grid Search Folds: {lrd["grid_search_folds"]}',
               file=output_file)
-        print('Grid Objective Function: {}'.format(lrd['grid_objective']),
+        print(f'Grid Objective Function: {lrd["grid_objective"]}',
               file=output_file)
     if (lrd['task'] == 'cross_validate' and
             lrd['grid_search'] and
             lrd['cv_folds'].endswith('folds file')):
-        print('Using Folds File for Grid Search: {}'.format(lrd['use_folds_file_for_grid_search']),
+        print('Using Folds File for Grid Search: '
+              f'{lrd["use_folds_file_for_grid_search"]}',
               file=output_file)
     if lrd['task'] in ['evaluate', 'cross_validate'] and lrd['additional_scores']:
-        print('Additional Evaluation Metrics: {}'.format(list(lrd['additional_scores'].keys())),
+        print('Additional Evaluation Metrics: '
+              f'{list(lrd["additional_scores"].keys())}',
               file=output_file)
-    print('Scikit-learn Version: {}'.format(lrd['scikit_learn_version']),
+    print(f'Scikit-learn Version: {lrd["scikit_learn_version"]}',
           file=output_file)
-    print('Start Timestamp: {}'.format(
-        lrd['start_timestamp']), file=output_file)
-    print('End Timestamp: {}'.format(lrd['end_timestamp']), file=output_file)
-    print('Total Time: {}'.format(lrd['total_time']), file=output_file)
+    print(f'Start Timestamp: {lrd["start_timestamp"]}', file=output_file)
+    print(f'End Timestamp: {lrd["end_timestamp"]}', file=output_file)
+    print(f'Total Time: {lrd["total_time"]}', file=output_file)
     print('\n', file=output_file)
 
     for lrd in learner_result_dicts:
-        print('Fold: {}'.format(lrd['fold']), file=output_file)
-        print('Model Parameters: {}'.format(lrd.get('model_params', '')),
+        print(f'Fold: {lrd["fold"]}', file=output_file)
+        print(f'Model Parameters: {lrd.get("model_params", "")}',
               file=output_file)
-        print('Grid Objective Score (Train) = {}'.format(lrd.get('grid_score',
-                                                                 '')),
+        print(f'Grid Objective Score (Train) = {lrd.get("grid_score", "")}',
               file=output_file)
         if 'result_table' in lrd:
             print(lrd['result_table'], file=output_file)
-            print('Accuracy = {}'.format(lrd['accuracy']),
-                  file=output_file)
+            print(f'Accuracy = {lrd["accuracy"]}', file=output_file)
         if 'descriptive' in lrd:
             print('Descriptive statistics:', file=output_file)
             for desc_stat in ['min', 'max', 'avg', 'std']:
                 actual = lrd['descriptive']['actual'][desc_stat]
                 predicted = lrd['descriptive']['predicted'][desc_stat]
-                print((' {} = {: .4f} (actual), {: .4f} '
-                       '(predicted)').format(desc_stat.title(), actual,
-                                             predicted),
+                print(f' {desc_stat.title()} = {actual:.4f} (actual), '
+                      f'{predicted:.4f} (predicted)',
                       file=output_file)
-            print('Pearson = {: f}'.format(lrd['pearson']),
-                  file=output_file)
-        print('Objective Function Score (Test) = {}'.format(lrd.get('score', '')),
+            print(f'Pearson = {lrd["pearson"]:f}', file=output_file)
+        print(f'Objective Function Score (Test) = {lrd.get("score", "")}',
               file=output_file)
 
         # now print the additional metrics, if there were any
@@ -271,7 +265,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
             print('Additional Evaluation Metrics (Test):', file=output_file)
             for metric, score in lrd['additional_scores'].items():
                 score = '' if np.isnan(score) else score
-                print(' {} = {}'.format(metric, score), file=output_file)
+                print(f' {metric} = {score}', file=output_file)
         print('', file=output_file)
 
 
@@ -295,10 +289,10 @@ def _write_learning_curve_file(result_json_paths, output_file):
     logger = get_skll_logger('experiment')
     for json_path in result_json_paths:
         if not exists(json_path):
-            logger.error(('JSON results file %s not found. Skipping summary '
-                          'creation. You can manually create the summary file'
-                          ' after the fact by using the summarize_results '
-                          'script.'), json_path)
+            logger.error(f'JSON results file {json_path} not found. Skipping '
+                         'summary creation. You can manually create the '
+                         'summary file after the fact by using the '
+                         'summarize_results script.')
             return
         else:
             with open(json_path, 'r') as json_file:
@@ -392,10 +386,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     logger = get_skll_logger('experiment')
     for json_path in result_json_paths:
         if not exists(json_path):
-            logger.error(('JSON results file %s not found. Skipping summary '
-                          'creation. You can manually create the summary file'
-                          ' after the fact by using the summarize_results '
-                          'script.'), json_path)
+            logger.error(f'JSON results file {json_path} not found. Skipping '
+                         'summary creation. You can manually create the '
+                         'summary file after the fact by using the '
+                         'summarize_results script.')
             return
         else:
             with open(json_path, 'r') as json_file:

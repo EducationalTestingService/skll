@@ -72,27 +72,27 @@ def tearDown():
     config_dir = join(_my_dir, 'configs')
     for suffix in ['learning_curve', 'summary', 'fancy_xval',
                    'warning_multiple_featuresets']:
-        if exists(join(train_dir, 'test_{}.jsonlines'.format(suffix))):
-            os.unlink(join(train_dir, 'test_{}.jsonlines'.format(suffix)))
+        if exists(join(train_dir, f'test_{suffix}.jsonlines')):
+            os.unlink(join(train_dir, f'test_{suffix}.jsonlines'))
 
-        if exists(join(test_dir, 'test_{}.jsonlines'.format(suffix))):
-            os.unlink(join(test_dir, 'test_{}.jsonlines'.format(suffix)))
+        if exists(join(test_dir, f'test_{suffix}.jsonlines')):
+            os.unlink(join(test_dir, f'test_{suffix}.jsonlines'))
 
-        config_files = ['test_{}.cfg'.format(suffix),
-                        'test_{}_with_metrics.cfg'.format(suffix),
-                        'test_{}_with_objectives.cfg'.format(suffix),
-                        'test_{}_feature_hasher.cfg'.format(suffix),
-                        'test_{}_feature_hasher_with_metrics.cfg'.format(suffix)]
+        config_files = [f'test_{suffix}.cfg',
+                        f'test_{suffix}_with_metrics.cfg',
+                        f'test_{suffix}_with_objectives.cfg',
+                        f'test_{suffix}_feature_hasher.cfg',
+                        f'test_{suffix}_feature_hasher_with_metrics.cfg']
         for cf in config_files:
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
 
-        for output_file in glob(join(output_dir, 'test_{}_*'.format(suffix))) \
-                           + glob(join(output_dir, 'test_{}.log'.format(suffix))):
+        for output_file in (glob(join(output_dir, f'test_{suffix}_*')) +
+                            glob(join(output_dir, f'test_{suffix}.log'))):
             os.unlink(output_file)
 
     for suffix in VALID_TASKS:
-        config_files = ['test_cv_results_{}.cfg'.format(suffix)]
+        config_files = [f'test_cv_results_{suffix}.cfg']
         for cf in config_files:
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
@@ -140,7 +140,7 @@ def make_learning_curve_data():
     X, y = digits.data, digits.target
 
     # create featureset with all features
-    feature_names = ['f{:02}'.format(n) for n in range(X.shape[1])]
+    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -152,7 +152,7 @@ def make_learning_curve_data():
     writer.write()
 
     # create featureset with all except the last feature
-    feature_names = ['f{:02}'.format(n) for n in range(X.shape[1])]
+    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
     features = []
     for row in X:
         features.append(dict(zip(feature_names[:-1], row)))
@@ -192,8 +192,8 @@ def check_summary_score(use_feature_hashing,
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output', ('{}_LogisticRegression.results.'
-                                       'json'.format(outprefix)))) as f:
+    with open(join(_my_dir, 'output',
+                   f'{outprefix}_LogisticRegression.results.json')) as f:
         outd = json.loads(f.read())
         logistic_result_score = outd[0]['score']
         if use_additional_metrics:
@@ -202,7 +202,7 @@ def check_summary_score(use_feature_hashing,
             logistic_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
     with open(join(_my_dir, 'output',
-                   '{}_SVC.results.json'.format(outprefix))) as f:
+                   f'{outprefix}_SVC.results.json')) as f:
         outd = json.loads(f.read())
         svm_result_score = outd[0]['score']
         if use_additional_metrics:
@@ -212,8 +212,8 @@ def check_summary_score(use_feature_hashing,
 
     # note that Naive Bayes doesn't work with feature hashing
     if not use_feature_hashing:
-        with open(join(_my_dir, 'output', ('{}_MultinomialNB.results.'
-                                           'json'.format(outprefix)))) as f:
+        with open(join(_my_dir, 'output',
+                       f'{outprefix}_MultinomialNB.results.json')) as f:
             outd = json.loads(f.read())
             naivebayes_result_score = outd[0]['score']
             if use_additional_metrics:
@@ -221,7 +221,7 @@ def check_summary_score(use_feature_hashing,
                 nb_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
                 nb_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
-    with open(join(_my_dir, 'output', '{}_summary.tsv'.format(summprefix)),
+    with open(join(_my_dir, 'output', f'{summprefix}_summary.tsv'),
               'r') as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
@@ -290,10 +290,9 @@ def check_summary_score(use_feature_hashing,
 
     for result_score, summary_score, learner_name in test_tuples:
         assert_almost_equal(result_score, summary_score,
-                            err_msg=('mismatched scores for {} '
-                                     '(result:{}, summary:'
-                                     '{})').format(learner_name, result_score,
-                                                   summary_score))
+                            err_msg=f'mismatched scores for {learner_name} '
+                                    f'(result:{result_score}, summary:'
+                                    f'{summary_score})')
 
     # We iterate over each model with an expected
     # accuracy score. Test proves that the report
@@ -303,15 +302,14 @@ def check_summary_score(use_feature_hashing,
         for report_name, val in (("LogisticRegression", .5),
                                  ("MultinomialNB", .5),
                                  ("SVC", .6333)):
-            filename = "test_summary_test_summary_{}.results".format(report_name)
+            filename = f"test_summary_test_summary_{report_name}.results"
             results_path = join(_my_dir, 'output', filename)
             with open(results_path) as results_file:
                 report = results_file.read()
-                expected_string = "Accuracy = {:.1f}".format(val)
+                expected_string = f"Accuracy = {val:.1f}"
                 eq_(expected_string in report,  # approximate
                     True,
-                    msg="{} is not in {}".format(expected_string,
-                                                 report))
+                    msg=f"{expected_string} is not in {report}")
 
 
 def test_summary():
@@ -437,8 +435,8 @@ def check_grid_search_cv_results(task, do_grid_search):
     train_path = join(_my_dir, 'train', 'f0.jsonlines')
     output_dir = join(_my_dir, 'output')
 
-    exp_name = ('test_grid_search_cv_results_{}_{}'
-                .format(task, "gs" if do_grid_search else "nogs"))
+    exp_name = (f'test_grid_search_cv_results_{task}_'
+                f'{"gs" if do_grid_search else "nogs"}')
 
     # make a simple config file for cross-validation
     values_to_fill_dict = {'experiment_name': exp_name,
@@ -447,7 +445,7 @@ def check_grid_search_cv_results(task, do_grid_search):
                            'grid_search': json.dumps(do_grid_search),
                            'objectives': "['f1_score_micro']",
                            'featureset_names': "['f0']",
-                           'learners': '{}'.format(json.dumps(learners)),
+                           'learners': json.dumps(learners),
                            'log': output_dir,
                            'results': output_dir}
     if task == 'train':
@@ -490,8 +488,7 @@ def check_grid_search_cv_results(task, do_grid_search):
 
     # now make sure that the results json file was produced
     for learner in learners:
-        results_file_name = ('{}_f0_{}.results.json'
-                             .format(exp_name, learner))
+        results_file_name = f'{exp_name}_f0_{learner}.results.json'
         actual_results_file_path = join(_my_dir, 'output',
                                         results_file_name)
         expected_results_file_path = join(expected_path,
@@ -689,7 +686,7 @@ def test_learning_curve_implementation():
 
     # get the features from this data into a FeatureSet instance we can use
     # with the SKLL API
-    feature_names = ['f{:02}'.format(n) for n in range(X.shape[1])]
+    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -726,7 +723,7 @@ def test_learning_curve_output():
     outprefix = 'test_learning_curve'
 
     # make sure that the TSV file is created with the right columns
-    output_tsv_path = join(_my_dir, 'output', '{}_summary.tsv'.format(outprefix))
+    output_tsv_path = join(_my_dir, 'output', f'{outprefix}_summary.tsv')
     ok_(exists(output_tsv_path))
     with open(output_tsv_path, 'r') as tsvf:
         r = csv.reader(tsvf, dialect=csv.excel_tab)
@@ -742,7 +739,7 @@ def test_learning_curve_output():
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
         ok_(exists(join(_my_dir,
                         'output',
-                        '{}_{}.png'.format(outprefix, featureset_name))))
+                        f'{outprefix}_{featureset_name}.png')))
 
 
 def test_learning_curve_output_with_objectives():
@@ -763,7 +760,7 @@ def test_learning_curve_output_with_objectives():
     outprefix = 'test_learning_curve'
 
     # make sure that the TSV file is created with the right columns
-    output_tsv_path = join(_my_dir, 'output', '{}_summary.tsv'.format(outprefix))
+    output_tsv_path = join(_my_dir, 'output', f'{outprefix}_summary.tsv')
     ok_(exists(output_tsv_path))
     with open(output_tsv_path, 'r') as tsvf:
         r = csv.reader(tsvf, dialect=csv.excel_tab)
@@ -779,7 +776,7 @@ def test_learning_curve_output_with_objectives():
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
         ok_(exists(join(_my_dir,
                         'output',
-                        '{}_{}.png'.format(outprefix, featureset_name))))
+                        f'{outprefix}_{featureset_name}.png')))
 
 
 def test_learning_curve_plots():
@@ -801,7 +798,7 @@ def test_learning_curve_plots():
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
         ok_(exists(join(_my_dir,
                         'output',
-                        '{}_{}.png'.format(outprefix, featureset_name))))
+                        f'{outprefix}_{featureset_name}.png')))
 
 
 def test_learning_curve_plots_with_objectives():
@@ -825,7 +822,7 @@ def test_learning_curve_plots_with_objectives():
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
         ok_(exists(join(_my_dir,
                         'output',
-                        '{}_{}.png'.format(outprefix, featureset_name))))
+                        f'{outprefix}_{featureset_name}.png')))
 
 
 def test_learning_curve_ylimits():
@@ -1143,7 +1140,7 @@ def test_send_warnings_to_log():
     # Run experiment
 
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', 'test_send_warnings{}'.format(suffix))
+    train_path = join(_my_dir, 'train', f'test_send_warnings{suffix}')
     config_path = fill_in_config_paths_for_single_file(join(_my_dir,
                                                             "configs",
                                                             "test_send_warnings_to_log"

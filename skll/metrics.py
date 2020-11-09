@@ -138,7 +138,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                     weights[i, j] = bool(diff)
                 else:
                     raise ValueError('Invalid weight scheme specified for '
-                                     'kappa: {}'.format(wt_scheme))
+                                     f'kappa: {wt_scheme}')
 
     hist_true = np.bincount(y_true, minlength=num_ratings)
     hist_true = hist_true[: num_ratings] / num_scored_items

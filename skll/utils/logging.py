@@ -12,7 +12,7 @@ import re
 import warnings
 
 orig_showwarning = warnings.showwarning
-SKLEARN_WARNINGS_RE = re.compile(re.escape("{0}sklearn{0}".format(sep)))
+SKLEARN_WARNINGS_RE = re.compile(re.escape(f"{sep}sklearn{sep}"))
 
 
 def send_sklearn_warnings_to_logger(logger, message, category, filename,
@@ -24,10 +24,7 @@ def send_sklearn_warnings_to_logger(logger, message, category, filename,
     """
 
     if SKLEARN_WARNINGS_RE.search(filename):
-        logger.warning('{}:{}: {}:{}'.format(filename,
-                                             lineno,
-                                             category.__name__,
-                                             message))
+        logger.warning(f'{filename}:{lineno}: {category.__name__}:{message}')
     else:
         orig_showwarning(message, category, filename, lineno,
                          file=file, line=line)

@@ -63,18 +63,18 @@ def tearDown():
     Clean up files created during testing.
     """
     for filetype in ['csv', 'jsonlines', 'libsvm', 'tsv']:
-        filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
+        filepath = join(_my_dir, 'other', f'empty.{filetype}')
         if exists(filepath):
             os.unlink(filepath)
 
-    filepaths = [join(_my_dir, 'other', '{}.jsonlines'.format(x)) for x in ['test_string_ids', 'test_string_ids_df', 'test_string_labels_df']]
+    filepaths = [join(_my_dir, 'other', f'{x}.jsonlines') for x in ['test_string_ids', 'test_string_ids_df', 'test_string_labels_df']]
     for filepath in filepaths:
         if exists(filepath):
             os.unlink(filepath)
 
 
 def _create_empty_file(filetype):
-    filepath = join(_my_dir, 'other', 'empty.{}'.format(filetype))
+    filepath = join(_my_dir, 'other', f'empty.{filetype}')
     with open(filepath, 'w'):
         pass
     return filepath
@@ -92,7 +92,7 @@ def test_empty_ids():
                                n_classes=3, random_state=1234567890)
 
     # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    feature_names = [f'f{n}' for n in range(1, 5)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -432,13 +432,13 @@ def test_mismatch_ids_features():
                                n_classes=3, random_state=1234567890)
 
     # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    feature_names = [f'f{n}' for n in range(1, 5)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
 
     # get 200 ids since we don't want to match the number of feature rows
-    ids = ['EXAMPLE_{}'.format(i) for i in range(200)]
+    ids = [f'EXAMPLE_{i}' for i in range(200)]
 
     # This should raise a ValueError
     FeatureSet('test', ids, features=features, labels=y)
@@ -460,13 +460,13 @@ def test_mismatch_labels_features():
     y2 = np.hstack([y, y])
 
     # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    feature_names = [f'f{n}' for n in range(1, 5)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
 
     # get 100 ids
-    ids = ['EXAMPLE_{}'.format(i) for i in range(100)]
+    ids = [f'EXAMPLE_{i}' for i in range(100)]
 
     # This should raise a ValueError
     FeatureSet('test', ids, features=features, labels=y2)
@@ -499,9 +499,9 @@ def check_filter_ids(inverse=False):
                                      train_test_ratio=1.0)
 
     # keep just the IDs after Example_50 or do the inverse
-    ids_to_filter = ['EXAMPLE_{}'.format(i) for i in range(51, 101)]
+    ids_to_filter = [f'EXAMPLE_{i}' for i in range(51, 101)]
     if inverse:
-        ids_kept = ['EXAMPLE_{}'.format(i) for i in range(1, 51)]
+        ids_kept = [f'EXAMPLE_{i}' for i in range(1, 51)]
     else:
         ids_kept = ids_to_filter
     fs.filter(ids=ids_to_filter, inverse=inverse)
@@ -697,8 +697,8 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
     labels = []
     for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, j) if not numeric_ids else j
-        x = {"f{:03d}".format(feat_num): np.random.randint(0, 4) for feat_num
+        ex_id = f"{y}{j}" if not numeric_ids else j
+        x = {f"f{feat_num:03d}": np.random.randint(0, 4) for feat_num
              in range(num_feat_files * num_feats_per_file)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
         ids.append(ex_id)
@@ -709,14 +709,14 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
     subset_dict = {}
     for i in range(num_feat_files):
         feat_num = i * num_feats_per_file
-        subset_dict['{}'.format(i)] = ["f{:03d}".format(feat_num + j) for j in
-                                       range(num_feats_per_file)]
+        subset_dict[str(i)] = [f"f{feat_num + j:03d}" for j in
+                               range(num_feats_per_file)]
     train_path = join(merge_dir, suffix)
     train_fs = FeatureSet('train', ids, labels=labels, features=features)
     Writer.for_path(train_path, train_fs, subsets=subset_dict).write()
 
     # Merged
-    train_path = join(merge_dir, 'all{}'.format(suffix))
+    train_path = join(merge_dir, f'all{suffix}')
     Writer.for_path(train_path, train_fs).write()
 
 
@@ -728,7 +728,7 @@ def check_load_featureset(suffix, numeric_ids):
 
     # Load unmerged data and merge it
     dirpath = join(_my_dir, 'train', 'test_merging')
-    featureset = ['{}'.format(i) for i in range(num_feat_files)]
+    featureset = [str(i) for i in range(num_feat_files)]
     merged_exs = load_featureset(dirpath, featureset, suffix, quiet=True)
 
     # Load pre-merged data
@@ -806,8 +806,8 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=Tru
     labels = [] if with_labels else None
     for j in range(num_examples):
         y = "dog" if j % 2 == 0 else "cat"
-        ex_id = "{}{}".format(y, j)
-        x = {"f{:03d}".format(feat_num): np.random.randint(4) for feat_num
+        ex_id = f"{y}{j}"
+        x = {f"f{feat_num:03d}": np.random.randint(4) for feat_num
              in range(num_feat_files * num_feats_per_file)}
         x = OrderedDict(sorted(x.items(), key=lambda t: t[0]))
         ids.append(ex_id)
@@ -828,23 +828,20 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=Tru
         label_map = None
 
     # get the feature name prefix
-    feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'),
-                                            to_suffix.lstrip('.'))
+    feature_name_prefix = f"{from_suffix.lstrip('.')}_to_{to_suffix.lstrip('.')}"
 
     # use '_unlabeled' as part of any file names when not using labels
     with_labels_part = '' if with_labels else '_unlabeled'
 
     # Write out unmerged features in the `from_suffix` file format
     for i in range(num_feat_files):
-        train_path = join(convert_dir, '{}_{}{}{}'.format(feature_name_prefix,
-                                                          i,
-                                                          with_labels_part,
-                                                          from_suffix))
+        train_path = join(convert_dir,
+                          f'{feature_name_prefix}_{i}{with_labels_part}{from_suffix}')
         sub_features = []
         for example_num in range(num_examples):
             feat_num = i * num_feats_per_file
-            x = {"f{:03d}".format(feat_num + j):
-                 features[example_num]["f{:03d}".format(feat_num + j)] for j in
+            x = {f"f{feat_num + j:03d}":
+                 features[example_num][f"f{feat_num + j:03d}"] for j in
                  range(num_feats_per_file)}
             sub_features.append(x)
         train_fs = FeatureSet('sub_train', ids, labels=labels,
@@ -860,9 +857,8 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=Tru
             Writer.for_path(train_path, train_fs).write()
 
     # Write out the merged features in the `to_suffix` file format
-    train_path = join(convert_dir, '{}{}_all{}'.format(feature_name_prefix,
-                                                       with_labels_part,
-                                                       to_suffix))
+    train_path = join(convert_dir,
+                      f'{feature_name_prefix}{with_labels_part}_all{to_suffix}')
     train_fs = FeatureSet('train', ids, labels=labels, features=features,
                           vectorizer=feat_vectorizer)
 
@@ -895,8 +891,7 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
     dirpath = join(_my_dir, 'train', 'test_conversion')
 
     # get the feature name prefix
-    feature_name_prefix = '{}_to_{}'.format(from_suffix.lstrip('.'),
-                                            to_suffix.lstrip('.'))
+    feature_name_prefix = f"{from_suffix.lstrip('.')}_to_{to_suffix.lstrip('.')}"
 
     # use '_unlabeled' as part of any file names when not using labels
     with_labels_part = '' if with_labels else '_unlabeled'
@@ -904,14 +899,10 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
     # Load each unmerged feature file in the `from_suffix` format and convert
     # it to the `to_suffix` format
     for feature in range(num_feat_files):
-        input_file_path = join(dirpath, '{}_{}{}{}'.format(feature_name_prefix,
-                                                           feature,
-                                                           with_labels_part,
-                                                           from_suffix))
-        output_file_path = join(dirpath, '{}_{}{}{}'.format(feature_name_prefix,
-                                                            feature,
-                                                            with_labels_part,
-                                                            to_suffix))
+        input_file_path = join(dirpath,
+                               f'{feature_name_prefix}_{feature}{with_labels_part}{from_suffix}')
+        output_file_path = join(dirpath,
+                                f'{feature_name_prefix}_{feature}{with_labels_part}{to_suffix}')
         skll_convert_args = ['--quiet', input_file_path, output_file_path]
         if not with_labels:
             skll_convert_args.append('--no_labels')
@@ -919,7 +910,7 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
 
     # now load and merge all unmerged, converted features in the `to_suffix`
     # format
-    featureset = ['{}_{}{}'.format(feature_name_prefix, i, with_labels_part) for i in
+    featureset = [f'{feature_name_prefix}_{i}{with_labels_part}' for i in
                   range(num_feat_files)]
     label_col = 'y' if with_labels else None
     merged_exs = load_featureset(dirpath,
@@ -929,7 +920,7 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
                                  quiet=True)
 
     # Load pre-merged data in the `to_suffix` format
-    featureset = ['{}{}_all'.format(feature_name_prefix, with_labels_part)]
+    featureset = [f'{feature_name_prefix}{with_labels_part}_all']
     premerged_exs = load_featureset(dirpath,
                                     featureset,
                                     to_suffix,
@@ -984,7 +975,7 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
                   if use_feature_hasher else None)
 
     # convert the features into a list of dictionaries
-    feature_names = ['f{}'.format(n) for n in range(1, 5)]
+    feature_names = [f'f{n}' for n in range(1, 5)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))

@@ -122,7 +122,7 @@ def make_class_map_data():
     class_names = ['beagle', 'cat', 'dachsund', 'cat']
     for i in range(1, 101):
         y = class_names[i % 4]
-        ex_id = "{}{}".format(y, i)
+        ex_id = f"{y}{i}"
         # note that f1 and f5 are missing in all instances but f4 is not
         x = {"f2": i + 1, "f3": i + 2, "f4": i + 5}
         ids.append(ex_id)
@@ -140,7 +140,7 @@ def make_class_map_data():
     features = []
     for i in range(1, 51):
         y = class_names[i % 4]
-        ex_id = "{}{}".format(y, i)
+        ex_id = f"{y}{i}"
         # f1 and f5 are not missing in any instances here but f4 is
         x = {"f1": i, "f2": i + 2, "f3": i % 10, "f5": i * 2}
         ids.append(ex_id)
@@ -214,10 +214,10 @@ def make_scaling_data(use_feature_hashing=False):
 
     # since we want to use SKLL's FeatureSet class, we need to
     # create a list of IDs
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 1001)]
+    ids = [f'EXAMPLE_{n}' for n in range(1, 1001)]
 
     # create a list of dictionaries as the features
-    feature_names = ['f{}'.format(n) for n in range(1, 6)]
+    feature_names = [f'f{n}' for n in range(1, 6)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))

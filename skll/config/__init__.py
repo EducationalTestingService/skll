@@ -227,18 +227,15 @@ class SKLLConfigParser(configparser.ConfigParser):
         invalid_options = self._find_invalid_options()
         if invalid_options:
             raise KeyError('Configuration file contains the following '
-                           'unrecognized options: {}'
-                           .format(list(invalid_options)))
+                           f'unrecognized options: {list(invalid_options)}')
 
         incorrectly_specified_options, multiply_specified_options = self._find_ill_specified_options()
         if multiply_specified_options:
             raise KeyError('The following are defined in multiple sections: '
-                           '{}'.format([t[0] for t in
-                                        multiply_specified_options]))
+                           f'{[t[0] for t in multiply_specified_options]}')
         if incorrectly_specified_options:
             raise KeyError('The following are not defined in the appropriate '
-                           'sections: {}'.format([t[0] for t in
-                                                  incorrectly_specified_options]))
+                           f'sections: {[t[0] for t in incorrectly_specified_options]}')
 
 
 def parse_config_file(config_path, log_level=logging.INFO):
@@ -402,7 +399,7 @@ def parse_config_file(config_path, log_level=logging.INFO):
             os.makedirs(log_path)
 
     # Create a top-level log file under the log path
-    main_log_file = join(log_path, '{}.log'.format(experiment_name))
+    main_log_file = join(log_path, f'{experiment_name}.log')
 
     # Now create a SKLL logger that will log to this file as well
     # as to the console. Use the log level provided - note that
@@ -418,17 +415,16 @@ def parse_config_file(config_path, log_level=logging.INFO):
         raise ValueError("Configuration file does not contain task in the "
                          "[General] section.")
     if task not in VALID_TASKS:
-        raise ValueError('An invalid task was specified: {}.  Valid tasks are:'
-                         ' {}'.format(task, ', '.join(VALID_TASKS)))
+        raise ValueError(f'An invalid task was specified: {task}.  Valid '
+                         f'tasks are: {", ".join(VALID_TASKS)}')
 
     ####################
     # 2. Input section #
     ####################
     sampler = config.get("Input", "sampler")
     if sampler not in VALID_SAMPLERS:
-        raise ValueError('An invalid sampler was specified: {}.  Valid '
-                         'samplers are: {}'.format(sampler,
-                                                   ', '.join(VALID_SAMPLERS)))
+        raise ValueError(f'An invalid sampler was specified: {sampler}.  Valid'
+                         f' samplers are: {", ".join(VALID_SAMPLERS)}')
 
     # produce warnings if feature_hasher is set but hasher_features
     # is less than or equal to zero.
@@ -479,7 +475,7 @@ def parse_config_file(config_path, log_level=logging.INFO):
                                                     in featuresets):
         raise ValueError("The featuresets parameter should be a list of "
                          "features or a list of lists of features. You "
-                         "specified: {}".format(featuresets))
+                         f"specified: {featuresets}")
 
     featureset_names = yaml.safe_load(fix_json(config.get("Input",
                                                           "featureset_names")))
@@ -490,8 +486,7 @@ def parse_config_file(config_path, log_level=logging.INFO):
                 not all([isinstance(fs, str) for fs in
                         featureset_names])):
             raise ValueError("The featureset_names parameter should be a list "
-                             "of strings. You specified: {}"
-                             .format(featureset_names))
+                             f"of strings. You specified: {featureset_names}")
 
     # get the value for learning_curve_cv_folds and ensure
     # that it's a list of the same length as the value of
@@ -508,8 +503,8 @@ def parse_config_file(config_path, log_level=logging.INFO):
                 not len(learning_curve_cv_folds_list) == len(learners)):
             raise ValueError("The learning_curve_cv_folds parameter should "
                              "be a list of integers of the same length as "
-                             "the number of learners. You specified: {}"
-                             .format(learning_curve_cv_folds_list))
+                             "the number of learners. You specified: "
+                             f"{learning_curve_cv_folds_list}")
 
     # get the value for learning_curve_train_sizes and ensure
     # that it's a list of either integers (sizes) or
@@ -524,8 +519,8 @@ def parse_config_file(config_path, log_level=logging.INFO):
             not all([isinstance(size, int) or isinstance(size, float) for size in
                      learning_curve_train_sizes])):
             raise ValueError("The learning_curve_train_sizes parameter should "
-                             "be a list of integers or floats. You specified: {}"
-                             .format(learning_curve_train_sizes))
+                             "be a list of integers or floats. You specified: "
+                             f"{learning_curve_train_sizes}")
 
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
@@ -546,8 +541,8 @@ def parse_config_file(config_path, log_level=logging.INFO):
     # four available choices
     feature_scaling = config.get("Input", "feature_scaling")
     if feature_scaling not in VALID_FEATURE_SCALING_OPTIONS:
-        raise ValueError("Invalid value for feature_scaling parameter: {}"
-                         .format(feature_scaling))
+        raise ValueError("Invalid value for feature_scaling parameter: "
+                         f"{feature_scaling}")
 
     suffix = config.get("Input", "suffix")
     label_col = config.get("Input", "label_col")
@@ -615,14 +610,14 @@ def parse_config_file(config_path, log_level=logging.INFO):
     # featuresets
     if train_file:
         train_path = train_file
-        featuresets = [['train_{}'.format(basename(train_file))]]
+        featuresets = [[f'train_{basename(train_file)}']]
         suffix = ''
 
     # if test_file is specified, then assign its value to test_path to
     # enable compatibility with the pre-existing featuresets architecture
     if test_file:
         test_path = test_file
-        featuresets[0][0] += '_test_{}'.format(basename(test_file))
+        featuresets[0][0] += f'_test_{basename(test_file)}'
 
     # make sure all the specified paths/files exist
     train_path = locate_file(train_path, config_dir)
@@ -748,15 +743,15 @@ def parse_config_file(config_path, log_level=logging.INFO):
             grid_objectives = []
     if task in ['cross_validate', 'train', 'learning_curve'] and test_path:
         raise ValueError('The test set should not be set when task is '
-                         '{}.'.format(task))
+                         f'{task}.')
     if task in ['train', 'predict'] and results_path and not do_grid_search:
         raise ValueError('The results path should not be set when task is '
-                         '{} and "grid_search" is set to False.'.format(task))
+                         f'{task} and "grid_search" is set to False.')
     if task == 'train' and not model_path:
         raise ValueError('The model path should be set when task is train.')
     if task in ['learning_curve', 'train'] and prediction_dir:
         raise ValueError('The predictions path should not be set when task is '
-                         '{}.'.format(task))
+                         f'{task}.')
     if task == 'learning_curve' and model_path:
         raise ValueError('The models path should not be set when task is '
                          'learning_curve.')
@@ -778,7 +773,7 @@ def parse_config_file(config_path, log_level=logging.INFO):
     if specified_probabilistic_metrics and not probability:
         raise ValueError("The 'probability' option must be 'true' "
                          " to compute the following: "
-                         "{}.".format(list(specified_probabilistic_metrics)))
+                         f"{list(specified_probabilistic_metrics)}.")
 
     # set the folds appropriately based on the task:
     #  (a) if the task is `train`/`evaluate`/`predict` and if an external
@@ -815,9 +810,9 @@ def parse_config_file(config_path, log_level=logging.INFO):
     if not featureset_names:
         featureset_names = [_munge_featureset_name(x) for x in featuresets]
     if len(featureset_names) != len(featuresets):
-        raise ValueError(('Number of feature set names (%s) does not match '
-                          'number of feature sets (%s).') %
-                         (len(featureset_names), len(featuresets)))
+        raise ValueError('Number of feature set names '
+                         f'({len(featureset_names)}) does not match number of'
+                         f' feature sets ({len(featuresets)}).')
 
     # store training/test set names for later use
     train_set_name = basename(train_path)

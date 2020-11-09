@@ -82,13 +82,13 @@ def main(argv=None):
                              "probability of the positive class will "
                              "always be in the last column.")
     parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(__version__))
+                        version=f'%(prog)s {__version__}')
 
     args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
                                 '%(message)s'))
     logger = logging.getLogger(__name__)
 
@@ -118,11 +118,10 @@ def main(argv=None):
     if (args.threshold is not None and
         (not is_probabilistic_classifier or
          len(learner.label_list) != 2)):
-        error_msg = ('Cannot threshold probabilities to predict '
-                     'positive class since given {} learner is '
-                     'either multi-class, non-probabilistic, or '
-                     'was not trained with probability=True'
-                     '.'.format(learner._model_type.__name__))
+        error_msg = ('Cannot threshold probabilities to predict positive '
+                     f'class since given {learner._model_type.__name__} '
+                     'learner is either multi-class, non-probabilistic, or '
+                     'was not trained with probability=True.')
         logger.error(error_msg)
         raise ValueError(error_msg)
 
@@ -130,9 +129,9 @@ def main(argv=None):
     # make sure that the learner is probabilistic
     if args.predict_labels and not is_probabilistic_classifier:
         error_msg = ('Cannot predict most likely labels from probabilities '
-                     'since given {} learner is either non-probabilistic or '
-                     'was not trained with probability=True'
-                     '.'.format(learner._model_type.__name__))
+                     f'since given {learner._model_type.__name__} learner is '
+                     'either non-probabilistic or was not trained with '
+                     'probability=True.')
         logger.error(error_msg)
         raise ValueError(error_msg)
 

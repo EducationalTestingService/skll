@@ -94,7 +94,7 @@ def main(argv=None):
                         action='store_true')
     parser.add_argument('--version',
                         action='version',
-                        version='%(prog)s {0}'.format(__version__))
+                        version=f'%(prog)s {__version__}')
     args = parser.parse_args(argv)
 
     # Default logging level is INFO unless we are being verbose
@@ -102,7 +102,7 @@ def main(argv=None):
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
                                 '%(message)s'), level=log_level)
 
     machines = None
