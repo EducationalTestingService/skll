@@ -392,7 +392,7 @@ def _classify_featureset(args):
             param_out = (f'{param_name}: {param_value}' for
                          param_name, param_value in
                          learner.model.get_params().items())
-            logger.info("Hyperparameters: {', '.join(param_out)}")
+            logger.info(f"Hyperparameters: {', '.join(param_out)}")
 
             # run on test set or cross-validate on training data,
             # depending on what was asked for

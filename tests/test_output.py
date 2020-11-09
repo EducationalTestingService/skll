@@ -87,8 +87,8 @@ def tearDown():
             if exists(join(config_dir, cf)):
                 os.unlink(join(config_dir, cf))
 
-        for output_file in glob(join(output_dir, f'test_{suffix}_*')) \
-                           + glob(join(output_dir, f'test_{suffix}.log')):
+        for output_file in (glob(join(output_dir, f'test_{suffix}_*')) +
+                            glob(join(output_dir, f'test_{suffix}.log'))):
             os.unlink(output_file)
 
     for suffix in VALID_TASKS:
