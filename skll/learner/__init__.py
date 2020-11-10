@@ -422,7 +422,7 @@ class Learner(object):
             feature_names = []
             for idx in range(num_features):
                 index_str = str(idx + 1).zfill(index_width_in_feature_name)
-                feature_names.append('hashed_feature_{}'.format(index_str))
+                feature_names.append(f'hashed_feature_{index_str}')
             feature_indices = range(num_features)
             vocabulary = dict(zip(feature_names, feature_indices))
 
@@ -435,7 +435,7 @@ class Learner(object):
         # feature names and the corresponding coefficient
         for feat, idx in vocabulary.items():
             if coef[idx]:
-                res['{}{}'.format(feature_name_prefix, feat)] = coef[idx]
+                res[f'{feature_name_prefix}{feat}'] = coef[idx]
 
         return res
 
@@ -499,7 +499,10 @@ class Learner(object):
                 coef = self.model.coef_[i]
                 coef = coef.reshape(1, -1)
                 coef = self.feat_selector.inverse_transform(coef)[0]
-                label_res = self._convert_coef_array_to_feature_names(coef, feature_name_prefix='{}\t'.format(label))
+                label_res = self._convert_coef_array_to_feature_names(
+                    coef,
+                    feature_name_prefix=f'{label}\t'
+                )
                 res.update(label_res)
 
             if isinstance(self.model.intercept_, float):
@@ -527,14 +530,16 @@ class Learner(object):
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 class1 = self.label_list[class_pair[0]]
                 class2 = self.label_list[class_pair[1]]
-                class_pair_res = self._convert_coef_array_to_feature_names(coef, feature_name_prefix='{}-vs-{}\t'.format(class1, class2))
+                class_pair_res = self._convert_coef_array_to_feature_names(
+                    coef,
+                    feature_name_prefix=f'{class1}-vs-{class2}\t'
+                )
                 res.update(class_pair_res)
-                intercept['{}-vs-{}'.format(class1, class2)] = self.model.intercept_[i]
+                intercept[f'{class1}-vs-{class2}'] = self.model.intercept_[i]
         else:
             # not supported
-            raise ValueError(("{} is not supported by" +
-                              " model_params with its current settings."
-                              ).format(self._model_type.__name__))
+            raise ValueError(f"{self._model_type.__name__} is not supported "
+                             "by model_params with its current settings.")
 
         return res, intercept
 
@@ -560,8 +565,9 @@ class Learner(object):
         # LinearSVC doesn't support predict_proba
         self._probability = value
         if not hasattr(self.model_type, "predict_proba") and value:
-            self.logger.warning("Probability was set to True, but {} does not have "
-                                "a predict_proba() method.".format(self.model_type.__name__))
+            self.logger.warning("Probability was set to True, but "
+                                f"{self.model_type.__name__} does not have a "
+                                "predict_proba() method.")
             self._probability = False
 
     def __getstate__(self):
@@ -614,8 +620,8 @@ class Learner(object):
             if issubclass(self._model_type, key_class):
                 default_param_grid = grid
         if default_param_grid is None:
-            raise ValueError("%s is not a valid learner type." %
-                             (self._model_type.__name__,))
+            raise ValueError(f"{self._model_type.__name__} is not a valid "
+                             "learner type.")
 
         estimator = self._model_type(**self._model_kwargs)
 
@@ -662,10 +668,10 @@ class Learner(object):
         """
         max_feat_abs = np.max(np.abs(feat_array.data))
         if max_feat_abs > 1000.0:
-            self.logger.warning("You have a feature with a very large absolute "
-                                "value ({}).  That may cause the learning "
-                                "algorithm to crash or perform "
-                                "poorly.".format(max_feat_abs))
+            self.logger.warning("You have a feature with a very large "
+                                f"absolute value ({max_feat_abs}).  That may "
+                                "cause the learning algorithm to crash or "
+                                "perform poorly.")
 
     def _create_label_dict(self, examples):
         """
@@ -830,11 +836,10 @@ class Learner(object):
                 allowed_objectives = get_acceptable_regression_metrics()
 
             if grid_objective not in allowed_objectives:
-                raise ValueError("'{}' is not a valid objective "
-                                 "function for {} with "
-                                 "labels of type {}.".format(grid_objective,
-                                                             self._model_type.__name__,
-                                                             label_type.__name__))
+                raise ValueError(f"'{grid_objective}' is not a valid objective"
+                                 f" function for {self._model_type.__name__} "
+                                 "with labels of type "
+                                 f"{label_type.__name__}.")
 
             # If we're using a correlation metric for doing binary
             # classification and probability is set to true, we assume
@@ -843,14 +848,14 @@ class Learner(object):
             if (grid_objective in CORRELATION_METRICS and
                     estimator_type == 'classifier' and
                     self.probability):
-                self.logger.info('You specified "{}" as the objective with '
-                                 '"probability" set to "true". If this is '
-                                 'a binary classification task with integer '
-                                 'labels, the probabilities for the positive '
-                                 'class will be used to compute the '
-                                 'correlation.'.format(grid_objective))
+                self.logger.info(f'You specified "{grid_objective}" as the '
+                                 'objective with "probability" set to "true".'
+                                 ' If this is a binary classification task '
+                                 'with integer labels, the probabilities for '
+                                 'the positive class will be used to compute '
+                                 'the correlation.')
                 old_grid_objective = grid_objective
-                new_grid_objective = '{}_probs'.format(grid_objective)
+                new_grid_objective = f'{grid_objective}_probs'
                 metrics_module = import_module('skll.metrics')
                 metric_func = getattr(metrics_module, 'correlation')
                 SCORERS[new_grid_objective] = make_scorer(metric_func,
@@ -888,14 +893,14 @@ class Learner(object):
                 xtrain = xtrain.todense()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
-                    reason = ('{} does not support sparse ' +
-                              'matrices.').format(self._model_type.__name__)
+                    reason = (f'{self._model_type.__name__} does not support '
+                              'sparse matrices.')
                 else:
-                    reason = ('{} feature scaling requires a dense ' +
-                              'matrix.').format(self._feature_scaling)
-                raise MemoryError('Ran out of memory when converting training '
-                                  'data to dense. This was required because ' +
-                                  reason)
+                    reason = (f'{self._feature_scaling} feature scaling '
+                              'requires a dense matrix.')
+                raise MemoryError('Ran out of memory when converting training'
+                                  ' data to dense. This was required because '
+                                  f'{reason}')
 
         if isinstance(self.feat_vectorizer, FeatureHasher) and \
                 issubclass(self._model_type, MultinomialNB):
@@ -941,10 +946,10 @@ class Learner(object):
         if grid_search and not param_grid:
             if default_param_grid == {}:
                 self.logger.warning("SKLL has no default parameter grid "
-                                    "available for the {} learner and no "
-                                    "parameter grids were supplied. Using "
-                                    "default values instead of grid "
-                                    "search.".format(self._model_type.__name__))
+                                    "available for the "
+                                    f"{self._model_type.__name__} learner and"
+                                    " no parameter grids were supplied. Using"
+                                    " default values instead of grid search.")
                 grid_search = False
             else:
                 param_grid = default_param_grid
@@ -1147,10 +1152,10 @@ class Learner(object):
         if unacceptable_metrics:
             label_type = examples.labels.dtype.type
             raise ValueError("The following metrics are not valid "
-                             "for this learner ({}) with these labels of "
-                             "type {}: {}".format(self._model_type.__name__,
-                                                  label_type.__name__,
-                                                  list(unacceptable_metrics)))
+                             f"for this learner ({self._model_type.__name__})"
+                             " with these labels of type "
+                             f"{label_type.__name__}: "
+                             f"{list(unacceptable_metrics)}")
 
         # get the values of the evaluation metrics
         (conf_matrix,
@@ -1325,14 +1330,14 @@ class Learner(object):
                 xtest = xtest.todense()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
-                    reason = ('{} does not support sparse ' +
-                              'matrices.').format(self._model_type.__name__)
+                    reason = (f'{self._model_type.__name__} does not support '
+                              'sparse matrices.')
                 else:
-                    reason = ('{} feature scaling requires a dense ' +
-                              'matrix.').format(self._feature_scaling)
-                raise MemoryError('Ran out of memory when converting test ' +
-                                  'data to dense. This was required because ' +
-                                  reason)
+                    reason = (f'{self._feature_scaling} feature scaling '
+                              'requires a dense matrix.')
+                raise MemoryError('Ran out of memory when converting test '
+                                  'data to dense. This was required because '
+                                  f'{reason}')
 
         # Scale xtest if necessary
         if not issubclass(self._model_type, MultinomialNB):
@@ -1618,7 +1623,8 @@ class Learner(object):
                        examples,
                        metric,
                        cv_folds=10,
-                       train_sizes=np.linspace(0.1, 1.0, 5)):
+                       train_sizes=np.linspace(0.1, 1.0, 5),
+                       override_minimum=False):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
@@ -1648,6 +1654,13 @@ class Learner(object):
             samples usually have to be big enough to contain
             at least one sample from each class.
             Defaults to  ``np.linspace(0.1, 1.0, 5)``.
+        override_minimum : bool, optional
+            Learning curves can be unreliable for very small sizes
+            esp. for > 2 labels. If this option is set to ``True``, the
+            learning curve would be generated even if the number
+            of example is less 500 along with a warning. If ``False``,
+            the curve is not generated and an exception is raised instead.
+            Defaults to ``False``.
 
         Returns
         -------
@@ -1658,7 +1671,26 @@ class Learner(object):
         num_examples : list of int
             The numbers of training examples used to generate
             the curve
+
+        Raises
+        ------
+        ValueError
+            If the number of examples is less than 500.
         """
+
+        # check that the number of training examples is more than the minimum
+        # needed for generating a reliable learning curve
+        if len(examples) < 500:
+            if not override_minimum:
+                raise ValueError(f'Number of training examples provided - {len(examples)} - '
+                                 f'is less than the minimum needed - {500} - '
+                                 f'for the learning curve to be reliable.')
+            else:
+                self.logger.warning(f'Because the number of training examples provided - '
+                                    f'{len(examples)} - is less than the ideal minimum - {500} - '
+                                    f'learning curve generation is unreliable'
+                                    f' and might break')
+
         # Call train setup before since we need to train
         # the learner eventually
         self._create_label_dict(examples)

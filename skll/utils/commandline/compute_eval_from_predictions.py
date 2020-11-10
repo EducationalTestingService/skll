@@ -16,7 +16,7 @@ from skll.version import __version__
 
 # Make warnings from built-in warnings module get formatted more nicely
 logging.captureWarnings(True)
-logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
+logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
                             '%(message)s'))
 logger = logging.getLogger(__name__)
 
@@ -132,9 +132,10 @@ def compute_eval_from_predictions(examples_file,
                 pred[row[0]] = safe_float(prediction)
         else:
             if prediction_method is not None:
-                logger.warning("A prediction method was provided, but the predictions "
-                               "file doesn't contain probabilities. Ignoring prediction "
-                               "method '{}'.".format(prediction_method))
+                logger.warning("A prediction method was provided, but the "
+                               "predictions file doesn't contain "
+                               "probabilities. Ignoring prediction method "
+                               f"'{prediction_method}'.")
 
             for row in reader:
                 pred[row[0]] = safe_float(row[1])
@@ -181,13 +182,14 @@ def main(argv=None):
                              "Supported methods are 'highest' (default) and "
                              "'expected_value' (only works with integer classes).")
     parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(__version__))
+                        version=f'%(prog)s {__version__}')
     args = parser.parse_args(argv)
 
     supported_prediction_methods = {"highest", "expected_value"}
     if (args.method is not None) and (args.method not in supported_prediction_methods):
-        raise KeyError("Unrecognized prediction method '{}'. Supported methods are "
-                       "'highest' and 'expected_value'.")
+        raise KeyError(f"Unrecognized prediction method '{args.method}'. "
+                       "Supported methods are 'highest' and "
+                       "'expected_value'.")
 
     scores = compute_eval_from_predictions(args.examples_file,
                                            args.predictions_file,
@@ -195,8 +197,7 @@ def main(argv=None):
                                            args.method)
 
     for metric_name in args.metric_names:
-        print("{}\t{}\t{}".format(scores[metric_name],
-                                  metric_name, args.predictions_file))
+        print(f"{scores[metric_name]}\t{metric_name}\t{args.predictions_file}")
 
 
 if __name__ == '__main__':

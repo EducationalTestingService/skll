@@ -221,5 +221,5 @@ IRIS Example on Binder
 ----------------------
 If you prefer using an interactive Jupyter notebook to learn about SKLL, you can do so by clicking the launch button below. 
 
-.. image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/master?filepath=examples%2FTutorial.ipynb
+.. image:: https://static.mybinder.org/badge_logo.svg
+ :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/main?filepath=examples%2FTutorial.ipynb

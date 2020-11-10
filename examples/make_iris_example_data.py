@@ -31,7 +31,7 @@ def main():
 
     examples = [{'id': 'EXAMPLE_{}'.format(i),
                  'y': y,
-                 'x': {'f{}'.format(j): x_val for j, x_val in enumerate(x)}}
+                 'x': {f'f{j}': x_val for j, x_val in enumerate(x)}}
                 for i, (x, y) in enumerate(zip(X, Y))]
 
     examples_train, examples_test = train_test_split(examples, test_size=0.33,
@@ -47,7 +47,7 @@ def main():
                                       'example_iris_features.jsonlines')
         with open(jsonlines_path, 'w') as f:
             for ex in examples:
-                f.write('{}\n'.format(json.dumps(ex)))
+                f.write(f'{json.dumps(ex)}\n')
     print('done')
 
 

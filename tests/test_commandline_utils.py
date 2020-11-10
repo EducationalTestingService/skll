@@ -765,7 +765,7 @@ def test_mutually_exclusive_generate_predictions_args():
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
-    generate_cmd = ['-t {}'.format(threshold), '-p']
+    generate_cmd = [f'-t {threshold}', '-p']
     generate_cmd.extend([model_file, input_file])
     gp.main(generate_cmd)
 
@@ -780,12 +780,10 @@ def check_skll_convert(from_suffix, to_suffix, id_type):
     # now write out this feature set in the given suffix
     from_suffix_file = join(_my_dir,
                             'other',
-                            'test_skll_convert_{}_ids_in{}'.format(id_type,
-                                                                   from_suffix))
+                            f'test_skll_convert_{id_type}_ids_in{from_suffix}')
     to_suffix_file = join(_my_dir,
                           'other',
-                          'test_skll_convert_{}_ids_out{}'.format(id_type,
-                                                                  to_suffix))
+                          f'test_skll_convert_{id_type}_ids_out{to_suffix}')
 
     writer = EXT_TO_WRITER[from_suffix](from_suffix_file, orig_fs, quiet=True)
     writer.write()
@@ -1067,7 +1065,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
                 feature_index = int(feature.split('_')[-1]) - 1
             else:
                 feature_index = learner.feat_vectorizer.vocabulary_[feature]
-            parsed_weights_dict['{}'.format(class_pair)][feature_index] = safe_float(weight)
+            parsed_weights_dict[class_pair][feature_index] = safe_float(weight)
 
         if sort_by_labels:
             # making sure that the weights are sorted by label
@@ -1098,7 +1096,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
         # the same for intercepts which are even easier to validate
         # since they _only_ depend on the class pair
         for idx, (class1, class2) in enumerate(itertools.combinations([0, 1, 2], 2)):
-            class_pair_label = '{}-vs-{}'.format(class1, class2)
+            class_pair_label = f'{class1}-vs-{class2}'
             computed_coefficients = np.array(parsed_weights_dict[class_pair_label])
             # we want to remove any extra zeros here for features that ended up
             # with zero weights since those are never printed out
@@ -1277,7 +1275,7 @@ def check_run_experiments_argparse(multiple_config_files=False,
         config_files.extend([config_file2_name])
 
     if n_ablated_features != 'all':
-        rex_cmd_args.extend(['-a', '{}'.format(n_ablated_features)])
+        rex_cmd_args.extend(['-a', str(n_ablated_features)])
     else:
         rex_cmd_args.append('-A')
 
@@ -1291,8 +1289,7 @@ def check_run_experiments_argparse(multiple_config_files=False,
         rex_cmd_args.append('-l')
     else:
         machine_list = ['"foo.1.org"', '"x.test.com"', '"z.a.b.d"']
-        rex_cmd_args.append('-m')
-        rex_cmd_args.append('{}'.format(','.join(machine_list)))
+        rex_cmd_args.extend(['-m', ','.join(machine_list)])
 
     rex_cmd_args.extend(['-q', 'foobar.q'])
 
@@ -1352,8 +1349,8 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
     writer_class = EXT_TO_WRITER[extension]
 
     # create some dummy input and output filenames
-    infile = 'foo{}'.format(extension)
-    outfile = 'bar{}'.format(extension)
+    infile = f'foo{extension}'
+    outfile = f'bar{extension}'
 
     # create a simple featureset with actual ids, labels and features
     fs, _ = make_classification_data(num_labels=3, train_test_ratio=1.0)
@@ -1373,9 +1370,9 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
 
     elif filter_type == 'id':
         if inverse:
-            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(1, 100, 2)]
+            ids_to_keep = [f'EXAMPLE_{x}' for x in range(1, 100, 2)]
         else:
-            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(2, 102, 2)]
+            ids_to_keep = [f'EXAMPLE_{x}' for x in range(2, 102, 2)]
 
         ff_cmd_args.append('-I')
 
@@ -1499,9 +1496,9 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
 
     elif filter_type == 'id':
         if inverse:
-            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(1, 100, 2)]
+            ids_to_keep = [f'EXAMPLE_{x}' for x in range(1, 100, 2)]
         else:
-            ids_to_keep = ['EXAMPLE_{}'.format(x) for x in range(2, 102, 2)]
+            ids_to_keep = [f'EXAMPLE_{x}' for x in range(2, 102, 2)]
 
         ff_cmd_args.append('-I')
 
@@ -1628,7 +1625,7 @@ def test_filter_features_unmatched_formats():
     # format
     for inext, outext in combinations(['.arff', '.ndj', '.tsv',
                                        '.jsonlines', '.csv'], 2):
-        ff_cmd_args = ['foo{}'.format(inext), 'bar{}'.format(outext), '-f',
+        ff_cmd_args = [f'foo{inext}', f'bar{outext}', '-f',
                        'a', 'b', 'c']
         yield check_filter_features_raises_system_exit, ff_cmd_args
 
@@ -1646,9 +1643,9 @@ def check_join_features_argparse(extension, label_col='y', id_col='id',
     writer_class = EXT_TO_WRITER[extension]
 
     # create some dummy input and output filenames
-    infile1 = join(_my_dir, 'other', 'test_join_features1{}'.format(extension))
-    infile2 = join(_my_dir, 'other', 'test_join_features2{}'.format(extension))
-    outfile = 'bar{}'.format(extension)
+    infile1 = join(_my_dir, 'other', f'test_join_features1{extension}')
+    infile2 = join(_my_dir, 'other', f'test_join_features2{extension}')
+    outfile = f'bar{extension}'
 
     # create a simple featureset with actual ids, labels and features
     fs1, _ = make_classification_data(num_labels=3,
@@ -1771,8 +1768,7 @@ def test_join_features_unmatched_input_formats():
     # formats
     for ext1, ext2 in combinations(['.arff', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
-        jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext2),
-                       'baz{}'.format(ext1)]
+        jf_cmd_args = [f'foo{ext1}', f'bar{ext2}', f'baz{ext1}']
         yield check_join_features_raises_system_exit, jf_cmd_args
 
 
@@ -1781,8 +1777,7 @@ def test_join_features_unmatched_output_format():
     # format
     for ext1, ext2 in combinations(['.arff', '.ndj', '.tsv',
                                     '.jsonlines', '.csv'], 2):
-        jf_cmd_args = ['foo{}'.format(ext1), 'bar{}'.format(ext1),
-                       'baz{}'.format(ext2)]
+        jf_cmd_args = [f'foo{ext1}', f'bar{ext1}', f'baz{ext2}']
         yield check_join_features_raises_system_exit, jf_cmd_args
 
 
@@ -1798,7 +1793,7 @@ def test_filter_features_with_drop_blanks():
 
     # create the expected results
     df_expected = df.copy().dropna().reset_index(drop=True)
-    df_expected['id'] = ['EXAMPLE_{}'.format(i) for i in range(4)]
+    df_expected['id'] = [f'EXAMPLE_{i}' for i in range(4)]
     df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
 
     csv_infile = join(_my_dir, 'other', 'features', 'features_drop_blanks.csv')
@@ -1835,7 +1830,7 @@ def test_filter_features_with_replace_blanks_with():
 
     # create the expected results
     df_expected = df.fillna(4.5).copy()
-    df_expected['id'] = ['EXAMPLE_{}'.format(i) for i in range(6)]
+    df_expected['id'] = [f'EXAMPLE_{i}' for i in range(6)]
     df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
 
     csv_infile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with.csv')

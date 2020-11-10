@@ -79,17 +79,15 @@ class FeatureSet(object):
                 raise ValueError('A list of IDs is required')
             num_ids = self.ids.shape[0]
             if num_feats != num_ids:
-                raise ValueError(('Number of IDs (%s) does not equal '
-                                  'number of feature rows (%s)') % (num_ids,
-                                                                    num_feats))
+                raise ValueError(f'Number of IDs ({num_ids}) does not equal '
+                                 f'number of feature rows ({num_feats})')
             if self.labels is None:
                 self.labels = np.empty(num_feats)
                 self.labels.fill(None)
             num_labels = self.labels.shape[0]
             if num_feats != num_labels:
-                raise ValueError(('Number of labels (%s) does not equal '
-                                  'number of feature rows (%s)') % (num_labels,
-                                                                    num_feats))
+                raise ValueError(f'Number of labels ({num_labels}) does not '
+                                 f'equal number of feature rows ({num_feats})')
 
     def __contains__(self, value):
         """
@@ -452,7 +450,7 @@ class FeatureSet(object):
                             else None)
             sliced_labels = (self.labels[value] if self.labels is not None
                              else None)
-            return FeatureSet('{}_{}'.format(self.name, value), sliced_ids,
+            return FeatureSet(f'{self.name}_{value}', sliced_ids,
                               features=sliced_feats, labels=sliced_labels,
                               vectorizer=self.vectorizer)
         else:
@@ -513,12 +511,12 @@ class FeatureSet(object):
             labels2 = fs.labels[ids_for_split2]
             features2 = fs.features[ids_for_split2]
 
-        fs1 = FeatureSet('{}_1'.format(fs.name),
+        fs1 = FeatureSet(f'{fs.name}_1',
                          ids1,
                          labels=labels1,
                          features=features1,
                          vectorizer=fs.vectorizer)
-        fs2 = FeatureSet('{}_2'.format(fs.name),
+        fs2 = FeatureSet(f'{fs.name}_2',
                          ids2,
                          labels=labels2,
                          features=features2,

@@ -508,10 +508,10 @@ def make_rare_class_data():
     firing
     """
 
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 16)]
+    ids = [f'EXAMPLE_{n}' for n in range(1, 16)]
     y = [0] * 5 + [1] * 5 + [2] * 5
     X = np.vstack([np.identity(5), np.identity(5), np.identity(5)])
-    feature_names = ['f{}'.format(i) for i in range(1, 6)]
+    feature_names = [f'f{i}' for i in range(1, 6)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -620,12 +620,12 @@ def check_dummy_classifier_predict(model_args, train_labels, expected_output):
 
     # create hard-coded featuresets based with known labels
     train_fs = FeatureSet('classification_train',
-                          ['TrainExample{}'.format(i) for i in range(20)],
+                          [f'TrainExample{i}' for i in range(20)],
                           labels=train_labels,
                           features=[{"feature": i} for i in range(20)])
 
     test_fs = FeatureSet('classification_test',
-                         ['TestExample{}'.format(i) for i in range(10)],
+                         [f'TestExample{i}' for i in range(10)],
                          features=[{"feature": i} for i in range(20, 30)])
 
     # Ensure predictions are as expectedfor the given strategy
@@ -935,12 +935,12 @@ def make_float_class_data(labels_as_strings=False):
     floats to make sure they are preserved correctly
     """
 
-    ids = ['EXAMPLE_{}'.format(n) for n in range(1, 76)]
+    ids = [f'EXAMPLE_{n}' for n in range(1, 76)]
     y = [1.2] * 25 + [1.5] * 25 + [1.8] * 25
     if labels_as_strings:
         y = list(map(str, y))
     X = np.vstack([np.identity(25), np.identity(25), np.identity(25)])
-    feature_names = ['f{}'.format(i) for i in range(1, 6)]
+    feature_names = [f'f{i}' for i in range(1, 6)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -1478,10 +1478,9 @@ def check_metric_values_for_classification(metric_name,
     NDJWriter.for_path(train_file, train_fs).write()
     NDJWriter.for_path(test_file, test_fs).write()
 
-    experiment_name = 'clf_metric_value_{}_{}_{}_{}'.format(use_probabilities,
-                                                            len(label_array),
-                                                            label_type.__name__,
-                                                            metric_name)
+    experiment_name = (f'clf_metric_value_{use_probabilities}_'
+                       f'{len(label_array)}_{label_type.__name__}_'
+                       f'{metric_name}')
 
     values_to_fill_dict = {'experiment_name': experiment_name,
                            'train_file': train_file,
@@ -1491,19 +1490,19 @@ def check_metric_values_for_classification(metric_name,
                            'results': output_dir,
                            'predictions': output_dir,
                            'probability': 'true' if use_probabilities else 'false',
-                           'metrics': "['{}']".format(metric_name)}
+                           'metrics': f"['{metric_name}']"}
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
-                                         '{}_{}'.format(metric_name, use_probabilities),
+                                         f'{metric_name}_{use_probabilities}',
                                          good_probability_option=True)
 
     # run this experiment and load the results_json and the SKLL model
     results_json_path = run_configuration(config_path, local=True, quiet=True)[0]
     results_obj = json.load(open(results_json_path, 'r'))[0]
     model_file_path = join(output_dir,
-                           '{}_metric_{}.model'.format(experiment_name,
-                                                       results_obj['learner_name']))
+                           f'{experiment_name}_metric_'
+                           f'{results_obj["learner_name"]}.model')
     clf = Learner.from_file(model_file_path)
 
     # get the value of the metric from SKLL

@@ -3,7 +3,7 @@ joblib>=0.8
 numpy
 pandas
 ruamel.yaml
-scikit-learn==0.23.1
+scikit-learn>=0.23.1,<=0.23.2
 scipy
 seaborn
 tabulate

@@ -68,9 +68,9 @@ def load_cv_folds(folds_file, ids_to_floats=False):
                 try:
                     row[0] = float(row[0])
                 except ValueError:
-                    raise ValueError('You set ids_to_floats to true, but ID {}'
-                                     ' could not be converted to float'
-                                     .format(row[0]))
+                    raise ValueError('You set ids_to_floats to true, but ID '
+                                     f'{row[0]} could not be converted to '
+                                     'float')
             res[row[0]] = row[1]
 
     return res
@@ -167,8 +167,8 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     # and parse it correctly
     metrics = yaml.safe_load(fix_json(metrics))
     if not isinstance(metrics, list):
-        raise TypeError("{} should be a list, not a {}.".format(option_name,
-                                                                type(metrics)))
+        raise TypeError(f"{option_name} should be a list, not a "
+                        f"{type(metrics)}.")
 
     # `mean_squared_error` is no longer supported.
     # It has been replaced by `neg_mean_squared_error`

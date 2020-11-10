@@ -91,7 +91,7 @@ def main(argv=None):
                               mapping from.',
                         type=argparse.FileType('rb'))
     parser.add_argument('--version', action='version',
-                        version='%(prog)s {0}'.format(__version__))
+                        version=f'%(prog)s {__version__}')
     args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
@@ -105,9 +105,9 @@ def main(argv=None):
     output_extension = os.path.splitext(args.outfile)[1].lower()
 
     if input_extension not in EXT_TO_READER:
-        logger.error(('Input file must be in either .arff, .csv, .jsonlines, '
-                      '.libsvm, .ndj, or .tsv format. You specified: '
-                      '{}').format(input_extension))
+        logger.error('Input file must be in either .arff, .csv, .jsonlines, '
+                     '.libsvm, .ndj, or .tsv format. You specified: '
+                     f'{input_extension}')
         sys.exit(1)
 
     # Build feature and label vectorizers from existing libsvm file if asked

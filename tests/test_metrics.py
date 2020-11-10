@@ -122,7 +122,7 @@ def check_f05_metrics(metric_name, average_method):
     y_true = [1, 1, 1, 0, 0, 0]
     y_pred = [0, 1, 1, 1, 0, 0]
     skll_value = use_score_func(metric_name, y_true, y_pred)
-    sklearn_value = fbeta_score(y_true, y_pred, 0.5, average=average_method)
+    sklearn_value = fbeta_score(y_true, y_pred, beta=0.5, average=average_method)
     eq_(skll_value, sklearn_value)
 
 

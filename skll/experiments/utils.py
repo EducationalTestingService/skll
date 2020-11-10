@@ -49,8 +49,8 @@ def _check_job_results(job_results):
     logger.info('Checking job results')
     for result_dicts in job_results:
         if not result_dicts or 'task' not in result_dicts[0]:
-            logger.error('There was an error running the experiment:\n%s',
-                         result_dicts)
+            logger.error('There was an error running the experiment:\n'
+                         f'{result_dicts}')
 
 
 def _create_learner_result_dicts(task_results,
@@ -131,7 +131,7 @@ def _create_learner_result_dicts(task_results,
             headers = [""] + labels + ["Precision", "Recall", "F-measure"]
             rows = []
             for i, actual_label in enumerate(labels):
-                conf_matrix[i][i] = "[{}]".format(conf_matrix[i][i])
+                conf_matrix[i][i] = f"[{conf_matrix[i][i]}]"
                 label_prec = _get_stat_float(result_dict[actual_label],
                                              "Precision")
                 label_recall = _get_stat_float(result_dict[actual_label],
@@ -153,8 +153,8 @@ def _create_learner_result_dicts(task_results,
                                     stralign="right",
                                     floatfmt=".3f",
                                     tablefmt="grid")
-            result_table_str = '{}'.format(result_table)
-            result_table_str += '\n(row = reference; column = predicted)'
+            result_table_str = (f'{result_table}\n(row = reference; column = '
+                                'predicted)')
             learner_result_dict['result_table'] = result_table_str
             learner_result_dict['accuracy'] = fold_accuracy
             accuracy_sum += fold_accuracy
@@ -199,7 +199,7 @@ def _create_learner_result_dicts(task_results,
                                     headers=headers,
                                     floatfmt=".3f",
                                     tablefmt="psql")
-            learner_result_dict['result_table'] = '{}'.format(result_table)
+            learner_result_dict['result_table'] = str(result_table)
             learner_result_dict['accuracy'] = accuracy_sum / num_folds
         else:
             learner_result_dict['pearson'] = pearson_sum / num_folds

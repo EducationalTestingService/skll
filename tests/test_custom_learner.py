@@ -116,8 +116,8 @@ def test_majority_class_custom_learner():
     outprefix = 'test_majority_class_custom_learner'
 
     preds = read_predictions(join(_my_dir, 'output',
-                                  ('{}_{}_MajorityClassLearner_predictions.tsv'
-                                   .format(outprefix, outprefix))))
+                                  (f'{outprefix}_{outprefix}_'
+                                   'MajorityClassLearner_predictions.tsv')))
     expected = np.array([float(num_labels - 1) for x in preds])
     assert_array_equal(preds, expected)
 
@@ -154,13 +154,13 @@ def test_logistic_custom_learner():
 
     outprefix = 'test_logistic_custom_learner'
     preds = read_predictions(join(_my_dir, 'output',
-                                  ('{}_{}_CustomLogisticRegressionWrapper'
-                                   '_predictions.tsv'.format(outprefix,
-                                                             outprefix))))
+                                  f'{outprefix}_{outprefix}_'
+                                  'CustomLogisticRegressionWrapper'
+                                  '_predictions.tsv'))
 
     expected = read_predictions(join(_my_dir, 'output',
-                                     ('{}_{}_LogisticRegression_predictions.tsv'
-                                      .format(outprefix, outprefix))))
+                                     f'{outprefix}_{outprefix}_'
+                                     'LogisticRegression_predictions.tsv'))
 
     assert_array_equal(preds, expected)
 
@@ -200,8 +200,8 @@ def test_custom_learner_model_loading():
     # and delete the predictions file
     outprefix = 'test_model_custom_learner'
     pred_file = join(_my_dir, 'output',
-                     '{}_{}_CustomLogisticRegressionWrapper'
-                     '_predictions.tsv'.format(outprefix, outprefix))
+                     f'{outprefix}_{outprefix}_CustomLogisticRegressionWrapper'
+                     '_predictions.tsv')
     preds1 = read_predictions(pred_file)
     os.unlink(pred_file)
 

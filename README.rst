@@ -1,11 +1,11 @@
 SciKit-Learn Laboratory
 -----------------------
 
-.. image:: https://img.shields.io/travis/EducationalTestingService/skll/master.svg
+.. image:: https://img.shields.io/travis/EducationalTestingService/skll/main.svg
    :alt: Build status
    :target: https://travis-ci.org/EducationalTestingService/skll
 
-.. image:: https://codecov.io/gh/EducationalTestingService/skll/branch/master/graph/badge.svg
+.. image:: https://codecov.io/gh/EducationalTestingService/skll/branch/main/graph/badge.svg
   :target: https://codecov.io/gh/EducationalTestingService/skll
 
 .. image:: https://img.shields.io/pypi/v/skll.svg
@@ -28,7 +28,7 @@ SciKit-Learn Laboratory
    :alt: DOI for citing SKLL 1.0.0
 
 .. image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/master?filepath=examples%2FTutorial.ipynb
+ :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/main?filepath=examples%2FTutorial.ipynb
 
 
 This Python package provides command-line utilities to make it easier to run
@@ -163,4 +163,4 @@ See `GitHub releases <https://github.com/EducationalTestingService/skll/releases
 Contribute
 ~~~~~~~~~~
 
-Thank you for your interest in contributing to SKLL! See `CONTRIBUTING.md <https://github.com/EducationalTestingService/skll/blob/master/CONTRIBUTING.md>`__ for instructions on how to get started.
+Thank you for your interest in contributing to SKLL! See `CONTRIBUTING.md <https://github.com/EducationalTestingService/skll/blob/main/CONTRIBUTING.md>`__ for instructions on how to get started.
