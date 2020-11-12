@@ -9,9 +9,7 @@ the future.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-import os
-
-from os.path import abspath, dirname, exists, join
+from pathlib import Path
 
 from nose.tools import eq_, raises
 from numpy.testing import assert_almost_equal
@@ -19,6 +17,8 @@ from numpy.testing import assert_almost_equal
 from sklearn.metrics import fbeta_score
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from skll.metrics import kappa, use_score_func
+
+from . import output_dir, train_dir, test_dir
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
@@ -36,22 +36,13 @@ _KAPPA_INPUTS = [([1, 2, 3], [1, 2, 3]),
                  ([1, 2, 4], [1, 2, 4]),
                  ([1, 2, 4], [1, 2, 2])]
 
-_my_dir = abspath(dirname(__file__))
-
 
 def setup():
     """
     Create necessary directories for testing.
     """
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
+    for dir_path in [train_dir, test_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
 
 
 def check_kappa(y_true, y_pred, weights, allow_off_by_one, expected):

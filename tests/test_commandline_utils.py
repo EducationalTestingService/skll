@@ -11,15 +11,16 @@ import copy
 import itertools
 import os
 import sys
-import scipy as sp
-import numpy as np
-import pandas as pd
-
 from collections import defaultdict
 from glob import glob
 from itertools import combinations, product
-from os.path import abspath, dirname, exists, join
+from os.path import exists, join
 from io import StringIO
+from pathlib import Path
+
+import scipy as sp
+import numpy as np
+import pandas as pd
 
 try:
     from unittest.mock import create_autospec, patch
@@ -60,71 +61,41 @@ from skll.experiments.output import _write_summary_file
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from tests.utils import make_classification_data, make_regression_data
+from . import other_dir, output_dir, test_dir, train_dir
+from .utils import make_classification_data, make_regression_data
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-_my_dir = abspath(dirname(__file__))
 
 
 def setup():
     """
     Create necessary directories for testing.
     """
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
-    features_dir = join(_my_dir, 'other', 'features')
-    if not exists(features_dir):
-        os.makedirs(features_dir)
+    for dir_path in [train_dir, test_dir, output_dir,
+                     join(other_dir, 'features')]:
+        Path(dir_path).mkdir(exist_ok=True)
 
 
 def tearDown():
     """
     Clean up after tests.
     """
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-    other_dir = join(_my_dir, 'other')
 
-    if exists(join(test_dir, 'test_generate_predictions.jsonlines')):
-        os.unlink(join(test_dir, 'test_generate_predictions.jsonlines'))
+    for path in [join(test_dir, 'test_generate_predictions.jsonlines'),
+                 join(other_dir, 'summary_file'),
+                 join(other_dir, 'test_filter_features_input.arff')]:
+        Path(path).unlink(missing_ok=True)
 
-    for f in glob(join(output_dir, 'test_generate_predictions.tsv')):
-        os.unlink(f)
-
-    for model_chunk in glob(join(output_dir,
-                                 'test_print_model_weights.model*')):
-        os.unlink(model_chunk)
-
-    for model_chunk in glob(join(output_dir,
-                                 'test_generate_predictions.model*')):
-        os.unlink(model_chunk)
-
-    for model_chunk in glob(join(output_dir,
-                                 'test_generate_predictions_console.model*')):
-        os.unlink(model_chunk)
-
-    for f in glob(join(other_dir, 'test_skll_convert*')):
-        os.unlink(f)
-
-    if exists(join(other_dir, 'summary_file')):
-        os.unlink(join(other_dir, 'summary_file'))
-
-    if exists(join(other_dir, 'test_filter_features_input.arff')):
-        os.unlink(join(other_dir, 'test_filter_features_input.arff'))
-    for ffile in glob(join(other_dir,
-                           'test_join_features*')):
-        os.unlink(ffile)
-
-    for ffile in glob(join(other_dir, 'features', 'features*')):
-        os.unlink(ffile)
+    for glob_pattern in [join(output_dir, 'test_generate_predictions.tsv'),
+                         join(output_dir, 'test_print_model_weights.model*'),
+                         join(output_dir, 'test_generate_predictions.model*'),
+                         join(output_dir, 'test_generate_predictions_console.model*'),
+                         join(other_dir, 'test_skll_convert*'),
+                         join(other_dir, 'test_join_features*'),
+                         join(other_dir, 'features', 'features*')]:
+        for f in glob(glob_pattern):
+            Path(f).unlink(f)
 
 
 def test_compute_eval_from_predictions():
@@ -132,23 +103,22 @@ def test_compute_eval_from_predictions():
     Test compute_eval_from_predictions function console script
     """
 
-    pred_path = join(_my_dir, 'other',
+    pred_path = join(other_dir,
                      'test_compute_eval_from_predictions_predictions.tsv')
-    input_path = join(_my_dir, 'other',
+    input_path = join(other_dir,
                       'test_compute_eval_from_predictions.jsonlines')
 
     # we need to capture stdout since that's what main() writes to
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
                                          'unweighted_kappa']
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = mystdout = StringIO()
+    sys.stderr = mystderr = StringIO()
     try:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = mystdout = StringIO()
-        sys.stderr = mystderr = StringIO()
         cefp.main(compute_eval_from_predictions_cmd)
         score_rows = mystdout.getvalue().strip().split('\n')
-        err = mystderr.getvalue()
-        print(err)
+        print(mystderr.getvalue())
     finally:
         sys.stdout = old_stdout
         sys.stderr = old_stderr
@@ -170,20 +140,20 @@ def test_warning_when_prediction_method_and_no_probabilities():
     lc = LogCapture()
     lc.begin()
 
-    pred_path = join(_my_dir, 'other',
+    pred_path = join(other_dir,
                      'test_compute_eval_from_predictions_predictions.tsv')
-    input_path = join(_my_dir, 'other',
+    input_path = join(other_dir,
                       'test_compute_eval_from_predictions.jsonlines')
 
     # we need to capture stdout since that's what main() writes to
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
                                          'unweighted_kappa',
                                          '--method', 'highest']
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = mystdout = StringIO()
+    sys.stderr = mystderr = StringIO()
     try:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = mystdout = StringIO()
-        sys.stderr = mystderr = StringIO()
         cefp.main(compute_eval_from_predictions_cmd)
         _ = mystdout.getvalue().strip().split('\n')
         err = mystderr.getvalue()
@@ -192,9 +162,10 @@ def test_warning_when_prediction_method_and_no_probabilities():
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
-    log_msg = ("skll.utils.commandline.compute_eval_from_predictions: WARNING: A prediction "
-               "method was provided, but the predictions file doesn't contain "
-               "probabilities. Ignoring prediction method 'highest'.")
+    log_msg = ("skll.utils.commandline.compute_eval_from_predictions: "
+               "WARNING: A prediction method was provided, but the "
+               "predictions file doesn't contain probabilities. Ignoring "
+               "prediction method 'highest'.")
 
     eq_(lc.handler.buffer[-1], log_msg)
 
@@ -205,23 +176,22 @@ def test_compute_eval_from_predictions_with_probs():
     with probabilities in the predictions file.
     """
 
-    pred_path = join(_my_dir, 'other',
+    pred_path = join(other_dir,
                      'test_compute_eval_from_predictions_probs_predictions.tsv')
-    input_path = join(_my_dir, 'other',
+    input_path = join(other_dir,
                       'test_compute_eval_from_predictions_probs.jsonlines')
 
     # we need to capture stdout since that's what main() writes to
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson',
                                          'unweighted_kappa']
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = mystdout = StringIO()
+    sys.stderr = mystderr = StringIO()
     try:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = mystdout = StringIO()
-        sys.stderr = mystderr = StringIO()
         cefp.main(compute_eval_from_predictions_cmd)
         score_rows = mystdout.getvalue().strip().split('\n')
-        err = mystderr.getvalue()
-        print(err)
+        print(mystderr.getvalue())
     finally:
         sys.stdout = old_stdout
         sys.stderr = old_stderr
@@ -240,15 +210,14 @@ def test_compute_eval_from_predictions_with_probs():
     compute_eval_from_predictions_cmd = [input_path, pred_path,
                                          'explained_variance',
                                          'r2', '--method', 'expected_value']
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = mystdout = StringIO()
+    sys.stderr = mystderr = StringIO()
     try:
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = mystdout = StringIO()
-        sys.stderr = mystderr = StringIO()
         cefp.main(compute_eval_from_predictions_cmd)
         score_rows = mystdout.getvalue().strip().split('\n')
-        err = mystderr.getvalue()
-        print(err)
+        print(mystderr.getvalue())
     finally:
         sys.stdout = old_stdout
         sys.stderr = old_stderr
@@ -269,9 +238,9 @@ def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes
     calculated via expected_value and the classes are non numeric.
     """
 
-    pred_path = join(_my_dir, 'other',
+    pred_path = join(other_dir,
                      'test_compute_eval_from_predictions_nonnumeric_classes_predictions.tsv')
-    input_path = join(_my_dir, 'other',
+    input_path = join(other_dir,
                       'test_compute_eval_from_predictions_nonnumeric_classes.jsonlines')
 
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
@@ -285,9 +254,9 @@ def test_conflicting_prediction_and_example_ids():
     Make sure compute_eval_from_predictions breaks with ValueError when predictions and
     examples don't have the same id set in 'compute_eval_from_predictions'.
     """
-    pred_path = join(_my_dir, 'other',
+    pred_path = join(other_dir,
                      'test_compute_eval_from_predictions_probs_predictions.tsv')
-    input_path = join(_my_dir, 'other',
+    input_path = join(other_dir,
                       'test_compute_eval_from_predictions_different_ids.jsonlines')
 
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson']
@@ -309,25 +278,19 @@ def _run_generate_predictions_and_capture_output(generate_cmd, output_file):
 
     if output_file == 'stdout':
         # we need to capture stdout since that's what main() writes to
-        err = ''
+        old_stdout = sys.stdout
+        sys.stdout = mystdout = StringIO()
         try:
-            old_stdout = sys.stdout
-            old_stderr = sys.stderr
-            sys.stdout = mystdout = StringIO()
-            sys.stderr = mystderr = StringIO()
             gp.main(generate_cmd)
             out = mystdout.getvalue()
-            err = mystderr.getvalue()
             output_lines = out.strip().split('\n')
         finally:
             sys.stdout = old_stdout
-            sys.stderr = old_stderr
-            print(err)
     else:
         if exists(output_file):
             os.unlink(output_file)
         gp.main(generate_cmd)
-        with open(output_file, 'r') as outputfh:
+        with open(output_file) as outputfh:
             output_lines = [line.strip() for line in outputfh.readlines()]
 
     return output_lines
@@ -393,7 +356,7 @@ def check_generate_predictions(use_regression=False,
             test_fs.filter(features=['f01', 'f02', 'f03', 'f04'])
 
     # write out the test set to disk so we can use it as a file
-    test_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    test_file = join(test_dir, 'test_generate_predictions.jsonlines')
     NDJWriter.for_path(test_file, test_fs).write()
 
     # we need probabilities if we are using thresholds or label inference
@@ -406,7 +369,7 @@ def check_generate_predictions(use_regression=False,
                       probability=enable_probability,
                       pos_label_str=pos_label_str)
     learner.train(train_fs, grid_search=False)
-    model_file = join(_my_dir, 'output', 'test_generate_predictions.model')
+    model_file = join(output_dir, 'test_generate_predictions.model')
     learner.save(model_file)
 
     # now train equivalent sklearn estimators that we will use
@@ -470,7 +433,7 @@ def check_generate_predictions(use_regression=False,
 
     # are we using an output file or the console?
     if not use_stdout:
-        output_file = join(_my_dir, "output", "test_generate_predictions.tsv")
+        output_file = join(output_dir, "test_generate_predictions.tsv")
         generate_cmd.extend(['--output', output_file])
     else:
         output_file = 'stdout'
@@ -579,7 +542,7 @@ def test_generate_predictions_console_bad_input_ext():
     _ = learner.predict(test_fs)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    model_file = join(output_dir, 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
@@ -587,10 +550,10 @@ def test_generate_predictions_console_bad_input_ext():
 
     _ = _run_generate_predictions_and_capture_output(generate_cmd, 'stdout')
 
-    expected_log_mssg = ("skll.utils.commandline.generate_predictions: ERROR: Input "
-                         "file must be in either .arff, .csv, .jsonlines, "
-                         ".libsvm, .ndj, or .tsv format.  Skipping "
-                         "file fake_input_file.txt")
+    expected_log_mssg = ("skll.utils.commandline.generate_predictions: ERROR:"
+                         " Input file must be in either .arff, .csv, "
+                         ".jsonlines, .libsvm, .ndj, or .tsv format.  "
+                         "Skipping file fake_input_file.txt")
 
     eq_(lc.handler.buffer[-1], expected_log_mssg)
 
@@ -604,7 +567,7 @@ def test_generate_predictions_threshold_not_trained_with_probability():
                                                  num_labels=2)
 
     # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    input_file = join(test_dir, 'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -615,7 +578,7 @@ def test_generate_predictions_threshold_not_trained_with_probability():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    model_file = join(output_dir, 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
@@ -633,7 +596,7 @@ def test_generate_predictions_threshold_multi_class():
                                                  num_labels=4)
 
     # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    input_file = join(test_dir, 'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -644,7 +607,7 @@ def test_generate_predictions_threshold_multi_class():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    model_file = join(output_dir, 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
@@ -662,7 +625,7 @@ def test_generate_predictions_threshold_non_probabilistic():
                                                  num_labels=2)
 
     # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    input_file = join(test_dir, 'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -673,7 +636,7 @@ def test_generate_predictions_threshold_non_probabilistic():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    model_file = join(output_dir, 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
@@ -692,7 +655,7 @@ def test_generate_predictions_predict_labels_not_trained_with_probability():
                                                  num_labels=2)
 
     # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    input_file = join(test_dir, 'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -703,7 +666,7 @@ def test_generate_predictions_predict_labels_not_trained_with_probability():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    model_file = join(output_dir, 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
@@ -721,7 +684,7 @@ def test_generate_predictions_predict_labels_non_probabilistic():
                                                  num_labels=4)
 
     # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    input_file = join(test_dir, 'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -732,7 +695,7 @@ def test_generate_predictions_predict_labels_non_probabilistic():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    model_file = join(output_dir, 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
@@ -750,7 +713,7 @@ def test_mutually_exclusive_generate_predictions_args():
     threshold = 0.6
 
     # save the test feature set to an NDJ file
-    input_file = join(_my_dir, 'test', 'test_generate_predictions.jsonlines')
+    input_file = join(test_dir, 'test_generate_predictions.jsonlines')
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -761,7 +724,7 @@ def test_mutually_exclusive_generate_predictions_args():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(_my_dir, 'output', 'test_generate_predictions_console.model')
+    model_file = join(output_dir, 'test_generate_predictions_console.model')
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
@@ -778,11 +741,9 @@ def check_skll_convert(from_suffix, to_suffix, id_type):
                                           id_type=id_type)
 
     # now write out this feature set in the given suffix
-    from_suffix_file = join(_my_dir,
-                            'other',
+    from_suffix_file = join(other_dir,
                             f'test_skll_convert_{id_type}_ids_in{from_suffix}')
-    to_suffix_file = join(_my_dir,
-                          'other',
+    to_suffix_file = join(other_dir,
                           f'test_skll_convert_{id_type}_ids_out{to_suffix}')
 
     writer = EXT_TO_WRITER[from_suffix](from_suffix_file, orig_fs, quiet=True)
@@ -792,15 +753,13 @@ def check_skll_convert(from_suffix, to_suffix, id_type):
     skll_convert_cmd = [from_suffix_file, to_suffix_file, '--quiet']
 
     # we need to capture stderr to make sure we don't miss any errors
-    err = ''
+    old_stderr = sys.stderr
+    sys.stderr = mystderr = StringIO()
     try:
-        old_stderr = sys.stderr
-        sys.stderr = mystderr = StringIO()
         sk.main(skll_convert_cmd)
-        err = mystderr.getvalue()
+        print(mystderr.getvalue())
     finally:
         sys.stderr = old_stderr
-        print(err)
 
     # now read the converted file and appropriately set `ids_to_floats`
     # depending on the ID types that we generated earlier
@@ -842,8 +801,7 @@ def test_skll_convert_libsvm_map():
                                           one_string_feature=True)
 
     # now write out this feature set as a libsvm file
-    orig_libsvm_file = join(_my_dir, 'other',
-                            'test_skll_convert_libsvm_map.libsvm')
+    orig_libsvm_file = join(other_dir, 'test_skll_convert_libsvm_map.libsvm')
     writer = LibSVMWriter(orig_libsvm_file, orig_fs, quiet=True)
     writer.write()
 
@@ -861,22 +819,20 @@ def test_skll_convert_libsvm_map():
 
     # now run skll_convert to convert this into a libsvm file
     # but using the mapping specified in the first libsvm file
-    converted_libsvm_file = join(_my_dir, 'other',
+    converted_libsvm_file = join(other_dir,
                                  'test_skll_convert_libsvm_map2.libsvm')
 
     # now call skll convert's main function
     skll_convert_cmd = ['--reuse_libsvm_map', orig_libsvm_file,
                         '--quiet', orig_libsvm_file,
                         converted_libsvm_file]
-    err = ''
+    old_stderr = sys.stderr
+    sys.stderr = mystderr = StringIO()
     try:
-        old_stderr = sys.stderr
-        sys.stderr = mystderr = StringIO()
         sk.main(skll_convert_cmd)
-        err = mystderr.getvalue()
+        print(mystderr.getvalue())
     finally:
         sys.stderr = old_stderr
-        print(err)
 
     # now read the converted libsvm file into a featureset
     reader = LibSVMReader(converted_libsvm_file, quiet=True)
@@ -963,8 +919,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
         learner.train(train_fs, grid_search=True, grid_objective='pearson')
 
     # now save the model to disk
-    model_file = join(_my_dir, 'output',
-                      'test_print_model_weights.model')
+    model_file = join(output_dir, 'test_print_model_weights.model')
     learner.save(model_file)
 
     # now call print_model_weights main() and capture the output
@@ -972,19 +927,17 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
         print_model_weights_cmd = [model_file, "--sort_by_labels"]
     else:
         print_model_weights_cmd = [model_file]
-    err = ''
+    old_stderr = sys.stderr
+    old_stdout = sys.stdout
+    sys.stderr = mystderr = StringIO()
+    sys.stdout = mystdout = StringIO()
     try:
-        old_stderr = sys.stderr
-        old_stdout = sys.stdout
-        sys.stderr = mystderr = StringIO()
-        sys.stdout = mystdout = StringIO()
         pmw.main(print_model_weights_cmd)
         out = mystdout.getvalue()
-        err = mystderr.getvalue()
+        print(mystderr.getvalue())
     finally:
         sys.stderr = old_stderr
         sys.stdout = old_stdout
-        print(err)
 
     # now parse the output of the print_model_weight command
     # and get the intercept and the feature values
@@ -1187,7 +1140,7 @@ def check_summarize_results_argparse(use_ablation=False):
     sr._write_summary_file = write_summary_file_mock
 
     # now call main with some arguments
-    summary_file_name = join(_my_dir, 'other', 'summary_file')
+    summary_file_name = join(other_dir, 'summary_file')
     list_of_input_files = ['infile1', 'infile2', 'infile3']
     sr_cmd_args = [summary_file_name]
     sr_cmd_args.extend(list_of_input_files)
@@ -1219,31 +1172,29 @@ def test_plot_learning_curves_argparse():
     plc.generate_learning_curve_plots = generate_learning_curve_plots_mock
 
     # now call main with some arguments
-    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
+    summary_file_name = join(other_dir, 'sample_learning_curve_summary.tsv')
     experiment_name = 'sample_learning_curve'
-    output_dir_name = join(_my_dir, 'other')
-    plc_cmd_args = [summary_file_name, output_dir_name]
+    plc_cmd_args = [summary_file_name, other_dir]
     plc.main(argv=plc_cmd_args)
 
     # now check to make sure that _generate_learning_curve_plots (or our mocked up version
     # of it) got the arguments that we passed
     positional_arguments, keyword_arguments = generate_learning_curve_plots_mock.call_args
     eq_(positional_arguments[0], experiment_name)
-    eq_(positional_arguments[1], output_dir_name)
+    eq_(positional_arguments[1], other_dir)
     eq_(positional_arguments[2], summary_file_name)
 
 
 @raises(SystemExit)
 def test_plot_learning_curves_missing_file():
-    summary_file_name = join(_my_dir, 'other', 'non_existent_summary.tsv')
-    output_dir_name = join(_my_dir, 'other')
-    plc_cmd_args = [summary_file_name, output_dir_name]
+    summary_file_name = join(other_dir, 'non_existent_summary.tsv')
+    plc_cmd_args = [summary_file_name, other_dir]
     plc.main(argv=plc_cmd_args)
 
 
 def test_plot_learning_curves_create_output_directory():
-    summary_file_name = join(_my_dir, 'other', 'sample_learning_curve_summary.tsv')
-    output_dir_name = join(_my_dir, 'other', 'foobar')
+    summary_file_name = join(other_dir, 'sample_learning_curve_summary.tsv')
+    output_dir_name = join(other_dir, 'foobar')
     plc_cmd_args = [summary_file_name, output_dir_name]
     plc.main(argv=plc_cmd_args)
     exists(output_dir_name)
@@ -1266,11 +1217,11 @@ def check_run_experiments_argparse(multiple_config_files=False,
     rex.run_configuration = run_configuration_mock
 
     # now call main with some arguments
-    config_file1_name = join(_my_dir, 'other', 'config_file1')
+    config_file1_name = join(other_dir, 'config_file1')
     config_files = [config_file1_name]
     rex_cmd_args = [config_file1_name]
     if multiple_config_files:
-        config_file2_name = join(_my_dir, 'other', 'config_file2')
+        config_file2_name = join(other_dir, 'config_file2')
         rex_cmd_args.extend([config_file2_name])
         config_files.extend([config_file2_name])
 
@@ -1472,7 +1423,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     writer_class = skll.data.writers.ARFFWriter
 
     # create some dummy input and output filenames
-    infile = join(_my_dir, 'other', 'test_filter_features_input.arff')
+    infile = join(other_dir, 'test_filter_features_input.arff')
     outfile = 'bar.arff'
 
     # create a simple featureset with actual ids, labels and features
@@ -1643,8 +1594,8 @@ def check_join_features_argparse(extension, label_col='y', id_col='id',
     writer_class = EXT_TO_WRITER[extension]
 
     # create some dummy input and output filenames
-    infile1 = join(_my_dir, 'other', f'test_join_features1{extension}')
-    infile2 = join(_my_dir, 'other', f'test_join_features2{extension}')
+    infile1 = join(other_dir, f'test_join_features1{extension}')
+    infile2 = join(other_dir, f'test_join_features2{extension}')
     outfile = f'bar{extension}'
 
     # create a simple featureset with actual ids, labels and features
@@ -1796,11 +1747,11 @@ def test_filter_features_with_drop_blanks():
     df_expected['id'] = [f'EXAMPLE_{i}' for i in range(4)]
     df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
 
-    csv_infile = join(_my_dir, 'other', 'features', 'features_drop_blanks.csv')
-    tsv_infile = join(_my_dir, 'other', 'features', 'features_drop_blanks.tsv')
+    csv_infile = join(other_dir, 'features', 'features_drop_blanks.csv')
+    tsv_infile = join(other_dir, 'features', 'features_drop_blanks.tsv')
 
-    csv_outfile = join(_my_dir, 'other', 'features', 'features_drop_blanks_out.csv')
-    tsv_outfile = join(_my_dir, 'other', 'features', 'features_drop_blanks_out.tsv')
+    csv_outfile = join(other_dir, 'features', 'features_drop_blanks_out.csv')
+    tsv_outfile = join(other_dir, 'features', 'features_drop_blanks_out.tsv')
 
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep='\t')
@@ -1833,11 +1784,11 @@ def test_filter_features_with_replace_blanks_with():
     df_expected['id'] = [f'EXAMPLE_{i}' for i in range(6)]
     df_expected = df_expected[['A', 'B', 'C', 'id', 'L']]
 
-    csv_infile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with.csv')
-    tsv_infile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with.tsv')
+    csv_infile = join(other_dir, 'features', 'features_replace_blanks_with.csv')
+    tsv_infile = join(other_dir, 'features', 'features_replace_blanks_with.tsv')
 
-    csv_outfile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with_out.csv')
-    tsv_outfile = join(_my_dir, 'other', 'features', 'features_replace_blanks_with_out.tsv')
+    csv_outfile = join(other_dir, 'features', 'features_replace_blanks_with_out.csv')
+    tsv_outfile = join(other_dir, 'features', 'features_replace_blanks_with_out.tsv')
 
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep='\t')
@@ -1860,8 +1811,8 @@ def test_filter_features_with_replace_blanks_with_and_drop_blanks_raises_error()
 
     df = pd.DataFrame(np.random.randn(5, 10))
 
-    csv_infile = join(_my_dir, 'other', 'features', 'features_drop_and_replace_error.csv')
-    csv_outfile = join(_my_dir, 'other', 'features', 'features_drop_and_replace_error_out.csv')
+    csv_infile = join(other_dir, 'features', 'features_drop_and_replace_error.csv')
+    csv_outfile = join(other_dir, 'features', 'features_drop_and_replace_error_out.csv')
 
     df.to_csv(csv_infile, index=False)
 

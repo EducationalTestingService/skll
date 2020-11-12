@@ -11,7 +11,8 @@ Module for running tests with custom learners.
 import csv
 import os
 from glob import glob
-from os.path import abspath, dirname, exists, join
+from os.path import join
+from pathlib import Path
 
 import numpy as np
 from nose.tools import raises
@@ -21,44 +22,31 @@ from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from tests.utils import fill_in_config_paths, make_classification_data
+from . import config_dir, other_dir, output_dir, test_dir, train_dir
+from .utils import fill_in_config_paths, make_classification_data
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-_my_dir = abspath(dirname(__file__))
 
 
 def setup():
     """
     Create necessary directories for testing.
     """
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
+    for dir_path in [train_dir, test_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
 
 
 def tearDown():
     """
     Clean up after tests.
     """
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-    config_dir = join(_my_dir, 'configs')
 
     input_files = ['test_logistic_custom_learner.jsonlines',
                    'test_majority_class_custom_learner.jsonlines',
                    'test_model_custom_learner.jsonlines']
     for inf in input_files:
-        if exists(join(train_dir, inf)):
-            os.unlink(join(train_dir, inf))
-        if exists(join(test_dir, inf)):
-            os.unlink(join(test_dir, inf))
+        for dir_path in [train_dir, test_dir]:
+            Path(join(dir_path, inf)).unlink(missing_ok=True)
 
     for cfg_file in glob(join(config_dir, '*custom_learner.cfg')):
         os.unlink(cfg_file)
@@ -96,28 +84,28 @@ def test_majority_class_custom_learner():
                                                  class_weights=class_weights)
 
     # Write training feature set to a file
-    train_path = join(_my_dir, 'train',
+    train_path = join(train_dir,
                       'test_majority_class_custom_learner.jsonlines')
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
     # Write test feature set to a file
-    test_path = join(_my_dir, 'test',
+    test_path = join(test_dir,
                      'test_majority_class_custom_learner.jsonlines')
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
     cfgfile = 'test_majority_class_custom_learner.template.cfg'
-    config_template_path = join(_my_dir, 'configs', cfgfile)
+    config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     outprefix = 'test_majority_class_custom_learner'
 
-    preds = read_predictions(join(_my_dir, 'output',
-                                  (f'{outprefix}_{outprefix}_'
-                                   'MajorityClassLearner_predictions.tsv')))
+    preds = read_predictions(join(output_dir,
+                                  f'{outprefix}_{outprefix}_'
+                                  'MajorityClassLearner_predictions.tsv'))
     expected = np.array([float(num_labels - 1) for x in preds])
     assert_array_equal(preds, expected)
 
@@ -135,30 +123,28 @@ def test_logistic_custom_learner():
                                                  class_weights=class_weights)
 
     # Write training feature set to a file
-    train_path = join(_my_dir, 'train',
-                      'test_logistic_custom_learner.jsonlines')
+    train_path = join(train_dir, 'test_logistic_custom_learner.jsonlines')
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
     # Write test feature set to a file
-    test_path = join(_my_dir, 'test',
-                     'test_logistic_custom_learner.jsonlines')
+    test_path = join(test_dir, 'test_logistic_custom_learner.jsonlines')
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
     cfgfile = 'test_logistic_custom_learner.template.cfg'
-    config_template_path = join(_my_dir, 'configs', cfgfile)
+    config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
     outprefix = 'test_logistic_custom_learner'
-    preds = read_predictions(join(_my_dir, 'output',
+    preds = read_predictions(join(output_dir,
                                   f'{outprefix}_{outprefix}_'
                                   'CustomLogisticRegressionWrapper'
                                   '_predictions.tsv'))
 
-    expected = read_predictions(join(_my_dir, 'output',
+    expected = read_predictions(join(output_dir,
                                      f'{outprefix}_{outprefix}_'
                                      'LogisticRegression_predictions.tsv'))
 
@@ -178,20 +164,18 @@ def test_custom_learner_model_loading():
                                                  class_weights=class_weights)
 
     # Write training feature set to a file
-    train_path = join(_my_dir, 'train',
-                      'test_model_custom_learner.jsonlines')
+    train_path = join(train_dir, 'test_model_custom_learner.jsonlines')
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
     # Write test feature set to a file
-    test_path = join(_my_dir, 'test',
-                     'test_model_custom_learner.jsonlines')
+    test_path = join(test_dir, 'test_model_custom_learner.jsonlines')
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
     # run the configuration that trains the custom model and saves it
     cfgfile = 'test_model_save_custom_learner.template.cfg'
-    config_template_path = join(_my_dir, 'configs', cfgfile)
+    config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
@@ -199,7 +183,7 @@ def test_custom_learner_model_loading():
     # save the predictions from disk into memory
     # and delete the predictions file
     outprefix = 'test_model_custom_learner'
-    pred_file = join(_my_dir, 'output',
+    pred_file = join(output_dir,
                      f'{outprefix}_{outprefix}_CustomLogisticRegressionWrapper'
                      '_predictions.tsv')
     preds1 = read_predictions(pred_file)
@@ -208,7 +192,7 @@ def test_custom_learner_model_loading():
     # run the configuration that loads the saved model
     # and generates the predictions again
     cfgfile = 'test_model_load_custom_learner.template.cfg'
-    config_template_path = join(_my_dir, 'configs', cfgfile)
+    config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, overwrite=False, quiet=True)
@@ -227,5 +211,5 @@ def test_custom_learner_api_missing_file():
 
 @raises(ValueError)
 def test_custom_learner_api_bad_extension():
-    other_dir = join(_my_dir, 'other')
-    _ = Learner('_CustomLogisticRegressionWrapper', custom_learner_path=join(other_dir, 'custom_learner.txt'))
+    _ = Learner('_CustomLogisticRegressionWrapper',
+                custom_learner_path=join(other_dir, 'custom_learner.txt'))

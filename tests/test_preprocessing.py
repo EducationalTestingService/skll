@@ -11,7 +11,8 @@ import json
 import os
 import re
 
-from os.path import abspath, dirname, exists, join
+from os.path import join
+from pathlib import Path
 
 import numpy as np
 import scipy.sparse as sp
@@ -26,53 +27,38 @@ from skll.learner import Learner
 from skll.learner.utils import SelectByMinCount
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from tests.utils import fill_in_config_paths
+from . import config_dir, output_dir, train_dir, test_dir
+from .utils import fill_in_config_paths
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
                              r'([\-\d\.]+)')
-_my_dir = abspath(dirname(__file__))
 
 
 def setup():
     """
     Create necessary directories for testing.
     """
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
+    for dir_path in [train_dir, test_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
 
 
 def tearDown():
     """
     Clean up after tests.
     """
-    output_dir = join(_my_dir, 'output')
-    config_dir = join(_my_dir, 'configs')
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
 
     for output_file in glob.glob(join(output_dir, 'test_class_map_*')):
         os.unlink(output_file)
 
-    if exists(join(train_dir, 'test_class_map.jsonlines')):
-        os.unlink(join(train_dir, 'test_class_map.jsonlines'))
-
-    if exists(join(test_dir, 'test_class_map.jsonlines')):
-        os.unlink(join(test_dir, 'test_class_map.jsonlines'))
+    for dir_path in [train_dir, test_dir]:
+        (Path(dir_path) / 'test_class_map.jsonlines').unlink(missing_ok=True)
 
     config_files = ['test_class_map.cfg',
                     'test_class_map_feature_hasher.cfg']
     for cf in config_files:
-        if exists(join(config_dir, cf)):
-            os.unlink(join(config_dir, cf))
+        (Path(config_dir) / cf).unlink(missing_ok=True)
 
 
 def test_SelectByMinCount():
@@ -115,7 +101,7 @@ def test_SelectByMinCount():
 
 def make_class_map_data():
     # Create training file
-    train_path = join(_my_dir, 'train', 'test_class_map.jsonlines')
+    train_path = join(train_dir, 'test_class_map.jsonlines')
     ids = []
     labels = []
     features = []
@@ -134,7 +120,7 @@ def make_class_map_data():
     writer.write()
 
     # Create test file
-    test_path = join(_my_dir, 'test', 'test_class_map.jsonlines')
+    test_path = join(test_dir, 'test_class_map.jsonlines')
     ids = []
     labels = []
     features = []
@@ -159,15 +145,14 @@ def test_class_map():
 
     make_class_map_data()
 
-    config_template_path = join(_my_dir,
-                                'configs',
-                                'test_class_map.template.cfg')
+    config_template_path = join(config_dir, 'test_class_map.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output', ('test_class_map_test_class_map_Logistic'
-                                       'Regression.results.json'))) as f:
+    with open(join(output_dir,
+                   'test_class_map_test_class_map_LogisticRegression.results'
+                   '.json')) as f:
         outd = json.loads(f.read())
         # outstr = f.read()
         # logistic_result_score = float(
@@ -184,19 +169,16 @@ def test_class_map_feature_hasher():
 
     make_class_map_data()
 
-    config_template_path = join(_my_dir, 'configs',
+    config_template_path = join(config_dir,
                                 'test_class_map_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output', ('test_class_map_test_class_map_'
-                                       'LogisticRegression.results.'
-                                       'json'))) as f:
-        # outstr = f.read()
+    with open(join(output_dir,
+                   'test_class_map_test_class_map_LogisticRegression.results.'
+                   'json')) as f:
         outd = json.loads(f.read())
-        # logistic_result_score = float(
-        #     SCORE_OUTPUT_RE.search(outstr).groups()[0])
         logistic_result_score = outd[0]['accuracy']
 
     assert_almost_equal(logistic_result_score, 0.5)
