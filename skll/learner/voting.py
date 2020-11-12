@@ -8,14 +8,12 @@ around scikit-learn's `VotingClassifier` and `VotingRegressor`.
 """
 import copy
 import logging
-
 from importlib import import_module
 from itertools import zip_longest
 from multiprocessing import cpu_count
 
 import joblib
 import numpy as np
-
 from sklearn.ensemble import VotingClassifier, VotingRegressor
 from sklearn.utils import shuffle as sk_shuffle
 from sklearn.utils.multiclass import type_of_target
@@ -35,10 +33,10 @@ from .utils import (add_unseen_labels,
 
 class VotingLearner(object):
     """
-    A class that wraps the scikit-learn ``VotingClassifier`` and
-    ``VotingRegressor`` meta-estimators. Note that this class does not
-    inherit from the `Learner` class but rather uses different `Learner`
-    instances underlyingly.
+    Wrap ``VotingClassifier`` and ``VotingRegressor`` from scikit-learn.
+
+    Note that this class does not inherit from the ``Learner`` class but rather
+    uses different ``Learner`` instances underlyingly.
 
     Parameters
     ----------
@@ -108,7 +106,7 @@ class VotingLearner(object):
                  learner_names,
                  voting="hard",
                  custom_learner_path=None,
-                 feature_scaling='none',
+                 feature_scaling="none",
                  pos_label_str=None,
                  min_feature_count=1,
                  model_kwargs_list=None,
@@ -228,9 +226,9 @@ class VotingLearner(object):
         scikit-learn ``Pipeline`` stored in the ``pipeline`` attribute
         of each trained `Learner` instance as the estimator. Finally,
         we call ``fit()`` on the ``VotingClassifier`` or ``VotingRegressor``
-        instance. We do this because it allows us to use grid search to
-        find good hyperparameter values for our underlying learners before
-        passing them to the meta-estimator AND because it allows us to
+        instance. We follow this process because it allows us to use grid
+        search to find good hyperparameter values for our underlying learners
+        before passing them to the meta-estimator AND because it allows us to
         use SKLL featuresets and do all of the same pre-processing when
         doing inference.
 
@@ -332,7 +330,7 @@ class VotingLearner(object):
                 examples,
                 prediction_prefix=None,
                 append=False,
-                class_labels=False,
+                class_labels=True,
                 individual_predictions=False):
         """
         Generate predictions from the meta-estimator and, optionally, the
@@ -366,7 +364,7 @@ class VotingLearner(object):
             For classifier, should we convert class indices to their (str) labels
             for the returned array? Note that class labels are always written out
             to disk.
-            Defaults to ``False``.
+            Defaults to ``True``.
         individual_predictions : bool, optional
             Return (and, optionally, write out) the predictions from each
             underlying learner.
@@ -432,8 +430,8 @@ class VotingLearner(object):
 
                 # get the right predictions first
                 yhat = estimator.predict_proba(X_test) if self.voting == "soft" else estimator.predict(X_test)
-                predictions_to_write = yhat
-                predictions_to_return = yhat
+                estimator_predictions_to_write = yhat
+                estimator_predictions_to_return = yhat
 
                 # for classifiers if we did hard voting, we always want to
                 # write out the classes but return classes only if asked for
@@ -443,20 +441,20 @@ class VotingLearner(object):
                     classes = np.array([self.learners[0].label_list[int(pred)] for pred in yhat])
 
                     # we always want to write out classes as our predictions
-                    predictions_to_write = classes
+                    estimator_predictions_to_write = classes
 
                     # if the user specified `class_labels`, then we want
                     # to return classes as well
                     if class_labels:
-                        predictions_to_return = classes
+                        estimator_predictions_to_return = classes
 
                 # save this estimator's predictions in the dictionary
-                individual_predictions_dict[name] = predictions_to_return
+                individual_predictions_dict[name] = estimator_predictions_to_return
 
                 # also write them out if asked
                 if prediction_prefix is not None:
                     write_predictions(example_ids,
-                                      predictions_to_write,
+                                      estimator_predictions_to_write,
                                       prediction_prefix + f"_{name}",
                                       self.learner_type,
                                       append=append,
@@ -511,6 +509,7 @@ class VotingLearner(object):
         # make the prediction on the test data; note that these
         # are either class indices or class probabilities
         yhat, _ = self.predict(examples,
+                               class_labels=False,
                                prediction_prefix=prediction_prefix,
                                append=append)
 
@@ -536,11 +535,10 @@ class VotingLearner(object):
         unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
         if unacceptable_metrics:
             label_type = examples.labels.dtype.type
-            raise ValueError("The following metrics are not valid "
-                             "for this learner({}) with these labels of "
-                             "type {}: {}".format(self.model_type.__name__,
-                                                  label_type.__name__,
-                                                  list(unacceptable_metrics)))
+            raise ValueError(f"The following metrics are not valid "
+                             f"for this learner({self.model_type.__name__}) "
+                             f"with these labels of type {label_type.__name__}: "
+                             f"{list(unacceptable_metrics)}")
 
         # get the values of the evaluation metrics
         (conf_matrix,
