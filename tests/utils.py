@@ -1,5 +1,5 @@
 """
-Utilities functions to make SKLL testing simpler
+Utility functions to make SKLL testing simpler.
 """
 
 import re
@@ -10,8 +10,12 @@ from os.path import abspath, dirname, exists, join
 
 import numpy as np
 from numpy.random import RandomState
-from sklearn.datasets import make_classification, make_regression
+from sklearn.datasets import (fetch_california_housing,
+                              load_digits,
+                              make_classification,
+                              make_regression)
 from sklearn.feature_extraction import FeatureHasher
+from sklearn.model_selection import ShuffleSplit
 
 from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
@@ -493,5 +497,148 @@ def make_sparse_data(use_feature_hashing=False):
     test_fs = FeatureSet('test_sparse', ids,
                          features=features, labels=y,
                          vectorizer=vectorizer)
+
+    return train_fs, test_fs
+
+
+def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
+    """
+    Create train/test featuresets from the digits dataset.
+
+    Parameters
+    ----------
+    num_examples : int, optional
+        Number of total examples to use. 80% of these examples
+        will be in the training set and the remaining 20% in
+        the test set. If ``None``, it will use all of the
+        examples in the dataset.
+        Defaults to ``None``.
+    test_size : float, optional
+        Fraction of ``num_examples`` to use for the test
+        featureset. Should be between 0 and 1.
+        Defaults to 0.2.
+    use_digit_names : bool, optional
+        If ``True``, use the names of the digits ("zero", "one", etc.) as the
+        labels in the featuresets rather than the integer-valued targets
+        (0, 1, etc.).
+        Defaults to ``False``.
+
+    Returns
+    -------
+    fs_tuple : tuple
+        A 2-tuple containing the created train and test featuresets.
+    """
+    # load the digits data
+    digits = load_digits(as_frame=True)
+    df_digits = digits.frame
+
+    # use all examples if ``num_examples`` was ``None``
+    num_examples = len(df_digits) if num_examples is None else num_examples
+
+    # shuffle the row indices and select the given number of examples
+    row_indices = np.arange(len(df_digits))
+    prng = np.random.default_rng(123456789)
+    prng.shuffle(row_indices)
+    chosen_row_indices = prng.choice(row_indices, size=num_examples, replace=False)
+
+    # now split the chosen indices into train and test indices
+    splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
+    train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
+
+    # by default, we will use the "target" column of the frame as our labels
+    label_column = "target"
+
+    # if we are asked to use digit names instead of integers
+    if use_digit_names:
+
+        # create a dictionary mapping integer labels to fake class names
+        label_dict = {0: "zero", 1: "one", 2: "two", 3: "three", 4: "four",
+                      5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
+
+        # add a new class column that contains the class names
+        df_digits["class"] = df_digits.apply(lambda row: label_dict[row["target"]],
+                                             axis=1)
+
+        # drop the target column and use "class" as the label column
+        df_digits.drop(columns=["target"], axis=1, inplace=True)
+        label_column = "class"
+
+    # now subset the training and test rows from the data frame
+    df_train = df_digits.iloc[train_indices].copy()
+    df_test = df_digits.iloc[test_indices].copy()
+
+    # now create the train and test feature sets from the data frames
+    train_fs = FeatureSet.from_data_frame(df_train,
+                                          "digits_train",
+                                          labels_column=label_column)
+    test_fs = FeatureSet.from_data_frame(df_test,
+                                         "digits_test",
+                                         labels_column=label_column,
+                                         vectorizer=train_fs.vectorizer)
+
+    return train_fs, test_fs
+
+
+def make_california_housing_data(num_examples=None, test_size=0.2):
+    """
+    Create train/test featuresets from the California housing dataset.
+
+    All columns are standardized into z-scores before creating the
+    two feature sets.
+
+    Parameters
+    ----------
+    num_examples : int, optional
+        Number of total examples to use. 80% of these examples
+        will be in the training set and the remaining 20% in
+        the test set. If ``None``, it will use all of the
+        examples in the dataset.
+        Defaults to ``None``.
+    test_size : float, optional
+        Fraction of ``num_examples`` to use for the test
+        featureset. Should be between 0 and 1.
+        Defaults to 0.2.
+
+    Returns
+    -------
+    fs_tuple : tuple
+        A 2-tuple containing the created train and test featuresets.
+    """
+
+    # load the digits data
+    other_dir = join(_my_dir, 'other')
+    housing = fetch_california_housing(data_home=other_dir,
+                                       download_if_missing=False,
+                                       as_frame=True)
+    df_housing = housing.frame
+
+    # standardize all of the values to get them on the same scale
+    df_housing = (df_housing - df_housing.mean()) / df_housing.std()
+
+    # use all examples if ``num_examples`` was ``None``
+    num_examples = len(df_housing) if num_examples is None else num_examples
+
+    # shuffle the row indices and select the given number of examples
+    row_indices = np.arange(len(df_housing))
+    prng = np.random.default_rng(123456789)
+    prng.shuffle(row_indices)
+    chosen_row_indices = prng.choice(row_indices, size=num_examples, replace=False)
+
+    # now split the chosen indices into train and test indices
+    splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
+    train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
+
+    # now subset the training and test rows from the data frame
+    df_train = df_housing.iloc[train_indices].copy()
+    df_test = df_housing.iloc[test_indices].copy()
+
+    # now create the train and test feature sets from the data frames
+    train_fs = FeatureSet.from_data_frame(df_train,
+                                          "housing_train",
+                                          labels_column="MedHouseVal")
+    test_fs = FeatureSet.from_data_frame(df_test,
+                                         "housing_test",
+                                         labels_column="MedHouseVal",
+                                         vectorizer=train_fs.vectorizer)
 
     return train_fs, test_fs
