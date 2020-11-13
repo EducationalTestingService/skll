@@ -74,7 +74,8 @@ def tearDown():
                  join(output_dir, 'float_class_predictions.tsv')]:
         unlink(path)
 
-    for glob_pattern in [join(output_dir, 'clf_metric_value_*'),
+    for glob_pattern in [join(output_dir, 'train_test_single_file_*'),
+                         join(output_dir, 'clf_metric_value_*'),
                          join(output_dir, 'pos_label_str_via_config*'),
                          join(output_dir, 'clf_metrics_objective_overlap*'),
                          join(output_dir, 'test_multinomialnb_loading*'),
