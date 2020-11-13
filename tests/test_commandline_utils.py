@@ -82,13 +82,16 @@ def tearDown():
     """
 
     for path in [join(test_dir, 'test_generate_predictions.jsonlines'),
+                 join(test_dir, 'test_single_file_subset.jsonlines'),
                  join(other_dir, 'summary_file'),
                  join(other_dir, 'test_filter_features_input.arff'),
-                 join(output_dir, 'test_generate_predictions.tsv')]:
+                 join(output_dir, 'test_generate_predictions.tsv'),
+                 join(output_dir, 'train_test_single_file.log')]:
         unlink(path)
 
     for glob_pattern in [join(output_dir, 'test_print_model_weights.model*'),
                          join(output_dir, 'test_generate_predictions.model*'),
+                         join(output_dir, 'pos_label_str_predict*'),
                          join(output_dir, 'test_generate_predictions_console.model*'),
                          join(other_dir, 'test_skll_convert*'),
                          join(other_dir, 'test_join_features*'),

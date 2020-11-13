@@ -51,10 +51,10 @@ def tearDown():
         unlink(cfg_file)
 
     for output_file in (glob(join(output_dir,
-                                  'test_logistic_custom_learner_*')) +
+                                  'test_logistic_custom_learner*')) +
                         glob(join(output_dir,
-                                  'test_majority_class_custom_learner_*')) +
-                        glob(join(output_dir, 'test_model_custom_learner_*'))):
+                                  'test_majority_class_custom_learner*')) +
+                        glob(join(output_dir, 'test_model_custom_learner*'))):
         unlink(output_file)
 
 

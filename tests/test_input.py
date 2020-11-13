@@ -51,9 +51,11 @@ def tearDown():
     Clean up after tests.
     """
 
-    for config_file in (glob(join(config_dir, 'test_config_parsing_*.cfg')) +
-                        glob(join(config_dir, 'test_relative_paths_auto_dir*.cfg'))):
-        unlink(config_file)
+    for path in (glob(join(config_dir, 'test_config_parsing_*.cfg')) +
+                 glob(join(config_dir, 'test_relative_paths_auto_dir*.cfg')) +
+                 glob(join(output_dir, 'config_parsing*.log')) +
+                 [join(config_dir, "test_relative_paths_relative_paths.cfg")]):
+        unlink(path)
 
     for auto_dir in glob(join(output_dir, 'auto*')):
         rmtree(auto_dir)

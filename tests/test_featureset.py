@@ -15,6 +15,7 @@ from collections import OrderedDict
 from io import StringIO
 from os.path import exists, join
 from pathlib import Path
+from shutil import rmtree
 
 import numpy as np
 import pandas as pd
@@ -65,6 +66,9 @@ def tearDown():
                             'test_string_labels_df']]
     for file_name in file_names:
         unlink(Path(other_dir) / file_name)
+
+    for dir_name in ["test_conversion", "test_merging"]:
+        rmtree(Path(train_dir) / dir_name)
 
 
 def _create_empty_file(filetype):
