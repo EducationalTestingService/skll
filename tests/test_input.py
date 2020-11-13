@@ -27,9 +27,10 @@ from skll.experiments import load_featureset
 from skll.utils.logging import (close_and_remove_logger_handlers,
                                 get_skll_logger)
 
-from . import _my_dir, config_dir, other_dir, output_dir, train_dir, test_dir
-from .utils import (create_jsonlines_feature_files, fill_in_config_options,
-                    unlink)
+from tests import (_my_dir, config_dir, other_dir, output_dir, train_dir,
+                   test_dir)
+from tests.utils import (create_jsonlines_feature_files,
+                         fill_in_config_options, unlink)
 
 
 def setup():

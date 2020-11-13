@@ -38,15 +38,15 @@ from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS, VALID_TASKS
 from skll.utils.logging import get_skll_logger, close_and_remove_logger_handlers
 
-from . import (_my_dir, backward_compatibility_dir, config_dir, other_dir,
-               output_dir, train_dir, test_dir)
-from .utils import (create_jsonlines_feature_files,
-                    fill_in_config_options,
-                    fill_in_config_paths,
-                    fill_in_config_paths_for_single_file,
-                    make_classification_data,
-                    make_regression_data,
-                    unlink)
+from tests import (_my_dir, backward_compatibility_dir, config_dir, other_dir,
+                   output_dir, train_dir, test_dir)
+from tests.utils import (create_jsonlines_feature_files,
+                         fill_in_config_options,
+                         fill_in_config_paths,
+                         fill_in_config_paths_for_single_file,
+                         make_classification_data,
+                         make_regression_data,
+                         unlink)
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())

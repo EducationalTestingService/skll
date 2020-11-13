@@ -18,7 +18,7 @@ from sklearn.feature_extraction import FeatureHasher
 from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
 
-from . import _my_dir, output_dir, train_dir, test_dir
+from tests import _my_dir, output_dir, train_dir, test_dir
 
 
 def unlink(file_path: Union[str, Path]):

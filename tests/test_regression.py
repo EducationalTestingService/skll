@@ -38,9 +38,9 @@ from skll.learner.utils import rescaled
 from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
                                   KNOWN_DEFAULT_PARAM_GRIDS)
 
-from . import config_dir, other_dir, output_dir, train_dir, test_dir
-from .utils import (fill_in_config_paths_for_fancy_output,
-                    make_regression_data, unlink)
+from tests import config_dir, other_dir, output_dir, train_dir, test_dir
+from tests.utils import (fill_in_config_paths_for_fancy_output,
+                         make_regression_data, unlink)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

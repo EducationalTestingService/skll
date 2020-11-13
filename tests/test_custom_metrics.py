@@ -23,9 +23,9 @@ from skll import Learner, run_configuration
 from skll.data import NDJReader
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric, use_score_func
 
-from . import config_dir, other_dir, output_dir
-from .utils import (fill_in_config_paths_for_single_file,
-                    make_classification_data, unlink)
+from tests import config_dir, other_dir, output_dir
+from tests.utils import (fill_in_config_paths_for_single_file,
+                         make_classification_data, unlink)
 
 
 

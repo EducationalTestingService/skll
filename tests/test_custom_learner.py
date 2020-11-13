@@ -21,8 +21,8 @@ from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from . import config_dir, other_dir, output_dir, test_dir, train_dir
-from .utils import fill_in_config_paths, make_classification_data, unlink
+from tests import config_dir, other_dir, output_dir, test_dir, train_dir
+from tests.utils import fill_in_config_paths, make_classification_data, unlink
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

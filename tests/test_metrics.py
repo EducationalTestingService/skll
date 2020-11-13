@@ -18,7 +18,7 @@ from sklearn.metrics import fbeta_score
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from skll.metrics import kappa, use_score_func
 
-from . import output_dir, train_dir, test_dir
+from tests import output_dir, train_dir, test_dir
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

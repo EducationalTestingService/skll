@@ -37,8 +37,8 @@ from skll.experiments import load_featureset
 from skll.utils.commandline import skll_convert
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from . import train_dir, test_dir, other_dir, output_dir
-from .utils import make_classification_data, make_regression_data, unlink
+from tests import train_dir, test_dir, other_dir, output_dir
+from tests.utils import make_classification_data, make_regression_data, unlink
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())

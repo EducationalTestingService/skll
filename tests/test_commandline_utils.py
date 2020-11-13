@@ -60,8 +60,8 @@ from skll.experiments.output import _write_summary_file
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from . import other_dir, output_dir, test_dir, train_dir
-from .utils import make_classification_data, make_regression_data, unlink
+from tests import other_dir, output_dir, test_dir, train_dir
+from tests.utils import make_classification_data, make_regression_data, unlink
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())

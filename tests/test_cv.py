@@ -33,9 +33,9 @@ from skll.experiments import load_featureset, run_configuration
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from . import config_dir, other_dir, output_dir, train_dir
-from .utils import (create_jsonlines_feature_files,
-                    fill_in_config_paths_for_single_file, unlink)
+from tests import config_dir, other_dir, output_dir, train_dir
+from tests.utils import (create_jsonlines_feature_files,
+                         fill_in_config_paths_for_single_file, unlink)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

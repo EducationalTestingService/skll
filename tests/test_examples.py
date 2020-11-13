@@ -18,7 +18,7 @@ from nose.tools import eq_, assert_almost_equal
 
 from skll.experiments import run_configuration
 
-from . import examples_dir, other_dir
+from tests import examples_dir, other_dir
 
 _old_titanic_dir = join(examples_dir, 'titanic')
 _old_boston_dir = join(examples_dir, 'boston')

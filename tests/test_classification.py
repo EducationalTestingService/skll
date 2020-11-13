@@ -48,13 +48,13 @@ from skll.utils.constants import (CORRELATION_METRICS,
                                   WEIGHTED_KAPPA_METRICS)
 from skll.metrics import use_score_func
 
-from . import config_dir, other_dir, output_dir, test_dir, train_dir
-from .utils import (make_classification_data,
-                    make_regression_data,
-                    make_sparse_data,
-                    fill_in_config_options,
-                    fill_in_config_paths_for_single_file,
-                    unlink)
+from tests import config_dir, other_dir, output_dir, test_dir, train_dir
+from tests.utils import (make_classification_data,
+                         make_regression_data,
+                         make_sparse_data,
+                         fill_in_config_options,
+                         fill_in_config_paths_for_single_file,
+                         unlink)
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())

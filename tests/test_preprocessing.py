@@ -27,8 +27,8 @@ from skll.learner import Learner
 from skll.learner.utils import SelectByMinCount
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from . import config_dir, output_dir, train_dir, test_dir
-from .utils import fill_in_config_paths, unlink
+from tests import config_dir, output_dir, train_dir, test_dir
+from tests.utils import fill_in_config_paths, unlink
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
