@@ -13,7 +13,9 @@ import itertools
 import os
 from collections import OrderedDict
 from io import StringIO
-from os.path import abspath, dirname, exists, join
+from os.path import exists, join
+from pathlib import Path
+from shutil import rmtree
 
 import numpy as np
 import pandas as pd
@@ -36,26 +38,19 @@ from skll.experiments import load_featureset
 from skll.utils.commandline import skll_convert
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
-from tests.utils import make_classification_data, make_regression_data
+from tests import train_dir, test_dir, other_dir, output_dir
+from tests.utils import make_classification_data, make_regression_data, unlink
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-_my_dir = abspath(dirname(__file__))
 
 
 def setup():
     """
     Create necessary directories for testing.
     """
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
+    for dir_path in [train_dir, test_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
 
 
 def tearDown():
@@ -63,20 +58,22 @@ def tearDown():
     Clean up files created during testing.
     """
     for filetype in ['csv', 'jsonlines', 'libsvm', 'tsv']:
-        filepath = join(_my_dir, 'other', f'empty.{filetype}')
-        if exists(filepath):
-            os.unlink(filepath)
+        unlink(Path(other_dir) / f'empty.{filetype}')
 
-    filepaths = [join(_my_dir, 'other', f'{x}.jsonlines') for x in ['test_string_ids', 'test_string_ids_df', 'test_string_labels_df']]
-    for filepath in filepaths:
-        if exists(filepath):
-            os.unlink(filepath)
+    file_names = [f'{x}.jsonlines'
+                  for x in ['test_string_ids',
+                            'test_string_ids_df',
+                            'test_string_labels_df']]
+    for file_name in file_names:
+        unlink(Path(other_dir) / file_name)
+
+    for dir_name in ["test_conversion", "test_merging"]:
+        rmtree(Path(train_dir) / dir_name)
 
 
 def _create_empty_file(filetype):
-    filepath = join(_my_dir, 'other', f'empty.{filetype}')
-    with open(filepath, 'w'):
-        pass
+    filepath = join(other_dir, f'empty.{filetype}')
+    open(filepath, 'w').close()
     return filepath
 
 
@@ -381,7 +378,6 @@ def test_write_hashed_featureset():
                                      use_feature_hashing=True,
                                      feature_bins=2,
                                      random_state=1234)
-    output_dir = join(_my_dir, 'output')
     writer = NDJWriter(join(output_dir, 'foo.jsonlines'), fs)
     writer.write()
 
@@ -687,7 +683,7 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
 
     np.random.seed(1234567890)
 
-    merge_dir = join(_my_dir, 'train', 'test_merging')
+    merge_dir = join(train_dir, 'test_merging')
     if not exists(merge_dir):
         os.makedirs(merge_dir)
 
@@ -727,7 +723,7 @@ def check_load_featureset(suffix, numeric_ids):
     make_merging_data(num_feat_files, suffix, numeric_ids)
 
     # Load unmerged data and merge it
-    dirpath = join(_my_dir, 'train', 'test_merging')
+    dirpath = join(train_dir, 'test_merging')
     featureset = [str(i) for i in range(num_feat_files)]
     merged_exs = load_featureset(dirpath, featureset, suffix, quiet=True)
 
@@ -755,7 +751,7 @@ def test_load_featureset():
 
 
 def test_ids_to_floats():
-    path = join(_my_dir, 'train', 'test_input_2examples_1.jsonlines')
+    path = join(train_dir, 'test_input_2examples_1.jsonlines')
 
     examples = Reader.for_path(path, ids_to_floats=True, quiet=True).read()
     assert isinstance(examples.ids[0], float)
@@ -796,7 +792,7 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=Tru
 
     np.random.seed(1234567890)
 
-    convert_dir = join(_my_dir, 'train', 'test_conversion')
+    convert_dir = join(train_dir, 'test_conversion')
     if not exists(convert_dir):
         os.makedirs(convert_dir)
 
@@ -888,7 +884,7 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
                          with_labels=with_labels)
 
     # the path to the unmerged feature files
-    dirpath = join(_my_dir, 'train', 'test_conversion')
+    dirpath = join(train_dir, 'test_conversion')
 
     # get the feature name prefix
     feature_name_prefix = f"{from_suffix.lstrip('.')}_to_{to_suffix.lstrip('.')}"
@@ -997,7 +993,7 @@ def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
     else:
         current = FeatureSet.from_data_frame(df, featureset_name, vectorizer=vectorizer)
 
-    return (expected, current)
+    return expected, current
 
 
 def test_featureset_creation_from_dataframe_with_labels():
@@ -1052,7 +1048,7 @@ def test_writing_ndj_featureset_with_string_ids():
                          labels=[1, 2],
                          features=Xtest,
                          vectorizer=test_dict_vectorizer)
-    output_path = join(_my_dir, "other", "test_string_ids.jsonlines")
+    output_path = join(other_dir, "test_string_ids.jsonlines")
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()
 
@@ -1078,7 +1074,7 @@ def test_featureset_creation_from_dataframe_with_string_ids():
                          labels=dftest['score'].values,
                          features=Xtest,
                          vectorizer=test_dict_vectorizer)
-    output_path = join(_my_dir, "other", "test_string_ids_df.jsonlines")
+    output_path = join(other_dir, "test_string_ids_df.jsonlines")
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()
 
@@ -1105,7 +1101,7 @@ def test_featureset_creation_from_dataframe_with_string_labels():
                          features=Xtest,
                          vectorizer=test_dict_vectorizer)
 
-    output_path = join(_my_dir, "other", "test_string_labels_df.jsonlines")
+    output_path = join(other_dir, "test_string_labels_df.jsonlines")
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()
 
