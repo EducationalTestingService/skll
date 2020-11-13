@@ -42,7 +42,8 @@ from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_paths,
                          fill_in_config_paths_for_single_file,
                          make_classification_data,
-                         make_regression_data)
+                         make_regression_data,
+                         make_digits_data)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 _my_dir = abspath(dirname(__file__))
@@ -135,32 +136,20 @@ def make_summary_data():
 # Generate and write out data for the test that checks learning curve outputs
 def make_learning_curve_data():
 
-    # Load in the digits data set
-    digits = load_digits()
-    X, y = digits.data, digits.target
-
-    # create featureset with all features
-    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    fs1 = FeatureSet('train1', features=features, labels=y, ids=list(range(X.shape[0])))
+    # create a featureset with the digits data
+    fs_digits, _ = make_digits_data(test_size=0)
 
     # Write this feature set to file
     train_path = join(_my_dir, 'train', 'test_learning_curve1.jsonlines')
-    writer = NDJWriter(train_path, fs1)
+    writer = NDJWriter(train_path, fs_digits)
     writer.write()
 
-    # create featureset with all except the last feature
-    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names[:-1], row)))
-    fs2 = FeatureSet('train2', features=features, labels=y, ids=list(range(X.shape[0])))
+    # create featureset with all except the last feature called "pixel_7_7"
+    fs_digits.filter(features="pixel_7_7", inverse=True)
 
     # Write this feature set to file
     train_path = join(_my_dir, 'train', 'test_learning_curve2.jsonlines')
-    writer = NDJWriter(train_path, fs2)
+    writer = NDJWriter(train_path, fs_digits)
     writer.write()
 
 
@@ -667,9 +656,8 @@ def test_learning_curve_implementation():
     # diverges from the scikit-learn implementation. This test essentially
     # serves as a regression test as well.
 
-    # Load in the digits data set
-    digits = load_digits()
-    X, y = digits.data, digits.target
+    # create a single featureset from the digits data
+    fs_digits, _ = make_digits_data(test_size=0)
 
     # get the learning curve results from scikit-learn for this data
     cv_folds = 10
@@ -678,26 +666,18 @@ def test_learning_curve_implementation():
     estimator = MultinomialNB()
     train_sizes = np.linspace(.1, 1.0, 5)
     train_sizes1, train_scores1, test_scores1 = learning_curve(estimator,
-                                                               X,
-                                                               y,
+                                                               fs_digits.features,
+                                                               fs_digits.labels,
                                                                cv=cv,
                                                                train_sizes=train_sizes,
                                                                scoring='accuracy')
-
-    # get the features from this data into a FeatureSet instance we can use
-    # with the SKLL API
-    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    fs = FeatureSet('train', features=features, labels=y, ids=list(range(X.shape[0])))
 
     # we don't want to filter out any features since scikit-learn
     # does not do that either
     learner = Learner('MultinomialNB', min_feature_count=0)
     (train_scores2,
      test_scores2,
-     train_sizes2) = learner.learning_curve(fs,
+     train_sizes2) = learner.learning_curve(fs_digits,
                                             cv_folds=cv_folds,
                                             train_sizes=train_sizes,
                                             metric='accuracy')
