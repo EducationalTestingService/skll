@@ -11,13 +11,13 @@ Tests related to classification experiments.
 import csv
 import itertools
 import json
-import os
 import re
 import warnings
 
 from glob import glob
 from itertools import product
-from os.path import abspath, dirname, exists, join
+from os.path import join
+from pathlib import Path
 
 import numpy as np
 from nose.tools import assert_almost_equal, assert_raises, eq_, ok_, raises
@@ -48,68 +48,40 @@ from skll.utils.constants import (CORRELATION_METRICS,
                                   WEIGHTED_KAPPA_METRICS)
 from skll.metrics import use_score_func
 
+from tests import config_dir, other_dir, output_dir, test_dir, train_dir
 from tests.utils import (make_classification_data,
                          make_regression_data,
                          make_sparse_data,
                          fill_in_config_options,
-                         fill_in_config_paths_for_single_file)
+                         fill_in_config_paths_for_single_file,
+                         unlink)
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-_my_dir = abspath(dirname(__file__))
 
 
 def setup():
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
+    for dir_path in [train_dir, test_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
 
 
 def tearDown():
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-    config_dir = join(_my_dir, 'configs')
 
-    if exists(join(train_dir, 'train_single_file.jsonlines')):
-        os.unlink(join(train_dir, 'train_single_file.jsonlines'))
+    for path in [join(train_dir, 'train_single_file.jsonlines'),
+                 join(train_dir, 'pos_label_str_train.jsonlines'),
+                 join(test_dir, 'test_single_file.jsonlines'),
+                 join(output_dir, 'rare_class_predictions.tsv'),
+                 join(output_dir, 'float_class_predictions.tsv')]:
+        unlink(path)
 
-    if exists(join(train_dir, 'pos_label_str_train.jsonlines')):
-        os.unlink(join(train_dir, 'pos_label_str_train.jsonlines'))
-
-    if exists(join(test_dir, 'test_single_file.jsonlines')):
-        os.unlink(join(test_dir, 'test_single_file.jsonlines'))
-
-    if exists(join(output_dir, 'rare_class_predictions.tsv')):
-        os.unlink(join(output_dir, 'rare_class_predictions.tsv'))
-
-    if exists(join(output_dir, 'float_class_predictions.tsv')):
-        os.unlink(join(output_dir, 'float_class_predictions.tsv'))
-
-    for output_file in glob(join(output_dir, 'train_test_single_file_*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir, 'clf_metric_value_*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir, 'pos_label_str_via_config*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir, 'clf_metrics_objective_overlap*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir, 'test_multinomialnb_loading*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir,
-                                 'test_predict_return_and_write_predictions*')):
-        os.unlink(output_file)
+    for glob_pattern in [join(output_dir, 'train_test_single_file_*'),
+                         join(output_dir, 'clf_metric_value_*'),
+                         join(output_dir, 'pos_label_str_via_config*'),
+                         join(output_dir, 'clf_metrics_objective_overlap*'),
+                         join(output_dir, 'test_multinomialnb_loading*'),
+                         join(output_dir, 'test_predict_return_and_write_predictions*')]:
+        for path in glob(glob_pattern):
+            unlink(path)
 
     config_files = [join(config_dir,
                          cfgname) for cfgname in ['test_single_file.cfg',
@@ -122,8 +94,11 @@ def tearDown():
                                   'test_fancy_metrics_objective_overlap*.cfg')))
 
     for config_file in config_files:
-        if exists(config_file):
-            os.unlink(config_file)
+        unlink(config_file)
+
+    for file_name in ["metric_values_test.jsonlines",
+                      "metric_values_train.jsonlines"]:
+        unlink(Path(train_dir) / file_name)
 
 
 def test_contiguous_int_or_float_labels():
@@ -215,17 +190,14 @@ def check_label_index_order_with_pos_label_str(use_api=True):
             clf.train(train_fs, grid_search=False)
         else:
 
-            train_file = join(_my_dir, 'train', 'pos_label_str_train.jsonlines')
-            output_dir = join(_my_dir, 'output')
+            train_file = join(train_dir, 'pos_label_str_train.jsonlines')
 
             # write out the feature set we made to a file for use in config
             writer = NDJWriter.for_path(train_file, train_fs)
             writer.write()
 
             # get the config template
-            config_template_path = join(_my_dir,
-                                        'configs',
-                                        'test_fancy.template.cfg')
+            config_template_path = join(config_dir, 'test_fancy.template.cfg')
 
             values_to_fill_dict = {'experiment_name': 'pos_label_str_via_config',
                                    'task': 'train',
@@ -325,17 +297,14 @@ def check_binary_predictions_for_pos_label_str(label_list,
                            probability=probability)
         clf_skll.train(train_fs, grid_search=False)
     else:
-        train_file = join(_my_dir, 'train', 'pos_label_str_train.jsonlines')
-        output_dir = join(_my_dir, 'output')
+        train_file = join(train_dir, 'pos_label_str_train.jsonlines')
 
         # write out the feature set we made to a file for use in config
         writer = NDJWriter.for_path(train_file, train_fs)
         writer.write()
 
         # get the config template
-        config_template_path = join(_my_dir,
-                                    'configs',
-                                    'test_fancy.template.cfg')
+        config_template_path = join(config_dir, 'test_fancy.template.cfg')
 
         values_to_fill_dict = {'experiment_name': 'pos_label_str_predict',
                                'task': 'train',
@@ -438,8 +407,8 @@ def test_predict():
 
 # test predictions when both the model and the data use DictVectorizers
 def test_predict_dict_dict():
-    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
-    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_file = join(other_dir, 'examples_train.jsonlines')
+    test_file = join(other_dir, 'examples_test.jsonlines')
     train_fs = NDJReader.for_path(train_file).read()
     test_fs = NDJReader.for_path(test_file).read()
     learner = Learner('LogisticRegression')
@@ -451,8 +420,8 @@ def test_predict_dict_dict():
 # test predictions when both the model and the data use FeatureHashers
 # and the same number of bins
 def test_predict_hasher_hasher_same_bins():
-    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
-    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_file = join(other_dir, 'examples_train.jsonlines')
+    test_file = join(other_dir, 'examples_test.jsonlines')
     train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
     test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
     learner = Learner('LogisticRegression')
@@ -465,8 +434,8 @@ def test_predict_hasher_hasher_same_bins():
 # but different number of bins
 @raises(RuntimeError)
 def test_predict_hasher_hasher_different_bins():
-    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
-    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_file = join(other_dir, 'examples_train.jsonlines')
+    test_file = join(other_dir, 'examples_test.jsonlines')
     train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
     test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=2).read()
     learner = Learner('LogisticRegression')
@@ -477,8 +446,8 @@ def test_predict_hasher_hasher_different_bins():
 # test predictions when model uses a FeatureHasher and data
 # uses a DictVectorizer
 def test_predict_hasher_dict():
-    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
-    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_file = join(other_dir, 'examples_train.jsonlines')
+    test_file = join(other_dir, 'examples_test.jsonlines')
     train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
     test_fs = NDJReader.for_path(test_file).read()
     learner = Learner('LogisticRegression')
@@ -491,8 +460,8 @@ def test_predict_hasher_dict():
 # uses a FeatureHasher
 @raises(RuntimeError)
 def test_predict_dict_hasher():
-    train_file = join(_my_dir, 'other', 'examples_train.jsonlines')
-    test_file = join(_my_dir, 'other', 'examples_test.jsonlines')
+    train_file = join(other_dir, 'examples_train.jsonlines')
+    test_file = join(other_dir, 'examples_test.jsonlines')
     train_fs = NDJReader.for_path(train_file).read()
     test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
     learner = Learner('LogisticRegression')
@@ -525,7 +494,7 @@ def test_rare_class():
     """
 
     rare_class_fs = make_rare_class_data()
-    prediction_prefix = join(_my_dir, 'output', 'rare_class')
+    prediction_prefix = join(output_dir, 'rare_class')
     learner = Learner('LogisticRegression')
     learner.cross_validate(rare_class_fs,
                            grid_objective='unweighted_kappa',
@@ -665,18 +634,18 @@ def make_single_file_featureset_data():
                                                  non_negative=False)
 
     # Write training feature set to a file
-    train_path = join(_my_dir, 'train', 'train_single_file.jsonlines')
+    train_path = join(train_dir, 'train_single_file.jsonlines')
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
     # Write test feature set to a file
-    test_path = join(_my_dir, 'test', 'test_single_file.jsonlines')
+    test_path = join(test_dir, 'test_single_file.jsonlines')
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
     # Also write another test feature set that has fewer features than the training set
     test_fs.filter(features=['f01', 'f02'])
-    test_path = join(_my_dir, 'test', 'test_single_file_subset.jsonlines')
+    test_path = join(test_dir, 'test_single_file_subset.jsonlines')
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
@@ -689,13 +658,13 @@ def test_train_file_test_file():
     make_single_file_featureset_data()
 
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_single_file"
                                                             ".template.cfg"),
-                                                       join(_my_dir, 'train',
+                                                       join(train_dir,
                                                             'train_single_file'
                                                             '.jsonlines'),
-                                                       join(_my_dir, 'test',
+                                                       join(test_dir,
                                                             'test_single_file.'
                                                             'jsonlines'))
     run_configuration(config_path, quiet=True)
@@ -703,26 +672,26 @@ def test_train_file_test_file():
     # Check results for objective functions ["accuracy", "f1", "f05"]
 
     # objective function accuracy
-    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
-                                       'single_file.jsonlines_test_test_single'
-                                       '_file.jsonlines_RandomForestClassifier'
-                                       '_accuracy.results.json'))) as f:
+    with open(join(output_dir,
+                   'train_test_single_file_train_train_single_file.jsonlines'
+                   '_test_test_single_file.jsonlines_RandomForestClassifier'
+                   '_accuracy.results.json')) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['score'], 0.95)
 
     # objective function f1
-    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
-                                       'single_file.jsonlines_test_test_single'
-                                       '_file.jsonlines_RandomForestClassifier'
-                                       '_f1.results.json'))) as f:
+    with open(join(output_dir,
+                   'train_test_single_file_train_train_single_file.jsonlines'
+                   '_test_test_single_file.jsonlines_RandomForestClassifier'
+                   '_f1.results.json')) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['score'], 0.9491525423728813)
 
     # objective function f05
-    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
-                                       'single_file.jsonlines_test_test_single'
-                                       '_file.jsonlines_RandomForestClassifier'
-                                       '_f05.results.json'))) as f:
+    with open(join(output_dir,
+                   'train_test_single_file_train_train_single_file.jsonlines'
+                   '_test_test_single_file.jsonlines_RandomForestClassifier'
+                   '_f05.results.json')) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['score'], 0.9302325581395348)
 
@@ -735,31 +704,31 @@ def test_predict_on_subset_with_existing_model():
     make_single_file_featureset_data()
 
     # train and save a model on the training file
-    train_fs = NDJReader.for_path(join(_my_dir, 'train', 'train_single_file.jsonlines')).read()
+    train_fs = NDJReader.for_path(join(train_dir, 'train_single_file.jsonlines')).read()
     learner = Learner('RandomForestClassifier')
     learner.train(train_fs, grid_search=True, grid_objective="accuracy")
-    model_filename = join(_my_dir, 'output', ('train_test_single_file_train_train_'
-                                              'single_file.jsonlines_test_test_single'
-                                              '_file_subset.jsonlines_RandomForestClassifier'
-                                              '.model'))
+    model_filename = join(output_dir,
+                          'train_test_single_file_train_train_single_file.'
+                          'jsonlines_test_test_single_file_subset.jsonlines'
+                          '_RandomForestClassifier.model')
 
     learner.save(model_filename)
 
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_single_file_saved_subset"
                                                             ".template.cfg"),
-                                                       join(_my_dir, 'train', 'train_single_file.jsonlines'),
-                                                       join(_my_dir, 'test',
+                                                       join(train_dir, 'train_single_file.jsonlines'),
+                                                       join(test_dir,
                                                             'test_single_file_subset.'
                                                             'jsonlines'))
     run_configuration(config_path, quiet=True, overwrite=False)
 
     # Check results
-    with open(join(_my_dir, 'output', ('train_test_single_file_train_train_'
-                                       'single_file.jsonlines_test_test_single'
-                                       '_file_subset.jsonlines_RandomForestClassifier'
-                                       '.results.json'))) as f:
+    with open(join(output_dir,
+                   'train_test_single_file_train_train_single_file.jsonlines'
+                   '_test_test_single_file_subset.jsonlines_'
+                   'RandomForestClassifier.results.json')) as f:
         result_dict = json.load(f)[0]
     assert_almost_equal(result_dict['accuracy'], 0.7333333)
 
@@ -772,22 +741,20 @@ def test_train_file_test_file_ablation():
     make_single_file_featureset_data()
 
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_single_file"
                                                             ".template.cfg"),
-                                                       join(_my_dir, 'train',
+                                                       join(train_dir,
                                                             'train_single_file'
                                                             '.jsonlines'),
-                                                       join(_my_dir, 'test',
+                                                       join(test_dir,
                                                             'test_single_file.'
                                                             'jsonlines'))
     run_configuration(config_path, quiet=True, ablation=None)
 
     # check that we see the message that ablation was ignored in the experiment log
     # Check experiment log output
-    with open(join(_my_dir,
-                   'output',
-                   'train_test_single_file.log')) as f:
+    with open(join(output_dir, 'train_test_single_file.log')) as f:
         cv_file_pattern = re.compile('Not enough featuresets for ablation. Ignoring.')
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
@@ -799,13 +766,13 @@ def test_train_file_and_train_directory():
     Test that train_file + train_directory = ValueError
     """
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_single_file"
                                                             ".template.cfg"),
-                                                       join(_my_dir, 'train',
+                                                       join(train_dir,
                                                             'train_single_file'
                                                             '.jsonlines'),
-                                                       join(_my_dir, 'test',
+                                                       join(test_dir,
                                                             'test_single_file.'
                                                             'jsonlines'),
                                                        train_directory='foo')
@@ -818,13 +785,13 @@ def test_test_file_and_test_directory():
     Test that test_file + test_directory = ValueError
     """
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_single_file"
                                                             ".template.cfg"),
-                                                       join(_my_dir, 'train',
+                                                       join(train_dir,
                                                             'train_single_file'
                                                             '.jsonlines'),
-                                                       join(_my_dir, 'test',
+                                                       join(test_dir,
                                                             'test_single_file.'
                                                             'jsonlines'),
                                                        test_directory='foo')
@@ -893,7 +860,8 @@ def test_new_labels_in_test_set():
 
 def test_new_labels_in_test_set_change_order():
     """
-    Test classification with an unseen label in the test set when the new label falls between the existing labels
+    Test classification with an unseen label in the test set when the
+    new label falls between the existing labels.
     """
     train_fs, test_fs = make_classification_data(num_labels=3,
                                                  train_test_ratio=0.8)
@@ -954,14 +922,14 @@ def test_xval_float_classes_as_strings():
     """
 
     float_class_fs = make_float_class_data(labels_as_strings=True)
-    prediction_prefix = join(_my_dir, 'output', 'float_class')
+    prediction_prefix = join(output_dir, 'float_class')
     learner = Learner('LogisticRegression')
     learner.cross_validate(float_class_fs,
                            grid_search=True,
                            grid_objective='accuracy',
                            prediction_prefix=prediction_prefix)
 
-    with open(prediction_prefix + '_predictions.tsv', 'r') as f:
+    with open(f'{prediction_prefix}_predictions.tsv', 'r') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
@@ -973,7 +941,7 @@ def test_xval_float_classes_as_strings():
 def check_bad_xval_float_classes(do_stratified_xval):
 
     float_class_fs = make_float_class_data()
-    prediction_prefix = join(_my_dir, 'output', 'float_class')
+    prediction_prefix = join(output_dir, 'float_class')
     learner = Learner('LogisticRegression')
     learner.cross_validate(float_class_fs,
                            stratified=do_stratified_xval,
@@ -1061,7 +1029,7 @@ def test_learner_api_load_into_existing_instance():
 
     # now use `load()` to replace the existing instance with a
     # different saved learner
-    other_model_file = join(_my_dir, 'other', 'test_load_saved_model.model')
+    other_model_file = join(other_dir, 'test_load_saved_model.model')
     learner1.load(other_model_file)
 
     # now load the saved model into another instance using the class method
@@ -1394,7 +1362,7 @@ def test_objective_values_for_classification():
     #
     # 4. We then compare values in 2 and 3 to verify that they are equal.
 
-    metrics_to_test = set(['accuracy'])
+    metrics_to_test = {'accuracy'}
     metrics_to_test.update(CORRELATION_METRICS,
                            PROBABILISTIC_METRICS,
                            UNWEIGHTED_KAPPA_METRICS,
@@ -1449,13 +1417,8 @@ def check_metric_values_for_classification(metric_name,
                                            label_array,
                                            use_probabilities):
 
-    # define some dictionaries
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
-
     # get the config template
-    config_template_path = join(_my_dir,
-                                'configs',
+    config_template_path = join(config_dir,
                                 'test_metric_values_for_classification.template.cfg')
 
     # instantiate a random number generator
@@ -1637,7 +1600,7 @@ def test_metric_values_for_classification():
     #
     # 4. We then compare values in 2 and 3 to verify that they are equal.
 
-    metrics_to_test = set(['accuracy'])
+    metrics_to_test = {'accuracy'}
     metrics_to_test.update(CORRELATION_METRICS,
                            PROBABILISTIC_METRICS,
                            UNWEIGHTED_KAPPA_METRICS,
@@ -1690,8 +1653,6 @@ def test_metric_values_for_classification():
 
 def check_metrics_and_objectives_overlap(task, metrics, objectives):
 
-    train_dir = join('..', 'train')
-    output_dir = join(_my_dir, 'output')
     train_file = join(train_dir, 'metric_values_train.jsonlines')
     test_file = join(train_dir, 'metric_values_test.jsonlines')
 
@@ -1714,9 +1675,7 @@ def check_metrics_and_objectives_overlap(task, metrics, objectives):
     else:
         values_to_fill_dict['grid_search'] = 'false'
 
-    config_template_path = join(_my_dir,
-                                'configs',
-                                'test_fancy.template.cfg')
+    config_template_path = join(config_dir, 'test_fancy.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
@@ -1751,15 +1710,13 @@ def test_metrics_and_objectives_overlap():
     for task, metrics, objectives in product(["evaluate", "cross_validate"],
                                              [["f1_score_weighted", "unweighted_kappa", "accuracy"]],
                                              [[], ["accuracy"], ["accuracy", "unweighted_kappa"]]):
-        yield (check_metrics_and_objectives_overlap, task, metrics, objectives)
+        yield check_metrics_and_objectives_overlap, task, metrics, objectives
 
 
 def test_multinomialnb_loading():
     """
     Make sure we can load MultnomialNB models from disk
     """
-
-    output_dir = join(_my_dir, 'output')
 
     learner = Learner('MultinomialNB')
     train_fs, test_fs = make_classification_data(num_examples=100, non_negative=True)
@@ -1781,7 +1738,7 @@ def test_load_old_skll_model():
     """
 
     # get the path to the old model
-    model_path = join(_my_dir, "other", "v2.1_SVC.model")
+    model_path = join(other_dir, "v2.1_SVC.model")
 
     # suppress warnings and check that error is raised
     with warnings.catch_warnings():
@@ -1794,15 +1751,13 @@ def test_load_old_skll_model():
 
 def check_predict_return_and_write(learner, test_fs, class_labels):
 
-    output_dir = join(_my_dir, 'output')
-
     returned_predictions = learner.predict(test_fs,
                                            class_labels=class_labels,
                                            prediction_prefix=f"{output_dir}/test_predict_return_and_write")
 
     # open and read the predictions file
-    with open(f"{output_dir}/test_predict_return_"
-              f"and_write_predictions.tsv", 'r') as predictfh:
+    with open(join(output_dir,
+                   "test_predict_return_and_write_predictions.tsv")) as predictfh:
         reader = csv.DictReader(predictfh, dialect=csv.excel_tab)
         written_predictions = list(reader)
 

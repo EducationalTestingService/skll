@@ -9,7 +9,6 @@ Tests related to output from run_experiment
 
 import csv
 import json
-import os
 import re
 import warnings
 
@@ -17,7 +16,8 @@ from ast import literal_eval
 from collections import defaultdict
 from glob import glob
 from itertools import product
-from os.path import abspath, dirname, exists, join
+from os.path import exists, join
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -37,29 +37,34 @@ from skll.experiments.output import _compute_ylimits_for_featureset
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS, VALID_TASKS
 from skll.utils.logging import get_skll_logger, close_and_remove_logger_handlers
+
+from tests import (_my_dir, backward_compatibility_dir, config_dir, other_dir,
+                   output_dir, train_dir, test_dir)
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_options,
                          fill_in_config_paths,
                          fill_in_config_paths_for_single_file,
                          make_classification_data,
                          make_regression_data,
-                         make_digits_data)
+                         make_digits_data,
+                         remove_jsonlines_feature_files,
+                         unlink)
+
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-_my_dir = abspath(dirname(__file__))
 
 
 def setup():
     """
     Create necessary directories for testing.
     """
-    for dir_name in ('train', 'test', 'output', 'evaluate'):
-        new_dir = join(_my_dir, dir_name)
-        if not exists(new_dir):
-            os.makedirs(new_dir)
+    for dir_path in [test_dir,
+                     train_dir,
+                     output_dir,
+                     join(_my_dir, 'evaluate')]:
+        Path(dir_path).mkdir(exist_ok=True)
 
     # create jsonlines feature files
-    train_dir = join(_my_dir, 'train')
     create_jsonlines_feature_files(train_dir)
 
 
@@ -67,17 +72,10 @@ def tearDown():
     """
     Clean up after tests.
     """
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-    config_dir = join(_my_dir, 'configs')
     for suffix in ['learning_curve', 'summary', 'fancy_xval',
                    'warning_multiple_featuresets']:
-        if exists(join(train_dir, f'test_{suffix}.jsonlines')):
-            os.unlink(join(train_dir, f'test_{suffix}.jsonlines'))
-
-        if exists(join(test_dir, f'test_{suffix}.jsonlines')):
-            os.unlink(join(test_dir, f'test_{suffix}.jsonlines'))
+        for dir_path in [train_dir, test_dir]:
+            unlink(Path(dir_path) / f'test_{suffix}.jsonlines')
 
         config_files = [f'test_{suffix}.cfg',
                         f'test_{suffix}_with_metrics.cfg',
@@ -85,33 +83,34 @@ def tearDown():
                         f'test_{suffix}_feature_hasher.cfg',
                         f'test_{suffix}_feature_hasher_with_metrics.cfg']
         for cf in config_files:
-            if exists(join(config_dir, cf)):
-                os.unlink(join(config_dir, cf))
+            unlink(Path(config_dir) / cf)
 
         for output_file in (glob(join(output_dir, f'test_{suffix}_*')) +
                             glob(join(output_dir, f'test_{suffix}.log'))):
-            os.unlink(output_file)
+            unlink(output_file)
 
     for suffix in VALID_TASKS:
         config_files = [f'test_cv_results_{suffix}.cfg']
         for cf in config_files:
-            if exists(join(config_dir, cf)):
-                os.unlink(join(config_dir, cf))
+            unlink(Path(config_dir) / cf)
 
-    if exists(join(config_dir, 'test_send_warnings_to_log.cfg')):
-        os.unlink(join(config_dir, 'test_send_warnings_to_log.cfg'))
+    for path in [Path(config_dir) / 'test_send_warnings_to_log.cfg',
+                 "test_current_directory.model",
+                 Path(train_dir) / 'test_learning_curve1.jsonlines',
+                 Path(train_dir) / 'test_learning_curve2.jsonlines']:
+        unlink(path)
 
-    # adding all the suffix independent output patterns here that are not f'test_{SUFFIX}_*'
+    remove_jsonlines_feature_files(train_dir)
+
+    # adding all the suffix independent output patterns here that are
+    # not f'test_{SUFFIX}_*'
     clean_up_output_file_name_patterns = ['test_majority_class_custom_learner_*',
                                           'test_send_warnings_to_log*',
                                           'test_grid_search_cv_results_*.*',
                                           'test_check_override_learning_curve_min_examples*']
     for file_name_pattern in clean_up_output_file_name_patterns:
         for output_file in glob(join(output_dir, file_name_pattern)):
-            os.unlink(output_file)
-
-    if exists("test_current_directory.model"):
-        os.unlink("test_current_directory.model")
+            unlink(output_file)
 
 
 # Generate and write out data for the test that checks summary scores
@@ -123,12 +122,12 @@ def make_summary_data():
                                                  non_negative=True)
 
     # Write training feature set to a file
-    train_path = join(_my_dir, 'train', 'test_summary.jsonlines')
+    train_path = join(train_dir, 'test_summary.jsonlines')
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
     # Write test feature set to a file
-    test_path = join(_my_dir, 'test', 'test_summary.jsonlines')
+    test_path = join(test_dir, 'test_summary.jsonlines')
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
@@ -140,7 +139,7 @@ def make_learning_curve_data():
     fs_digits, _ = make_digits_data(test_size=0)
 
     # Write this feature set to file
-    train_path = join(_my_dir, 'train', 'test_learning_curve1.jsonlines')
+    train_path = join(train_dir, 'test_learning_curve1.jsonlines')
     writer = NDJWriter(train_path, fs_digits)
     writer.write()
 
@@ -148,7 +147,7 @@ def make_learning_curve_data():
     fs_digits.filter(features="pixel_7_7", inverse=True)
 
     # Write this feature set to file
-    train_path = join(_my_dir, 'train', 'test_learning_curve2.jsonlines')
+    train_path = join(train_dir, 'test_learning_curve2.jsonlines')
     writer = NDJWriter(train_path, fs_digits)
     writer.write()
 
@@ -176,12 +175,12 @@ def check_summary_score(use_feature_hashing,
         summprefix = ('test_summary_with_metrics' if
                       use_additional_metrics else 'test_summary')
 
-    config_template_path = join(_my_dir, 'configs', cfgfile)
+    config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True)
 
-    with open(join(_my_dir, 'output',
+    with open(join(output_dir,
                    f'{outprefix}_LogisticRegression.results.json')) as f:
         outd = json.loads(f.read())
         logistic_result_score = outd[0]['score']
@@ -190,8 +189,7 @@ def check_summary_score(use_feature_hashing,
             logistic_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
             logistic_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
-    with open(join(_my_dir, 'output',
-                   f'{outprefix}_SVC.results.json')) as f:
+    with open(join(output_dir, f'{outprefix}_SVC.results.json')) as f:
         outd = json.loads(f.read())
         svm_result_score = outd[0]['score']
         if use_additional_metrics:
@@ -201,7 +199,7 @@ def check_summary_score(use_feature_hashing,
 
     # note that Naive Bayes doesn't work with feature hashing
     if not use_feature_hashing:
-        with open(join(_my_dir, 'output',
+        with open(join(output_dir,
                        f'{outprefix}_MultinomialNB.results.json')) as f:
             outd = json.loads(f.read())
             naivebayes_result_score = outd[0]['score']
@@ -210,8 +208,7 @@ def check_summary_score(use_feature_hashing,
                 nb_result_additional_metric1 = results_metrics_dict['unweighted_kappa']
                 nb_result_additional_metric2 = results_metrics_dict['f1_score_micro']
 
-    with open(join(_my_dir, 'output', f'{summprefix}_summary.tsv'),
-              'r') as f:
+    with open(join(output_dir, f'{summprefix}_summary.tsv')) as f:
         reader = csv.DictReader(f, dialect='excel-tab')
 
         for row in reader:
@@ -292,7 +289,7 @@ def check_summary_score(use_feature_hashing,
                                  ("MultinomialNB", .5),
                                  ("SVC", .6333)):
             filename = f"test_summary_test_summary_{report_name}.results"
-            results_path = join(_my_dir, 'output', filename)
+            results_path = join(output_dir, filename)
             with open(results_path) as results_file:
                 report = results_file.read()
                 expected_string = f"Accuracy = {val:.1f}"
@@ -313,8 +310,7 @@ def check_xval_fancy_results_file(do_grid_search,
                                   use_folds_file_for_grid_search,
                                   use_additional_metrics):
 
-    train_path = join(_my_dir, 'train', 'f0.jsonlines')
-    output_dir = join(_my_dir, 'output')
+    train_path = join(train_dir, 'f0.jsonlines')
 
     # make a simple config file for cross-validation
     values_to_fill_dict = {'experiment_name': 'test_fancy_xval',
@@ -330,7 +326,7 @@ def check_xval_fancy_results_file(do_grid_search,
                            'predictions': output_dir,
                            'results': output_dir}
 
-    folds_file_path = join(_my_dir, 'train', 'folds_file_test.csv')
+    folds_file_path = join(train_dir, 'folds_file_test.csv')
     if use_folds_file:
         values_to_fill_dict['folds_file'] = folds_file_path
     values_to_fill_dict['grid_search'] = str(do_grid_search)
@@ -339,9 +335,7 @@ def check_xval_fancy_results_file(do_grid_search,
     if use_additional_metrics:
         values_to_fill_dict['metrics'] = str(["accuracy", "unweighted_kappa"])
 
-    config_template_path = join(_my_dir,
-                                'configs',
-                                'test_fancy.template.cfg')
+    config_template_path = join(config_dir, 'test_fancy.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
@@ -351,7 +345,8 @@ def check_xval_fancy_results_file(do_grid_search,
     run_configuration(config_path, quiet=True)
 
     # now make sure that the results file was produced
-    results_file_path = join(_my_dir, 'output', 'test_fancy_xval_f0_LogisticRegression.results')
+    results_file_path = join(output_dir,
+                             'test_fancy_xval_f0_LogisticRegression.results')
     ok_(exists(results_file_path))
 
     # read in all the lines and look at the lines up to where we print the "Total Time"
@@ -416,13 +411,12 @@ def test_xval_fancy_results_file():
 
 def check_grid_search_cv_results(task, do_grid_search):
     learners = ['LogisticRegression', 'SVC']
-    expected_path = join(_my_dir, 'other', 'cv_results')
+    expected_path = join(other_dir, 'cv_results')
 
     def time_field(x):
         return x.endswith('_time')
 
-    train_path = join(_my_dir, 'train', 'f0.jsonlines')
-    output_dir = join(_my_dir, 'output')
+    train_path = join(train_dir, 'f0.jsonlines')
 
     exp_name = (f'test_grid_search_cv_results_{task}_'
                 f'{"gs" if do_grid_search else "nogs"}')
@@ -455,9 +449,7 @@ def check_grid_search_cv_results(task, do_grid_search):
         if do_grid_search:
             do_grid_search = False
 
-    config_template_path = join(_my_dir,
-                                'configs',
-                                'test_cv_results.template.cfg')
+    config_template_path = join(config_dir, 'test_cv_results.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
@@ -478,8 +470,7 @@ def check_grid_search_cv_results(task, do_grid_search):
     # now make sure that the results json file was produced
     for learner in learners:
         results_file_name = f'{exp_name}_f0_{learner}.results.json'
-        actual_results_file_path = join(_my_dir, 'output',
-                                        results_file_name)
+        actual_results_file_path = join(output_dir, results_file_name)
         expected_results_file_path = join(expected_path,
                                           results_file_name)
         ok_(exists(actual_results_file_path))
@@ -578,8 +569,6 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
     '''
     test using multiple feature sets with feature hasher throws warning
     '''
-    train_dir = join(_my_dir, 'train')
-    output_dir = join(_my_dir, 'output')
 
     # make a simple config file for feature hasher warning test
     values_to_fill_dict = {'experiment_name': 'test_warning_multiple_featuresets',
@@ -588,8 +577,8 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
                            'grid_search': 'false',
                            'objectives': "['f1_score_micro']",
                            'learners': "['LogisticRegression']",
-                           'featuresets': ("[['test_input_3examples_1', "
-                                           "'test_input_3examples_2']]"),
+                           'featuresets': "[['test_input_3examples_1', "
+                                          "'test_input_3examples_2']]",
                            "featureset_names": "['feature_hasher']",
                            'suffix': '.jsonlines',
                            'log': output_dir,
@@ -598,8 +587,7 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
                            "hasher_features": "4"
                            }
 
-    config_template_path = join(_my_dir,
-                                'configs',
+    config_template_path = join(config_dir,
                                 'test_warning_multiple_featuresets.template.cfg')
 
     config_path = fill_in_config_options(config_template_path,
@@ -611,12 +599,12 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
     run_configuration(config_path, quiet=True)
 
     # test if it throws any warning
-    logfile_path = join(_my_dir, "output",
+    logfile_path = join(output_dir,
                         "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log")
     with open(logfile_path) as f:
-        warning_pattern = re.compile('Since there are multiple feature files, '
-                                     'feature hashing applies to each '
-                                     'specified feature file separately.')
+        warning_pattern = re.compile(r'Since there are multiple feature files, '
+                                     r'feature hashing applies to each '
+                                     r'specified feature file separately.')
         matches = re.findall(warning_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -626,14 +614,11 @@ def test_backward_compatibility():
     """
     Test to validate backward compatibility
     """
-    predict_path = join(_my_dir,
-                        'backward_compatibility',
+    predict_path = join(backward_compatibility_dir,
                         'v0.23.1_test_summary_test_summary_LogisticRegression_predictions.tsv')
-    model_path = join(_my_dir,
-                      'backward_compatibility',
+    model_path = join(backward_compatibility_dir,
                       'v0.23.1_test_summary_test_summary_LogisticRegression.model')
-    test_path = join(_my_dir,
-                     'backward_compatibility',
+    test_path = join(backward_compatibility_dir,
                      'v0.23.1_test_summary.jsonlines')
 
     learner = Learner.from_file(model_path)
@@ -695,7 +680,7 @@ def test_learning_curve_output():
     # Test to validate learning curve output
     make_learning_curve_data()
 
-    config_template_path = join(_my_dir, 'configs', 'test_learning_curve.template.cfg')
+    config_template_path = join(config_dir, 'test_learning_curve.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
@@ -703,7 +688,7 @@ def test_learning_curve_output():
     outprefix = 'test_learning_curve'
 
     # make sure that the TSV file is created with the right columns
-    output_tsv_path = join(_my_dir, 'output', f'{outprefix}_summary.tsv')
+    output_tsv_path = join(output_dir, f'{outprefix}_summary.tsv')
     ok_(exists(output_tsv_path))
     with open(output_tsv_path, 'r') as tsvf:
         r = csv.reader(tsvf, dialect=csv.excel_tab)
@@ -717,8 +702,7 @@ def test_learning_curve_output():
 
     # make sure that the two PNG files (one per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        ok_(exists(join(_my_dir,
-                        'output',
+        ok_(exists(join(output_dir,
                         f'{outprefix}_{featureset_name}.png')))
 
 
@@ -730,9 +714,7 @@ def test_learning_curve_output_with_objectives():
     # Test to validate learning curve output
     make_learning_curve_data()
 
-    config_template_path = join(_my_dir,
-                                'configs',
-                                'test_learning_curve.template.cfg')
+    config_template_path = join(config_dir, 'test_learning_curve.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
@@ -740,7 +722,7 @@ def test_learning_curve_output_with_objectives():
     outprefix = 'test_learning_curve'
 
     # make sure that the TSV file is created with the right columns
-    output_tsv_path = join(_my_dir, 'output', f'{outprefix}_summary.tsv')
+    output_tsv_path = join(output_dir, f'{outprefix}_summary.tsv')
     ok_(exists(output_tsv_path))
     with open(output_tsv_path, 'r') as tsvf:
         r = csv.reader(tsvf, dialect=csv.excel_tab)
@@ -754,9 +736,7 @@ def test_learning_curve_output_with_objectives():
 
     # make sure that the two PNG files (one per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        ok_(exists(join(_my_dir,
-                        'output',
-                        f'{outprefix}_{featureset_name}.png')))
+        ok_(exists(join(output_dir, f'{outprefix}_{featureset_name}.png')))
 
 
 def test_learning_curve_plots():
@@ -767,7 +747,7 @@ def test_learning_curve_plots():
     # Test to validate learning curve output
     make_learning_curve_data()
 
-    config_template_path = join(_my_dir, 'configs', 'test_learning_curve.template.cfg')
+    config_template_path = join(config_dir, 'test_learning_curve.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
@@ -776,9 +756,7 @@ def test_learning_curve_plots():
 
     # make sure that the two PNG files (one per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        ok_(exists(join(_my_dir,
-                        'output',
-                        f'{outprefix}_{featureset_name}.png')))
+        ok_(exists(join(output_dir, f'{outprefix}_{featureset_name}.png')))
 
 
 def test_learning_curve_plots_with_objectives():
@@ -789,9 +767,7 @@ def test_learning_curve_plots_with_objectives():
     # Test to validate learning curve output
     make_learning_curve_data()
 
-    config_template_path = join(_my_dir,
-                                'configs',
-                                'test_learning_curve.template.cfg')
+    config_template_path = join(config_dir, 'test_learning_curve.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
@@ -800,9 +776,7 @@ def test_learning_curve_plots_with_objectives():
 
     # make sure that the two PNG files (one per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        ok_(exists(join(_my_dir,
-                        'output',
-                        f'{outprefix}_{featureset_name}.png')))
+        ok_(exists(join(output_dir, f'{outprefix}_{featureset_name}.png')))
 
 
 def test_learning_curve_ylimits():
@@ -895,7 +869,7 @@ def test_learning_curve_min_examples_check_override():
     """
 
     # creates a logger which writes to a temporary log file
-    log_file_path = join(_my_dir, "output",
+    log_file_path = join(output_dir,
                          "test_check_override_learning_curve_min_examples.log")
     logger = get_skll_logger("test_learning_curve_min_examples_check_override",
                              filepath=log_file_path)
@@ -918,8 +892,8 @@ def test_learning_curve_min_examples_check_override():
         learning_curve_warning_re = \
             re.compile(r'Because the number of training examples provided - '
                        r'\d+ - is less than the ideal minimum - \d+ - '
-                       r'learning curve generation is unreliable'
-                       r' and might break')
+                       r'learning curve generation is unreliable and might '
+                       r'break')
         assert learning_curve_warning_re.search(log_text)
 
     close_and_remove_logger_handlers(logger)
@@ -1120,9 +1094,8 @@ def test_send_warnings_to_log():
     # Run experiment
 
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', f'test_send_warnings{suffix}')
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
-                                                            "configs",
+    train_path = join(train_dir, f'test_send_warnings{suffix}')
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_send_warnings_to_log"
                                                             ".template.cfg"),
                                                        train_path,
@@ -1132,8 +1105,7 @@ def test_send_warnings_to_log():
     # Check experiment log output
     # The experiment log file should contain warnings related
     # to the use of sklearn
-    with open(join(_my_dir,
-                   'output',
+    with open(join(output_dir,
                    'test_send_warnings_to_log_train_test_send_warnings.'
                    'jsonlines_LinearSVC.log')) as f:
         log_content = f.read()
@@ -1151,7 +1123,7 @@ def test_save_models_to_current_directory():
 
     # create a learner and train it on some data
     learner1 = Learner('LogisticRegression')
-    train_path = join(_my_dir, 'train', 'f0.jsonlines')
+    train_path = join(train_dir, 'f0.jsonlines')
     train_fs = NDJReader.for_path(train_path).read()
     learner1.train(train_fs, grid_search=False)
 

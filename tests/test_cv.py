@@ -12,11 +12,11 @@ the future.
 import csv
 import itertools
 import json
-import os
 import re
 
 from glob import glob
-from os.path import abspath, dirname, join, exists
+from os.path import join, exists
+from pathlib import Path
 
 import numpy as np
 
@@ -32,48 +32,40 @@ from skll.data import FeatureSet
 from skll.experiments import load_featureset, run_configuration
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
+
+from tests import config_dir, other_dir, output_dir, train_dir
 from tests.utils import (create_jsonlines_feature_files,
-                         fill_in_config_paths_for_single_file)
+                         fill_in_config_paths_for_single_file,
+                         remove_jsonlines_feature_files,
+                         unlink)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-_my_dir = abspath(dirname(__file__))
 
 
 def setup():
     """
     Create necessary directories for testing.
     """
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
+    for dir_path in [train_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
 
     # create jsonlines feature files
-    train_path = join(_my_dir, 'train')
-    create_jsonlines_feature_files(train_path)
+    create_jsonlines_feature_files(train_dir)
 
 
 def tearDown():
     """
     Clean up after tests.
     """
-    fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
-    if exists(fold_file_path):
-        os.unlink(fold_file_path)
-
-    train_dir = join(_my_dir, "train")
-    output_dir = join(_my_dir, 'output')
-    config_dir = join(_my_dir, 'configs')
+    fold_file_path = join(other_dir, 'custom_folds.csv')
+    unlink(fold_file_path)
 
     cfg_files = [join(config_dir, 'test_save_cv_folds.cfg'),
                  join(config_dir, 'test_save_cv_models.cfg'),
                  join(config_dir, 'test_folds_file.cfg'),
                  join(config_dir, 'test_folds_file_grid.cfg')]
     for cfg_file in cfg_files:
-        if exists(cfg_file):
-            os.unlink(cfg_file)
+        unlink(cfg_file)
 
     for output_file in (glob(join(output_dir,
                                   'test_save_cv_folds*')) +
@@ -83,10 +75,9 @@ def tearDown():
                                   'test_save_cv_models*')) +
                         glob(join(output_dir,
                                   'test_folds_file*'))):
-        os.unlink(output_file)
+        unlink(output_file)
 
-    for i in range(6):
-        os.unlink(join(train_dir, f"f{i}.jsonlines"))
+    remove_jsonlines_feature_files(train_dir)
 
 
 def make_cv_folds_data(num_examples_per_fold=100,
@@ -135,7 +126,7 @@ def make_cv_folds_data(num_examples_per_fold=100,
     # make the custom cv folds dictionary
     custom_cv_folds = dict(zip(ids, folds))
 
-    return (cv_fs, custom_cv_folds)
+    return cv_fs, custom_cv_folds
 
 
 def test_specified_cv_folds():
@@ -192,7 +183,7 @@ def test_load_cv_folds():
     custom_cv_folds = make_cv_folds_data()[1]
 
     # write the generated CV folds to a CSV file
-    fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
+    fold_file_path = join(other_dir, 'custom_folds.csv')
     with open(fold_file_path, 'w', newline='') as foldf:
         w = csv.writer(foldf)
         w.writerow(['id', 'fold'])
@@ -215,7 +206,7 @@ def test_load_cv_folds_non_float_ids():
     custom_cv_folds = make_cv_folds_data()[1]
 
     # write the generated CV folds to a CSV file
-    fold_file_path = join(_my_dir, 'other', 'custom_folds.csv')
+    fold_file_path = join(other_dir, 'custom_folds.csv')
     with open(fold_file_path, 'w', newline='') as foldf:
         w = csv.writer(foldf)
         w.writerow(['id', 'fold'])
@@ -293,10 +284,9 @@ def test_folds_file_logging_num_folds():
     """
     # Run experiment
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', f'f0{suffix}')
+    train_path = join(train_dir, f'f0{suffix}')
 
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
-                                                            "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_folds_file"
                                                             ".template.cfg"),
                                                        train_path,
@@ -304,19 +294,18 @@ def test_folds_file_logging_num_folds():
     run_configuration(config_path, quiet=True)
 
     # Check experiment log output
-    with open(join(_my_dir,
-                   'output',
-                   'test_folds_file_logging.log')) as f:
-        cv_file_pattern = re.compile('Specifying "folds_file" overrides both explicit and default "num_cv_folds".')
+    with open(join(output_dir, 'test_folds_file_logging.log')) as f:
+        cv_file_pattern = re.compile(r'Specifying "folds_file" overrides both'
+                                     r' explicit and default "num_cv_folds".')
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
 
     # Check job log output
-    with open(join(_my_dir,
-                   'output',
+    with open(join(output_dir,
                    'test_folds_file_logging_train_f0.'
                    'jsonlines_LogisticRegression.log')) as f:
-        cv_folds_pattern = re.compile(r"(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds\))")
+        cv_folds_pattern = re.compile(r"(Task: cross_validate\n)(.+)"
+                                      r"(Cross-validating \([0-9]+ folds\))")
         matches = re.findall(cv_folds_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -327,10 +316,9 @@ def test_folds_file_with_fewer_ids_than_featureset():
     """
     # Run experiment with a special featureset that has extra IDs
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', f'f5{suffix}')
+    train_path = join(train_dir, f'f5{suffix}')
 
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
-                                                            "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_folds_file"
                                                             ".template.cfg"),
                                                        train_path,
@@ -338,11 +326,12 @@ def test_folds_file_with_fewer_ids_than_featureset():
     run_configuration(config_path, quiet=True)
 
     # Check job log output
-    with open(join(_my_dir,
-                   'output',
+    with open(join(output_dir,
                    'test_folds_file_logging_train_f5.'
                    'jsonlines_LogisticRegression.log')) as f:
-        cv_file_pattern = re.compile('Feature set contains IDs that are not in folds dictionary. Skipping those IDs.')
+        cv_file_pattern = re.compile(r'Feature set contains IDs that are not '
+                                     r'in folds dictionary. Skipping those '
+                                     r'IDs.')
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -354,10 +343,9 @@ def test_folds_file_logging_grid_search():
     """
     # Run experiment
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', f'f0{suffix}')
+    train_path = join(train_dir, f'f0{suffix}')
 
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir,
-                                                            "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_folds_file_grid"
                                                             ".template.cfg"),
                                                        train_path,
@@ -365,10 +353,12 @@ def test_folds_file_logging_grid_search():
     run_configuration(config_path, quiet=True)
 
     # Check experiment log output
-    with open(join(_my_dir,
-                   'output',
-                   'test_folds_file_logging.log')) as f:
-        cv_file_pattern = re.compile('Specifying "folds_file" overrides both explicit and default "num_cv_folds".\n(.+)The specified "folds_file" will not be used for inner grid search.')
+    with open(join(output_dir, 'test_folds_file_logging.log')) as f:
+        cv_file_pattern = re.compile(r'Specifying "folds_file" overrides '
+                                     r'both explicit and default '
+                                     r'"num_cv_folds".\n(.+)The specified '
+                                     r'"folds_file" will not be used for '
+                                     r'inner grid search.')
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -380,9 +370,9 @@ def test_cross_validate_task():
 
     # Run experiment
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', f'f0{suffix}')
+    train_path = join(train_dir, f'f0{suffix}')
 
-    config_path = fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+    config_path = fill_in_config_paths_for_single_file(join(config_dir,
                                                             "test_save_cv_folds"
                                                             ".template.cfg"),
                                                        train_path,
@@ -390,8 +380,9 @@ def test_cross_validate_task():
     run_configuration(config_path, quiet=True)
 
     # Check final average results
-    with open(join(_my_dir, 'output', 'test_save_cv_folds_train_f0.' +
-                                      'jsonlines_LogisticRegression.results.json')) as f:
+    with open(join(output_dir,
+                   'test_save_cv_folds_train_f0.jsonlines_LogisticRegression'
+                   '.results.json')) as f:
         result_dict = json.load(f)[10]
 
     assert_almost_equal(result_dict['accuracy'], 0.517)
@@ -405,7 +396,7 @@ def test_cross_validate_task():
             expected_skll_ids[examples.ids[index]] = fold_num
 
     skll_fold_ids = {}
-    with open(join(_my_dir, 'output', 'test_save_cv_folds_skll_fold_ids.csv')) as f:
+    with open(join(output_dir, 'test_save_cv_folds_skll_fold_ids.csv')) as f:
         reader = csv.DictReader(f)
         for row in reader:
             skll_fold_ids[row['id']] = row['cv_test_fold']
@@ -424,14 +415,13 @@ def test_cross_validate_task_save_cv_models():
     """
 
     suffix = '.jsonlines'
-    train_path = join(_my_dir, 'train', f'f0{suffix}')
+    train_path = join(train_dir, f'f0{suffix}')
     config_path = \
-        fill_in_config_paths_for_single_file(join(_my_dir, "configs",
+        fill_in_config_paths_for_single_file(join(config_dir,
                                                   "test_save_cv_models.template.cfg"),
                                              train_path,
                                              None)
     run_configuration(config_path, quiet=True)
-    output_dir = join(_my_dir, 'output')
     cv_model_prefix = \
         "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
     for i in range(1, 11):

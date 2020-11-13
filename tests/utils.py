@@ -6,7 +6,9 @@ import re
 
 from collections import OrderedDict
 from math import floor, log10
-from os.path import abspath, dirname, exists, join
+from os.path import exists, join
+from pathlib import Path
+from typing import Union
 
 import numpy as np
 from numpy.random import RandomState
@@ -20,7 +22,21 @@ from sklearn.model_selection import ShuffleSplit
 from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
 
-_my_dir = abspath(dirname(__file__))
+from tests import _my_dir, output_dir, train_dir, test_dir
+
+
+def unlink(file_path: Union[str, Path]):
+    """
+    Remove a file path if it exists.
+
+    Parameters
+    ----------
+    file_path : str/Path
+    """
+
+    file_path = Path(file_path)
+    if file_path.exists():
+        file_path.unlink()
 
 
 def fill_in_config_paths(config_template_path):
@@ -28,10 +44,6 @@ def fill_in_config_paths(config_template_path):
     Add paths to train, test, and output directories to a given config template
     file.
     """
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
 
     config = _setup_config_parser(config_template_path, validate=False)
 
@@ -83,10 +95,6 @@ def fill_in_config_paths_for_single_file(config_template_path, train_file,
     Add paths to train and test files, and output directories to a given config
     template file.
     """
-
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
 
     config = _setup_config_parser(config_template_path, validate=False)
 
@@ -194,15 +202,10 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
     file.
     """
 
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
     config = _setup_config_parser(config_template_path, validate=False)
 
     config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
-    config.set("Input", "test_file", join(test_dir,
-                                          "fancy_test.jsonlines"))
+    config.set("Input", "test_file", join(test_dir, "fancy_test.jsonlines"))
     config.set("Output", "results", output_dir)
     config.set("Output", "log", output_dir)
     config.set("Output", "predictions", output_dir)
@@ -266,6 +269,21 @@ def create_jsonlines_feature_files(path):
         file_path = join(path, 'f5.jsonlines')
         writer = NDJWriter(file_path, fs)
         writer.write()
+
+
+def remove_jsonlines_feature_files(path: Union[str, Path]):
+    """
+    Companion method for ``create_jsonlines_feature_files``. Removes
+    all created files.
+
+    Parameters
+    ----------
+    path : str
+        Path to directory in which jsonlines files reside.
+    """
+
+    for i in range(6):
+        unlink(Path(path) / f"f{i}.jsonlines")
 
 
 def make_classification_data(num_examples=100, train_test_ratio=0.5,

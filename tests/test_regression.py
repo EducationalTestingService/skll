@@ -10,13 +10,13 @@ the future.
 """
 
 import math
-import os
 import re
 import warnings
 
 from glob import glob
 from itertools import product
-from os.path import abspath, dirname, join, exists
+from os.path import join
+from pathlib import Path
 
 from nose.tools import (assert_almost_equal,
                         assert_less,
@@ -38,56 +38,37 @@ from skll.learner.utils import rescaled
 from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
                                   KNOWN_DEFAULT_PARAM_GRIDS)
 
-from tests.utils import (make_regression_data,
-                         fill_in_config_paths_for_fancy_output)
+from tests import config_dir, other_dir, output_dir, train_dir, test_dir
+from tests.utils import (fill_in_config_paths_for_fancy_output,
+                         make_regression_data, unlink)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-_my_dir = abspath(dirname(__file__))
 
 
 def setup():
     """
     Create necessary directories for testing.
     """
-    train_dir = join(_my_dir, 'train')
-    if not exists(train_dir):
-        os.makedirs(train_dir)
-    test_dir = join(_my_dir, 'test')
-    if not exists(test_dir):
-        os.makedirs(test_dir)
-    output_dir = join(_my_dir, 'output')
-    if not exists(output_dir):
-        os.makedirs(output_dir)
+    for dir_path in [train_dir, test_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
 
 
 def tearDown():
     """
     Clean up after tests.
     """
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-    config_dir = join(_my_dir, 'configs')
 
-    train_file = join(train_dir, 'fancy_train.jsonlines')
-    if exists(train_file):
-        os.unlink(train_file)
+    for dir_path in [train_dir, test_dir]:
+        unlink(Path(dir_path) / 'fancy_train.jsonlines')
 
-    test_file = join(test_dir, 'fancy_test.jsonlines')
-    if exists(test_file):
-        os.unlink(test_file)
+    for output_file in (glob(join(output_dir, 'regression_fancy_output*')) +
+                        glob(join(output_dir, 'test_int_labels_cv*')) +
+                        [join(test_dir, 'fancy_test.jsonlines')]):
+        unlink(output_file)
 
-    for output_file in glob(join(output_dir, 'regression_fancy_output_*')):
-        os.unlink(output_file)
-
-    config_file = join(config_dir, 'test_regression_fancy_output.cfg')
-    if exists(config_file):
-        os.unlink(config_file)
-
-    config_file = join(config_dir, 'test_int_labels_cv.cfg')
-    if exists(config_file):
-        os.unlink(config_file)
-
+    for file_name in ['test_regression_fancy_output.cfg',
+                      'test_int_labels_cv.cfg']:
+        unlink(Path(config_dir) / file_name)
 
 # a utility function to check rescaling for linear models
 def check_rescaling(name, grid_search=False):
@@ -98,7 +79,7 @@ def check_rescaling(name, grid_search=False):
 
     # instantiate the given learner and its rescaled counterpart
     learner = Learner(name)
-    rescaled_learner = Learner('Rescaled' + name)
+    rescaled_learner = Learner(f'Rescaled{name}')
 
     # train both the regular regressor and the rescaled regressor
     # with and without using grid search
@@ -178,7 +159,7 @@ def check_linear_models(name,
 
     # create the learner
     if use_rescaling:
-        name = 'Rescaled' + name
+        name = f'Rescaled{name}'
     learner = Learner(name)
 
     # train it with the training feature set we created
@@ -260,7 +241,7 @@ def check_non_linear_models(name,
 
     # create the learner
     if use_rescaling:
-        name = 'Rescaled' + name
+        name = f'Rescaled{name}'
     learner = Learner(name)
 
     # train it with the training feature set we created
@@ -315,7 +296,7 @@ def check_tree_models(name,
 
     # create the learner
     if use_rescaling:
-        name = 'Rescaled' + name
+        name = f'Rescaled{name}'
     learner = Learner(name)
 
     # train it with the training feature set we created
@@ -388,7 +369,7 @@ def check_ensemble_models(name,
 
     # create the learner
     if use_rescaling:
-        name = 'Rescaled' + name
+        name = f'Rescaled{name}'
     learner = Learner(name)
 
     # train it with the training feature set we created
@@ -451,14 +432,13 @@ def test_int_labels():
     (rather than floats or strings).  For v1.0.0, it could not because the
     json package doesn't know how to serialize numpy.int64 objects.
     """
-    config_template_path = join(_my_dir, 'configs',
+    config_template_path = join(config_dir,
                                 'test_int_labels_cv.template.cfg')
-    config_path = join(_my_dir, 'configs', 'test_int_labels_cv.cfg')
-    output_dir = join(_my_dir, 'output')
+    config_path = join(config_dir, 'test_int_labels_cv.cfg')
 
     config = _setup_config_parser(config_template_path, validate=False)
     config.set("Input", "train_file",
-               join(_my_dir, 'other', 'test_int_labels_cv.jsonlines'))
+               join(other_dir, 'test_int_labels_cv.jsonlines'))
     config.set("Output", "results", output_dir)
     config.set("Output", "log", output_dir)
     config.set("Output", "predictions", output_dir)
@@ -507,10 +487,6 @@ def test_fancy_output():
     pred_stats_from_api = dict(resultdict[2]['descriptive']['predicted'])
 
     # write out the training and test feature set
-    train_dir = join(_my_dir, 'train')
-    test_dir = join(_my_dir, 'test')
-    output_dir = join(_my_dir, 'output')
-
     train_writer = NDJWriter(join(train_dir, 'fancy_train.jsonlines'),
                              train_fs)
     train_writer.write()
@@ -519,7 +495,7 @@ def test_fancy_output():
 
     # now get the config file template, fill it in and run it
     # so that we can get a results file
-    config_template_path = join(_my_dir, 'configs',
+    config_template_path = join(config_dir,
                                 'test_regression_fancy_output.template.cfg')
     config_path = fill_in_config_paths_for_fancy_output(config_template_path)
 
@@ -528,10 +504,9 @@ def test_fancy_output():
     # read in the results file and get the descriptive statistics
     actual_stats_from_file = {}
     pred_stats_from_file = {}
-    with open(join(output_dir, ('regression_fancy_output_train_fancy_train.'
-                                'jsonlines_test_fancy_test.jsonlines'
-                                '_LinearRegression.results')),
-              'r') as resultf:
+    with open(join(output_dir,
+                   'regression_fancy_output_train_fancy_train.jsonlines_'
+                   'test_fancy_test.jsonlines_LinearRegression.results')) as resultf:
 
         result_output = resultf.read().strip().split('\n')
         for desc_stat_line in result_output[26:30]:
