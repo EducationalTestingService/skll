@@ -22,6 +22,7 @@ from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from tests import config_dir, output_dir, test_dir, train_dir
 from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_paths,
+                         remove_jsonlines_feature_files,
                          unlink)
 
 
@@ -57,6 +58,8 @@ def tearDown():
                     'test_ablation_feature_hasher_sampler_all_combos.cfg']
     for cf in config_files:
         unlink(Path(config_dir) / cf)
+
+    remove_jsonlines_feature_files(train_dir)
 
 
 def check_ablation_rows(reader):

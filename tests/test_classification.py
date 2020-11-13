@@ -96,6 +96,10 @@ def tearDown():
     for config_file in config_files:
         unlink(config_file)
 
+    for file_name in ["metric_values_test.jsonlines",
+                      "metric_values_train.jsonlines"]:
+        unlink(Path(train_dir) / file_name)
+
 
 def test_contiguous_int_or_float_labels():
     """

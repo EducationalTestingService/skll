@@ -267,6 +267,21 @@ def create_jsonlines_feature_files(path):
         writer.write()
 
 
+def remove_jsonlines_feature_files(path: Union[str, Path]):
+    """
+    Companion method for ``create_jsonlines_feature_files``. Removes
+    all created files.
+
+    Parameters
+    ----------
+    path : str
+        Path to directory in which jsonlines files reside.
+    """
+
+    for i in range(6):
+        unlink(Path(path) / f"f{i}.jsonlines")
+
+
 def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              num_features=10, use_feature_hashing=False,
                              feature_bins=4, num_labels=2,

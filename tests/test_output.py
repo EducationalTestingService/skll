@@ -46,6 +46,7 @@ from tests.utils import (create_jsonlines_feature_files,
                          fill_in_config_paths_for_single_file,
                          make_classification_data,
                          make_regression_data,
+                         remove_jsonlines_feature_files,
                          unlink)
 
 
@@ -92,9 +93,14 @@ def tearDown():
         for cf in config_files:
             unlink(Path(config_dir) / cf)
 
-    unlink(Path(config_dir) / 'test_send_warnings_to_log.cfg')
+    for path in [Path(config_dir) / 'test_send_warnings_to_log.cfg',
+                 "test_current_directory.model"]:
+        unlink(path)
 
-    # adding all the suffix independent output patterns here that are not f'test_{SUFFIX}_*'
+    remove_jsonlines_feature_files(train_dir)
+
+    # adding all the suffix independent output patterns here that are
+    # not f'test_{SUFFIX}_*'
     clean_up_output_file_name_patterns = ['test_majority_class_custom_learner_*',
                                           'test_send_warnings_to_log*',
                                           'test_grid_search_cv_results_*.*',
@@ -102,9 +108,6 @@ def tearDown():
     for file_name_pattern in clean_up_output_file_name_patterns:
         for output_file in glob(join(output_dir, file_name_pattern)):
             unlink(output_file)
-
-    if exists("test_current_directory.model"):
-        unlink("test_current_directory.model")
 
 
 # Generate and write out data for the test that checks summary scores

@@ -30,7 +30,9 @@ from skll.utils.logging import (close_and_remove_logger_handlers,
 from tests import (_my_dir, config_dir, other_dir, output_dir, train_dir,
                    test_dir)
 from tests.utils import (create_jsonlines_feature_files,
-                         fill_in_config_options, unlink)
+                         fill_in_config_options,
+                         remove_jsonlines_feature_files,
+                         unlink)
 
 
 def setup():
@@ -55,6 +57,8 @@ def tearDown():
 
     for auto_dir in glob(join(output_dir, 'auto*')):
         rmtree(auto_dir)
+
+    remove_jsonlines_feature_files(train_dir)
 
 
 def check_safe_float_conversion(converted_val, expected_val):

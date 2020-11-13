@@ -35,7 +35,9 @@ from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from tests import config_dir, other_dir, output_dir, train_dir
 from tests.utils import (create_jsonlines_feature_files,
-                         fill_in_config_paths_for_single_file, unlink)
+                         fill_in_config_paths_for_single_file,
+                         remove_jsonlines_feature_files,
+                         unlink)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
@@ -75,8 +77,7 @@ def tearDown():
                                   'test_folds_file*'))):
         unlink(output_file)
 
-    for i in range(6):
-        unlink(Path(train_dir) / f"f{i}.jsonlines")
+    remove_jsonlines_feature_files(train_dir)
 
 
 def make_cv_folds_data(num_examples_per_fold=100,
