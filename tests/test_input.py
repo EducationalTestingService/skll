@@ -51,6 +51,12 @@ def tearDown():
     Clean up after tests.
     """
 
+    # We need to first ensure that all logger file handlers are closed
+    # before trying to unlink any of the log files. Otherwise, the
+    # tearDown fixture will not work on Windows.
+    logger = get_skll_logger('experiment')
+    close_and_remove_logger_handlers(logger)
+
     for path in (glob(join(config_dir, 'test_config_parsing_*.cfg')) +
                  glob(join(config_dir, 'test_relative_paths_auto_dir*.cfg')) +
                  glob(join(output_dir, 'config_parsing*.log')) +
@@ -1043,12 +1049,6 @@ def test_config_parsing_automatic_output_directory_creation():
     ok_(exists(new_results_path))
     ok_(exists(new_models_path))
     ok_(exists(new_predictions_path))
-
-    # we need to close the experiment log file
-    # that would also have been created otherwise
-    # the teardown fixture on Windows will not work
-    logger = get_skll_logger('experiment')
-    close_and_remove_logger_handlers(logger)
 
 
 def test_cv_folds_and_grid_search_folds():
