@@ -9,7 +9,6 @@ Tests related to output from run_experiment
 
 import csv
 import json
-import os
 import re
 import warnings
 
@@ -46,7 +45,8 @@ from .utils import (create_jsonlines_feature_files,
                     fill_in_config_paths,
                     fill_in_config_paths_for_single_file,
                     make_classification_data,
-                    make_regression_data)
+                    make_regression_data,
+                    unlink)
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
@@ -73,7 +73,7 @@ def tearDown():
     for suffix in ['learning_curve', 'summary', 'fancy_xval',
                    'warning_multiple_featuresets']:
         for dir_path in [train_dir, test_dir]:
-            (Path(dir_path) / f'test_{suffix}.jsonlines').unlink(missing_ok=True)
+            unlink(Path(dir_path) / f'test_{suffix}.jsonlines')
 
         config_files = [f'test_{suffix}.cfg',
                         f'test_{suffix}_with_metrics.cfg',
@@ -81,18 +81,18 @@ def tearDown():
                         f'test_{suffix}_feature_hasher.cfg',
                         f'test_{suffix}_feature_hasher_with_metrics.cfg']
         for cf in config_files:
-            (Path(config_dir) / cf).unlink(missing_ok=True)
+            unlink(Path(config_dir) / cf)
 
         for output_file in (glob(join(output_dir, f'test_{suffix}_*')) +
                             glob(join(output_dir, f'test_{suffix}.log'))):
-            os.unlink(output_file)
+            unlink(output_file)
 
     for suffix in VALID_TASKS:
         config_files = [f'test_cv_results_{suffix}.cfg']
         for cf in config_files:
-            (Path(config_dir) / cf).unlink(missing_ok=True)
+            unlink(Path(config_dir) / cf)
 
-    (Path(config_dir) / 'test_send_warnings_to_log.cfg').unlink(missing_ok=True)
+    unlink(Path(config_dir) / 'test_send_warnings_to_log.cfg')
 
     # adding all the suffix independent output patterns here that are not f'test_{SUFFIX}_*'
     clean_up_output_file_name_patterns = ['test_majority_class_custom_learner_*',
@@ -101,10 +101,10 @@ def tearDown():
                                           'test_check_override_learning_curve_min_examples*']
     for file_name_pattern in clean_up_output_file_name_patterns:
         for output_file in glob(join(output_dir, file_name_pattern)):
-            os.unlink(output_file)
+            unlink(output_file)
 
     if exists("test_current_directory.model"):
-        os.unlink("test_current_directory.model")
+        unlink("test_current_directory.model")
 
 
 # Generate and write out data for the test that checks summary scores

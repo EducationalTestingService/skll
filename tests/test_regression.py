@@ -10,7 +10,6 @@ the future.
 """
 
 import math
-import os
 import re
 import warnings
 
@@ -41,7 +40,7 @@ from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
 
 from . import config_dir, other_dir, output_dir, train_dir, test_dir
 from .utils import (fill_in_config_paths_for_fancy_output,
-                    make_regression_data)
+                    make_regression_data, unlink)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
@@ -60,14 +59,14 @@ def tearDown():
     """
 
     for dir_path in [train_dir, test_dir]:
-        (Path(dir_path) / 'fancy_train.jsonlines').unlink(missing_ok=True)
+        unlink(Path(dir_path) / 'fancy_train.jsonlines')
 
     for output_file in glob(join(output_dir, 'regression_fancy_output_*')):
-        os.unlink(output_file)
+        unlink(output_file)
 
     for file_name in ['test_regression_fancy_output.cfg',
                       'test_int_labels_cv.cfg']:
-        (Path(config_dir) / file_name).unlink(missing_ok=True)
+        unlink(Path(config_dir) / file_name)
 
 
 # a utility function to check rescaling for linear models

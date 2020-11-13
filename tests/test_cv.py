@@ -12,7 +12,6 @@ the future.
 import csv
 import itertools
 import json
-import os
 import re
 
 from glob import glob
@@ -36,7 +35,7 @@ from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from . import config_dir, other_dir, output_dir, train_dir
 from .utils import (create_jsonlines_feature_files,
-                    fill_in_config_paths_for_single_file)
+                    fill_in_config_paths_for_single_file, unlink)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
@@ -57,14 +56,14 @@ def tearDown():
     Clean up after tests.
     """
     fold_file_path = join(other_dir, 'custom_folds.csv')
-    Path(fold_file_path).unlink(missing_ok=True)
+    unlink(fold_file_path)
 
     cfg_files = [join(config_dir, 'test_save_cv_folds.cfg'),
                  join(config_dir, 'test_save_cv_models.cfg'),
                  join(config_dir, 'test_folds_file.cfg'),
                  join(config_dir, 'test_folds_file_grid.cfg')]
     for cfg_file in cfg_files:
-        Path(cfg_file).unlink(missing_ok=True)
+        unlink(cfg_file)
 
     for output_file in (glob(join(output_dir,
                                   'test_save_cv_folds*')) +
@@ -74,10 +73,10 @@ def tearDown():
                                   'test_save_cv_models*')) +
                         glob(join(output_dir,
                                   'test_folds_file*'))):
-        os.unlink(output_file)
+        unlink(output_file)
 
     for i in range(6):
-        os.unlink(join(train_dir, f"f{i}.jsonlines"))
+        unlink(Path(train_dir) / f"f{i}.jsonlines")
 
 
 def make_cv_folds_data(num_examples_per_fold=100,

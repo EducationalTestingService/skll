@@ -2,7 +2,6 @@ import re
 import sys
 import warnings
 
-from os import unlink
 from six import StringIO
 from sklearn.metrics import roc_curve
 from tempfile import NamedTemporaryFile
@@ -10,6 +9,8 @@ from tempfile import NamedTemporaryFile
 from skll.utils.logging import (close_and_remove_logger_handlers,
                                 get_skll_logger,
                                 orig_showwarning)
+
+from .utils import unlink
 
 TEMP_FILES = []
 TEMP_FILE_PATHS = []

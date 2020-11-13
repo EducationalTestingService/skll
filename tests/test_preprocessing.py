@@ -28,7 +28,7 @@ from skll.learner.utils import SelectByMinCount
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from . import config_dir, output_dir, train_dir, test_dir
-from .utils import fill_in_config_paths
+from .utils import fill_in_config_paths, unlink
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
@@ -53,12 +53,12 @@ def tearDown():
         os.unlink(output_file)
 
     for dir_path in [train_dir, test_dir]:
-        (Path(dir_path) / 'test_class_map.jsonlines').unlink(missing_ok=True)
+        unlink(Path(dir_path) / 'test_class_map.jsonlines')
 
     config_files = ['test_class_map.cfg',
                     'test_class_map_feature_hasher.cfg']
     for cf in config_files:
-        (Path(config_dir) / cf).unlink(missing_ok=True)
+        unlink(Path(config_dir) / cf)
 
 
 def test_SelectByMinCount():

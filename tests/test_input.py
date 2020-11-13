@@ -8,7 +8,6 @@ Tests for SKLL inputs, mainly configuration files.
 :author: Aoife Cahill (acahill@ets.org)
 """
 
-import os
 import re
 import tempfile
 
@@ -29,7 +28,8 @@ from skll.utils.logging import (close_and_remove_logger_handlers,
                                 get_skll_logger)
 
 from . import _my_dir, config_dir, other_dir, output_dir, train_dir, test_dir
-from .utils import create_jsonlines_feature_files, fill_in_config_options
+from .utils import (create_jsonlines_feature_files, fill_in_config_options,
+                    unlink)
 
 
 def setup():
@@ -50,7 +50,7 @@ def tearDown():
 
     for config_file in (glob(join(config_dir, 'test_config_parsing_*.cfg')) +
                         glob(join(config_dir, 'test_relative_paths_auto_dir*.cfg'))):
-        os.unlink(config_file)
+        unlink(config_file)
 
     for auto_dir in glob(join(output_dir, 'auto*')):
         rmtree(auto_dir)

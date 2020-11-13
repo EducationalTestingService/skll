@@ -9,7 +9,6 @@ Module for running tests with custom learners.
 """
 
 import csv
-import os
 from glob import glob
 from os.path import join
 from pathlib import Path
@@ -23,7 +22,7 @@ from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from . import config_dir, other_dir, output_dir, test_dir, train_dir
-from .utils import fill_in_config_paths, make_classification_data
+from .utils import fill_in_config_paths, make_classification_data, unlink
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
@@ -46,17 +45,17 @@ def tearDown():
                    'test_model_custom_learner.jsonlines']
     for inf in input_files:
         for dir_path in [train_dir, test_dir]:
-            Path(join(dir_path, inf)).unlink(missing_ok=True)
+            unlink(Path(dir_path) / inf)
 
     for cfg_file in glob(join(config_dir, '*custom_learner.cfg')):
-        os.unlink(cfg_file)
+        unlink(cfg_file)
 
     for output_file in (glob(join(output_dir,
                                   'test_logistic_custom_learner_*')) +
                         glob(join(output_dir,
                                   'test_majority_class_custom_learner_*')) +
                         glob(join(output_dir, 'test_model_custom_learner_*'))):
-        os.unlink(output_file)
+        unlink(output_file)
 
 
 def read_predictions(path):
@@ -187,7 +186,7 @@ def test_custom_learner_model_loading():
                      f'{outprefix}_{outprefix}_CustomLogisticRegressionWrapper'
                      '_predictions.tsv')
     preds1 = read_predictions(pred_file)
-    os.unlink(pred_file)
+    unlink(pred_file)
 
     # run the configuration that loads the saved model
     # and generates the predictions again

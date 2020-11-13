@@ -9,7 +9,6 @@ import json
 from glob import glob
 from os.path import join
 import sys
-from pathlib import Path
 
 import numpy as np
 import skll.metrics
@@ -26,7 +25,7 @@ from skll.metrics import _CUSTOM_METRICS, register_custom_metric, use_score_func
 
 from . import config_dir, other_dir, output_dir
 from .utils import (fill_in_config_paths_for_single_file,
-                    make_classification_data)
+                    make_classification_data, unlink)
 
 
 
@@ -53,7 +52,7 @@ def tearDown():
                          join(config_dir, "*custom_metrics_kwargs4.cfg"),
                          join(output_dir, "test_custom_metrics*")]:
         for f in glob(glob_pattern):
-            Path(f).unlink(missing_ok=True)
+            unlink(f)
 
 
 def _cleanup_custom_metrics():

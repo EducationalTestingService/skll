@@ -11,7 +11,6 @@ Tests related to classification experiments.
 import csv
 import itertools
 import json
-import os
 import re
 import warnings
 
@@ -54,7 +53,8 @@ from .utils import (make_classification_data,
                     make_regression_data,
                     make_sparse_data,
                     fill_in_config_options,
-                    fill_in_config_paths_for_single_file)
+                    fill_in_config_paths_for_single_file,
+                    unlink)
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
@@ -72,23 +72,15 @@ def tearDown():
                  join(test_dir, 'test_single_file.jsonlines'),
                  join(output_dir, 'rare_class_predictions.tsv'),
                  join(output_dir, 'float_class_predictions.tsv')]:
-        Path(path).unlink(missing_ok=True)
+        unlink(path)
 
-    for output_file in glob(join(output_dir, 'clf_metric_value_*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir, 'pos_label_str_via_config*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir, 'clf_metrics_objective_overlap*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir, 'test_multinomialnb_loading*')):
-        os.unlink(output_file)
-
-    for output_file in glob(join(output_dir,
-                                 'test_predict_return_and_write_predictions*')):
-        os.unlink(output_file)
+    for glob_pattern in [join(output_dir, 'clf_metric_value_*'),
+                         join(output_dir, 'pos_label_str_via_config*'),
+                         join(output_dir, 'clf_metrics_objective_overlap*'),
+                         join(output_dir, 'test_multinomialnb_loading*'),
+                         join(output_dir, 'test_predict_return_and_write_predictions*')]:
+        for path in glob(glob_pattern):
+            unlink(path)
 
     config_files = [join(config_dir,
                          cfgname) for cfgname in ['test_single_file.cfg',
@@ -101,7 +93,7 @@ def tearDown():
                                   'test_fancy_metrics_objective_overlap*.cfg')))
 
     for config_file in config_files:
-        Path(config_file).unlink(missing_ok=True)
+        unlink(config_file)
 
 
 def test_contiguous_int_or_float_labels():

@@ -38,7 +38,7 @@ from skll.utils.commandline import skll_convert
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from . import train_dir, test_dir, other_dir, output_dir
-from .utils import make_classification_data, make_regression_data
+from .utils import make_classification_data, make_regression_data, unlink
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
@@ -57,14 +57,14 @@ def tearDown():
     Clean up files created during testing.
     """
     for filetype in ['csv', 'jsonlines', 'libsvm', 'tsv']:
-        (Path(other_dir) / f'empty.{filetype}').unlink(missing_ok=True)
+        unlink(Path(other_dir) / f'empty.{filetype}')
 
     file_names = [f'{x}.jsonlines'
                   for x in ['test_string_ids',
                             'test_string_ids_df',
                             'test_string_labels_df']]
     for file_name in file_names:
-        (Path(other_dir) / file_name).unlink(missing_ok=True)
+        unlink(Path(other_dir) / file_name)
 
 
 def _create_empty_file(filetype):

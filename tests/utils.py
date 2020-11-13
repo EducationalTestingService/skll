@@ -7,6 +7,8 @@ import re
 from collections import OrderedDict
 from math import floor, log10
 from os.path import exists, join
+from pathlib import Path
+from typing import Union
 
 import numpy as np
 from numpy.random import RandomState
@@ -17,6 +19,20 @@ from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
 
 from . import _my_dir, output_dir, train_dir, test_dir
+
+
+def unlink(file_path: Union[str, Path]):
+    """
+    Remove a file path if it exists.
+
+    Parameters
+    ----------
+    file_path : str/Path
+    """
+
+    file_path = Path(file_path)
+    if file_path.exists():
+        file_path.unlink()
 
 
 def fill_in_config_paths(config_template_path):

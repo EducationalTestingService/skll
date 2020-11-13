@@ -9,7 +9,6 @@ Module for running unit tests related to command line utilities.
 import ast
 import copy
 import itertools
-import os
 import sys
 from collections import defaultdict
 from glob import glob
@@ -62,7 +61,7 @@ from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from . import other_dir, output_dir, test_dir, train_dir
-from .utils import make_classification_data, make_regression_data
+from .utils import make_classification_data, make_regression_data, unlink
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
@@ -85,7 +84,7 @@ def tearDown():
     for path in [join(test_dir, 'test_generate_predictions.jsonlines'),
                  join(other_dir, 'summary_file'),
                  join(other_dir, 'test_filter_features_input.arff')]:
-        Path(path).unlink(missing_ok=True)
+        unlink(path)
 
     for glob_pattern in [join(output_dir, 'test_generate_predictions.tsv'),
                          join(output_dir, 'test_print_model_weights.model*'),
@@ -95,7 +94,7 @@ def tearDown():
                          join(other_dir, 'test_join_features*'),
                          join(other_dir, 'features', 'features*')]:
         for f in glob(glob_pattern):
-            Path(f).unlink(f)
+            unlink(f)
 
 
 def test_compute_eval_from_predictions():
@@ -287,8 +286,7 @@ def _run_generate_predictions_and_capture_output(generate_cmd, output_file):
         finally:
             sys.stdout = old_stdout
     else:
-        if exists(output_file):
-            os.unlink(output_file)
+        unlink(output_file)
         gp.main(generate_cmd)
         with open(output_file) as outputfh:
             output_lines = [line.strip() for line in outputfh.readlines()]

@@ -10,7 +10,6 @@ Tests related to ablation experiments.
 
 import csv
 import json
-import os
 
 from glob import glob
 from os.path import join
@@ -22,7 +21,8 @@ from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 
 from . import config_dir, output_dir, test_dir, train_dir
 from .utils import (create_jsonlines_feature_files,
-                    fill_in_config_paths)
+                    fill_in_config_paths,
+                    unlink)
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
@@ -45,7 +45,7 @@ def tearDown():
     """
 
     for output_file in glob(join(output_dir, 'ablation_cv_*')):
-        os.unlink(output_file)
+        unlink(output_file)
 
     config_files = ['test_ablation.cfg',
                     'test_ablation_all_combos.cfg',
@@ -56,7 +56,7 @@ def tearDown():
                     'test_ablation_feature_hasher_sampler.cfg',
                     'test_ablation_feature_hasher_sampler_all_combos.cfg']
     for cf in config_files:
-        (Path(config_dir) / cf).unlink(missing_ok=True)
+        unlink(Path(config_dir) / cf)
 
 
 def check_ablation_rows(reader):
