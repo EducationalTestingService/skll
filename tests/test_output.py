@@ -94,7 +94,9 @@ def tearDown():
             unlink(Path(config_dir) / cf)
 
     for path in [Path(config_dir) / 'test_send_warnings_to_log.cfg',
-                 "test_current_directory.model"]:
+                 "test_current_directory.model",
+                 Path(train_dir) / 'test_learning_curve1.jsonlines',
+                 Path(train_dir) / 'test_learning_curve2.jsonlines']:
         unlink(path)
 
     remove_jsonlines_feature_files(train_dir)

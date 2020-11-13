@@ -49,7 +49,7 @@ def tearDown():
     Clean up after tests.
     """
 
-    for output_file in glob.glob(join(output_dir, 'test_class_map_*')):
+    for output_file in glob.glob(join(output_dir, 'test_class_map*')):
         os.unlink(output_file)
 
     for dir_path in [train_dir, test_dir]:

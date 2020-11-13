@@ -61,13 +61,14 @@ def tearDown():
     for dir_path in [train_dir, test_dir]:
         unlink(Path(dir_path) / 'fancy_train.jsonlines')
 
-    for output_file in glob(join(output_dir, 'regression_fancy_output_*')):
+    for output_file in (glob(join(output_dir, 'regression_fancy_output*')) +
+                        glob(join(output_dir, 'test_int_labels_cv*')) +
+                        [join(test_dir, 'fancy_test.jsonlines')]):
         unlink(output_file)
 
     for file_name in ['test_regression_fancy_output.cfg',
                       'test_int_labels_cv.cfg']:
         unlink(Path(config_dir) / file_name)
-
 
 # a utility function to check rescaling for linear models
 def check_rescaling(name, grid_search=False):
