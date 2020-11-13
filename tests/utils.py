@@ -515,7 +515,9 @@ def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
         Defaults to ``None``.
     test_size : float, optional
         Fraction of ``num_examples`` to use for the test
-        featureset. Should be between 0 and 1.
+        featureset. Should be between 0 and 1. If this is 0,
+        the training featureset will contain all of the
+        examples and the test featureset will be ``None``.
         Defaults to 0.2.
     use_digit_names : bool, optional
         If ``True``, use the names of the digits ("zero", "one", etc.) as the
@@ -527,6 +529,7 @@ def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
     -------
     fs_tuple : tuple
         A 2-tuple containing the created train and test featuresets.
+        The test featureset will be ``None`` if ``test_size`` is 0.
     """
     # load the digits data
     digits = load_digits(as_frame=True)
@@ -542,8 +545,13 @@ def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
     chosen_row_indices = prng.choice(row_indices, size=num_examples, replace=False)
 
     # now split the chosen indices into train and test indices
-    splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
-    train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
+    # assuming ``test_size`` > 0
+    if test_size > 0:
+        splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
+        train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
+    else:
+        train_indices = chosen_row_indices
+        test_indices = np.array([])
 
     # by default, we will use the "target" column of the frame as our labels
     label_column = "target"
@@ -571,10 +579,13 @@ def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
     train_fs = FeatureSet.from_data_frame(df_train,
                                           "digits_train",
                                           labels_column=label_column)
-    test_fs = FeatureSet.from_data_frame(df_test,
-                                         "digits_test",
-                                         labels_column=label_column,
-                                         vectorizer=train_fs.vectorizer)
+    if len(df_test) > 0:
+        test_fs = FeatureSet.from_data_frame(df_test,
+                                             "digits_test",
+                                             labels_column=label_column,
+                                             vectorizer=train_fs.vectorizer)
+    else:
+        test_fs = None
 
     return train_fs, test_fs
 
@@ -596,13 +607,16 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
         Defaults to ``None``.
     test_size : float, optional
         Fraction of ``num_examples`` to use for the test
-        featureset. Should be between 0 and 1.
+        featureset. Should be between 0 and 1. If this is 0,
+        the training featureset will contain all of the
+        examples and the test featureset will be ``None``.
         Defaults to 0.2.
 
     Returns
     -------
     fs_tuple : tuple
         A 2-tuple containing the created train and test featuresets.
+        The test featureset will be ``None`` if ``test_size`` is 0.
     """
 
     # load the digits data
@@ -625,8 +639,12 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
     chosen_row_indices = prng.choice(row_indices, size=num_examples, replace=False)
 
     # now split the chosen indices into train and test indices
-    splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
-    train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
+    if test_size > 0:
+        splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
+        train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
+    else:
+        train_indices = chosen_row_indices
+        test_indices = np.array([])
 
     # now subset the training and test rows from the data frame
     df_train = df_housing.iloc[train_indices].copy()
@@ -636,9 +654,12 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
     train_fs = FeatureSet.from_data_frame(df_train,
                                           "housing_train",
                                           labels_column="MedHouseVal")
-    test_fs = FeatureSet.from_data_frame(df_test,
-                                         "housing_test",
-                                         labels_column="MedHouseVal",
-                                         vectorizer=train_fs.vectorizer)
+    if len(df_test) > 0:
+        test_fs = FeatureSet.from_data_frame(df_test,
+                                             "housing_test",
+                                             labels_column="MedHouseVal",
+                                             vectorizer=train_fs.vectorizer)
+    else:
+        test_fs = None
 
     return train_fs, test_fs
