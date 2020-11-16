@@ -500,7 +500,7 @@ def test_rare_class():
                            grid_objective='unweighted_kappa',
                            prediction_prefix=prediction_prefix)
 
-    with open(prediction_prefix + '_predictions.tsv', 'r') as f:
+    with open(f'{prediction_prefix}_predictions.tsv') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
@@ -929,7 +929,7 @@ def test_xval_float_classes_as_strings():
                            grid_objective='accuracy',
                            prediction_prefix=prediction_prefix)
 
-    with open(f'{prediction_prefix}_predictions.tsv', 'r') as f:
+    with open(f'{prediction_prefix}_predictions.tsv') as f:
         reader = csv.reader(f, dialect='excel-tab')
         next(reader)
         pred = [row[1] for row in reader]
@@ -1462,7 +1462,8 @@ def check_metric_values_for_classification(metric_name,
 
     # run this experiment and load the results_json and the SKLL model
     results_json_path = run_configuration(config_path, local=True, quiet=True)[0]
-    results_obj = json.load(open(results_json_path, 'r'))[0]
+    with open(results_json_path) as results_json_file:
+        results_obj = json.load(results_json_file)[0]
     model_file_path = join(output_dir,
                            f'{experiment_name}_metric_'
                            f'{results_obj["learner_name"]}.model')
@@ -1699,7 +1700,8 @@ def check_metrics_and_objectives_overlap(task, metrics, objectives):
             pruned_metrics = metrics
         else:
             pruned_metrics = [metric for metric in metrics if metric != objective]
-        results_obj = json.load(open(results_json_path, 'r'))[0]
+        with open(results_json_path) as results_json_file:
+            results_obj = json.load(results_json_file)[0]
         eq_(results_obj['grid_objective'], objective)
         eq_(set(results_obj['additional_scores'].keys()), set(pruned_metrics))
         ok_(objective not in results_obj['additional_scores'])

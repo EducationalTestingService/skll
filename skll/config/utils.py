@@ -59,7 +59,7 @@ def load_cv_folds(folds_file, ids_to_floats=False):
     ValueError
         If example IDs cannot be converted to floats and `ids_to_floats` is `True`.
     """
-    with open(folds_file, 'r') as f:
+    with open(folds_file) as f:
         reader = csv.reader(f)
         next(reader)  # discard the header
         res = {}

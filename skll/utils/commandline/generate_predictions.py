@@ -188,21 +188,28 @@ def main(argv=None):
                 predictions = original_predictions
 
             # now initialize the output file
-            outputfh = open(args.output_file, 'a') if args.output_file else sys.stdout
+            outputfh = None
+            try:
+                outputfh = open(args.output_file, 'a') if args.output_file else sys.stdout
 
-            # write out the header first but only once
-            if i == 0:
-                print("\t".join(header), file=outputfh)
+                # write out the header first but only once
+                if i == 0:
+                    print("\t".join(header), file=outputfh)
 
-            # and now write out the predictions
-            for j, prediction in enumerate(predictions):
-                id_ = feature_set.ids[j]
-                prediction_str = "\t".join([str(p) for p in prediction]) if isinstance(prediction, (np.ndarray, list)) else prediction
-                print(f"{id_}\t{prediction_str}", file=outputfh)
+                # and now write out the predictions
+                for j, prediction in enumerate(predictions):
+                    id_ = feature_set.ids[j]
+                    if isinstance(prediction, (np.ndarray, list)):
+                        prediction_str = "\t".join([str(p) for p in prediction])
+                    else:
+                        prediction_str = prediction
+                    print(f"{id_}\t{prediction_str}", file=outputfh)
 
-            # close the file if we had opened one
-            if args.output_file:
-                outputfh.close()
+            finally:
+
+                # close the file if we had opened one
+                if args.output_file:
+                    outputfh.close()
 
 
 if __name__ == '__main__':

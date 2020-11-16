@@ -248,7 +248,7 @@ class Reader(object):
         ids = []
         labels = []
         ex_num = 0
-        with open(file, 'r', encoding='utf-8') as f:
+        with open(file, encoding='utf-8') as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
 
                 # Update lists of IDs, classes, and features
@@ -276,7 +276,7 @@ class Reader(object):
         labels = np.array(labels)
 
         def feat_dict_generator():
-            with open(self.path_or_list, 'r', encoding='utf-8') as f:
+            with open(self.path_or_list, encoding='utf-8') as f:
                 for ex_num, (_, _, feat_dict) in enumerate(self._sub_read(f)):
                     yield feat_dict
                     if ex_num % 100 == 0:

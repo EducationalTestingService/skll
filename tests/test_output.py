@@ -361,7 +361,7 @@ def check_xval_fancy_results_file(do_grid_search,
     ok_(exists(results_file_path))
 
     # read in all the lines and look at the lines up to where we print the "Total Time"
-    with open(results_file_path, 'r') as resultsf:
+    with open(results_file_path) as resultsf:
         results_lines = resultsf.readlines()
         end_idx = [results_lines.index(l) for l in results_lines if l.startswith('Total Time:')][0]
         results_lines = results_lines[:end_idx + 1]
@@ -636,7 +636,7 @@ def test_backward_compatibility():
     examples = Reader.for_path(test_path, quiet=True).read()
     new_predictions = learner.predict(examples, class_labels=False)[:, 1]
 
-    with open(predict_path, 'r') as predict_file:
+    with open(predict_path) as predict_file:
         reader = csv.DictReader(predict_file, dialect=csv.excel_tab)
         old_predictions = [float(row['1']) for row in reader]
     assert_almost_equal(new_predictions, old_predictions)
@@ -710,7 +710,7 @@ def test_learning_curve_output():
     # make sure that the TSV file is created with the right columns
     output_tsv_path = join(output_dir, f'{outprefix}_summary.tsv')
     ok_(exists(output_tsv_path))
-    with open(output_tsv_path, 'r') as tsvf:
+    with open(output_tsv_path) as tsvf:
         r = csv.reader(tsvf, dialect=csv.excel_tab)
         header = next(r)
         # make sure we have the expected number of columns
@@ -744,7 +744,7 @@ def test_learning_curve_output_with_objectives():
     # make sure that the TSV file is created with the right columns
     output_tsv_path = join(output_dir, f'{outprefix}_summary.tsv')
     ok_(exists(output_tsv_path))
-    with open(output_tsv_path, 'r') as tsvf:
+    with open(output_tsv_path) as tsvf:
         r = csv.reader(tsvf, dialect=csv.excel_tab)
         header = next(r)
         # make sure we have the expected number of columns
