@@ -548,6 +548,12 @@ def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
     fs_tuple : tuple
         A 2-tuple containing the created train and test featuresets.
         The test featureset will be ``None`` if ``test_size`` is 0.
+
+    Raises
+    ------
+    ValueError
+        If ``num_examples`` is greater than the number of available
+        examples.
     """
     # load the digits data
     digits = load_digits(as_frame=True)
@@ -556,11 +562,22 @@ def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
     # use all examples if ``num_examples`` was ``None``
     num_examples = len(df_digits) if num_examples is None else num_examples
 
-    # shuffle the row indices and select the given number of examples
+    # raise an exception if the number of desired examples is greater
+    # than the number of available examples in the data
+    if num_examples > len(df_digits):
+        raise ValueError(f"invalid value {num_examples} for 'num_examples', "
+                         f"only {len(df_digits)} examples are available.")
+
+    # select the desired number of examples
     row_indices = np.arange(len(df_digits))
     prng = np.random.default_rng(123456789)
-    prng.shuffle(row_indices)
-    chosen_row_indices = prng.choice(row_indices, size=num_examples, replace=False)
+    if num_examples < len(df_digits):
+        chosen_row_indices = prng.choice(row_indices,
+                                         size=num_examples,
+                                         replace=False,
+                                         shuffle=False)
+    else:
+        chosen_row_indices = row_indices
 
     # now split the chosen indices into train and test indices
     # assuming ``test_size`` > 0
@@ -635,9 +652,15 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
     fs_tuple : tuple
         A 2-tuple containing the created train and test featuresets.
         The test featureset will be ``None`` if ``test_size`` is 0.
+
+    Raises
+    ------
+    ValueError
+        If ``num_examples`` is greater than the number of available
+        examples.
     """
 
-    # load the digits data
+    # load the housing data
     other_dir = join(_my_dir, 'other')
     housing = fetch_california_housing(data_home=other_dir,
                                        download_if_missing=False,
@@ -650,13 +673,25 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
     # use all examples if ``num_examples`` was ``None``
     num_examples = len(df_housing) if num_examples is None else num_examples
 
-    # shuffle the row indices and select the given number of examples
+    # raise an exception if the number of desired examples is greater
+    # than the number of available examples in the data
+    if num_examples > len(df_housing):
+        raise ValueError(f"invalid value {num_examples} for 'num_examples', "
+                         f"only {len(df_housing)} examples are available.")
+
+    # select the desired number of examples
     row_indices = np.arange(len(df_housing))
     prng = np.random.default_rng(123456789)
-    prng.shuffle(row_indices)
-    chosen_row_indices = prng.choice(row_indices, size=num_examples, replace=False)
+    if num_examples < len(df_housing):
+        chosen_row_indices = prng.choice(row_indices,
+                                         size=num_examples,
+                                         replace=False,
+                                         shuffle=False)
+    else:
+        chosen_row_indices = row_indices
 
     # now split the chosen indices into train and test indices
+    # assuming ``test_size`` > 0
     if test_size > 0:
         splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
         train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
