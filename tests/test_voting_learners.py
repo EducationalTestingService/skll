@@ -23,6 +23,7 @@ from sklearn.ensemble import (RandomForestRegressor,
                               VotingRegressor)
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error
+from sklearn.model_selection import learning_curve, ShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC, SVR
 from skll import Learner, run_configuration
@@ -422,3 +423,115 @@ def test_predict_voting_learner():
                with_grid_search,
                with_class_labels,
                with_file_output)
+
+
+def check_learning_curve_implementation(learner_type):
+
+    # instantiate some neede variables
+    cv_folds = 10
+    random_state = 123456789
+    cv = ShuffleSplit(n_splits=cv_folds, test_size=0.2, random_state=random_state)
+    train_sizes = np.linspace(.1, 1.0, 5)
+
+    # if the voting learner is a classifier
+    if learner_type == "classifier":
+
+        # create a single featureset from digits data
+        fs_digits, _ = make_digits_data(test_size=0)
+
+        # instantiate and compute the learning curve on the digits data
+        learner_names = ["LogisticRegression", "SVC", "MultinomialNB"]
+        skll_vl = VotingLearner(learner_names,
+                                feature_scaling="none",
+                                min_feature_count=0)
+
+        (train_scores1,
+         test_scores1,
+         train_sizes1) = skll_vl.learning_curve(fs_digits,
+                                                cv_folds=cv_folds,
+                                                train_sizes=train_sizes,
+                                                metric='accuracy')
+
+        # now instantiate the scikit-learn version with the exact
+        # same classifiers;
+        # NOTE: here we need to do a bit of hackery
+        # to get the same underlying scikit-learn estimators that
+        # SKLL would have used since `learning_curve()` doesn't
+        # save the underlying estimators
+        learner1 = Learner("LogisticRegression")
+        learner2 = Learner("SVC")
+        learner3 = Learner("MultinomialNB")
+        learner1.train(fs_digits[:100], grid_search=False)
+        learner2.train(fs_digits[:100], grid_search=False)
+        learner3.train(fs_digits[:100], grid_search=False)
+        clf1, clf2, clf3 = learner1.model, learner2.model, learner3.model
+
+        sklearn_vl = VotingClassifier(estimators=[('lr', clf1),
+                                                  ('svc', clf2),
+                                                  ('nb', clf3)])
+        (train_sizes2,
+         train_scores2,
+         test_scores2) = learning_curve(sklearn_vl,
+                                        fs_digits.features,
+                                        fs_digits.labels,
+                                        cv=cv,
+                                        train_sizes=train_sizes,
+                                        scoring='accuracy')
+
+        assert np.all(train_sizes1 == train_sizes2)
+        # this dataset is quite easy which causes some strange differences
+        # in anything more than 2 significant digits
+        assert np.allclose(train_scores1, train_scores2, rtol=1e-2)
+        assert np.allclose(test_scores1, test_scores2, rtol=1e-2)
+
+    else:
+
+        # create featureset from housing data using 2000 examples
+        fs_housing, _ = make_california_housing_data(num_examples=2000, test_size=0)
+
+        # instantiate and compute the learning curve on the housing data
+        learner_names = ["LinearRegression", "SVR", "Ridge"]
+        skll_vl = VotingLearner(learner_names,
+                                feature_scaling="none",
+                                min_feature_count=0)
+        (train_scores1,
+         test_scores1,
+         train_sizes1) = skll_vl.learning_curve(fs_housing,
+                                                cv_folds=cv_folds,
+                                                train_sizes=train_sizes,
+                                                metric='neg_mean_squared_error')
+
+        # now instantiate the scikit-learn version with the exact
+        # same regressors;
+        # NOTE: here we need to do a bit of hackery
+        # to get the same underlying scikit-learn estimators that
+        # SKLL would have used since `learning_curve()` doesn't
+        # save the underlying estimators
+        learner1 = Learner("LinearRegression")
+        learner2 = Learner("SVR")
+        learner3 = Learner("Ridge")
+        learner1.train(fs_housing[:100], grid_search=False)
+        learner2.train(fs_housing[:100], grid_search=False)
+        learner3.train(fs_housing[:100], grid_search=False)
+        clf1, clf2, clf3 = learner1.model, learner2.model, learner3.model
+
+        sklearn_vl = VotingRegressor(estimators=[('lr', clf1),
+                                                 ('svr', clf2),
+                                                 ('rdg', clf3)])
+        (train_sizes2,
+         train_scores2,
+         test_scores2) = learning_curve(sklearn_vl,
+                                        fs_housing.features,
+                                        fs_housing.labels,
+                                        cv=cv,
+                                        train_sizes=train_sizes,
+                                        scoring='neg_mean_squared_error')
+
+        assert np.all(train_sizes1 == train_sizes2)
+        assert np.allclose(train_scores1, train_scores2)
+        assert np.allclose(test_scores1, test_scores2)
+
+
+def test_learning_curve_implementation_voting_learner():
+    for learner_type in ["classifier", "regressor"]:
+        yield check_learning_curve_implementation, learner_type
