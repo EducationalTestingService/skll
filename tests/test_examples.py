@@ -98,8 +98,10 @@ def run_configuration_and_check_outputs(config_path):
     if exists(results_json_path):
 
         results_json_exp_path = join(other_dir, 'expected', basename(results_json_path))
-        results_obj = json.load(open(results_json_path, 'r'))[0]
-        results_exp_obj = json.load(open(results_json_exp_path, 'r'))[0]
+        with open(results_json_path) as results_json_file:
+            results_obj = json.load(results_json_file)[0]
+        with open(results_json_exp_path) as results_json_exp_file:
+            results_exp_obj = json.load(results_json_exp_file)[0]
 
         # we check a subset of the values, just to make sure
         # that nothing weird is going on with our output

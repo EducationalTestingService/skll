@@ -295,7 +295,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
                          'summarize_results script.')
             return
         else:
-            with open(json_path, 'r') as json_file:
+            with open(json_path) as json_file:
                 obj = json.load(json_file)
                 learner_result_dicts.extend(obj)
 
@@ -392,7 +392,7 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
                          'summarize_results script.')
             return
         else:
-            with open(json_path, 'r') as json_file:
+            with open(json_path) as json_file:
                 obj = json.load(json_file)
                 featureset_name = obj[0]['featureset_name']
                 if ablation != 0 and '_minus_' in featureset_name:
