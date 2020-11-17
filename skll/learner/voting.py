@@ -382,10 +382,6 @@ class VotingLearner(object):
         example_ids = examples.ids
 
         # get the test set features in the right format
-        self.logger.warning("If there is any difference between features used "
-                            "to train the underlying learners and the "
-                            "features in the test set, the latter will be "
-                            "transformed to the trained model space.")
         X_test = examples.vectorizer.inverse_transform(examples.features)
 
         # get the predictions from the meta-learner
