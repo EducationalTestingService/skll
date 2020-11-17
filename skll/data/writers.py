@@ -110,7 +110,7 @@ class Writer(object):
             appropriate for the given path.
         """
         # Get lowercase extension for file extension checking
-        ext = '.' + path.rsplit('.', 1)[-1].lower()
+        ext = f'.{path.rsplit(".", 1)[-1].lower()}'
         return EXT_TO_WRITER[ext](path, feature_set, **kwargs)
 
     def write(self):
@@ -410,7 +410,7 @@ class CSVWriter(Writer):
         self.id_col = kwargs.pop('id_col', 'id')
         super(CSVWriter, self).__init__(path, feature_set, **kwargs)
         self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        self._sep = self._pandas_kwargs.pop('sep', str(','))
+        self._sep = self._pandas_kwargs.pop('sep', ',')
         self._index = self._pandas_kwargs.pop('index', False)
         self._use_pandas = True
 

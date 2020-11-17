@@ -40,7 +40,8 @@ def main(argv=None):
 
     # Get command line arguments
     parser = argparse.ArgumentParser(
-        description="Generates learning curve plots from the learning curve TSV file.",
+        description="Generates learning curve plots from the learning curve "
+                    "TSV file.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         conflict_handler='resolve')
     parser.add_argument('tsv_file',
@@ -53,8 +54,8 @@ def main(argv=None):
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
-                                '%(message)s'))
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
+                               '%(message)s')
 
     # make sure that the input TSV file that's being passed exists
     if not exists(args.tsv_file):

@@ -102,9 +102,12 @@ def test_majority_class_custom_learner():
 
     outprefix = 'test_majority_class_custom_learner'
 
-    preds = read_predictions(join(output_dir,
-                                  f'{outprefix}_{outprefix}_'
-                                  'MajorityClassLearner_predictions.tsv'))
+    preds = read_predictions(
+        join(
+            output_dir,
+            f'{outprefix}_{outprefix}_MajorityClassLearner_predictions.tsv'
+        )
+    )
     expected = np.array([float(num_labels - 1) for x in preds])
     assert_array_equal(preds, expected)
 
@@ -138,14 +141,20 @@ def test_logistic_custom_learner():
     run_configuration(config_path, quiet=True)
 
     outprefix = 'test_logistic_custom_learner'
-    preds = read_predictions(join(output_dir,
-                                  f'{outprefix}_{outprefix}_'
-                                  'CustomLogisticRegressionWrapper'
-                                  '_predictions.tsv'))
+    preds = read_predictions(
+        join(
+            output_dir,
+            f'{outprefix}_{outprefix}_CustomLogisticRegressionWrapper_'
+            'predictions.tsv'
+        )
+    )
 
-    expected = read_predictions(join(output_dir,
-                                     f'{outprefix}_{outprefix}_'
-                                     'LogisticRegression_predictions.tsv'))
+    expected = read_predictions(
+        join(
+            output_dir,
+            f'{outprefix}_{outprefix}_LogisticRegression_predictions.tsv'
+        )
+    )
 
     assert_array_equal(preds, expected)
 
@@ -182,9 +191,10 @@ def test_custom_learner_model_loading():
     # save the predictions from disk into memory
     # and delete the predictions file
     outprefix = 'test_model_custom_learner'
-    pred_file = join(output_dir,
-                     f'{outprefix}_{outprefix}_CustomLogisticRegressionWrapper'
-                     '_predictions.tsv')
+    pred_file = join(
+        output_dir,
+        f'{outprefix}_{outprefix}_CustomLogisticRegressionWrapper_predictions.tsv'
+    )
     preds1 = read_predictions(pred_file)
     unlink(pred_file)
 

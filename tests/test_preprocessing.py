@@ -32,8 +32,9 @@ from tests.utils import fill_in_config_paths, unlink
 
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-SCORE_OUTPUT_RE = re.compile(r'Objective Function Score \(Test\) = '
-                             r'([\-\d\.]+)')
+SCORE_OUTPUT_RE = re.compile(
+    r'Objective Function Score \(Test\) = ([\-\d\.]+)'
+)
 
 
 def setup():
@@ -154,9 +155,6 @@ def test_class_map():
                    'test_class_map_test_class_map_LogisticRegression.results'
                    '.json')) as f:
         outd = json.loads(f.read())
-        # outstr = f.read()
-        # logistic_result_score = float(
-        # SCORE_OUTPUT_RE.search(outstr).groups()[0])
         logistic_result_score = outd[0]['accuracy']
 
     assert_almost_equal(logistic_result_score, 0.5)

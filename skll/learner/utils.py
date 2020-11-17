@@ -111,7 +111,7 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
                           self.keep]
             if not self._warned and (train_len != len(train_index) or
                                      test_len != len(test_index)):
-                self.logger.warning('Feature set contains IDs that are not ' +
+                self.logger.warning('Feature set contains IDs that are not '
                                     'in folds dictionary. Skipping those IDs.')
                 self._warned = True
 
@@ -268,10 +268,10 @@ def compute_evaluation_metrics(metrics,
     # warn if grid objective was also specified in metrics
     if len(metrics) > 0 and grid_objective in metrics:
         logger.warning(f"The grid objective '{grid_objective}' is also "
-                       f"specified as an evaluation metric. Since its "
-                       f"value is already included in the results as the "
-                       f"objective score, it will not be printed "
-                       f"again in the list of metrics.")
+                       "specified as an evaluation metric. Since its value "
+                       "is already included in the results as the objective "
+                       "score, it will not be printed again in the list of "
+                       "metrics.")
         metrics = [metric for metric in metrics if metric != grid_objective]
 
     # initialize a dictionary that will hold all of the metric scores
@@ -317,7 +317,7 @@ def compute_evaluation_metrics(metrics,
                     (metric in CORRELATION_METRICS or
                      metric in ['average_precision', 'roc_auc']) and
                     metric != grid_objective):
-                logger.info(f"using probabilities for the positive class to "
+                logger.info("using probabilities for the positive class to "
                             f"compute '{metric}' for evaluation.")
                 preds_for_metric = class_probs[:, 1]
             elif metric == 'neg_log_loss':
@@ -425,12 +425,12 @@ def compute_num_folds_from_example_counts(cv_folds,
 
     min_examples_per_label = min(Counter(labels).values())
     if min_examples_per_label <= 1:
-        raise ValueError(f"The training set has only {min_examples_per_label} "
-                         f"example for a label.")
+        raise ValueError(f"The training set has only {min_examples_per_label}"
+                         " example for a label.")
     if min_examples_per_label < cv_folds:
-        logger.warning(f"The minimum number of examples per label was "
+        logger.warning("The minimum number of examples per label was "
                        f"{min_examples_per_label}. Setting the number of "
-                       f"cross-validation folds to that value.")
+                       "cross-validation folds to that value.")
         cv_folds = min_examples_per_label
     return cv_folds
 
@@ -664,9 +664,10 @@ def get_predictions(learner, xtest):
             try:
                 yhat_probs = learner.model.predict_proba(xtest)
             except NotImplementedError as e:
-                learner.logger.error(f"Model type: {learner.model_type.__name__}\n"
-                                     f"Model: {learner.model}\n"
-                                     f"Probability: {learner.probability}\n")
+                learner.logger.error(
+                    f"Model type: {learner.model_type.__name__}\nModel: "
+                    f"{learner.model}\nProbability: {learner.probability}\n"
+                )
                 raise e
             else:
                 prediction_dict["probabilities"] = yhat_probs
@@ -706,8 +707,8 @@ def rescaled(cls):
     orig_predict = cls.predict
 
     if cls._estimator_type == 'classifier':
-        raise ValueError('Classifiers cannot be rescaled. ' +
-                         'Only regressors can.')
+        raise ValueError('Classifiers cannot be rescaled. Only regressors '
+                         'can.')
 
     # Define all new versions of functions
     @wraps(cls.fit)
@@ -815,12 +816,12 @@ def rescaled(cls):
             # there should be no varargs
             for parameter in original_parameters:
                 if parameter.kind == parameter.VAR_POSITIONAL:
-                    raise RuntimeError("scikit-learn estimators should always"
-                                       " specify their parameters in the "
-                                       "signature of their __init__ (no "
-                                       f"varargs). {cls} with constructor "
-                                       f"{init_signature} doesn't follow this"
-                                       " convention.")
+                    raise RuntimeError(
+                        "scikit-learn estimators should always specify their "
+                        "parameters in the signature of their __init__ (no "
+                        f"varargs). {cls} with constructor {init_signature} "
+                        "doesn't follow this convention."
+                    )
                 else:
                     args.append(parameter.name)
 

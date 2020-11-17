@@ -85,7 +85,9 @@ def check_rescaling(name, grid_search=False):
     # with and without using grid search
     if grid_search:
         learner.train(train_fs, grid_search=True, grid_objective='pearson')
-        rescaled_learner.train(train_fs, grid_search=True, grid_objective='pearson')
+        rescaled_learner.train(train_fs,
+                               grid_search=True,
+                               grid_objective='pearson')
     else:
         learner.train(train_fs, grid_search=False)
         rescaled_learner.train(train_fs, grid_search=False)
@@ -432,8 +434,7 @@ def test_int_labels():
     (rather than floats or strings).  For v1.0.0, it could not because the
     json package doesn't know how to serialize numpy.int64 objects.
     """
-    config_template_path = join(config_dir,
-                                'test_int_labels_cv.template.cfg')
+    config_template_path = join(config_dir, 'test_int_labels_cv.template.cfg')
     config_path = join(config_dir, 'test_int_labels_cv.cfg')
 
     config = _setup_config_parser(config_template_path, validate=False)
@@ -514,9 +515,11 @@ def test_fancy_output():
             if not desc_stat_line:
                 continue
             else:
-                m = re.search(r'([A-Za-z]+)\s+=\s+(-?[0-9]+.?[0-9]*)\s+'
-                              r'\((actual)\),\s+(-?[0-9]+.?[0-9]*)\s+'
-                              r'\((predicted)\)', desc_stat_line)
+                m = re.search(
+                    r'([A-Za-z]+)\s+=\s+(-?[0-9]+.?[0-9]*)\s+\((actual)\),\s+'
+                    r'(-?[0-9]+.?[0-9]*)\s+\((predicted)\)',
+                    desc_stat_line
+                )
                 stat_type, actual_value, _, pred_value, _ = m.groups()
                 actual_stats_from_file[stat_type.lower()] = float(actual_value)
                 pred_stats_from_file[stat_type.lower()] = float(pred_value)
@@ -539,8 +542,10 @@ def check_adaboost_regression(base_estimator):
 
     # train an AdaBoostRegressor on the training data and evalute on the
     # testing data
-    learner = Learner('AdaBoostRegressor', model_kwargs={'base_estimator':
-                                                         base_estimator})
+    learner = Learner(
+        'AdaBoostRegressor',
+        model_kwargs={'base_estimator': base_estimator}
+    )
     learner.train(train_fs, grid_search=False)
 
     # now generate the predictions on the test set

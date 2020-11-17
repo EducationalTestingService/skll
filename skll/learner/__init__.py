@@ -222,10 +222,11 @@ class Learner(object):
             self._model_kwargs['probability'] = self.probability
             self._model_kwargs['gamma'] = 'scale'
             if self.probability:
-                self.logger.warning('Because LibSVM does an internal '
-                                    'cross-validation to produce probabilities, '
-                                    'results will not be exactly replicable when '
-                                    'using SVC and probability mode.')
+                self.logger.warning(
+                    'Because LibSVM does an internal cross-validation to '
+                    'produce probabilities, results will not be exactly '
+                    'replicable when using SVC and probability mode.'
+                )
         elif issubclass(self._model_type,
                         (RandomForestClassifier, RandomForestRegressor,
                          GradientBoostingClassifier, GradientBoostingRegressor,
@@ -342,15 +343,15 @@ class Learner(object):
 
         # Check that we've actually loaded a Learner (or sub-class)
         if not isinstance(learner, cls):
-            raise ValueError(f"'{learner_path}' does not contain "
-                             f"a learner object.")
+            raise ValueError(f"'{learner_path}' does not contain a learner "
+                             "object.")
         # check that versions are compatible.
         elif skll_version < (2, 5, 0):
             model_version_str = '.'.join(map(str, skll_version))
             current_version_str = '.'.join(map(str, VERSION))
             raise ValueError(f"The learner stored in '{learner_path}' was "
                              f"created with v{model_version_str} of SKLL, "
-                             f"which is incompatible with the current "
+                             "which is incompatible with the current "
                              f"v{current_version_str}.")
         else:
             if not hasattr(learner, 'sampler'):
@@ -493,7 +494,9 @@ class Learner(object):
                 label_list = self.label_list[-1:]
 
             if isinstance(self.feat_vectorizer, FeatureHasher):
-                self.logger.warning("No feature names are available since this model was trained on hashed features.")
+                self.logger.warning("No feature names are available since "
+                                    "this model was trained on hashed "
+                                    "features.")
 
             for i, label in enumerate(label_list):
                 coef = self.model.coef_[i]
@@ -523,7 +526,9 @@ class Learner(object):
         elif isinstance(self._model, SVC) and self._model.kernel == 'linear':
             intercept = {}
             if isinstance(self.feat_vectorizer, FeatureHasher):
-                self.logger.warning("No feature names are available since this model was trained on hashed features.")
+                self.logger.warning("No feature names are available since "
+                                    "this model was trained on hashed "
+                                    "features.")
             for i, class_pair in enumerate(combinations(range(len(self.label_list)), 2)):
                 coef = self.model.coef_[i]
                 coef = coef.toarray()
@@ -822,8 +827,9 @@ class Learner(object):
         if grid_search:
 
             if not grid_objective:
-                raise ValueError("Grid search is on by default. You must either "
-                                 "specify a grid objective or turn off grid search.")
+                raise ValueError("Grid search is on by default. You must "
+                                 "either specify a grid objective or turn off"
+                                 " grid search.")
 
             # get the list of objectives that are acceptable in the current
             # prediction scenario and raise an exception if the current
@@ -1044,18 +1050,18 @@ class Learner(object):
             if (self._use_dense_features or
                     isinstance(self.sampler, SkewedChi2Sampler)):
                 if isinstance(self.feat_vectorizer, DictVectorizer):
-                    self.logger.warning("The `sparse` attribute of the "
-                                        "DictVectorizer stage will be "
-                                        "set to `False` in the pipeline "
-                                        "since dense features are "
-                                        "required when centering.")
+                    self.logger.warning(
+                        "The `sparse` attribute of the DictVectorizer stage "
+                        "will be set to `False` in the pipeline since dense "
+                        "features are required when centering."
+                    )
                     vectorizer_copy.sparse = False
                 else:
-                    self.logger.warning("A custom pipeline stage "
-                                        "(`Densifier`) will be inserted "
-                                        "in the pipeline since the "
-                                        "current SKLL configuration "
-                                        "requires dense features.")
+                    self.logger.warning(
+                        "A custom pipeline stage (`Densifier`) will be "
+                        "inserted in the pipeline since the current SKLL "
+                        "configuration requires dense features."
+                    )
                     densifier = Densifier()
                     pipeline_steps.append(('densifier', densifier))
             pipeline_steps.insert(0, ('vectorizer', vectorizer_copy))
@@ -1280,10 +1286,11 @@ class Learner(object):
         if both_dicts:
             if (set(self.feat_vectorizer.feature_names_) !=
                     set(examples.vectorizer.feature_names_)):
-                self.logger.warning("There is mismatch between the training model "
-                                    "features and the data passed to predict. The "
-                                    "prediction features will be transformed to "
-                                    "the trained model space.")
+                self.logger.warning(
+                    "There is mismatch between the training model features "
+                    "and the data passed to predict. The prediction features "
+                    "will be transformed to the trained model space."
+                )
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
             else:
@@ -1303,9 +1310,11 @@ class Learner(object):
             if self_feat_vec_tuple == example_feat_vec_tuple:
                 xtest = examples.features
             else:
-                self.logger.error('There is mismatch between the FeatureHasher '
-                                  'configuration for the training data and '
-                                  'the configuration for the data passed to predict')
+                self.logger.error(
+                    'There is mismatch between the FeatureHasher '
+                    'configuration for the training data and the '
+                    'configuration for the data passed to predict'
+                )
                 raise RuntimeError('Mismatched hasher configurations')
 
         # 3. model is a FeatureHasher and test set is a DictVectorizer
@@ -1317,8 +1326,8 @@ class Learner(object):
         # 4. model is a DictVectorizer and test set is a FeatureHasher
         elif model_dict_and_data_hasher:
             self.logger.error('Cannot predict with a model using a '
-                              'DictVectorizer on data that uses '
-                              'a FeatureHasher')
+                              'DictVectorizer on data that uses a '
+                              'FeatureHasher')
             raise RuntimeError('Cannot use FeatureHasher for data')
 
         # filter features based on those selected from training set
@@ -1511,7 +1520,8 @@ class Learner(object):
         # to encode the labels as strings anyway for classification problems.
         if (self.model_type._estimator_type == 'classifier' and
                 type_of_target(examples.labels) not in ['binary', 'multiclass']):
-            raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
+            raise ValueError("Floating point labels must be encoded as "
+                             "strings for cross-validation.")
 
         # check that we have an objective since grid search is on by default
         # Note that `train()` would raise this error anyway later but it's
@@ -1519,8 +1529,9 @@ class Learner(object):
         # stuff has happened
         if grid_search:
             if not grid_objective:
-                raise ValueError("Grid search is on by default. You must either "
-                                 "specify a grid objective or turn off grid search.")
+                raise ValueError("Grid search is on by default. You must "
+                                 "either specify a grid objective or turn off"
+                                 " grid search.")
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1528,9 +1539,10 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                self.logger.warning('Training data will be shuffled to randomize '
-                                    'grid search folds. Shuffling may yield '
-                                    'different results compared to scikit-learn.')
+                self.logger.warning('Training data will be shuffled to '
+                                    'randomize grid search folds. Shuffling '
+                                    'may yield different results compared to '
+                                    'scikit-learn.')
             ids, labels, features = sk_shuffle(examples.ids, examples.labels,
                                                examples.features,
                                                random_state=random_state)
@@ -1556,8 +1568,8 @@ class Learner(object):
         # the configparser should take care of this even before this method is called
         if isinstance(cv_folds, dict):
             if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
-                self.logger.warning("The specified custom folds will be used for "
-                                    "the inner grid search.")
+                self.logger.warning("The specified custom folds will be used "
+                                    "for the inner grid search.")
                 grid_search_folds = cv_folds
 
         # handle each fold separately & accumulate the predictions and results
@@ -1682,14 +1694,17 @@ class Learner(object):
         # needed for generating a reliable learning curve
         if len(examples) < 500:
             if not override_minimum:
-                raise ValueError(f'Number of training examples provided - {len(examples)} - '
-                                 f'is less than the minimum needed - {500} - '
-                                 f'for the learning curve to be reliable.')
+                raise ValueError(
+                    f'Number of training examples provided - {len(examples)} '
+                    f'- is less than the minimum needed - {500} - for the '
+                    'learning curve to be reliable.'
+                )
             else:
-                self.logger.warning(f'Because the number of training examples provided - '
-                                    f'{len(examples)} - is less than the ideal minimum - {500} - '
-                                    f'learning curve generation is unreliable'
-                                    f' and might break')
+                self.logger.warning(
+                    'Because the number of training examples provided - '
+                    f'{len(examples)} - is less than the ideal minimum - '
+                    f'{500} - learning curve generation is unreliable and '
+                    'might break')
 
         # Call train setup before since we need to train
         # the learner eventually

@@ -19,8 +19,9 @@ def main():
     """
     Create directories and split CSV files into subsets.
     """
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
-                                '%(message)s'), level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
+                               '%(message)s',
+                        level=logging.INFO)
     logger = logging.getLogger(__name__)
 
     # Create dictionary of subsets to use for creating split feature files
