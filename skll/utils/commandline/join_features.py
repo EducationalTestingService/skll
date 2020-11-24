@@ -30,24 +30,24 @@ def main(argv=None):
 
     # Get command line arguments
     parser = argparse.ArgumentParser(
-        description="Joins multiple input feature files together into one \
-                     file.",
+        description="Joins multiple input feature files together into one "
+                    " file.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('infile',
-                        help='input feature file (ends in .arff, .csv, \
-                              .jsonlines, .ndj, or .tsv)',
+                        help='input feature file (ends in .arff, .csv, '
+                             ' .jsonlines, .ndj, or .tsv)',
                         nargs='+')
     parser.add_argument('outfile',
                         help='output feature file')
     parser.add_argument('-i', '--id_col',
-                        help='Name of the column which contains the instance \
-                              IDs in ARFF, CSV, or TSV files.',
+                        help='Name of the column which contains the instance '
+                             ' IDs in ARFF, CSV, or TSV files.',
                         default='id')
     parser.add_argument('-l', '--label_col',
-                        help='Name of the column which contains the class \
-                              labels in ARFF, CSV, or TSV files. For ARFF \
-                              files, this must be the final column to count as\
-                              the label.',
+                        help='Name of the column which contains the class '
+                             'labels in ARFF, CSV, or TSV files. For ARFF '
+                             'files, this must be the final column to count '
+                             'as the label.',
                         default='y')
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
@@ -58,8 +58,8 @@ def main(argv=None):
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
-                                '%(message)s'))
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
+                               '%(message)s')
     logger = logging.getLogger(__name__)
 
     # all extensions except .libsvm can be processed

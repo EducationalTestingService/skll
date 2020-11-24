@@ -103,10 +103,12 @@ def tearDown():
 
     # adding all the suffix independent output patterns here that are
     # not f'test_{SUFFIX}_*'
-    clean_up_output_file_name_patterns = ['test_majority_class_custom_learner_*',
-                                          'test_send_warnings_to_log*',
-                                          'test_grid_search_cv_results_*.*',
-                                          'test_check_override_learning_curve_min_examples*']
+    clean_up_output_file_name_patterns = [
+        'test_majority_class_custom_learner_*',
+        'test_send_warnings_to_log*',
+        'test_grid_search_cv_results_*.*',
+        'test_check_override_learning_curve_min_examples*'
+    ]
     for file_name_pattern in clean_up_output_file_name_patterns:
         for output_file in glob(join(output_dir, file_name_pattern)):
             unlink(output_file)
@@ -143,7 +145,12 @@ def make_learning_curve_data():
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
-    fs1 = FeatureSet('train1', features=features, labels=y, ids=list(range(X.shape[0])))
+    fs1 = FeatureSet(
+        'train1',
+        features=features,
+        labels=y,
+        ids=list(range(X.shape[0]))
+    )
 
     # Write this feature set to file
     train_path = join(train_dir, 'test_learning_curve1.jsonlines')
@@ -155,7 +162,12 @@ def make_learning_curve_data():
     features = []
     for row in X:
         features.append(dict(zip(feature_names[:-1], row)))
-    fs2 = FeatureSet('train2', features=features, labels=y, ids=list(range(X.shape[0])))
+    fs2 = FeatureSet(
+        'train2',
+        features=features,
+        labels=y,
+        ids=list(range(X.shape[0]))
+    )
 
     # Write this feature set to file
     train_path = join(train_dir, 'test_learning_curve2.jsonlines')
@@ -172,19 +184,37 @@ def check_summary_score(use_feature_hashing,
     make_summary_data()
 
     if use_feature_hashing:
-        cfgfile = ('test_summary_feature_hasher_with_metrics.template.cfg' if
-                   use_additional_metrics else 'test_summary_feature_hasher.template.cfg')
-        outprefix = ('test_summary_feature_hasher_with_metrics_test_summary' if
-                     use_additional_metrics else 'test_summary_feature_hasher_test_summary')
-        summprefix = ('test_summary_feature_hasher_with_metrics' if
-                      use_additional_metrics else 'test_summary_feature_hasher')
+        cfgfile = (
+            'test_summary_feature_hasher_with_metrics.template.cfg'
+            if use_additional_metrics
+            else 'test_summary_feature_hasher.template.cfg'
+        )
+        outprefix = (
+            'test_summary_feature_hasher_with_metrics_test_summary'
+            if use_additional_metrics
+            else 'test_summary_feature_hasher_test_summary'
+        )
+        summprefix = (
+            'test_summary_feature_hasher_with_metrics'
+            if use_additional_metrics
+            else 'test_summary_feature_hasher'
+        )
     else:
-        cfgfile = ('test_summary_with_metrics.template.cfg' if
-                   use_additional_metrics else 'test_summary.template.cfg')
-        outprefix = ('test_summary_with_metrics_test_summary' if
-                     use_additional_metrics else 'test_summary_test_summary')
-        summprefix = ('test_summary_with_metrics' if
-                      use_additional_metrics else 'test_summary')
+        cfgfile = (
+            'test_summary_with_metrics.template.cfg'
+            if use_additional_metrics
+            else 'test_summary.template.cfg'
+        )
+        outprefix = (
+            'test_summary_with_metrics_test_summary'
+            if use_additional_metrics
+            else 'test_summary_test_summary'
+        )
+        summprefix = (
+            'test_summary_with_metrics'
+            if use_additional_metrics
+            else 'test_summary'
+        )
 
     config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
@@ -286,10 +316,12 @@ def check_summary_score(use_feature_hashing,
                                  'MultinomialNB')])
 
     for result_score, summary_score, learner_name in test_tuples:
-        assert_almost_equal(result_score, summary_score,
-                            err_msg=f'mismatched scores for {learner_name} '
-                                    f'(result:{result_score}, summary:'
-                                    f'{summary_score})')
+        assert_almost_equal(
+            result_score,
+            summary_score,
+            err_msg=f'mismatched scores for {learner_name} '
+                    f'(result:{result_score}, summary:{summary_score})'
+        )
 
     # We iterate over each model with an expected
     # accuracy score. Test proves that the report
@@ -363,7 +395,8 @@ def check_xval_fancy_results_file(do_grid_search,
     # read in all the lines and look at the lines up to where we print the "Total Time"
     with open(results_file_path) as resultsf:
         results_lines = resultsf.readlines()
-        end_idx = [results_lines.index(l) for l in results_lines if l.startswith('Total Time:')][0]
+        end_idx = [results_lines.index(l) for l in results_lines
+                   if l.startswith('Total Time:')][0]
         results_lines = results_lines[:end_idx + 1]
 
         # read in the "keys" and "values" separated by colons into a dictionary
@@ -582,24 +615,27 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
     '''
 
     # make a simple config file for feature hasher warning test
-    values_to_fill_dict = {'experiment_name': 'test_warning_multiple_featuresets',
-                           'train_directory': train_dir,
-                           'task': 'train',
-                           'grid_search': 'false',
-                           'objectives': "['f1_score_micro']",
-                           'learners': "['LogisticRegression']",
-                           'featuresets': "[['test_input_3examples_1', "
-                                          "'test_input_3examples_2']]",
-                           "featureset_names": "['feature_hasher']",
-                           'suffix': '.jsonlines',
-                           'log': output_dir,
-                           'models': output_dir,
-                           'feature_hasher': "true",
-                           "hasher_features": "4"
-                           }
+    values_to_fill_dict = {
+        'experiment_name': 'test_warning_multiple_featuresets',
+        'train_directory': train_dir,
+        'task': 'train',
+        'grid_search': 'false',
+        'objectives': "['f1_score_micro']",
+        'learners': "['LogisticRegression']",
+        'featuresets':
+            "[['test_input_3examples_1', 'test_input_3examples_2']]",
+        "featureset_names": "['feature_hasher']",
+        'suffix': '.jsonlines',
+        'log': output_dir,
+        'models': output_dir,
+        'feature_hasher': "true",
+        "hasher_features": "4"
+    }
 
-    config_template_path = join(config_dir,
-                                'test_warning_multiple_featuresets.template.cfg')
+    config_template_path = join(
+        config_dir,
+        'test_warning_multiple_featuresets.template.cfg'
+    )
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
@@ -610,12 +646,15 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
     run_configuration(config_path, quiet=True)
 
     # test if it throws any warning
-    logfile_path = join(output_dir,
-                        "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log")
+    logfile_path = join(
+        output_dir,
+        "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log"
+    )
     with open(logfile_path) as f:
-        warning_pattern = re.compile(r'Since there are multiple feature files, '
-                                     r'feature hashing applies to each '
-                                     r'specified feature file separately.')
+        warning_pattern = re.compile(
+            r'Since there are multiple feature files, feature hashing applies'
+            r' to each specified feature file separately.'
+        )
         matches = re.findall(warning_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -625,12 +664,18 @@ def test_backward_compatibility():
     """
     Test to validate backward compatibility
     """
-    predict_path = join(backward_compatibility_dir,
-                        'v0.23.1_test_summary_test_summary_LogisticRegression_predictions.tsv')
-    model_path = join(backward_compatibility_dir,
-                      'v0.23.1_test_summary_test_summary_LogisticRegression.model')
-    test_path = join(backward_compatibility_dir,
-                     'v0.23.1_test_summary.jsonlines')
+    predict_path = join(
+        backward_compatibility_dir,
+        'v0.23.1_test_summary_test_summary_LogisticRegression_predictions.tsv'
+    )
+    model_path = join(
+        backward_compatibility_dir,
+        'v0.23.1_test_summary_test_summary_LogisticRegression.model'
+    )
+    test_path = join(
+        backward_compatibility_dir,
+        'v0.23.1_test_summary.jsonlines'
+    )
 
     learner = Learner.from_file(model_path)
     examples = Reader.for_path(test_path, quiet=True).read()
@@ -722,8 +767,7 @@ def test_learning_curve_output():
 
     # make sure that the two PNG files (one per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        ok_(exists(join(output_dir,
-                        f'{outprefix}_{featureset_name}.png')))
+        ok_(exists(join(output_dir, f'{outprefix}_{featureset_name}.png')))
 
 
 def test_learning_curve_output_with_objectives():
@@ -889,8 +933,10 @@ def test_learning_curve_min_examples_check_override():
     """
 
     # creates a logger which writes to a temporary log file
-    log_file_path = join(output_dir,
-                         "test_check_override_learning_curve_min_examples.log")
+    log_file_path = join(
+        output_dir,
+        "test_check_override_learning_curve_min_examples.log"
+    )
     logger = get_skll_logger("test_learning_curve_min_examples_check_override",
                              filepath=log_file_path)
 
@@ -909,21 +955,17 @@ def test_learning_curve_min_examples_check_override():
     # checks that the learning_curve warning message is contained in the log file
     with open(log_file_path) as tf:
         log_text = tf.read()
-        learning_curve_warning_re = \
-            re.compile(r'Because the number of training examples provided - '
-                       r'\d+ - is less than the ideal minimum - \d+ - '
-                       r'learning curve generation is unreliable and might '
-                       r'break')
+        learning_curve_warning_re = re.compile(
+            r'Because the number of training examples provided - \d+ - is '
+            r'less than the ideal minimum - \d+ - learning curve generation '
+            r'is unreliable and might break'
+        )
         assert learning_curve_warning_re.search(log_text)
 
     close_and_remove_logger_handlers(logger)
 
 
-def check_pipeline_attribute(learner_name,
-                             do_feature_hashing,
-                             min_count,
-                             scaling_type,
-                             sampler_name,
+def check_pipeline_attribute(do_feature_hashing,
                              learner,
                              function_args_dict):
 
@@ -1098,11 +1140,7 @@ def test_pipeline_attribute():
                           pipeline=True)
 
         yield (check_pipeline_attribute,
-               learner_name,
                do_feature_hashing,
-               min_count,
-               scaling_type,
-               sampler_name,
                learner,
                function_args_dict)
 
@@ -1115,11 +1153,11 @@ def test_send_warnings_to_log():
 
     suffix = '.jsonlines'
     train_path = join(train_dir, f'test_send_warnings{suffix}')
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_send_warnings_to_log"
-                                                            ".template.cfg"),
-                                                       train_path,
-                                                       None)
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_send_warnings_to_log.template.cfg"),
+        train_path,
+        None
+    )
     run_configuration(config_path, quiet=True, local=True)
 
     # Check experiment log output
@@ -1129,10 +1167,11 @@ def test_send_warnings_to_log():
                    'test_send_warnings_to_log_train_test_send_warnings.'
                    'jsonlines_LinearSVC.log')) as f:
         log_content = f.read()
-        convergence_sklearn_warning_re = \
-            re.compile(r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: "
-                       r"ConvergenceWarning:Liblinear failed to converge, "
-                       r"increase the number of iterations\.")
+        convergence_sklearn_warning_re = re.compile(
+            r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: ConvergenceWarning:"
+            r"Liblinear failed to converge, increase the number of iterations"
+            r"\."
+        )
         assert convergence_sklearn_warning_re.search(log_content) is not None
 
 

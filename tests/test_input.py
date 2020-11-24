@@ -127,7 +127,7 @@ def test_locate_file_invalid_path():
     exist.
     """
 
-    locate_file('test/does_not_exist.cfg', _my_dir)
+    locate_file(join(test_dir, 'does_not_exist.cfg'), _my_dir)
 
 
 @raises(ValueError)
@@ -166,9 +166,12 @@ def test_one_file_load_featureset():
     """
     suffix = '.jsonlines'
     featureset = ['test_input_2examples_1']
-    single_file_fs = load_featureset(join(train_dir,
-                                          'test_input_2examples_1.jsonlines'),
-                                     '', '', quiet=True)
+    single_file_fs = load_featureset(
+        join(train_dir, 'test_input_2examples_1.jsonlines'),
+        '',
+        '',
+        quiet=True
+    )
     single_fs = load_featureset(train_dir, featureset, suffix, quiet=True)
     eq_(single_file_fs, single_fs)
 
@@ -219,13 +222,15 @@ def test_config_parsing_no_name():
     """
 
     # make a simple config file that has no experiment name
-    values_to_fill_dict = {'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'task': 'evaluate',
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'task': 'evaluate',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -242,13 +247,15 @@ def test_config_parsing_bad_task():
 
     # make a simple config file that has a bad task
     # but everything else is correct
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     for task_value, sub_prefix in zip([None, '', 'procrastinate'],
                                       ['no_task', 'missing_task', 'bad_task']):
@@ -268,13 +275,15 @@ def test_config_parsing_bad_learner():
     # duplicate learners
 
     # make a simple config file that has bad learner specifications
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     for learners_list, sub_prefix in zip([None, '[]', 'LogisticRegression',
                                           "['LogisticRegression', "
@@ -299,15 +308,17 @@ def test_config_parsing_bad_sampler():
     """
 
     # make a simple config file that has bad sampling information
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'sampler': 'RFBSampler'}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'sampler': 'RFBSampler'
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -324,15 +335,17 @@ def test_config_parsing_bad_hashing():
     """
 
     # make a simple config file that has bad feature hashing information
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'feature_hasher': 'True'}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'feature_hasher': 'True'
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -348,13 +361,15 @@ def test_config_parsing_bad_featuresets():
     # featuresets
 
     # make a simple config file that has bad feature sets
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     for featuresets, sub_prefix in zip([None, '[]', "{'f1', 'f2', 'f3'}",
                                         "[['f1', 'f2'], 'f3', 'f4']"],
@@ -376,15 +391,16 @@ def test_config_parsing_bad_featurenames():
     # featureset names
 
     # make a simple config file that has bad feature names
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'learners': "['LogisticRegression']",
-                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
-                                           "'f6']]"),
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'learners': "['LogisticRegression']",
+        'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     for fname, sub_prefix in zip(["['set_a']", "['1', 2]", "set_a", "1"],
                                  ['wrong_num_names', 'wrong_type_names',
@@ -407,15 +423,16 @@ def test_config_parsing_bad_scaling():
     # type
 
     # make a simple config file that has bad scaling information
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'learners': "['LogisticRegression']",
-                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
-                                           "'f6']]"),
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'learners': "['LogisticRegression']",
+        'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     for scaling_type, sub_prefix in zip(["foo", "True", "False"],
                                         ['bad_scaling1', 'bad_scaling2',
@@ -437,14 +454,15 @@ def test_config_parsing_bad_train():
     # path specifications
 
     # make a simple config file that has a bad train paths
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'test_directory': test_dir,
-                           'learners': "['LogisticRegression']",
-                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
-                                           "'f6']]"),
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'test_directory': test_dir,
+        'learners': "['LogisticRegression']",
+        'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     for sub_prefix in ['no_train_path_or_file',
                        'both_train_path_and_file',
@@ -452,10 +470,10 @@ def test_config_parsing_bad_train():
                        'nonexistent_test_file']:
 
         if sub_prefix == 'both_train_path_and_file':
-            train_fh = tempfile.NamedTemporaryFile(suffix='jsonlines',
-                                                   prefix=join(other_dir,
-                                                               'test_config_'
-                                                               'parsing_'))
+            train_fh = tempfile.NamedTemporaryFile(
+                suffix='jsonlines',
+                prefix=join(other_dir, 'test_config_parsing_')
+            )
             values_to_fill_dict['train_file'] = train_fh.name
             values_to_fill_dict['train_directory'] = train_dir
 
@@ -482,24 +500,25 @@ def test_config_parsing_bad_test():
     # specifications
 
     # make a simple config file that has bad test path
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'learners': "['LogisticRegression']",
-                           'featuresets': ("[['f1', 'f2', 'f3'], ['f4', 'f5', "
-                                           "'f6']]"),
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'learners': "['LogisticRegression']",
+        'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     for sub_prefix in ['both_test_path_and_file',
                        'nonexistent_test_path',
                        'nonexistent_test_file']:
 
         if sub_prefix == 'both_test_path_and_file':
-            test_fh = tempfile.NamedTemporaryFile(suffix='jsonlines',
-                                                  prefix=join(other_dir,
-                                                              'test_config_'
-                                                              'parsing_'))
+            test_fh = tempfile.NamedTemporaryFile(
+                suffix='jsonlines',
+                prefix=join(other_dir, 'test_config_parsing_')
+            )
             values_to_fill_dict['test_file'] = test_fh.name
             values_to_fill_dict['test_directory'] = test_dir
 
@@ -527,14 +546,15 @@ def test_config_parsing_grid_search_but_no_objectives():
     """
 
     # make a simple config file that has grid search turned on but no objectives
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir}
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -553,16 +573,18 @@ def test_config_parsing_bad_objectives():
     # make a simple config file that has a mistyped objective value
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'true',
-                           'objectives': "accuracy"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'grid_search': 'true',
+        'objectives': "accuracy"
+    }
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
                                          'bad_objectives')
@@ -575,15 +597,17 @@ def test_config_parsing_bad_metric():
     """
 
     # make a simple config file that has bad metrics
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'metrics': "accuracy"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'metrics': "accuracy"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -599,16 +623,18 @@ def test_config_parsing_log_loss_no_probability():
     Test that config parsing raises an error if log loss is used without probability
     """
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'grid_search': 'true',
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['neg_log_loss']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'grid_search': 'true',
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['neg_log_loss']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -624,16 +650,18 @@ def test_config_parsing_roc_auc_no_probability():
     Test that config parsing raises an error if roc_auc is used without probability
     """
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'grid_search': 'false',
-                           'log': output_dir,
-                           'results': output_dir,
-                           'metrics': "['roc_auc']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'grid_search': 'false',
+        'log': output_dir,
+        'results': output_dir,
+        'metrics': "['roc_auc']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -654,8 +682,8 @@ def test_config_parsing_bad_task_paths():
     values_to_fill_dict = {'experiment_name': 'config_parsing',
                            'train_directory': train_dir,
                            'learners': "['LogisticRegression']",
-                           'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', "
-                                          "'f6']]",
+                           'featuresets':
+                               "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
                            'log': output_dir}
 
     for sub_prefix in ['predict_no_test', 'evaluate_no_test',
@@ -686,19 +714,19 @@ def test_config_parsing_bad_task_paths():
         elif sub_prefix == 'xv_with_test_file':
             values_to_fill_dict['task'] = 'cross_validate'
             values_to_fill_dict['results'] = output_dir
-            test_fh1 = tempfile.NamedTemporaryFile(suffix='jsonlines',
-                                                   prefix=join(other_dir,
-                                                               'test_config_'
-                                                               'parsing_'))
+            test_fh1 = tempfile.NamedTemporaryFile(
+                suffix='jsonlines',
+                prefix=join(other_dir, 'test_config_parsing_')
+            )
             values_to_fill_dict['test_file'] = test_fh1.name
 
         elif sub_prefix == 'train_with_test_file':
             values_to_fill_dict['task'] = 'train'
             values_to_fill_dict['models'] = output_dir
-            test_fh2 = tempfile.NamedTemporaryFile(suffix='jsonlines',
-                                                   prefix=join(other_dir,
-                                                               'test_config_'
-                                                               'parsing_'))
+            test_fh2 = tempfile.NamedTemporaryFile(
+                suffix='jsonlines',
+                prefix=join(other_dir, 'test_config_parsing_')
+            )
 
             values_to_fill_dict['test_file'] = test_fh2.name
 
@@ -748,15 +776,17 @@ def test_config_parsing_bad_cv_folds():
 
     # make a simple config file that has a bad value for cv_folds
     # but everything else is correct
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'num_cv_folds': 'random',
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'num_cv_folds': 'random',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -775,15 +805,17 @@ def test_config_parsing_save_cv_models_no_models_path():
 
     # make a simple config file that has a bad value for cv_folds
     # but everything else is correct
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'save_cv_models': 'True',
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'save_cv_models': 'True',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -797,15 +829,17 @@ def test_config_parsing_save_cv_models_no_models_path():
 def test_config_parsing_invalid_option():
 
     # make a simple config file that has an invalid option
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'bad_option': 'whatever',
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'bad_option': 'whatever',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -820,15 +854,17 @@ def test_config_parsing_invalid_option():
 def test_config_parsing_duplicate_option():
 
     # make a simple config file that has a duplicate option
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'duplicate_option': 'value',
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'duplicate_option': 'value',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -843,15 +879,17 @@ def test_config_parsing_duplicate_option():
 def test_config_parsing_option_in_wrong_section():
 
     # make a simple config file that has an option in the wrong section
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'probability': 'true',
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'probability': 'true',
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -866,14 +904,16 @@ def test_config_parsing_option_in_wrong_section():
 def test_config_parsing_mislocated_input_path():
 
     # make a simple config file that has a mislocated path
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': 'train',
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': 'train',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -892,15 +932,17 @@ def test_config_parsing_mse_throws_exception():
     """
 
     # make a simple config file that has an invalid option
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'true',
-                           'objectives': "['mean_squared_error']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'grid_search': 'true',
+        'objectives': "['mean_squared_error']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -917,14 +959,16 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
     Check that tuning objectives are not needed for learning curve task
     """
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'metrics': "['neg_mean_squared_error']",
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'metrics': "['neg_mean_squared_error']",
+        'results': output_dir
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -953,14 +997,16 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
 def test_config_parsing_relative_input_path():
 
     # make a simple config file that has relative paths
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -991,14 +1037,16 @@ def test_config_parsing_relative_input_paths():
     test_file = join(train_dir, 'f1.jsonlines')
 
     # make a simple config file that has relative paths
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_file': train_file,
-                           'test_file': test_file,
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_micro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_file': train_file,
+        'test_file': test_file,
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_micro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_relative_paths.template.cfg')
@@ -1026,16 +1074,18 @@ def test_config_parsing_automatic_output_directory_creation():
     ok_(not(exists(new_models_path)))
     ok_(not(exists(new_predictions_path)))
 
-    values_to_fill_dict = {'experiment_name': 'auto_dir_creation',
-                           'task': 'evaluate',
-                           'train_file': train_file,
-                           'test_file': test_file,
-                           'learners': "['LogisticRegression']",
-                           'log': new_log_path,
-                           'results': new_results_path,
-                           'models': new_models_path,
-                           'predictions': new_predictions_path,
-                           'objectives': "['f1_score_micro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'auto_dir_creation',
+        'task': 'evaluate',
+        'train_file': train_file,
+        'test_file': test_file,
+        'learners': "['LogisticRegression']",
+        'log': new_log_path,
+        'results': new_results_path,
+        'models': new_models_path,
+        'predictions': new_predictions_path,
+        'objectives': "['f1_score_micro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_relative_paths.template.cfg')
@@ -1201,14 +1251,16 @@ def check_cv_folds_and_grid_search_folds(task,
         chosen_cv_folds = fold_mapping
 
     # make a simple config file
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': task,
-                           'grid_search': 'true',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': task,
+        'grid_search': 'true',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
 
     # we need the models field when training but the results field
     # when cross-validating
@@ -1257,15 +1309,17 @@ def test_default_number_of_cv_folds():
 
     # make a simple config file that does not set cv_folds
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'grid_search': 'true',
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'grid_search': 'true',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1291,16 +1345,18 @@ def test_default_number_of_cv_folds():
 def test_setting_number_of_cv_folds():
 
     # make a simple config file that does not set cv_folds
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'cross_validate',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'true',
-                           'num_cv_folds': "5",
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'log': output_dir,
+        'results': output_dir,
+        'grid_search': 'true',
+        'num_cv_folds': "5",
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1327,17 +1383,19 @@ def test_setting_param_grids():
 
     # make a simple config file that does not set cv_folds
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LinearSVC']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'true',
-                           'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LinearSVC']",
+        'log': output_dir,
+        'results': output_dir,
+        'grid_search': 'true',
+        'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1368,17 +1426,19 @@ def test_setting_param_grids():
 def test_setting_fixed_parameters():
     # make a simple config file that does not set cv_folds
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LinearSVC']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'fixed_parameters': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
-                           'grid_search': 'true',
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LinearSVC']",
+        'log': output_dir,
+        'results': output_dir,
+        'fixed_parameters': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
+        'grid_search': 'true',
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1413,15 +1473,17 @@ def test_learning_curve_objectives_unsupported_error():
     does not support objectives option any more
     """
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'true',
-                           'objectives': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir,
+        'grid_search': 'true',
+        'objectives': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1434,15 +1496,17 @@ def test_learning_curve_objectives_unsupported_error():
 
 def test_default_learning_curve_options():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'grid_search': 'true',
-                           'metrics': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir,
+        'grid_search': 'true',
+        'metrics': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1468,16 +1532,18 @@ def test_default_learning_curve_options():
 
 def test_setting_learning_curve_options():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'learning_curve_cv_folds_list': "[100, 10]",
-                           'learning_curve_train_sizes': "[10, 50, 100, 200, 500]",
-                           'metrics': "['f1_score_macro']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir,
+        'learning_curve_cv_folds_list': "[100, 10]",
+        'learning_curve_train_sizes': "[10, 50, 100, 200, 500]",
+        'metrics': "['f1_score_macro']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1504,21 +1570,25 @@ def test_setting_learning_curve_options():
 @raises(ValueError)
 def test_learning_curve_metrics_and_objectives_throw_error():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': "['f1_score_macro']",
-                           'metrics': '["accuracy", "f1_score_micro"]'}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']",
+        'metrics': '["accuracy", "f1_score_micro"]'
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'learning_curve_metrics_and_objectives')
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        'learning_curve_metrics_and_objectives'
+    )
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
@@ -1537,20 +1607,24 @@ def test_learning_curve_metrics_and_objectives_throw_error():
 
 def test_learning_curve_metrics_and_no_objectives():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'metrics': '["accuracy", "unweighted_kappa"]'}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir,
+        'metrics': '["accuracy", "unweighted_kappa"]'
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'learning_curve_metrics_and_no_objectives')
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        'learning_curve_metrics_and_no_objectives'
+    )
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
@@ -1569,20 +1643,24 @@ def test_learning_curve_metrics_and_no_objectives():
 
 def test_learning_curve_metrics():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'metrics': '["accuracy"]'}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir,
+        'metrics': '["accuracy"]'
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'learning_curve_objectives_and_no_metrics')
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        'learning_curve_objectives_and_no_metrics'
+    )
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
@@ -1602,21 +1680,25 @@ def test_learning_curve_metrics():
 
 def test_learning_curve_pipeline_option():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'pipeline': 'true',
-                           'metrics': '["accuracy", "unweighted_kappa"]'}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir,
+        'pipeline': 'true',
+        'metrics': '["accuracy", "unweighted_kappa"]'
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'learning_curve_metrics_and_no_objectives')
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        'learning_curve_metrics_and_no_objectives'
+    )
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
@@ -1635,60 +1717,72 @@ def test_learning_curve_pipeline_option():
 
 def test_learning_curve_no_metrics():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'learning_curve_default_objectives_and_no_metrics')
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        'learning_curve_default_objectives_and_no_metrics'
+    )
 
     yield check_config_parsing_value_error, config_path
 
 
 def test_learning_curve_no_metrics_and_no_objectives():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'log': output_dir,
-                           'results': output_dir,
-                           'objectives': '[]'}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'log': output_dir,
+        'results': output_dir,
+        'objectives': '[]'
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'learning_curve_no_metrics_and_no_objectives')
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        'learning_curve_no_metrics_and_no_objectives'
+    )
 
     yield check_config_parsing_value_error, config_path
 
 
 def test_learning_curve_bad_folds_specifications():
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'learning_curve',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learning_curve_cv_folds_list': "[10]",
-                           'learners': "['LogisticRegression', 'MultinomialNB']",
-                           'metrics': "['accuracy', 'f1_score_macro']",
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'learning_curve',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learning_curve_cv_folds_list': "[10]",
+        'learners': "['LogisticRegression', 'MultinomialNB']",
+        'metrics': "['accuracy', 'f1_score_macro']",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'learning_curve_bad_folds_specifications')
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        'learning_curve_bad_folds_specifications'
+    )
     yield check_config_parsing_value_error, config_path
 
 
@@ -1698,15 +1792,17 @@ def test_config_parsing_param_grids_no_grid_search():
     """
 
     # make a simple config file that turns off grid search but specifies param grids
-    values_to_fill_dict = {'experiment_name': 'config_parsing_param_grids_no_grid_search',
-                           'task': 'train',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LinearSVC']",
-                           'log': output_dir,
-                           'models': output_dir,
-                           'grid_search': 'false',
-                           'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing_param_grids_no_grid_search',
+        'task': 'train',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LinearSVC']",
+        'log': output_dir,
+        'models': output_dir,
+        'grid_search': 'false',
+        'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1715,11 +1811,13 @@ def test_config_parsing_param_grids_no_grid_search():
                                          'param_grids_no_grid_search')
 
     parse_config_file(config_path)
-    log_path = join(output_dir, "config_parsing_param_grids_no_grid_search.log")
+    log_path = join(output_dir,
+                    "config_parsing_param_grids_no_grid_search.log")
     with open(log_path) as f:
-        warning_pattern = re.compile(r'Since "grid_search" is set to False, '
-                                     r'the specified "param_grids" will be '
-                                     r'ignored.')
+        warning_pattern = re.compile(
+            r'Since "grid_search" is set to False, the specified '
+            r'"param_grids" will be ignored.'
+        )
         matches = re.findall(warning_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -1730,15 +1828,17 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
     """
 
     # make a simple config file that has grid search off but still specifies objectives
-    values_to_fill_dict = {'experiment_name': 'config_parsing_objectives_no_grid_search',
-                           'task': 'train',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LinearSVC']",
-                           'log': output_dir,
-                           'models': output_dir,
-                           'grid_search': 'false',
-                           'objectives': "['f1_score_macro', 'accuracy']"}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing_objectives_no_grid_search',
+        'task': 'train',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LinearSVC']",
+        'log': output_dir,
+        'models': output_dir,
+        'grid_search': 'false',
+        'objectives': "['f1_score_macro', 'accuracy']"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1763,9 +1863,10 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
 
     log_path = join(output_dir, "config_parsing_objectives_no_grid_search.log")
     with open(log_path) as f:
-        warning_pattern = re.compile(r'Since "grid_search" is set to False, '
-                                     r'any specified "objectives" will be '
-                                     r'ignored.')
+        warning_pattern = re.compile(
+            r'Since "grid_search" is set to False, any specified "objectives"'
+            r' will be ignored.'
+        )
         matches = re.findall(warning_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -1777,17 +1878,20 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
 
     # make a simple config file that has a bad task
     # but everything else is correct
-    values_to_fill_dict = {'experiment_name': 'config_parsing_param_grids_fixed_parameters_conflict',
-                           'task': 'train',
-                           'train_directory': train_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LinearSVC']",
-                           'log': output_dir,
-                           'models': output_dir,
-                           'grid_search': 'true',
-                           'objectives': "['f1_score_macro']",
-                           'fixed_parameters': "[{'C': 0.001}]",
-                           'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"}
+    values_to_fill_dict = {
+        'experiment_name':
+            'config_parsing_param_grids_fixed_parameters_conflict',
+        'task': 'train',
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LinearSVC']",
+        'log': output_dir,
+        'models': output_dir,
+        'grid_search': 'true',
+        'objectives': "['f1_score_macro']",
+        'fixed_parameters': "[{'C': 0.001}]",
+        'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')
@@ -1799,12 +1903,12 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
     log_path = join(output_dir,
                     "config_parsing_param_grids_fixed_parameters_conflict.log")
     with open(log_path) as f:
-        warning_pattern = \
-            re.compile(r'Note that "grid_search" is set to True and '
-                       r'"fixed_parameters" is also specified. If there '
-                       r'is a conflict between the grid search parameter '
-                       r'space and the fixed parameter values, the fixed '
-                       r'parameter values will take precedence.')
+        warning_pattern = re.compile(
+            r'Note that "grid_search" is set to True and "fixed_parameters" '
+            r'is also specified. If there is a conflict between the grid '
+            r'search parameter space and the fixed parameter values, the '
+            r'fixed parameter values will take precedence.'
+        )
         matches = re.findall(warning_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -1814,15 +1918,17 @@ def test_config_parsing_default_pos_label_str_value():
     Check that the default value of `pos_label_str` gets set to `None`
     """
 
-    values_to_fill_dict = {'experiment_name': 'config_parsing',
-                           'task': 'evaluate',
-                           'train_directory': train_dir,
-                           'test_directory': test_dir,
-                           'featuresets': "[['f1', 'f2', 'f3']]",
-                           'learners': "['LogisticRegression']",
-                           'objectives': "['accuracy']",
-                           'log': output_dir,
-                           'results': output_dir}
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'objectives': "['accuracy']",
+        'log': output_dir,
+        'results': output_dir
+    }
 
     config_template_path = join(config_dir,
                                 'test_config_parsing.template.cfg')

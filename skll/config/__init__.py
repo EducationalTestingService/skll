@@ -757,12 +757,10 @@ def parse_config_file(config_path, log_level=logging.INFO):
                          'learning_curve.')
     if task == 'learning_curve':
         if len(grid_objectives) > 0:
-            raise ValueError("The \"objectives\" option "
-                             "is no longer supported for the "
-                             "\"learning_curve\" "
-                             "task. Please use the \"metrics\" "
-                             "option in the [Output] "
-                             "section instead.")
+            raise ValueError("The \"objectives\" option is no longer supported"
+                             " for the \"learning_curve\" task. Please use the"
+                             " \"metrics\" option in the [Output] section "
+                             "instead.")
         if len(output_metrics) == 0:
             raise ValueError('The "metrics" option must be set when '
                              'the task is "learning_curve".')

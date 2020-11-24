@@ -68,7 +68,8 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
             return isinstance(handler, logging.FileHandler) and handler.stream.name == filepath
         need_file_handler = not any([is_file_handler(handler) for handler in logger.handlers])
         if need_file_handler:
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - '
+                                          '%(message)s')
             file_handler = logging.FileHandler(filepath, mode='w')
             file_handler.setFormatter(formatter)
             file_handler.setLevel(log_level)

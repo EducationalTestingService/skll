@@ -34,8 +34,8 @@ def main(argv=None):
 
     # Get command line arguments
     parser = argparse.ArgumentParser(
-        description="Loads a trained model and outputs predictions based \
-                     on input feature files.",
+        description="Loads a trained model and outputs predictions based "
+                    "on input feature files.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         conflict_handler='resolve')
     parser.add_argument('model_file',
@@ -59,19 +59,18 @@ def main(argv=None):
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-p', '--predict_labels',
                        help="If the model is doing probabilistic "
-                            "classification, output the class label "
-                            "with the highest probability instead of "
-                            "the class probabilities.",
-                            action='store_true',
-                            default=False)
+                            "classification, output the class label with the "
+                            "highest probability instead of the class "
+                            "probabilities.",
+                       action='store_true',
+                       default=False)
     group.add_argument('-t', '--threshold',
-                       help="If the model we're using is "
-                            "doing probabilistic binary "
-                            "classification, output the positive "
-                            "class label if its probability"
-                            "meets/exceeds this threshold"
-                            "and output the negative class "
-                            "label otherwise.", type=float)
+                       help="If the model we're using is doing probabilistic "
+                            "binary classification, output the positive class"
+                            " label if its probability meets/exceeds this "
+                            "threshold and output the negative class label "
+                            "otherwise.",
+                       type=float)
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
@@ -79,8 +78,8 @@ def main(argv=None):
                         help="Path to output tsv file. If not specified, "
                              "predictions will be printed to stdout. For "
                              "probabilistic binary classification, the "
-                             "probability of the positive class will "
-                             "always be in the last column.")
+                             "probability of the positive class will always "
+                             "be in the last column.")
     parser.add_argument('--version', action='version',
                         version=f'%(prog)s {__version__}')
 
@@ -110,7 +109,8 @@ def main(argv=None):
             else:
                 pos_label_str = [label for label in learner.label_dict if learner.label_dict[label] == 1][0]
             neg_label_str = [label for label in learner.label_list if label != pos_label_str][0]
-            logger.info(f"{pos_label_str} is the label for the positive class.")
+            logger.info(f"{pos_label_str} is the label for the positive "
+                        "class.")
 
     # if we want to choose labels by thresholding the probabilities,
     # make sure that the learner is probabilistic AND binary first

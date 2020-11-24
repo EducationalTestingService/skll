@@ -139,36 +139,38 @@ VALID_TASKS = frozenset(['cross_validate',
                          'train'])
 
 #: Set of evaluation metrics only used for classification tasks
-CLASSIFICATION_ONLY_METRICS = set(['accuracy',
-                                   'average_precision',
-                                   'balanced_accuracy',
-                                   'f1',
-                                   'f1_score_least_frequent',
-                                   'f1_score_macro',
-                                   'f1_score_micro',
-                                   'f1_score_weighted',
-                                   'f05',
-                                   'f05_score_macro',
-                                   'f05_score_micro',
-                                   'f05_score_weighted',
-                                   'jaccard',
-                                   'jaccard_macro',
-                                   'jaccard_micro',
-                                   'jaccard_weighted',
-                                   'neg_log_loss',
-                                   'precision',
-                                   'precision_macro',
-                                   'precision_micro',
-                                   'precision_weighted',
-                                   'recall',
-                                   'recall_macro',
-                                   'recall_micro',
-                                   'recall_weighted',
-                                   'roc_auc'])
+CLASSIFICATION_ONLY_METRICS = {
+    'accuracy',
+    'average_precision',
+    'balanced_accuracy',
+    'f1',
+    'f1_score_least_frequent',
+    'f1_score_macro',
+    'f1_score_micro',
+    'f1_score_weighted',
+    'f05',
+    'f05_score_macro',
+    'f05_score_micro',
+    'f05_score_weighted',
+    'jaccard',
+    'jaccard_macro',
+    'jaccard_micro',
+    'jaccard_weighted',
+    'neg_log_loss',
+    'precision',
+    'precision_macro',
+    'precision_micro',
+    'precision_weighted',
+    'recall',
+    'recall_macro',
+    'recall_micro',
+    'recall_weighted',
+    'roc_auc'
+}
 
 
 #: Set of evaluation metrics based on correlation
-CORRELATION_METRICS = set(['kendall_tau', 'pearson', 'spearman'])
+CORRELATION_METRICS = {'kendall_tau', 'pearson', 'spearman'}
 
 #: Set of evaluation metrics that can use prediction probabilities
 PROBABILISTIC_METRICS = frozenset(['average_precision',
@@ -176,18 +178,21 @@ PROBABILISTIC_METRICS = frozenset(['average_precision',
                                    'roc_auc'])
 
 #: Set of evaluation metrics only used for regression tasks
-REGRESSION_ONLY_METRICS = set(['explained_variance',
-                               'max_error',
-                               'neg_mean_squared_error',
-                               'neg_mean_absolute_error',
-                               'r2'])
+REGRESSION_ONLY_METRICS = {
+    'explained_variance',
+    'max_error',
+    'neg_mean_squared_error',
+    'neg_mean_absolute_error',
+    'r2'
+}
 
 #: Set of unweighted kappa agreement metrics
-UNWEIGHTED_KAPPA_METRICS = set(['unweighted_kappa',
-                                'uwk_off_by_one'])
+UNWEIGHTED_KAPPA_METRICS = {'unweighted_kappa', 'uwk_off_by_one'}
 
 #: Set of weighed kappa agreement metrics
-WEIGHTED_KAPPA_METRICS = set(['linear_weighted_kappa',
-                              'lwk_off_by_one',
-                              'quadratic_weighted_kappa',
-                              'qwk_off_by_one'])
+WEIGHTED_KAPPA_METRICS = {
+    'linear_weighted_kappa',
+    'lwk_off_by_one',
+    'quadratic_weighted_kappa',
+    'qwk_off_by_one'
+}

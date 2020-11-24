@@ -30,11 +30,11 @@ def main(argv=None):
     """
 
     # Get command line arguments
-    parser = ArgumentParser(description='Runs the scikit-learn '
-                                        'experiments in a given config file. '
-                                        'If Grid Map is installed, jobs will '
-                                        'automatically be created and run on '
-                                        'a DRMAA-compatible cluster.',
+    parser = ArgumentParser(description='Runs the scikit-learn experiments '
+                                        'in a given config file. If Grid Map '
+                                        'is installed, jobs will automatically'
+                                        ' be created and run on a '
+                                        'DRMAA-compatible cluster.',
                             formatter_class=ArgumentDefaultsHelpFormatter,
                             conflict_handler='resolve')
     parser.add_argument('config_file',
@@ -64,14 +64,14 @@ def main(argv=None):
                         action='store_true')
     parser.add_argument('-l',
                         '--local',
-                        help='Do not use the Grid Engine for running jobs and '
-                             'just run everything sequentially on the local '
+                        help='Do not use the Grid Engine for running jobs and'
+                             ' just run everything sequentially on the local '
                              'machine. ',
                         action='store_true')
     parser.add_argument('-m',
                         '--machines',
-                        help='comma-separated list of machines to add to '
-                             'the gridmap whitelist (if not specified, all '
+                        help='comma-separated list of machines to add to the '
+                             'gridmap whitelist (if not specified, all '
                              'available machines are used). Note that full '
                              'names must be specified, e.g., '
                              '"nlp.research.ets.org"',
@@ -82,10 +82,10 @@ def main(argv=None):
                         default='all.q')
     parser.add_argument('-r',
                         '--resume',
-                        help='If result files already exist for an experiment '
-                             'do not overwrite them. This is very useful when '
-                             'doing a large ablation experiment and part of it '
-                             'crashes.',
+                        help='If result files already exist for an experiment'
+                             ' do not overwrite them. This is very useful '
+                             'when doing a large ablation experiment and part'
+                             ' of it crashes.',
                         action='store_true')
     parser.add_argument('-v',
                         '--verbose',
@@ -102,8 +102,9 @@ def main(argv=None):
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
-                                '%(message)s'), level=log_level)
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
+                               '%(message)s',
+                        level=log_level)
 
     machines = None
     if args.machines:
