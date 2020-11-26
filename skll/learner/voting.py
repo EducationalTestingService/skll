@@ -25,6 +25,7 @@ from .utils import (add_unseen_labels,
                     compute_evaluation_metrics,
                     get_acceptable_classification_metrics,
                     get_acceptable_regression_metrics,
+                    get_predictions,
                     setup_cv_fold_iterator,
                     setup_cv_split_iterator,
                     train_and_score,
@@ -342,7 +343,7 @@ class VotingLearner(object):
         - if ``class_labels`` is ``True``, class labels are returned
           as well as written out.
         - if ``class_labels`` is ``False`` and the classifier is probabilistic
-          (i.e., ``self..probability`` is ``True``), class probabilities are
+          (i.e., ``self.probability`` is ``True``), class probabilities are
           returned as well as written out.
         - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
           (i.e., ``self..probability`` is ``False``), class indices are returned
@@ -382,86 +383,68 @@ class VotingLearner(object):
         example_ids = examples.ids
 
         # get the test set features in the right format
-        X_test = examples.vectorizer.inverse_transform(examples.features)
+        xtest = examples.vectorizer.inverse_transform(examples.features)
 
-        # get the predictions from the meta-learner
-        yhat = self._model.predict(X_test)
+        # get all possible kinds of predictions from the meta-learner
+        prediction_dict = get_predictions(self, xtest)
 
         # decide what predictions to write and what predictions to return
         # by default, these are just what is output by the model
-        predictions_to_write = yhat
-        predictions_to_return = yhat
+        to_write = prediction_dict["raw"]
+        to_return = prediction_dict["raw"]
 
-        # if it's a classifier
+        # for classifiers ...
         if self.learner_type == "classifier":
 
-            # get its predicted classes
-            classes = np.array([self.learners[0].label_list[int(pred)] for pred in yhat])
-
-            # we always want to write out classes as our predictions
-            predictions_to_write = classes
-
-            # if the user specified `class_labels`, then we want
-            # to return classes as well
+            # return and write class labels if they were explicitly asked for
             if class_labels:
-                predictions_to_return = classes
+                to_return = to_write = prediction_dict["labels"]
+            else:
+                # return and write probabilities
+                if self.voting == "soft":
+                    to_return = to_write = prediction_dict["probabilities"]
+                # return class indices and write labels
+                else:
+                    to_return = prediction_dict["raw"]
+                    to_write = prediction_dict["labels"]
+
+        # for regressors, it's really simple
+        else:
+            to_write = to_return = prediction_dict["raw"]
 
         # write out the meta-estimator predictions if we are asked to
         if prediction_prefix is not None:
             write_predictions(example_ids,
-                              predictions_to_write,
+                              to_write,
                               prediction_prefix,
                               self.learner_type,
                               append=append,
                               label_list=self.learners[0].label_list)
 
-        # get and write each underlying estimator's predictions if asked for
+        # get and write each underlying learner's predictions if asked for
         if individual_predictions:
 
             # create a dictionary to hold the individual predictions
             individual_predictions_dict = {}
 
-            # iterate over each underlying estimator
-            for name, estimator in self.model.named_estimators_.items():
+            # iterate over each underlying learner along with names
+            for (name, learner) in zip(self.model.named_estimators_, self.learners):
 
-                # get the right predictions first
-                yhat = estimator.predict_proba(X_test) if self.voting == "soft" else estimator.predict(X_test)
-                estimator_predictions_to_write = yhat
-                estimator_predictions_to_return = yhat
-
-                # for classifiers if we did hard voting, we always want to
-                # write out the classes but return classes only if asked for
-                if self.learner_type == "classifier" and self.voting != "soft":
-
-                    # get its predicted classes
-                    classes = np.array([self.learners[0].label_list[int(pred)] for pred in yhat])
-
-                    # we always want to write out classes as our predictions
-                    estimator_predictions_to_write = classes
-
-                    # if the user specified `class_labels`, then we want
-                    # to return classes as well
-                    if class_labels:
-                        estimator_predictions_to_return = classes
+                # the learner's `predict()` method should handle everything
+                learner_prediction_prefix = f"{prediction_prefix}_{name}" if prediction_prefix is not None else None
+                learner_predictions = learner.predict(examples,
+                                                      prediction_prefix=learner_prediction_prefix,
+                                                      append=append,
+                                                      class_labels=class_labels)
 
                 # save this estimator's predictions in the dictionary
-                individual_predictions_dict[name] = estimator_predictions_to_return
-
-                # also write them out if asked
-                if prediction_prefix is not None:
-                    write_predictions(example_ids,
-                                      estimator_predictions_to_write,
-                                      prediction_prefix + f"_{name}",
-                                      self.learner_type,
-                                      append=append,
-                                      label_list=self.learners[0].label_list,
-                                      probability=self.voting == "soft")
+                individual_predictions_dict[name] = learner_predictions
         else:
             individual_predictions_dict = None
 
         # return the tuple of the meta-estimator predictions array
         # and the dictionary containing the individual predictions
-        return (predictions_to_return, individual_predictions_dict)
+        return (to_return, individual_predictions_dict)
 
     def evaluate(self,
                  examples,
@@ -547,6 +530,7 @@ class VotingLearner(object):
                                                      self.learner_type,
                                                      label_dict=train_and_test_label_dict,
                                                      grid_objective=grid_objective,
+                                                     probability=self.voting == "soft",
                                                      logger=self.logger)
 
         # add in the model parameters and return
@@ -698,7 +682,7 @@ class VotingLearner(object):
         # Set up the cross-validation iterator.
         kfold, cv_groups = setup_cv_fold_iterator(cv_folds,
                                                   examples,
-                                                  self.model_type._learner_type,
+                                                  self.learner_type,
                                                   stratified=stratified,
                                                   logger=self.logger)
 
