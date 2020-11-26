@@ -1350,7 +1350,7 @@ class Learner(object):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 if sp.issparse(xtest):
                     xtest = xtest.todense()
-            xtest = self.sampler.fit_transform(xtest)
+            xtest = self.sampler.transform(xtest)
 
         # get the various prediction from this learner on these features
         prediction_dict = get_predictions(self, xtest)
