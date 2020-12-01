@@ -8,6 +8,7 @@ Module containing tests for voting learners.
 
 from itertools import product
 from pathlib import Path
+from skll.data.featureset import FeatureSet
 from skll import learner
 
 import numpy as np
@@ -31,6 +32,7 @@ from sklearn.model_selection import (cross_val_predict,
                                      learning_curve,
                                      PredefinedSplit,
                                      ShuffleSplit)
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC, SVR
 from skll import Learner, run_configuration
@@ -195,53 +197,49 @@ def check_train_voting_learner(learner_type, with_grid_search):
 
     # if the voting learner is a classifier
     if learner_type == "classifier":
-
-        # instantiate and train on the digits training set
-        learner_names = ["LogisticRegression", "SVC"]
-        vl = VotingLearner(learner_names)
-        vl.train(TRAIN_FS_DIGITS,
-                 grid_objective="accuracy",
-                 grid_search=with_grid_search)
-
-        # check that the training sets the proper attributes
-        assert_is_not_none(vl.model)
-        assert(isinstance(vl.model, VotingClassifier))
-        eq_(len(vl.learners), 2)
-        assert(isinstance(vl.learners[0].model, LogisticRegression))
-        assert(isinstance(vl.learners[1].model, SVC))
-        eq_(len(vl.model.named_estimators_), 2)
-        pipeline1 = vl.model.named_estimators_["LogisticRegression"]
-        pipeline2 = vl.model.named_estimators_["SVC"]
-        assert(isinstance(pipeline1, Pipeline))
-        assert(isinstance(pipeline2, Pipeline))
-        assert(isinstance(pipeline1['estimator'], LogisticRegression))
-        assert(isinstance(pipeline2['estimator'], SVC))
-    # else if it's a regressor
+        # use 3 classifiers, the digits training set, and accuracy
+        # as the grid search objective
+        learner_names = ["LogisticRegression", "SVC", "MultinomialNB"]
+        estimator_classes = [LogisticRegression, SVC, MultinomialNB]
+        featureset = TRAIN_FS_DIGITS
+        objective = "accuracy"
     else:
+        # otherwise use 3 regressors, the housing training set
+        # and pearson as the grid search objective
+        learner_names = ["LinearRegression", "SVR", "RandomForestRegressor"]
+        estimator_classes = [LinearRegression, SVR, RandomForestRegressor]
+        featureset = TRAIN_FS_HOUSING
+        objective = "pearson"
 
-        # instantiate and train on the housing training set
-        vl = VotingLearner(["LinearRegression", "SVR", "RandomForestRegressor"])
-        vl.train(TRAIN_FS_HOUSING,
-                 grid_objective="pearson",
-                 grid_search=with_grid_search)
+    # instantiate and train a voting learner
+    vl = VotingLearner(learner_names)
+    vl.train(featureset,
+             grid_objective=objective,
+             grid_search=with_grid_search)
 
-        # check that the training sets the proper attributes
-        assert_is_not_none(vl.model)
-        assert(isinstance(vl.model, VotingRegressor))
-        eq_(len(vl.learners), 3)
-        assert(isinstance(vl.learners[0].model, LinearRegression))
-        assert(isinstance(vl.learners[1].model, SVR))
-        assert(isinstance(vl.learners[2].model, RandomForestRegressor))
-        eq_(len(vl.model.named_estimators_), 3)
-        pipeline1 = vl.model.named_estimators_["LinearRegression"]
-        pipeline2 = vl.model.named_estimators_["SVR"]
-        pipeline3 = vl.model.named_estimators_["RandomForestRegressor"]
-        assert(isinstance(pipeline1, Pipeline))
-        assert(isinstance(pipeline2, Pipeline))
-        assert(isinstance(pipeline3, Pipeline))
-        assert(isinstance(pipeline1['estimator'], LinearRegression))
-        assert(isinstance(pipeline2['estimator'], SVR))
-        assert(isinstance(pipeline3['estimator'], RandomForestRegressor))
+    # check that the training worked
+    assert_is_not_none(vl.model)
+    model_type = VotingClassifier if learner_type == "classifier" else VotingRegressor
+    assert(isinstance(vl.model, model_type))
+
+    # check the underlying learners
+    eq_(len(vl.learners), len(learner_names))
+    assert(isinstance(vl.learners[0].model, estimator_classes[0]))
+    assert(isinstance(vl.learners[1].model, estimator_classes[1]))
+    assert(isinstance(vl.learners[2].model, estimator_classes[2]))
+
+    eq_(len(vl.model.named_estimators_), 3)
+    pipeline1 = vl.model.named_estimators_[learner_names[0]]
+    pipeline2 = vl.model.named_estimators_[learner_names[1]]
+    pipeline3 = vl.model.named_estimators_[learner_names[2]]
+
+    assert(isinstance(pipeline1, Pipeline))
+    assert(isinstance(pipeline2, Pipeline))
+    assert(isinstance(pipeline3, Pipeline))
+
+    assert(isinstance(pipeline1['estimator'], estimator_classes[0]))
+    assert(isinstance(pipeline2['estimator'], estimator_classes[1]))
+    assert(isinstance(pipeline3['estimator'], estimator_classes[2]))
 
 
 def test_train_voting_learner():
@@ -253,15 +251,20 @@ def test_train_voting_learner():
 
 def test_train_voting_learner_with_custom_path():
     """Test voting classifier with custom learner path."""
-    # instantiate and train on iris example training set
+
+    # instantiate and train a voting classifier on the digits training set
     learner_names = ["CustomLogisticRegressionWrapper", "SVC"]
     vl = VotingLearner(learner_names,
                        custom_learner_path=str(CUSTOM_LEARNER_PATH))
     vl.train(TRAIN_FS_DIGITS,
              grid_objective="accuracy",
              grid_search=False)
+
+    # check that we have a trained model
     assert_is_not_none(vl.model)
     assert(isinstance(vl.model, VotingClassifier))
+
+    # check the underlying learners
     eq_(len(vl.learners), 2)
     eq_(vl.learners[0].model.__class__.__name__, "CustomLogisticRegressionWrapper")
     assert(isinstance(vl.learners[1].model, SVC))
