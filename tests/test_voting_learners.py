@@ -8,6 +8,7 @@ Module containing tests for voting learners.
 
 from itertools import product
 from pathlib import Path
+from skll import learner
 
 import numpy as np
 from nose.tools import (assert_almost_equal,
@@ -15,7 +16,6 @@ from nose.tools import (assert_almost_equal,
                         eq_,
                         ok_,
                         raises)
-from numpy.core.fromnumeric import argmax
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises_regex)
@@ -78,88 +78,92 @@ def check_init_voting_learner(learner_type,
     # if the voting learner is a classifier
     if learner_type == "classifier":
 
+        # we are using 2 learners
+        learner_names = ["LogisticRegression", "SVC", "MultinomialNB"]
+
         # add the model parameters for each of the learners
         if model_kwargs_list is not None:
-            model_kwargs_list = [{"C": 0.01}, {"C": 10.0, "kernel": "poly"}]
-            kwargs["model_kwargs_list"] = model_kwargs_list
-
-        # initialize the voting classifier
-        vl = VotingLearner(["LogisticRegression", "SVC"], **kwargs)
-
-        # check that we have the right number and type of learners
-        eq_(len(vl.learners), 2)
-        eq_(vl.learners[0].model_type.__name__, "LogisticRegression")
-        eq_(vl.learners[1].model_type.__name__, "SVC")
-
-        # check that the probability attribute is properly set
-        eq_(vl.learners[0].probability, voting_type == "soft")
-        eq_(vl.learners[1].probability, voting_type == "soft")
-
-        # check that we have the right attribute values
-        eq_(vl.learner_type, learner_type)
-        eq_(vl.label_dict, None)
-        expected_voting_type = "hard" if voting_type is None else voting_type
-        eq_(vl.voting, expected_voting_type)
-        expected_feature_scaling = 'none' if feature_scaling is None else feature_scaling
-        eq_(vl.learners[0]._feature_scaling, expected_feature_scaling)
-        eq_(vl.learners[1]._feature_scaling, expected_feature_scaling)
-        if model_kwargs_list:
-            eq_(vl.model_kwargs_list, model_kwargs_list)
-            eq_(vl.learners[0].model_kwargs["C"], 0.01)
-            eq_(vl.learners[1].model_kwargs["C"], 10.0)
-            eq_(vl.learners[1].model_kwargs["kernel"], "poly")
-        else:
-            eq_(vl.model_kwargs_list, [])
-        if sampler_list:
-            eq_(vl.sampler_list, sampler_list)
-            eq_(vl.learners[0].sampler.__class__.__name__, "RBFSampler")
-            eq_(vl.learners[1].sampler.__class__.__name__, "Nystroem")
-        else:
-            eq_(vl.sampler_list, [])
-        eq_(vl.sampler_kwargs_list, [])
-
-    # else if it's a voting regressor
+            given_model_kwargs_list = [{"C": 0.01},
+                                       {"C": 10.0, "kernel": "poly"},
+                                       {"alpha": 0.75}]
+            kwargs["model_kwargs_list"] = given_model_kwargs_list
     else:
 
+        # we are using 2 learners
+        learner_names = ["LinearRegression", "SVR", "RandomForestRegressor"]
+
         # add the model parameters for each of the learners
         if model_kwargs_list is not None:
-            model_kwargs_list = [{},
-                                 {"C": 0.01, "kernel": "linear"},
-                                 {"n_estimators": 1000}]
-            kwargs["model_kwargs_list"] = model_kwargs_list
+            given_model_kwargs_list = [{},
+                                       {"C": 0.01, "kernel": "linear"},
+                                       {"n_estimators": 1000}]
+            kwargs["model_kwargs_list"] = given_model_kwargs_list
 
-        # initialize the voting regressor
-        vl = VotingLearner(["LinearRegression",
-                            "SVR",
-                            "RandomForestRegressor"], **kwargs)
+    # initialize the voting classifier
+    vl = VotingLearner(learner_names, **kwargs)
 
-        # check that we have the right number and type of learners
-        eq_(len(vl.learners), 3)
-        eq_(vl.learners[0].model_type.__name__, "LinearRegression")
-        eq_(vl.learners[1].model_type.__name__, "SVR")
-        eq_(vl.learners[2].model_type.__name__, "RandomForestRegressor")
+    # check that we have the right number and type of learners
+    eq_(len(vl.learners), len(learner_names))
+    eq_(vl.learners[0].model_type.__name__, learner_names[0])
+    eq_(vl.learners[1].model_type.__name__, learner_names[1])
+    eq_(vl.learners[2].model_type.__name__, learner_names[2])
 
-        # check that we have the right attribute values
-        eq_(vl.learner_type, learner_type)
-        eq_(vl.label_dict, None)
-        eq_(vl.voting, None)
-        expected_feature_scaling = 'none' if feature_scaling is None else feature_scaling
-        eq_(vl.learners[0]._feature_scaling, expected_feature_scaling)
-        eq_(vl.learners[1]._feature_scaling, expected_feature_scaling)
-        if model_kwargs_list:
-            eq_(vl.model_kwargs_list, model_kwargs_list)
-            eq_(vl.learners[1].model_kwargs["C"], 0.01)
-            eq_(vl.learners[1].model_kwargs["kernel"], "linear")
-            eq_(vl.learners[2].model_kwargs["n_estimators"], 1000)
+    # check that the probability attribute is properly set
+    if learner_type == "classifier":
+        eq_(vl.learners[0].probability, voting_type == "soft")
+        eq_(vl.learners[1].probability, voting_type == "soft")
+        eq_(vl.learners[2].probability, voting_type == "soft")
+
+    # check that we have the right attribute values
+    eq_(vl.learner_type, learner_type)
+    eq_(vl.label_dict, None)
+
+    # check that voting type is properly set
+    if learner_type == "classifier":
+        expected_voting_type = "hard" if voting_type is None else voting_type
+    else:
+        expected_voting_type = None
+    eq_(vl.voting, expected_voting_type)
+
+    # check that feature scaling is properly set
+    expected_feature_scaling = 'none' if feature_scaling is None else feature_scaling
+    eq_(vl.learners[0]._feature_scaling, expected_feature_scaling)
+    eq_(vl.learners[1]._feature_scaling, expected_feature_scaling)
+    eq_(vl.learners[2]._feature_scaling, expected_feature_scaling)
+
+    # check that any given model kwargs are reflected
+    if model_kwargs_list:
+        eq_(vl.model_kwargs_list, given_model_kwargs_list)
+        if learner_type == "classifier":
+            eq_(vl.learners[0].model_kwargs["C"],
+                given_model_kwargs_list[0]["C"])
+            eq_(vl.learners[1].model_kwargs["C"],
+                given_model_kwargs_list[1]["C"])
+            eq_(vl.learners[1].model_kwargs["kernel"],
+                given_model_kwargs_list[1]["kernel"])
+            eq_(vl.learners[2].model_kwargs["alpha"],
+                given_model_kwargs_list[2]["alpha"])
         else:
-            eq_(vl.model_kwargs_list, [])
-        if sampler_list:
-            eq_(vl.sampler_list, sampler_list)
-            eq_(vl.learners[0].sampler.__class__.__name__, "RBFSampler")
-            eq_(vl.learners[1].sampler.__class__.__name__, "Nystroem")
-        else:
-            eq_(vl.sampler_list, [])
-        eq_(vl.sampler_kwargs_list, [])
+            eq_(vl.learners[1].model_kwargs["C"],
+                given_model_kwargs_list[1]["C"])
+            eq_(vl.learners[1].model_kwargs["kernel"],
+                given_model_kwargs_list[1]["kernel"])
+            eq_(vl.learners[2].model_kwargs["n_estimators"],
+                given_model_kwargs_list[2]["n_estimators"])
+    else:
+        eq_(vl.model_kwargs_list, [])
+
+    # check that any given samplers are actually used
+    if sampler_list:
+        eq_(vl.sampler_list, sampler_list)
+        eq_(vl.learners[0].sampler.__class__.__name__, "RBFSampler")
+        eq_(vl.learners[1].sampler.__class__.__name__, "Nystroem")
+        eq_(vl.learners[2].sampler, None)
+    else:
+        eq_(vl.sampler_list, [])
+
+    # check that sampler kwargs is reflected
+    eq_(vl.sampler_kwargs_list, [])
 
 
 def test_init_voting_learner():
