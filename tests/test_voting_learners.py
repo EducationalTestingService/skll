@@ -288,132 +288,97 @@ def check_evaluate_voting_learner(learner_type,
     # same in scikit-learn space and compare the objective and value for
     # on additional output metric
 
+    # set various parameters based on whether we are using
+    # a classifier or a regressor
     if learner_type == "classifier":
-
-        # use three classifiers for voting
         learner_names = ["LogisticRegression", "SVC", "MultinomialNB"]
-
-        # use soft voting type if given
         voting_type = "soft" if with_soft_voting else "hard"
-
-        # instantiate and train a SKLL voting classifier on digits training set
-        skll_vl = VotingLearner(learner_names,
-                                voting=voting_type,
-                                feature_scaling="none",
-                                min_feature_count=0)
-        skll_vl.train(TRAIN_FS_DIGITS,
-                      grid_objective="accuracy",
-                      grid_search=with_grid_search)
-
-        # evaluate on the digits test set
-        res = skll_vl.evaluate(TEST_FS_DIGITS,
-                               grid_objective="accuracy",
-                               output_metrics=["f1_score_macro"])
-
-        # make sure all the parts of the results tuple
-        # have the expected types
-        ok_(len(res), 6)
-        ok_(isinstance(res[0], list))   # confusion matrix
-        ok_(isinstance(res[1], float))  # accuracy
-        ok_(isinstance(res[2], dict))   # result dict
-        ok_(isinstance(res[3], dict))   # model params
-        ok_(isinstance(res[4], float))  # objective
-        ok_(isinstance(res[5], dict))   # metric scores
-
-        # make sure the model params in the results match what we passed in
-        estimators_from_params = res[3]['estimators']
-        for idx, (name, estimator) in enumerate(estimators_from_params):
-            eq_(name, learner_names[idx])
-            ok_(isinstance(estimator, Pipeline))
-        eq_(res[3]['voting'], voting_type)
-
-        # get the values for the objective and the additional metric
-        skll_accuracy = res[1]
-        skll_f1_score = res[5]["f1_score_macro"]
-
-        # now get the estimators that underlie the SKLL voting classifier
-        # and use them to train a voting classifier directly in scikit-learn
-        named_estimators = skll_vl.model.named_estimators_
-        clf1 = named_estimators["LogisticRegression"]["estimator"]
-        clf2 = named_estimators["SVC"]["estimator"]
-        clf3 = named_estimators["MultinomialNB"]["estimator"]
-        sklearn_vl = VotingClassifier(estimators=[('lr', clf1),
-                                                  ('svc', clf2),
-                                                  ('nb', clf3)],
-                                      voting=voting_type)
-        sklearn_vl.fit(TRAIN_FS_DIGITS.features, TRAIN_FS_DIGITS.labels)
-
-        # get the predictions from this voting classifier on the test ste
-        sklearn_predictions = sklearn_vl.predict(TEST_FS_DIGITS.features)
-
-        # compute the accuracy and f1-score values directly
-        sklearn_accuracy = accuracy_score(TEST_FS_DIGITS.labels, sklearn_predictions)
-        sklearn_f1_score = f1_score(TEST_FS_DIGITS.labels,
-                                    sklearn_predictions,
-                                    average="macro")
-
-        # check that the values match between SKLL and scikit-learn
-        assert_almost_equal(skll_accuracy, sklearn_accuracy)
-        assert_almost_equal(skll_f1_score, sklearn_f1_score)
+        train_fs, test_fs = TRAIN_FS_DIGITS, TEST_FS_DIGITS
+        objective = "accuracy"
+        extra_metric = "f1_score_macro"
+        expected_voting_type = voting_type
     else:
-        # instantiate and train a SKLL voting regressor on housing training set
         learner_names = ["LinearRegression", "SVR", "Ridge"]
-        skll_vl = VotingLearner(learner_names,
-                                feature_scaling="none",
-                                min_feature_count=0)
-        skll_vl.train(TRAIN_FS_HOUSING,
-                      grid_objective="pearson",
-                      grid_search=with_grid_search)
+        voting_type = "hard"
+        train_fs, test_fs = TRAIN_FS_HOUSING, TEST_FS_HOUSING
+        objective = "pearson"
+        extra_metric = "neg_mean_squared_error"
+        expected_voting_type = None
 
-        # evaluate on the housing test set
-        res = skll_vl.evaluate(TEST_FS_HOUSING,
-                               grid_objective="pearson",
-                               output_metrics=["neg_mean_squared_error"])
+    # instantiate and train a SKLL voting learner
+    skll_vl = VotingLearner(learner_names,
+                            voting=voting_type,
+                            feature_scaling="none",
+                            min_feature_count=0)
+    skll_vl.train(train_fs,
+                  grid_objective=objective,
+                  grid_search=with_grid_search)
 
-        # make sure all the parts of the results tuple
-        # have the expected types; note that the confusion
-        # matrix and accuracy fields are `None` since we
-        # are doing regression
-        ok_(len(res), 6)
-        eq_(res[0], None)               # None
-        eq_(res[0], None)               # None
-        ok_(isinstance(res[2], dict))   # result dict
-        ok_(isinstance(res[3], dict))   # model params
-        ok_(isinstance(res[4], float))  # objective
-        ok_(isinstance(res[5], dict))   # metric scores
+    # evaluate on the test set
+    res = skll_vl.evaluate(test_fs,
+                           grid_objective=objective,
+                           output_metrics=[extra_metric])
 
-        # make sure the model params match what we passed in
-        estimators_from_params = res[3]['estimators']
-        for idx, (name, estimator) in enumerate(estimators_from_params):
-            eq_(name, learner_names[idx])
-            ok_(isinstance(estimator, Pipeline))
-        eq_(res[3]['voting'], None)
+    # make sure all the parts of the results tuple
+    # have the expected types
+    ok_(len(res), 6)
+    if learner_type == "classifier":
+        ok_(isinstance(res[0], list))  # confusion matrix
+        ok_(isinstance(res[1], float))  # accuracy
+    else:
+        eq_(res[0], None)  # no confusion matrix
+        eq_(res[1], None)  # no accuracy
+    ok_(isinstance(res[2], dict))   # result dict
+    ok_(isinstance(res[3], dict))   # model params
+    ok_(isinstance(res[4], float))  # objective
+    ok_(isinstance(res[5], dict))   # metric scores
 
-        # get the values for the objective and the additional metric
-        skll_pearson = res[4]
-        skll_mse = -1 * res[5]["neg_mean_squared_error"]
+    # make sure the model params in the results match what we passed in
+    estimators_from_params = res[3]['estimators']
+    for idx, (name, estimator) in enumerate(estimators_from_params):
+        eq_(name, learner_names[idx])
+        ok_(isinstance(estimator, Pipeline))
+    if learner_type == "classifier":
+        eq_(res[3]['voting'], expected_voting_type)
 
-        # now get the estimators that underlie the SKLL voting regressor
-        # and use them to train a voting regressor directly in scikit-learn
-        named_estimators = skll_vl.model.named_estimators_
-        clf1 = named_estimators["LinearRegression"]["estimator"]
-        clf2 = named_estimators["SVR"]["estimator"]
-        clf3 = named_estimators["Ridge"]["estimator"]
-        sklearn_vl = VotingRegressor(estimators=[('lr', clf1),
-                                                 ('svr', clf2),
-                                                 ('rdg', clf3)])
-        sklearn_vl.fit(TRAIN_FS_HOUSING.features, TRAIN_FS_HOUSING.labels)
+    # get the values for the objective and the additional metric
+    skll_objective = res[4]
+    skll_extra_metric = res[5][extra_metric]
 
-        # get the predictions from this voting regressor on the test set
-        sklearn_predictions = sklearn_vl.predict(TEST_FS_HOUSING.features)
+    # now get the estimators that underlie the SKLL voting classifier
+    # and use them to train a voting classifier directly in scikit-learn
+    named_estimators = skll_vl.model.named_estimators_
+    clf1 = named_estimators[learner_names[0]]["estimator"]
+    clf2 = named_estimators[learner_names[1]]["estimator"]
+    clf3 = named_estimators[learner_names[2]]["estimator"]
+    sklearn_model_type = (VotingClassifier if learner_type == "classifier"
+                          else VotingRegressor)
+    sklearn_model_kwargs = {"estimators": [('clf1', clf1),
+                                           ('clf2', clf2),
+                                           ('clf3', clf3)]}
+    if learner_type == "classifier":
+        sklearn_model_kwargs["voting"] = voting_type
+    sklearn_vl = sklearn_model_type(**sklearn_model_kwargs)
+    sklearn_vl.fit(train_fs.features, train_fs.labels)
 
-        # compute the pearson and MSE values directly
-        sklearn_pearson = pearsonr(TEST_FS_HOUSING.labels, sklearn_predictions)[0]
-        sklearn_mse = mean_squared_error(TEST_FS_HOUSING.labels, sklearn_predictions)
+    # get the predictions from this voting classifier on the test ste
+    sklearn_predictions = sklearn_vl.predict(test_fs.features)
 
-        # check that the values match between SKLL and scikit-learn
-        assert_almost_equal(skll_pearson, sklearn_pearson)
-        assert_almost_equal(skll_mse, sklearn_mse)
+    # compute the values of the objective and the extra metric
+    # on the scikit-learn side
+    if learner_type == "classifier":
+        sklearn_objective = accuracy_score(test_fs.labels, sklearn_predictions)
+        sklearn_extra_metric = f1_score(test_fs.labels,
+                                        sklearn_predictions,
+                                        average="macro")
+    else:
+        sklearn_objective = pearsonr(test_fs.labels, sklearn_predictions)[0]
+        sklearn_extra_metric = -1 * mean_squared_error(test_fs.labels,
+                                                       sklearn_predictions)
+
+    # check that the values match between SKLL and scikit-learn
+    assert_almost_equal(skll_objective, sklearn_objective)
+    assert_almost_equal(skll_extra_metric, sklearn_extra_metric)
 
 
 def test_evaluate_voting_learner():
