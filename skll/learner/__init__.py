@@ -1698,16 +1698,15 @@ class Learner(object):
         if len(examples) < 500:
             if not override_minimum:
                 raise ValueError(
-                    f'Number of training examples provided - {len(examples)} '
-                    f'- is less than the minimum needed - {500} - for the '
-                    'learning curve to be reliable.'
+                    f"Number of training examples provided ({len(examples)}) "
+                    "is less than the minimum needed (500) for the "
+                    "learning curve to be reliable."
                 )
             else:
                 self.logger.warning(
-                    'Because the number of training examples provided - '
-                    f'{len(examples)} - is less than the ideal minimum - '
-                    f'{500} - learning curve generation is unreliable and '
-                    'might break')
+                    "Learning curves can be unreliable for examples fewer than "
+                    f"500. You provided {len(examples)}."
+                )
 
         # raise a warning if we are using a probabilistic classifier
         # since that means we cannot use the predictions directly
