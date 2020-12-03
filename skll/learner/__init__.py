@@ -1194,11 +1194,14 @@ class Learner(object):
 
         For regressors, the returned and written-out predictions are identical.
         However, for classifiers:
+
         - if ``class_labels`` is ``True``, class labels are returned
           as well as written out.
+
         - if ``class_labels`` is ``False`` and the classifier is probabilistic
           (i.e., ``self..probability`` is ``True``), class probabilities are
           returned as well as written out.
+
         - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
           (i.e., ``self..probability`` is ``False``), class indices are returned
           and class labels are written out.
