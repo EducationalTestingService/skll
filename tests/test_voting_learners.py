@@ -55,13 +55,13 @@ FS_HOUSING.ids = np.arange(2000)
 CUSTOM_LEARNER_PATH = MY_DIR / "other" / "custom_logistic_wrapper.py"
 
 
-def check_init_voting_learner(learner_type,
-                              voting_type,
-                              feature_scaling,
-                              pos_label_str,
-                              min_feature_count,
-                              model_kwargs_list,
-                              sampler_list):
+def check_initialize(learner_type,
+                     voting_type,
+                     feature_scaling,
+                     pos_label_str,
+                     min_feature_count,
+                     model_kwargs_list,
+                     sampler_list):
     """Run checks for voting learner initialization."""
     # instantiate the keyword arguments for the initialization
     kwargs = {}
@@ -168,7 +168,7 @@ def check_init_voting_learner(learner_type,
     eq_(vl.sampler_kwargs_list, [])
 
 
-def test_init_voting_learner():
+def test_initialize():
     for (learner_type,
          voting_type,
          feature_scaling,
@@ -182,7 +182,7 @@ def test_init_voting_learner():
                                   [None, 5],
                                   [None, True],
                                   [None, True]):
-        yield (check_init_voting_learner,
+        yield (check_initialize,
                learner_type,
                voting_type,
                feature_scaling,
@@ -192,7 +192,7 @@ def test_init_voting_learner():
                sampler_list)
 
 
-def check_train_voting_learner(learner_type, with_grid_search):
+def check_train(learner_type, with_grid_search):
     """Run checks when training voting learners."""
 
     # if the voting learner is a classifier
@@ -242,14 +242,14 @@ def check_train_voting_learner(learner_type, with_grid_search):
     assert(isinstance(pipeline3['estimator'], estimator_classes[2]))
 
 
-def test_train_voting_learner():
+def test_train():
     for (learner_type,
          with_grid_search) in product(["classifier", "regressor"],
                                       [False, True]):
-        yield check_train_voting_learner, learner_type, with_grid_search
+        yield check_train, learner_type, with_grid_search
 
 
-def test_train_voting_learner_with_custom_path():
+def test_train_with_custom_path():
     """Test voting classifier with custom learner path."""
 
     # instantiate and train a voting classifier on the digits training set
@@ -277,9 +277,9 @@ def test_train_voting_learner_with_custom_path():
     assert(isinstance(pipeline2['estimator'], SVC))
 
 
-def check_evaluate_voting_learner(learner_type,
-                                  with_grid_search,
-                                  with_soft_voting):
+def check_evaluate(learner_type,
+                   with_grid_search,
+                   with_soft_voting):
     """Run checks when evaluating voting learners."""
 
     # to test the evaluate() method, we instantiate the SKLL voting learner,
@@ -381,7 +381,7 @@ def check_evaluate_voting_learner(learner_type,
     assert_almost_equal(skll_extra_metric, sklearn_extra_metric)
 
 
-def test_evaluate_voting_learner():
+def test_evaluate():
     for (learner_type,
          with_grid_search,
          with_soft_voting) in product(["classifier", "regressor"],
@@ -391,18 +391,18 @@ def test_evaluate_voting_learner():
         if learner_type == "regressor" and with_soft_voting:
             continue
         else:
-            yield (check_evaluate_voting_learner,
+            yield (check_evaluate,
                    learner_type,
                    with_grid_search,
                    with_soft_voting)
 
 
-def check_predict_voting_learner(learner_type,
-                                 with_grid_search,
-                                 with_soft_voting,
-                                 with_class_labels,
-                                 with_file_output,
-                                 with_individual_predictions):
+def check_predict(learner_type,
+                  with_grid_search,
+                  with_soft_voting,
+                  with_class_labels,
+                  with_file_output,
+                  with_individual_predictions):
 
     # to test the predict() method, we instantiate the SKLL voting learner,
     # train it on either the digits (classification) or housing (regression)
@@ -553,7 +553,7 @@ def check_predict_voting_learner(learner_type,
             ok_(Path(f"{prediction_prefix}_{learner_names[2]}_predictions.tsv").exists())
 
 
-def test_predict_voting_learner():
+def test_predict():
     for (learner_type,
          with_grid_search,
          with_soft_voting,
@@ -570,7 +570,7 @@ def test_predict_voting_learner():
                 (with_soft_voting or with_class_labels)):
             continue
         else:
-            yield (check_predict_voting_learner,
+            yield (check_predict,
                    learner_type,
                    with_grid_search,
                    with_soft_voting,
@@ -579,7 +579,7 @@ def test_predict_voting_learner():
                    with_individual_predictions)
 
 
-def check_learning_curve_voting_learner(learner_type, with_soft_voting):
+def check_learning_curve(learner_type, with_soft_voting):
 
     # to test the learning_curve() method, we instantiate the SKLL voting
     # learner, get the SKLL learning curve output; then we do the
@@ -663,7 +663,7 @@ def check_learning_curve_voting_learner(learner_type, with_soft_voting):
         assert np.allclose(test_scores1, test_scores2)
 
 
-def test_learning_curve_voting_learner():
+def test_learning_curve():
     for (learner_type,
          with_soft_voting) in product(["classifier", "regressor"],
                                       [False, True]):
@@ -671,12 +671,12 @@ def test_learning_curve_voting_learner():
         if learner_type == "regressor" and with_soft_voting:
             continue
         else:
-            yield (check_learning_curve_voting_learner,
+            yield (check_learning_curve,
                    learner_type,
                    with_soft_voting)
 
 
-def check_xval_voting_learner_without_grid_search(learner_type, with_soft_voting):
+def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
 
     # to test the cross_validate() method without grid search, we
     # instantiate the SKLL voting learner, call `cross_validate()` on it
@@ -874,7 +874,7 @@ def check_xval_voting_learner_without_grid_search(learner_type, with_soft_voting
         assert_allclose(df_preds["skll"], df_preds["sklearn"])
 
 
-def test_cross_validate_voting_learner_without_grid_search():
+def test_cross_validate_without_grid_search():
     for (learner_type,
          with_soft_voting) in product(["classifier", "regressor"],
                                       [False, True]):
@@ -882,6 +882,6 @@ def test_cross_validate_voting_learner_without_grid_search():
         if learner_type == "regressor" and with_soft_voting:
             continue
         else:
-            yield (check_xval_voting_learner_without_grid_search,
+            yield (check_cross_validate_without_grid_search,
                    learner_type,
                    with_soft_voting)
