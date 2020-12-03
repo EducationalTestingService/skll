@@ -1044,8 +1044,10 @@ def train_and_score(learner,
         test_predictions = test_predictions[0]
 
     # if we got probabilities, then we need to run argmax over them
-    # to convert them into indices
-    if hasattr(learner, "probability") and learner.probability:
+    # to convert them into indices; this needs to handle both
+    # regular learners as well as voting learners
+    if ((hasattr(learner, "probability") and learner.probability) or
+            (hasattr(learner, "voting") and learner.voting == "soft")):
         train_predictions = np.argmax(train_predictions, axis=1)
         test_predictions = np.argmax(test_predictions, axis=1)
 
