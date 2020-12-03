@@ -752,7 +752,8 @@ class VotingLearner(object):
                        examples,
                        metric,
                        cv_folds=10,
-                       train_sizes=np.linspace(0.1, 1.0, 5)):
+                       train_sizes=np.linspace(0.1, 1.0, 5),
+                       override_minimum=False):
         """
         Generates learning curves for the voting meta-estimator on the training
         examples via cross-validation. Adapted from the scikit-learn code for
@@ -782,6 +783,13 @@ class VotingLearner(object):
             samples usually have to be big enough to contain
             at least one sample from each class.
             Defaults to  ``np.linspace(0.1, 1.0, 5)``.
+        override_minimum : bool, optional
+            Learning curves can be unreliable for very small sizes
+            esp. for > 2 labels. If this option is set to ``True``, the
+            learning curve would be generated even if the number
+            of example is less 500 along with a warning. If ``False``,
+            the curve is not generated and an exception is raised instead.
+            Defaults to ``False``.
 
         Returns
         -------
@@ -792,7 +800,34 @@ class VotingLearner(object):
         num_examples : list of int
             The numbers of training examples used to generate
             the curve
+
+        Raises
+        ------
+        ValueError
+            If the number of examples is less than 500.
         """
+        # check that the number of training examples is more than the minimum
+        # needed for generating a reliable learning curve
+        if len(examples) < 500:
+            if not override_minimum:
+                raise ValueError(
+                    f"Number of training examples provided ({len(examples)}) "
+                    "is less than the minimum needed (500) for the "
+                    "learning curve to be reliable."
+                )
+            else:
+                self.logger.warning(
+                    "Learning curves can be unreliable for examples fewer than "
+                    f"500. You provided {len(examples)}."
+                )
+
+        # raise a warning if we are using a probabilistic classifier
+        # since that means we cannot use the predictions directly
+        if self.voting == "soft":
+            self.logger.warning("For soft-voting classifiers, the most likely "
+                                "class will be computed via an argmax before "
+                                "computing the curve.")
+
         # Call learning curve before since we need to train
         # which will properly initialize the underlying learners
         # before they are eventually trained
