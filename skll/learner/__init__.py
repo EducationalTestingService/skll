@@ -1706,6 +1706,13 @@ class Learner(object):
                     f'{500} - learning curve generation is unreliable and '
                     'might break')
 
+        # raise a warning if we are using a probabilistic classifier
+        # since that means we cannot use the predictions directly
+        if self.probability:
+            self.logger.warning("Since ``probability`` is set, the most likely "
+                                "class will be computed via an argmax before "
+                                "computing the curve.")
+
         # Call train setup before since we need to train
         # the learner eventually
         self._create_label_dict(examples)
