@@ -31,23 +31,24 @@ def main(argv=None):
 
     # Get command line arguments
     parser = argparse.ArgumentParser(
-        description="Takes an input feature file and removes any instances or "
-                    "features that do not match the specified patterns.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        description="Takes an input feature file and removes any instances or"
+                    " features that do not match the specified patterns.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument('infile',
                         help='input feature file (ends in .arff, .csv, '
                              '.jsonlines, .ndj, or .tsv)')
     parser.add_argument('outfile',
-                        help='output feature file (must have same extension as '
-                             'input file)')
+                        help='output feature file (must have same extension '
+                             'as input file)')
     parser.add_argument('-f', '--feature',
                         help='A feature in the feature file you would like to '
                              'keep.  If unspecified, no features are removed.',
                         nargs='*')
     parser.add_argument('-I', '--id',
                         help='An instance ID in the feature file you would '
-                             'like to keep.  If unspecified, no instances are '
-                             'removed based on their IDs.',
+                             'like to keep.  If unspecified, no instances are'
+                             ' removed based on their IDs.',
                         nargs='*')
     parser.add_argument('--id_col',
                         help='Name of the column which contains the instance '
@@ -59,19 +60,20 @@ def main(argv=None):
                         action='store_true')
     parser.add_argument('-L', '--label',
                         help='A label in the feature file you would like to '
-                             'keep.  If unspecified, no instances are removed '
-                             'based on their labels.',
+                             'keep.  If unspecified, no instances are removed'
+                             ' based on their labels.',
                         nargs='*')
     parser.add_argument('-l', '--label_col',
                         help='Name of the column which contains the class '
                              'labels in ARFF, CSV, or TSV files. For ARFF '
-                             'files, this must be the final column to count as '
-                             'the label.',
+                             'files, this must be the final column to count '
+                             'as the label.',
                         default='y')
     parser.add_argument('-rb', '--replace_blanks_with',
-                        help='Specifies a new value with which to replace blank values '
-                             'in all columns in the file. To replace blanks differently '
-                             'in each column, use the SKLL Reader API directly.',
+                        help='Specifies a new value with which to replace '
+                             'blank values in all columns in the file. To '
+                             'replace blanks differently in each column, use '
+                             'the SKLL Reader API directly.',
                         default=None)
     parser.add_argument('-db', '--drop_blanks',
                         action='store_true',
@@ -86,8 +88,8 @@ def main(argv=None):
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
-                                '%(message)s'))
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
+                               '%(message)s')
     logger = logging.getLogger(__name__)
 
     # all extensions except .libsvm can be processed
@@ -98,8 +100,8 @@ def main(argv=None):
     output_extension = os.path.splitext(args.outfile)[1].lower()
 
     if input_extension == '.libsvm':
-        logger.error('Cannot filter LibSVM files.  Please use skll_convert to '
-                     'convert to a different datatype first.')
+        logger.error('Cannot filter LibSVM files.  Please use skll_convert to'
+                     ' convert to a different datatype first.')
         sys.exit(1)
 
     if input_extension not in valid_extensions:
@@ -118,8 +120,8 @@ def main(argv=None):
         drop_blanks = args.drop_blanks
         if drop_blanks and replace_blanks_with is not None:
             raise ValueError("You cannot both drop blanks and replace them. "
-                             "'replace_blanks_with' can only have a value when "
-                             "'drop_blanks' is `False`.")
+                             "'replace_blanks_with' can only have a value "
+                             "when 'drop_blanks' is `False`.")
         replace_blanks_with = (None if replace_blanks_with is None
                                else safe_float(replace_blanks_with))
         kwargs = {'replace_blanks_with': replace_blanks_with,

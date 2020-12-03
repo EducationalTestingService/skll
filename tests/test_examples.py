@@ -59,12 +59,18 @@ def setup():
 
     # Create all of the data sets we need
     python_binary = join(_binary_dir, 'python') if _binary_dir else 'python'
-    subprocess.run([python_binary, join(examples_dir, 'make_titanic_example_data.py')],
-                   cwd=dirname(_new_titanic_dir))
-    subprocess.run([python_binary, join(examples_dir, 'make_boston_example_data.py')],
-                   cwd=dirname(_new_boston_dir))
-    subprocess.run([python_binary, join(examples_dir, 'make_iris_example_data.py')],
-                   cwd=dirname(_new_iris_dir))
+    subprocess.run(
+        [python_binary, join(examples_dir, 'make_titanic_example_data.py')],
+        cwd=dirname(_new_titanic_dir)
+    )
+    subprocess.run(
+        [python_binary, join(examples_dir, 'make_boston_example_data.py')],
+        cwd=dirname(_new_boston_dir)
+    )
+    subprocess.run(
+        [python_binary, join(examples_dir, 'make_iris_example_data.py')],
+        cwd=dirname(_new_iris_dir)
+    )
 
     # Move all the configuration files to our new directories
     for cfg_file in glob(join(_old_titanic_dir, '**.cfg')):
@@ -97,7 +103,11 @@ def run_configuration_and_check_outputs(config_path):
     # if the results path exists, check the output
     if exists(results_json_path):
 
-        results_json_exp_path = join(other_dir, 'expected', basename(results_json_path))
+        results_json_exp_path = join(
+            other_dir,
+            'expected',
+            basename(results_json_path)
+        )
         with open(results_json_path) as results_json_file:
             results_obj = json.load(results_json_file)[0]
         with open(results_json_exp_path) as results_json_exp_file:

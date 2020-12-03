@@ -173,9 +173,8 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     # `mean_squared_error` is no longer supported.
     # It has been replaced by `neg_mean_squared_error`
     if 'mean_squared_error' in metrics:
-        raise ValueError("The metric \"mean_squared_error\" "
-                         "is no longer supported."
-                         " please use the metric "
+        raise ValueError("The metric \"mean_squared_error\" is no longer "
+                         "supported. please use the metric "
                          "\"neg_mean_squared_error\" instead.")
 
     return metrics

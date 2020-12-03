@@ -473,7 +473,7 @@ def _classify_featureset(args):
 
         # write out the cv folds if required
         if task == 'cross_validate' and save_cv_folds:
-            skll_fold_ids_file = experiment_name + '_skll_fold_ids.csv'
+            skll_fold_ids_file = f'{experiment_name}_skll_fold_ids.csv'
             with open(join(results_path, skll_fold_ids_file),
                       'w') as output_file:
                 _write_skll_folds(skll_fold_ids, output_file)
@@ -602,21 +602,21 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
                             expanded_fs.append(sorted(featureset -
                                                       set(excluded_features)))
                             expanded_fs_names.append(
-                                featureset_name
-                                + '_minus_'
-                                + _munge_featureset_name(excluded_features))
+                                f'{featureset_name}_minus_'
+                                f'{_munge_featureset_name(excluded_features)}'
+                            )
                 # Otherwise, just expand removing the specified number at a time
                 else:
                     for excluded_features in combinations(features, ablation):
                         expanded_fs.append(sorted(featureset -
                                                   set(excluded_features)))
                         expanded_fs_names.append(
-                            featureset_name
-                            + '_minus_'
-                            + _munge_featureset_name(excluded_features))
+                            f'{featureset_name}_minus_'
+                            f'{_munge_featureset_name(excluded_features)}'
+                        )
                 # Also add version with nothing removed as baseline
                 expanded_fs.append(features)
-                expanded_fs_names.append(featureset_name + '_all')
+                expanded_fs_names.append(f'{featureset_name}_all')
 
             # Replace original feature set lists
             featuresets = expanded_fs
@@ -636,15 +636,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
         # allowed
         for featureset_name in featureset_names:
             if len(featureset_name) > 210:
-                raise OSError('System generated file length '
-                              f'"{featureset_name}" exceeds the maximum '
-                              'length supported.  Please specify names of '
-                              'your datasets with "featureset_names".  If you'
-                              ' are running ablation experiment, please '
-                              'reduce the length of the features in '
-                              '"featuresets" because the auto-generated name '
-                              'would be longer than the file system can '
-                              'handle')
+                raise OSError(
+                    f'System generated file length "{featureset_name}" '
+                    'exceeds the maximum length supported.  Please specify '
+                    'names of your datasets with "featureset_names".  If you '
+                    'are running ablation experiment, please reduce the '
+                    'length of the features in "featuresets" because the '
+                    'auto-generated name would be longer than the file system'
+                    ' can handle')
 
         # if the task is learning curve, and ``metrics`` was specified, then
         # assign the value of ``metrics`` to ``grid_objectives`` - this lets
@@ -781,14 +780,14 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
 
         # write out the summary results file
         if (task == 'cross_validate' or task == 'evaluate') and write_summary:
-            summary_file_name = experiment_name + '_summary.tsv'
+            summary_file_name = f'{experiment_name}_summary.tsv'
             with open(join(results_path,
                            summary_file_name), 'w', newline='') as output_file:
                 _write_summary_file(result_json_paths,
                                     output_file,
                                     ablation=ablation)
         elif task == 'learning_curve':
-            output_file_name = experiment_name + '_summary.tsv'
+            output_file_name = f'{experiment_name}_summary.tsv'
             output_file_path = join(results_path, output_file_name)
             with open(output_file_path, 'w', newline='') as output_file:
                 _write_learning_curve_file(result_json_paths, output_file)

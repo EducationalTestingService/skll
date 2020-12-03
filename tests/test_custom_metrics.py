@@ -294,11 +294,11 @@ def test_custom_metric_config_experiment():
     # Run experiment
     train_file = join(other_dir, "examples_train.jsonlines")
     test_file = join(other_dir, "examples_test.jsonlines")
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_custom_metrics"
-                                                            ".template.cfg"),
-                                                       train_file,
-                                                       test_file)
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_custom_metrics.template.cfg"),
+        train_file,
+        test_file
+    )
     run_configuration(config_path, local=True, quiet=True)
 
     # Check results for objective functions and output metrics
@@ -364,11 +364,11 @@ def test_custom_metric_config_experiment_with_kappa_filename():
     # Run experiment
     train_file = join(other_dir, "examples_train.jsonlines")
     test_file = join(other_dir, "examples_test.jsonlines")
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_custom_metrics_"
-                                                            "kappa.template.cfg"),
-                                                       train_file,
-                                                       test_file)
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_custom_metrics_kappa.template.cfg"),
+        train_file,
+        test_file
+    )
     run_configuration(config_path, local=True, quiet=True)
 
     # Check results for objective functions and output metrics
@@ -398,11 +398,11 @@ def test_custom_metric_config_with_invalid_custom_metric():
     # Run experiment
     train_file = join(other_dir, "examples_train.jsonlines")
     test_file = join(other_dir, "examples_test.jsonlines")
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_custom_metrics_bad"
-                                                            ".template.cfg"),
-                                                       train_file,
-                                                       test_file)
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_custom_metrics_bad.template.cfg"),
+        train_file,
+        test_file
+    )
     # since this configuration file consists of an invalid
     # metric, this should raise an error
     assert_raises_regex(ValueError,
@@ -461,12 +461,11 @@ def test_config_with_inverted_custom_metric():
     # for grid saerch defined as simply 1 minus the macro-averaged F1 score
     train_file = join(other_dir, "examples_train.jsonlines")
     test_file = join(other_dir, "examples_test.jsonlines")
-    config_path1 = fill_in_config_paths_for_single_file(join(config_dir,
-                                                             "test_custom_"
-                                                             "metrics_kwargs1"
-                                                             ".template.cfg"),
-                                                        train_file,
-                                                        test_file)
+    config_path1 = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_custom_metrics_kwargs1.template.cfg"),
+        train_file,
+        test_file
+    )
     run_configuration(config_path1, local=True, quiet=True)
 
     # laod the results
@@ -479,12 +478,11 @@ def test_config_with_inverted_custom_metric():
 
     # now run the second experiment that is identical except that
     # that it uses the regular macro-averaged F1 score for grid search
-    config_path2 = fill_in_config_paths_for_single_file(join(config_dir,
-                                                             "test_custom_"
-                                                             "metrics_kwargs2"
-                                                             ".template.cfg"),
-                                                        train_file,
-                                                        test_file)
+    config_path2 = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_custom_metrics_kwargs2.template.cfg"),
+        train_file,
+        test_file
+    )
     run_configuration(config_path2, local=True, quiet=True)
 
     # laod the results
@@ -546,12 +544,11 @@ def test_config_with_custom_prob_metric():
     # for grid search but with a learner that does not produce probabilities
     train_file = join(other_dir, "examples_train.jsonlines")
     test_file = join(other_dir, "examples_test.jsonlines")
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_custom_"
-                                                            "metrics_kwargs3"
-                                                            ".template.cfg"),
-                                                       train_file,
-                                                       test_file)
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_custom_metrics_kwargs3.template.cfg"),
+        train_file,
+        test_file
+    )
 
     # this should fail as expected
     assert_raises_regex(AttributeError,
@@ -560,12 +557,11 @@ def test_config_with_custom_prob_metric():
 
     # now run the second experiment that is identical except that
     # the learner now produces probabilities
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_custom_"
-                                                            "metrics_kwargs4"
-                                                            ".template.cfg"),
-                                                       train_file,
-                                                       test_file)
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_custom_metrics_kwargs4.template.cfg"),
+        train_file,
+        test_file
+    )
     # this should succeed and produce results
     run_configuration(config_path, local=True, quiet=True)
 

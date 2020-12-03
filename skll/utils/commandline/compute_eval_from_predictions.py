@@ -16,8 +16,8 @@ from skll.version import __version__
 
 # Make warnings from built-in warnings module get formatted more nicely
 logging.captureWarnings(True)
-logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
-                            '%(message)s'))
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
+                           '%(message)s')
 logger = logging.getLogger(__name__)
 
 
@@ -166,10 +166,11 @@ def main(argv=None):
         is used instead.
     """
     # Get command line arguments
-    parser = argparse.ArgumentParser(description=("Computes evaluation metrics from "
-                                                  "prediction files after you have run an "
-                                                  "experiment."),
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Computes evaluation metrics from prediction files after "
+                    "you have run an experiment.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument('examples_file',
                         help='SKLL input file with labeled examples')
     parser.add_argument('predictions_file',
@@ -178,9 +179,10 @@ def main(argv=None):
                         help='metrics to compute',
                         nargs='+')
     parser.add_argument('--method', '-m',
-                        help="How to generate a prediction from the class probabilities. "
-                             "Supported methods are 'highest' (default) and "
-                             "'expected_value' (only works with integer classes).")
+                        help="How to generate a prediction from the class "
+                             "probabilities. Supported methods are 'highest' "
+                             "(default) and 'expected_value' (only works with"
+                             " integer classes).")
     parser.add_argument('--version', action='version',
                         version=f'%(prog)s {__version__}')
     args = parser.parse_args(argv)

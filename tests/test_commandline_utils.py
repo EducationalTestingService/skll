@@ -164,10 +164,11 @@ def test_warning_when_prediction_method_and_no_probabilities():
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
-    log_msg = ("skll.utils.commandline.compute_eval_from_predictions: "
-               "WARNING: A prediction method was provided, but the "
-               "predictions file doesn't contain probabilities. Ignoring "
-               "prediction method 'highest'.")
+    log_msg = (
+        "skll.utils.commandline.compute_eval_from_predictions: WARNING: A "
+        "prediction method was provided, but the predictions file doesn't "
+        "contain probabilities. Ignoring prediction method 'highest'."
+    )
 
     eq_(lc.handler.buffer[-1], log_msg)
 
@@ -240,10 +241,14 @@ def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes
     calculated via expected_value and the classes are non numeric.
     """
 
-    pred_path = join(other_dir,
-                     'test_compute_eval_from_predictions_nonnumeric_classes_predictions.tsv')
-    input_path = join(other_dir,
-                      'test_compute_eval_from_predictions_nonnumeric_classes.jsonlines')
+    pred_path = join(
+        other_dir,
+        'test_compute_eval_from_predictions_nonnumeric_classes_predictions.tsv'
+    )
+    input_path = join(
+        other_dir,
+        'test_compute_eval_from_predictions_nonnumeric_classes.jsonlines'
+    )
 
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'explained_variance',
                                          'r2', '--method', 'expected_value']
@@ -256,10 +261,14 @@ def test_conflicting_prediction_and_example_ids():
     Make sure compute_eval_from_predictions breaks with ValueError when predictions and
     examples don't have the same id set in 'compute_eval_from_predictions'.
     """
-    pred_path = join(other_dir,
-                     'test_compute_eval_from_predictions_probs_predictions.tsv')
-    input_path = join(other_dir,
-                      'test_compute_eval_from_predictions_different_ids.jsonlines')
+    pred_path = join(
+        other_dir,
+        'test_compute_eval_from_predictions_probs_predictions.tsv'
+    )
+    input_path = join(
+        other_dir,
+        'test_compute_eval_from_predictions_different_ids.jsonlines'
+    )
 
     compute_eval_from_predictions_cmd = [input_path, pred_path, 'pearson']
     cefp.main(compute_eval_from_predictions_cmd)
@@ -551,10 +560,11 @@ def test_generate_predictions_console_bad_input_ext():
 
     _ = _run_generate_predictions_and_capture_output(generate_cmd, 'stdout')
 
-    expected_log_mssg = ("skll.utils.commandline.generate_predictions: ERROR:"
-                         " Input file must be in either .arff, .csv, "
-                         ".jsonlines, .libsvm, .ndj, or .tsv format.  "
-                         "Skipping file fake_input_file.txt")
+    expected_log_mssg = (
+        "skll.utils.commandline.generate_predictions: ERROR: Input file must "
+        "be in either .arff, .csv, .jsonlines, .libsvm, .ndj, or .tsv format."
+        "  Skipping file fake_input_file.txt"
+    )
 
     eq_(lc.handler.buffer[-1], expected_log_mssg)
 
@@ -1096,10 +1106,12 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
         feature_values = [t[1] for t in sorted(feature_values)]
 
         assert_array_almost_equal(intercept, learner.model.intercept_)
-        if task in ['regression_svr_linear', 'regression_svr_linear_with_hashing']:
+        if task in ['regression_svr_linear',
+                    'regression_svr_linear_with_hashing']:
             coef = learner.model.coef_.toarray()[0]
             assert_allclose(coef, feature_values)
-        elif task in ['regression_svr_linear_with_scaling', 'regression_svr_linear_with_scaling_and_hashing']:
+        elif task in ['regression_svr_linear_with_scaling',
+                      'regression_svr_linear_with_scaling_and_hashing']:
             coef = learner.model.coef_[0]
             assert_allclose(coef, feature_values)
         else:
@@ -1788,14 +1800,24 @@ def test_filter_features_with_replace_blanks_with():
     csv_infile = join(other_dir, 'features', 'features_replace_blanks_with.csv')
     tsv_infile = join(other_dir, 'features', 'features_replace_blanks_with.tsv')
 
-    csv_outfile = join(other_dir, 'features', 'features_replace_blanks_with_out.csv')
-    tsv_outfile = join(other_dir, 'features', 'features_replace_blanks_with_out.tsv')
+    csv_outfile = join(
+        other_dir,
+        'features',
+        'features_replace_blanks_with_out.csv'
+    )
+    tsv_outfile = join(
+        other_dir,
+        'features',
+        'features_replace_blanks_with_out.tsv'
+    )
 
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep='\t')
 
-    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L', '--replace_blanks_with', '4.5']
-    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L', '--replace_blanks_with', '4.5']
+    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L',
+                               '--replace_blanks_with', '4.5']
+    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L',
+                               '--replace_blanks_with', '4.5']
 
     ff.main(filter_features_csv_cmd)
     ff.main(filter_features_tsv_cmd)
@@ -1812,8 +1834,16 @@ def test_filter_features_with_replace_blanks_with_and_drop_blanks_raises_error()
 
     df = pd.DataFrame(np.random.randn(5, 10))
 
-    csv_infile = join(other_dir, 'features', 'features_drop_and_replace_error.csv')
-    csv_outfile = join(other_dir, 'features', 'features_drop_and_replace_error_out.csv')
+    csv_infile = join(
+        other_dir,
+        'features',
+        'features_drop_and_replace_error.csv'
+    )
+    csv_outfile = join(
+        other_dir,
+        'features',
+        'features_drop_and_replace_error_out.csv'
+    )
 
     df.to_csv(csv_infile, index=False)
 

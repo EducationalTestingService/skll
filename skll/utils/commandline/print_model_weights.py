@@ -33,8 +33,8 @@ def main(argv=None):
         If None, ``sys.argv[1:]`` is used instead.
     """
 
-    parser = argparse.ArgumentParser(description="Prints out the weights of a \
-                                                  given model.",
+    parser = argparse.ArgumentParser(description="Prints out the weights of a"
+                                                 " given model.",
                                      conflict_handler='resolve',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('model_file', help='model file to load')
@@ -54,8 +54,8 @@ def main(argv=None):
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
-                                '%(message)s'))
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
+                               '%(message)s')
 
     k = args.k if args.k > 0 else None
 

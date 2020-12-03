@@ -895,10 +895,14 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
     # Load each unmerged feature file in the `from_suffix` format and convert
     # it to the `to_suffix` format
     for feature in range(num_feat_files):
-        input_file_path = join(dirpath,
-                               f'{feature_name_prefix}_{feature}{with_labels_part}{from_suffix}')
-        output_file_path = join(dirpath,
-                                f'{feature_name_prefix}_{feature}{with_labels_part}{to_suffix}')
+        input_file_path = join(
+            dirpath,
+            f'{feature_name_prefix}_{feature}{with_labels_part}{from_suffix}'
+        )
+        output_file_path = join(
+            dirpath,
+            f'{feature_name_prefix}_{feature}{with_labels_part}{to_suffix}'
+        )
         skll_convert_args = ['--quiet', input_file_path, output_file_path]
         if not with_labels:
             skll_convert_args.append('--no_labels')
@@ -1125,12 +1129,18 @@ def test_reading_csv_and_tsv_with_drop_blanks():
                              'C': [6, 3, 7], 'L': [None, None, None]},
                             index=['EXAMPLE_0', 'EXAMPLE_1', 'EXAMPLE_2'])
 
-    fs_expected = FeatureSet.from_data_frame(expected, 'test', labels_column='L')
+    fs_expected = FeatureSet.from_data_frame(expected,
+                                             'test',
+                                             labels_column='L')
 
-    fs_csv = CSVReader(StringIO(test_csv), drop_blanks=True, pandas_kwargs=kwargs).read()
+    fs_csv = CSVReader(StringIO(test_csv),
+                       drop_blanks=True,
+                       pandas_kwargs=kwargs).read()
     fs_csv.name = 'test'
 
-    fs_tsv = TSVReader(StringIO(test_tsv), drop_blanks=True, pandas_kwargs=kwargs).read()
+    fs_tsv = TSVReader(StringIO(test_tsv),
+                       drop_blanks=True,
+                       pandas_kwargs=kwargs).read()
     fs_tsv.name = 'test'
 
     eq_(fs_csv, fs_expected)
@@ -1155,10 +1165,14 @@ def test_reading_csv_and_tsv_with_fill_blanks():
 
     fs_expected = FeatureSet.from_data_frame(expected, 'test', labels_column='L')
 
-    fs_csv = CSVReader(StringIO(test_csv), replace_blanks_with=4.5, pandas_kwargs=kwargs).read()
+    fs_csv = CSVReader(StringIO(test_csv),
+                       replace_blanks_with=4.5,
+                       pandas_kwargs=kwargs).read()
     fs_csv.name = 'test'
 
-    fs_tsv = TSVReader(StringIO(test_tsv), replace_blanks_with=4.5, pandas_kwargs=kwargs).read()
+    fs_tsv = TSVReader(StringIO(test_tsv),
+                       replace_blanks_with=4.5,
+                       pandas_kwargs=kwargs).read()
     fs_tsv.name = 'test'
 
     eq_(fs_csv, fs_expected)
@@ -1184,10 +1198,14 @@ def test_reading_csv_and_tsv_with_fill_blanks_with_dictionary():
     fs_expected = FeatureSet.from_data_frame(expected, 'test', labels_column='L')
 
     replacement_dict = {'A': 4.5, 'B': 2.5, 'C': 1}
-    fs_csv = CSVReader(StringIO(test_csv), replace_blanks_with=replacement_dict, pandas_kwargs=kwargs).read()
+    fs_csv = CSVReader(StringIO(test_csv),
+                       replace_blanks_with=replacement_dict,
+                       pandas_kwargs=kwargs).read()
     fs_csv.name = 'test'
 
-    fs_tsv = TSVReader(StringIO(test_tsv), replace_blanks_with=replacement_dict, pandas_kwargs=kwargs).read()
+    fs_tsv = TSVReader(StringIO(test_tsv),
+                       replace_blanks_with=replacement_dict,
+                       pandas_kwargs=kwargs).read()
     fs_tsv.name = 'test'
 
     eq_(fs_csv, fs_expected)
@@ -1198,4 +1216,6 @@ def test_reading_csv_and_tsv_with_fill_blanks_with_dictionary():
 def test_drop_blanks_and_replace_blanks_with_raises_error():
 
     test_csv = '1,1,6\n2,,2\n3,9,3\n,,\n,5,\n,,\n2,7,7'
-    CSVReader(StringIO(test_csv), replace_blanks_with=4.5, drop_blanks=True).read()
+    CSVReader(StringIO(test_csv),
+              replace_blanks_with=4.5,
+              drop_blanks=True).read()

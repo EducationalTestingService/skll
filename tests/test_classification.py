@@ -212,8 +212,11 @@ def check_label_index_order_with_pos_label_str(use_api=True):
                                                  values_to_fill_dict,
                                                  'pos_label_str')
             _ = run_configuration(config_path, local=True, quiet=True)
-            clf = Learner.from_file(join(output_dir,
-                                         "pos_label_str_via_config_train_pos_label_str_train.jsonlines_LogisticRegression.model"))
+            clf = Learner.from_file(
+                join(output_dir,
+                     "pos_label_str_via_config_train_pos_label_str_train."
+                     "jsonlines_LogisticRegression.model")
+            )
 
         reverse_label_dict = {y: x for x, y in clf.label_dict.items()}
         label_order_from_dict = [reverse_label_dict[x] for x in range(len(unique_label_list))]
@@ -322,8 +325,11 @@ def check_binary_predictions_for_pos_label_str(label_list,
                                              good_probability_option=True)
 
         _ = run_configuration(config_path, local=True, quiet=True)
-        clf_skll = Learner.from_file(join(output_dir,
-                                     "pos_label_str_predict_train_pos_label_str_train.jsonlines_LogisticRegression.model"))
+        clf_skll = Learner.from_file(
+            join(output_dir,
+                 "pos_label_str_predict_train_pos_label_str_train.jsonlines"
+                 "_LogisticRegression.model")
+        )
 
     skll_predictions = clf_skll.predict(test_fs, class_labels=False)
 
@@ -715,13 +721,11 @@ def test_predict_on_subset_with_existing_model():
     learner.save(model_filename)
 
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_single_file_saved_subset"
-                                                            ".template.cfg"),
-                                                       join(train_dir, 'train_single_file.jsonlines'),
-                                                       join(test_dir,
-                                                            'test_single_file_subset.'
-                                                            'jsonlines'))
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_single_file_saved_subset.template.cfg"),
+        join(train_dir, 'train_single_file.jsonlines'),
+        join(test_dir, 'test_single_file_subset.jsonlines')
+    )
     run_configuration(config_path, quiet=True, overwrite=False)
 
     # Check results
@@ -741,21 +745,18 @@ def test_train_file_test_file_ablation():
     make_single_file_featureset_data()
 
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_single_file"
-                                                            ".template.cfg"),
-                                                       join(train_dir,
-                                                            'train_single_file'
-                                                            '.jsonlines'),
-                                                       join(test_dir,
-                                                            'test_single_file.'
-                                                            'jsonlines'))
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_single_file.template.cfg"),
+        join(train_dir, 'train_single_file.jsonlines'),
+        join(test_dir, 'test_single_file.jsonlines')
+    )
     run_configuration(config_path, quiet=True, ablation=None)
 
     # check that we see the message that ablation was ignored in the experiment log
     # Check experiment log output
     with open(join(output_dir, 'train_test_single_file.log')) as f:
-        cv_file_pattern = re.compile('Not enough featuresets for ablation. Ignoring.')
+        cv_file_pattern = re.compile(r'Not enough featuresets for ablation. '
+                                     r'Ignoring.')
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -766,16 +767,12 @@ def test_train_file_and_train_directory():
     Test that train_file + train_directory = ValueError
     """
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_single_file"
-                                                            ".template.cfg"),
-                                                       join(train_dir,
-                                                            'train_single_file'
-                                                            '.jsonlines'),
-                                                       join(test_dir,
-                                                            'test_single_file.'
-                                                            'jsonlines'),
-                                                       train_directory='foo')
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_single_file.template.cfg"),
+        join(train_dir, 'train_single_file.jsonlines'),
+        join(test_dir, 'test_single_file.jsonlines'),
+        train_directory='foo'
+    )
     parse_config_file(config_path)
 
 
@@ -785,16 +782,12 @@ def test_test_file_and_test_directory():
     Test that test_file + test_directory = ValueError
     """
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_single_file"
-                                                            ".template.cfg"),
-                                                       join(train_dir,
-                                                            'train_single_file'
-                                                            '.jsonlines'),
-                                                       join(test_dir,
-                                                            'test_single_file.'
-                                                            'jsonlines'),
-                                                       test_directory='foo')
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_single_file.template.cfg"),
+        join(train_dir, 'train_single_file.jsonlines'),
+        join(test_dir, 'test_single_file.jsonlines'),
+        test_directory='foo'
+    )
     parse_config_file(config_path)
 
 
@@ -1418,8 +1411,10 @@ def check_metric_values_for_classification(metric_name,
                                            use_probabilities):
 
     # get the config template
-    config_template_path = join(config_dir,
-                                'test_metric_values_for_classification.template.cfg')
+    config_template_path = join(
+        config_dir,
+        'test_metric_values_for_classification.template.cfg'
+    )
 
     # instantiate a random number generator
     prng = np.random.RandomState(123456789)
@@ -1441,9 +1436,10 @@ def check_metric_values_for_classification(metric_name,
     NDJWriter.for_path(train_file, train_fs).write()
     NDJWriter.for_path(test_file, test_fs).write()
 
-    experiment_name = (f'clf_metric_value_{use_probabilities}_'
-                       f'{len(label_array)}_{label_type.__name__}_'
-                       f'{metric_name}')
+    experiment_name = (
+        f'clf_metric_value_{use_probabilities}_{len(label_array)}_'
+        f'{label_type.__name__}_{metric_name}'
+    )
 
     values_to_fill_dict = {'experiment_name': experiment_name,
                            'train_file': train_file,
@@ -1464,9 +1460,9 @@ def check_metric_values_for_classification(metric_name,
     results_json_path = run_configuration(config_path, local=True, quiet=True)[0]
     with open(results_json_path) as results_json_file:
         results_obj = json.load(results_json_file)[0]
-    model_file_path = join(output_dir,
-                           f'{experiment_name}_metric_'
-                           f'{results_obj["learner_name"]}.model')
+    model_file_path = join(
+        output_dir,
+        f'{experiment_name}_metric_{results_obj["learner_name"]}.model')
     clf = Learner.from_file(model_file_path)
 
     # get the value of the metric from SKLL
@@ -1745,10 +1741,13 @@ def test_load_old_skll_model():
     # suppress warnings and check that error is raised
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        assert_raises_regex(ValueError,
-                            r"created with v2.1 of SKLL, which is "
-                            r"incompatible with the current",
-                            Learner.from_file, model_path)
+        assert_raises_regex(
+            ValueError,
+            r"created with v2.1 of SKLL, which is incompatible with the "
+            r"current",
+            Learner.from_file,
+            model_path
+        )
 
 
 def check_predict_return_and_write(learner, test_fs, class_labels):

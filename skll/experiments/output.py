@@ -196,8 +196,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         raise ValueError('Result dictionary list is empty!')
 
     lrd = learner_result_dicts[0]
-    print(f'Experiment Name: {lrd["experiment_name"]}',
-          file=output_file)
+    print(f'Experiment Name: {lrd["experiment_name"]}', file=output_file)
     print(f'SKLL Version: {lrd["version"]}', file=output_file)
     print(f'Training Set: {lrd["train_set_name"]}', file=output_file)
     print(f'Training Set Size: {lrd["train_set_size"]}', file=output_file)

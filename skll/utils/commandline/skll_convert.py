@@ -47,48 +47,50 @@ def main(argv=None):
 
     # Get command line arguments
     parser = argparse.ArgumentParser(
-        description="Takes an input feature file and converts it to another \
-                     format. Formats are determined automatically from file \
-                     extensions.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        description="Takes an input feature file and converts it to another "
+                    "format. Formats are determined automatically from file "
+                    "extensions.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument('infile',
-                        help='input feature file (ends in .arff, .csv, \
-                              .jsonlines, .libsvm, .ndj, or .tsv)')
+                        help='input feature file (ends in .arff, .csv, '
+                             '.jsonlines, .libsvm, .ndj, or .tsv)')
     parser.add_argument('outfile',
-                        help='output feature file (ends in .arff, .csv, \
-                              .jsonlines, .libsvm, .ndj, or .tsv)')
+                        help='output feature file (ends in .arff, .csv, '
+                             '.jsonlines, .libsvm, .ndj, or .tsv)')
     parser.add_argument('-i', '--id_col',
-                        help='Name of the column which contains the instance \
-                              IDs in ARFF, CSV, or TSV files.',
+                        help='Name of the column which contains the instance '
+                             'IDs in ARFF, CSV, or TSV files.',
                         default='id')
     label_group = parser.add_mutually_exclusive_group(required=False)
     label_group.add_argument('-l',
                              '--label_col',
-                             help='Name of the column which contains the class \
-                                   labels in ARFF, CSV, or TSV files. For ARFF \
-                                   files, this must be the final column to count as\
-                                   the label.',
+                             help='Name of the column which contains the '
+                                  'class labels in ARFF, CSV, or TSV files. '
+                                  'For ARFF files, this must be the final '
+                                  'column to count as the label.',
                              default='y')
     label_group.add_argument('--no_labels',
                              action='store_true',
                              default=False,
-                             help='Used to indicate that the input data has no labels.')
+                             help='Used to indicate that the input data has '
+                                  'no labels.')
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
                         action='store_true')
     parser.add_argument('--arff_regression',
-                        help='Create ARFF files for regression, not \
-                              classification.',
+                        help='Create ARFF files for regression, not '
+                             'classification.',
                         action='store_true')
     parser.add_argument('--arff_relation',
                         help='Relation name to use for ARFF file.',
                         default='skll_relation')
     parser.add_argument('--reuse_libsvm_map',
-                        help='If you want to output multiple files that use \
-                              the same mapping from labels and features to \
-                              numbers when writing libsvm files, you can \
-                              specify an existing .libsvm file to reuse the \
-                              mapping from.',
+                        help='If you want to output multiple files that use '
+                             'the same mapping from labels and features to '
+                             'numbers when writing libsvm files, you can '
+                             'specify an existing .libsvm file to reuse the '
+                             'mapping from.',
                         type=argparse.FileType('rb'))
     parser.add_argument('--version', action='version',
                         version=f'%(prog)s {__version__}')
@@ -96,8 +98,8 @@ def main(argv=None):
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - '
-                                '%(message)s'))
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
+                               '%(message)s')
     logger = logging.getLogger(__name__)
 
     # make sure the input file extension is one we can process
