@@ -687,9 +687,9 @@ def test_backward_compatibility():
     assert_almost_equal(new_predictions, old_predictions)
 
 
-def test_learning_curve_implementation():
+def check_learning_curve_implementation(with_probability):
     """
-    Test to ensure that the learning curve results match scikit-learn
+    Ensure that the learning curve results match scikit-learn
     """
 
     # This test is different from the other tests which just use regression data.
@@ -724,7 +724,9 @@ def test_learning_curve_implementation():
 
     # we don't want to filter out any features since scikit-learn
     # does not do that either
-    learner = Learner('MultinomialNB', min_feature_count=0)
+    learner = Learner('MultinomialNB',
+                      min_feature_count=0,
+                      probability=with_probability)
     (train_scores2,
      test_scores2,
      train_sizes2) = learner.learning_curve(fs,
@@ -735,6 +737,11 @@ def test_learning_curve_implementation():
     assert np.all(train_sizes1 == train_sizes2)
     assert np.allclose(train_scores1, train_scores2)
     assert np.allclose(test_scores1, test_scores2)
+
+
+def test_learning_curve_implementation():
+    yield check_learning_curve_implementation, False
+    yield check_learning_curve_implementation, True
 
 
 def test_learning_curve_output():
