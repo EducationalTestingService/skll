@@ -925,16 +925,16 @@ def test_learning_curve_min_examples_check_override():
     learner = Learner('LogisticRegression', logger=logger)
 
     # this must throw an error because `examples` has less than 500 items
-    _ = learner.learning_curve(examples=train_fs_less_than_500, metric='accuracy',
+    _ = learner.learning_curve(examples=train_fs_less_than_500,
+                               metric='accuracy',
                                override_minimum=True)
 
     # checks that the learning_curve warning message is contained in the log file
     with open(log_file_path) as tf:
         log_text = tf.read()
         learning_curve_warning_re = re.compile(
-            r'Because the number of training examples provided - \d+ - is '
-            r'less than the ideal minimum - \d+ - learning curve generation '
-            r'is unreliable and might break'
+            r"Learning curves can be unreliable for examples fewer than "
+            r"500. You provided \d+\."
         )
         assert learning_curve_warning_re.search(log_text)
 
