@@ -417,110 +417,84 @@ def check_predict_voting_learner(learner_type,
                                       f"{with_class_labels}" if with_file_output else None)
     prediction_prefix = str(prediction_prefix)
 
+    # set various parameters based on whether we are using
+    # a classifier or a regressor
     if learner_type == "classifier":
-
-        # use three classifiers for voting
         learner_names = ["LogisticRegression", "SVC", "MultinomialNB"]
-
-        # use soft voting type if given
         voting_type = "soft" if with_soft_voting else "hard"
-
-        # instantiate and train the SKLL voting learner on the digits dataset
-        skll_vl = VotingLearner(learner_names,
-                                feature_scaling="none",
-                                min_feature_count=0,
-                                voting=voting_type)
-        skll_vl.train(TRAIN_FS_DIGITS,
-                      grid_objective="accuracy",
-                      grid_search=with_grid_search)
-
-        # get the overall and individual predictions from SKLL
-        (skll_predictions,
-         skll_individual_dict) = skll_vl.predict(TEST_FS_DIGITS,
-                                                 class_labels=with_class_labels,
-                                                 prediction_prefix=prediction_prefix,
-                                                 individual_predictions=with_individual_predictions)
-
-        # get the underlying scikit-learn estimators from SKLL
-        named_estimators = skll_vl.model.named_estimators_
-        clf1 = named_estimators[learner_names[0]]["estimator"]
-        clf2 = named_estimators[learner_names[1]]["estimator"]
-        clf3 = named_estimators[learner_names[2]]["estimator"]
-
-        # instantiate and train the scikit-learn voting classifer
-        sklearn_vl = VotingClassifier(estimators=[(learner_names[0], clf1),
-                                                  (learner_names[1], clf2),
-                                                  (learner_names[2], clf3)],
-                                      voting=voting_type)
-        sklearn_vl.fit(TRAIN_FS_DIGITS.features, TRAIN_FS_DIGITS.labels)
-
-        # get the overall predictions from scikit-learn
-        sklearn_predictions = sklearn_vl.predict(TEST_FS_DIGITS.features)
-
-        # get the individual scikit-learn predictions, if necessary
-        # note that scikit-learn individual predictions are indices
-        # and not class labels so we need to convert them to labels
-        # if required
-        sklearn_individual_dict = {}
-        if with_individual_predictions:
-            for name, estimator in sklearn_vl.named_estimators_.items():
-                estimator_predictions = estimator.predict(TEST_FS_DIGITS.features)
-                if with_class_labels:
-                    estimator_predictions = [sklearn_vl.classes_[index] for index in estimator_predictions]
-                sklearn_individual_dict[name] = estimator_predictions
-
-        # if we are asked to _not_ output the class labels, then get the
-        # either the scikit-learn probabilities or the class indices depending
-        # on the voting type (soft and hard respectively)
-        if not with_class_labels:
-            if voting_type == "soft":
-                sklearn_predictions = sklearn_vl.predict_proba(TEST_FS_DIGITS.features)
-                if with_individual_predictions:
-                    for name, estimator in sklearn_vl.named_estimators_.items():
-                        sklearn_individual_dict[name] = estimator.predict_proba(TEST_FS_DIGITS.features)
-            else:
-                sklearn_predictions = np.array([skll_vl.label_dict[class_] for class_ in sklearn_predictions])
-                # note that the individual predictions from scikit-learn are
-                # already indices so we do not need to do anything there
+        train_fs, test_fs = TRAIN_FS_DIGITS, TEST_FS_DIGITS
+        objective = "accuracy"
     else:
-        # use three regressors for voting
         learner_names = ["LinearRegression", "SVR", "Ridge"]
+        voting_type = "hard"
+        train_fs, test_fs = TRAIN_FS_HOUSING, TEST_FS_HOUSING
+        objective = "pearson"
 
-        # instantiate and train a SKLL voting learner on the housing dataset
-        skll_vl = VotingLearner(learner_names,
-                                feature_scaling="none",
-                                min_feature_count=0)
-        skll_vl.train(TRAIN_FS_HOUSING,
-                      grid_objective="pearson",
-                      grid_search=with_grid_search)
+    # instantiate and train the SKLL voting learner on the digits dataset
+    skll_vl = VotingLearner(learner_names,
+                            feature_scaling="none",
+                            min_feature_count=0,
+                            voting=voting_type)
+    skll_vl.train(train_fs,
+                  grid_objective=objective,
+                  grid_search=with_grid_search)
 
-        # get the overall and individual predictions from SKLL
-        (skll_predictions,
-         skll_individual_dict) = skll_vl.predict(TEST_FS_HOUSING,
-                                                 class_labels=with_class_labels,
-                                                 prediction_prefix=prediction_prefix,
-                                                 individual_predictions=with_individual_predictions)
+    # get the overall and individual predictions from SKLL
+    (skll_predictions,
+     skll_individual_dict) = skll_vl.predict(test_fs,
+                                             class_labels=with_class_labels,
+                                             prediction_prefix=prediction_prefix,
+                                             individual_predictions=with_individual_predictions)
 
-        # get the underlying scikit-learn estimators from SKLL
-        named_estimators = skll_vl.model.named_estimators_
-        clf1 = named_estimators[learner_names[0]]["estimator"]
-        clf2 = named_estimators[learner_names[1]]["estimator"]
-        clf3 = named_estimators[learner_names[2]]["estimator"]
+    # get the underlying scikit-learn estimators from SKLL
+    named_estimators = skll_vl.model.named_estimators_
+    clf1 = named_estimators[learner_names[0]]["estimator"]
+    clf2 = named_estimators[learner_names[1]]["estimator"]
+    clf3 = named_estimators[learner_names[2]]["estimator"]
 
-        # instantiate and train the scikit-learn voting classifer
-        sklearn_vl = VotingRegressor(estimators=[(learner_names[0], clf1),
-                                                 (learner_names[1], clf2),
-                                                 (learner_names[2], clf3)])
-        sklearn_vl.fit(TRAIN_FS_HOUSING.features, TRAIN_FS_HOUSING.labels)
+    # instantiate and train the scikit-learn voting classifer
+    sklearn_model_type = (VotingClassifier if learner_type == "classifier"
+                          else VotingRegressor)
+    sklearn_model_kwargs = {"estimators": [(learner_names[0], clf1),
+                                           (learner_names[1], clf2),
+                                           (learner_names[2], clf3)]}
+    if learner_type == "classifier":
+        sklearn_model_kwargs["voting"] = voting_type
+    sklearn_vl = sklearn_model_type(**sklearn_model_kwargs)
+    sklearn_vl.fit(train_fs.features, train_fs.labels)
 
-        # get the overall predictions from scikit-learn
-        sklearn_predictions = sklearn_vl.predict(TEST_FS_HOUSING.features)
+    # get the overall predictions from scikit-learn
+    sklearn_predictions = sklearn_vl.predict(test_fs.features)
 
-        # get the individual scikit-learn predictions, if necessary
-        sklearn_individual_dict = {}
-        if with_individual_predictions:
-            for name, estimator in sklearn_vl.named_estimators_.items():
-                sklearn_individual_dict[name] = estimator.predict(TEST_FS_HOUSING.features)
+    # if we are doing classification and not asked to output class
+    # labels get either the scikit-learn probabilities or the class
+    # indices depending on the voting type (soft vs. hard)
+    if learner_type == "classifier" and not with_class_labels:
+        if voting_type == "soft":
+            sklearn_predictions = sklearn_vl.predict_proba(test_fs.features)
+        else:
+            sklearn_predictions = np.array([skll_vl.label_dict[class_]
+                                            for class_ in sklearn_predictions])
+
+    # get the individual scikit-learn predictions, if necessary
+    sklearn_individual_dict = {}
+    if with_individual_predictions:
+        for name, estimator in sklearn_vl.named_estimators_.items():
+            estimator_predictions = estimator.predict(test_fs.features)
+            # scikit-learn individual predictions are indices not class labels
+            # so we need to convert them to labels if required
+            if with_class_labels:
+                estimator_predictions = [sklearn_vl.classes_[index]
+                                         for index in estimator_predictions]
+            # if no class labels, then get the probabilities with soft
+            # voting; note that sinec the individual predictions from
+            # scikit-learn are already indices, we do not need to do
+            # anything for the hard voting case
+            else:
+                if voting_type == "soft":
+                    estimator_predictions = estimator.predict_proba(test_fs.features)
+
+            sklearn_individual_dict[name] = estimator_predictions
 
     # now we start the actual tests
 
@@ -535,28 +509,29 @@ def check_predict_voting_learner(learner_type,
     # exactly for 2 decimal places because of the way that SVC computes
     # probabilities; we also check that the index of the highest probability
     # is the same for both
-    if (learner_type == "classifier" and
-            voting_type == "soft" and
-            not with_class_labels):
-        assert_array_almost_equal(skll_predictions, sklearn_predictions, decimal=2)
-        skll_max_prob_indices = np.argmax(skll_predictions, axis=1)
-        sklearn_max_prob_indices = np.argmax(sklearn_predictions, axis=1)
-        assert_array_equal(skll_max_prob_indices, sklearn_max_prob_indices)
-        # check individual probabilities but only for non-SVC estimators
-        if with_individual_predictions:
-            assert_array_almost_equal(skll_individual_dict["LogisticRegression"],
-                                      sklearn_individual_dict["LogisticRegression"],
-                                      decimal=2)
-            assert_array_almost_equal(skll_individual_dict["MultinomialNB"],
-                                      sklearn_individual_dict["MultinomialNB"],
-                                      decimal=2)
-    # in all other cases, we expect the actual class lables or class indices
-    # to be identical between SKLL and scikit-learn; note that this also
-    # includes all regression scenarios
+    if learner_type == "classifier":
+        if voting_type == "soft" and not with_class_labels:
+            assert_array_almost_equal(skll_predictions, sklearn_predictions, decimal=2)
+            skll_max_prob_indices = np.argmax(skll_predictions, axis=1)
+            sklearn_max_prob_indices = np.argmax(sklearn_predictions, axis=1)
+            assert_array_equal(skll_max_prob_indices, sklearn_max_prob_indices)
+            # check individual probabilities but only for non-SVC estimators
+            if with_individual_predictions:
+                assert_array_almost_equal(skll_individual_dict["LogisticRegression"],
+                                          sklearn_individual_dict["LogisticRegression"],
+                                          decimal=2)
+                assert_array_almost_equal(skll_individual_dict["MultinomialNB"],
+                                          sklearn_individual_dict["MultinomialNB"],
+                                          decimal=2)
+        # in all other cases, we expect the actual class lables or class indices
+        # to be identical between SKLL and scikit-learn
+        else:
+            assert_array_equal(skll_predictions, sklearn_predictions)
+
+    # for regression, we expect the overall predictions to match exactly
+    # but individual predictions only up to 2 decimal places
     else:
         assert_array_equal(skll_predictions, sklearn_predictions)
-        # for individual predictions, we still only guarantee equality
-        # up to two decimal places
         if with_individual_predictions:
             assert_array_almost_equal(skll_individual_dict[learner_names[0]],
                                       sklearn_individual_dict[learner_names[0]],
