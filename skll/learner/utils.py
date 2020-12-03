@@ -990,6 +990,11 @@ def train_and_score(learner,
     and also the given test set, and score those predictions using the
     given metric. The method returns the train and test scores.
 
+    If the learner has its ``probability`` attribute set to ``True``, it will
+    produce probability values as predictions rather than class indices.
+    In this case, this function will compute the argmax over the probability
+    values to find the most likely class index and use that.
+
     Note that this method needs to be a top-level function since it is
     called from within ``joblib.Parallel()`` and, therefore, needs to be
     picklable which it would not be as an instancemethod of the ``Learner``
@@ -1015,12 +1020,17 @@ def train_and_score(learner,
         Output of the score function applied to predictions of
         ``learner`` on ``test_examples``.
     """
-
     _ = learner.train(train_examples, grid_search=False, shuffle=False)
 
-    # get the train and test class indices (not labels)
+    # get the train and test class probabilities or indices (not labels)
     train_predictions = learner.predict(train_examples, class_labels=False)
     test_predictions = learner.predict(test_examples, class_labels=False)
+
+    # if we got probabilities, then we need to run argmax over them
+    # to convert them into indices
+    if hasattr(learner, "probability") and learner.probability:
+        train_predictions = np.argmax(train_predictions, axis=1)
+        test_predictions = np.argmax(test_predictions, axis=1)
 
     # now get the training and test labels and convert them to indices
     # but make sure to include any unseen labels in the test data
