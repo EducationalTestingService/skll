@@ -745,181 +745,127 @@ def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
                                       f"{with_soft_voting}")
     prediction_prefix = str(prediction_prefix)
 
+    # set various parameters based on whether we are using
+    # a classifier or a regressor
     if learner_type == "classifier":
-
-        # use three classifiers for voting
         learner_names = ["LogisticRegression", "SVC", "MultinomialNB"]
-
-        # use soft voting type if given
         voting_type = "soft" if with_soft_voting else "hard"
+        featureset = FS_DIGITS
+        extra_metric = "f1_score_macro"
+    else:
+        learner_names = ["LinearRegression", "SVR", "Ridge"]
+        voting_type = "hard"
+        featureset = FS_HOUSING
+        extra_metric = "neg_mean_squared_error"
 
-        # instantiate and cross-validate the SKLL voting learner
-        # on the full digits dataset
-        skll_vl = VotingLearner(learner_names,
-                                feature_scaling="none",
-                                min_feature_count=0,
-                                voting=voting_type)
-        (xval_results,
-         used_fold_ids,
-         used_models) = skll_vl.cross_validate(FS_DIGITS,
-                                               grid_search=False,
-                                               prediction_prefix=prediction_prefix,
-                                               output_metrics=["f1_score_macro"],
-                                               save_cv_folds=True,
-                                               save_cv_models=True)
+    # instantiate and cross-validate the SKLL voting learner
+    # on the full digits dataset
+    skll_vl = VotingLearner(learner_names,
+                            feature_scaling="none",
+                            min_feature_count=0,
+                            voting=voting_type)
+    (xval_results,
+     used_fold_ids,
+     used_models) = skll_vl.cross_validate(featureset,
+                                           grid_search=False,
+                                           prediction_prefix=prediction_prefix,
+                                           output_metrics=[extra_metric],
+                                           save_cv_folds=True,
+                                           save_cv_models=True)
 
-        # check that the results are as expected
-        ok_(len(xval_results), 10)               # number of folds
-        for i in range(10):
-            ok_(isinstance(xval_results[i][0], list))   # confusion matrix
+    # check that the results are as expected
+    ok_(len(xval_results), 10)               # number of folds
+    for i in range(10):
+        if learner_type == "classifier":
+            ok_(isinstance(xval_results[i][0], list))  # confusion matrix
             ok_(isinstance(xval_results[i][1], float))  # accuracy
-            ok_(isinstance(xval_results[i][2], dict))   # result dict
-            ok_(isinstance(xval_results[i][3], dict))   # model params
-            eq_(xval_results[i][4], None)               # No objective
-            ok_(isinstance(xval_results[i][5], dict))   # metric scores
-
-        # create a pandas dataframe with the returned fold IDs
-        # and create a scikit-learn CV splitter with the exact folds
-        df_folds = pd.DataFrame(used_fold_ids.items(), columns=["id", "fold"])
-        df_folds = df_folds.sort_values(by="id").reset_index(drop=True)
-        splitter = PredefinedSplit(df_folds["fold"].to_numpy())
-        eq_(splitter.get_n_splits(), 10)
-
-        # now read in the SKLL xval predictions from the file written to disk
-        df_preds = pd.read_csv(f"{prediction_prefix}_predictions.tsv", sep="\t")
-
-        # sort the columns so that consecutive IDs are actually next to
-        # each other in the frame; this is not always guaranteed because
-        # consecutive IDs may be in different folds
-        df_preds = df_preds.sort_values(by="id").reset_index(drop=True)
-
-        # if we are doing soft voting, then save the argmax-ed prediction
-        # as a separate column along with the probabilities themselves
-        if with_soft_voting:
-            non_id_columns = [c for c in df_preds.columns if c != "id"]
-
-            # write a simple function to get the argmax
-            def get_argmax(row):
-                return row.index[row.argmax()]
-
-            # apply the function to each row of the predictions frame
-            df_preds["skll"] = df_preds[non_id_columns].apply(get_argmax, axis=1)
         else:
-            df_preds.rename(columns={"prediction": "skll"}, inplace=True)
+            eq_(xval_results[i][0], None)  # no confusion matrix
+            eq_(xval_results[i][1], None)  # no accuracy
+        ok_(isinstance(xval_results[i][2], dict))   # result dict
+        ok_(isinstance(xval_results[i][3], dict))   # model params
+        eq_(xval_results[i][4], None)               # No objective
+        ok_(isinstance(xval_results[i][5], dict))   # metric scores
 
-        # now create a voting classifier directly in scikit-learn using
-        # any of the returned learners - since there is grid search,
-        # all the underlying estimators have the same (default)
-        # hyper-parameters
-        used_estimators = used_models[0].model.named_estimators_
-        clf1 = used_estimators[learner_names[0]]["estimator"]
-        clf2 = used_estimators[learner_names[1]]["estimator"]
-        clf3 = used_estimators[learner_names[2]]["estimator"]
+    # create a pandas dataframe with the returned fold IDs
+    # and create a scikit-learn CV splitter with the exact folds
+    df_folds = pd.DataFrame(used_fold_ids.items(), columns=["id", "fold"])
+    df_folds = df_folds.sort_values(by="id").reset_index(drop=True)
+    splitter = PredefinedSplit(df_folds["fold"].to_numpy())
+    eq_(splitter.get_n_splits(), 10)
 
-        # instantiate the scikit-learn voting classifier
-        sklearn_vl = VotingClassifier(estimators=[(learner_names[0], clf1),
-                                                  (learner_names[1], clf2),
-                                                  (learner_names[2], clf3)],
-                                      voting=voting_type)
+    # now read in the SKLL xval predictions from the file written to disk
+    df_preds = pd.read_csv(f"{prediction_prefix}_predictions.tsv", sep="\t")
 
-        # now call `cross_val_predict()` with this learner on the
-        # digits data set using the same folds as we did in SKLL;
-        # also set the prediction method to be `predict_proba` if
-        # we are doing soft voting so that we get probabiities back
-        sklearn_predict_method = "predict_proba" if with_soft_voting else "predict"
-        sklearn_preds = cross_val_predict(sklearn_vl,
-                                          FS_DIGITS.features,
-                                          FS_DIGITS.labels,
-                                          cv=splitter,
-                                          method=sklearn_predict_method)
+    # sort the columns so that consecutive IDs are actually next to
+    # each other in the frame; this is not always guaranteed because
+    # consecutive IDs may be in different folds
+    df_preds = df_preds.sort_values(by="id").reset_index(drop=True)
 
-        # save the (argmax-ed) sklearn predictions into our data frame
-        if with_soft_voting:
-            argmax_label_indices = np.argmax(sklearn_preds, axis=1)
-            labels = skll_vl.learners[0].label_list
-            sklearn_argmax_preds = np.array([labels[x] for x in argmax_label_indices])
-            df_preds["sklearn"] = sklearn_argmax_preds
-        else:
-            df_preds["sklearn"] = sklearn_preds
+    # if we are doing soft voting, then save the argmax-ed prediction
+    # as a separate column along with the probabilities themselves
+    if with_soft_voting:
+        non_id_columns = [c for c in df_preds.columns if c != "id"]
 
-        # now check that the argmax-ed SKLL and scikit-learn predictions match
-        # NOTE: unfortunately, likely because of the SVC, we know that the
-        # hard-voting predictions will not match for one instance in the
-        # set (with id=275)
+        # write a simple function to get the argmax
+        def get_argmax(row):
+            return row.index[row.argmax()]
+
+        # apply the function to each row of the predictions frame
+        df_preds["skll"] = df_preds[non_id_columns].apply(get_argmax, axis=1)
+    else:
+        df_preds.rename(columns={"prediction": "skll"}, inplace=True)
+
+    # now create a voting classifier directly in scikit-learn using
+    # any of the returned learners - since there is grid search,
+    # all the underlying estimators have the same (default)
+    # hyper-parameters
+    used_estimators = used_models[0].model.named_estimators_
+    clf1 = used_estimators[learner_names[0]]["estimator"]
+    clf2 = used_estimators[learner_names[1]]["estimator"]
+    clf3 = used_estimators[learner_names[2]]["estimator"]
+
+    # instantiate the scikit-learn voting classifier
+    sklearn_model_type = (VotingClassifier if learner_type == "classifier"
+                          else VotingRegressor)
+    sklearn_model_kwargs = {"estimators": [(learner_names[0], clf1),
+                                           (learner_names[1], clf2),
+                                           (learner_names[2], clf3)]}
+    if learner_type == "classifier":
+        sklearn_model_kwargs["voting"] = voting_type
+    sklearn_vl = sklearn_model_type(**sklearn_model_kwargs)
+
+    # now call `cross_val_predict()` with this learner on the
+    # digits data set using the same folds as we did in SKLL;
+    # also set the prediction method to be `predict_proba` if
+    # we are doing soft voting so that we get probabiities back
+    sklearn_predict_method = "predict_proba" if with_soft_voting else "predict"
+    sklearn_preds = cross_val_predict(sklearn_vl,
+                                      featureset.features,
+                                      featureset.labels,
+                                      cv=splitter,
+                                      method=sklearn_predict_method)
+
+    # save the (argmax-ed) sklearn predictions into our data frame
+    if with_soft_voting:
+        argmax_label_indices = np.argmax(sklearn_preds, axis=1)
+        labels = skll_vl.learners[0].label_list
+        sklearn_argmax_preds = np.array([labels[x] for x in argmax_label_indices])
+        df_preds["sklearn"] = sklearn_argmax_preds
+    else:
+        df_preds["sklearn"] = sklearn_preds
+
+    # now check that the SKLL and scikit-learn predictions match
+    # NOTE: unfortunately, likely because of the SVC, we know that the
+    # hard-voting classifier predictions will not match for one instance
+    # in the set (with id=275)
+    if learner_type == "classifier":
         if with_soft_voting:
             assert_array_equal(df_preds["skll"], df_preds["sklearn"])
         else:
             df_preds_filtered = df_preds.drop(275, axis=0)
             assert_array_equal(df_preds_filtered["skll"], df_preds_filtered["sklearn"])
     else:
-
-        # use three regressors for voting
-        learner_names = ["LinearRegression", "SVR", "Ridge"]
-
-        # instantiate and cross-validate the SKLL voting learner
-        # on the housing dataset
-        skll_vl = VotingLearner(learner_names,
-                                feature_scaling="none",
-                                min_feature_count=0)
-        (xval_results,
-         used_fold_ids,
-         used_models) = skll_vl.cross_validate(FS_HOUSING,
-                                               grid_search=False,
-                                               prediction_prefix=prediction_prefix,
-                                               output_metrics=["neg_mean_squared_error"],
-                                               save_cv_folds=True,
-                                               save_cv_models=True)
-
-        # check that the results are as expected
-        ok_(len(xval_results), 10)                      # number of folds
-        for i in range(10):
-            eq_(xval_results[i][0], None)               # No confusion matrix
-            eq_(xval_results[i][1], None)               # No accuracy
-            ok_(isinstance(xval_results[i][2], dict))   # result dict
-            ok_(isinstance(xval_results[i][3], dict))   # model params
-            eq_(xval_results[i][4], None)               # No objective
-            ok_(isinstance(xval_results[i][5], dict))   # metric scores
-
-        # create a pandas dataframe with the returned fold IDs
-        # and create a scikit-learn CV splitter with the exact folds
-        df_folds = pd.DataFrame(used_fold_ids.items(), columns=["id", "fold"])
-        df_folds = df_folds.sort_values(by="id").reset_index(drop=True)
-        splitter = PredefinedSplit(df_folds["fold"].to_numpy())
-        eq_(splitter.get_n_splits(), 10)
-
-        # now read in the SKLL xval predictions from the file written to disk
-        df_preds = pd.read_csv(f"{prediction_prefix}_predictions.tsv", sep="\t")
-
-        # sort the columns so that consecutive IDs are actually next to
-        # each other in the frame; this is not always guaranteed because
-        # consecutive IDs may be in different folds
-        df_preds = df_preds.sort_values(by="id").reset_index(drop=True)
-        df_preds.rename(columns={"prediction": "skll"}, inplace=True)
-
-        # now create a voting classifier directly in scikit-learn using
-        # any of the returned learners - since there is grid search,
-        # all the underlying estimators have the same (default)
-        # hyper-parameters
-        used_estimators = used_models[0].model.named_estimators_
-        clf1 = used_estimators[learner_names[0]]["estimator"]
-        clf2 = used_estimators[learner_names[1]]["estimator"]
-        clf3 = used_estimators[learner_names[2]]["estimator"]
-
-        # instantiate the scikit-learn voting classifier
-        sklearn_vl = VotingRegressor(estimators=[(learner_names[0], clf1),
-                                                 (learner_names[1], clf2),
-                                                 (learner_names[2], clf3)])
-
-        # now call `cross_val_predict()` with this learner on the
-        # housing data set using the same folds as we did in SKLL
-        sklearn_preds = cross_val_predict(sklearn_vl,
-                                          FS_HOUSING.features,
-                                          FS_HOUSING.labels,
-                                          cv=splitter)
-
-        # save the (argmax-ed) sklearn predictions into our data frame
-        df_preds["sklearn"] = sklearn_preds
-
         # now confirm that the SKLL and scikit-learn predictions match
         assert_allclose(df_preds["skll"], df_preds["sklearn"])
 
