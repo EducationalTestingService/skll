@@ -1194,11 +1194,14 @@ class Learner(object):
 
         For regressors, the returned and written-out predictions are identical.
         However, for classifiers:
+
         - if ``class_labels`` is ``True``, class labels are returned
           as well as written out.
+
         - if ``class_labels`` is ``False`` and the classifier is probabilistic
           (i.e., ``self..probability`` is ``True``), class probabilities are
           returned as well as written out.
+
         - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
           (i.e., ``self..probability`` is ``False``), class indices are returned
           and class labels are written out.
@@ -1705,6 +1708,13 @@ class Learner(object):
                     f'{len(examples)} - is less than the ideal minimum - '
                     f'{500} - learning curve generation is unreliable and '
                     'might break')
+
+        # raise a warning if we are using a probabilistic classifier
+        # since that means we cannot use the predictions directly
+        if self.probability:
+            self.logger.warning("Since ``probability`` is set, the most likely "
+                                "class will be computed via an argmax before "
+                                "computing the curve.")
 
         # Call train setup before since we need to train
         # the learner eventually

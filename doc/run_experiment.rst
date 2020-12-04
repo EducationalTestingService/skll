@@ -240,7 +240,9 @@ field in each section is provided below, but to summarize:
 
     .. note::
 
-        Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
+        1. Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
+        
+        2. If you set :ref:`probability <probability>` to ``True``, the probabilities will be converted to the most likely label via an argmax before computing the curve.
 
 .. _learners_required:
 
