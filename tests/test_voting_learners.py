@@ -6,6 +6,7 @@ Module containing tests for voting learners.
 :organization: ETS
 """
 
+import re
 from itertools import product
 from pathlib import Path
 from skll.data.featureset import FeatureSet
@@ -39,6 +40,7 @@ from skll import Learner, run_configuration
 from skll.data import NDJReader
 from skll.learner.voting import VotingLearner
 from skll.metrics import f1_score
+from skll.utils.logging import get_skll_logger, close_and_remove_logger_handlers
 from tests.other.custom_logistic_wrapper import CustomLogisticRegressionWrapper
 from tests.utils import (fill_in_config_paths_for_single_file,
                          make_classification_data,
@@ -674,6 +676,54 @@ def test_learning_curve():
             yield (check_learning_curve,
                    learner_type,
                    with_soft_voting)
+
+
+@raises(ValueError)
+def test_learning_curve_min_examples_check():
+    # generates a training split with less than 500 examples
+    fs_less_than_500 = FS_DIGITS[:499]
+
+    # create a simple voting classifier
+    voting_learner = VotingLearner(["LogisticRegression", "SVC", "MultinomialNB"],
+                                   voting="hard")
+
+    # this must throw an error because `examples` has less than 500 items
+    _ = voting_learner.learning_curve(examples=fs_less_than_500,
+                                      metric="accuracy")
+
+
+def test_learning_curve_min_examples_check_override():
+
+    # creates a logger which writes to a temporary log file
+    log_file_path = (OUTPUT_DIR / "test_check_override_voting_learner_"
+                                  "learning_curve_min_examples.log")
+
+    logger = get_skll_logger("test_voting_learner_learning_curve_min_examples",
+                             filepath=log_file_path)
+
+    # generates a training split with less than 500 examples
+    fs_less_than_500 = FS_DIGITS[:499]
+
+    # create a simple voting classifier
+    voting_learner = VotingLearner(["LogisticRegression", "SVC", "MultinomialNB"],
+                                   voting="hard",
+                                   logger=logger)
+
+    # this must throw an error because `examples` has less than 500 items
+    _ = voting_learner.learning_curve(examples=fs_less_than_500,
+                                      metric="accuracy",
+                                      override_minimum=True)
+
+    # checks that the learning_curve warning message is contained in the log file
+    with open(log_file_path) as tf:
+        log_text = tf.read()
+        learning_curve_warning_re = re.compile(
+            r"Learning curves can be unreliable for examples fewer than "
+            r"500. You provided \d+\."
+        )
+        assert learning_curve_warning_re.search(log_text)
+
+    close_and_remove_logger_handlers(logger)
 
 
 def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
