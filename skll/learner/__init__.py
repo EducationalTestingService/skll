@@ -1509,6 +1509,8 @@ class Learner(object):
         ------
         ValueError
             If classification labels are not properly encoded as strings.
+        ValueError
+            If ``grid_search`` is ``True`` but ``grid_objective`` is ``None``.
         """
 
         # Seed the random number generator so that randomized algorithms are
