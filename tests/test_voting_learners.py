@@ -9,8 +9,6 @@ Module containing tests for voting learners.
 import re
 from itertools import product
 from pathlib import Path
-from skll.data.featureset import FeatureSet
-from skll import learner
 
 import numpy as np
 from nose.tools import (assert_almost_equal,
@@ -18,10 +16,10 @@ from nose.tools import (assert_almost_equal,
                         eq_,
                         ok_,
                         raises)
-from numpy.testing import (assert_array_equal,
+from numpy.testing import (assert_allclose,
+                           assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises_regex)
-from numpy.testing._private.utils import assert_allclose
 import pandas as pd
 from scipy.stats import pearsonr
 from sklearn.ensemble import (RandomForestRegressor,
@@ -37,9 +35,8 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC, SVR
 from skll import Learner, run_configuration
-from skll.data import NDJReader
+from skll.data import FeatureSet, NDJReader
 from skll.learner.voting import VotingLearner
-from skll.metrics import f1_score
 from skll.utils.logging import get_skll_logger, close_and_remove_logger_handlers
 from tests.other.custom_logistic_wrapper import CustomLogisticRegressionWrapper
 from tests.utils import (fill_in_config_paths_for_single_file,
@@ -47,6 +44,7 @@ from tests.utils import (fill_in_config_paths_for_single_file,
                          make_california_housing_data,
                          make_digits_data)
 
+# define some constants needed for testing
 MY_DIR = Path(__file__).parent.resolve()
 OUTPUT_DIR = MY_DIR / "output"
 TRAIN_FS_DIGITS, TEST_FS_DIGITS = make_digits_data(use_digit_names=True)
@@ -55,6 +53,15 @@ TRAIN_FS_HOUSING, TEST_FS_HOUSING = make_california_housing_data(num_examples=20
 FS_HOUSING, _ = make_california_housing_data(num_examples=2000, test_size=0)
 FS_HOUSING.ids = np.arange(2000)
 CUSTOM_LEARNER_PATH = MY_DIR / "other" / "custom_logistic_wrapper.py"
+
+
+def tearDown():
+    """
+    Clean up after tests.
+    """
+    for suffix in ['predict', 'check_override', 'xval']:
+        for output_file_path in OUTPUT_DIR.glob(f"test_{suffix}_voting*"):
+            output_file_path.unlink()
 
 
 def check_initialize(learner_type,
@@ -348,7 +355,7 @@ def check_evaluate(learner_type,
     skll_extra_metric = res[5][extra_metric]
 
     # now get the estimators that underlie the SKLL voting classifier
-    # and use them to train a voting classifier directly in scikit-learn
+    # and use them to train a voting learner directly in scikit-learn
     named_estimators = skll_vl.model.named_estimators_
     clf1 = named_estimators[learner_names[0]]["estimator"]
     clf2 = named_estimators[learner_names[1]]["estimator"]
@@ -733,14 +740,12 @@ def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
     # while writing out the predictions and also asking it to return
     # the actual folds it used as well as the models. Then we use these
     # exact folds with `cross_val_predict()` from scikit-learn as applied
-    # to a voting learner instantiated in scikit-learn space. Then we compare
-    # the SKLL and scikit-learn cross-validated predictions. Note that since
-    # we are not using grid search, the models for all the folds will
-    # have the same hyper-parameters. This is why we can use this
+    # to a voting learner instantiated in scikit-learn space. Then we compute
+    # metrics over both sets of cross-validated predictions on the
+    # test set and compare their values.
 
     # set the prediction prefix in case we need to write out the predictions
-    # TODO: delete these files in tear down
-    prediction_prefix = (OUTPUT_DIR / f"test_xval_voting_"
+    prediction_prefix = (OUTPUT_DIR / f"test_xval_voting_no_gs_"
                                       f"{learner_type}_"
                                       f"{with_soft_voting}")
     prediction_prefix = str(prediction_prefix)
@@ -791,7 +796,7 @@ def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
     # and create a scikit-learn CV splitter with the exact folds
     df_folds = pd.DataFrame(used_fold_ids.items(), columns=["id", "fold"])
     df_folds = df_folds.sort_values(by="id").reset_index(drop=True)
-    splitter = PredefinedSplit(df_folds["fold"].to_numpy())
+    splitter = PredefinedSplit(df_folds["fold"].astype(int).to_numpy())
     eq_(splitter.get_n_splits(), 10)
 
     # now read in the SKLL xval predictions from the file written to disk
@@ -816,7 +821,7 @@ def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
     else:
         df_preds.rename(columns={"prediction": "skll"}, inplace=True)
 
-    # now create a voting classifier directly in scikit-learn using
+    # now create a voting learner directly in scikit-learn using
     # any of the returned learners - since there is grid search,
     # all the underlying estimators have the same (default)
     # hyper-parameters
