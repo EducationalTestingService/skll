@@ -202,9 +202,9 @@ class VotingLearner(object):
         """
         return self._model_type
 
-    def _learning_curve_setup(self, examples):
+    def _setup_underlying_learners(self, examples):
         """
-        Initial set-up for learning curve task
+        Initial, pre-training set up for learners
         """
         for learner in self.learners:
             learner._create_label_dict(examples)
@@ -647,6 +647,8 @@ class VotingLearner(object):
         ------
         ValueError
             If classification labels are not properly encoded as strings.
+        ValueError
+            If ``grid_search`` is ``True`` but ``grid_objective`` is ``None``.
         """
 
         # Seed the random number generator so that randomized algorithms are
@@ -663,6 +665,16 @@ class VotingLearner(object):
                 type_of_target(examples.labels) not in ['binary', 'multiclass']):
             raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
 
+        # check that we have an objective since grid search is on by default
+        # Note that `train()` would raise this error anyway later but it's
+        # better to raise this early on so rather than after a whole bunch of
+        # stuff has happened
+        if grid_search:
+            if not grid_objective:
+                raise ValueError("Grid search is on by default. You must "
+                                 "either specify a grid objective or turn off"
+                                 " grid search.")
+
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
         # You can't shuffle a scipy sparse matrix in place, so unfortunately
@@ -678,6 +690,10 @@ class VotingLearner(object):
             examples = FeatureSet(examples.name, ids, labels=labels,
                                   features=features,
                                   vectorizer=examples.vectorizer)
+
+        # Call some setup code which will properly initialize the underlying
+        # learners before they are eventually trained
+        self._setup_underlying_learners(examples)
 
         # Set up the cross-validation iterator.
         kfold, cv_groups = setup_cv_fold_iterator(cv_folds,
@@ -697,7 +713,7 @@ class VotingLearner(object):
                                     "the inner grid search.")
                 grid_search_folds = cv_folds
 
-        # handle each fold separately &accumulate the predictions and results
+        # handle each fold separately & accumulate the predictions and results
         results = []
         append_predictions = False
         models = [] if save_cv_models else None
@@ -717,8 +733,8 @@ class VotingLearner(object):
             self.train(train_set,
                        param_grid_list=param_grid_list,
                        grid_search_folds=grid_search_folds,
-                       grid_objective=grid_objective,
                        grid_search=grid_search,
+                       grid_objective=grid_objective,
                        grid_jobs=grid_jobs,
                        shuffle=grid_search)
 
@@ -828,10 +844,9 @@ class VotingLearner(object):
                                 "class will be computed via an argmax before "
                                 "computing the curve.")
 
-        # Call learning curve before since we need to train
-        # which will properly initialize the underlying learners
-        # before they are eventually trained
-        self._learning_curve_setup(examples)
+        # Call some setup code which will properly initialize the underlying
+        # learners before they are eventually trained
+        self._setup_underlying_learners(examples)
 
         # set up the CV split iterator over the train/test featuresets
         # which also returns the maximum number of training examples
