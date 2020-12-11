@@ -424,7 +424,7 @@ def check_predict(learner_type,
                                       f"{learner_type}_"
                                       f"{with_grid_search}_"
                                       f"{with_class_labels}" if with_file_output else None)
-    prediction_prefix = str(prediction_prefix)
+    prediction_prefix = str(prediction_prefix) if prediction_prefix else None
 
     # set various parameters based on whether we are using
     # a classifier or a regressor
