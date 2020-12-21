@@ -47,7 +47,7 @@ import re
 import sys
 from csv import DictReader
 from io import StringIO
-from itertools import chain, islice
+from itertools import chain
 
 import numpy as np
 import pandas as pd
