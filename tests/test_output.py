@@ -183,7 +183,7 @@ def make_learning_curve_data():
 
 # Function that checks to make sure that the summary files
 # contain the right results
-def check_summary_score(use_feature_hashing,
+def check_summary_score(use_feature_hashing,  # noqa: C901
                         use_additional_metrics):
 
     # Test to validate summary file scores
@@ -401,7 +401,7 @@ def check_xval_fancy_results_file(do_grid_search,
     # read in all the lines and look at the lines up to where we print the "Total Time"
     with open(results_file_path) as resultsf:
         results_lines = resultsf.readlines()
-        end_idx = [results_lines.index(l) for l in results_lines
+        end_idx = [results_lines.index(l) for l in results_lines  # noqa: E741
                    if l.startswith('Total Time:')][0]
         results_lines = results_lines[:end_idx + 1]
 
@@ -459,7 +459,7 @@ def test_xval_fancy_results_file():
                use_additional_metrics)
 
 
-def check_grid_search_cv_results(task, do_grid_search):
+def check_grid_search_cv_results(task, do_grid_search):  # noqa: C901
     learners = ['LogisticRegression', 'SVC']
     expected_path = join(other_dir, 'cv_results')
 

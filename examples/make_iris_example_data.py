@@ -25,7 +25,6 @@ def main():
     print('done')
     sys.stdout.flush()
 
-
     X = iris_data['data']
     Y = [iris_data['target_names'][label] for label in iris_data['target']]
 

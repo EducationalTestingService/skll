@@ -26,4 +26,3 @@ class MajorityClassLearner(BaseEstimator, ClassifierMixin):
 
     def predict(self, X):
         return np.array([self.majority_class for x in range(X.shape[0])])
-

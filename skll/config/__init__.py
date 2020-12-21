@@ -241,7 +241,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                            f'sections: {[t[0] for t in incorrectly_specified_options]}')
 
 
-def parse_config_file(config_path, log_level=logging.INFO):
+def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     """
     Parses a SKLL experiment configuration file with the given path.
     Log messages with the given log level (default: INFO).

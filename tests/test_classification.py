@@ -1149,7 +1149,7 @@ def test_invalid_classification_metric():
             yield check_invalid_classification_metric, learner, metric, label_array, False
 
 
-def check_objective_values_for_classification(metric_name,
+def check_objective_values_for_classification(metric_name,  # noqa: C901
                                               label_array,
                                               use_probabilities):
 

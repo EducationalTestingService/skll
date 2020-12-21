@@ -65,6 +65,7 @@ def tearDown():
                       'test_int_labels_cv.cfg']:
         unlink(Path(config_dir) / file_name)
 
+
 # a utility function to check rescaling for linear models
 def check_rescaling(name, grid_search=False):
 

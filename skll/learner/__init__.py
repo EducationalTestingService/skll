@@ -165,7 +165,7 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self,
+    def __init__(self,  # noqa: C901
                  model_type,
                  probability=False,
                  pipeline=False,
@@ -759,7 +759,7 @@ class Learner(object):
                                          with_mean=False,
                                          with_std=False)
 
-    def train(self,
+    def train(self,  # noqa: C901
               examples,
               param_grid=None,
               grid_search_folds=3,
@@ -1188,7 +1188,7 @@ class Learner(object):
                objective_score, metric_scores)
         return res
 
-    def predict(self,
+    def predict(self,  # noqa: C901
                 examples,
                 prediction_prefix=None,
                 append=False,
@@ -1761,6 +1761,7 @@ class Learner(object):
         out = np.asarray(out).transpose((2, 1, 0))
 
         return list(out[0]), list(out[1]), list(train_sizes_abs)
+
 
 # Rescaled regressors
 @rescaled

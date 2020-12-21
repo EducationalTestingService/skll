@@ -53,7 +53,7 @@ __all__ = ['generate_learning_curve_plots',
            'run_configuration']
 
 
-def _classify_featureset(args):
+def _classify_featureset(args):  # noqa: C901
     """
     Classification job to be submitted to grid.
 
@@ -479,7 +479,7 @@ def _classify_featureset(args):
     return res
 
 
-def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
+def run_configuration(config_file, local=False, overwrite=True, queue='all.q',  # noqa: C901
                       hosts=None, write_summary=True, quiet=False,
                       ablation=0, resume=False, log_level=logging.INFO):
     """
