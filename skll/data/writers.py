@@ -14,11 +14,10 @@ import logging
 import os
 import re
 import sys
-import pandas as pd
-
 from csv import DictWriter
 from decimal import Decimal
 
+import pandas as pd
 from scipy.sparse import issparse
 from sklearn.feature_extraction import FeatureHasher
 

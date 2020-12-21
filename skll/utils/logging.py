@@ -6,10 +6,10 @@ Functions related to logging in SKLL.
 :organization: ETS
 """
 import logging
-from functools import partial
-from os.path import sep
 import re
 import warnings
+from functools import partial
+from os.path import sep
 
 orig_showwarning = warnings.showwarning
 SKLEARN_WARNINGS_RE = re.compile(re.escape(f"{sep}sklearn{sep}"))

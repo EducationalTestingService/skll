@@ -12,14 +12,14 @@ import itertools
 import sys
 from collections import defaultdict
 from glob import glob
+from io import StringIO
 from itertools import combinations, product
 from os.path import exists, join
-from io import StringIO
 from pathlib import Path
 
-import scipy as sp
 import numpy as np
 import pandas as pd
+import scipy as sp
 
 try:
     from unittest.mock import create_autospec, patch
@@ -27,42 +27,35 @@ except ImportError:
     from mock import create_autospec, patch
 
 from nose.plugins.logcapture import LogCapture
-from nose.tools import eq_, assert_almost_equal, raises
-from numpy.testing import assert_allclose, assert_array_almost_equal
+from nose.tools import assert_almost_equal, eq_, raises
 from numpy import concatenate
-
+from numpy.testing import assert_allclose, assert_array_almost_equal
 from pandas.testing import assert_frame_equal
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 
 import skll
 import skll.utils.commandline.compute_eval_from_predictions as cefp
-from skll.utils.commandline.compute_eval_from_predictions import get_prediction_from_probabilities
 import skll.utils.commandline.filter_features as ff
 import skll.utils.commandline.generate_predictions as gp
+import skll.utils.commandline.join_features as jf
+import skll.utils.commandline.plot_learning_curves as plc
 import skll.utils.commandline.print_model_weights as pmw
 import skll.utils.commandline.run_experiment as rex
 import skll.utils.commandline.skll_convert as sk
 import skll.utils.commandline.summarize_results as sr
-import skll.utils.commandline.join_features as jf
-import skll.utils.commandline.plot_learning_curves as plc
-
-from skll.data import (FeatureSet,
-                       NDJWriter,
-                       LibSVMWriter,
-                       LibSVMReader,
-                       safe_float)
+from skll.data import FeatureSet, LibSVMReader, LibSVMWriter, NDJWriter, safe_float
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
-from skll.experiments import (generate_learning_curve_plots,
-                              run_configuration)
+from skll.experiments import generate_learning_curve_plots, run_configuration
 from skll.experiments.output import _write_summary_file
 from skll.learner import Learner
+from skll.utils.commandline.compute_eval_from_predictions import (
+    get_prediction_from_probabilities,
+)
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-
 from tests import other_dir, output_dir, test_dir, train_dir
 from tests.utils import make_classification_data, make_regression_data, unlink
-
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

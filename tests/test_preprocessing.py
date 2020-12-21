@@ -10,26 +10,22 @@ import glob
 import json
 import os
 import re
-
 from os.path import join
 from pathlib import Path
 
 import numpy as np
 import scipy.sparse as sp
-
-from numpy.testing import assert_array_equal, assert_almost_equal
-from sklearn.feature_extraction import FeatureHasher
+from numpy.testing import assert_almost_equal, assert_array_equal
 from sklearn.datasets import make_classification
+from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import SelectByMinCount
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-
-from tests import config_dir, output_dir, train_dir, test_dir
+from tests import config_dir, output_dir, test_dir, train_dir
 from tests.utils import fill_in_config_paths, unlink
-
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(

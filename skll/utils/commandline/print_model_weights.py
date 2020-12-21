@@ -11,15 +11,14 @@ Simple script for printing out model weights.
 import argparse
 import logging
 import sys
-
 from collections import defaultdict
 
 import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
 
 from skll import Learner
 from skll.version import __version__
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC, SVC
 
 
 def main(argv=None):

@@ -9,7 +9,8 @@ common scikit-learn experiments with pre-generated features.
 :organization: ETS
 """
 
-from sklearn.metrics import f1_score, fbeta_score, make_scorer, SCORERS
+from sklearn.metrics import SCORERS, f1_score, fbeta_score, make_scorer
+
 from .data import FeatureSet
 from .experiments import run_configuration
 from .learner import Learner

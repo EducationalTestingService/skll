@@ -9,7 +9,9 @@ script for computing additional evaluation metrics
 import argparse
 import csv
 import logging
+
 from numpy.random import RandomState
+
 from skll.data import Reader, safe_float
 from skll.metrics import use_score_func
 from skll.version import __version__

@@ -1,9 +1,11 @@
-from sklearn.metrics import (average_precision_score,
-                             f1_score,
-                             fbeta_score,
-                             precision_score,
-                             r2_score,
-                             roc_auc_score)
+from sklearn.metrics import (
+    average_precision_score,
+    f1_score,
+    fbeta_score,
+    precision_score,
+    r2_score,
+    roc_auc_score,
+)
 
 
 def f075_macro(y_true, y_pred):

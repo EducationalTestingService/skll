@@ -12,6 +12,8 @@ import csv
 import json
 import math
 import sys
+from collections import defaultdict
+from os.path import exists, join
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -19,9 +21,6 @@ import numpy as np
 import pandas as pd
 import ruamel.yaml as yaml
 import seaborn as sns
-
-from collections import defaultdict
-from os.path import exists, join
 
 from skll.utils.logging import get_skll_logger
 

@@ -7,17 +7,15 @@ Run the examples, just to make sure they are all still working
 
 import json
 import subprocess
-
 from glob import glob
 from os import environ
 from os.path import basename, dirname, exists, join
-from shutil import copytree, copyfile, rmtree
 from pathlib import Path
+from shutil import copyfile, copytree, rmtree
 
-from nose.tools import eq_, assert_almost_equal
+from nose.tools import assert_almost_equal, eq_
 
 from skll.experiments import run_configuration
-
 from tests import examples_dir, other_dir
 
 _old_titanic_dir = join(examples_dir, 'titanic')

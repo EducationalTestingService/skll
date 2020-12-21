@@ -12,35 +12,30 @@ the future.
 import math
 import re
 import warnings
-
 from glob import glob
 from itertools import product
 from os.path import join
 from pathlib import Path
 
-from nose.tools import (assert_almost_equal,
-                        assert_less,
-                        assert_greater,
-                        eq_,
-                        raises)
-
 import numpy as np
+from nose.tools import assert_almost_equal, assert_greater, assert_less, eq_, raises
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 
-from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
+from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import rescaled
-from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
-                                  KNOWN_DEFAULT_PARAM_GRIDS)
-
-from tests import config_dir, other_dir, output_dir, train_dir, test_dir
-from tests.utils import (fill_in_config_paths_for_fancy_output,
-                         make_regression_data, unlink)
+from skll.utils.constants import CLASSIFICATION_ONLY_METRICS, KNOWN_DEFAULT_PARAM_GRIDS
+from tests import config_dir, other_dir, output_dir, test_dir, train_dir
+from tests.utils import (
+    fill_in_config_paths_for_fancy_output,
+    make_regression_data,
+    unlink,
+)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

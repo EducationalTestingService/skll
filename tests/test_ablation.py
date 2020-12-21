@@ -10,21 +10,21 @@ Tests related to ablation experiments.
 
 import csv
 import json
-
 from glob import glob
 from os.path import join
 from pathlib import Path
 
 from nose.tools import eq_
+
 from skll.experiments import run_configuration
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-
 from tests import config_dir, output_dir, test_dir, train_dir
-from tests.utils import (create_jsonlines_feature_files,
-                         fill_in_config_paths,
-                         remove_jsonlines_feature_files,
-                         unlink)
-
+from tests.utils import (
+    create_jsonlines_feature_files,
+    fill_in_config_paths,
+    remove_jsonlines_feature_files,
+    unlink,
+)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

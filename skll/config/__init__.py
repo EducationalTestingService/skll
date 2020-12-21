@@ -8,29 +8,32 @@ The main class and functions used to parse SKLL configuration files.
 :author: Chee Wee Leong (cleong@ets.org)
 """
 
+import configparser
 import errno
 import itertools
 import logging
 import os
 from os.path import basename, dirname, exists, join, realpath
 
-import configparser
 import numpy as np
 import ruamel.yaml as yaml
 
-
 from skll.data.readers import safe_float
-from skll.utils.constants import (PROBABILISTIC_METRICS,
-                                  VALID_TASKS,
-                                  VALID_SAMPLERS,
-                                  VALID_FEATURE_SCALING_OPTIONS)
+from skll.utils.constants import (
+    PROBABILISTIC_METRICS,
+    VALID_FEATURE_SCALING_OPTIONS,
+    VALID_SAMPLERS,
+    VALID_TASKS,
+)
 from skll.utils.logging import get_skll_logger
 
-from .utils import (fix_json,
-                    load_cv_folds,
-                    locate_file,
-                    _munge_featureset_name,
-                    _parse_and_validate_metrics)
+from .utils import (
+    _munge_featureset_name,
+    _parse_and_validate_metrics,
+    fix_json,
+    load_cv_folds,
+    locate_file,
+)
 
 __all__ = ['SKLLConfigParser', 'fix_json', 'load_cv_folds', 'locate_file']
 

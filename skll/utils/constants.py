@@ -11,30 +11,33 @@ Constants useful for SKLL learners.
 import os
 
 from sklearn.dummy import DummyClassifier, DummyRegressor
-from sklearn.ensemble import (AdaBoostClassifier,
-                              AdaBoostRegressor,
-                              GradientBoostingClassifier,
-                              GradientBoostingRegressor,
-                              RandomForestClassifier,
-                              RandomForestRegressor)
-
-from sklearn.linear_model import (BayesianRidge,
-                                  ElasticNet,
-                                  HuberRegressor,
-                                  Lars,
-                                  Lasso,
-                                  LinearRegression,
-                                  LogisticRegression,
-                                  RANSACRegressor,
-                                  Ridge,
-                                  RidgeClassifier,
-                                  SGDClassifier,
-                                  SGDRegressor,
-                                  TheilSenRegressor)
+from sklearn.ensemble import (
+    AdaBoostClassifier,
+    AdaBoostRegressor,
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from sklearn.linear_model import (
+    BayesianRidge,
+    ElasticNet,
+    HuberRegressor,
+    Lars,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    RANSACRegressor,
+    Ridge,
+    RidgeClassifier,
+    SGDClassifier,
+    SGDRegressor,
+    TheilSenRegressor,
+)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.svm import LinearSVC, SVC, LinearSVR, SVR
+from sklearn.svm import SVC, SVR, LinearSVC, LinearSVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 KNOWN_DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:

@@ -11,7 +11,6 @@ import csv
 import json
 import re
 import warnings
-
 from ast import literal_eval
 from collections import defaultdict
 from glob import glob
@@ -21,12 +20,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from numpy.testing import (assert_almost_equal,
-                           assert_array_equal,
-                           assert_array_almost_equal)
-
-from nose.tools import eq_, ok_, assert_raises, raises
-
+from nose.tools import assert_raises, eq_, ok_, raises
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+)
 from sklearn.datasets import load_digits
 from sklearn.model_selection import ShuffleSplit, learning_curve
 from sklearn.naive_bayes import MultinomialNB
@@ -36,19 +35,26 @@ from skll.experiments import run_configuration
 from skll.experiments.output import _compute_ylimits_for_featureset
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS, VALID_TASKS
-from skll.utils.logging import get_skll_logger, close_and_remove_logger_handlers
-
-from tests import (_my_dir, backward_compatibility_dir, config_dir, other_dir,
-                   output_dir, train_dir, test_dir)
-from tests.utils import (create_jsonlines_feature_files,
-                         fill_in_config_options,
-                         fill_in_config_paths,
-                         fill_in_config_paths_for_single_file,
-                         make_classification_data,
-                         make_regression_data,
-                         remove_jsonlines_feature_files,
-                         unlink)
-
+from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
+from tests import (
+    _my_dir,
+    backward_compatibility_dir,
+    config_dir,
+    other_dir,
+    output_dir,
+    test_dir,
+    train_dir,
+)
+from tests.utils import (
+    create_jsonlines_feature_files,
+    fill_in_config_options,
+    fill_in_config_paths,
+    fill_in_config_paths_for_single_file,
+    make_classification_data,
+    make_regression_data,
+    remove_jsonlines_feature_files,
+    unlink,
+)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

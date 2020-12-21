@@ -46,13 +46,12 @@ import logging
 import re
 import sys
 from csv import DictReader
-from itertools import chain, islice
 from io import StringIO
+from itertools import chain, islice
 
 import numpy as np
 import pandas as pd
 from bs4 import UnicodeDammit
-
 from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet

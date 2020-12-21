@@ -13,12 +13,11 @@ from pathlib import Path
 
 from nose.tools import eq_, raises
 from numpy.testing import assert_almost_equal
-
 from sklearn.metrics import fbeta_score
-from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-from skll.metrics import kappa, use_score_func
 
-from tests import output_dir, train_dir, test_dir
+from skll.metrics import kappa, use_score_func
+from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
+from tests import output_dir, test_dir, train_dir
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
