@@ -36,6 +36,15 @@ How to contribute
           $ git add modified_files
           $ git commit
 
+   Note that [`pre-commit`](https://pre-commit.com/) is installed in
+   development environments, which is used to run pre-commit hooks, such as
+   [`isort`](https://pycqa.github.io/isort/) and
+   [`flake8`](https://flake8.pycqa.org/en/latest/). (Check
+   [here](./.pre-commit-config.yaml) to see a full list of pre-commit
+   hooks) If your commit fails, you will be able to see which hooks
+   passed/failed and you will have an opportunity to commit suggested changes
+   and/or address problems.
+
 7. Once you are done with your changes (including any new tests), run the tests
    locally:
 
