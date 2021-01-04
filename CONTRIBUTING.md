@@ -25,32 +25,66 @@ How to contribute
 
          $ conda activate sklldev
 
-5. Create a feature branch to hold your changes:
+5. Run `pip install -e .` to install skll into the environment in editable mode,
+   which is what we need for development.
+
+6. Install [`pre-commit`](https://pre-commit.com/) for automatically running git commit hooks:
+
+         $ pre-commit install
+
+   [`pre-commit`](https://pre-commit.com/) is used to run pre-commit
+   hooks, such as [`isort`](https://pycqa.github.io/isort/) and
+   [`flake8`](https://flake8.pycqa.org/en/latest/). (Check
+   [here](./.pre-commit-config.yaml) to see a full list of pre-commit
+   hooks.) If you attempt to make a commit and it fails, you will be
+   able to see which hooks passed/failed and you will have an
+   opportunity to commit suggested changes and/or address problems.
+
+   If you want to run all checks or specific checks before attempting a
+   commit, it is possible to do. It is also possible to skip checks
+   altogether (though this should be done only when well-motivated).
+
+   To run all checks on all files (not just those that have changed):
+
+         $ pre-commit run --all-files
+
+   To run all hooks on changed files:
+
+         $ pre-commit run
+
+   To run the `isort` hook alone on changed files:
+
+         $ pre-commit run isort
+
+   To run the `isort` hook alone on a given file:
+
+         $ pre-commit run isort <file-path>
+
+   Finally, the `SKIP` environment variable can be used to indicate to
+   `pre-commit` that certain checks should be skipped. It can be
+   assigned a comma-separated list of check names:
+
+         $ SKIP=check-added-large-files git commit -m "Adding a large file that we definitely need"
+
+7. Create a feature branch to hold your changes:
 
           $ git checkout -b feature/my-new-addition
 
    and start making changes. **Never work in the ``main`` branch!**
 
-6. During development, you can stage and commit your changes in git as follows:
+8. During development, you can stage and commit your changes in git as follows:
 
           $ git add modified_files
           $ git commit
 
-   Note that [`pre-commit`](https://pre-commit.com/) is installed in
-   development environments, which is used to run pre-commit hooks, such as
-   [`isort`](https://pycqa.github.io/isort/) and
-   [`flake8`](https://flake8.pycqa.org/en/latest/). (Check
-   [here](./.pre-commit-config.yaml) to see a full list of pre-commit
-   hooks) If your commit fails, you will be able to see which hooks
-   passed/failed and you will have an opportunity to commit suggested changes
-   and/or address problems.
+   Make sure to read step 6 above concerning `pre-commit` hooks.
 
-7. Once you are done with your changes (including any new tests), run the tests
+9. Once you are done with your changes (including any new tests), run the tests
    locally:
 
          $ nosetests
 
-8. After making sure all tests pass, you are ready to push your branch/fork to GitHub with:
+10. After making sure all tests pass, you are ready to push your branch/fork to GitHub with:
 
           $ git push feature/my-new-addition
 
