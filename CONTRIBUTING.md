@@ -31,12 +31,12 @@ How to contribute
 
    and start making changes. **Never work in the ``main`` branch!**
 
-6. During development, you can stage and commit your changes in git as follows: 
+6. During development, you can stage and commit your changes in git as follows:
 
           $ git add modified_files
           $ git commit
 
-7. Once you are done with your changes (including any new tests), run the tests 
+7. Once you are done with your changes (including any new tests), run the tests
    locally:
 
          $ nosetests
@@ -66,13 +66,13 @@ following rules before submitting a pull request:
    trying to address. This is easily done by just typing `#` and then picking the issue from the dropdown. If the issue is not visible in the first set of results, type a few characters from the issue title and the dropdown should update.
 
 -  Address any PEP8 issues pointed out by the `pep8speaks` bot that comments on
-   your PR after you submit it. The *same* comment will update after you make make any further commits so refer to it after every commit. You may want to install a linter in your development environment so that you can fix any PEP8 issues while you write your code. We generally ignore E501 messages about lines longer than 100 characters. 
+   your PR after you submit it. The *same* comment will update after you make make any further commits so refer to it after every commit. You may want to install a linter in your development environment so that you can fix any PEP8 issues while you write your code. We generally ignore E501 messages about lines longer than 100 characters.
 
-- You may need to add new tests if the code coverage after merging your branch 
+- You may need to add new tests if the code coverage after merging your branch
   will be lower than the current `main`. This will be reported by the `codecov` bot once you submit your PR.
 
-After submitting a pull request, it is recommended to add at least 2-3 reviewers to 
-review it. See [Requesting a pull request review](https://help.github.com/en/articles/requesting-a-pull-request-review) for more details. 
+After submitting a pull request, it is recommended to add at least 2-3 reviewers to
+review it. See [Requesting a pull request review](https://help.github.com/en/articles/requesting-a-pull-request-review) for more details.
 
 
 Easy Issues
@@ -115,5 +115,3 @@ For building the documentation, you will need [sphinx](http://sphinx.pocoo.org/)
       $ conda install sphinx sphinx_rtd_theme
 
 in your existing conda environment.
-
-

@@ -7,6 +7,7 @@ repos:
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
+        exclude: .(tsv|csv|json|json)$
     -   id: check-yaml
     -   id: check-added-large-files
     -   id: check-ast

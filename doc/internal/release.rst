@@ -21,7 +21,7 @@ This document is only meant for the project administrators, not users and develo
 
     conda build -c conda-forge --numpy=1.17 .
 
-4. Upload the package to anaconda.org using ``anaconda upload --user ets <package tarball>``. You will need to have the appropriate permissions for the ``ets`` organization. 
+4. Upload the package to anaconda.org using ``anaconda upload --user ets <package tarball>``. You will need to have the appropriate permissions for the ``ets`` organization.
 
 5. Build the PyPI source distribution using ``python setup.py sdist build``.
 
